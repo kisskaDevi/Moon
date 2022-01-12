@@ -166,7 +166,6 @@ void gltfModel::destroy(VkDevice device)
 
 void gltfModel::loadNode(Node *parent, const tinygltf::Node &node, uint32_t nodeIndex, const tinygltf::Model &model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale)
 {
-
     Node *newNode = new Node{};
     newNode->index = nodeIndex;
     newNode->parent = parent;

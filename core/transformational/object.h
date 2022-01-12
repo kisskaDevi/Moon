@@ -58,6 +58,7 @@ private:
     glm::vec3                       m_scale;
     glm::mat4x4                     m_globalTransform;
     glm::mat4x4                     modelMatrix;
+    float                           visibilityDistance = 10.0f;
 
     std::vector<VkBuffer>           m_uniformBuffers;
     std::vector<VkDeviceMemory>     m_uniformBuffersMemory;
@@ -81,6 +82,7 @@ public:
     void setPipeline(VkPipeline* pipeline);
     void setPipelineLayout(VkPipelineLayout* pipelineLayout);
     void setEmptyTexture(texture* emptyTexture);
+    void setVisibilityDistance(float visibilityDistance);
 
     void enableBloomSprite(bool enable);
 
@@ -98,7 +100,8 @@ public:
     VkPipelineLayout*               getPipelineLayout();
 
     bool&                           isEnableBloomSprite();
-    glm::mat4x4&                    getTransformation();
+    glm::mat4x4                     getTransformation();
+    float                           getVisibilityDistance();
 
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet();

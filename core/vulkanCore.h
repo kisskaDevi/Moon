@@ -13,6 +13,7 @@
 #include <libs/glm/glm/gtc/matrix_transform.hpp>
 
 class texture;
+class cubeTexture;
 class object;
 class group;
 class camera;
@@ -43,7 +44,7 @@ template <> class light<pointLight>;
 #include "graphics/graphics.h"
 
 const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+const uint32_t HEIGHT = 800;
 const double pi = 4*std::atan(1);
 
 const int MAX_FRAMES_IN_FLIGHT = 3;
@@ -135,6 +136,8 @@ private:
     camera                                      *cam;
     texture                                     *emptyTexture;
     texture                                     *emptyTextureW;
+    cubeTexture                                 *skybox;
+    object                                      *skyboxObject;
 
     double                                      xMpos, yMpos;
     double                                      angx=0.0, angy=0.0;
@@ -142,7 +145,7 @@ private:
     float                                       frameTime;
     float                                       fps = 60.0f;
     bool                                        animate = true;
-    bool                                        fpsLock = true;
+    bool                                        fpsLock = false;
 
     uint32_t                                    controledGroup = 0;
 

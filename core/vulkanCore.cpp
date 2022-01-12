@@ -6,8 +6,16 @@
 #include "transformational/light.h"
 #include "transformational/gltfmodel.h"
 
-std::string ZERO_TEXTURE = "C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\texture\\0.png";
-std::string ZERO_TEXTURE_WHITE = "C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\texture\\1.png";
+std::vector<std::string> SKYBOX = {
+    "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\skybox\\left.jpg",
+    "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\skybox\\right.jpg",
+    "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\skybox\\front.jpg",
+    "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\skybox\\back.jpg",
+    "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\skybox\\top.jpg",
+    "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\skybox\\bottom.jpg"
+};
+std::string ZERO_TEXTURE = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\0.png";
+std::string ZERO_TEXTURE_WHITE = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\texture\\1.png";
 
 void VkApplication::VkApplication::initWindow()
 {
@@ -279,6 +287,7 @@ void VkApplication::createLogicalDevice()
     deviceFeatures.samplerAnisotropy = VK_TRUE;             //анизотропная фильтрация
     deviceFeatures.independentBlend = VK_TRUE;
     deviceFeatures.sampleRateShading = VK_TRUE;
+    deviceFeatures.imageCubeArray = VK_TRUE;
 
     //создаём информацию о новом логическом устройстве
     VkDeviceCreateInfo createInfo{};
@@ -340,6 +349,12 @@ void VkApplication::createCommandPool()
 
 void VkApplication::createTextures()
 {
+    skybox = new cubeTexture(this,SKYBOX);
+    skybox->setMipLevel(0.0f);
+    skybox->createTextureImage();
+    skybox->createTextureImageView();
+    skybox->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+
     emptyTexture = new texture(this,ZERO_TEXTURE);
     emptyTexture->createTextureImage();
     emptyTexture->createTextureImageView();
@@ -354,17 +369,17 @@ void VkApplication::createTextures()
 void VkApplication::loadModel()
 {
     gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\model\\glb\\Bee.glb",this,1.0f);
+    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\model\\glb\\Bee.glb",this,1.0f);
     gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\model\\glb\\Bee.glb",this,1.0f);
+    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\model\\glb\\Bee.glb",this,1.0f);
     gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\model\\glb\\Box.glb",this,1.0f);
+    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\model\\glb\\Box.glb",this,1.0f);
     gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\model\\glTF\\Sponza\\Sponza.gltf",this,1.0f);
+    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\model\\glTF\\Sponza\\Sponza.gltf",this,1.0f);
     gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\model\\glb\\Duck.glb",this,1.0f);
+    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\model\\glb\\Duck.glb",this,1.0f);
     gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\model\\glb\\RetroUFO.glb",this,1.0f);
+    gltfModel.at(gltfModel.size()-1)->loadFromFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\model\\glb\\RetroUFO.glb",this,1.0f);
 }
 
 void VkApplication::createObjects()
@@ -397,19 +412,22 @@ void VkApplication::createObjects()
 
     object3D.push_back( new object(this,{gltfModel.at(5),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(2.0f,2.0f,2.0f));
+    object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object *UFO1 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(this,{gltfModel.at(5),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(2.0f,2.0f,2.0f));
+    object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(this,{gltfModel.at(2),&Graphics.BloomSpriteGraphicsPipeline(),&Graphics.BloomSpritePipelineLayout(),emptyTextureW}) );
     object *Box = object3D.at(index);
     index++;
+
+    skyboxObject = new object(this,{gltfModel.at(2),nullptr,nullptr,nullptr});
+    skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
 
     groups.push_back(new group);
     groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
@@ -427,7 +445,7 @@ void VkApplication::createObjects()
     groups.at(3)->addObject(UFO2);
 
     cam = new camera;
-    cam->translate(glm::vec3(0.0f,0.0f,5.0f));
+    cam->translate(glm::vec3(0.0f,0.0f,10.0f));
 }
 
 void VkApplication::createLight()
@@ -467,6 +485,7 @@ void VkApplication::createGraphics()
 {    
     PostProcessing.setApplication(this);
     PostProcessing.setMSAASamples(msaaSamples);
+
     PostProcessing.createSwapChain();
     PostProcessing.createImageViews();
     PostProcessing.createRenderPass();
@@ -480,13 +499,18 @@ void VkApplication::createGraphics()
     Graphics.setMSAASamples(msaaSamples);
     Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent());
     Graphics.setEmptyTexture(emptyTexture);
+    Graphics.setSkyboxTexture(skybox);
+
     Graphics.createColorAttachments();
     Graphics.createDepthAttachment();
     Graphics.createAttachments();
     Graphics.createUniformBuffers();
+    Graphics.createSkyboxUniformBuffers();
     Graphics.createDrawRenderPass();
     Graphics.createDescriptorSetLayout();
+    Graphics.createSkyboxDescriptorSetLayout();
     Graphics.createGraphicsPipeline();
+    Graphics.createSkyBoxPipeline();
     Graphics.createGodRaysGraphicsPipeline();
     Graphics.createBloomSpriteGraphicsPipeline();
     Graphics.createFramebuffers();
@@ -524,6 +548,8 @@ void VkApplication::createDescriptors()
 
     Graphics.createDescriptorPool(object3D);
     Graphics.createDescriptorSets(lightSource,object3D);
+    Graphics.createSkyboxDescriptorPool();
+    Graphics.createSkyboxDescriptorSets();
 }
 
 void VkApplication::createCommandBuffers()
@@ -580,7 +606,7 @@ void VkApplication::updateCommandBuffer(uint32_t number, uint32_t i)
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
-            Graphics.render(commandBuffers[number],i,object3D);
+            Graphics.render(commandBuffers[number],i,object3D,*skyboxObject);
             PostProcessing.render(commandBuffers[number],i);
 
         if (vkEndCommandBuffer(commandBuffers[number][i]) != VK_SUCCESS)
@@ -685,9 +711,6 @@ void VkApplication::VkApplication::mainLoop()
 
         updateCmd(imageIndex);
 
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
         VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
@@ -699,6 +722,8 @@ void VkApplication::VkApplication::mainLoop()
         }
         commandbufferSet[lightSource.size()] = commandBuffers[currentBuffer][imageIndex];
 
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
@@ -773,17 +798,7 @@ void VkApplication::VkApplication::mainLoop()
     }
         void VkApplication::updateUniformBuffer(uint32_t currentImage)
         {
-            UniformBufferObject ubo{};
-
-            ubo.view = cam->getViewMatrix();
-            ubo.proj = glm::perspective(glm::radians(45.0f), (float) Graphics.SwapChainExtent().width / (float) Graphics.SwapChainExtent().height, 0.1f, 1000.0f);
-            ubo.proj[1][1] *= -1;
-            ubo.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
-
-            void* data;
-            vkMapMemory(device, Graphics.UniformBuffersMemory()[currentImage], 0, sizeof(ubo), 0, &data);
-                memcpy(data, &ubo, sizeof(ubo));
-            vkUnmapMemory(device, Graphics.UniformBuffersMemory()[currentImage]);
+            Graphics.updateUniformBuffer(currentImage, cam, skyboxObject);
 
             for(size_t i=0;i<object3D.size();i++)
             {
@@ -854,6 +869,8 @@ void VkApplication::VkApplication::cleanup()
         delete textures.at(i);
     }
 
+    skybox->destroy();
+    delete skybox;
     emptyTexture->destroy();
     delete emptyTexture;
     emptyTextureW->destroy();

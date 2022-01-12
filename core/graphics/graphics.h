@@ -15,7 +15,9 @@
 class VkApplication;
 
 class texture;
+class cubeTexture;
 class object;
+class camera;
 struct gltfModel;
 template <typename type>
 class light;
@@ -47,6 +49,13 @@ struct UniformBufferObject
     alignas(16) glm::vec4 eyePosition;
 };
 
+struct SkyboxUniformBufferObject
+{
+    alignas(16) glm::mat4 proj;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 model;
+};
+
 struct SwapChainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -68,13 +77,25 @@ struct QueueFamilyIndices
     }
 };
 
+struct skybox
+{
+    cubeTexture                     *texture;
+    VkDescriptorSetLayout           descriptorSetLayout;
+    VkDescriptorPool                descriptorPool;
+    std::vector<VkDescriptorSet>    descriptorSets;
+    VkPipeline                      pipeline;
+    VkPipelineLayout                pipelineLayout;
+    std::vector<VkBuffer>           uniformBuffers;
+    std::vector<VkDeviceMemory>     uniformBuffersMemory;
+};
+
 class graphics
 {
 private:
-
     VkApplication                   *app;
 
     texture                         *emptyTexture;
+    skybox                          skyBox;
     std::vector<VkBuffer>           emptyUniformBuffers;
     std::vector<VkDeviceMemory>     emptyUniformBuffersMemory;
 
@@ -97,7 +118,6 @@ private:
     VkPipelineLayout                godRaysPipelineLayout;
 
     VkPipeline                      graphicsPipeline;
-    VkPipeline                      skyBoxPipeline;
     VkPipeline                      bloomSpriteGraphicsPipeline;
     VkPipeline                      godRaysPipeline;
 
@@ -111,16 +131,20 @@ private:
     VkDescriptorSetLayout           uniformBlockSetLayout;
     VkDescriptorSetLayout           materialSetLayout;
 
+    glm::vec4                       cameraPosition;
+
     void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
 
 public:
     graphics();
+
     void setApplication(VkApplication *app);
     void setEmptyTexture(texture *emptyTexture);
     void setMSAASamples(VkSampleCountFlagBits msaaSamples);
-    void destroy();
-
     void setImageProp(uint32_t imageCount, VkFormat format, VkExtent2D extent);
+    void setSkyboxTexture(cubeTexture * tex);
+
+    void destroy();
 
     void createColorAttachments();
     void createDepthAttachment();
@@ -129,30 +153,37 @@ public:
     void createDrawRenderPass();
 
     void createDescriptorSetLayout();
+    void createDescriptorPool(const std::vector<object*> & object3D);
+    void createDescriptorSets(const std::vector<light<spotLight>*> & lightSource, const std::vector<object*> & object3D);
+
+
+    void createSkyboxDescriptorSetLayout();
+    void createSkyboxDescriptorPool();
+    void createSkyboxDescriptorSets();
 
     void createGraphicsPipeline();
-    void createSkyBoxPipeline();
     void createBloomSpriteGraphicsPipeline();
     void createGodRaysGraphicsPipeline();
+    void createSkyBoxPipeline();
 
     void createFramebuffers();
 
-    void createDescriptorPool(const std::vector<object*> & object3D);
-
     void createUniformBuffers();
+    void createSkyboxUniformBuffers();
 
-    void createDescriptorSets(const std::vector<light<spotLight>*> & lightSource, const std::vector<object*> & object3D);
+    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D, object & sky);
 
-    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D);
+    void updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
 
     VkPipelineLayout                & PipelineLayout();
     VkPipelineLayout                & BloomSpritePipelineLayout();
     VkPipelineLayout                & GodRaysPipelineLayout();
+    VkPipelineLayout                & SkyBoxPipelineLayout();
 
     VkPipeline                      & PipeLine();
-    VkPipeline                      & SkyBoxPipeLine();
     VkPipeline                      & BloomSpriteGraphicsPipeline();
     VkPipeline                      & GodRaysPipeline();
+    VkPipeline                      & SkyBoxPipeLine();
 
     VkSwapchainKHR                  & SwapChain();
     VkFormat                        & SwapChainImageFormat();
@@ -190,7 +221,6 @@ private:
     VkPipeline                          graphicsPipeline;
 
     std::vector<VkFramebuffer>          framebuffers;
-
 
     VkDescriptorSetLayout               descriptorSetLayout;
     VkDescriptorPool                    descriptorPool;

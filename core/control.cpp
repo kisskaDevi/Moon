@@ -193,6 +193,10 @@ void VkApplication::mouseEvent()
     {
         controledGroup = 3;
     }
+    if(glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window,GLFW_TRUE);
+    }
 }
 
 void VkApplication::scrol(GLFWwindow *window, double xoffset, double yoffset)

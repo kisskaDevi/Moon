@@ -332,6 +332,7 @@ void object::createMaterialDescriptorSet(Material* material)
     vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
+void                            object::setVisibilityDistance(float visibilityDistance){this->visibilityDistance=visibilityDistance;}
 void                            object::setPipeline(VkPipeline* pipeline){m_pipeline = pipeline;}
 void                            object::setPipelineLayout(VkPipelineLayout* pipelineLayout){m_pipelineLayout = pipelineLayout;}
 void                            object::setEmptyTexture(texture* emptyTexture){m_emptyTexture = emptyTexture;}
@@ -342,6 +343,9 @@ gltfModel*                      object::getModel(){return m_model;}
 
 VkPipeline                      *object::getPipeline(){return m_pipeline;}
 VkPipelineLayout                *object::getPipelineLayout(){return m_pipelineLayout;}
+
+float                           object::getVisibilityDistance(){return visibilityDistance;}
+glm::mat4x4                     object::getTransformation(){return modelMatrix;}
 
 VkDescriptorPool                &object::getDescriptorPool(){return m_descriptorPool;}
 std::vector<VkDescriptorSet>    &object::getDescriptorSet(){return m_descriptors;}

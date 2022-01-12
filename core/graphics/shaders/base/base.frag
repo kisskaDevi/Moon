@@ -142,7 +142,7 @@ void outImage2()
 
 void outImage3()
 {
-
+    outGodRays = SRGBtoLINEAR(texture(emissiveTexture, UV0));
 }
 
 //===================================================main====================================================================//
@@ -151,6 +151,7 @@ void main()
 {
     outImage1();
     outImage2();
+    outImage3();
 }
 
 vec3 getNormal()
@@ -181,32 +182,27 @@ float shadowFactor(int i)
 
     vec2 shadowMapCoord = lightSpaceNDC.xy * 0.5f + 0.5f;
 
-//    int n = 8;
-//    float maxNoise = 0.005f;
-//    float dang = pi/n;
-//    float shadowSample = 0.0f;
-//    for(int j=0;j<n;j++)
-//    {
-//	for(float noise = 0.001f; noise<maxNoise; noise=noise+0.001f)
-//	{
-//	    vec2 dx = vec2(noise*cos(j*dang), noise*sin(j*dang));
-//	    shadowSample += texture(shadowMap[i], shadowMapCoord.xy + dx).x/(4*n);
-//	}
-//    }
+        int n = 8; int maxNoise = 1;
+	float dang = 2.0f*pi/n; float dnoise = 0.001f;
+	float shadowSample = 0.0f;
+	for(int j=0;j<n;j++)
+	{
+	    for(float noise = dnoise; noise<dnoise*(maxNoise+1); noise+=dnoise)
+	    {
+		vec2 dx = vec2(noise*cos(j*dang), noise*sin(j*dang));
+		shadowSample += lightSpaceNDC.z-texture(shadowMap[i], shadowMapCoord.xy + dx).x > 0.0001f ? 1.0f : 0.0f;
+	    }
+	}
+	shadowSample /= maxNoise*n;
 
-//    float d = lightSpaceNDC.z-shadowSample;
-//    d = exp(-d*1000.0f);
+	if(1.0f - shadowSample<minAmbientFactor)
+	{return minAmbientFactor;}
+	return 1.0f - shadowSample;
 
-//    if(1.0-d<0.1f)
-//    {
-//	return d;
-//    }
-//    return minAmbientFactor;
+//    if(lightSpaceNDC.z-texture(shadowMap[i], shadowMapCoord.xy).x > 0.0001f)
+//    {return minAmbientFactor;}
 
-    if(lightSpaceNDC.z-texture(shadowMap[i], shadowMapCoord.xy).x > 0.0001f)
-    {return minAmbientFactor;}
-
-    return 1.0f;
+//    return 1.0f;
 
 }
 

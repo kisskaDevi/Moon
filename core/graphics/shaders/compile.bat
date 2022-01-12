@@ -7,4 +7,6 @@ C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe bloomSprite/bloomSprite.vert -o bloomSpri
 C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe bloomSprite/bloomSprite.frag -o bloomSprite/fragBloomSprite.spv
 C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe godRays/godRays.vert -o godRays/godRaysVert.spv
 C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe godRays/godRays.frag -o godRays/godRaysFrag.spv
+C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe skybox/skybox.vert -o skybox/skyboxVert.spv
+C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe skybox/skybox.frag -o skybox/skyboxFrag.spv
 pause

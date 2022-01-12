@@ -113,7 +113,7 @@ void postProcessing::createSwapChain()
     //записываем дескриптор изображений представляющий элементы в списке показа
     vkGetSwapchainImagesKHR(app->getDevice(), swapChain, &imageCount, nullptr);                   //в imageCount записываем точно число изображений
 
-    swapChainAttachments.resize(2);
+    swapChainAttachments.resize(3);
     for(size_t i=0;i<swapChainAttachments.size();i++)
     {
         swapChainAttachments.at(i).image.resize(imageCount);
@@ -214,20 +214,34 @@ void postProcessing::createRenderPass()
     bloomColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
     bloomColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;              //в каком размещении его нужно оставить по завершению рендеринга
 
+    VkAttachmentDescription godRaysColorAttachment{};
+    godRaysColorAttachment.format = swapChainImageFormat;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
+    godRaysColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;                            //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
+    godRaysColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                       //следующие 4 параметра смотри на странице 210
+    godRaysColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    godRaysColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    godRaysColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    godRaysColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
+    godRaysColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;              //в каком размещении его нужно оставить по завершению рендеринга
+
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;                                          //индекс в массив подключений
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;       //размещение
 
     VkAttachmentReference bloomColorAttachmentRef{};
-    bloomColorAttachmentRef.attachment = 1;                                          //индекс в массив подключений
-    bloomColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;       //размещение
+    bloomColorAttachmentRef.attachment = 1;
+    bloomColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference attachmentRef[2] = {colorAttachmentRef,bloomColorAttachmentRef};
+    VkAttachmentReference godRaysColorAttachmentRef{};
+    godRaysColorAttachmentRef.attachment = 2;
+    godRaysColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    std::array<VkAttachmentReference, 3> attachmentRef = {colorAttachmentRef,bloomColorAttachmentRef,godRaysColorAttachmentRef};
 
     VkSubpassDescription subpass{};                                             //подпроходы рендеринга
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;                //бит для графики
-    subpass.colorAttachmentCount = 2;                                           //количество подключений
-    subpass.pColorAttachments = attachmentRef;                                 //подключения
+    subpass.colorAttachmentCount = static_cast<uint32_t>(attachmentRef.size());                        //количество подключений
+    subpass.pColorAttachments = attachmentRef.data();                           //подключения
 
     VkSubpassDependency dependency{};                                           //зависимости
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;                                //ссылка из исходного прохода (создавшего данные)
@@ -237,7 +251,7 @@ void postProcessing::createRenderPass()
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, bloomColorAttachment};
+    std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, bloomColorAttachment,godRaysColorAttachment};
     //информация о проходе рендеринга
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -292,8 +306,8 @@ void postProcessing::createDescriptorSetLayout()
 void postProcessing::createGraphicsPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\postProcessing\\postProcessingVert.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\postProcessing\\postProcessingFrag.spv");
+    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\postProcessing\\postProcessingVert.spv");
+    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\postProcessing\\postProcessingFrag.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -381,7 +395,7 @@ void postProcessing::createGraphicsPipeline()
      * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
      * шейдера и текущим содержанием фреймбуфера.*/
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment[2];
+    std::array<VkPipelineColorBlendAttachmentState,3> colorBlendAttachment;
     colorBlendAttachment[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment[0].blendEnable = VK_TRUE;
     colorBlendAttachment[0].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -389,7 +403,7 @@ void postProcessing::createGraphicsPipeline()
     colorBlendAttachment[0].colorBlendOp = VK_BLEND_OP_MAX;
     colorBlendAttachment[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     colorBlendAttachment[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    colorBlendAttachment[0].alphaBlendOp = VK_BLEND_OP_MAX;                         // Optional
+    colorBlendAttachment[0].alphaBlendOp = VK_BLEND_OP_MAX;
 
     colorBlendAttachment[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment[1].blendEnable = VK_TRUE;
@@ -398,14 +412,23 @@ void postProcessing::createGraphicsPipeline()
     colorBlendAttachment[1].colorBlendOp = VK_BLEND_OP_MAX;
     colorBlendAttachment[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     colorBlendAttachment[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    colorBlendAttachment[1].alphaBlendOp = VK_BLEND_OP_MAX;                         // Optional
+    colorBlendAttachment[1].alphaBlendOp = VK_BLEND_OP_MAX;
+
+    colorBlendAttachment[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment[2].blendEnable = VK_TRUE;
+    colorBlendAttachment[2].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[2].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[2].colorBlendOp = VK_BLEND_OP_MAX;
+    colorBlendAttachment[2].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[2].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[2].alphaBlendOp = VK_BLEND_OP_MAX;
 
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlending.logicOpEnable = VK_FALSE;                                         //задаёт, необходимо ли выполнить логические операции между выводом фрагментного шейдера и содержанием цветовых подключений
-    colorBlending.logicOp = VK_LOGIC_OP_COPY;                                       //Optional
-    colorBlending.attachmentCount = 2;                                              //количество подключений
-    colorBlending.pAttachments = colorBlendAttachment;                              //массив подключений
+    colorBlending.logicOpEnable = VK_FALSE;                                                 //задаёт, необходимо ли выполнить логические операции между выводом фрагментного шейдера и содержанием цветовых подключений
+    colorBlending.logicOp = VK_LOGIC_OP_COPY;                                               //Optional
+    colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());     //количество подключений
+    colorBlending.pAttachments = colorBlendAttachment.data();                               //массив подключений
     colorBlending.blendConstants[0] = 0.0f; // Optional
     colorBlending.blendConstants[1] = 0.0f; // Optional
     colorBlending.blendConstants[2] = 0.0f; // Optional
@@ -471,10 +494,11 @@ void postProcessing::createFramebuffers()
     framebuffers.resize(imageCount);
     for (size_t i = 0; i < framebuffers.size(); i++)
     {
-        std::array<VkImageView, 2> attachments =
+        std::array<VkImageView, 3> attachments =
         {
             swapChainAttachments.at(0).imageView[i],
-            swapChainAttachments.at(1).imageView[i]
+            swapChainAttachments.at(1).imageView[i],
+            swapChainAttachments.at(2).imageView[i],
         };
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -537,25 +561,25 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
 
     for(size_t i=0;i<Attachments.size();i++)
     {
-        VkSamplerCreateInfo bloomCenterSamplerInfo{};
-        bloomCenterSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        bloomCenterSamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-        bloomCenterSamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-        bloomCenterSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;          //Режим адресации
-        bloomCenterSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;          //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-        bloomCenterSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;          //Повторение текстуры при выходе за пределы размеров изображения.
-        bloomCenterSamplerInfo.anisotropyEnable = VK_FALSE;
-        bloomCenterSamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-        bloomCenterSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-        bloomCenterSamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-        bloomCenterSamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-        bloomCenterSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
-        bloomCenterSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        bloomCenterSamplerInfo.minLod = 0.0f;
-        bloomCenterSamplerInfo.maxLod = 1.0f;
-        bloomCenterSamplerInfo.mipLodBias = 0.0f; // Optional
+        VkSamplerCreateInfo SamplerInfo{};
+        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+        SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;          //Режим адресации
+        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;          //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;          //Повторение текстуры при выходе за пределы размеров изображения.
+        SamplerInfo.anisotropyEnable = VK_FALSE;
+        SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+        SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+        SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        SamplerInfo.minLod = 0.0f;
+        SamplerInfo.maxLod = 0.0f;
+        SamplerInfo.mipLodBias = 0.0f; // Optional
 
-        if (vkCreateSampler(app->getDevice(), &bloomCenterSamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
+        if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create texture sampler!");
         }
@@ -588,9 +612,11 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
 
 void postProcessing::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
 {
-    std::array<VkClearValue, 2> ClearValues{};
+    std::array<VkClearValue, 3> ClearValues{};
     ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
     ClearValues[1].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    ClearValues[2].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
 
     VkRenderPassBeginInfo ectsRenderPassInfo{};
     ectsRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

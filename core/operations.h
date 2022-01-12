@@ -33,14 +33,6 @@ void copyBuffer(
 
 //textureOperations
 
-void generateMipmaps(
-        VkApplication*                  app,
-        VkImage                         image,
-        VkFormat                        imageFormat,
-        int32_t                         texWidth,
-        int32_t                         texHeight,
-        uint32_t                        mipLevels);
-
 void createImage(
         VkApplication*                  app,
         uint32_t                        width,
@@ -53,6 +45,14 @@ void createImage(
         VkMemoryPropertyFlags           properties,
         VkImage&                        image,
         VkDeviceMemory&                 imageMemory);
+
+void generateMipmaps(
+        VkApplication*                  app,
+        VkImage                         image,
+        VkFormat                        imageFormat,
+        int32_t                         texWidth,
+        int32_t                         texHeight,
+        uint32_t                        mipLevels);
 
 void transitionImageLayout(
         VkApplication*                  app,
@@ -75,6 +75,55 @@ VkImageView createImageView(
         VkFormat                        format,
         VkImageAspectFlags              aspectFlags,
         uint32_t                        mipLevels);
+
+
+//cubeTextureOperations
+
+void createCubeImage(
+        VkApplication*                  app,
+        uint32_t                        width,
+        uint32_t                        height,
+        uint32_t                        mipLevels,
+        VkSampleCountFlagBits           numSamples,
+        VkFormat                        format,
+        VkImageTiling                   tiling,
+        VkImageUsageFlags               usage,
+        VkMemoryPropertyFlags           properties,
+        VkImage&                        image,
+        VkDeviceMemory&                 imageMemory);
+
+VkImageView createCubeImageView(
+        VkApplication*                  app,
+        VkImage                         image,
+        VkFormat                        format,
+        VkImageAspectFlags              aspectFlags,
+        uint32_t                        mipLevels);
+
+void transitionImageLayout(
+        VkApplication*                  app,
+        VkImage                         image,
+        VkFormat                        format,
+        VkImageLayout                   oldLayout,
+        VkImageLayout                   newLayout,
+        uint32_t                        mipLevels,
+        uint32_t                        baseArrayLayer);
+
+void copyBufferToImage(
+        VkApplication*                  app,
+        VkBuffer                        buffer,
+        VkImage                         image,
+        uint32_t                        width,
+        uint32_t                        height,
+        uint32_t                        baseArrayLayer);
+
+void generateMipmaps(
+        VkApplication*                  app,
+        VkImage                         image,
+        VkFormat                        imageFormat,
+        int32_t                         texWidth,
+        int32_t                         texHeight,
+        uint32_t                        mipLevels,
+        uint32_t                        baseArrayLayer);
 
 //depthAttachmentsOperations
 

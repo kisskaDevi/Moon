@@ -4,6 +4,7 @@
 #include "core/transformational/gltfmodel.h"
 #include "core/transformational/light.h"
 #include "core/transformational/gltfmodel.h"
+#include "core/transformational/camera.h"
 
 graphics::graphics()
 {
@@ -43,6 +44,9 @@ void graphics::destroy()
     vkDestroyPipeline(app->getDevice(), godRaysPipeline, nullptr);
     vkDestroyPipelineLayout(app->getDevice(), godRaysPipelineLayout,nullptr);
 
+    vkDestroyPipeline(app->getDevice(), skyBox.pipeline, nullptr);
+    vkDestroyPipelineLayout(app->getDevice(), skyBox.pipelineLayout,nullptr);
+
     vkDestroyRenderPass(app->getDevice(), renderPass, nullptr);
 
     for(size_t i=0;i<Attachments.size();i++)
@@ -59,11 +63,16 @@ void graphics::destroy()
     vkDestroyDescriptorSetLayout(app->getDevice(), uniformBufferSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(app->getDevice(), uniformBlockSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(app->getDevice(), materialSetLayout, nullptr);
-
     vkDestroyDescriptorPool(app->getDevice(), descriptorPool, nullptr);
+
+    vkDestroyDescriptorSetLayout(app->getDevice(), skyBox.descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(app->getDevice(), skyBox.descriptorPool, nullptr);
 
     for (size_t i = 0; i < imageCount; i++)
     {
+        vkDestroyBuffer(app->getDevice(), skyBox.uniformBuffers[i], nullptr);
+        vkFreeMemory(app->getDevice(), skyBox.uniformBuffersMemory[i], nullptr);
+
         vkDestroyBuffer(app->getDevice(), uniformBuffers[i], nullptr);
         vkFreeMemory(app->getDevice(), uniformBuffersMemory[i], nullptr);
 
@@ -77,6 +86,11 @@ void graphics::setImageProp(uint32_t imageCount, VkFormat format, VkExtent2D ext
     this->imageCount = imageCount;
     swapChainImageFormat = format;
     swapChainExtent = extent;
+}
+
+void graphics::setSkyboxTexture(cubeTexture *tex)
+{
+    skyBox.texture = tex;
 }
 
 //=========================================================================//
@@ -137,6 +151,19 @@ void graphics::createUniformBuffers()
     }
 }
 
+void graphics::createSkyboxUniformBuffers()
+{
+    VkDeviceSize bufferSize = sizeof(SkyboxUniformBufferObject);
+
+    skyBox.uniformBuffers.resize(imageCount);
+    skyBox.uniformBuffersMemory.resize(imageCount);
+
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        createBuffer(app,bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, skyBox.uniformBuffers[i], skyBox.uniformBuffersMemory[i]);
+    }
+}
+
 //=======================================RenderPass======================//
 
 void graphics::createDrawRenderPass()
@@ -162,14 +189,14 @@ void graphics::createDrawRenderPass()
     for(size_t i=0;i<colorAttachments.size();i++)
     {
         VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = swapChainImageFormat;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
-        colorAttachment.samples = msaaSamples;                            //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                       //следующие 4 параметра смотри на странице 210
+        colorAttachment.format = swapChainImageFormat;                                      //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
+        colorAttachment.samples = msaaSamples;                                              //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                               //следующие 4 параметра смотри на странице 210
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;              //в каком размещении его нужно оставить по завершению рендеринга
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                          //в каком размещении будет изображение в начале прохода
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;             //в каком размещении его нужно оставить по завершению рендеринга
         attachments.push_back(colorAttachment);
     }
 
@@ -223,9 +250,9 @@ void graphics::createDrawRenderPass()
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
     subpass.pResolveAttachments = resolveRef;
 
-    VkSubpassDependency dependency{};                                           //зависимости
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;                                //ссылка из исходного прохода (создавшего данные)
-    dependency.dstSubpass = 0;                                                  //в целевой подпроход (поглощающий данные)
+    VkSubpassDependency dependency{};                                                                                           //зависимости
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
+    dependency.dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
     dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;       //задаёт как стадии конвейера в исходном проходе создают данные
     dependency.srcAccessMask = 0;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -245,8 +272,6 @@ void graphics::createDrawRenderPass()
         throw std::runtime_error("failed to create render pass!");
     }
 }
-
-//==============================Piplines=================================
 
 void graphics::createDescriptorSetLayout()
 {
@@ -510,11 +535,121 @@ void graphics::createDescriptorSets(const std::vector<light<spotLight>*> & light
     }
 }
 
+//==========================SkyboxDescriptors============================
+
+
+void graphics::createSkyboxDescriptorSetLayout()
+{
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding textursBinding{};
+    textursBinding.binding = 1;
+    textursBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    textursBinding.descriptorCount = 1;
+    textursBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    textursBinding.pImmutableSamplers = nullptr;
+
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding,textursBinding};
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+    layoutInfo.pBindings = bindings.data();
+
+    if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &skyBox.descriptorSetLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+}
+
+void graphics::createSkyboxDescriptorPool()
+{
+    std::vector<VkDescriptorPoolSize> poolSizes(2);
+    size_t index = 0;
+
+    poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;                           //Сначала нам нужно описать, какие типы дескрипторов будут содержать наши наборы дескрипторов
+    poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);                //и сколько их, используя VkDescriptorPoolSizeструктуры.
+    index++;
+
+    poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+    index++;
+
+    //Мы будем выделять один из этих дескрипторов для каждого кадра. На эту структуру размера пула ссылается главный VkDescriptorPoolCreateInfo:
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.pPoolSizes = poolSizes.data();
+    poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+
+    if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &skyBox.descriptorPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create descriptor pool!");
+    }
+}
+
+void graphics::createSkyboxDescriptorSets()
+{
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, skyBox.descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = skyBox.descriptorPool;
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+    allocInfo.pSetLayouts = layouts.data();
+
+    skyBox.descriptorSets.resize(imageCount);
+    if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, skyBox.descriptorSets.data()) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+
+    //Наборы дескрипторов уже выделены, но дескрипторы внутри еще нуждаются в настройке.
+    //Теперь мы добавим цикл для заполнения каждого дескриптора:
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = skyBox.uniformBuffers[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(SkyboxUniformBufferObject);
+
+        VkDescriptorImageInfo skyBoxImageInfo;
+        skyBoxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        skyBoxImageInfo.imageView = skyBox.texture->getTextureImageView();
+        skyBoxImageInfo.sampler = skyBox.texture->getTextureSampler();
+
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = skyBox.descriptorSets[i];
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = skyBox.descriptorSets[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &skyBoxImageInfo;
+
+        vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+}
+
+//==============================Piplines=================================
+
 void graphics::createGraphicsPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\base\\basevert.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\base\\basefrag.spv");
+    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\base\\basevert.spv");
+    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\base\\basefrag.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -556,7 +691,7 @@ void graphics::createGraphicsPipeline()
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;                       //тип примитива, подробно про тип примитива смотри со страницы 228
     inputAssembly.primitiveRestartEnable = VK_FALSE;                                    //это флаг, кторый используется для того, чтоюы можно было оборвать примитивы полосы и веера и затем начать их снова
-                                                                                    //без него кажда полоса и веер потребуют отдельной команды вывода.
+                                                                                        //без него кажда полоса и веер потребуют отдельной команды вывода.
 
     /* здесь может быть добавлена тесселяция*/
 
@@ -628,7 +763,7 @@ void graphics::createGraphicsPipeline()
     colorBlendAttachment[0].alphaBlendOp = VK_BLEND_OP_MAX;
 
     colorBlendAttachment[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment[1].blendEnable = VK_TRUE;
+    colorBlendAttachment[1].blendEnable = VK_FALSE;
     colorBlendAttachment[1].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment[1].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
     colorBlendAttachment[1].colorBlendOp = VK_BLEND_OP_MAX;
@@ -720,8 +855,8 @@ void graphics::createGraphicsPipeline()
 void graphics::createBloomSpriteGraphicsPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\bloomSprite\\vertBloomSprite.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\bloomSprite\\fragBloomSprite.spv");
+    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\bloomSprite\\vertBloomSprite.spv");
+    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\bloomSprite\\fragBloomSprite.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -882,7 +1017,7 @@ void graphics::createBloomSpriteGraphicsPipeline()
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencil.depthTestEnable = VK_TRUE;
-    depthStencil.depthWriteEnable = VK_FALSE;
+    depthStencil.depthWriteEnable = VK_TRUE;
     depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.minDepthBounds = 0.0f; // Optional
@@ -906,7 +1041,7 @@ void graphics::createBloomSpriteGraphicsPipeline()
     pipelineInfo.pRasterizationState = &rasterizer;                         //растеризация
     pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
     pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
-    pipelineInfo.layout = bloomSpritePipelineLayout;                                   //
+    pipelineInfo.layout = bloomSpritePipelineLayout;                        //
     pipelineInfo.renderPass = renderPass;                                   //проход рендеринга
     pipelineInfo.subpass = 0;                                               //подпроход рендеригка
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -925,8 +1060,8 @@ void graphics::createBloomSpriteGraphicsPipeline()
 void graphics::createGodRaysGraphicsPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\godRays\\godRaysVert.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\vulkan\\core\\graphics\\shaders\\godRays\\godRaysFrag.spv");
+    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\godRays\\godRaysVert.spv");
+    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\godRays\\godRaysFrag.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -1129,6 +1264,207 @@ void graphics::createGodRaysGraphicsPipeline()
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
 
+void graphics::createSkyBoxPipeline()
+{
+    //считываем шейдеры
+    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\skybox\\skyboxVert.spv");
+    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\skybox\\skyboxFrag.spv");
+    //создаём шейдерные модули
+    VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+    //задаём стадии шейдеров в конвейере
+    //вершинный
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;                             //ниформацию о всех битах смотри на странице 222
+    vertShaderStageInfo.module = vertShaderModule;                                      //сюда передаём шейдерный модуль
+    vertShaderStageInfo.pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
+    //фрагментный
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;                           //ниформацию о всех битах смотри на странице 222
+    fragShaderStageInfo.module = fragShaderModule;                                      //сюда передаём шейдерный модуль
+    fragShaderStageInfo.pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
+    //формаируем нужный массив, который будем передавать в структуру для создания графического конвейера
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+    /* Для рендеринга настоящей геометрии вам необходимо передавать данные в конвайер Vulkan.
+     * Вы можете использовать индексы вершин и экземпляров, доступные в SPIR-V, для автоматической
+     * генерации геометрии или же явно извлекать геометрические данные из буфера. Вместо этого вы можете
+     * описать размещение геометрических данных в памяти, и Vulkan может сам извлекать эти данные для вас, передавая их прямо в шейдер*/
+
+    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
+    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount = 1;                                                      //количество привязанных дескрипторов вершин
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());  //количество дескрипторов атрибутов вершин
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;                                       //указатель на массив соответствующийх структуру
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();                            //указатель на массив соответствующийх структуру
+
+    /* фаза входной сборки графического конвейера берёт данные в вершинах и группирует их в примитивы,
+     * готовые для обработки следубщими стадиями конвейера.*/
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;                       //тип примитива, подробно про тип примитива смотри со страницы 228
+    inputAssembly.primitiveRestartEnable = VK_FALSE;                                    //это флаг, кторый используется для того, чтоюы можно было оборвать примитивы полосы и веера и затем начать их снова
+                                                                                        //без него кажда полоса и веер потребуют отдельной команды вывода.
+
+    /* здесь может быть добавлена тесселяция*/
+
+
+    /* Преобразование области вывода - это последнее преобразование координат в конвейере Vulkan до растретизации.
+     * Оно преобразует координаты вершины из нормализованных координат устройства в оконные координаты. Одновременно
+     * может использоваться несколько областей вывода.*/
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float) swapChainExtent.width;
+    viewport.height = (float) swapChainExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = swapChainExtent;
+
+    VkPipelineViewportStateCreateInfo viewportState{};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;                                                //число областей вывода
+    viewportState.pViewports = &viewport;                                           //размер каждой области вывода
+    viewportState.scissorCount = 1;                                                 //число прямоугольников
+    viewportState.pScissors = &scissor;                                             //эксцент
+
+    /* Растеризация - это процесс, в ходе которого примитивы, представленные вершинами, преобразуются в потоки фрагментов, которых к обработке
+     * фрагментным шейдером. Состояние растеризации управляется тем, как этот процесс происходит, и задаётся при помощи следующей структуры*/
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;                                      //используется для того чтобы полностью выключить растеризацию. Когда флаг установлен, растеризация не работает и не создаются фрагменты
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;                                      //используется для того чтобы Vulkan автоматически превращал треугольники в точки или отрезки
+    rasterizer.lineWidth = 1.0f;                                                        //толщина линии
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;                                        //параметр обрасывания
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;                             //параметр направления обхода (против часовой стрелки)
+    rasterizer.depthBiasEnable = VK_FALSE;                                              //используется для того чтобы включать отсечение глубины
+    rasterizer.depthBiasConstantFactor = 0.0f; // Optional                              //
+    rasterizer.depthBiasClamp = 0.0f; // Optional
+    rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+
+    /* Мультсемплинг - это процесс создания нескольких образцов (sample) для каждого пиксела в изображении.
+     * Они используются для борьбы с алиансингом и может заметно улучшить общее качество изображения при эффективном использовании*/
+
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = msaaSamples;
+    multisampling.minSampleShading = 1.0f; // Optional
+    multisampling.pSampleMask = nullptr; // Optional
+    multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
+    multisampling.alphaToOneEnable = VK_FALSE; // Optional
+
+    /* Последней стадией в графическом конвейере является стадия смешивания цветов. Эта стадия отвечает за запись фрагментов
+     * в цветовые подключения. Во многих случаях это простая операция, которая просто записывает содержимое выходного значения
+     * фрагментного шейдера поверх старого значения. Однакоподдеживаются смешивание этих значнеий со значениями,
+     * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
+     * шейдера и текущим содержанием фреймбуфера.*/
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment[3];
+    colorBlendAttachment[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment[0].blendEnable = VK_FALSE;
+    colorBlendAttachment[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[0].colorBlendOp = VK_BLEND_OP_MAX;
+    colorBlendAttachment[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[0].alphaBlendOp = VK_BLEND_OP_MAX;
+
+    colorBlendAttachment[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment[1].blendEnable = VK_FALSE;
+    colorBlendAttachment[1].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment[1].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[1].colorBlendOp = VK_BLEND_OP_MAX;
+    colorBlendAttachment[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[1].alphaBlendOp = VK_BLEND_OP_MAX;
+
+    colorBlendAttachment[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment[2].blendEnable = VK_FALSE;
+    colorBlendAttachment[2].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment[2].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[2].colorBlendOp = VK_BLEND_OP_MAX;
+    colorBlendAttachment[2].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment[2].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment[2].alphaBlendOp = VK_BLEND_OP_MAX;
+
+    VkPipelineColorBlendStateCreateInfo colorBlending{};
+    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.logicOpEnable = VK_FALSE;                                         //задаёт, необходимо ли выполнить логические операции между выводом фрагментного шейдера и содержанием цветовых подключений
+    colorBlending.logicOp = VK_LOGIC_OP_COPY;                                       //Optional
+    colorBlending.attachmentCount = 3;                                              //количество подключений
+    colorBlending.pAttachments = colorBlendAttachment;                              //массив подключений
+    colorBlending.blendConstants[0] = 0.0f; // Optional
+    colorBlending.blendConstants[1] = 0.0f; // Optional
+    colorBlending.blendConstants[2] = 0.0f; // Optional
+    colorBlending.blendConstants[3] = 0.0f; // Optional
+
+    /* Для того чтобы сделать небольште изменения состояния более удобными, Vulkan предоставляет возможность помечать
+     * определенные части графического конвейера как динамически, что значит что они могут быть изменены прямо на месте
+     * при помощи команд прямо внутри командного буфера*/
+
+    // добавлено
+
+    std::array<VkDescriptorSetLayout,1> SetLayouts = {skyBox.descriptorSetLayout};
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
+    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &skyBox.pipelineLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_TRUE;
+    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.minDepthBounds = 0.0f; // Optional
+    depthStencil.maxDepthBounds = 1.0f; // Optional
+    depthStencil.stencilTestEnable = VK_FALSE;
+    depthStencil.front = {}; // Optional
+    depthStencil.back = {}; // Optional
+
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;                                            //число структур в массиве структур
+    pipelineInfo.pStages = shaderStages;                                    //указывает на массив структур VkPipelineShaderStageCreateInfo, каждая из которых описыват одну стадию
+    pipelineInfo.pVertexInputState = &vertexInputInfo;                      //вершинный ввод
+    pipelineInfo.pInputAssemblyState = &inputAssembly;                      //фаза входной сборки
+    pipelineInfo.pViewportState = &viewportState;                           //Преобразование области вывода
+    pipelineInfo.pRasterizationState = &rasterizer;                         //растеризация
+    pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
+    pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
+    pipelineInfo.layout = skyBox.pipelineLayout;                            //
+    pipelineInfo.renderPass = renderPass;                                   //проход рендеринга
+    pipelineInfo.subpass = 0;                                               //подпроход рендеригка
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.pDepthStencilState = &depthStencil;
+
+    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &skyBox.pipeline) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create graphics pipeline!");
+    }
+
+    //можно удалить шейдерные модули после использования
+    vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
+    vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+
+}
+
 //===================Framebuffers===================================
 
 void graphics::createFramebuffers()
@@ -1155,21 +1491,21 @@ void graphics::createFramebuffers()
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;                                                                    //дескриптор объекта прохода рендеринга
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                //число изображений
-        framebufferInfo.pAttachments = attachments.data();                                                          //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
-        framebufferInfo.width = swapChainExtent.width;                                                              //ширина изображения
-        framebufferInfo.height = swapChainExtent.height;                                                            //высота изображения
-        framebufferInfo.layers = 1;                                                                                 //число слоёв
+        framebufferInfo.renderPass = renderPass;                                                                            //дескриптор объекта прохода рендеринга
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                        //число изображений
+        framebufferInfo.pAttachments = attachments.data();                                                                  //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
+        framebufferInfo.width = swapChainExtent.width;                                                                      //ширина изображения
+        framebufferInfo.height = swapChainExtent.height;                                                                    //высота изображения
+        framebufferInfo.layers = 1;                                                                                         //число слоёв
 
-        if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[image]) != VK_SUCCESS) //создание буфера кадров
+        if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[image]) != VK_SUCCESS)  //создание буфера кадров
         {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
 }
 
-void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D)
+void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D, object & sky)
 {
     std::array<VkClearValue, 4> clearValues{};
     clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -1188,26 +1524,6 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, 
 
     vkCmdBeginRenderPass(commandBuffers[i], &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-
-//        for(size_t j = 0; j<object3D.size() ;j++)
-//        {
-//            if(object3D[j]->isEnableBloomSprite())
-//            {
-//                VkDeviceSize offsets[] = {0};
-//                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, bloomSpriteGraphicsPipeline);
-//                vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &object3D[j]->getVertexBuffer(), offsets);
-
-//                VkDescriptorSet descriptors[3] = {descriptorSets[i],object3D[j]->getTextureDescriptorSet()[i],object3D[j]->getNormalMapDescriptorSet()[i]};
-//                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, bloomSpritePipelineLayout, 0, 3, descriptors, 0, nullptr);
-
-//                PushConstant pc;
-//                pc.modelMatrix = object3D[j]->getTransformation();
-
-//                vkCmdPushConstants(commandBuffers[i], *object3D[j]->getPipelineLayout(), VK_SHADER_STAGE_ALL, 0, sizeof(PushConstant), (void *)&pc);
-//                vkCmdDraw(commandBuffers[i], 4, 1, 0, 0);
-//            }
-//        }
-
         for(size_t j = 0; j<object3D.size() ;j++)
         {
             VkDeviceSize offsets[1] = { 0 };
@@ -1222,11 +1538,24 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, 
 
             for (auto node : object3D[j]->getModel()->nodes)
             {
+//                glm::vec4 position = object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f);
+//                if(glm::length(position-cameraPosition)<object3D[j]->getVisibilityDistance()){
+//                    renderNode(node,commandBuffers[i],descriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
+//                }
+
                 renderNode(node,commandBuffers[i],descriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
             }
         }
 
-    vkCmdEndRenderPass(commandBuffers[i]);
+        VkDeviceSize offsets[1] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & sky.getModel()->vertices.buffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[i],  sky.getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyBox.pipeline);
+        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyBox.pipelineLayout, 0, 1, &skyBox.descriptorSets[i], 0, NULL);
+
+        vkCmdDrawIndexed(commandBuffers[i], 36, 1, 0, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffers[i]);
 }
 
 void graphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout)
@@ -1297,15 +1626,45 @@ void graphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescript
     }
 }
 
+void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox)
+{
+    UniformBufferObject ubo{};
+
+    ubo.view = cam->getViewMatrix();
+    ubo.proj = glm::perspective(glm::radians(45.0f), (float) swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 1000.0f);
+    ubo.proj[1][1] *= -1;
+    ubo.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
+
+    cameraPosition = glm::vec4(cam->getTranslate(), 1.0);
+
+    void* data;
+    vkMapMemory(app->getDevice(), uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+        memcpy(data, &ubo, sizeof(ubo));
+    vkUnmapMemory(app->getDevice(), uniformBuffersMemory[currentImage]);
+
+    SkyboxUniformBufferObject SkyboxUbo{};
+
+    SkyboxUbo.view = cam->getViewMatrix();
+    SkyboxUbo.proj = glm::perspective(glm::radians(45.0f), (float) swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 1000.0f);
+    SkyboxUbo.proj[1][1] *= -1;
+    SkyboxUbo.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox->getTransformation();
+
+    vkMapMemory(app->getDevice(), skyBox.uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+        memcpy(data, &SkyboxUbo, sizeof(SkyboxUbo));
+    vkUnmapMemory(app->getDevice(), skyBox.uniformBuffersMemory[currentImage]);
+}
+
 uint32_t                        &graphics::ImageCount(){return imageCount;}
 
 VkPipeline                      &graphics::PipeLine(){return graphicsPipeline;}
 VkPipeline                      &graphics::BloomSpriteGraphicsPipeline(){return bloomSpriteGraphicsPipeline;}
 VkPipeline                      &graphics::GodRaysPipeline(){return godRaysPipeline;}
+VkPipeline                      &graphics::SkyBoxPipeLine(){return skyBox.pipeline;}
 
 VkPipelineLayout                &graphics::PipelineLayout(){return pipelineLayout;}
 VkPipelineLayout                &graphics::BloomSpritePipelineLayout(){return bloomSpritePipelineLayout;}
 VkPipelineLayout                &graphics::GodRaysPipelineLayout(){return godRaysPipelineLayout;}
+VkPipelineLayout                &graphics::SkyBoxPipelineLayout(){return skyBox.pipelineLayout;}
 
 VkDescriptorSetLayout           &graphics::DescriptorSetLayout(){return descriptorSetLayout;}
 

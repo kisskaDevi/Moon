@@ -28,7 +28,6 @@ void texture::destroy()
     sampler.destroy(app);
 }
 
-
 void texture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels)
 {
     if (!pixels) {
@@ -171,32 +170,132 @@ void texture::createTextureSampler(struct textureSampler TextureSampler)
     sampler.enable = true;
 }
 
-void texture::setVkApplication(VkApplication* app)
+void                texture::setVkApplication(VkApplication* app){this->app=app;}
+void                texture::setTextureNumber(uint32_t number){this->number = number;}
+void                texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
+
+VkImageView         & texture::getTextureImageView(){return view.textureImageView;}
+VkSampler           & texture::getTextureSampler(){return sampler.textureSampler;}
+uint32_t            & texture::getTextureNumber(){return number;}
+
+//cubeTexture
+
+cubeTexture::cubeTexture(){}
+cubeTexture::cubeTexture(VkApplication* app) : app(app){}
+
+cubeTexture::cubeTexture(VkApplication* app, const std::vector<std::string> & TEXTURE_PATH) : app(app)
 {
-    this->app=app;
+    this->TEXTURE_PATH.resize(6);
+    for(uint32_t i= 0;i<6;i++)
+    {
+        this->TEXTURE_PATH.at(i) = TEXTURE_PATH.at(i);
+    }
 }
 
-VkImageView & texture::getTextureImageView()
+cubeTexture::~cubeTexture(){}
+
+void cubeTexture::destroy()
 {
-    return view.textureImageView;
+    view.destroy(app);
+    image.destroy(app);
+    memory.destroy(app);
+    sampler.destroy(app);
 }
 
-void texture::setTextureNumber(uint32_t number)
+void cubeTexture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels[6])
 {
-    this->number = number;
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
+
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    createBuffer(app, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    for(uint32_t i=0;i<6;i++)
+    {
+        void* data;
+        vkMapMemory(app->getDevice(), stagingBufferMemory, static_cast<uint32_t>(i*imageSize/6), static_cast<uint32_t>(imageSize/6), 0, &data);
+            memcpy(data, pixels[i], static_cast<uint32_t>(imageSize/6));
+        vkUnmapMemory(app->getDevice(), stagingBufferMemory);
+        stbi_image_free(pixels[i]);
+    }
+
+    createCubeImage(app, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
+
+    transitionImageLayout(app, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels,0);
+    copyBufferToImage(app, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),0);
+
+    vkDestroyBuffer(app->getDevice(), stagingBuffer, nullptr);
+    vkFreeMemory(app->getDevice(), stagingBufferMemory, nullptr);
+
+    generateMipmaps(app, textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels,0);
+
+    enable = true;
+    memory.enable = true;
 }
 
-void texture::setMipLevel(float mipLevel)
+void cubeTexture::createTextureImage()
 {
-    this->mipLevel = mipLevel;
+    int texWidth, texHeight, texChannels;
+    void *pixels[6];
+    VkDeviceSize imageSize = 0;
+    for(uint32_t i=0;i<6;i++)
+    {
+        pixels[i]= stbi_load(TEXTURE_PATH.at(i).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        imageSize += 4 * texWidth * texHeight;
+
+        if (!pixels[i]) {
+            throw std::runtime_error("failed to load texture image!");
+        }
+    }
+
+    image.create(app,mipLevels,memory,texWidth,texHeight,imageSize,pixels);
 }
 
-VkSampler & texture::getTextureSampler()
+void cubeTexture::createTextureImageView()
 {
-    return sampler.textureSampler;
+    view.textureImageView = createCubeImageView(app, image.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    view.enable = true;
 }
 
-uint32_t & texture::getTextureNumber()
+void cubeTexture::createTextureSampler(struct textureSampler TextureSampler)
 {
-    return number;
+    /* Сэмплеры настраиваются через VkSamplerCreateInfoструктуру, которая определяет
+     * все фильтры и преобразования, которые она должна применять.*/
+
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = TextureSampler.magFilter;                           //поля определяют как интерполировать тексели, которые увеличенные
+    samplerInfo.minFilter = TextureSampler.minFilter;                           //или минимизированы
+    samplerInfo.addressModeU = TextureSampler.addressModeU;               //Режим адресации
+    samplerInfo.addressModeV = TextureSampler.addressModeV;               //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+    samplerInfo.addressModeW = TextureSampler.addressModeW;               //Повторение текстуры при выходе за пределы размеров изображения.
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+    samplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.minLod = static_cast<float>(mipLevel*mipLevels);
+    samplerInfo.maxLod = static_cast<float>(mipLevels);
+    samplerInfo.mipLodBias = 0.0f; // Optional
+
+    if (vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+    sampler.enable = true;
 }
+
+void                cubeTexture::setVkApplication(VkApplication* app){this->app=app;}
+void                cubeTexture::setTextureNumber(uint32_t number){this->number = number;}
+void                cubeTexture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
+
+VkImageView         & cubeTexture::getTextureImageView(){return view.textureImageView;}
+VkSampler           & cubeTexture::getTextureSampler(){return sampler.textureSampler;}
+uint32_t            & cubeTexture::getTextureNumber(){return number;}

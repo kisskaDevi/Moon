@@ -55,23 +55,27 @@ vec4 SRGBtoLINEAR(vec4 srgbIn);
 
 void outImage1()
 {
+
+    vec4 diffMatColor = SRGBtoLINEAR(texture(baseColorTexture, UV0));
+
+    outColor = diffMatColor;
 }
 
 void outImage2()
 {
-    vec4 diffMatColor = SRGBtoLINEAR(texture(baseColorTexture, UV0));
-
-    outFilterColor = diffMatColor;
+    outFilterColor = outColor;
 }
 
 void outImage3()
 {
+
 }
 
 //===================================================main====================================================================//
 
 void main()
 {
+    outImage1();
     outImage2();
 }
 

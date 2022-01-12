@@ -8,6 +8,9 @@ layout(location = 0) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 bloomOutColor;
+layout(location = 2) out vec4 godRaysOutColor;
+
+const float pi = 3.141592653589793f;
 
 vec4 blur(sampler2D bloomSampler, vec2 TexCoord)
 {
@@ -22,6 +25,7 @@ vec4 blur(sampler2D bloomSampler, vec2 TexCoord)
 	    Color += texture(bloomSampler, TexCoord + vec2(i*textel.x,j*textel.y) ).xyz * I;
 	}
     }
+
 
     return vec4(Color, 1.0);
 }
@@ -51,4 +55,5 @@ void main()
 
     outColor = texture(Sampler,fragTexCoord);
     bloomOutColor = blur(bloomSampler,fragTexCoord);
+    godRaysOutColor = godRays(godRaysSampler,fragTexCoord);
 }

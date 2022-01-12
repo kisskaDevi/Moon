@@ -185,6 +185,7 @@ void generateMipmaps(VkApplication* app, VkImage image, VkFormat imageFormat, in
 
     endSingleTimeCommands(app,commandBuffer);
 }
+
 void createImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
     VkImageCreateInfo imageInfo{};
@@ -281,6 +282,7 @@ void transitionImageLayout(VkApplication* app, VkImage image, VkFormat format, V
 
     endSingleTimeCommands(app, commandBuffer);
 }
+
 void copyBufferToImage(VkApplication* app, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
@@ -326,6 +328,238 @@ VkImageView createImageView(VkApplication* app, VkImage image, VkFormat format, 
     }
 
     return imageView;
+}
+
+void createCubeImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+{
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = width;
+    imageInfo.extent.height = height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = mipLevels;
+    imageInfo.arrayLayers = 6;
+    imageInfo.format = format;
+    imageInfo.tiling = tiling;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = usage;
+    imageInfo.samples = numSamples;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateImage(app->getDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(app->getDevice(), image, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(app->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
+
+    if (vkAllocateMemory(app->getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate image memory!");
+    }
+
+    vkBindImageMemory(app->getDevice(), image, imageMemory, 0);
+}
+
+VkImageView createCubeImageView(VkApplication* app, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
+{
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;                                             //родительское изобраЖение для которого создаётся вид
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;                        //тип создаваемого вида, все типы на странице 73
+    viewInfo.format = format;                                           //формат нового вида
+    viewInfo.subresourceRange.aspectMask = aspectFlags;                 //является битовым полем состоящим из членов перечисления, задающим, на какие стороны изображения влияют барьеры
+    viewInfo.subresourceRange.baseMipLevel = 0;                         //остальное не используется смотри, страницу 75
+    viewInfo.subresourceRange.levelCount = mipLevels;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 6;
+
+    VkImageView imageView;
+    if (vkCreateImageView(app->getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create texture image view!");
+    }
+
+    return imageView;
+}
+
+void transitionImageLayout(VkApplication* app, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t baseArrayLayer)
+{
+    static_cast<void>(format);
+    //Обработка переходов макета. Один из наиболее распространенных способов выполнения переходов макета - использование барьера памяти изображений
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;                                      //Первые два поля определяют переход макета.
+    barrier.newLayout = newLayout;                                      //Можно использовать так, VK_IMAGE_LAYOUT_UNDEFINED как oldLayout будто вас не волнует существующее содержимое изображения.
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Если вы используете барьер для передачи владения семейством очередей, то эти два поля должны быть индексами семейств очередей.
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Они должны быть установлены на, VK_QUEUE_FAMILY_IGNORED если вы не хотите этого делать (не значение по умолчанию!).
+    barrier.image = image;                                              //изображение, на которое влияют
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;    //и конкретную часть изображения
+    barrier.subresourceRange.baseMipLevel = 0;                          //Наше изображение не является массивом,
+    barrier.subresourceRange.levelCount = mipLevels;                    //поэтому указаны только один уровень и слой.
+    barrier.subresourceRange.baseArrayLayer = baseArrayLayer;
+    barrier.subresourceRange.layerCount = 6;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+
+    // Нам нужно обработать два перехода:
+    //  * Не определено → пункт назначения передачи: передача пишет, что ничего не нужно ждать
+    //  * Пункт назначения передачи → чтение шейдера: чтение шейдера должно ждать записи передачи,
+    //   в частности, шейдер читает во фрагментном шейдере, потому что именно там мы собираемся использовать текстуру.*/
+
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }else {
+        throw std::invalid_argument("unsupported layout transition!");
+    }
+
+    /* Барьеры в основном используются для целей синхронизации, поэтому вы должны указать, какие типы операций с ресурсом
+     * должны выполняться до барьера, а какие операции, связанные с ресурсом, должны ждать на барьере.
+     * Нам нужно это сделать, несмотря на то, что мы уже используем vkQueueWaitIdle синхронизацию вручную.
+     * Правильные значения зависят от старого и нового макета, поэтому мы вернемся к этому, когда выясним,
+     * какие переходы мы собираемся использовать.*/
+
+    vkCmdPipelineBarrier(
+        commandBuffer,                  //Первый параметр после буфера команд указывает, на каком этапе конвейера выполняются операции, которые должны произойти до барьера.
+        sourceStage, destinationStage,  //Второй параметр указывает этап конвейера, на котором операции будут ожидать на барьере. Третий параметр - либо 0 или VK_DEPENDENCY_BY_REGION_BIT. Последнее превращает барьер в состояние для каждой области.
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+
+    endSingleTimeCommands(app, commandBuffer);
+}
+
+void copyBufferToImage(VkApplication* app, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t baseArrayLayer)
+{
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
+    //Как и в случае с буферными копиями, вам нужно указать, какая часть буфера будет копироваться в какую часть изображения. Это происходит через VkBufferImageCopyструктуры:
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;                                     //определяют как пиксели раскладывают в памяти
+    region.bufferImageHeight = 0;                                   //Указание 0для обоих означает, что пиксели просто плотно упакованы, как в нашем случае
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; //В imageSubresource, imageOffsetи imageExtent поля указывают , к какой части изображения мы хотим скопировать пиксели.
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = baseArrayLayer;
+    region.imageSubresource.layerCount = 6;
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {
+        width,
+        height,
+        1
+    };
+    //Операции копирования из буфера в изображение ставятся в очередь с помощью vkCmdCopyBufferToImage функции
+    //Четвертый параметр указывает, какой макет изображение используется в данный момент.
+    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    endSingleTimeCommands(app, commandBuffer);
+}
+
+void generateMipmaps(VkApplication* app, VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels, uint32_t baseArrayLayer)
+{
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(app->getPhysicalDevice(), imageFormat, &formatProperties);
+
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+        throw std::runtime_error("texture image format does not support linear blitting!");
+    }
+
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.image = image;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseArrayLayer = baseArrayLayer;
+    barrier.subresourceRange.layerCount = 6;
+    barrier.subresourceRange.levelCount = 1;
+
+    int32_t mipWidth = texWidth;
+    int32_t mipHeight = texHeight;
+
+    for (uint32_t i = 1; i < mipLevels; i++) {
+        barrier.subresourceRange.baseMipLevel = i - 1;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier);
+
+        VkImageBlit blit{};
+        blit.srcOffsets[0] = {0, 0, 0};
+        blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
+        blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.srcSubresource.mipLevel = i - 1;
+        blit.srcSubresource.baseArrayLayer = baseArrayLayer;
+        blit.srcSubresource.layerCount = 6;
+        blit.dstOffsets[0] = {0, 0, 0};
+        blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+        blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.dstSubresource.mipLevel = i;
+        blit.dstSubresource.baseArrayLayer = baseArrayLayer;
+        blit.dstSubresource.layerCount = 6;
+
+        vkCmdBlitImage(commandBuffer,
+            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1, &blit,
+            VK_FILTER_LINEAR);
+
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier);
+
+        if (mipWidth > 1) mipWidth /= 2;
+        if (mipHeight > 1) mipHeight /= 2;
+    }
+
+    barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier);
+
+    endSingleTimeCommands(app,commandBuffer);
 }
 
 bool hasStencilComponent(VkFormat format)

@@ -9,15 +9,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
     vec4 eyePosition;
 } global;
 
-layout(set = 0, binding = 1) uniform LightUniformBufferObject
-{
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-    vec4 lightColor;
-    int type;
-} lightubo[MAX_LIGHT_SOURCES];
-
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
     mat4 matrix;
@@ -45,10 +36,6 @@ layout(location = 2)	out vec2 outUV0;
 layout(location = 3)	out vec2 outUV1;
 layout(location = 4)	out vec4 eyePosition;
 layout(location = 5)	out mat3 TBN;
-
-layout(location = 8)	out vec4 lightPosition[MAX_LIGHT_SOURCES];
-layout(location = 16)	out vec4 fragLightPosition[MAX_LIGHT_SOURCES];
-layout(location = 24)	out vec4 lightColor[MAX_LIGHT_SOURCES];
 
 void main()
 {
@@ -81,13 +68,6 @@ void main()
     }
 
     TBN = mat3(bitangent, tangent, outNormal);
-
-    for(int i=0;i<MAX_LIGHT_SOURCES;i++)
-    {
-	lightPosition[i] = lightubo[i].model * vec4(0.0f,0.0f,0.0f,1.0f);
-	fragLightPosition[i] = lightubo[i].proj * lightubo[i].view * vec4(outPosition,1.0f);
-	lightColor[i] = lightubo[i].lightColor;
-    }
 
     gl_Position = global.proj * global.view * vec4(outPosition,1.0f);
 }

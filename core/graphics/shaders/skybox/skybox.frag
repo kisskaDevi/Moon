@@ -19,7 +19,7 @@ vec4 SRGBtoLINEAR(vec4 srgbIn);
 void main()
 {
     outColor = SRGBtoLINEAR(texture(samplerCubeMap, inUVW));
-    outGodRays = SRGBtoLINEAR(texture(samplerCubeMap, inUVW));
+    //outGodRays = SRGBtoLINEAR(texture(samplerCubeMap, inUVW));
 }
 
 vec4 SRGBtoLINEAR(vec4 srgbIn)

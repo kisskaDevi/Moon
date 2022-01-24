@@ -28,6 +28,7 @@ void texture::destroy()
     sampler.destroy(app);
 }
 
+
 void texture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels)
 {
     if (!pixels) {

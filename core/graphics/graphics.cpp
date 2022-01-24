@@ -52,6 +52,7 @@ void graphics::destroy()
     for(size_t i=0;i<Attachments.size();i++)
     {
         Attachments.at(i).deleteAttachment(&app->getDevice());
+        Attachments.at(i).deleteSampler(&app->getDevice());
     }
 
     for(size_t i = 0; i< swapChainFramebuffers.size();i++)
@@ -97,12 +98,15 @@ void graphics::setSkyboxTexture(cubeTexture *tex)
 
 void graphics::createColorAttachments()
 {
-    colorAttachments.resize(3);
-
-    for(size_t i=0;i<colorAttachments.size();i++)
+    if(msaaSamples!=VK_SAMPLE_COUNT_1_BIT)
     {
-        createImage(app,swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, swapChainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
-        colorAttachments.at(i).imageView = createImageView(app, colorAttachments.at(i).image, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        colorAttachments.resize(3);
+
+        for(size_t i=0;i<colorAttachments.size();i++)
+        {
+            createImage(app,swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, swapChainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
+            colorAttachments.at(i).imageView = createImageView(app, colorAttachments.at(i).image, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        }
     }
 }
 
@@ -124,6 +128,30 @@ void graphics::createAttachments()
             createImage(app,swapChainExtent.width,swapChainExtent.height,1,VK_SAMPLE_COUNT_1_BIT,swapChainImageFormat,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[image], Attachments[i].imageMemory[image]);
             Attachments[i].imageView[image] = createImageView(app, Attachments[i].image[image], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         }
+    }
+
+    for(size_t i=0;i<Attachments.size();i++)
+    {
+        VkSamplerCreateInfo SamplerInfo{};
+            SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+            SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+            SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+            SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+            SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+            SamplerInfo.anisotropyEnable = VK_TRUE;
+            SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+            SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+            SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+            SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+            SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+            SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            SamplerInfo.minLod = 0.0f;
+            SamplerInfo.maxLod = 0.0f;
+            SamplerInfo.mipLodBias = 0.0f;
+
+        if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
+        {throw std::runtime_error("failed to create texture sampler!");}
     }
 }
 
@@ -168,110 +196,211 @@ void graphics::createSkyboxUniformBuffers()
 
 void graphics::createDrawRenderPass()
 {
-    /*  Одной из вещей, отличающий графический конвейер Vulkan от вычислительного
-     * конвейера, является то, что вы используете графический конвейер для рендерига
-     * пикселов в изображения, которые вы либо дальше будете обрабатывать, либо
-     * покажете пользователю. В сложгых графических приложения изображение строится из
-     * нескольких прохов, где каждый проход отвечает ха построение отдельной части сцены,
-     * применяя полноэкранные эффекты, такие как постпроцессинг или наложение (composition),
-     * рендерин пользовательского интерфейса и т.п.
-     *  Эти проходы могут быть представлены в Vulkan при помощи объектов прохода рендеринга (renderpass)
-     * Один объект прохода рендеринга совмещаеь в себе несколько проходов или фаз рендеринга над набором
-     * выходных изображений. Каждый проход внутри такого прохода рендеринга называется подпроходом (subpass)
-     * Объекты прохода рендеринга могут содержать много проходов, но даже в простом приложении единственным проходом
-     * над одним выходным изображением объект прохода рендеринга содержит информацию об этом выходном изображении.
-     *  Весь рендеринг должен содержаться внутри прохода рендеринга. Более того, графические конвейеры должны знать, куда они осуществляют рендеринг;
-     * поэтому необэодимо создать объект прохода рендеринга перед созданием графического конвейера, чтобы мы могли сообщить конвейеру о тех изображениях,
-     * которые он будет создавать.*/
-
-    std::vector<VkAttachmentDescription> attachments;
-
-    for(size_t i=0;i<colorAttachments.size();i++)
+    if(msaaSamples==VK_SAMPLE_COUNT_1_BIT)
     {
-        VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = swapChainImageFormat;                                      //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
-        colorAttachment.samples = msaaSamples;                                              //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                               //следующие 4 параметра смотри на странице 210
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                          //в каком размещении будет изображение в начале прохода
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;             //в каком размещении его нужно оставить по завершению рендеринга
-        attachments.push_back(colorAttachment);
-    }
-
-    VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat(app);
-    depthAttachment.samples = msaaSamples;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    attachments.push_back(depthAttachment);
-
-    for(size_t i=0;i<Attachments.size();i++)
-    {
-        VkAttachmentDescription colorAttachmentResolve{};
-        colorAttachmentResolve.format = swapChainImageFormat;
-        colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        attachments.push_back(colorAttachmentResolve);
-    }
-
-    VkAttachmentReference attachmentRef[colorAttachments.size()];
-    for (size_t i=0;i<colorAttachments.size();i++)
-    {
-        attachmentRef[i].attachment = i;                                          //индекс в массив подключений
-        attachmentRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;       //размещение
-    }
-
-    VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = colorAttachments.size();
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference resolveRef[Attachments.size()];
-    for (size_t i=0;i<Attachments.size();i++)
-    {
-        resolveRef[i].attachment = colorAttachments.size()+1+i;
-        resolveRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    }
-
-    VkSubpassDescription subpass{};                                                 //подпроходы рендеринга
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;                    //бит для графики
-    subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());  //количество подключений
-    subpass.pColorAttachments = attachmentRef;                                      //подключения
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
-    subpass.pResolveAttachments = resolveRef;
-
-    VkSubpassDependency dependency{};                                                                                           //зависимости
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
-    dependency.dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;       //задаёт как стадии конвейера в исходном проходе создают данные
-    dependency.srcAccessMask = 0;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());         //количество структур VkAtachmentDescription, определяющих подключения, связанные с этим проходом рендеринга
-    renderPassInfo.pAttachments = attachments.data();                                   //Каждая структура определяет одно изображение, которое будет использовано как входное, выходное или входное и выходное одновремнно для оного или нескольких проходо в данном редеринге
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)    //создаём проход рендеринга
-    {
-        throw std::runtime_error("failed to create render pass!");
+        oneSampleRenderPass();
+    }else{
+        multiSampleRenderPass();
     }
 }
+    void graphics::oneSampleRenderPass()
+    {
+        /*  Одной из вещей, отличающий графический конвейер Vulkan от вычислительного
+         * конвейера, является то, что вы используете графический конвейер для рендерига
+         * пикселов в изображения, которые вы либо дальше будете обрабатывать, либо
+         * покажете пользователю. В сложгых графических приложения изображение строится из
+         * нескольких прохов, где каждый проход отвечает ха построение отдельной части сцены,
+         * применяя полноэкранные эффекты, такие как постпроцессинг или наложение (composition),
+         * рендерин пользовательского интерфейса и т.п.
+         *  Эти проходы могут быть представлены в Vulkan при помощи объектов прохода рендеринга (renderpass)
+         * Один объект прохода рендеринга совмещаеь в себе несколько проходов или фаз рендеринга над набором
+         * выходных изображений. Каждый проход внутри такого прохода рендеринга называется подпроходом (subpass)
+         * Объекты прохода рендеринга могут содержать много проходов, но даже в простом приложении единственным проходом
+         * над одним выходным изображением объект прохода рендеринга содержит информацию об этом выходном изображении.
+         *  Весь рендеринг должен содержаться внутри прохода рендеринга. Более того, графические конвейеры должны знать, куда они осуществляют рендеринг;
+         * поэтому необэодимо создать объект прохода рендеринга перед созданием графического конвейера, чтобы мы могли сообщить конвейеру о тех изображениях,
+         * которые он будет создавать.*/
+
+        std::vector<VkAttachmentDescription> attachments;
+
+        for(size_t i=0;i<Attachments.size();i++)
+        {
+            VkAttachmentDescription colorAttachmentResolve{};
+            colorAttachmentResolve.format = swapChainImageFormat;
+            colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+            colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachments.push_back(colorAttachmentResolve);
+        }
+
+        VkAttachmentDescription depthAttachment{};
+        depthAttachment.format = findDepthFormat(app);
+        depthAttachment.samples = msaaSamples;
+        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        attachments.push_back(depthAttachment);
+
+        uint32_t attachmentNumber = 0;
+        VkAttachmentReference resolveRef[Attachments.size()];
+        for (size_t i=0;i<Attachments.size();i++)
+        {
+            resolveRef[i].attachment = attachmentNumber;
+            resolveRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentNumber++;
+        }
+
+        VkAttachmentReference depthAttachmentRef{};
+        depthAttachmentRef.attachment = attachmentNumber++;
+        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        attachmentNumber++;
+
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;                    //бит для графики
+        subpass.colorAttachmentCount = static_cast<uint32_t>(Attachments.size());       //количество подключений
+        subpass.pColorAttachments = resolveRef;                                         //подключения
+        subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+        VkSubpassDependency dependency{};                                                                                           //зависимости
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
+        dependency.dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;       //задаёт как стадии конвейера в исходном проходе создают данные
+        dependency.srcAccessMask = 0;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        VkRenderPassCreateInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());         //количество структур VkAtachmentDescription, определяющих подключения, связанные с этим проходом рендеринга
+        renderPassInfo.pAttachments = attachments.data();                                   //Каждая структура определяет одно изображение, которое будет использовано как входное, выходное или входное и выходное одновремнно для оного или нескольких проходо в данном редеринге
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subpass;
+        renderPassInfo.dependencyCount = 1;
+        renderPassInfo.pDependencies = &dependency;
+
+        if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)    //создаём проход рендеринга
+        {
+            throw std::runtime_error("failed to create render pass!");
+        }
+    }
+    void graphics::multiSampleRenderPass()
+    {
+        /*  Одной из вещей, отличающий графический конвейер Vulkan от вычислительного
+         * конвейера, является то, что вы используете графический конвейер для рендерига
+         * пикселов в изображения, которые вы либо дальше будете обрабатывать, либо
+         * покажете пользователю. В сложгых графических приложения изображение строится из
+         * нескольких прохов, где каждый проход отвечает ха построение отдельной части сцены,
+         * применяя полноэкранные эффекты, такие как постпроцессинг или наложение (composition),
+         * рендерин пользовательского интерфейса и т.п.
+         *  Эти проходы могут быть представлены в Vulkan при помощи объектов прохода рендеринга (renderpass)
+         * Один объект прохода рендеринга совмещаеь в себе несколько проходов или фаз рендеринга над набором
+         * выходных изображений. Каждый проход внутри такого прохода рендеринга называется подпроходом (subpass)
+         * Объекты прохода рендеринга могут содержать много проходов, но даже в простом приложении единственным проходом
+         * над одним выходным изображением объект прохода рендеринга содержит информацию об этом выходном изображении.
+         *  Весь рендеринг должен содержаться внутри прохода рендеринга. Более того, графические конвейеры должны знать, куда они осуществляют рендеринг;
+         * поэтому необэодимо создать объект прохода рендеринга перед созданием графического конвейера, чтобы мы могли сообщить конвейеру о тех изображениях,
+         * которые он будет создавать.*/
+
+        std::vector<VkAttachmentDescription> attachments;
+
+        for(size_t i=0;i<colorAttachments.size();i++)
+        {
+            VkAttachmentDescription colorAttachment{};
+            colorAttachment.format = swapChainImageFormat;                                      //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
+            colorAttachment.samples = msaaSamples;                                              //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
+            colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                               //следующие 4 параметра смотри на странице 210
+            colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                          //в каком размещении будет изображение в начале прохода
+            colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;             //в каком размещении его нужно оставить по завершению рендеринга
+            attachments.push_back(colorAttachment);
+        }
+
+        VkAttachmentDescription depthAttachment{};
+        depthAttachment.format = findDepthFormat(app);
+        depthAttachment.samples = msaaSamples;
+        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        attachments.push_back(depthAttachment);
+
+        for(size_t i=0;i<Attachments.size();i++)
+        {
+            VkAttachmentDescription colorAttachmentResolve{};
+            colorAttachmentResolve.format = swapChainImageFormat;
+            colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+            colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachments.push_back(colorAttachmentResolve);
+        }
+
+        uint32_t attachmentNumber = 0;
+        VkAttachmentReference attachmentRef[colorAttachments.size()];
+        for (size_t i=0;i<colorAttachments.size();i++)
+        {
+            attachmentRef[i].attachment = attachmentNumber;                             //индекс в массив подключений
+            attachmentRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;         //размещение
+            attachmentNumber++;
+        }
+
+        VkAttachmentReference depthAttachmentRef{};
+        depthAttachmentRef.attachment = attachmentNumber;
+        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        attachmentNumber++;
+
+        VkAttachmentReference resolveRef[Attachments.size()];
+        for (size_t i=0;i<Attachments.size();i++)
+        {
+            resolveRef[i].attachment = attachmentNumber;
+            resolveRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentNumber++;
+        }
+
+        VkSubpassDescription subpass{};                                                 //подпроходы рендеринга
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;                    //бит для графики
+        subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());  //количество подключений
+        subpass.pColorAttachments = attachmentRef;                                      //подключения
+        subpass.pDepthStencilAttachment = &depthAttachmentRef;
+        subpass.pResolveAttachments = resolveRef;
+
+        VkSubpassDependency dependency{};                                                                                           //зависимости
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
+        dependency.dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;       //задаёт как стадии конвейера в исходном проходе создают данные
+        dependency.srcAccessMask = 0;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        VkRenderPassCreateInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());         //количество структур VkAtachmentDescription, определяющих подключения, связанные с этим проходом рендеринга
+        renderPassInfo.pAttachments = attachments.data();                                   //Каждая структура определяет одно изображение, которое будет использовано как входное, выходное или входное и выходное одновремнно для оного или нескольких проходо в данном редеринге
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subpass;
+        renderPassInfo.dependencyCount = 1;
+        renderPassInfo.pDependencies = &dependency;
+
+        if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)    //создаём проход рендеринга
+        {
+            throw std::runtime_error("failed to create render pass!");
+        }
+    }
+
 
 void graphics::createDescriptorSetLayout()
 {
@@ -291,7 +420,7 @@ void graphics::createDescriptorSetLayout()
     lightUboLayoutBinding.binding = 1;
     lightUboLayoutBinding.descriptorCount = MAX_LIGHT_SOURCE_COUNT;
     lightUboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    lightUboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    lightUboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     lightUboLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding shadowLayoutBinding{};
@@ -493,15 +622,15 @@ void graphics::createDescriptorSets(const std::vector<light<spotLight>*> & light
             VkDescriptorImageInfo shadowImageInfo[MAX_LIGHT_SOURCE_COUNT];
             for (size_t j = 0; j < lightSource.size(); j++)
             {
-                shadowImageInfo[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                shadowImageInfo[j].imageView = lightSource.at(j)->getImageView();
-                shadowImageInfo[j].sampler = lightSource.at(j)->getSampler();
+                shadowImageInfo[j].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                shadowImageInfo[j].imageView    = lightSource.at(j)->getShadowEnable() ? lightSource.at(j)->getImageView() : emptyTexture->getTextureImageView();
+                shadowImageInfo[j].sampler      = lightSource.at(j)->getShadowEnable() ? lightSource.at(j)->getSampler() : emptyTexture->getTextureSampler();
             }
             for (size_t j = lightSource.size(); j < MAX_LIGHT_SOURCE_COUNT; j++)
             {
-                shadowImageInfo[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                shadowImageInfo[j].imageView = emptyTexture->getTextureImageView();
-                shadowImageInfo[j].sampler = emptyTexture->getTextureSampler();
+                shadowImageInfo[j].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                shadowImageInfo[j].imageView    = emptyTexture->getTextureImageView();
+                shadowImageInfo[j].sampler      = emptyTexture->getTextureSampler();
             }
 
             std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
@@ -648,8 +777,8 @@ void graphics::createSkyboxDescriptorSets()
 void graphics::createGraphicsPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\base\\basevert.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\base\\basefrag.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\base\\basevert.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\base\\basefrag.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -855,8 +984,8 @@ void graphics::createGraphicsPipeline()
 void graphics::createBloomSpriteGraphicsPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\bloomSprite\\vertBloomSprite.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\bloomSprite\\fragBloomSprite.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\bloomSprite\\vertBloomSprite.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\bloomSprite\\fragBloomSprite.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -1060,8 +1189,8 @@ void graphics::createBloomSpriteGraphicsPipeline()
 void graphics::createGodRaysGraphicsPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\godRays\\godRaysVert.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\godRays\\godRaysFrag.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\godRays\\godRaysVert.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\godRays\\godRaysFrag.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -1267,8 +1396,8 @@ void graphics::createGodRaysGraphicsPipeline()
 void graphics::createSkyBoxPipeline()
 {
     //считываем шейдеры
-    auto vertShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\skybox\\skyboxVert.spv");
-    auto fragShaderCode = readFile("C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\core\\graphics\\shaders\\skybox\\skyboxFrag.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\skybox\\skyboxVert.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\skybox\\skyboxFrag.spv");
     //создаём шейдерные модули
     VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
@@ -1469,41 +1598,82 @@ void graphics::createSkyBoxPipeline()
 
 void graphics::createFramebuffers()
 {
-    /* Фреймбуфер (буфер кадра) - эо объект, представляющий набор изображений, в который
-     * графические конвейеры будут осуществлять рендеринг. Они затрагивают посление несколько
-     * стадий в кнвейере: тесты глубины и трафарета, смешивание цветов, логические операции,
-     * мультисемплинг и т.п. Фреймбуфер создаётся, используя ссылку на проход рендеринга, и может быть
-     * использован с любым проходом рендеринга, имеющим похожую структуру подключений.*/
-
-    swapChainFramebuffers.resize(imageCount);
-    for (size_t image = 0; image < imageCount; image++)
+    if(msaaSamples == VK_SAMPLE_COUNT_1_BIT)
     {
-        std::vector<VkImageView> attachments(colorAttachments.size()+Attachments.size()+1);
-        for(size_t i=0;i<colorAttachments.size();i++)
-        {
-            attachments[i] = colorAttachments[i].imageView;
-        }
-        attachments[colorAttachments.size()] = depthAttachment.imageView;
-        for(size_t i=0;i<Attachments.size();i++)
-        {
-            attachments[colorAttachments.size()+1+i] = Attachments[i].imageView[image];
-        }
-
-        VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;                                                                            //дескриптор объекта прохода рендеринга
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                        //число изображений
-        framebufferInfo.pAttachments = attachments.data();                                                                  //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
-        framebufferInfo.width = swapChainExtent.width;                                                                      //ширина изображения
-        framebufferInfo.height = swapChainExtent.height;                                                                    //высота изображения
-        framebufferInfo.layers = 1;                                                                                         //число слоёв
-
-        if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[image]) != VK_SUCCESS)  //создание буфера кадров
-        {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
+        oneSampleFrameBuffer();
+    }else{
+        multiSampleFrameBuffer();
     }
 }
+    void graphics::oneSampleFrameBuffer()
+    {
+        /* Фреймбуфер (буфер кадра) - эо объект, представляющий набор изображений, в который
+         * графические конвейеры будут осуществлять рендеринг. Они затрагивают посление несколько
+         * стадий в кнвейере: тесты глубины и трафарета, смешивание цветов, логические операции,
+         * мультисемплинг и т.п. Фреймбуфер создаётся, используя ссылку на проход рендеринга, и может быть
+         * использован с любым проходом рендеринга, имеющим похожую структуру подключений.*/
+
+        swapChainFramebuffers.resize(imageCount);
+        for (size_t image = 0; image < imageCount; image++)
+        {
+            std::vector<VkImageView> attachments;
+
+            for(size_t i=0;i<Attachments.size();i++)
+            {
+                attachments.push_back(Attachments[i].imageView[image]);
+            }
+            attachments.push_back(depthAttachment.imageView);
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = renderPass;                                                                            //дескриптор объекта прохода рендеринга
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                        //число изображений
+            framebufferInfo.pAttachments = attachments.data();                                                                  //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
+            framebufferInfo.width = swapChainExtent.width;                                                                      //ширина изображения
+            framebufferInfo.height = swapChainExtent.height;                                                                    //высота изображения
+            framebufferInfo.layers = 1;                                                                                         //число слоёв
+
+            if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[image]) != VK_SUCCESS)  //создание буфера кадров
+            {
+                throw std::runtime_error("failed to create framebuffer!");
+            }
+        }
+    }
+    void graphics::multiSampleFrameBuffer()
+    {
+        /* Фреймбуфер (буфер кадра) - эо объект, представляющий набор изображений, в который
+         * графические конвейеры будут осуществлять рендеринг. Они затрагивают посление несколько
+         * стадий в кнвейере: тесты глубины и трафарета, смешивание цветов, логические операции,
+         * мультисемплинг и т.п. Фреймбуфер создаётся, используя ссылку на проход рендеринга, и может быть
+         * использован с любым проходом рендеринга, имеющим похожую структуру подключений.*/
+
+        swapChainFramebuffers.resize(imageCount);
+        for (size_t image = 0; image < imageCount; image++)
+        {
+            std::vector<VkImageView> attachments;
+
+            for(size_t i=0;i<colorAttachments.size();i++)
+                attachments.push_back(colorAttachments[i].imageView);
+            attachments.push_back(depthAttachment.imageView);
+            for(size_t i=0;i<Attachments.size();i++)
+                attachments.push_back(Attachments[i].imageView[image]);
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = renderPass;                                                                            //дескриптор объекта прохода рендеринга
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                        //число изображений
+            framebufferInfo.pAttachments = attachments.data();                                                                  //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
+            framebufferInfo.width = swapChainExtent.width;                                                                      //ширина изображения
+            framebufferInfo.height = swapChainExtent.height;                                                                    //высота изображения
+            framebufferInfo.layers = 1;                                                                                         //число слоёв
+
+            if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[image]) != VK_SUCCESS)  //создание буфера кадров
+            {
+                throw std::runtime_error("failed to create framebuffer!");
+            }
+        }
+    }
+
 
 void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D, object & sky)
 {
@@ -1538,7 +1708,7 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, 
 
             for (auto node : object3D[j]->getModel()->nodes)
             {
-//                glm::vec4 position = object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f);
+//                glm::vec3 position = glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f));
 //                if(glm::length(position-cameraPosition)<object3D[j]->getVisibilityDistance()){
 //                    renderNode(node,commandBuffers[i],descriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
 //                }

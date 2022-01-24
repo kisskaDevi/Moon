@@ -3,9 +3,8 @@
 
 layout(set = 0, binding = 1) uniform LightUniformBufferObject
 {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
+    mat4 projView;
+    vec4 position;
     vec4 lightColor;
 } lightubo;
 
@@ -48,5 +47,5 @@ void main()
 	    outPosition = vec3(local.matrix*node.matrix * vec4(inPosition,1.0));
     }
 
-    gl_Position = lightubo.proj * lightubo.view * vec4(outPosition,1.0f);
+    gl_Position = lightubo.projView * vec4(outPosition,1.0f);
 }

@@ -7,26 +7,24 @@ layout(set = 0, binding = 2) uniform sampler2D godRaysSampler;
 layout(location = 0) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 bloomOutColor;
-layout(location = 2) out vec4 godRaysOutColor;
 
 const float pi = 3.141592653589793f;
 
-vec4 blur(sampler2D bloomSampler, vec2 TexCoord)
+vec4 blur(sampler2D Sampler, vec2 TexCoord)
 {
-    vec2 textel = 1.0 / textureSize(bloomSampler, 0);
-    vec3 Color = vec3(0.0f);
-    int h = 5;
-    float I = 1.0f/(2.0f*h+1.0f)/(2.0f*h+1.0f);
-    for(int i=-h;i<h+1;i++)
+    float sigma = textureSize(Sampler, 0).y;
+    vec2 textel = 1.0 / textureSize(Sampler, 0);
+    vec3 Color = texture(bloomSampler, TexCoord).xyz /sqrt(pi*sigma);
+    int h = 20;
+    for(int i=-h;i<h+1;i+=2)
     {
-	for(int j=-h;j<h+1;j++)
-	{
-	    Color += texture(bloomSampler, TexCoord + vec2(i*textel.x,j*textel.y) ).xyz * I;
-	}
+	float I1 = 1.0f/sqrt(pi*sigma) * exp( -(i*textel.y*i*textel.y)/sigma);
+	float I2 = 1.0f/sqrt(pi*sigma) * exp( -((i+1)*textel.y*(i+1)*textel.y)/sigma);
+	float y = (I1*i+I2*(i+1))*textel.y/(I1+I2);
+	float I = 1.0f/sqrt(pi*sigma) * exp( -(y*y)/sigma);
+	Color += texture(bloomSampler, TexCoord + vec2(0.0f,y) ).xyz * I;
+	Color += texture(bloomSampler, TexCoord - vec2(0.0f,y) ).xyz * I;
     }
-
-
     return vec4(Color, 1.0);
 }
 
@@ -54,6 +52,5 @@ void main()
     float factor = exp( - 2.0f * (NDCfragCoord.x*NDCfragCoord.x + NDCfragCoord.y*NDCfragCoord.y));
 
     outColor = texture(Sampler,fragTexCoord);
-    bloomOutColor = blur(bloomSampler,fragTexCoord);
-    godRaysOutColor = godRays(godRaysSampler,fragTexCoord);
+    outColor += blur(bloomSampler,fragTexCoord);
 }

@@ -131,10 +131,13 @@ private:
     VkDescriptorSetLayout           uniformBlockSetLayout;
     VkDescriptorSetLayout           materialSetLayout;
 
-    glm::vec4                       cameraPosition;
+    glm::vec3                       cameraPosition;
 
+    void oneSampleRenderPass();
+    void multiSampleRenderPass();
+    void oneSampleFrameBuffer();
+    void multiSampleFrameBuffer();
     void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
-
 public:
     graphics();
 
@@ -206,25 +209,33 @@ class postProcessing
 {
 private:
     VkApplication                       *app;
+    uint32_t                            imageCount;
+    VkSampleCountFlagBits               msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
+    uint32_t                            swapChainAttachmentCount = 1;
     VkSwapchainKHR                      swapChain;
     std::vector<attachments>            swapChainAttachments;
     VkFormat                            swapChainImageFormat;
     VkExtent2D                          swapChainExtent;
 
-    VkSampleCountFlagBits               msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    uint32_t                            imageCount;
+    uint32_t                            AttachmentCount = 1;
+    std::vector<attachments>            Attachments;
 
     VkRenderPass                        renderPass;
-
-    VkPipelineLayout                    pipelineLayout;
-    VkPipeline                          graphicsPipeline;
-
     std::vector<VkFramebuffer>          framebuffers;
 
-    VkDescriptorSetLayout               descriptorSetLayout;
-    VkDescriptorPool                    descriptorPool;
-    std::vector<VkDescriptorSet>        descriptorSets;
+    VkPipelineLayout                    firstPipelineLayout;
+    VkPipeline                          firstGraphicsPipeline;
+
+    VkPipelineLayout                    secondPipelineLayout;
+    VkPipeline                          secondGraphicsPipeline;
+
+    VkDescriptorSetLayout               firstDescriptorSetLayout;
+    VkDescriptorPool                    firstDescriptorPool;
+    std::vector<VkDescriptorSet>        firstDescriptorSets;
+    VkDescriptorSetLayout               secondDescriptorSetLayout;
+    VkDescriptorPool                    secondDescriptorPool;
+    std::vector<VkDescriptorSet>        secondDescriptorSets;
 
 public:
     postProcessing();
@@ -242,12 +253,15 @@ public:
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void createImageViews();
 
+    void createAttachments();
+
     void createDescriptorSetLayout();
-    void createDescriptorPool(std::vector<attachments> & Attachments);
+    void createDescriptorPool();
     void createDescriptorSets(std::vector<attachments> & Attachments);
 
     void createRenderPass();
-    void createGraphicsPipeline();
+    void createFirstGraphicsPipeline();
+    void createSecondGraphicsPipeline();
     void createFramebuffers();
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
@@ -256,17 +270,6 @@ public:
     VkFormat                        & SwapChainImageFormat();
     VkExtent2D                      & SwapChainExtent();
     uint32_t                        & ImageCount();
-
-    std::vector<attachments>        & getAttachments();
-
-    VkRenderPass                    & RenderPass();
-    VkPipelineLayout                & PipelineLayout();
-    VkPipeline                      & GraphicsPipeline();
-    std::vector<VkFramebuffer>      & Framebuffers();
-
-    VkDescriptorSetLayout           & DescriptorSetLayout();
-    VkDescriptorPool                & DescriptorPool();
-    std::vector<VkDescriptorSet>    & DescriptorSets();
 };
 
 #endif // GRAPHICS_H

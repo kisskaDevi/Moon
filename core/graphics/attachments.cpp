@@ -26,6 +26,10 @@ void attachments::deleteAttachment(VkDevice * device)
         vkFreeMemory(*device, imageMemory.at(i), nullptr);
         vkDestroyImageView(*device, imageView.at(i), nullptr);
     }
+}
+
+void attachments::deleteSampler(VkDevice *device)
+{
     vkDestroySampler(*device,sampler,nullptr);
 }
 

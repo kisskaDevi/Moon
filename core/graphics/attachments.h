@@ -23,6 +23,7 @@ public:
 
     void resize(size_t size);
     void deleteAttachment(VkDevice * device);
+    void deleteSampler(VkDevice * device);
     void setSize(size_t size);
     size_t getSize();
 };

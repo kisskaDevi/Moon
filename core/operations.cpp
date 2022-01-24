@@ -1,4 +1,5 @@
 #include "operations.h"
+#include <set>
 
 uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
@@ -261,7 +262,7 @@ void transitionImageLayout(VkApplication* app, VkImage image, VkFormat format, V
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }else {
+    }else{
         throw std::invalid_argument("unsupported layout transition!");
     }
 

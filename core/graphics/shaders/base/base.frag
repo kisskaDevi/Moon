@@ -5,6 +5,13 @@
 const float pi = 3.141592653589793f;
 float minAmbientFactor = 0.05f;
 
+layout(set = 0, binding = 1) uniform LightUniformBufferObject
+{
+    mat4 projView;
+    vec4 position;
+    vec4 lightColor;
+} lightubo[MAX_LIGHT_SOURCES];
+
 layout(set = 0, binding = 2) uniform sampler2D shadowMap[MAX_LIGHT_SOURCES];
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
@@ -20,13 +27,13 @@ layout(location = 3)	in vec2 UV1;
 layout(location = 4)	in vec4 eyePosition;
 layout(location = 5)	in mat3 TBN;
 
-layout(location = 8)	in vec4 lightPosition[MAX_LIGHT_SOURCES];
-layout(location = 16)	in vec4 fragLightPosition[MAX_LIGHT_SOURCES];
-layout(location = 24)	in vec4 lightColor[MAX_LIGHT_SOURCES];
-
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outFilterColor;
 layout(location = 2) out vec4 outGodRays;
+
+vec3 lightPosition[MAX_LIGHT_SOURCES];
+vec4 fragLightPosition[MAX_LIGHT_SOURCES];
+vec4 lightColor[MAX_LIGHT_SOURCES];
 
 layout (push_constant) uniform Material
 {
@@ -72,6 +79,13 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0);
 
 void outImage1()
 {
+    for(int i=0;i<MAX_LIGHT_SOURCES;i++)
+    {
+	lightPosition[i] = lightubo[i].position.xyz;
+	fragLightPosition[i] = lightubo[i].projView * vec4(position,1.0f);
+	lightColor[i] = lightubo[i].lightColor;
+    }
+
     outColor = vec4(0.0f,0.0f,0.0f,1.0f);
 
     float metallic  = texture(metallicRoughnessTexture, UV0).b;
@@ -92,11 +106,11 @@ void outImage1()
 	float lightPower = 1.0f*shadowFactor(i);
 	if(lightPower>minAmbientFactor)
 	{
-	    float len = length(lightPosition[i].xyz - position);
+	    float len = length(lightPosition[i] - position);
 	    float lightDrop = 1.0f+lightDropFactor*pow(len,2.0f);
 
 	    vector.eyeDirection	    = normalize(eyePosition.xyz - position);
-	    vector.lightDirection   = normalize(lightPosition[i].xyz - position);
+	    vector.lightDirection   = normalize(lightPosition[i] - position);
 	    vector.normal	    = material.normalTextureSet > -1 ? getNormal() : normalize(normal);
 	    vector.reflect	    = reflect(-vector.lightDirection, vector.normal);
 	    vector.H		    = normalize(vector.eyeDirection + vector.lightDirection);
@@ -169,14 +183,12 @@ float shadowFactor(int i)
     if(lightColor[i].w==0.0f)
     {
 	if( lightSpaceNDC.x*lightSpaceNDC.x +
-	    lightSpaceNDC.y*lightSpaceNDC.y +
-	    lightSpaceNDC.z*lightSpaceNDC.z > 2.0f )
+	    lightSpaceNDC.y*lightSpaceNDC.y > 1.0f )
 	{return minAmbientFactor;}
     }else
     {
 	if( abs(lightSpaceNDC.x) > 1.0f ||
-	    abs(lightSpaceNDC.y) > 1.0f ||
-	    abs(lightSpaceNDC.z) > 1.0f )
+	    abs(lightSpaceNDC.y) > 1.0f )
 	{return minAmbientFactor;}
     }
 
@@ -202,8 +214,7 @@ float shadowFactor(int i)
 //    if(lightSpaceNDC.z-texture(shadowMap[i], shadowMapCoord.xy).x > 0.0001f)
 //    {return minAmbientFactor;}
 
-//    return 1.0f;
-
+    return 1.0f;
 }
 
 vec4 SRGBtoLINEAR(vec4 srgbIn)

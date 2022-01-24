@@ -33,8 +33,6 @@ template <> class light<pointLight>;
 #include <stdexcept>        // предотвращения ошибок
 #include <cstdlib>          // заголовок для использования макросов EXIT_SUCCESSи EXIT_FAILURE
 #include <vector>
-#include <cstring>
-#include <optional>         // нужна для вызова std::optional<uint32_t>
 #include <set>
 #include <cstdint>          // нужна для UINT32_MAX
 #include <algorithm>        // нужна для std::min/std::max
@@ -42,6 +40,8 @@ template <> class light<pointLight>;
 #include <array>
 #include "graphics/attachments.h"
 #include "graphics/graphics.h"
+
+const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 800;
@@ -138,6 +138,8 @@ private:
     texture                                     *emptyTextureW;
     cubeTexture                                 *skybox;
     object                                      *skyboxObject;
+
+    uint32_t                                    shadowCount = 0;
 
     double                                      xMpos, yMpos;
     double                                      angx=0.0, angy=0.0;

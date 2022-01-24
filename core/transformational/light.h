@@ -4,6 +4,8 @@
 #include "core/vulkanCore.h"
 #include "transformational.h"
 
+class camera;
+
 class pointLight
 {
 private:
@@ -29,9 +31,8 @@ enum lightType
 
 struct LightUniformBufferObject
 {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
+    alignas(16) glm::mat4 projView;
+    alignas(16) glm::vec4 position;
     alignas(16) glm::vec4 lightColor;
 };
 
@@ -43,7 +44,10 @@ class light<spotLight> : public transformational
 {
 private:
     VkApplication                                   *app;
+    camera                                          *camera;
+
     bool                                            deleted = false;
+    bool                                            enableShadow = false;
     int                                             LIGHT_COMMAND_POOLS;
     uint32_t                                        type;
 
@@ -60,9 +64,8 @@ private:
     glm::quat                                       m_rotateX;
     glm::quat                                       m_rotateY;
 
-    uint32_t                                        number;
-    uint32_t                                        SHADOW_MAP_WIDTH = 2048;
-    uint32_t                                        SHADOW_MAP_HEIGHT = 2048;
+    uint32_t                                        SHADOW_MAP_WIDTH = 1024;
+    uint32_t                                        SHADOW_MAP_HEIGHT = 1024;
     uint32_t                                        mipLevels;
     uint32_t                                        imageCount;
 
@@ -106,9 +109,9 @@ public:
     void createShadowImage();
     void createShadowImageView();
     void createShadowSampler();
-    void createLightPVMatrix(const glm::mat4x4 & projection, const glm::mat4x4 & view);
+    void createLightPVM(const glm::mat4x4 & projection);
 
-    void createCommandPool();
+    void createShadowCommandPool();
 
     void createShadowRenderPass();
     void createShadowMapFramebuffer();
@@ -116,17 +119,19 @@ public:
     void createShadowDescriptorSetLayout();
     void createShadowPipeline();
 
-    void createUniformBuffers();
-    void updateShadowUniformBuffer(uint32_t currentImage);
-
     void createShadowDescriptorPool();
     void createShadowDescriptorSets();
 
     void createShadowCommandBuffers(uint32_t number);
     void updateShadowCommandBuffers(uint32_t number, uint32_t i, std::vector<object *> & object3D);
 
+    void createUniformBuffers();
+    void updateUniformBuffer(uint32_t currentImage);
+
+    void createShadow(uint32_t commandPoolsCount);
+
     void                            setImageCount(uint32_t imageCount);
-    void                            setNumber(uint32_t number);
+    void                            setCamera(class camera *camera);
     void                            setLightColor(const glm::vec4 & color);
     void                            setCommandPoolsCount(const int & count);
 
@@ -134,10 +139,11 @@ public:
     glm::mat4x4                     getModelMatrix() const;
     glm::vec3                       getTranslate() const;
 
-    uint32_t                        getNumber() const;
     uint32_t                        getWidth() const;
     uint32_t                        getHeight() const;
     glm::vec4                       getLightColor() const;
+
+    bool                            getShadowEnable() const;
 
     VkImage                         & getShadowImage();
     VkDeviceMemory                  & getShadowImageMemory();
@@ -178,6 +184,7 @@ public:
     ~light();
 
     void setLightColor(const glm::vec4 & color);
+    void setCamera(class camera *camera);
     uint32_t getNumber();
 
     void setGlobalTransform(const glm::mat4 & transform);

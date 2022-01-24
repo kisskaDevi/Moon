@@ -9,14 +9,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
     vec4 eyePosition;
 } global;
 
-layout(set = 0, binding = 1) uniform LightUniformBufferObject
-{
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-    vec4 lightColor;
-} lightubo[MAX_LIGHT_SOURCES];
-
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
     mat4 matrix;

@@ -31,9 +31,11 @@ enum lightType
 
 struct LightUniformBufferObject
 {
-    alignas(16) glm::mat4 projView;
-    alignas(16) glm::vec4 position;
-    alignas(16) glm::vec4 lightColor;
+    alignas(16) glm::mat4   projView;
+    alignas(16) glm::vec4   position;
+    alignas(16) glm::vec4   lightColor;
+    alignas(4)  uint32_t    type;
+    alignas(4)  uint32_t    enableShadow;
 };
 
 template<typename type>
@@ -185,7 +187,7 @@ public:
 
     void setLightColor(const glm::vec4 & color);
     void setCamera(class camera *camera);
-    uint32_t getNumber();
+    uint32_t getNumber() const;
 
     void setGlobalTransform(const glm::mat4 & transform);
     void translate(const glm::vec3 & translate);

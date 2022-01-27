@@ -179,7 +179,7 @@ void gltfModel::loadNode(Node *parent, const tinygltf::Node &node, uint32_t node
         translation = glm::make_vec3(node.translation.data());
         newNode->translation = translation;
     }
-    glm::mat4 rotation = glm::mat4(1.0f);
+    //glm::mat4 rotation = glm::mat4(1.0f);     //ADD
     if (node.rotation.size() == 4) {
         glm::quat q = glm::make_quat(node.rotation.data());
         newNode->rotation = glm::mat4(q);
@@ -223,14 +223,14 @@ void gltfModel::loadNode(Node *parent, const tinygltf::Node &node, uint32_t node
                 const void *bufferJoints = nullptr;
                 const float *bufferWeights = nullptr;
 
-                int posByteStride;
-                int normByteStride;
-                int uv0ByteStride;
-                int uv1ByteStride;
-                int jointByteStride;
-                int weightByteStride;
+                int posByteStride=0;        //  int posByteStride;
+                int normByteStride=0;       //  int normByteStride;
+                int uv0ByteStride=0;        //  int uv0ByteStride;
+                int uv1ByteStride=0;        //  int uv1ByteStride;
+                int jointByteStride=0;      //  int jointByteStride;
+                int weightByteStride=0;     //  int weightByteStride;
 
-                int jointComponentType;
+                int jointComponentType=0;   //  int jointComponentType;
 
                 // Position attribute is required
                 assert(primitive.attributes.find("POSITION") != primitive.attributes.end());
@@ -447,7 +447,8 @@ VkSamplerAddressMode gltfModel::getVkWrapMode(int32_t wrapMode)
         return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     case 33648:
         return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-    }
+    };
+    return VK_SAMPLER_ADDRESS_MODE_REPEAT;            //ADD
 }
 
 VkFilter gltfModel::getVkFilterMode(int32_t filterMode)
@@ -466,6 +467,7 @@ VkFilter gltfModel::getVkFilterMode(int32_t filterMode)
     case 9987:
         return VK_FILTER_LINEAR;
     }
+    return VK_FILTER_LINEAR;            //ADD
 }
 
 void gltfModel::loadTextureSamplers(tinygltf::Model &gltfModel)
@@ -737,7 +739,7 @@ void gltfModel::loadFromFile(std::string filename, VkApplication* app, float sca
         return;
     }
 
-    calculateTangent(vertexBuffer);
+    calculateTangent(vertexBuffer, indexBuffer);
 
     extensions = gltfModel.extensionsUsed;
 
@@ -945,17 +947,17 @@ Node* gltfModel::nodeFromIndex(uint32_t index)
     return nodeFound;
 }
 
-void gltfModel::calculateTangent(std::vector<Vertex>& vertexBuffer)
+void gltfModel::calculateTangent(std::vector<Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer)
 {
-    for(size_t i=0;i<vertexBuffer.size();i += 3)
+    for(size_t i=0;i<indexBuffer.size();i += 3)
     {
-        glm::vec3 &v1 = vertexBuffer[i].pos;
-        glm::vec3 &v2 = vertexBuffer[i+1].pos;
-        glm::vec3 &v3 = vertexBuffer[i+2].pos;
+        glm::vec3 &v1 = vertexBuffer[indexBuffer[i+0]].pos;
+        glm::vec3 &v2 = vertexBuffer[indexBuffer[i+1]].pos;
+        glm::vec3 &v3 = vertexBuffer[indexBuffer[i+2]].pos;
 
-        glm::vec2 &uv1 = vertexBuffer[i].uv0;
-        glm::vec2 &uv2 = vertexBuffer[i+1].uv0;
-        glm::vec2 &uv3 = vertexBuffer[i+2].uv0;
+        glm::vec2 &uv1 = vertexBuffer[indexBuffer[i+0]].uv0;
+        glm::vec2 &uv2 = vertexBuffer[indexBuffer[i+1]].uv0;
+        glm::vec2 &uv3 = vertexBuffer[indexBuffer[i+2]].uv0;
 
         glm::vec3 dv1 = v2 - v1;
         glm::vec3 dv2 = v3 - v1;
@@ -963,16 +965,19 @@ void gltfModel::calculateTangent(std::vector<Vertex>& vertexBuffer)
         glm::vec2 duv1 = uv2 - uv1;
         glm::vec2 duv2 = uv3 - uv1;
 
-        float det = duv1.x*duv2.y - duv1.y*duv2.x;
-        glm::vec3 tangent   = (dv1*duv2.y - dv2*duv1.y)/det;
-        glm::vec3 bitangent = (dv2*duv1.x - dv1*duv2.x)/det;
+        float det = 1.0f/(duv1.x*duv2.y - duv1.y*duv2.x);
+        glm::vec3 tangent   = det*(dv1*duv2.y - dv2*duv1.y);
+        glm::vec3 bitangent = det*(dv2*duv1.x - dv1*duv2.x);
 
-        vertexBuffer[i].tangent = tangent;
-        vertexBuffer[i+1].tangent = tangent;
-        vertexBuffer[i+2].tangent = tangent;
+        tangent = glm::normalize(tangent);
+        bitangent = glm::normalize(bitangent);
 
-        vertexBuffer[i].bitangent = bitangent;
-        vertexBuffer[i+1].bitangent = bitangent;
-        vertexBuffer[i+2].bitangent = bitangent;
+        vertexBuffer[indexBuffer[i+0]].tangent = tangent;
+        vertexBuffer[indexBuffer[i+1]].tangent = tangent;
+        vertexBuffer[indexBuffer[i+2]].tangent = tangent;
+
+        vertexBuffer[indexBuffer[i+0]].bitangent = bitangent;
+        vertexBuffer[indexBuffer[i+1]].bitangent = bitangent;
+        vertexBuffer[indexBuffer[i+2]].bitangent = bitangent;
     }
 }

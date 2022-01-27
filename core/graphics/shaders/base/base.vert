@@ -1,6 +1,5 @@
 #version 450
 #define MAX_NUM_JOINTS 128
-#define MAX_LIGHT_SOURCES 8
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
@@ -30,7 +29,7 @@ layout(location = 5)	in  vec4 inWeight0;
 layout(location = 6)	in  vec3 inTangent;
 layout(location = 7)	in  vec3 inBitangent;
 
-layout(location = 0)	out vec3 outPosition;
+layout(location = 0)	out vec4 outPosition;
 layout(location = 1)	out vec3 outNormal;
 layout(location = 2)	out vec2 outUV0;
 layout(location = 3)	out vec2 outUV1;
@@ -55,19 +54,19 @@ void main()
 	            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
 
 	    model *= skinMat;
-	    outPosition	    =		vec3(model * vec4(inPosition,1.0));
+	    outPosition	    =		model * vec4(inPosition,1.0);
 	    outNormal	    = normalize(vec3(model * vec4(inNormal,0.0)));
 	    tangent	    = normalize(vec3(model * vec4(inTangent,0.0)));
-	    bitangent    = normalize(vec3(model * vec4(inBitangent,0.0)));
+	    bitangent	    = normalize(vec3(model * vec4(inBitangent,0.0)));
     } else
     {
-	    outPosition	    =		vec3(model * vec4(inPosition,1.0));
+	    outPosition	    =		model * vec4(inPosition,1.0);
 	    outNormal	    = normalize(vec3(model * vec4(inNormal,0.0)));
 	    tangent	    = normalize(vec3(model * vec4(inTangent,0.0)));
-	    bitangent    = normalize(vec3(model * vec4(inBitangent,0.0)));
+	    bitangent	    = normalize(vec3(model * vec4(inBitangent,0.0)));
     }
 
-    TBN = mat3(bitangent, tangent, outNormal);
+    TBN = mat3(tangent, bitangent, outNormal);
 
-    gl_Position = global.proj * global.view * vec4(outPosition,1.0f);
+    gl_Position = global.proj * global.view * outPosition;
 }

@@ -522,11 +522,12 @@ void light<spotLight>::createUniformBuffers()
 
 void light<spotLight>::updateUniformBuffer(uint32_t currentImage)
 {
-    lightColor = glm::vec4(lightColor.x,lightColor.y,lightColor.z,type);
     LightUniformBufferObject ubo;
     ubo.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
     ubo.projView = projectionMatrix*viewMatrix;
     ubo.lightColor = lightColor;
+    ubo.type = type;
+    ubo.enableShadow = static_cast<uint32_t>(enableShadow);
 
     void* data;
     vkMapMemory(app->getDevice(), lightUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
@@ -707,14 +708,13 @@ std::vector<VkCommandBuffer>    & light<spotLight>::getCommandBuffer(uint32_t nu
 std::vector<VkBuffer>           & light<spotLight>::getLightUniformBuffers(){return lightUniformBuffers;}
 std::vector<VkDeviceMemory>     & light<spotLight>::getLightUniformBuffersMemory(){return lightUniformBuffersMemory;}
 
-//==========================================================================================================//
-//======//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//======//
-//======//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//======//
-//======//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//======//
-//==========================================================================================================//
+//======================================================================================================================//
+//============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
+//============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
+//============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
+//======================================================================================================================//
 
-light<pointLight>::light(VkApplication *app, std::vector<light<spotLight> *> & lightSource)
-    : lightSource(lightSource)
+light<pointLight>::light(VkApplication *app, std::vector<light<spotLight> *> & lightSource) : lightSource(lightSource)
 {
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -763,15 +763,11 @@ light<pointLight>::light(VkApplication *app, std::vector<light<spotLight> *> & l
     lightSource.at(index)->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
 }
 
-light<pointLight>::~light()
-{
+light<pointLight>::~light(){}
 
-}
-
-glm::vec4 light<pointLight>::getLightColor() const
-{
-    return lightColor;
-}
+glm::vec4       light<pointLight>::getLightColor() const {return lightColor;}
+uint32_t        light<pointLight>::getNumber() const {return number;}
+glm::vec3       light<pointLight>::getTranslate() const {return m_translate;}
 
 void light<pointLight>::setLightColor(const glm::vec4 &color)
 {
@@ -780,11 +776,6 @@ void light<pointLight>::setLightColor(const glm::vec4 &color)
     {
         lightSource.at(i)->setLightColor(color);
     }
-}
-
-uint32_t light<pointLight>::getNumber()
-{
-    return number;
 }
 
 void light<pointLight>::setCamera(class camera *camera)
@@ -836,11 +827,6 @@ void light<pointLight>::updateViewMatrix()
     {
         lightSource.at(i)->setGlobalTransform(localMatrix);
     }
-}
-
-glm::vec3 light<pointLight>::getTranslate() const
-{
-    return m_translate;
 }
 
 void light<pointLight>::rotateX(const float & ang ,const glm::vec3 & ax)

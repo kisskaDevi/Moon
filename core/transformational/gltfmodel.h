@@ -287,7 +287,7 @@ struct gltfModel
     void updateAnimation(uint32_t index, float time);
     Node* findNode(Node* parent, uint32_t index);
     Node* nodeFromIndex(uint32_t index);
-    void calculateTangent(std::vector<Vertex>& vertexBuffer);
+    void calculateTangent(std::vector<Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer);
 };
 
 struct PushConstBlockMaterial

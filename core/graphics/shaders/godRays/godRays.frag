@@ -1,10 +1,4 @@
 #version 450
-#define MANUAL_SRGB 1
-
-const float pi = 3.141592653589793f;
-float minAmbientFactor = 0.1f;
-
-layout(set = 0, binding = 2) uniform sampler2D shadowMap[6];
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D metallicRoughnessTexture;
@@ -16,9 +10,12 @@ layout(location = 0)	in vec3 position;
 layout(location = 1)	in vec2 UV0;
 layout(location = 2)	in vec2 UV1;
 
-layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outFilterColor;
-layout(location = 2) out vec4 outGodRays;
+layout(location = 0) out vec4 outPosition;
+layout(location = 1) out vec4 outBaseColor;
+layout(location = 2) out vec4 outMetallicRoughness;
+layout(location = 3) out vec4 outNormal;
+layout(location = 4) out vec4 outOcclusion;
+layout(location = 5) out vec4 outEmissiveTexture;
 
 layout (push_constant) uniform Material
 {
@@ -38,54 +35,15 @@ layout (push_constant) uniform Material
 	float alphaMaskCutoff;
 } material;
 
-struct Vector{
-    vec3 eyeDirection;
-    vec3 lightDirection;
-    vec3 normal;
-    vec3 reflect;
-    vec3 H;
-}vector;
-
-//===================================================functions====================================================================//
-
-vec4 SRGBtoLINEAR(vec4 srgbIn);
-
-
-//===================================================outImages====================================================================//
-
-void outImage1()
-{
-}
-
-void outImage2()
-{
-}
-
-void outImage3()
-{    
-    vec4 diffMatColor = SRGBtoLINEAR(texture(baseColorTexture, UV0));
-
-    outGodRays = diffMatColor;
-}
-
-//===================================================main====================================================================//
-
 void main()
 {
-    outImage3();
+    outPosition = vec4(position,1.0f);
+    outBaseColor = texture(baseColorTexture, UV0);
+    outMetallicRoughness = texture(metallicRoughnessTexture, UV0);
+    outNormal = vec4(0.0f);
+    outOcclusion = texture(occlusionTexture, UV0);
+    outEmissiveTexture = texture(emissiveTexture, UV0);
+
+    outPosition.a = 2.0f;
 }
 
-vec4 SRGBtoLINEAR(vec4 srgbIn)
-{
-        #ifdef MANUAL_SRGB
-        #ifdef SRGB_FAST_APPROXIMATION
-        vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-        #else //SRGB_FAST_APPROXIMATION
-        vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-	vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-        #endif //SRGB_FAST_APPROXIMATION
-	return vec4(linOut,srgbIn.w);;
-        #else //MANUAL_SRGB
-        return srgbIn;
-        #endif //MANUAL_SRGB
-}

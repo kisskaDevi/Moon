@@ -140,6 +140,7 @@ void object::createDescriptorPool(uint32_t imageCount)
     uint32_t meshCount = 0;
     for (auto &material : m_model->materials)
     {
+        static_cast<void>(material);
         imageSamplerCount += 5;
         materialCount++;
     }

@@ -96,6 +96,7 @@ private:
 
     texture                         *emptyTexture;
     skybox                          skyBox;
+
     std::vector<VkBuffer>           emptyUniformBuffers;
     std::vector<VkDeviceMemory>     emptyUniformBuffersMemory;
 
@@ -131,6 +132,12 @@ private:
     VkDescriptorSetLayout           uniformBlockSetLayout;
     VkDescriptorSetLayout           materialSetLayout;
 
+    VkDescriptorSetLayout           secondDescriptorSetLayout;
+    VkDescriptorPool                secondDescriptorPool;
+    std::vector<VkDescriptorSet>    secondDescriptorSets;
+    VkPipelineLayout                secondPipelineLayout;
+    VkPipeline                      secondGraphicsPipeline;
+
     glm::vec3                       cameraPosition;
 
     void oneSampleRenderPass();
@@ -140,6 +147,7 @@ private:
     void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
 public:
     graphics();
+    void destroy();
 
     void setApplication(VkApplication *app);
     void setEmptyTexture(texture *emptyTexture);
@@ -147,27 +155,31 @@ public:
     void setImageProp(uint32_t imageCount, VkFormat format, VkExtent2D extent);
     void setSkyboxTexture(cubeTexture * tex);
 
-    void destroy();
-
     void createColorAttachments();
     void createDepthAttachment();
     void createAttachments();
 
-    void createDrawRenderPass();
+    void createRenderPass();
 
     void createDescriptorSetLayout();
     void createDescriptorPool(const std::vector<object*> & object3D);
-    void createDescriptorSets(const std::vector<light<spotLight>*> & lightSource, const std::vector<object*> & object3D);
-
+    void createDescriptorSets(const std::vector<object*> & object3D);
 
     void createSkyboxDescriptorSetLayout();
     void createSkyboxDescriptorPool();
     void createSkyboxDescriptorSets();
 
-    void createGraphicsPipeline();
-    void createBloomSpriteGraphicsPipeline();
-    void createGodRaysGraphicsPipeline();
-    void createSkyBoxPipeline();
+    void createPipelines();
+        void createGraphicsPipeline();
+        void createBloomSpriteGraphicsPipeline();
+        void createGodRaysGraphicsPipeline();
+        void createSkyBoxPipeline();
+
+    void createSecondDescriptorSetLayout();
+    void createSecondDescriptorPool();
+    void createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSource);
+
+    void createSecondPipelines();
 
     void createFramebuffers();
 

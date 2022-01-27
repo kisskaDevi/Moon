@@ -23,7 +23,5 @@ layout(location = 0)	out vec3 outUVW;
 void main()
 {
     outUVW = inPosition;
-    // Convert cubemap coordinates into Vulkan coordinate space
-    outUVW.xy *= -1.0;
     gl_Position = local.proj * local.view * local.model * vec4(inPosition.xyz,1.0f);
 }

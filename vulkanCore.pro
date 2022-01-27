@@ -18,6 +18,8 @@ DISTFILES += \
     core/graphics/shaders/godRays/godRays.vert \
     core/graphics/shaders/postProcessing/firstPostProcessingShader.frag \
     core/graphics/shaders/postProcessing/firstPostProcessingShader.vert \
+    core/graphics/shaders/secondPass/second.frag \
+    core/graphics/shaders/secondPass/second.vert \
     core/graphics/shaders/shadow/shadowMapShader.vert \
     core/graphics/shaders/postProcessing/postProcessingShader.frag \
     core/graphics/shaders/postProcessing/postProcessingShader.vert \

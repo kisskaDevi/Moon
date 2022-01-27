@@ -23,3 +23,7 @@
 * Создание MIP-карт.
 * Скайбокс (на картинке эффект радиального размытия от скайбокса)
 <img src="./screenshots/screenshot4.PNG" width="1000px">
+
+* Отложенный рендеринг
+<img src="./screenshots/screenshot5.PNG" width="500px"> <img src="./screenshots/screenshot6.PNG" width="500px">
+<img src="./screenshots/screenshot7.PNG" width="500px"> <img src="./screenshots/screenshot8.PNG" width="500px">

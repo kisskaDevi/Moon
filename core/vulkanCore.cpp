@@ -66,6 +66,7 @@ void VkApplication::VkApplication::initVulkan()
 }
 
 //==========================Instance=============================================//
+
 void VkApplication::VkApplication::createInstance()
 {
     /*Экземпляр Vulkan - это программная конструкция, которая которая логически отделяет
@@ -250,7 +251,10 @@ void VkApplication::VkApplication::pickPhysicalDevice()
     {
         physicalDevice = physicalDevices.at(0).device;
         indices = physicalDevices.at(0).indices.at(0);
-        msaaSamples = getMaxUsableSampleCount(physicalDevice);
+        VkSampleCountFlagBits maxMSAASamples = getMaxUsableSampleCount(physicalDevice);
+
+        if(msaaSamples>maxMSAASamples)
+            msaaSamples = maxMSAASamples;
     }
 
     if (physicalDevice == VK_NULL_HANDLE)                               //если не нашли ни одного поддерживаемого устройства, то выводим соответствующую ошибку
@@ -475,7 +479,6 @@ void VkApplication::createLight()
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setCamera(cam);
     groups.at(3)->addObject(lightSource.at(index));
-    index++;
 }
 
 void VkApplication::createGraphics()
@@ -505,24 +508,32 @@ void VkApplication::createGraphics()
     Graphics.createAttachments();
     Graphics.createUniformBuffers();
     Graphics.createSkyboxUniformBuffers();
-    Graphics.createDrawRenderPass();
+    Graphics.createRenderPass();
     Graphics.createDescriptorSetLayout();
     Graphics.createSkyboxDescriptorSetLayout();
-    Graphics.createGraphicsPipeline();
-    Graphics.createSkyBoxPipeline();
-    Graphics.createGodRaysGraphicsPipeline();
-    Graphics.createBloomSpriteGraphicsPipeline();
+    Graphics.createPipelines();
+    Graphics.createSecondDescriptorSetLayout();
+    Graphics.createSecondPipelines();
     Graphics.createFramebuffers();
 }
 
 void VkApplication::updateLight()
 {
     shadowCount = 0;
-    for(size_t i=0; i<lightSource.size();i++)
+    for(size_t i=0; i<8;i++)
     {
         lightSource.at(i)->setImageCount(imageCount);
         lightSource.at(i)->createUniformBuffers();
         lightSource.at(i)->createShadow(COMMAND_POOLS);
+        if(lightSource.at(i)->getShadowEnable())
+            shadowCount++;
+    }
+
+    for(size_t i=8; i<lightSource.size();i++)
+    {
+        lightSource.at(i)->setImageCount(imageCount);
+        lightSource.at(i)->createUniformBuffers();
+        //lightSource.at(i)->createShadow(COMMAND_POOLS);
         if(lightSource.at(i)->getShadowEnable())
             shadowCount++;
     }
@@ -542,9 +553,11 @@ void VkApplication::createDescriptors()
     PostProcessing.createDescriptorSets(Graphics.getAttachments());
 
     Graphics.createDescriptorPool(object3D);
-    Graphics.createDescriptorSets(lightSource,object3D);
+    Graphics.createDescriptorSets(object3D);
     Graphics.createSkyboxDescriptorPool();
     Graphics.createSkyboxDescriptorSets();
+    Graphics.createSecondDescriptorPool();
+    Graphics.createSecondDescriptorSets(lightSource);
 }
 
 void VkApplication::createCommandBuffers()

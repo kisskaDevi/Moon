@@ -2,8 +2,6 @@
 
 layout(set = 0, binding = 8) uniform GlobalUniformBuffer
 {
-    mat4 view;
-    mat4 proj;
     vec4 eyePosition;
 } global;
 

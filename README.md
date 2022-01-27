@@ -12,7 +12,7 @@
 * Освещение прожекторными и точечными источниками.
 * Мягкие тени.
 * Отрисовка в различные цветовые прикрепления.
-* Многопроходный рендеринг. В частности осуществляется 2 прохода - в первом осуществляется отрисовка моделей, во втором - работа над изображением, например, размытие или добавление эффекта god rays (motion blur).
+* Многопроходный рендеринг(в том числе и подпроходы в пост-процессинге). В частности осуществляется 2 прохода - в первом осуществляется отрисовка моделей, во втором - работа над изображением, например, размытие по Гауссу или добавление эффекта god rays (motion blur).
 * Рендер glTF моделей на основе [загрузчика glTF](https://github.com/SaschaWillems/Vulkan-glTF-PBR), переработанного под данную реализацию приложения Vulkan.
 * Анимация.
 <img src="./screenshots/Vulkan.gif" width="1000px">
@@ -23,7 +23,10 @@
 * Создание MIP-карт.
 * Скайбокс (на картинке эффект радиального размытия от скайбокса)
 <img src="./screenshots/screenshot4.PNG" width="1000px">
+<<<<<<< HEAD
 
 * Отложенный рендеринг
-<img src="./screenshots/screenshot5.PNG" width="500px"> <img src="./screenshots/screenshot6.PNG" width="500px">
-<img src="./screenshots/screenshot7.PNG" width="500px"> <img src="./screenshots/screenshot8.PNG" width="500px">
+<img src="./screenshots/screenshot5.PNG" width="300px"> <img src="./screenshots/screenshot6.PNG" width="300px">
+<img src="./screenshots/screenshot7.PNG" width="300px"> <img src="./screenshots/screenshot8.PNG" width="300px">
+=======
+>>>>>>> e7912d5529ecb1ca63864840b8b60ec93f2a182a

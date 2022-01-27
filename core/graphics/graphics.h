@@ -56,6 +56,11 @@ struct SkyboxUniformBufferObject
     alignas(16) glm::mat4 model;
 };
 
+struct SecondUniformBufferObject
+{
+    alignas(16) glm::vec4 eyePosition;
+};
+
 struct SwapChainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -77,68 +82,100 @@ struct QueueFamilyIndices
     }
 };
 
-struct skybox
-{
-    cubeTexture                     *texture;
-    VkDescriptorSetLayout           descriptorSetLayout;
-    VkDescriptorPool                descriptorPool;
-    std::vector<VkDescriptorSet>    descriptorSets;
-    VkPipeline                      pipeline;
-    VkPipelineLayout                pipelineLayout;
-    std::vector<VkBuffer>           uniformBuffers;
-    std::vector<VkDeviceMemory>     uniformBuffersMemory;
-};
-
 class graphics
 {
 private:
     VkApplication                   *app;
-
     texture                         *emptyTexture;
-    skybox                          skyBox;
-
-    std::vector<VkBuffer>           emptyUniformBuffers;
-    std::vector<VkDeviceMemory>     emptyUniformBuffersMemory;
+    glm::vec3                       cameraPosition;
 
     VkSampleCountFlagBits           msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     uint32_t                        imageCount;
-    VkFormat                        swapChainImageFormat;
-    VkExtent2D                      swapChainExtent;
+    VkFormat                        imageFormat;
+    VkExtent2D                      extent;
 
     std::vector<attachment>         colorAttachments;
     attachment                      depthAttachment;
     std::vector<attachments>        Attachments;
 
-    std::vector<VkBuffer>           uniformBuffers;
-    std::vector<VkDeviceMemory>     uniformBuffersMemory;
-
     VkRenderPass                    renderPass;
+    std::vector<VkFramebuffer>      framebuffers;
 
-    VkPipelineLayout                pipelineLayout;
-    VkPipelineLayout                bloomSpritePipelineLayout;
-    VkPipelineLayout                godRaysPipelineLayout;
+    struct graphicsInfo{
+        uint32_t                        imageCount;
+        VkExtent2D                      extent;
+        VkSampleCountFlagBits           msaaSamples;
+        VkRenderPass                    renderPass;
+    };
 
-    VkPipeline                      graphicsPipeline;
-    VkPipeline                      bloomSpriteGraphicsPipeline;
-    VkPipeline                      godRaysPipeline;
+    struct Base{
+        VkPipelineLayout                PipelineLayout;
+        VkPipeline                      Pipeline;
+        VkDescriptorSetLayout           DescriptorSetLayout;
+        VkDescriptorSetLayout           uniformBufferSetLayout;
+        VkDescriptorSetLayout           uniformBlockSetLayout;
+        VkDescriptorSetLayout           materialSetLayout;
+        VkDescriptorPool                DescriptorPool;
+        std::vector<VkDescriptorSet>    DescriptorSets;
+        std::vector<VkBuffer>           uniformBuffers;
+        std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
-    std::vector<VkFramebuffer>      swapChainFramebuffers;
+        void Destroy(VkApplication  *app);
+        void createPipeline(VkApplication *app, graphicsInfo info);
+        void createDescriptorSetLayout(VkApplication *app);
+        void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+    }base;
 
-    VkDescriptorPool                descriptorPool;
-    std::vector<VkDescriptorSet>    descriptorSets;
+    struct Extension{
+        VkPipeline                      bloomPipeline;
+        VkPipeline                      godRaysPipeline;
+        VkPipelineLayout                bloomPipelineLayout;
+        VkPipelineLayout                godRaysPipelineLayout;
 
-    VkDescriptorSetLayout           descriptorSetLayout;
-    VkDescriptorSetLayout           uniformBufferSetLayout;
-    VkDescriptorSetLayout           uniformBlockSetLayout;
-    VkDescriptorSetLayout           materialSetLayout;
+        void DestroyBloom(VkApplication  *app);
+        void DestroyGodRays(VkApplication  *app);
+        void createBloomPipeline(VkApplication *app, Base *base, graphicsInfo info);
+        void createGodRaysPipeline(VkApplication *app, Base *base, graphicsInfo info);
+    }extension;
 
-    VkDescriptorSetLayout           secondDescriptorSetLayout;
-    VkDescriptorPool                secondDescriptorPool;
-    std::vector<VkDescriptorSet>    secondDescriptorSets;
-    VkPipelineLayout                secondPipelineLayout;
-    VkPipeline                      secondGraphicsPipeline;
+    struct Skybox
+    {
+        cubeTexture                     *texture;
+        VkPipelineLayout                PipelineLayout;
+        VkPipeline                      Pipeline;
+        VkDescriptorSetLayout           DescriptorSetLayout;
+        VkDescriptorPool                DescriptorPool;
+        std::vector<VkDescriptorSet>    DescriptorSets;
+        std::vector<VkBuffer>           uniformBuffers;
+        std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
-    glm::vec3                       cameraPosition;
+        void Destroy(VkApplication  *app);
+        void createPipeline(VkApplication *app, graphicsInfo info);
+        void createDescriptorSetLayout(VkApplication *app);
+        void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+    }skybox;
+
+    struct Second{
+        VkPipelineLayout                PipelineLayout;
+        VkPipeline                      Pipeline;
+        VkDescriptorSetLayout           DescriptorSetLayout;
+        VkDescriptorPool                DescriptorPool;
+        std::vector<VkDescriptorSet>    DescriptorSets;
+        std::vector<VkBuffer>           emptyUniformBuffers;
+        std::vector<VkDeviceMemory>     emptyUniformBuffersMemory;
+        std::vector<VkBuffer>           uniformBuffers;
+        std::vector<VkDeviceMemory>     uniformBuffersMemory;
+
+        void Destroy(VkApplication  *app);
+        void createPipeline(VkApplication *app, graphicsInfo info);
+        void createDescriptorSetLayout(VkApplication *app);
+        void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+    }second;
+
+
+    void createColorAttachments();
+    void createDepthAttachment();
+    void createResolveAttachments();
 
     void oneSampleRenderPass();
     void multiSampleRenderPass();
@@ -155,36 +192,19 @@ public:
     void setImageProp(uint32_t imageCount, VkFormat format, VkExtent2D extent);
     void setSkyboxTexture(cubeTexture * tex);
 
-    void createColorAttachments();
-    void createDepthAttachment();
     void createAttachments();
-
     void createRenderPass();
+    void createFramebuffers();
+    void createPipelines();
 
-    void createDescriptorSetLayout();
-    void createDescriptorPool(const std::vector<object*> & object3D);
-    void createDescriptorSets(const std::vector<object*> & object3D);
+    void createBaseDescriptorPool(const std::vector<object*> & object3D);
+    void createBaseDescriptorSets(const std::vector<object*> & object3D);
 
-    void createSkyboxDescriptorSetLayout();
     void createSkyboxDescriptorPool();
     void createSkyboxDescriptorSets();
 
-    void createPipelines();
-        void createGraphicsPipeline();
-        void createBloomSpriteGraphicsPipeline();
-        void createGodRaysGraphicsPipeline();
-        void createSkyBoxPipeline();
-
-    void createSecondDescriptorSetLayout();
     void createSecondDescriptorPool();
     void createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSource);
-
-    void createSecondPipelines();
-
-    void createFramebuffers();
-
-    void createUniformBuffers();
-    void createSkyboxUniformBuffers();
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D, object & sky);
 
@@ -200,21 +220,7 @@ public:
     VkPipeline                      & GodRaysPipeline();
     VkPipeline                      & SkyBoxPipeLine();
 
-    VkSwapchainKHR                  & SwapChain();
-    VkFormat                        & SwapChainImageFormat();
-    VkExtent2D                      & SwapChainExtent();
-    uint32_t                        & ImageCount();
-
     std::vector<attachments>        & getAttachments();
-    VkRenderPass                    & RenderPass();
-    std::vector<VkFramebuffer>      & SwapChainFramebuffers();
-
-    VkDescriptorSetLayout           & DescriptorSetLayout();
-    VkDescriptorPool                & DescriptorPool();
-    std::vector<VkDescriptorSet>    & DescriptorSets();
-
-    std::vector<VkBuffer>           & UniformBuffers();
-    std::vector<VkDeviceMemory>     & UniformBuffersMemory();
 };
 
 class postProcessing
@@ -236,27 +242,24 @@ private:
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
 
-    VkPipelineLayout                    firstPipelineLayout;
-    VkPipeline                          firstGraphicsPipeline;
+    struct First{
+        VkPipelineLayout                    PipelineLayout;
+        VkPipeline                          Pipeline;
+        VkDescriptorSetLayout               DescriptorSetLayout;
+        VkDescriptorPool                    DescriptorPool;
+        std::vector<VkDescriptorSet>        DescriptorSets;
+    }first;
 
-    VkPipelineLayout                    secondPipelineLayout;
-    VkPipeline                          secondGraphicsPipeline;
-
-    VkDescriptorSetLayout               firstDescriptorSetLayout;
-    VkDescriptorPool                    firstDescriptorPool;
-    std::vector<VkDescriptorSet>        firstDescriptorSets;
-    VkDescriptorSetLayout               secondDescriptorSetLayout;
-    VkDescriptorPool                    secondDescriptorPool;
-    std::vector<VkDescriptorSet>        secondDescriptorSets;
-
-public:
-    postProcessing();
-    void setApplication(VkApplication *app);
-    void setMSAASamples(VkSampleCountFlagBits msaaSamples);
-    void destroy();
+    struct Second{
+        VkPipelineLayout                    PipelineLayout;
+        VkPipeline                          Pipeline;
+        VkDescriptorSetLayout               DescriptorSetLayout;
+        VkDescriptorPool                    DescriptorPool;
+        std::vector<VkDescriptorSet>        DescriptorSets;
+    }second;
 
     //Создание цепочки обмена
-    void createSwapChain();
+    void createSwapChain(SwapChainSupportDetails swapChainSupport);
         //Формат поверхности
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
         //Режим презентации
@@ -264,17 +267,23 @@ public:
         //Экстент подкачки - это разрешение изображений цепочки подкачки, и оно почти всегда точно равно разрешению окна, в которое мы рисуем, в пикселях
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void createImageViews();
+    void createColorAttachments();
+public:
+    postProcessing();
+    void setApplication(VkApplication *app);
+    void setMSAASamples(VkSampleCountFlagBits msaaSamples);
+    void destroy();
 
-    void createAttachments();
+    void createAttachments(SwapChainSupportDetails swapChainSupport);
+    void createRenderPass();
+    void createFramebuffers();
+    void createPipelines();
+        void createDescriptorSetLayout();
+        void createFirstGraphicsPipeline();
+        void createSecondGraphicsPipeline();
 
-    void createDescriptorSetLayout();
     void createDescriptorPool();
     void createDescriptorSets(std::vector<attachments> & Attachments);
-
-    void createRenderPass();
-    void createFirstGraphicsPipeline();
-    void createSecondGraphicsPipeline();
-    void createFramebuffers();
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
 

@@ -41,7 +41,11 @@ template <> class light<pointLight>;
 #include "graphics/attachments.h"
 #include "graphics/graphics.h"
 
-const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+    const bool enableValidationLayers = true;
+#endif
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 800;
@@ -50,25 +54,16 @@ const double pi = 4*std::atan(1);
 const int MAX_FRAMES_IN_FLIGHT = 3;
 const int COMMAND_POOLS = 1;
 
+
+const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
+
 const std::vector<const char*> validationLayers = {
   "VK_LAYER_KHRONOS_validation"
 };
 
-//список необходимых расширений устройств, аналогичный списку уровней проверки
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-
-#ifdef NDEBUG
-    const bool enableValidationLayers = false;
-#else
-    const bool enableValidationLayers = true;
-#endif
-
-typedef struct physicalDevice{
-    VkPhysicalDevice device;
-    std::vector<QueueFamilyIndices> indices;
-}physicalDevice;
 
 class VkApplication
 {
@@ -91,17 +86,23 @@ public:
 
 private:
 
+    typedef struct physicalDevice{
+        VkPhysicalDevice device;
+        std::vector<QueueFamilyIndices> indices;
+    }physicalDevice;
+
     VkInstance                                  instance;
     GLFWwindow                                  *window;
     VkSurfaceKHR                                surface;
     VkDebugUtilsMessengerEXT                    debugMessenger;
 
     std::vector<physicalDevice>                 physicalDevices;
-    VkPhysicalDevice                            physicalDevice = VK_NULL_HANDLE;
+    VkPhysicalDevice                            PhysicalDevice = VK_NULL_HANDLE;
     QueueFamilyIndices                          indices;
     VkDevice                                    device;
     VkQueue                                     graphicsQueue;
     VkQueue                                     presentQueue;
+    SwapChainSupportDetails                     swapChainSupport;
 
     graphics                                    Graphics;
     postProcessing                              PostProcessing;
@@ -172,21 +173,19 @@ private:
         void pickPhysicalDevice();
         void createLogicalDevice();
 
+        void checkSwapChainSupport();
+
         void createCommandPool();
 
         void createTextures();
         void loadModel();
-
         void createObjects();
+        void createObjectsUniformBuffers();
 
         void createLight();
+        void updateLight();
 
         void createGraphics();
-
-        void updateLight();
-        void updateObjectsUniformBuffers();
-
-        void createDescriptors();
 
         void createCommandBuffers();
         void createCommandBuffer(uint32_t number);

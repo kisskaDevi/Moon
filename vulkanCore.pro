@@ -43,8 +43,12 @@ DISTFILES += \
 
 SOURCES += \
     core/graphics/attachments.cpp \
+    core/graphics/base.cpp \
+    core/graphics/extension.cpp \
     core/graphics/graphics.cpp \
     core/graphics/postProcessing.cpp \
+    core/graphics/second.cpp \
+    core/graphics/skybox.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/light.cpp \

@@ -76,6 +76,14 @@ VkImageView createImageView(
         VkImageAspectFlags              aspectFlags,
         uint32_t                        mipLevels);
 
+void createImageView(
+        VkApplication*                  app,
+        VkImage                         image,
+        VkFormat                        format,
+        VkImageAspectFlags              aspectFlags,
+        uint32_t                        mipLevels,
+        VkImageView*                    imageView);
+
 
 //cubeTextureOperations
 
@@ -149,6 +157,11 @@ VkShaderModule createShaderModule(
         const std::vector<char>&        code);
 
 //deviceOperations
+
+typedef struct physicalDevice{
+    VkPhysicalDevice device;
+    std::vector<QueueFamilyIndices> indices;
+}physicalDevice;
 
 std::vector<QueueFamilyIndices> findQueueFamilies(
         VkPhysicalDevice                device,

@@ -331,6 +331,23 @@ VkImageView createImageView(VkApplication* app, VkImage image, VkFormat format, 
     return imageView;
 }
 
+void createImageView(VkApplication* app, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, VkImageView* imageView)
+{
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;                                             //родительское изобраЖение для которого создаётся вид
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;                          //тип создаваемого вида, все типы на странице 73
+    viewInfo.format = format;                                           //формат нового вида
+    viewInfo.subresourceRange.aspectMask = aspectFlags;                 //является битовым полем состоящим из членов перечисления, задающим, на какие стороны изображения влияют барьеры
+    viewInfo.subresourceRange.baseMipLevel = 0;                         //остальное не используется смотри, страницу 75
+    viewInfo.subresourceRange.levelCount = mipLevels;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    if (vkCreateImageView(app->getDevice(), &viewInfo, nullptr, imageView) != VK_SUCCESS)
+    {throw std::runtime_error("failed to create texture image view!");}
+}
+
 void createCubeImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
     VkImageCreateInfo imageInfo{};
@@ -564,13 +581,11 @@ void generateMipmaps(VkApplication* app, VkImage image, VkFormat imageFormat, in
 }
 
 bool hasStencilComponent(VkFormat format)
-{
-    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
+{return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;}
 
 VkFormat findSupportedFormat(VkApplication* app, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
-    VkFormat supportedFormat;
+    VkFormat supportedFormat = candidates[0];   //VkFormat supportedFormat;
     for (VkFormat format : candidates)
     {
         VkFormatProperties props;

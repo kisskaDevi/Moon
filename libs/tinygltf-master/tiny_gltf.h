@@ -3194,6 +3194,9 @@ static bool ParseJsonAsValue(Value *ret, const json &o) {
     case json::value_t::discarded:
       // default:
       break;
+
+    default:
+      break;
   }
 #endif
   if (ret) *ret = std::move(val);

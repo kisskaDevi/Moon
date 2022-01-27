@@ -20,13 +20,11 @@ std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
 void VkApplication::VkApplication::initWindow()
 {
     glfwInit();                                                             //инициализация библиотеки GLFW
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);                           //указывает не создавать контекст OpenGL (GLFW изначально был разработан для создания контекста OpenGL,)
 
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);   //инициализация собственного окна
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-
 }
     void VkApplication::VkApplication::framebufferResizeCallback(GLFWwindow* window, int width, int height)
     {
@@ -45,20 +43,19 @@ void VkApplication::VkApplication::initVulkan()
     pickPhysicalDevice();           //выбрать физические устройства
     createLogicalDevice();          //создать логические устройства 
 
+    checkSwapChainSupport();
+
     createCommandPool();
 
     createTextures();
     loadModel();
     createObjects();
+    createObjectsUniformBuffers();
 
     createLight();
+    updateLight();
 
     createGraphics();
-
-    updateLight();
-    updateObjectsUniformBuffers();
-
-    createDescriptors();
 
     createCommandBuffers();
 
@@ -91,9 +88,8 @@ void VkApplication::VkApplication::createInstance()
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());    //число расширений которое вы хотите включить
     createInfo.ppEnabledExtensionNames = extensions.data();                         //и их имена
 
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
+    if (enableValidationLayers && !checkValidationLayerSupport())
         throw std::runtime_error("validation layers requested, but not available!");
-    }
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (enableValidationLayers) //если включены уравни проверки
@@ -108,9 +104,8 @@ void VkApplication::VkApplication::createInstance()
     }
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)                //создаём экземпляр функцией vkCreateInstance, в случае успеха возвращает VK_SUCCESS
-    {                                                                                   //параметр pAllocator указывает на аллокатор памяти CPU который ваше приложение может передать для управления используемой Vulkan памятью
-        throw std::runtime_error("failed to create instance!");                         //при передачи nullptr Vulkan будет использовать свой собственный внутренний аллокатор
-    }
+        throw std::runtime_error("failed to create instance!");                         //параметр pAllocator указывает на аллокатор памяти CPU который ваше приложение может передать для управления используемой Vulkan памятью
+
 }
     //создадим getRequiredExtensions функцию,
     //которая будет возвращать требуемый список расширений в зависимости от того,
@@ -124,9 +119,7 @@ void VkApplication::VkApplication::createInstance()
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
         if(enableValidationLayers)
-        {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); //макрос, который равен буквальной строке «VK_EXT_debug_utils»
-        }
 
         return extensions;
     }
@@ -152,9 +145,7 @@ void VkApplication::VkApplication::createInstance()
             }
 
             if(!layerFound)                                             //если не нашли, возвращаем false
-            {
                 return false;
-            }
         }
 
         return true;
@@ -230,9 +221,7 @@ void VkApplication::VkApplication::pickPhysicalDevice()
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
     if(deviceCount==0)
-    {
         throw std::runtime_error("failed to find GPUs with Vulkan support!");
-    }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
@@ -242,25 +231,23 @@ void VkApplication::VkApplication::pickPhysicalDevice()
         std::vector<QueueFamilyIndices> indices = findQueueFamilies(device, surface);
         if (indices.size()!=0 && isDeviceSuitable(device,surface,deviceExtensions))
         {
-            struct physicalDevice currentDevice = {device,indices};
+            physicalDevice currentDevice = {device,indices};
             physicalDevices.push_back(currentDevice);
         }
     }
 
     if(physicalDevices.size()!=0)
     {
-        physicalDevice = physicalDevices.at(0).device;
+        PhysicalDevice = physicalDevices.at(0).device;
         indices = physicalDevices.at(0).indices.at(0);
-        VkSampleCountFlagBits maxMSAASamples = getMaxUsableSampleCount(physicalDevice);
+        VkSampleCountFlagBits maxMSAASamples = getMaxUsableSampleCount(PhysicalDevice);
 
         if(msaaSamples>maxMSAASamples)
             msaaSamples = maxMSAASamples;
     }
 
-    if (physicalDevice == VK_NULL_HANDLE)                               //если не нашли ни одного поддерживаемого устройства, то выводим соответствующую ошибку
-    {
+    if (PhysicalDevice == VK_NULL_HANDLE)                               //если не нашли ни одного поддерживаемого устройства, то выводим соответствующую ошибку
         throw std::runtime_error("failed to find a suitable GPU!");
-    }
 }
 
 void VkApplication::createLogicalDevice()
@@ -308,20 +295,22 @@ void VkApplication::createLogicalDevice()
     {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-    } else
-    {
-        createInfo.enabledLayerCount = 0;
-    }
+    } else {createInfo.enabledLayerCount = 0;}
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) //создание логического устройства
-    {
+    if (vkCreateDevice(PhysicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) //создание логического устройства
         throw std::runtime_error("failed to create logical device!");
-    }
 
     //Получение дескрипторов очереди из найденного семейства очередей от выбранного устройства
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
+
+void VkApplication::checkSwapChainSupport()
+{
+    swapChainSupport = querySwapChainSupport(PhysicalDevice,surface);   //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
+    imageCount = swapChainSupport.capabilities.minImageCount + 1;
+}
+
 
 void VkApplication::createCommandPool()
 {
@@ -343,12 +332,8 @@ void VkApplication::createCommandPool()
     commandBuffers.resize(COMMAND_POOLS);
 
     for(size_t i=0;i<COMMAND_POOLS;i++)
-    {
         if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool.at(i)) != VK_SUCCESS) //создание пула команд
-        {
             throw std::runtime_error("failed to create command pool!");
-        }
-    }
 }
 
 void VkApplication::createTextures()
@@ -451,6 +436,11 @@ void VkApplication::createObjects()
     cam = new camera;
     cam->translate(glm::vec3(0.0f,0.0f,10.0f));
 }
+void VkApplication::createObjectsUniformBuffers()
+{
+    for(size_t i=0;i<object3D.size();i++)
+        object3D.at(i)->createUniformBuffers(imageCount);
+}
 
 void VkApplication::createLight()
 {
@@ -464,8 +454,8 @@ void VkApplication::createLight()
     glm::mat4x4 Proj;
 
     lightSource.push_back(new light<spotLight>(this));
-    Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
-    Proj[1][1] *= -1;
+        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
+        Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     lightSource.at(index)->setCamera(cam);
@@ -473,54 +463,18 @@ void VkApplication::createLight()
     index++;
 
     lightSource.push_back(new light<spotLight>(this));
-    Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
-    Proj[1][1] *= -1;
+        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
+        Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setCamera(cam);
     groups.at(3)->addObject(lightSource.at(index));
 }
 
-void VkApplication::createGraphics()
-{    
-    PostProcessing.setApplication(this);
-    PostProcessing.setMSAASamples(msaaSamples);
-
-    PostProcessing.createSwapChain();
-    PostProcessing.createImageViews();
-    PostProcessing.createAttachments();
-    PostProcessing.createRenderPass();
-    PostProcessing.createDescriptorSetLayout();
-    PostProcessing.createFirstGraphicsPipeline();
-    PostProcessing.createSecondGraphicsPipeline();
-    PostProcessing.createFramebuffers();
-
-    imageCount = PostProcessing.ImageCount();
-
-    Graphics.setApplication(this);
-    Graphics.setMSAASamples(msaaSamples);
-    Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent());
-    Graphics.setEmptyTexture(emptyTextureW);
-    Graphics.setSkyboxTexture(skybox);
-
-    Graphics.createColorAttachments();
-    Graphics.createDepthAttachment();
-    Graphics.createAttachments();
-    Graphics.createUniformBuffers();
-    Graphics.createSkyboxUniformBuffers();
-    Graphics.createRenderPass();
-    Graphics.createDescriptorSetLayout();
-    Graphics.createSkyboxDescriptorSetLayout();
-    Graphics.createPipelines();
-    Graphics.createSecondDescriptorSetLayout();
-    Graphics.createSecondPipelines();
-    Graphics.createFramebuffers();
-}
-
 void VkApplication::updateLight()
 {
     shadowCount = 0;
-    for(size_t i=0; i<8;i++)
+    for(size_t i=0; i<lightSource.size();i++)
     {
         lightSource.at(i)->setImageCount(imageCount);
         lightSource.at(i)->createUniformBuffers();
@@ -528,32 +482,34 @@ void VkApplication::updateLight()
         if(lightSource.at(i)->getShadowEnable())
             shadowCount++;
     }
-
-    for(size_t i=8; i<lightSource.size();i++)
-    {
-        lightSource.at(i)->setImageCount(imageCount);
-        lightSource.at(i)->createUniformBuffers();
-        //lightSource.at(i)->createShadow(COMMAND_POOLS);
-        if(lightSource.at(i)->getShadowEnable())
-            shadowCount++;
-    }
 }
 
-void VkApplication::updateObjectsUniformBuffers()
-{
-    for(size_t i=0;i<object3D.size();i++)
-    {
-        object3D.at(i)->createUniformBuffers(imageCount);
-    }
-}
+void VkApplication::createGraphics()
+{    
+    PostProcessing.setApplication(this);
+    PostProcessing.setMSAASamples(msaaSamples);
 
-void VkApplication::createDescriptors()
-{
+    PostProcessing.createAttachments(swapChainSupport);
+    PostProcessing.createRenderPass();
+    PostProcessing.createFramebuffers();
+    PostProcessing.createPipelines();
+
+    Graphics.setApplication(this);
+    Graphics.setMSAASamples(msaaSamples);
+    Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent());
+    Graphics.setEmptyTexture(emptyTextureW);
+    Graphics.setSkyboxTexture(skybox);
+
+    Graphics.createAttachments();
+    Graphics.createRenderPass();
+    Graphics.createFramebuffers();
+    Graphics.createPipelines();
+
     PostProcessing.createDescriptorPool();
     PostProcessing.createDescriptorSets(Graphics.getAttachments());
 
-    Graphics.createDescriptorPool(object3D);
-    Graphics.createDescriptorSets(object3D);
+    Graphics.createBaseDescriptorPool(object3D);
+    Graphics.createBaseDescriptorSets(object3D);
     Graphics.createSkyboxDescriptorPool();
     Graphics.createSkyboxDescriptorSets();
     Graphics.createSecondDescriptorPool();
@@ -566,52 +522,36 @@ void VkApplication::createCommandBuffers()
     updateCmdWorld = true;
 
     for(size_t i=0;i<commandPool.size();i++)
-    {
         createCommandBuffer(i);
-    }
 }
     void VkApplication::createCommandBuffer(uint32_t number)
     {
-        /*После того как мы получили пул для создания командных буферов, мы можем
-         * получить новый буфер при помощи функции vkAllocateCommandBuffers()*/
-
         commandBuffers[number].resize(imageCount);
 
-        //сперва заполним структуру содержащую информацию для создания командного буфера
         VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool[number];                                 //дескриптор ранее созданного командного пула
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                              //задаёт уровень командных буферов, которые вы хотите выделить
-        allocInfo.commandBufferCount = (uint32_t) commandBuffers[number].size();     //задаёт число командных буферов
+            allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            allocInfo.commandPool = commandPool[number];                                 //дескриптор ранее созданного командного пула
+            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                              //задаёт уровень командных буферов, которые вы хотите выделить
+            allocInfo.commandBufferCount = (uint32_t) commandBuffers[number].size();     //задаёт число командных буферов
 
-        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers[number].data()) != VK_SUCCESS) //получаем командные буферы
-        {   //если вызов успешен, то он вернёт VK_SUCCESS и поместит дескрипторы созданных буферов в массив, адресс которого содержится в pCommandBuffers
+        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers[number].data()) != VK_SUCCESS)
             throw std::runtime_error("failed to allocate command buffers!");
-        }
     }
 
 void VkApplication::updateCommandBuffer(uint32_t number, uint32_t i)
 {
-        /* Прежде чем вы сможете начать записывать команды в командный буфер, вам
-         * нужно начать командный буфер, т.е. просто сбростить к начальному состоянию.
-         * Для этого выозвите функцию vkBeginCommandBuffer*/
-
-        VkCommandBufferBeginInfo beginInfo{};
+    VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;                                            //поле для передачи информации о том, как будет использоваться этот командный буфер (смотри страницу 102)
         beginInfo.pInheritanceInfo = nullptr;                           //используется при начале вторичного буфера, для того чтобы определить, какие состояния наследуются от первичного командного буфера, который его вызовет
-        if (vkBeginCommandBuffer(commandBuffers[number][i], &beginInfo) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to begin recording command buffer!");
-        }
+    if (vkBeginCommandBuffer(commandBuffers[number][i], &beginInfo) != VK_SUCCESS)
+        throw std::runtime_error("failed to begin recording command buffer!");
 
-            Graphics.render(commandBuffers[number],i,object3D,*skyboxObject);
-            PostProcessing.render(commandBuffers[number],i);
+    Graphics.render(commandBuffers[number],i,object3D,*skyboxObject);
+    PostProcessing.render(commandBuffers[number],i);
 
-        if (vkEndCommandBuffer(commandBuffers[number][i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to record command buffer!");
-        }
+    if (vkEndCommandBuffer(commandBuffers[number][i]) != VK_SUCCESS)
+        throw std::runtime_error("failed to record command buffer!");
 }
 
 void VkApplication::createSyncObjects()
@@ -633,21 +573,17 @@ void VkApplication::createSyncObjects()
     imagesInFlight.resize(imageCount, VK_NULL_HANDLE);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create synchronization objects for a frame!");
-        }
-    }
+                throw std::runtime_error("failed to create synchronization objects for a frame!");
 }
 
 void VkApplication::VkApplication::mainLoop()
@@ -812,39 +748,31 @@ void VkApplication::VkApplication::mainLoop()
                 glfwGetFramebufferSize(window, &width, &height);
                 glfwWaitEvents();
             }
-
             vkDeviceWaitIdle(device);
 
             cleanupSwapChain();
 
-            createGraphics();
+            checkSwapChainSupport();
 
             updateLight();
-            updateObjectsUniformBuffers();
 
-            createDescriptors();
+            createGraphics();
 
             createCommandBuffers();
         }
             void VkApplication::cleanupSwapChain()
             {
                 for(size_t i=0;i<lightSource.size();i++)
-                {
                     lightSource.at(i)->cleanup();
-                }
 
                 Graphics.destroy();
-                for(size_t i=0;i<object3D.size();i++)
-                {
-                    object3D.at(i)->destroyUniformBuffers();
-                    object3D.at(i)->destroyDescriptorPools();
-                }
                 PostProcessing.destroy();
 
+                for(size_t i=0;i<object3D.size();i++)
+                    object3D.at(i)->destroyDescriptorPools();
+
                 for(size_t i = 0; i< commandPool.size();i++)
-                {
                     vkFreeCommandBuffers(device, commandPool.at(i), static_cast<uint32_t>(commandBuffers.at(i).size()),commandBuffers.at(i).data());
-                }
             }
 
 
@@ -856,17 +784,14 @@ void VkApplication::VkApplication::cleanup()
         delete lightPoint.at(i);
 
     for(size_t i =0 ;i<textures.size();i++)
-    {
-        textures.at(i)->destroy();
-        delete textures.at(i);
-    }
+    {textures.at(i)->destroy(); delete textures.at(i);}
 
-    skybox->destroy();
-    delete skybox;
-    emptyTexture->destroy();
-    delete emptyTexture;
-    emptyTextureW->destroy();
-    delete emptyTextureW;
+    skybox->destroy(); delete skybox;
+    emptyTexture->destroy(); delete emptyTexture;
+    emptyTextureW->destroy(); delete emptyTextureW;
+
+    for(size_t i=0;i<object3D.size();i++)
+        object3D.at(i)->destroyUniformBuffers();
 
     for (size_t i =0 ;i<object3D.size();i++)
         delete object3D.at(i);
@@ -906,7 +831,7 @@ void VkApplication::VkApplication::cleanup()
         }
     }
 
-VkPhysicalDevice                    & VkApplication::getPhysicalDevice(){return physicalDevice;}
+VkPhysicalDevice                    & VkApplication::getPhysicalDevice(){return PhysicalDevice;}
 VkDevice                            & VkApplication::getDevice(){return device;}
 VkQueue                             & VkApplication::getGraphicsQueue(){return graphicsQueue;}
 std::vector<VkCommandPool>          & VkApplication::getCommandPool(){return commandPool;}

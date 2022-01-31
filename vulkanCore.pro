@@ -27,6 +27,10 @@ DISTFILES += \
     core/graphics/shaders/bloomSprite/bloomSprite.vert \
     core/graphics/shaders/skybox/skybox.frag \
     core/graphics/shaders/skybox/skybox.vert \
+    core/graphics/shaders/stencil/firstStencil.frag \
+    core/graphics/shaders/stencil/firstStencil.vert \
+    core/graphics/shaders/stencil/secondStencil.frag \
+    core/graphics/shaders/stencil/secondStencil.vert \
     model/glTF/Sponza/Sponza.gltf \
     model/glb/Bee.glb \
     model/glb/Box.glb \

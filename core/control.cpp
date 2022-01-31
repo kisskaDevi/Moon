@@ -197,6 +197,14 @@ void VkApplication::mouseEvent()
     {
         glfwSetWindowShouldClose(window,GLFW_TRUE);
     }
+    if(backRStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_R) == 0)
+    {
+        Graphics.setStencilObject(object3D[0]);
+        Graphics.setStencilObject(object3D[1]);
+        Graphics.setStencilObject(object3D[2]);
+        updateCmdWorld = true;
+    }
+    backRStage = glfwGetKey(window,GLFW_KEY_R);
 }
 
 void VkApplication::scrol(GLFWwindow *window, double xoffset, double yoffset)

@@ -30,8 +30,9 @@ template <> class light<pointLight>;
 #include <chrono>
 
 #include <iostream>         // заголовки для
+#include <sstream>
 #include <stdexcept>        // предотвращения ошибок
-#include <cstdlib>          // заголовок для использования макросов EXIT_SUCCESSи EXIT_FAILURE
+#include <cstdlib>          // заголовок для использования макросов EXIT_SUCCESS и EXIT_FAILURE
 #include <vector>
 #include <set>
 #include <cstdint>          // нужна для UINT32_MAX
@@ -151,6 +152,8 @@ private:
     bool                                        fpsLock = false;
 
     uint32_t                                    controledGroup = 0;
+
+    bool                                        backRStage = 0;
 
     void initWindow();
         static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

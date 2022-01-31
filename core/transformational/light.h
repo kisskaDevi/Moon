@@ -29,6 +29,13 @@ enum lightType
     point
 };
 
+struct shadowInfo{
+    uint32_t                    imageCount;
+    uint32_t                    width;
+    uint32_t                    height;
+    VkRenderPass                renderPass;
+};
+
 struct LightUniformBufferObject
 {
     alignas(16) glm::mat4   projView;
@@ -45,56 +52,64 @@ template<>
 class light<spotLight> : public transformational
 {
 private:
-    VkApplication                                   *app;
-    camera                                          *camera;
+    VkApplication                       *app;
+    camera                              *camera;
 
-    bool                                            deleted = false;
-    bool                                            enableShadow = false;
-    int                                             LIGHT_COMMAND_POOLS;
-    uint32_t                                        type;
+    bool                                deleted = false;
+    bool                                enableShadow = false;
+    int                                 LIGHT_COMMAND_POOLS;
+    uint32_t                            type;
 
-    glm::mat4x4                                     projectionMatrix;
-    glm::mat4x4                                     viewMatrix;
-    glm::mat4x4                                     modelMatrix;
-    glm::mat4x4                                     m_globalTransform;
+    glm::mat4x4                         projectionMatrix;
+    glm::mat4x4                         viewMatrix;
+    glm::mat4x4                         modelMatrix;
+    glm::mat4x4                         m_globalTransform;
 
-    glm::vec4                                       lightColor;
-    glm::vec3                                       m_translate;
+    glm::vec4                           lightColor;
+    glm::vec3                           m_translate;
 
-    glm::vec3                                       m_scale;
-    glm::quat                                       m_rotate;
-    glm::quat                                       m_rotateX;
-    glm::quat                                       m_rotateY;
+    glm::vec3                           m_scale;
+    glm::quat                           m_rotate;
+    glm::quat                           m_rotateX;
+    glm::quat                           m_rotateY;
 
-    uint32_t                                        SHADOW_MAP_WIDTH = 1024;
-    uint32_t                                        SHADOW_MAP_HEIGHT = 1024;
-    uint32_t                                        mipLevels;
-    uint32_t                                        imageCount;
+    uint32_t                            SHADOW_MAP_WIDTH = 1024;
+    uint32_t                            SHADOW_MAP_HEIGHT = 1024;
+    uint32_t                            mipLevels;
+    uint32_t                            imageCount;
 
-    attachment                                      depthAttachment;
-    VkSampler                                       shadowSampler;
+    attachment                          depthAttachment;
+    VkSampler                           shadowSampler;
 
-    VkRenderPass                                    shadowRenerPass;
-    std::vector<VkFramebuffer>                      shadowMapFramebuffer;
+    VkRenderPass                        RenderPass;
+    std::vector<VkFramebuffer>          shadowMapFramebuffer;
 
-    VkDescriptorPool                                descriptorPool;
-    std::vector<VkDescriptorSet>                    descriptorSets;
-    VkPipelineLayout                                shadowPipelineLayout;
-    VkDescriptorSetLayout                           descriptorSetLayout;
-    VkDescriptorSetLayout                           uniformBufferSetLayout;
-    VkDescriptorSetLayout                           uniformBlockSetLayout;
-    VkPipeline                                      shadowPipeline;
+    struct Shadow{
+        VkPipelineLayout                PipelineLayout;
+        VkPipeline                      Pipeline;
+        VkDescriptorSetLayout           DescriptorSetLayout;
+        VkDescriptorSetLayout           uniformBufferSetLayout;
+        VkDescriptorSetLayout           uniformBlockSetLayout;
+        VkDescriptorPool                DescriptorPool;
+        std::vector<VkDescriptorSet>    DescriptorSets;
+        std::vector<VkBuffer>           uniformBuffers;
+        std::vector<VkDeviceMemory>     uniformBuffersMemory;
+
+        void Destroy(VkApplication  *app);
+        void DestroyUniformBuffers(VkApplication  *app);
+        void createPipeline(VkApplication *app, shadowInfo info);
+        void createDescriptorSetLayout(VkApplication *app);
+        void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+    }shadow;
 
     std::vector<VkCommandPool>                      shadowCommandPool;
     std::vector<std::vector<VkCommandBuffer>>       shadowCommandBuffer;
 
-    std::vector<VkBuffer>                           lightUniformBuffers;
-    std::vector<VkDeviceMemory>                     lightUniformBuffersMemory;
 
     void updateViewMatrix();
     void renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet);
 public:
-    light(VkApplication *app, uint32_t type = lightType::spot);
+    light(VkApplication *app, uint32_t imageCount, uint32_t type = lightType::spot);
     ~light();
 
     void cleanup();
@@ -108,18 +123,16 @@ public:
     void rotateX(const float & ang ,const glm::vec3 & ax);
     void rotateY(const float & ang ,const glm::vec3 & ax);
 
+    void createLightPVM(const glm::mat4x4 & projection);
+
     void createShadowImage();
     void createShadowImageView();
     void createShadowSampler();
-    void createLightPVM(const glm::mat4x4 & projection);
 
     void createShadowCommandPool();
 
     void createShadowRenderPass();
     void createShadowMapFramebuffer();
-
-    void createShadowDescriptorSetLayout();
-    void createShadowPipeline();
 
     void createShadowDescriptorPool();
     void createShadowDescriptorSets();
@@ -127,7 +140,6 @@ public:
     void createShadowCommandBuffers(uint32_t number);
     void updateShadowCommandBuffers(uint32_t number, uint32_t i, std::vector<object *> & object3D);
 
-    void createUniformBuffers();
     void updateUniformBuffer(uint32_t currentImage);
 
     void createShadow(uint32_t commandPoolsCount);
@@ -135,7 +147,6 @@ public:
     void                            setImageCount(uint32_t imageCount);
     void                            setCamera(class camera *camera);
     void                            setLightColor(const glm::vec4 & color);
-    void                            setCommandPoolsCount(const int & count);
 
     glm::mat4x4                     getViewMatrix() const;
     glm::mat4x4                     getModelMatrix() const;
@@ -147,19 +158,11 @@ public:
 
     bool                            getShadowEnable() const;
 
-    VkImage                         & getShadowImage();
-    VkDeviceMemory                  & getShadowImageMemory();
     VkImageView                     & getImageView();
     VkSampler                       & getSampler();
 
-    VkRenderPass                    & getShadowRenerPass();
-    std::vector<VkFramebuffer>      & getShadowMapFramebuffer();
-    VkPipeline                      & getShadowPipeline();
-    VkCommandPool                   & getShadowCommandPool(uint32_t number);
-    VkPipelineLayout                & getShadowPipelineLayout();
     std::vector<VkCommandBuffer>    & getCommandBuffer(uint32_t number);
-    std::vector<VkBuffer>           & getLightUniformBuffers();
-    std::vector<VkDeviceMemory>     & getLightUniformBuffersMemory();
+    std::vector<VkBuffer>           & getUniformBuffers();
 
 };
 
@@ -182,7 +185,7 @@ private:
     std::vector<light<spotLight> *> & lightSource;
 
 public:
-    light(VkApplication *app, std::vector<light<spotLight> *> & lightSource);
+    light(VkApplication *app, uint32_t imageCount, std::vector<light<spotLight> *> & lightSource);
     ~light();
 
     void setLightColor(const glm::vec4 & color);

@@ -2,8 +2,6 @@
 #include "core/operations.h"
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
-#include "core/transformational/light.h"
-#include "core/transformational/gltfmodel.h"
 #include "core/transformational/camera.h"
 
 graphics::graphics()
@@ -27,6 +25,8 @@ void graphics::destroy()
     base.Destroy(app);
     extension.DestroyBloom(app);
     extension.DestroyGodRays(app);
+    stencil.DestroyFirstPipeline(app);
+    stencil.DestroySecondPipeline(app);
     skybox.Destroy(app);
     second.Destroy(app);
 
@@ -101,7 +101,7 @@ void graphics::createDepthAttachment()
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 depthAttachment.image, depthAttachment.imageMemory);
     createImageView(app, depthAttachment.image,
-                    findDepthFormat(app), VK_IMAGE_ASPECT_DEPTH_BIT,
+                    findDepthFormat(app), VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
                     1, &depthAttachment.imageView);
 }
 void graphics::createResolveAttachments()
@@ -623,6 +623,8 @@ void graphics::createPipelines()
     base.createUniformBuffers(app,imageCount);
     extension.createBloomPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
     extension.createGodRaysPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
+    stencil.createFirstPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
+    stencil.createSecondPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
     skybox.createDescriptorSetLayout(app);
     skybox.createPipeline(app,{imageCount,extent,msaaSamples,renderPass});
     skybox.createUniformBuffers(app,imageCount);
@@ -631,7 +633,7 @@ void graphics::createPipelines()
     second.createUniformBuffers(app,imageCount);
 }
 
-void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D, object & sky)
+void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
 {
     std::array<VkClearValue, 10> clearValues{};
         for(size_t i=0;i<9;i++)
@@ -649,32 +651,65 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, 
 
     vkCmdBeginRenderPass(commandBuffers[i], &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        for(size_t j = 0; j<object3D.size() ;j++)
+        if(skybox.objects.size()!=0)
+        {
+            VkDeviceSize offsets[1] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & skybox.objects[0]->getModel()->vertices.buffer, offsets);
+            vkCmdBindIndexBuffer(commandBuffers[i],  skybox.objects[0]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
+            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, 1, &skybox.DescriptorSets[i], 0, NULL);
+            vkCmdDrawIndexed(commandBuffers[i], 36, 1, 0, 0, 0);
+        }
+
+        for(size_t j = 0; j<base.objects.size() ;j++)
         {
             VkDeviceSize offsets[1] = { 0 };
 
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *object3D[j]->getPipeline());
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & object3D[j]->getModel()->vertices.buffer, offsets);
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, base.Pipeline);
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & base.objects[j]->getModel()->vertices.buffer, offsets);
 
-            if (object3D[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i],  object3D[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            if (base.objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers[i],  base.objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-
-            for (auto node : object3D[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],base.DescriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
+            for (auto node : base.objects[j]->getModel()->nodes)
+                renderNode(node,commandBuffers[i],base.DescriptorSets[i],base.objects[j]->getDescriptorSet()[i],base.PipelineLayout);
 
 //            for (auto node : object3D[j]->getModel()->nodes)
 //               if(glm::length(glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-cameraPosition)<object3D[j]->getVisibilityDistance())
 //                    renderNode(node,commandBuffers[i],base.DescriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
         }
 
-        //skybox
-        VkDeviceSize offsets[1] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & sky.getModel()->vertices.buffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[i],  sky.getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, 1, &skybox.DescriptorSets[i], 0, NULL);
-        vkCmdDrawIndexed(commandBuffers[i], 36, 1, 0, 0, 0);
+        for(size_t j = 0; j<extension.bloomObjects.size() ;j++)
+        {
+            VkDeviceSize offsets[1] = { 0 };
+
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, extension.bloomPipeline);
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & extension.bloomObjects[j]->getModel()->vertices.buffer, offsets);
+            if (extension.bloomObjects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers[i],  extension.bloomObjects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            for (auto node : extension.bloomObjects[j]->getModel()->nodes)
+                renderNode(node,commandBuffers[i],base.DescriptorSets[i],extension.bloomObjects[j]->getDescriptorSet()[i],extension.bloomPipelineLayout);
+        }
+
+        for(size_t j = 0; j<stencil.objects.size() ;j++)
+        {
+            VkDeviceSize offsets[1] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & stencil.objects[j]->getModel()->vertices.buffer, offsets);
+            if (stencil.objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers[i], stencil.objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, stencil.firstPipeline);
+            for (auto node : stencil.objects[j]->getModel()->nodes)
+                renderNode(node,commandBuffers[i],base.DescriptorSets[i],stencil.objects[j]->getDescriptorSet()[i],stencil.firstPipelineLayout);
+
+            if(stencil.stencilEnable[j]){
+                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, stencil.secondPipeline);
+                for (auto node : stencil.objects[j]->getModel()->nodes)
+                    renderNode(node,commandBuffers[i],base.DescriptorSets[i],stencil.objects[j]->getDescriptorSet()[i],stencil.secondPipelineLayout);
+            }
+        }
+
 
     vkCmdNextSubpass(commandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
 
@@ -737,16 +772,11 @@ void graphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescript
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConstBlockMaterial), &pushConstBlockMaterial);
 
             if (primitive->hasIndices)
-            {
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            }
             else
-            {
                 vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-            }
         }
     }
-
     for (auto child : node->children)
         renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
 }
@@ -783,13 +813,53 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *s
 }
 
 VkPipeline                      &graphics::PipeLine(){return base.Pipeline;}
-VkPipeline                      &graphics::BloomSpriteGraphicsPipeline(){return extension.bloomPipeline;}
+VkPipeline                      &graphics::BloomPipeline(){return extension.bloomPipeline;}
 VkPipeline                      &graphics::GodRaysPipeline(){return extension.godRaysPipeline;}
 VkPipeline                      &graphics::SkyBoxPipeLine(){return skybox.Pipeline;}
 
 VkPipelineLayout                &graphics::PipelineLayout(){return base.PipelineLayout;}
-VkPipelineLayout                &graphics::BloomSpritePipelineLayout(){return extension.bloomPipelineLayout;}
+VkPipelineLayout                &graphics::BloomPipelineLayout(){return extension.bloomPipelineLayout;}
 VkPipelineLayout                &graphics::GodRaysPipelineLayout(){return extension.godRaysPipelineLayout;}
 VkPipelineLayout                &graphics::SkyBoxPipelineLayout(){return skybox.PipelineLayout;}
 
 std::vector<attachments>        &graphics::getAttachments(){return Attachments;}
+
+void graphics::bindBaseObject(object *newObject)
+{
+    base.objects.push_back(newObject);
+}
+
+void graphics::bindBloomObject(object *newObject)
+{
+    extension.bloomObjects.push_back(newObject);
+}
+
+void graphics::bindGodRaysObject(object *newObject)
+{
+    extension.godRaysObjects.push_back(newObject);
+}
+
+void graphics::bindStencilObject(object *newObject)
+{
+    stencil.stencilEnable.push_back(false);
+    stencil.objects.push_back(newObject);
+}
+
+void graphics::bindSkyBoxObject(object *newObject)
+{
+    skybox.objects.push_back(newObject);
+}
+
+void graphics::setStencilObject(object *oldObject)
+{
+    for(uint32_t i=0;i<stencil.objects.size();i++)
+    {
+        if(stencil.objects[i]==oldObject)
+        {
+            if(stencil.stencilEnable[i] == true)
+                stencil.stencilEnable[i] = false;
+            else
+                stencil.stencilEnable[i] = true;
+        }
+    }
+}

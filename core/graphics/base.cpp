@@ -2,9 +2,6 @@
 #include "core/operations.h"
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
-#include "core/transformational/light.h"
-#include "core/transformational/gltfmodel.h"
-#include "core/transformational/camera.h"
 
 void graphics::Base::Destroy(VkApplication *app)
 {
@@ -281,11 +278,11 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
     depthStencil.depthWriteEnable = VK_TRUE;
     depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.minDepthBounds = 0.0f; // Optional
-    depthStencil.maxDepthBounds = 1.0f; // Optional
+    depthStencil.minDepthBounds = 0.0f;
+    depthStencil.maxDepthBounds = 1.0f;
     depthStencil.stencilTestEnable = VK_FALSE;
-    depthStencil.front = {}; // Optional
-    depthStencil.back = {}; // Optional
+    depthStencil.front = {};
+    depthStencil.back = {};
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -313,84 +310,89 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
 
-void graphics::createBaseDescriptorPool(const std::vector<object*> & object3D)
+void graphics::createBaseDescriptorPool()
 {
     /* Наборы дескрипторов нельзя создавать напрямую, они должны выделяться из пула, как буферы команд.
      * Эквивалент для наборов дескрипторов неудивительно называется пулом дескрипторов . Мы напишем
      * новую функцию createDescriptorPool для ее настройки.*/
 
     {
-        std::vector<VkDescriptorPoolSize> poolSizes(1);
         size_t index = 0;
+        std::vector<VkDescriptorPoolSize> poolSizes(1);
             poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;                           //Сначала нам нужно описать, какие типы дескрипторов будут содержать наши наборы дескрипторов
             poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);                //и сколько их, используя VkDescriptorPoolSizeструктуры.
-        index++;
 
         //Мы будем выделять один из этих дескрипторов для каждого кадра. На эту структуру размера пула ссылается главный VkDescriptorPoolCreateInfo:
         VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+            poolInfo.pPoolSizes = poolSizes.data();
+            poolInfo.maxSets = static_cast<uint32_t>(imageCount);
 
         if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &base.DescriptorPool) != VK_SUCCESS)
-        {
             throw std::runtime_error("failed to create descriptor pool!");
-        }
     }
 
-    for(size_t i=0;i<object3D.size();i++)
+    for(size_t i=0;i<base.objects.size();i++)
     {
-        object3D.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
-        object3D.at(i)->createDescriptorPool(imageCount);
+        base.objects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
+        base.objects.at(i)->createDescriptorPool(imageCount);
+    }
+    for(size_t i=0;i<extension.bloomObjects.size();i++)
+    {
+        extension.bloomObjects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
+        extension.bloomObjects.at(i)->createDescriptorPool(imageCount);
+    }
+    for(size_t i=0;i<stencil.objects.size();i++)
+    {
+        stencil.objects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
+        stencil.objects.at(i)->createDescriptorPool(imageCount);
     }
 }
 
-void graphics::createBaseDescriptorSets(const std::vector<object*> & object3D)
+void graphics::createBaseDescriptorSets()
 {
     //Теперь мы можем выделить сами наборы дескрипторов
     /* В нашем случае мы создадим один набор дескрипторов для каждого изображения цепочки подкачки, все с одинаковым макетом.
      * К сожалению, нам нужны все копии макета, потому что следующая функция ожидает массив, соответствующий количеству наборов.
      * Добавьте член класса для хранения дескрипторов набора дескрипторов и назначьте их vkAllocateDescriptorSets */
 
-    for(size_t i=0;i<object3D.size();i++)
-    {
-        object3D.at(i)->createDescriptorSet(imageCount);
-    }
+    for(size_t i=0;i<base.objects.size();i++)
+        base.objects.at(i)->createDescriptorSet(imageCount);
+    for(size_t i=0;i<extension.bloomObjects.size();i++)
+        extension.bloomObjects.at(i)->createDescriptorSet(imageCount);
+    for(size_t i=0;i<stencil.objects.size();i++)
+        stencil.objects.at(i)->createDescriptorSet(imageCount);
 
-    {
-        std::vector<VkDescriptorSetLayout> layouts(imageCount, base.DescriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, base.DescriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = base.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
 
-        base.DescriptorSets.resize(imageCount);
-        if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, base.DescriptorSets.data()) != VK_SUCCESS)
-            throw std::runtime_error("failed to allocate descriptor sets!");
+    base.DescriptorSets.resize(imageCount);
+    if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, base.DescriptorSets.data()) != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate descriptor sets!");
 
-        //Наборы дескрипторов уже выделены, но дескрипторы внутри еще нуждаются в настройке.
-        //Теперь мы добавим цикл для заполнения каждого дескриптора:
-        for (size_t i = 0; i < imageCount; i++)
-        {
-            VkDescriptorBufferInfo bufferInfo{};
+    //Наборы дескрипторов уже выделены, но дескрипторы внутри еще нуждаются в настройке.
+    //Теперь мы добавим цикл для заполнения каждого дескриптора:
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = base.uniformBuffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
-
-            std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = base.DescriptorSets[i];
-            descriptorWrites[0].dstBinding = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-            vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
+        size_t index = 0;
+        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = base.DescriptorSets[i];
+            descriptorWrites[index].dstBinding = 0;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pBufferInfo = &bufferInfo;
+        vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 

@@ -24,8 +24,6 @@ struct Material;
 struct objectInfo
 {
     gltfModel*                      model;
-    VkPipeline*                     pipeline;
-    VkPipelineLayout*               pipelineLayout;
     texture*                        emptyTexture;
 };
 
@@ -41,8 +39,6 @@ class object : public transformational
 private:
     VkApplication*                  app;
     gltfModel*                      m_model;
-    VkPipeline*                     m_pipeline;
-    VkPipelineLayout*               m_pipelineLayout;
     texture*                        m_emptyTexture;
 
     VkDescriptorSetLayout*          m_uniformBufferSetLayout;
@@ -50,8 +46,6 @@ private:
     VkDescriptorSetLayout*          m_materialSetLayout;
     VkDescriptorPool                m_descriptorPool;
     std::vector<VkDescriptorSet>    m_descriptors;
-
-    bool                            bloomSprite = false;
 
     glm::vec3                       m_translate;
     glm::quat                       m_rotate;
@@ -79,12 +73,8 @@ public:
     void updateModelMatrix();
 
     void setModel(gltfModel* model3D);
-    void setPipeline(VkPipeline* pipeline);
-    void setPipelineLayout(VkPipelineLayout* pipelineLayout);
     void setEmptyTexture(texture* emptyTexture);
     void setVisibilityDistance(float visibilityDistance);
-
-    void enableBloomSprite(bool enable);
 
     void createUniformBuffers(uint32_t imageCount);
     void updateUniformBuffer(uint32_t currentImage);
@@ -96,10 +86,7 @@ public:
     void createMaterialDescriptorSet(Material* material);
 
     gltfModel*                      getModel();
-    VkPipeline*                     getPipeline();
-    VkPipelineLayout*               getPipelineLayout();
 
-    bool&                           isEnableBloomSprite();
     glm::mat4x4                     getTransformation();
     float                           getVisibilityDistance();
 

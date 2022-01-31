@@ -374,13 +374,15 @@ void VkApplication::loadModel()
 void VkApplication::createObjects()
 {
     uint32_t index=0;
-    object3D.push_back( new object(this,{gltfModel.at(0),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
+    object3D.push_back( new object(this,{gltfModel.at(0),emptyTexture}) );
+    Graphics.bindStencilObject(object3D.at(index));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
-    object3D.push_back( new object(this,{gltfModel.at(1),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
+    object3D.push_back( new object(this,{gltfModel.at(1),emptyTexture}) );
+    Graphics.bindStencilObject(object3D.at(index));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -388,34 +390,40 @@ void VkApplication::createObjects()
     object3D.at(index)->animationIndex = 1;
     index++;
 
-    object3D.push_back( new object(this,{gltfModel.at(3),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(4),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
+    object3D.push_back( new object(this,{gltfModel.at(4),emptyTexture}) );
+    Graphics.bindStencilObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object *Duck = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(this,{gltfModel.at(5),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
+    object3D.push_back( new object(this,{gltfModel.at(3),emptyTexture}) );
+    Graphics.bindBaseObject(object3D.at(index));
+    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
+    index++;
+
+    object3D.push_back( new object(this,{gltfModel.at(5),emptyTexture}) );
+    Graphics.bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object *UFO1 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(this,{gltfModel.at(5),&Graphics.PipeLine(),&Graphics.PipelineLayout(),emptyTexture}) );
+    object3D.push_back( new object(this,{gltfModel.at(5),emptyTexture}) );
+    Graphics.bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(this,{gltfModel.at(2),&Graphics.BloomSpriteGraphicsPipeline(),&Graphics.BloomSpritePipelineLayout(),emptyTextureW}) );
+    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
+    Graphics.bindBloomObject(object3D.at(index));
     object *Box = object3D.at(index);
     index++;
 
-    skyboxObject = new object(this,{gltfModel.at(2),nullptr,nullptr,nullptr});
+    skyboxObject = new object(this,{gltfModel.at(2),nullptr});
+    Graphics.bindSkyBoxObject(skyboxObject);
     skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
 
     groups.push_back(new group);
@@ -445,7 +453,7 @@ void VkApplication::createObjectsUniformBuffers()
 void VkApplication::createLight()
 {
     int index = 0;
-    lightPoint.push_back(new light<pointLight>(this,lightSource));
+    lightPoint.push_back(new light<pointLight>(this,imageCount,lightSource));
     lightPoint.at(0)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     lightPoint.at(0)->setCamera(cam);
     groups.at(0)->addObject(lightPoint.at(0));
@@ -453,7 +461,7 @@ void VkApplication::createLight()
 
     glm::mat4x4 Proj;
 
-    lightSource.push_back(new light<spotLight>(this));
+    lightSource.push_back(new light<spotLight>(this,imageCount));
         Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
@@ -462,7 +470,7 @@ void VkApplication::createLight()
     groups.at(2)->addObject(lightSource.at(index));
     index++;
 
-    lightSource.push_back(new light<spotLight>(this));
+    lightSource.push_back(new light<spotLight>(this,imageCount));
         Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
@@ -476,8 +484,6 @@ void VkApplication::updateLight()
     shadowCount = 0;
     for(size_t i=0; i<lightSource.size();i++)
     {
-        lightSource.at(i)->setImageCount(imageCount);
-        lightSource.at(i)->createUniformBuffers();
         lightSource.at(i)->createShadow(COMMAND_POOLS);
         if(lightSource.at(i)->getShadowEnable())
             shadowCount++;
@@ -508,8 +514,8 @@ void VkApplication::createGraphics()
     PostProcessing.createDescriptorPool();
     PostProcessing.createDescriptorSets(Graphics.getAttachments());
 
-    Graphics.createBaseDescriptorPool(object3D);
-    Graphics.createBaseDescriptorSets(object3D);
+    Graphics.createBaseDescriptorPool();
+    Graphics.createBaseDescriptorSets();
     Graphics.createSkyboxDescriptorPool();
     Graphics.createSkyboxDescriptorSets();
     Graphics.createSecondDescriptorPool();
@@ -547,7 +553,7 @@ void VkApplication::updateCommandBuffer(uint32_t number, uint32_t i)
     if (vkBeginCommandBuffer(commandBuffers[number][i], &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("failed to begin recording command buffer!");
 
-    Graphics.render(commandBuffers[number],i,object3D,*skyboxObject);
+    Graphics.render(commandBuffers[number],i);
     PostProcessing.render(commandBuffers[number],i);
 
     if (vkEndCommandBuffer(commandBuffers[number][i]) != VK_SUCCESS)
@@ -595,8 +601,12 @@ void VkApplication::VkApplication::mainLoop()
         auto currentTime = std::chrono::high_resolution_clock::now();
         frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
 
-        if(fpsLock){if(fps<1.0f/frameTime){continue;}}
-        pastTime = currentTime;
+            if(fpsLock){if(fps<1.0f/frameTime){continue;}}
+            pastTime = currentTime;
+
+            std::stringstream ss;
+            ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
+            glfwSetWindowTitle(window, ss.str().c_str());
 
         updateAnimations(animate);
         glfwPollEvents();
@@ -637,9 +647,7 @@ void VkApplication::VkApplication::mainLoop()
         {throw std::runtime_error("failed to acquire swap chain image!");}
 
         if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)                                       //если нет следующего изображения
-        {
             vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);       //ждём
-        }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
         updateCmd(imageIndex);
@@ -670,9 +678,7 @@ void VkApplication::VkApplication::mainLoop()
         vkResetFences(device, 1, &inFlightFences[currentFrame]);                                                //восстановить симофоры в несингнальное положение
 
         if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)           //отправляет последовательность семафоров или командных буферов в очередь
-        {
             throw std::runtime_error("failed to submit draw command buffer!");
-        }
 
         VkPresentInfoKHR presentInfo{};
         VkSwapchainKHR swapChains[] = {PostProcessing.SwapChain()};
@@ -779,6 +785,9 @@ void VkApplication::VkApplication::mainLoop()
 void VkApplication::VkApplication::cleanup()
 {
     cleanupSwapChain();
+
+    for(size_t i=0;i<lightSource.size();i++)
+        lightSource.at(i)->deleteLight();
 
     for(size_t i=0;i<lightPoint.size();i++)
         delete lightPoint.at(i);

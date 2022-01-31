@@ -13,4 +13,8 @@ C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe godRays/godRays.vert -o godRays/godRaysVe
 C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe godRays/godRays.frag -o godRays/godRaysFrag.spv
 C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe skybox/skybox.vert -o skybox/skyboxVert.spv
 C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe skybox/skybox.frag -o skybox/skyboxFrag.spv
+C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe stencil/firstStencil.vert -o stencil/firststencilvert.spv
+C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe stencil/firstStencil.frag -o stencil/firststencilfrag.spv
+C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe stencil/secondStencil.vert -o stencil/secondstencilvert.spv
+C:/VulkanSDK/1.2.170.0/Bin32/glslc.exe stencil/secondStencil.frag -o stencil/secondstencilfrag.spv
 pause

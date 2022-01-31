@@ -12,8 +12,6 @@ object::object(VkApplication *app) : app(app)
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
 
     m_model = nullptr;
-    m_pipeline = nullptr;
-    m_pipelineLayout = nullptr;
 }
 
 object::object(VkApplication *app, objectInfo info): app(app)
@@ -25,8 +23,6 @@ object::object(VkApplication *app, objectInfo info): app(app)
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
 
     m_model = info.model;
-    m_pipeline = info.pipeline;
-    m_pipelineLayout = info.pipelineLayout;
     m_emptyTexture = info.emptyTexture;
 }
 
@@ -37,9 +33,6 @@ object::object(VkApplication *app, gltfModel* model3D) : app(app), m_model(model
     m_translate = glm::vec3(0.0f,0.0f,0.0f);
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
-
-    m_pipeline = nullptr;
-    m_pipelineLayout = nullptr;
 }
 
 object::~object()
@@ -334,16 +327,9 @@ void object::createMaterialDescriptorSet(Material* material)
 }
 
 void                            object::setVisibilityDistance(float visibilityDistance){this->visibilityDistance=visibilityDistance;}
-void                            object::setPipeline(VkPipeline* pipeline){m_pipeline = pipeline;}
-void                            object::setPipelineLayout(VkPipelineLayout* pipelineLayout){m_pipelineLayout = pipelineLayout;}
 void                            object::setEmptyTexture(texture* emptyTexture){m_emptyTexture = emptyTexture;}
 
-void                            object::enableBloomSprite(bool enable){bloomSprite = enable;}
-
 gltfModel*                      object::getModel(){return m_model;}
-
-VkPipeline                      *object::getPipeline(){return m_pipeline;}
-VkPipelineLayout                *object::getPipelineLayout(){return m_pipelineLayout;}
 
 float                           object::getVisibilityDistance(){return visibilityDistance;}
 glm::mat4x4                     object::getTransformation(){return modelMatrix;}

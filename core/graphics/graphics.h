@@ -12,22 +12,21 @@
 
 #include <optional>         // нужна для вызова std::optional<uint32_t>
 #include "attachments.h"
-class VkApplication;
-
-class texture;
-class cubeTexture;
-class object;
-class camera;
-struct gltfModel;
-template <typename type>
-class light;
-class spotLight;
-class pointLight;
-template <> class light<spotLight>;
-template <> class light<pointLight>;
-struct Node;
 
 const int MAX_LIGHT_SOURCE_COUNT = 8;
+
+class                           VkApplication;
+class                           texture;
+class                           cubeTexture;
+class                           object;
+class                           camera;
+struct                          gltfModel;
+template <typename type> class  light;
+class                           spotLight;
+class                           pointLight;
+template <> class               light<spotLight>;
+template <> class               light<pointLight>;
+struct                          Node;
 
 struct attachment
 {
@@ -42,44 +41,43 @@ struct attachment
     }
 };
 
-struct UniformBufferObject
-{
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::vec4 eyePosition;
+struct graphicsInfo{
+    uint32_t                    imageCount;
+    VkExtent2D                  extent;
+    VkSampleCountFlagBits       msaaSamples;
+    VkRenderPass                renderPass;
 };
 
-struct SkyboxUniformBufferObject
-{
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 model;
+struct UniformBufferObject{
+    alignas(16) glm::mat4       view;
+    alignas(16) glm::mat4       proj;
+    alignas(16) glm::vec4       eyePosition;
 };
 
-struct SecondUniformBufferObject
-{
-    alignas(16) glm::vec4 eyePosition;
+struct SkyboxUniformBufferObject{
+    alignas(16) glm::mat4       proj;
+    alignas(16) glm::mat4       view;
+    alignas(16) glm::mat4       model;
 };
 
-struct SwapChainSupportDetails
-{
-    VkSurfaceCapabilitiesKHR capabilities;
+struct SecondUniformBufferObject{
+    alignas(16) glm::vec4       eyePosition;
+};
+
+struct SwapChainSupportDetails{
+    VkSurfaceCapabilitiesKHR        capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+    std::vector<VkPresentModeKHR>   presentModes;
 };
 
 struct QueueFamilyIndices
 {
+    std::optional<uint32_t> graphicsFamily;                             //графикческое семейство очередей
+    std::optional<uint32_t> presentFamily;                              //семейство очередей показа
+    bool isComplete()                                                   //если оба значения не пусты, а были записаны, выводит true
+    {return graphicsFamily.has_value() && presentFamily.has_value();}
     //std::optional это оболочка, которая не содержит значения, пока вы ей что-то не присвоите.
     //В любой момент вы можете запросить, содержит ли он значение или нет, вызвав его has_value()функцию-член.
-
-    std::optional<uint32_t> graphicsFamily;     //графикческое семейство очередей
-    std::optional<uint32_t> presentFamily;      //семейство очередей показа
-
-    bool isComplete() //если оба значения не пусты, а были записаны, выводит true
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
 };
 
 class graphics
@@ -101,13 +99,6 @@ private:
     VkRenderPass                    renderPass;
     std::vector<VkFramebuffer>      framebuffers;
 
-    struct graphicsInfo{
-        uint32_t                        imageCount;
-        VkExtent2D                      extent;
-        VkSampleCountFlagBits           msaaSamples;
-        VkRenderPass                    renderPass;
-    };
-
     struct Base{
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
@@ -120,6 +111,7 @@ private:
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
+        std::vector<object *>           objects;
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
@@ -132,11 +124,27 @@ private:
         VkPipelineLayout                bloomPipelineLayout;
         VkPipelineLayout                godRaysPipelineLayout;
 
+        std::vector<object *>           bloomObjects;
+        std::vector<object *>           godRaysObjects;
         void DestroyBloom(VkApplication  *app);
         void DestroyGodRays(VkApplication  *app);
         void createBloomPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void createGodRaysPipeline(VkApplication *app, Base *base, graphicsInfo info);
     }extension;
+
+    struct StencilExtension{
+        VkPipeline                      firstPipeline;
+        VkPipeline                      secondPipeline;
+        VkPipelineLayout                firstPipelineLayout;
+        VkPipelineLayout                secondPipelineLayout;
+
+        std::vector<bool>               stencilEnable;
+        std::vector<object *>           objects;
+        void DestroyFirstPipeline(VkApplication *app);
+        void DestroySecondPipeline(VkApplication *app);
+        void createFirstPipeline(VkApplication *app, Base *base, graphicsInfo info);
+        void createSecondPipeline(VkApplication *app, Base *base, graphicsInfo info);
+    }stencil;
 
     struct Skybox
     {
@@ -149,6 +157,7 @@ private:
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
+        std::vector<object *>           objects;
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
@@ -171,7 +180,6 @@ private:
         void createDescriptorSetLayout(VkApplication *app);
         void createUniformBuffers(VkApplication *app, uint32_t imageCount);
     }second;
-
 
     void createColorAttachments();
     void createDepthAttachment();
@@ -197,8 +205,8 @@ public:
     void createFramebuffers();
     void createPipelines();
 
-    void createBaseDescriptorPool(const std::vector<object*> & object3D);
-    void createBaseDescriptorSets(const std::vector<object*> & object3D);
+    void createBaseDescriptorPool();
+    void createBaseDescriptorSets();
 
     void createSkyboxDescriptorPool();
     void createSkyboxDescriptorSets();
@@ -206,17 +214,25 @@ public:
     void createSecondDescriptorPool();
     void createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSource);
 
-    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<object*> & object3D, object & sky);
+    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
 
     void updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
 
+    void bindBaseObject(object *newObject);
+    void bindBloomObject(object *newObject);
+    void bindGodRaysObject(object *newObject);
+    void bindStencilObject(object *newObject);
+    void bindSkyBoxObject(object *newObject);
+
+    void setStencilObject(object *oldObject);
+
     VkPipelineLayout                & PipelineLayout();
-    VkPipelineLayout                & BloomSpritePipelineLayout();
+    VkPipelineLayout                & BloomPipelineLayout();
     VkPipelineLayout                & GodRaysPipelineLayout();
     VkPipelineLayout                & SkyBoxPipelineLayout();
 
     VkPipeline                      & PipeLine();
-    VkPipeline                      & BloomSpriteGraphicsPipeline();
+    VkPipeline                      & BloomPipeline();
     VkPipeline                      & GodRaysPipeline();
     VkPipeline                      & SkyBoxPipeLine();
 
@@ -260,12 +276,9 @@ private:
 
     //Создание цепочки обмена
     void createSwapChain(SwapChainSupportDetails swapChainSupport);
-        //Формат поверхности
-        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        //Режим презентации
-        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-        //Экстент подкачки - это разрешение изображений цепочки подкачки, и оно почти всегда точно равно разрешению окна, в которое мы рисуем, в пикселях
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);    //Формат поверхности
+        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);     //Режим презентации
+        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);                              //Экстент - это разрешение изображений
     void createImageViews();
     void createColorAttachments();
 public:

@@ -222,7 +222,7 @@ float shadowFactor(int i)
 	    for(float noise = dnoise; noise<dnoise*(maxNoise+1); noise+=dnoise)
 	    {
 		vec2 dx = vec2(noise*cos(j*dang), noise*sin(j*dang));
-		shadowSample += lightSpaceNDC.z-texture(shadowMap[i], shadowMapCoord.xy + dx).x > 0.001f ? 1.0f : 0.0f;
+		shadowSample += lightSpaceNDC.z-texture(shadowMap[i], shadowMapCoord.xy + dx).x > 0.0001f ? 1.0f : 0.0f;
 	    }
 	}
 	shadowSample /= maxNoise*n;

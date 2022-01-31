@@ -1,10 +1,7 @@
 #include "graphics.h"
 #include "core/operations.h"
-#include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 #include "core/transformational/light.h"
-#include "core/transformational/gltfmodel.h"
-#include "core/transformational/camera.h"
 
 void graphics::Second::Destroy(VkApplication *app)
 {
@@ -303,7 +300,7 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
         VkDescriptorBufferInfo lightBufferInfo[MAX_LIGHT_SOURCE_COUNT];
         for (size_t j = 0; j < lightSource.size(); j++)
         {
-            lightBufferInfo[j].buffer = lightSource.at(j)->getLightUniformBuffers().at(i);
+            lightBufferInfo[j].buffer = lightSource.at(j)->getUniformBuffers().at(i);
             lightBufferInfo[j].offset = 0;
             lightBufferInfo[j].range = sizeof(LightUniformBufferObject);
         }

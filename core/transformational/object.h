@@ -71,6 +71,7 @@ public:
     void scale(const glm::vec3& scale);
 
     void updateModelMatrix();
+    void updateAnimation();
 
     void setModel(gltfModel* model3D);
     void setEmptyTexture(texture* emptyTexture);
@@ -95,6 +96,10 @@ public:
 
     float animationTimer = 0.0f;
     uint32_t animationIndex = 0;
+    uint32_t newAnimationIndex;
+    bool changeAnimationFlag = false;
+    float startTimer;
+    float changeAnimationTime;
 };
 
 #endif // OBJECT_H

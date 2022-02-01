@@ -94,6 +94,25 @@ void object::updateModelMatrix()
     modelMatrix = m_globalTransform * translateMatrix * rotateMatrix * scaleMatrix;
 }
 
+void object::updateAnimation()
+{
+    if(getModel()->animations.size() > 0){
+        if(!changeAnimationFlag){
+            if (animationTimer > getModel()->animations[animationIndex].end)
+                animationTimer -= getModel()->animations[animationIndex].end;
+
+            getModel()->updateAnimation(animationIndex, animationTimer);
+        }else{
+            getModel()->changeAnimation(animationIndex, newAnimationIndex, startTimer, animationTimer, changeAnimationTime);
+            if(startTimer+changeAnimationTime<animationTimer){
+                changeAnimationFlag = false;
+                animationTimer = getModel()->animations[animationIndex+1].start;
+                animationIndex = newAnimationIndex;
+            }
+        }
+    }
+}
+
 void object::createUniformBuffers(uint32_t imageCount)
 {
     VkDeviceSize bufferSize = sizeof(UniformBuffer);

@@ -285,6 +285,7 @@ struct gltfModel
     void calculateBoundingBox(Node* node, Node* parent);
     void getSceneDimensions();
     void updateAnimation(uint32_t index, float time);
+    void changeAnimation(uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime);
     Node* findNode(Node* parent, uint32_t index);
     Node* nodeFromIndex(uint32_t index);
     void calculateTangent(std::vector<Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer);

@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include "core/operations.h"
+#include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 
 void graphics::Skybox::Destroy(VkApplication *app)
@@ -313,5 +314,18 @@ void graphics::Skybox::createUniformBuffers(VkApplication *app, uint32_t imageCo
                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                      uniformBuffers[i], uniformBuffersMemory[i]);
+    }
+}
+
+void graphics::Skybox::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
+{
+    if(objects.size()!=0)
+    {
+        VkDeviceSize offsets[1] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[0]->getModel()->vertices.buffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[i],  objects[0]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0, NULL);
+        vkCmdDrawIndexed(commandBuffers[i], 36, 1, 0, 0, 0);
     }
 }

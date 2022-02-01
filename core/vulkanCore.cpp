@@ -619,20 +619,11 @@ void VkApplication::VkApplication::mainLoop()
     void VkApplication::updateAnimations(bool animate)
     {
         if(animate)
-        {
             for(size_t j=0;j<object3D.size();j++)
             {
-                if(object3D[j]->getModel()->animations.size() > 0)
-                {
-                    object3D[j]->animationTimer += frameTime;
-                    if (object3D[j]->animationTimer > object3D[j]->getModel()->animations[object3D[j]->animationIndex].end)
-                    {
-                        object3D[j]->animationTimer -= object3D[j]->getModel()->animations[object3D[j]->animationIndex].end;
-                    }
-                    object3D[j]->getModel()->updateAnimation(object3D[j]->animationIndex, object3D[j]->animationTimer);
-                }
+                object3D[j]->animationTimer += frameTime;
+                object3D[j]->updateAnimation();
             }
-        }
     }
     void VkApplication::drawFrame()
     {

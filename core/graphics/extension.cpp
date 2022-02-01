@@ -1,17 +1,18 @@
 #include "graphics.h"
 #include "core/operations.h"
+#include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 
-void graphics::Extension::DestroyBloom(VkApplication *app)
+void graphics::bloomExtension::Destroy(VkApplication *app)
 {
-    vkDestroyPipeline(app->getDevice(), bloomPipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), bloomPipelineLayout, nullptr);
+    vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
+    vkDestroyPipelineLayout(app->getDevice(), PipelineLayout, nullptr);
 }
 
-void graphics::Extension::DestroyGodRays(VkApplication *app)
+void graphics::godRaysExtension::Destroy(VkApplication *app)
 {
-    vkDestroyPipeline(app->getDevice(), godRaysPipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), godRaysPipelineLayout,nullptr);
+    vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
+    vkDestroyPipelineLayout(app->getDevice(), PipelineLayout,nullptr);
 }
 
 void graphics::StencilExtension::DestroyFirstPipeline(VkApplication *app)
@@ -26,7 +27,7 @@ void graphics::StencilExtension::DestroySecondPipeline(VkApplication *app)
     vkDestroyPipelineLayout(app->getDevice(), secondPipelineLayout,nullptr);
 }
 
-void graphics::Extension::createBloomPipeline(VkApplication *app, struct Base *base, graphicsInfo info)
+void graphics::bloomExtension::createPipeline(VkApplication *app, struct Base *base, graphicsInfo info)
 {
     //считываем шейдеры
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\bloomSprite\\vertBloomSprite.spv");
@@ -185,7 +186,7 @@ void graphics::Extension::createBloomPipeline(VkApplication *app, struct Base *b
     depthStencil.front = {}; // Optional
     depthStencil.back = {}; // Optional
 
-    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &bloomPipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create pipeline layout!");
     }
@@ -200,13 +201,13 @@ void graphics::Extension::createBloomPipeline(VkApplication *app, struct Base *b
     pipelineInfo.pRasterizationState = &rasterizer;                         //растеризация
     pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
     pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
-    pipelineInfo.layout = bloomPipelineLayout;
+    pipelineInfo.layout = PipelineLayout;
     pipelineInfo.renderPass = info.renderPass;                             //проход рендеринга
     pipelineInfo.subpass = 0;                                               //подпроход рендеригка
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
 
-    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &bloomPipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
@@ -216,7 +217,7 @@ void graphics::Extension::createBloomPipeline(VkApplication *app, struct Base *b
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
 
-void graphics::Extension::createGodRaysPipeline(VkApplication *app, struct Base *base, graphicsInfo info)
+void graphics::godRaysExtension::createPipeline(VkApplication *app, struct Base *base, graphicsInfo info)
 {
     //считываем шейдеры
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\godRays\\godRaysVert.spv");
@@ -366,7 +367,7 @@ void graphics::Extension::createGodRaysPipeline(VkApplication *app, struct Base 
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &godRaysPipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create pipeline layout!");
     }
@@ -393,13 +394,13 @@ void graphics::Extension::createGodRaysPipeline(VkApplication *app, struct Base 
     pipelineInfo.pRasterizationState = &rasterizer;                         //растеризация
     pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
     pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
-    pipelineInfo.layout = godRaysPipelineLayout;
+    pipelineInfo.layout = PipelineLayout;
     pipelineInfo.renderPass = info.renderPass;                             //проход рендеринга
     pipelineInfo.subpass = 0;                                               //подпроход рендеригка
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
 
-    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &godRaysPipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
@@ -727,7 +728,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, Base *
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencil.depthTestEnable = VK_FALSE;
-        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_FALSE;
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.minDepthBounds = 0.0f;
@@ -778,4 +779,49 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, Base *
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+}
+
+void graphics::bloomExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base)
+{
+    for(size_t j = 0; j<objects.size() ;j++)
+    {
+        VkDeviceSize offsets[1] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+        if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+            vkCmdBindIndexBuffer(commandBuffers[i],  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+        for (auto node : objects[j]->getModel()->nodes)
+            Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],PipelineLayout);
+    }
+}
+
+void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base)
+{
+    for(size_t j = 0; j<objects.size() ;j++)
+    {
+        VkDeviceSize offsets[1] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+        if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+            vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipeline);
+        for (auto node : objects[j]->getModel()->nodes)
+            Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],firstPipelineLayout);
+
+    }
+
+    for(size_t j = 0; j<objects.size() ;j++)
+    {
+        if(stencilEnable[j]){
+            VkDeviceSize offsets[1] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+            if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
+            for (auto node : objects[j]->getModel()->nodes)
+                Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],secondPipelineLayout);
+        }
+    }
 }

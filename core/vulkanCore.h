@@ -154,6 +154,8 @@ private:
     uint32_t                                    controledGroup = 0;
 
     bool                                        backRStage = 0;
+    bool                                        backTStage = 0;
+    bool                                        backYStage = 0;
 
     void initWindow();
         static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

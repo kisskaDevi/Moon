@@ -3,6 +3,7 @@
 #include "transformational/group.h"
 #include "transformational/camera.h"
 #include "transformational/light.h"
+#include "transformational/gltfmodel.h"
 
 void VkApplication::mouseEvent()
 {
@@ -205,6 +206,22 @@ void VkApplication::mouseEvent()
         updateCmdWorld = true;
     }
     backRStage = glfwGetKey(window,GLFW_KEY_R);
+    if(backTStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_T) == 0)
+    {
+        object3D[0]->changeAnimationFlag = true;
+        object3D[0]->startTimer = object3D[0]->animationTimer;
+        object3D[0]->newAnimationIndex = 1;
+        object3D[0]->changeAnimationTime = 0.5f;
+    }
+    backTStage = glfwGetKey(window,GLFW_KEY_T);
+    if(backYStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_Y) == 0)
+    {
+        object3D[0]->changeAnimationFlag = true;
+        object3D[0]->startTimer = object3D[0]->animationTimer;
+        object3D[0]->newAnimationIndex = 0;
+        object3D[0]->changeAnimationTime = 0.5f;
+    }
+    backYStage = glfwGetKey(window,GLFW_KEY_Y);
 }
 
 void VkApplication::scrol(GLFWwindow *window, double xoffset, double yoffset)

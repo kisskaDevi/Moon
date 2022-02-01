@@ -380,3 +380,10 @@ void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCo
                      emptyUniformBuffers[i], emptyUniformBuffersMemory[i]);
     }
 }
+
+void graphics::Second::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
+{
+    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+    vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0, nullptr);
+    vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
+}

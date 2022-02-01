@@ -23,8 +23,8 @@ void graphics::setImageProp(uint32_t imageCount, VkFormat format, VkExtent2D ext
 void graphics::destroy()
 {
     base.Destroy(app);
-    extension.DestroyBloom(app);
-    extension.DestroyGodRays(app);
+    bloom.Destroy(app);
+    godRays.Destroy(app);
     stencil.DestroyFirstPipeline(app);
     stencil.DestroySecondPipeline(app);
     skybox.Destroy(app);
@@ -621,8 +621,8 @@ void graphics::createPipelines()
     base.createDescriptorSetLayout(app);
     base.createPipeline(app,{imageCount,extent,msaaSamples,renderPass});
     base.createUniformBuffers(app,imageCount);
-    extension.createBloomPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
-    extension.createGodRaysPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
+    bloom.createPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
+    godRays.createPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
     stencil.createFirstPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
     stencil.createSecondPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
     skybox.createDescriptorSetLayout(app);
@@ -651,71 +651,14 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
 
     vkCmdBeginRenderPass(commandBuffers[i], &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        if(skybox.objects.size()!=0)
-        {
-            VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & skybox.objects[0]->getModel()->vertices.buffer, offsets);
-            vkCmdBindIndexBuffer(commandBuffers[i],  skybox.objects[0]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
-            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, 1, &skybox.DescriptorSets[i], 0, NULL);
-            vkCmdDrawIndexed(commandBuffers[i], 36, 1, 0, 0, 0);
-        }
-
-        for(size_t j = 0; j<base.objects.size() ;j++)
-        {
-            VkDeviceSize offsets[1] = { 0 };
-
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, base.Pipeline);
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & base.objects[j]->getModel()->vertices.buffer, offsets);
-
-            if (base.objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i],  base.objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            for (auto node : base.objects[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],base.DescriptorSets[i],base.objects[j]->getDescriptorSet()[i],base.PipelineLayout);
-
-//            for (auto node : object3D[j]->getModel()->nodes)
-//               if(glm::length(glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-cameraPosition)<object3D[j]->getVisibilityDistance())
-//                    renderNode(node,commandBuffers[i],base.DescriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
-        }
-
-        for(size_t j = 0; j<extension.bloomObjects.size() ;j++)
-        {
-            VkDeviceSize offsets[1] = { 0 };
-
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, extension.bloomPipeline);
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & extension.bloomObjects[j]->getModel()->vertices.buffer, offsets);
-            if (extension.bloomObjects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i],  extension.bloomObjects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            for (auto node : extension.bloomObjects[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],base.DescriptorSets[i],extension.bloomObjects[j]->getDescriptorSet()[i],extension.bloomPipelineLayout);
-        }
-
-        for(size_t j = 0; j<stencil.objects.size() ;j++)
-        {
-            VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & stencil.objects[j]->getModel()->vertices.buffer, offsets);
-            if (stencil.objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i], stencil.objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, stencil.firstPipeline);
-            for (auto node : stencil.objects[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],base.DescriptorSets[i],stencil.objects[j]->getDescriptorSet()[i],stencil.firstPipelineLayout);
-
-            if(stencil.stencilEnable[j]){
-                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, stencil.secondPipeline);
-                for (auto node : stencil.objects[j]->getModel()->nodes)
-                    renderNode(node,commandBuffers[i],base.DescriptorSets[i],stencil.objects[j]->getDescriptorSet()[i],stencil.secondPipelineLayout);
-            }
-        }
-
+        skybox.render(commandBuffers,i);
+        base.render(commandBuffers,i,this);
+        bloom.render(commandBuffers,i,this,&base);
+        stencil.render(commandBuffers,i,this,&base);
 
     vkCmdNextSubpass(commandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, second.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, second.PipelineLayout, 0, 1, &second.DescriptorSets[i], 0, nullptr);
-        vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
+        second.render(commandBuffers,i);
 
     vkCmdEndRenderPass(commandBuffers[i]);
 }
@@ -812,16 +755,6 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *s
     vkUnmapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage]);
 }
 
-VkPipeline                      &graphics::PipeLine(){return base.Pipeline;}
-VkPipeline                      &graphics::BloomPipeline(){return extension.bloomPipeline;}
-VkPipeline                      &graphics::GodRaysPipeline(){return extension.godRaysPipeline;}
-VkPipeline                      &graphics::SkyBoxPipeLine(){return skybox.Pipeline;}
-
-VkPipelineLayout                &graphics::PipelineLayout(){return base.PipelineLayout;}
-VkPipelineLayout                &graphics::BloomPipelineLayout(){return extension.bloomPipelineLayout;}
-VkPipelineLayout                &graphics::GodRaysPipelineLayout(){return extension.godRaysPipelineLayout;}
-VkPipelineLayout                &graphics::SkyBoxPipelineLayout(){return skybox.PipelineLayout;}
-
 std::vector<attachments>        &graphics::getAttachments(){return Attachments;}
 
 void graphics::bindBaseObject(object *newObject)
@@ -831,12 +764,12 @@ void graphics::bindBaseObject(object *newObject)
 
 void graphics::bindBloomObject(object *newObject)
 {
-    extension.bloomObjects.push_back(newObject);
+    bloom.objects.push_back(newObject);
 }
 
 void graphics::bindGodRaysObject(object *newObject)
 {
-    extension.godRaysObjects.push_back(newObject);
+    godRays.objects.push_back(newObject);
 }
 
 void graphics::bindStencilObject(object *newObject)

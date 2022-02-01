@@ -116,21 +116,28 @@ private:
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
         void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics);
     }base;
 
-    struct Extension{
-        VkPipeline                      bloomPipeline;
-        VkPipeline                      godRaysPipeline;
-        VkPipelineLayout                bloomPipelineLayout;
-        VkPipelineLayout                godRaysPipelineLayout;
+    struct bloomExtension{
+        VkPipeline                      Pipeline;
+        VkPipelineLayout                PipelineLayout;
 
-        std::vector<object *>           bloomObjects;
-        std::vector<object *>           godRaysObjects;
-        void DestroyBloom(VkApplication  *app);
-        void DestroyGodRays(VkApplication  *app);
-        void createBloomPipeline(VkApplication *app, Base *base, graphicsInfo info);
-        void createGodRaysPipeline(VkApplication *app, Base *base, graphicsInfo info);
-    }extension;
+        std::vector<object *>           objects;
+        void Destroy(VkApplication  *app);
+        void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base);
+    }bloom;
+
+    struct godRaysExtension{
+        VkPipeline                      Pipeline;
+        VkPipelineLayout                PipelineLayout;
+
+        std::vector<object *>           objects;
+        void Destroy(VkApplication  *app);
+        void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics);
+    }godRays;
 
     struct StencilExtension{
         VkPipeline                      firstPipeline;
@@ -144,6 +151,7 @@ private:
         void DestroySecondPipeline(VkApplication *app);
         void createFirstPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void createSecondPipeline(VkApplication *app, Base *base, graphicsInfo info);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base);
     }stencil;
 
     struct Skybox
@@ -162,6 +170,7 @@ private:
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
         void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
     }skybox;
 
     struct Second{
@@ -179,6 +188,7 @@ private:
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
         void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
     }second;
 
     void createColorAttachments();
@@ -189,7 +199,6 @@ private:
     void multiSampleRenderPass();
     void oneSampleFrameBuffer();
     void multiSampleFrameBuffer();
-    void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
 public:
     graphics();
     void destroy();
@@ -215,6 +224,7 @@ public:
     void createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSource);
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
+        void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
 
     void updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
 
@@ -225,16 +235,6 @@ public:
     void bindSkyBoxObject(object *newObject);
 
     void setStencilObject(object *oldObject);
-
-    VkPipelineLayout                & PipelineLayout();
-    VkPipelineLayout                & BloomPipelineLayout();
-    VkPipelineLayout                & GodRaysPipelineLayout();
-    VkPipelineLayout                & SkyBoxPipelineLayout();
-
-    VkPipeline                      & PipeLine();
-    VkPipeline                      & BloomPipeline();
-    VkPipeline                      & GodRaysPipeline();
-    VkPipeline                      & SkyBoxPipeLine();
 
     std::vector<attachments>        & getAttachments();
 };

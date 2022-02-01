@@ -338,10 +338,10 @@ void graphics::createBaseDescriptorPool()
         base.objects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
         base.objects.at(i)->createDescriptorPool(imageCount);
     }
-    for(size_t i=0;i<extension.bloomObjects.size();i++)
+    for(size_t i=0;i<bloom.objects.size();i++)
     {
-        extension.bloomObjects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
-        extension.bloomObjects.at(i)->createDescriptorPool(imageCount);
+        bloom.objects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
+        bloom.objects.at(i)->createDescriptorPool(imageCount);
     }
     for(size_t i=0;i<stencil.objects.size();i++)
     {
@@ -359,8 +359,8 @@ void graphics::createBaseDescriptorSets()
 
     for(size_t i=0;i<base.objects.size();i++)
         base.objects.at(i)->createDescriptorSet(imageCount);
-    for(size_t i=0;i<extension.bloomObjects.size();i++)
-        extension.bloomObjects.at(i)->createDescriptorSet(imageCount);
+    for(size_t i=0;i<bloom.objects.size();i++)
+        bloom.objects.at(i)->createDescriptorSet(imageCount);
     for(size_t i=0;i<stencil.objects.size();i++)
         stencil.objects.at(i)->createDescriptorSet(imageCount);
 
@@ -406,5 +406,24 @@ void graphics::Base::createUniformBuffers(VkApplication *app, uint32_t imageCoun
                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                      uniformBuffers[i], uniformBuffersMemory[i]);
+    }
+}
+
+void graphics::Base::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics)
+{
+    for(size_t j = 0; j<objects.size() ;j++)
+    {
+        VkDeviceSize offsets[1] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+        if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+            vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+        for (auto node : objects[j]->getModel()->nodes)
+            Graphics->renderNode(node,commandBuffers[i],DescriptorSets[i],objects[j]->getDescriptorSet()[i],PipelineLayout);
+
+//            for (auto node : object3D[j]->getModel()->nodes)
+//               if(glm::length(glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-cameraPosition)<object3D[j]->getVisibilityDistance())
+//                    renderNode(node,commandBuffers[i],base.DescriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
     }
 }

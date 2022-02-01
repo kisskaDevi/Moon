@@ -920,6 +920,60 @@ void gltfModel::updateAnimation(uint32_t index, float time)
     }
 }
 
+void gltfModel::changeAnimation(uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime)
+{
+    Animation &animationOld = animations[oldIndex];
+    Animation &animationNew = animations[newIndex];
+
+    bool updated = false;
+    for (auto& channel : animationOld.channels) {
+        AnimationSampler &samplerOld = animationOld.samplers[channel.samplerIndex];
+        AnimationSampler &samplerNew = animationNew.samplers[channel.samplerIndex];
+        if (samplerOld.inputs.size() > samplerOld.outputsVec4.size())
+            continue;
+
+        for (size_t i = 0; i < samplerOld.inputs.size(); i++) {
+            if ((startTime >= samplerOld.inputs[i]) && (time <= samplerOld.inputs[i]+changeAnimationTime)) {
+                float u = std::max(0.0f, time - startTime) / changeAnimationTime;
+                if (u <= 1.0f) {
+                    switch (channel.path) {
+                    case AnimationChannel::PathType::TRANSLATION: {
+                        glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                        channel.node->translation = glm::vec3(trans);
+                        break;
+                    }
+                    case AnimationChannel::PathType::SCALE: {
+                        glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                        channel.node->scale = glm::vec3(trans);
+                        break;
+                    }
+                    case AnimationChannel::PathType::ROTATION: {
+                        glm::quat q1;
+                        q1.x = samplerOld.outputsVec4[i].x;
+                        q1.y = samplerOld.outputsVec4[i].y;
+                        q1.z = samplerOld.outputsVec4[i].z;
+                        q1.w = samplerOld.outputsVec4[i].w;
+                        glm::quat q2;
+                        q2.x = samplerNew.outputsVec4[0].x;
+                        q2.y = samplerNew.outputsVec4[0].y;
+                        q2.z = samplerNew.outputsVec4[0].z;
+                        q2.w = samplerNew.outputsVec4[0].w;
+                        channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+                        break;
+                    }
+                    }
+                    updated = true;
+                }
+            }
+        }
+    }
+    if (updated) {
+        for (auto &node : nodes) {
+            node->update();
+        }
+    }
+}
+
 Node* gltfModel::findNode(Node *parent, uint32_t index)
 {
     Node* nodeFound = nullptr;

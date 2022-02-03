@@ -204,9 +204,7 @@ void VkApplication::createSurface()
      * адаптируется под каждую платформу лоя получения платформенно-зависимого интерфейса для связи с поверхостью окна*/
 
     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)         //Эта функция создает поверхность Vulkan для указанного окна window.
-    {
-            throw std::runtime_error("failed to create window surface!");
-    }
+        throw std::runtime_error("failed to create window surface!");
 }
 
 //===========================Devices==========================//
@@ -258,7 +256,7 @@ void VkApplication::createLogicalDevice()
 
     QueueFamilyIndices indices = this->indices;     //при помощи этой функции ищем первое подходящее семейство очередей
 
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;              //массив очередей
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};  //массив очередей
 
     //Vulkan позволяет назначать приоритеты очередям, чтобы влиять на планирование выполнения командного буфера,
@@ -297,7 +295,7 @@ void VkApplication::createLogicalDevice()
         createInfo.ppEnabledLayerNames = validationLayers.data();
     } else {createInfo.enabledLayerCount = 0;}
 
-    if (vkCreateDevice(PhysicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) //создание логического устройства
+    if (vkCreateDevice(PhysicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)    //создание логического устройства
         throw std::runtime_error("failed to create logical device!");
 
     //Получение дескрипторов очереди из найденного семейства очередей от выбранного устройства
@@ -366,7 +364,7 @@ void VkApplication::loadModel()
     gltfModel.push_back(new struct gltfModel);
     gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glTF\\Sponza\\Sponza.gltf",this,1.0f);
     gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\Duck.glb",this,1.0f);
+    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\Robot.glb",this,1.0f);
     gltfModel.push_back(new struct gltfModel);
     gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\RetroUFO.glb",this,1.0f);
 }
@@ -393,7 +391,9 @@ void VkApplication::createObjects()
     object3D.push_back( new object(this,{gltfModel.at(4),emptyTexture}) );
     Graphics.bindStencilObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
+    object3D.at(index)->scale(glm::vec3(15.0f,15.0f,15.0f));
+    object3D.at(index)->animationTimer = 0.0f;
+    object3D.at(index)->animationIndex = 0;
     object *Duck = object3D.at(index);
     index++;
 
@@ -465,6 +465,7 @@ void VkApplication::createLight()
         Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     lightSource.at(index)->setCamera(cam);
     groups.at(2)->addObject(lightSource.at(index));
@@ -474,6 +475,7 @@ void VkApplication::createLight()
         Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setCamera(cam);
     groups.at(3)->addObject(lightSource.at(index));
@@ -527,8 +529,12 @@ void VkApplication::createCommandBuffers()
     updateCmdLight = true;
     updateCmdWorld = true;
 
-    for(size_t i=0;i<commandPool.size();i++)
+    for(size_t i=0;i<COMMAND_POOLS;i++)
         createCommandBuffer(i);
+
+    for(size_t i=0;i<lightSource.size();i++)
+        for(size_t j=0;j<COMMAND_POOLS;j++)
+            lightSource.at(i)->createShadowCommandBuffers(j);
 }
     void VkApplication::createCommandBuffer(uint32_t number)
     {
@@ -702,38 +708,24 @@ void VkApplication::VkApplication::mainLoop()
                 updateCommandBuffer((currentBuffer + 1) % COMMAND_POOLS,imageIndex);
                 updatedWorldFrames++;
                 if(updatedWorldFrames==COMMAND_POOLS*imageCount)
-                {
                     updateCmdWorld = false;
-                }
             }
             if(updateCmdLight)
             {
+                Graphics.updateLightUniformBuffer(imageIndex,lightSource);
                 for(size_t i=0;i<lightSource.size();i++)
-                {
-                    lightSource[i]->updateUniformBuffer(imageIndex);
-                }
-                for(size_t i=0;i<lightSource.size();i++)
-                {
                     if(lightSource[i]->getShadowEnable())
-                    {
                         lightSource[i]->updateShadowCommandBuffers((currentBuffer + 1) % COMMAND_POOLS,imageIndex,object3D);
-                    }
-                }
                 updatedLightFrames++;
                 if(updatedLightFrames==COMMAND_POOLS*imageCount)
-                {
                     updateCmdLight = false;
-                }
             }
         }
             void VkApplication::updateUniformBuffer(uint32_t currentImage)
             {
                 Graphics.updateUniformBuffer(currentImage, cam, skyboxObject);
-
                 for(size_t i=0;i<object3D.size();i++)
-                {
                     object3D.at(i)->updateUniformBuffer(currentImage);
-                }
             }
 
         void VkApplication::recreateSwapChain()

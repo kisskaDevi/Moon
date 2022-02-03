@@ -1,17 +1,30 @@
 #version 450
-#define MAX_NUM_JOINTS 128
+#define MAX_NUM_JOINTS 130
+#define MAX_LIGHT_SOURCES 8
 
-layout(set = 0, binding = 1) uniform LightUniformBufferObject
+struct LightBufferObject
 {
     mat4 projView;
     vec4 position;
     vec4 lightColor;
-} lightubo;
+    int type;
+    int enableShadow;
+};
+
+layout(set = 0, binding = 1) uniform LightUniformBufferObject
+{
+    LightBufferObject ubo[MAX_LIGHT_SOURCES];
+} light;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
     mat4 matrix;
 } local;
+
+layout (push_constant) uniform Number
+{
+    int value;
+} number;
 
 layout (set = 2, binding = 0) uniform UBONode
 {
@@ -47,5 +60,5 @@ void main()
 	    outPosition = vec3(local.matrix*node.matrix * vec4(inPosition,1.0));
     }
 
-    gl_Position = lightubo.projView * vec4(outPosition,1.0f);
+    gl_Position = light.ubo[number.value].projView * vec4(outPosition,1.0f);
 }

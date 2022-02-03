@@ -14,8 +14,6 @@ light<spotLight>::light(VkApplication *app, uint32_t imageCount, uint32_t type)
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
-
-    shadow.createUniformBuffers(app,imageCount);
 }
 
 light<spotLight>::~light()
@@ -44,7 +42,6 @@ void light<spotLight>::deleteLight()
 {
     if(deleted == false)
     {
-        shadow.DestroyUniformBuffers(app);
         deleted = true;
     }
 }
@@ -233,15 +230,6 @@ void light<spotLight>::Shadow::Destroy(VkApplication  *app)
     vkDestroyDescriptorPool(app->getDevice(), DescriptorPool, nullptr);
 }
 
-void light<spotLight>::Shadow::DestroyUniformBuffers(VkApplication  *app)
-{
-    for (size_t i = 0; i < uniformBuffers.size(); i++)
-    {
-        vkDestroyBuffer(app->getDevice(), uniformBuffers[i], nullptr);
-        vkFreeMemory(app->getDevice(), uniformBuffersMemory[i], nullptr);
-    }
-}
-
 void light<spotLight>::Shadow::createPipeline(VkApplication *app, shadowInfo info)
 {
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\shadow\\shad.spv");
@@ -323,11 +311,17 @@ void light<spotLight>::Shadow::createPipeline(VkApplication *app, shadowInfo inf
     colorBlending.attachmentCount = 1;                                              //количество подключений
     colorBlending.pAttachments = &colorBlendAttachment;                             //массив подключений
 
+    VkPushConstantRange pushConstantRange;
+        pushConstantRange.stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(uint32_t);
     std::array<VkDescriptorSetLayout,3> SetLayouts = {DescriptorSetLayout,uniformBufferSetLayout,uniformBufferSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
-    pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -415,19 +409,6 @@ void light<spotLight>::Shadow::createDescriptorSetLayout(VkApplication *app)
         throw std::runtime_error("failed to create descriptor set layout!");
 }
 
-void light<spotLight>::Shadow::createUniformBuffers(VkApplication *app, uint32_t imageCount)
-{
-    uniformBuffers.resize(imageCount);
-    uniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-    {
-        createBuffer(app,sizeof(LightUniformBufferObject),
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     uniformBuffers[i], uniformBuffersMemory[i]);
-    }
-}
-
 void light<spotLight>::createShadowDescriptorPool()
 {
     size_t index = 0;
@@ -445,7 +426,7 @@ void light<spotLight>::createShadowDescriptorPool()
         throw std::runtime_error("failed to create descriptor pool!");
 }
 
-void light<spotLight>::createShadowDescriptorSets()
+void light<spotLight>::createShadowDescriptorSets(std::vector<VkBuffer> lightUniformBuffers)
 {    
     std::vector<VkDescriptorSetLayout> layouts(imageCount, shadow.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -461,7 +442,7 @@ void light<spotLight>::createShadowDescriptorSets()
     for (size_t i = 0; i < imageCount; i++)
     {
         VkDescriptorBufferInfo lightBufferInfo;
-            lightBufferInfo.buffer = shadow.uniformBuffers.at(i);
+            lightBufferInfo.buffer = lightUniformBuffers[i];
             lightBufferInfo.offset = 0;
             lightBufferInfo.range = sizeof(LightUniformBufferObject);
         VkWriteDescriptorSet descriptorWrites{};
@@ -477,19 +458,15 @@ void light<spotLight>::createShadowDescriptorSets()
     }
 }
 
-void light<spotLight>::updateUniformBuffer(uint32_t currentImage)
+LightBufferObject light<spotLight>::getLightBufferObject() const
 {
-    LightUniformBufferObject ubo;
-        ubo.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-        ubo.projView = projectionMatrix*viewMatrix;
-        ubo.lightColor = lightColor;
-        ubo.type = type;
-        ubo.enableShadow = static_cast<uint32_t>(enableShadow);
-
-    void* data;
-    vkMapMemory(app->getDevice(), shadow.uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
-        memcpy(data, &ubo, sizeof(LightUniformBufferObject));
-    vkUnmapMemory(app->getDevice(), shadow.uniformBuffersMemory[currentImage]);
+    LightBufferObject buffer;
+        buffer.projView = projectionMatrix * viewMatrix;
+        buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);;
+        buffer.lightColor = lightColor;
+        buffer.type = type;
+        buffer.enableShadow = static_cast<uint32_t>(enableShadow);
+    return buffer;
 }
 
 void light<spotLight>::createShadowCommandBuffers(uint32_t number)
@@ -518,10 +495,6 @@ void light<spotLight>::createShadow(uint32_t commandPoolsCount)
     shadow.createDescriptorSetLayout(app);
     shadow.createPipeline(app,{imageCount,SHADOW_MAP_WIDTH,SHADOW_MAP_HEIGHT,RenderPass});
     createShadowDescriptorPool();
-    createShadowDescriptorSets();
-
-    for(size_t j=0;j<shadowCommandPool.size();j++)
-        createShadowCommandBuffers(j);
 }
 
 void light<spotLight>::updateShadowCommandBuffers(uint32_t number, uint32_t i, std::vector<object *> & object3D)
@@ -572,6 +545,8 @@ void light<spotLight>::updateShadowCommandBuffers(uint32_t number, uint32_t i, s
             VkDeviceSize offsets[1] = { 0 };
             vkCmdBindPipeline(shadowCommandBuffer[number][i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
             vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D[j]->getModel()->vertices.buffer, offsets);
+
+            vkCmdPushConstants(shadowCommandBuffer[number][i], shadow.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(uint32_t), &this->number);
             if (object3D[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
                 vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -614,6 +589,7 @@ void light<spotLight>::renderNode(Node *node, VkCommandBuffer& commandBuffer, Vk
 
 void                            light<spotLight>::setLightColor(const glm::vec4 &color){this->lightColor = color;}
 void                            light<spotLight>::setCamera(class camera *camera){this->camera=camera;}
+void                            light<spotLight>::setLightNumber(const uint32_t & number){this->number=number;}
 
 glm::mat4x4                     light<spotLight>::getViewMatrix() const {return viewMatrix;}
 glm::mat4x4                     light<spotLight>::getModelMatrix() const {return modelMatrix;}
@@ -626,7 +602,6 @@ bool                            light<spotLight>::getShadowEnable() const{return
 
 VkImageView                     & light<spotLight>::getImageView(){return depthAttachment.imageView;}
 VkSampler                       & light<spotLight>::getSampler(){return shadowSampler;}
-std::vector<VkBuffer>           & light<spotLight>::getUniformBuffers(){return shadow.uniformBuffers;}
 std::vector<VkCommandBuffer>    & light<spotLight>::getCommandBuffer(uint32_t number){return shadowCommandBuffer[number];}
 
 //======================================================================================================================//
@@ -651,35 +626,41 @@ light<pointLight>::light(VkApplication *app, uint32_t imageCount, std::vector<li
     int index = number;
     lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
 
     index++;
     lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,0.0f,1.0f));
 
     index++;
     lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
 
     index++;
     lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.3f,0.6f,0.9f,1.0f));
 
     index++;
     lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.6f,0.9f,0.3f,1.0f));
 
     index++;
     lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(180.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
 }

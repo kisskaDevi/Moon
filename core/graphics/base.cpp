@@ -253,7 +253,6 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
      * определенные части графического конвейера как динамически, что значит что они могут быть изменены прямо на месте
      * при помощи команд прямо внутри командного буфера*/
 
-    // добавлено
         VkPushConstantRange pushConstantRange;
         pushConstantRange.stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.offset = 0;

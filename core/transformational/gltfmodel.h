@@ -19,7 +19,7 @@
 
 #include "libs/tinygltf-master/tiny_gltf.h"
 
-#define MAX_NUM_JOINTS 128u
+#define MAX_NUM_JOINTS 130u
 
 struct Node;
 

@@ -1,5 +1,5 @@
 #version 450
-#define MAX_NUM_JOINTS 128
+#define MAX_NUM_JOINTS 130
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
@@ -55,15 +55,17 @@ void main()
 
 	    model *= skinMat;
 	    outPosition	    =		model * vec4(inPosition,1.0);
-	    outNormal	    = normalize(vec3(model * vec4(inNormal,0.0)));
-	    tangent	    = normalize(vec3(model * vec4(inTangent,0.0)));
-	    bitangent	    = normalize(vec3(model * vec4(inBitangent,0.0)));
+	    mat3 mNormal = transpose(inverse(mat3(model)));
+	    outNormal	    = normalize(vec3(mNormal * inNormal));
+	    tangent	    = normalize(vec3(mNormal * inTangent));
+	    bitangent	    = normalize(vec3(mNormal * inBitangent));
     } else
     {
 	    outPosition	    =		model * vec4(inPosition,1.0);
-	    outNormal	    = normalize(vec3(model * vec4(inNormal,0.0)));
-	    tangent	    = normalize(vec3(model * vec4(inTangent,0.0)));
-	    bitangent	    = normalize(vec3(model * vec4(inBitangent,0.0)));
+	    mat3 mNormal = transpose(inverse(mat3(model)));
+	    outNormal	    = normalize(vec3(mNormal * inNormal));
+	    tangent	    = normalize(vec3(mNormal * inTangent));
+	    bitangent	    = normalize(vec3(mNormal * inBitangent));
     }
 
     TBN = mat3(tangent, bitangent, outNormal);

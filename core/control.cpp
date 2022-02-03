@@ -202,7 +202,7 @@ void VkApplication::mouseEvent()
     {
         Graphics.setStencilObject(object3D[0]);
         Graphics.setStencilObject(object3D[1]);
-        Graphics.setStencilObject(object3D[2]);
+        Graphics.setStencilObject(object3D.at(2));
         updateCmdWorld = true;
     }
     backRStage = glfwGetKey(window,GLFW_KEY_R);
@@ -210,16 +210,22 @@ void VkApplication::mouseEvent()
     {
         object3D[0]->changeAnimationFlag = true;
         object3D[0]->startTimer = object3D[0]->animationTimer;
-        object3D[0]->newAnimationIndex = 1;
         object3D[0]->changeAnimationTime = 0.5f;
+        if(object3D[0]->animationIndex == 0)
+            object3D[0]->newAnimationIndex = 1;
+        else if(object3D[0]->animationIndex == 1)
+            object3D[0]->newAnimationIndex = 0;
     }
     backTStage = glfwGetKey(window,GLFW_KEY_T);
     if(backYStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_Y) == 0)
     {
-        object3D[0]->changeAnimationFlag = true;
-        object3D[0]->startTimer = object3D[0]->animationTimer;
-        object3D[0]->newAnimationIndex = 0;
-        object3D[0]->changeAnimationTime = 0.5f;
+        object3D.at(2)->changeAnimationFlag = true;
+        object3D.at(2)->startTimer = object3D.at(2)->animationTimer;
+        object3D.at(2)->changeAnimationTime = 0.1f;
+        if(object3D.at(2)->animationIndex<4)
+            object3D.at(2)->newAnimationIndex += 1;
+        else
+            object3D.at(2)->newAnimationIndex = 0;
     }
     backYStage = glfwGetKey(window,GLFW_KEY_Y);
 }

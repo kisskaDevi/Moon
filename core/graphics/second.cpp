@@ -12,6 +12,9 @@ void graphics::Second::Destroy(VkApplication *app)
 
     for (size_t i = 0; i < uniformBuffers.size(); i++)
     {
+        vkDestroyBuffer(app->getDevice(), lightUniformBuffers[i], nullptr);
+        vkFreeMemory(app->getDevice(), lightUniformBuffersMemory[i], nullptr);
+
         vkDestroyBuffer(app->getDevice(), uniformBuffers[i], nullptr);
         vkFreeMemory(app->getDevice(), uniformBuffersMemory[i], nullptr);
 
@@ -33,7 +36,7 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
         Binding.at(index).pImmutableSamplers = nullptr;
     }
         Binding.at(index).binding = index;
-        Binding.at(index).descriptorCount = MAX_LIGHT_SOURCE_COUNT;
+        Binding.at(index).descriptorCount = 1;
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding.at(index).pImmutableSamplers = nullptr;
@@ -196,9 +199,7 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-    {
         throw std::runtime_error("failed to create pipeline layout!");
-    }
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -223,15 +224,13 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
     pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
     pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
     pipelineInfo.layout = PipelineLayout;
-    pipelineInfo.renderPass = info.renderPass;                             //проход рендеринга
+    pipelineInfo.renderPass = info.renderPass;                              //проход рендеринга
     pipelineInfo.subpass = 1;                                               //подпроход рендеригка
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
 
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
-    {
         throw std::runtime_error("failed to create graphics pipeline!");
-    }
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -240,26 +239,19 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
 
 void graphics::createSecondDescriptorPool()
 {
-    size_t index = 0;
-    std::vector<VkDescriptorPoolSize> poolSizes(6+2*MAX_LIGHT_SOURCE_COUNT+1);
-    for(index = 0; index<6;index++)
-        poolSizes.at(index) = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(imageCount)};
-
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    for(size_t i=0;i<6;i++)
+        poolSizes.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(imageCount)});
+    poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)});
     for(size_t i=0;i<MAX_LIGHT_SOURCE_COUNT;i++)
-    {
-        poolSizes.at(index) = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)};
-    index++;
-        poolSizes.at(index) = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)};
-    index++;
-    }
-        poolSizes.at(index) = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)};
+        poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)});
+    poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)});
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
     {throw std::runtime_error("failed to create descriptor pool!");}
 }
@@ -297,19 +289,10 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
             descriptorWrites.at(index).pImageInfo = &imageInfo.at(index);
         }
 
-        VkDescriptorBufferInfo lightBufferInfo[MAX_LIGHT_SOURCE_COUNT];
-        for (size_t j = 0; j < lightSource.size(); j++)
-        {
-            lightBufferInfo[j].buffer = lightSource.at(j)->getUniformBuffers().at(i);
-            lightBufferInfo[j].offset = 0;
-            lightBufferInfo[j].range = sizeof(LightUniformBufferObject);
-        }
-        for (size_t j = lightSource.size(); j < MAX_LIGHT_SOURCE_COUNT; j++)
-        {
-            lightBufferInfo[j].buffer = second.emptyUniformBuffers[i];
-            lightBufferInfo[j].offset = 0;
-            lightBufferInfo[j].range = sizeof(LightUniformBufferObject);
-        }
+        VkDescriptorBufferInfo lightBufferInfo;
+            lightBufferInfo.buffer = second.lightUniformBuffers[i];
+            lightBufferInfo.offset = 0;
+            lightBufferInfo.range = sizeof(LightUniformBufferObject);
 
         VkDescriptorImageInfo shadowImageInfo[MAX_LIGHT_SOURCE_COUNT];
         for (size_t j = 0; j < lightSource.size(); j++)
@@ -335,8 +318,8 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
             descriptorWrites.at(index).dstBinding = index;
             descriptorWrites.at(index).dstArrayElement = 0;
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.at(index).descriptorCount = MAX_LIGHT_SOURCE_COUNT;
-            descriptorWrites.at(index).pBufferInfo = lightBufferInfo;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pBufferInfo = &lightBufferInfo;
         index++;
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
@@ -356,10 +339,23 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
 
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+
+    for(size_t i=0;i<lightSource.size();i++)
+        lightSource[i]->createShadowDescriptorSets(second.lightUniformBuffers);
 }
 
 void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCount)
 {
+    lightUniformBuffers.resize(imageCount);
+    lightUniformBuffersMemory.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        createBuffer(app, sizeof(LightUniformBufferObject),
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                     lightUniformBuffers[i], lightUniformBuffersMemory[i]);
+    }
+
     uniformBuffers.resize(imageCount);
     uniformBuffersMemory.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++)
@@ -374,7 +370,7 @@ void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCo
     emptyUniformBuffersMemory.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++)
     {
-        createBuffer(app, sizeof(LightUniformBufferObject),
+        createBuffer(app, sizeof(LightBufferObject),
                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                      emptyUniformBuffers[i], emptyUniformBuffersMemory[i]);

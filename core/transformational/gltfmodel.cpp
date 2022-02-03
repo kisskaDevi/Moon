@@ -1020,8 +1020,8 @@ void gltfModel::calculateTangent(std::vector<Vertex>& vertexBuffer, std::vector<
         glm::vec2 duv2 = uv3 - uv1;
 
         float det = 1.0f/(duv1.x*duv2.y - duv1.y*duv2.x);
-        glm::vec3 tangent   = det*(dv1*duv2.y - dv2*duv1.y);
         glm::vec3 bitangent = det*(dv2*duv1.x - dv1*duv2.x);
+        glm::vec3 tangent   = glm::cross(vertexBuffer[indexBuffer[i]].normal,bitangent);
 
         tangent = glm::normalize(tangent);
         bitangent = glm::normalize(bitangent);

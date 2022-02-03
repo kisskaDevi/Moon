@@ -9,9 +9,9 @@ layout(set = 3, binding = 4) uniform sampler2D emissiveTexture;
 layout(location = 0)	in vec4 position;
 
 layout(location = 0) out vec4 outPosition;
-layout(location = 1) out vec4 outBaseColor;
-layout(location = 2) out vec4 outMetallicRoughness;
-layout(location = 3) out vec4 outNormal;
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outBaseColor;
+layout(location = 3) out vec4 outMetallicRoughness;
 layout(location = 4) out vec4 outOcclusion;
 layout(location = 5) out vec4 outEmissiveTexture;
 

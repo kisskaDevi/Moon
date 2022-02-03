@@ -13,8 +13,6 @@
 #include <optional>         // нужна для вызова std::optional<uint32_t>
 #include "attachments.h"
 
-const int MAX_LIGHT_SOURCE_COUNT = 8;
-
 class                           VkApplication;
 class                           texture;
 class                           cubeTexture;
@@ -183,6 +181,8 @@ private:
         std::vector<VkDeviceMemory>     emptyUniformBuffersMemory;
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
+        std::vector<VkBuffer>           lightUniformBuffers;
+        std::vector<VkDeviceMemory>     lightUniformBuffersMemory;
 
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, graphicsInfo info);
@@ -227,6 +227,7 @@ public:
         void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
 
     void updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
+    void updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource);
 
     void bindBaseObject(object *newObject);
     void bindBloomObject(object *newObject);

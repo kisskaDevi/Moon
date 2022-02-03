@@ -3,6 +3,7 @@
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 #include "core/transformational/camera.h"
+#include "core/transformational/light.h"
 
 graphics::graphics()
 {
@@ -70,12 +71,12 @@ void graphics::createColorAttachments()
     for(size_t i=3;i<5;i++)
     {
         createImage(app,extent.width, extent.height,
-                    1, msaaSamples, VK_FORMAT_R16G16B16A16_SFLOAT,
+                    1, msaaSamples, VK_FORMAT_R32G32B32A32_SFLOAT,
                     VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
         createImageView(app, colorAttachments.at(i).image,
-                        VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT,
+                        VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT,
                         1, &colorAttachments.at(i).imageView);
     }
     for(size_t i=5;i<colorAttachments.size();i++)
@@ -753,6 +754,17 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *s
     vkMapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage], 0, sizeof(secondUBO), 0, &data);
         memcpy(data, &secondUBO, sizeof(secondUBO));
     vkUnmapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage]);
+}
+
+void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource)
+{
+    void* data;
+    LightUniformBufferObject lightUBO{};
+    for(uint32_t i=0;i<lightSource.size();i++)
+        lightUBO.buffer[i] = lightSource[i]->getLightBufferObject();
+    vkMapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage], 0, sizeof(lightUBO), 0, &data);
+        memcpy(data, &lightUBO, sizeof(lightUBO));
+        vkUnmapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage]);
 }
 
 std::vector<attachments>        &graphics::getAttachments(){return Attachments;}

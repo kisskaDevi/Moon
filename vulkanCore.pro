@@ -36,6 +36,7 @@ DISTFILES += \
     model/glb/Box.glb \
     model/glb/Duck.glb \
     model/glb/RetroUFO.glb \
+    model/glb/sponza.glb \
     texture/0.png \
     texture/1.png \
     texture/skybox/back.jpg \

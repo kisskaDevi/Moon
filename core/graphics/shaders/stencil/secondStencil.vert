@@ -1,5 +1,5 @@
 #version 450
-#define MAX_NUM_JOINTS 128
+#define MAX_NUM_JOINTS 130
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {

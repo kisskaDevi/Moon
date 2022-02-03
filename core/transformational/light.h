@@ -4,6 +4,8 @@
 #include "core/vulkanCore.h"
 #include "transformational.h"
 
+const int MAX_LIGHT_SOURCE_COUNT = 8;
+
 class camera;
 
 class pointLight
@@ -36,13 +38,18 @@ struct shadowInfo{
     VkRenderPass                renderPass;
 };
 
-struct LightUniformBufferObject
+struct LightBufferObject
 {
     alignas(16) glm::mat4   projView;
     alignas(16) glm::vec4   position;
     alignas(16) glm::vec4   lightColor;
     alignas(4)  uint32_t    type;
     alignas(4)  uint32_t    enableShadow;
+};
+
+struct LightUniformBufferObject
+{
+    LightBufferObject buffer[MAX_LIGHT_SOURCE_COUNT];
 };
 
 template<typename type>
@@ -59,6 +66,7 @@ private:
     bool                                enableShadow = false;
     int                                 LIGHT_COMMAND_POOLS;
     uint32_t                            type;
+    uint32_t                            number;
 
     glm::mat4x4                         projectionMatrix;
     glm::mat4x4                         viewMatrix;
@@ -66,8 +74,8 @@ private:
     glm::mat4x4                         m_globalTransform;
 
     glm::vec4                           lightColor;
-    glm::vec3                           m_translate;
 
+    glm::vec3                           m_translate;
     glm::vec3                           m_scale;
     glm::quat                           m_rotate;
     glm::quat                           m_rotateX;
@@ -92,14 +100,10 @@ private:
         VkDescriptorSetLayout           uniformBlockSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
-        std::vector<VkBuffer>           uniformBuffers;
-        std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
         void Destroy(VkApplication  *app);
-        void DestroyUniformBuffers(VkApplication  *app);
         void createPipeline(VkApplication *app, shadowInfo info);
         void createDescriptorSetLayout(VkApplication *app);
-        void createUniformBuffers(VkApplication *app, uint32_t imageCount);
     }shadow;
 
     std::vector<VkCommandPool>                      shadowCommandPool;
@@ -135,18 +139,17 @@ public:
     void createShadowMapFramebuffer();
 
     void createShadowDescriptorPool();
-    void createShadowDescriptorSets();
+    void createShadowDescriptorSets(std::vector<VkBuffer> lightUniformBuffers);
 
     void createShadowCommandBuffers(uint32_t number);
     void updateShadowCommandBuffers(uint32_t number, uint32_t i, std::vector<object *> & object3D);
-
-    void updateUniformBuffer(uint32_t currentImage);
 
     void createShadow(uint32_t commandPoolsCount);
 
     void                            setImageCount(uint32_t imageCount);
     void                            setCamera(class camera *camera);
     void                            setLightColor(const glm::vec4 & color);
+    void                            setLightNumber(const uint32_t & number);
 
     glm::mat4x4                     getViewMatrix() const;
     glm::mat4x4                     getModelMatrix() const;
@@ -159,10 +162,11 @@ public:
     bool                            getShadowEnable() const;
 
     VkImageView                     & getImageView();
-    VkSampler                       & getSampler();
+    VkSampler                       & getSampler();    
 
     std::vector<VkCommandBuffer>    & getCommandBuffer(uint32_t number);
-    std::vector<VkBuffer>           & getUniformBuffers();
+
+    LightBufferObject               getLightBufferObject() const;
 
 };
 

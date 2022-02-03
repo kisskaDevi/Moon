@@ -14,9 +14,9 @@ layout(location = 4)	in vec4 eyePosition;
 layout(location = 5)	in mat3 TBN;
 
 layout(location = 0) out vec4 outPosition;
-layout(location = 1) out vec4 outBaseColor;
-layout(location = 2) out vec4 outMetallicRoughness;
-layout(location = 3) out vec4 outNormal;
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outBaseColor;
+layout(location = 3) out vec4 outMetallicRoughness;
 layout(location = 4) out vec4 outOcclusion;
 layout(location = 5) out vec4 outEmissiveTexture;
 

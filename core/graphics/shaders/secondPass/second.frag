@@ -9,20 +9,25 @@ layout(location = 0)	in vec4 eyePosition;
 layout(location = 1)	in vec2 fragTexCoord;
 
 layout(input_attachment_index = 0, binding = 0) uniform subpassInput inPositionTexture;
-layout(input_attachment_index = 1, binding = 1) uniform subpassInput inBaseColorTexture;
-layout(input_attachment_index = 2, binding = 2) uniform subpassInput inMetallicRoughnessTexture;
-layout(input_attachment_index = 3, binding = 3) uniform subpassInput inNormalTexture;
+layout(input_attachment_index = 1, binding = 1) uniform subpassInput inNormalTexture;
+layout(input_attachment_index = 2, binding = 2) uniform subpassInput inBaseColorTexture;
+layout(input_attachment_index = 3, binding = 3) uniform subpassInput inMetallicRoughnessTexture;
 layout(input_attachment_index = 4, binding = 4) uniform subpassInput inOcclusionTexture;
 layout(input_attachment_index = 5, binding = 5) uniform subpassInput inEmissiveTexture;
 
-layout(set = 0, binding = 6) uniform LightUniformBufferObject
+struct LightBufferObject
 {
     mat4 projView;
     vec4 position;
     vec4 lightColor;
     int type;
     int enableShadow;
-} lightubo[MAX_LIGHT_SOURCES];
+};
+
+layout(set = 0, binding = 6) uniform LightUniformBufferObject
+{
+    LightBufferObject ubo[MAX_LIGHT_SOURCES];
+} light;
 
 layout(set = 0, binding = 7) uniform sampler2D shadowMap[MAX_LIGHT_SOURCES];
 
@@ -69,9 +74,9 @@ void outImage1()
 {
     for(int i=0;i<MAX_LIGHT_SOURCES;i++)
     {
-	lightPosition[i] = lightubo[i].position.xyz;
-	fragLightPosition[i] = lightubo[i].projView * vec4(position.xyz,1.0f);
-	lightColor[i] = lightubo[i].lightColor;
+	lightPosition[i] = light.ubo[i].position.xyz;
+	fragLightPosition[i] = light.ubo[i].projView * vec4(position.xyz,1.0f);
+	lightColor[i] = light.ubo[i].lightColor;
     }
 
     outColor = vec4(0.0f,0.0f,0.0f,1.0f);
@@ -80,7 +85,7 @@ void outImage1()
     float roughness = metallicRoughnessTexture.g;
     float ao	    = occlusionTexture.r;
 
-    float specularFactor = 16.0f;
+    float specularFactor = 128.0f;
     float lightDropFactor = 0.01f;
 
     vec4 diffMatColor = SRGBtoLINEAR(baseColorTexture);
@@ -123,11 +128,11 @@ void outImage1()
 	    resultColor += vec4(specularColor.xyz/lightDrop,1.0f);
 
 	    lightCount++;
-	    vec4 resultLightColor = vec4(lightPower*lightColor[i].xyz,0.0f);
+	    vec4 resultLightColor = vec4(lightPower*lightColor[i].xyz,1.0f);
 
 	    resultColor *= resultLightColor;
 
-	    outColor = vec4(vec3(max(outColor,resultColor).xyz),1.0f);
+	    outColor = max(outColor,resultColor);
 	}
     }
     if(lightCount==0)
@@ -166,7 +171,7 @@ void shadingType3()
 void main()
 {
     position = subpassLoad(inPositionTexture);
-    normal = subpassLoad(inNormalTexture).rgb;
+    normal = subpassLoad(inNormalTexture).xyz;
     baseColorTexture = subpassLoad(inBaseColorTexture);
     metallicRoughnessTexture = subpassLoad(inMetallicRoughnessTexture);
     occlusionTexture = subpassLoad(inOcclusionTexture);
@@ -198,7 +203,7 @@ float shadowFactor(int i)
     vec3 lightSpaceNDC = fragLightPosition[i].xyz;
     lightSpaceNDC /= fragLightPosition[i].w;
 
-    if(lightubo[i].type==0.0f)
+    if(light.ubo[i].type==0.0f)
     {
 	if( lightSpaceNDC.x*lightSpaceNDC.x +
 	    lightSpaceNDC.y*lightSpaceNDC.y > 1.0f )
@@ -210,7 +215,7 @@ float shadowFactor(int i)
 	{return minAmbientFactor;}
     }
 
-    if(lightubo[i].enableShadow==1.0)
+    if(light.ubo[i].enableShadow==1.0)
     {
 	vec2 shadowMapCoord = lightSpaceNDC.xy * 0.5f + 0.5f;
 

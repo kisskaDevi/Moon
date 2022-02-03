@@ -650,9 +650,7 @@ VkShaderModule createShaderModule(VkApplication* app, const std::vector<char>& c
 
     VkShaderModule shaderModule;    //дескриптор шейдерного модуля в который мы его создадим
     if (vkCreateShaderModule(app->getDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) //классическое дял вулкана создание шейдерного модуля
-    {
         throw std::runtime_error("failed to create shader module!");
-    }
 
     return shaderModule;
 }
@@ -672,21 +670,16 @@ std::vector<QueueFamilyIndices> findQueueFamilies(VkPhysicalDevice device, VkSur
     {
         QueueFamilyIndices currentIndices;
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)                                         //побитное сравнение
-        {
             currentIndices.graphicsFamily = currentIndex;
-        }
 
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, currentIndex, surface, &presentSupport);       //Запрос на поддержку презентации
         if (presentSupport)                                                                         //если поверхность и устройство поддерживают в i-ом семействе очередей,
-        {                                                                                           //функция записывает в presentSupport значение true
-            currentIndices.presentFamily = currentIndex;                                            //и тогда запоминаем индекс
-        }
+            currentIndices.presentFamily = currentIndex;                                            //функция записывает в presentSupport значение true
 
         if (currentIndices.isComplete())                                                            //если оба значения не пусты, то функция вернёт true
-        {
             indices.push_back(currentIndices);
-        }
+
         currentIndex++;
     }
 
@@ -715,9 +708,7 @@ void outDeviceInfo(std::vector<physicalDevice>& physicalDevices)
     {
         std::cout<<"Physical Device "<<i<<":"<<std::endl;
         for(size_t j=0;j<physicalDevices.at(i).indices.size();j++)
-        {
             std::cout<<"\tQueue Family Indices "<<physicalDevices.at(i).indices.at(j).presentFamily.value()<<std::endl;
-        }
     }
 }
 

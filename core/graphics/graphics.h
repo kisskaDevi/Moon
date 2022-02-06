@@ -25,19 +25,7 @@ class                           pointLight;
 template <> class               light<spotLight>;
 template <> class               light<pointLight>;
 struct                          Node;
-
-struct attachment
-{
-    VkImage image;
-    VkDeviceMemory imageMemory;
-    VkImageView imageView;
-    void deleteAttachment(VkDevice * device)
-    {
-        vkDestroyImage(*device, image, nullptr);
-        vkFreeMemory(*device, imageMemory, nullptr);
-        vkDestroyImageView(*device, imageView, nullptr);
-    }
-};
+struct                          PushConstBlockMaterial;
 
 struct graphicsInfo{
     uint32_t                    imageCount;
@@ -84,6 +72,7 @@ private:
     VkApplication                   *app;
     texture                         *emptyTexture;
     glm::vec3                       cameraPosition;
+    uint32_t                        primitiveCount = 0;
 
     VkSampleCountFlagBits           msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     uint32_t                        imageCount;
@@ -115,6 +104,7 @@ private:
         void createDescriptorSetLayout(VkApplication *app);
         void createUniformBuffers(VkApplication *app, uint32_t imageCount);
         void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics);
+        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
     }base;
 
     struct bloomExtension{
@@ -125,6 +115,7 @@ private:
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base);
+        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
     }bloom;
 
     struct godRaysExtension{
@@ -135,6 +126,7 @@ private:
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics);
+        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
     }godRays;
 
     struct StencilExtension{
@@ -150,6 +142,7 @@ private:
         void createFirstPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void createSecondPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base);
+        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
     }stencil;
 
     struct Skybox
@@ -177,12 +170,13 @@ private:
         VkDescriptorSetLayout           DescriptorSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
-        std::vector<VkBuffer>           emptyUniformBuffers;
-        std::vector<VkDeviceMemory>     emptyUniformBuffersMemory;
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
         std::vector<VkBuffer>           lightUniformBuffers;
         std::vector<VkDeviceMemory>     lightUniformBuffersMemory;
+        std::vector<VkBuffer>           nodeMaterialUniformBuffers;
+        std::vector<VkDeviceMemory>     nodeMaterialUniformBuffersMemory;
+        uint32_t                        nodeMaterialCount = 256;
 
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, graphicsInfo info);
@@ -225,8 +219,10 @@ public:
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
         void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
+        void setMaterialNode(Node* node, std::vector<PushConstBlockMaterial> &nodeMaterials);
 
     void updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
+    void updateMaterialUniformBuffer(uint32_t currentImage);
     void updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource);
 
     void bindBaseObject(object *newObject);

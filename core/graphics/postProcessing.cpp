@@ -69,6 +69,9 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
             imageCount = swapChainSupport.capabilities.maxImageCount;                                                           //присываиваем максимальное значение
         }
 
+        QueueFamilyIndices indices = app->getQueueFamilyIndices();
+        uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+
         //Создаём соответствующую структуру, задержащую все парамеры списка показа
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -81,16 +84,12 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
         createInfo.imageArrayLayers = 1;                                //и это поле задаёт число слоёв в каждом изображении. Это может быть использовано для рендеринга в изображение со слояи и дальнейшего показа отдельных слоёв пользователю
         createInfo.imageUsage = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_SAMPLED_BIT ;    //это набор сандартных битов из перечисления VkImageUsageFlags, задающих как изображение будет использовано. Например если вы хотите осуществлять рендериг в изображение
                                                                         //как обычное цветовое подключение, то вам нужно включть бит VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, и если вы хотите писать в него прямо из шейдера, то выключите бит VK_IMAGE_USAGE_STORAGE_BIT
-        QueueFamilyIndices indices = app->getQueueFamilyIndices();
-        uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-
-        if (indices.graphicsFamily != indices.presentFamily)
+        if(indices.graphicsFamily != indices.presentFamily)
         {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;   //поле задаёт как именно изображение будет совместно использоваться различными очередями, этот бит означает что изображение будет использовано несколькими очередями
             createInfo.pQueueFamilyIndices = queueFamilyIndices;        //в этом случае в данном поле задаётся указатель на массив индексов очередей, в которых эти изображения будут использоваться
             createInfo.queueFamilyIndexCount = 2;                       //и задаётся длина этого массива
-        } else
-        {
+        }else{
             createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;    //бит для случая, если изображение будет использоваться только одной очередью
         }
 
@@ -100,13 +99,10 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
         createInfo.clipped = VK_TRUE;                                               //поле для оптимизации случая когда не вся поверхность видна. Избежание рендеринга частй которые не видит пользователь
         createInfo.oldSwapchain = VK_NULL_HANDLE;                                   //поле для передачи старого списк показа для переиспользования
 
-        if (vkCreateSwapchainKHR(app->getDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)   //функция дял создания цепочки обмена, устройство с которым связан список показа передаётся в параметре device
-        {                                                                                   //информация о списке показа передаётся в виде структуры VkSwapchainCreateInfoKHR которая определена выше
-            throw std::runtime_error("failed to create swap chain!");
-        }
+        if (vkCreateSwapchainKHR(app->getDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)     //функция дял создания цепочки обмена, устройство с которым связан список показа передаётся в параметре device
+            throw std::runtime_error("failed to create swap chain!");                                   //информация о списке показа передаётся в виде структуры VkSwapchainCreateInfoKHR которая определена выше
 
-        //записываем дескриптор изображений представляющий элементы в списке показа
-        vkGetSwapchainImagesKHR(app->getDevice(), swapChain, &imageCount, nullptr);                   //в imageCount записываем точно число изображений
+        vkGetSwapchainImagesKHR(app->getDevice(), swapChain, &imageCount, nullptr);                     //записываем дескриптор изображений представляющий элементы в списке показа
 
         swapChainAttachments.resize(swapChainAttachmentCount);
         for(size_t i=0;i<swapChainAttachments.size();i++)
@@ -115,7 +111,6 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
             swapChainAttachments.at(i).imageView.resize(imageCount);
             swapChainAttachments.at(i).setSize(imageCount);
             vkGetSwapchainImagesKHR(app->getDevice(), swapChain, &imageCount, swapChainAttachments.at(i).image.data());    //получаем дескрипторы, на них мы будем ссылаться при рендеринге
-
         }
 
         swapChainImageFormat = surfaceFormat.format;                                        //сохраним форматы
@@ -143,7 +138,7 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
             }
             return VK_PRESENT_MODE_FIFO_KHR;
         }
-        //Экстент подкачки - это разрешение изображений цепочки подкачки, и оно почти всегда точно равно разрешению окна, в которое мы рисуем, в пикселях
+        //Экстент обмена - это разрешение изображений цепочки обмена, и оно почти всегда точно равно разрешению окна, в которое мы рисуем, в пикселях
         VkExtent2D postProcessing::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
         {
             if (capabilities.currentExtent.width != UINT32_MAX)
@@ -176,12 +171,8 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
          * даже если форматы полностью отличаются и даже если отличаетс ячисло каналова изображений*/
 
         for(size_t i=0;i<swapChainAttachments.size();i++)
-        {
             for (size_t size = 0; size < swapChainAttachments.at(i).getSize(); size++)
-            {
                 swapChainAttachments.at(i).imageView[size] = createImageView(app,swapChainAttachments.at(i).image[size], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-            }
-        }
     }
 
     void postProcessing::createColorAttachments()
@@ -217,7 +208,7 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
                 SamplerInfo.mipLodBias = 0.0f;
 
             if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
-            {throw std::runtime_error("failed to create texture sampler!");}
+                throw std::runtime_error("failed to create texture sampler!");
         }
     }
 
@@ -237,14 +228,14 @@ void postProcessing::createRenderPass()
         attachments.at(index).initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
         attachments.at(index).finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;              //в каком размещении его нужно оставить по завершению рендеринга
     index++;
-        attachments.at(index).format = swapChainImageFormat;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
-        attachments.at(index).samples = VK_SAMPLE_COUNT_1_BIT;                            //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
-        attachments.at(index).loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;                       //следующие 4 параметра смотри на странице 210
+        attachments.at(index).format = swapChainImageFormat;
+        attachments.at(index).samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments.at(index).loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachments.at(index).storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachments.at(index).stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachments.at(index).stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments.at(index).initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
-        attachments.at(index).finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;     //в каком размещении его нужно оставить по завершению рендеринга
+        attachments.at(index).initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments.at(index).finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     
     index = 0;
     std::vector<VkAttachmentReference> firstAttachmentRef(2);
@@ -261,13 +252,13 @@ void postProcessing::createRenderPass()
 
     index = 0;
     std::vector<VkAttachmentReference> inSecondAttachmentRef(1);
-        inSecondAttachmentRef.at(index).attachment = 1;                                                  //индекс в массив подключений
-        inSecondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;               //размещение
+        inSecondAttachmentRef.at(index).attachment = 1;
+        inSecondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     index = 0;
     std::vector<VkAttachmentReference> thirdAttachmentRef(1);
-        thirdAttachmentRef.at(index).attachment = 0;                                                  //индекс в массив подключений
-        thirdAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;               //размещение
+        thirdAttachmentRef.at(index).attachment = 0;
+        thirdAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
  
     index = 0;
     std::vector<VkSubpassDescription> subpass(3);                                                       //подпроходы рендеринга
@@ -275,15 +266,15 @@ void postProcessing::createRenderPass()
         subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(firstAttachmentRef.size());      //количество подключений
         subpass.at(index).pColorAttachments = firstAttachmentRef.data();                                //подключения
     index++;
-        subpass.at(index).pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;                          //бит для графики
-        subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(secondAttachmentRef.size());     //количество подключений
-        subpass.at(index).pColorAttachments = secondAttachmentRef.data();                               //подключения
+        subpass.at(index).pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(secondAttachmentRef.size());
+        subpass.at(index).pColorAttachments = secondAttachmentRef.data();
         subpass.at(index).inputAttachmentCount = static_cast<uint32_t>(inSecondAttachmentRef.size());
         subpass.at(index).pInputAttachments = inSecondAttachmentRef.data();
     index++;
-        subpass.at(index).pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;                          //бит для графики
-        subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(thirdAttachmentRef.size());     //количество подключений
-        subpass.at(index).pColorAttachments = thirdAttachmentRef.data();                               //подключения;
+        subpass.at(index).pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(thirdAttachmentRef.size());
+        subpass.at(index).pColorAttachments = thirdAttachmentRef.data();
 
     index = 0;
     std::vector<VkSubpassDependency> dependency(3);                                                                                           //зависимости
@@ -294,34 +285,31 @@ void postProcessing::createRenderPass()
         dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency.at(index).dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     index++;
-        dependency.at(index).srcSubpass = 0;                                                                                                    //ссылка из исходного прохода (создавшего данные)
-        dependency.at(index).dstSubpass = 1;                                                                                                    //в целевой подпроход (поглощающий данные)
-        dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;                                                                                                  //задаёт как стадии конвейера в исходном проходе создают данные
-        dependency.at(index).srcAccessMask = 0;                                                                                                 //поля задают как каждый из исходных проходов обращается к данным
+        dependency.at(index).srcSubpass = 0;
+        dependency.at(index).dstSubpass = 1;
+        dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.at(index).srcAccessMask = 0;
         dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency.at(index).dstAccessMask = 0;
     index++;
-        dependency.at(index).srcSubpass = 1;                                                                                                    //ссылка из исходного прохода (создавшего данные)
-        dependency.at(index).dstSubpass = 2;                                                                                                    //в целевой подпроход (поглощающий данные)
-        dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;                                                      //задаёт как стадии конвейера в исходном проходе создают данные
-        dependency.at(index).srcAccessMask = 0;                                                                                                 //поля задают как каждый из исходных проходов обращается к данным
+        dependency.at(index).srcSubpass = 1;
+        dependency.at(index).dstSubpass = 2;
+        dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.at(index).srcAccessMask = 0;
         dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency.at(index).dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    //информация о проходе рендеринга
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());         //количество структур VkAtachmentDescription, определяющих подключения, связанные с этим проходом рендеринга
-        renderPassInfo.pAttachments = attachments.data();                                   //Каждая структура определяет одно изображение, которое будет использовано как входное, выходное или входное и выходное одновремнно для оного или нескольких проходо в данном редеринге
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        renderPassInfo.pAttachments = attachments.data();
         renderPassInfo.subpassCount = static_cast<uint32_t>(subpass.size());
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
 
-    if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)    //создаём проход рендеринга
-    {
+    if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
         throw std::runtime_error("failed to create render pass!");
-    }
 }
 
 //===================Framebuffers===================================
@@ -404,9 +392,9 @@ void postProcessing::createPipelines()
             textureLayoutInfo.at(index).pBindings = secondBindings.data();
 
         if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo.at(0), nullptr, &first.DescriptorSetLayout) != VK_SUCCESS)
-        {throw std::runtime_error("failed to create descriptor set layout 1!");}
+            throw std::runtime_error("failed to create descriptor set layout 1!");
         if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo.at(1), nullptr, &second.DescriptorSetLayout) != VK_SUCCESS)
-        {throw std::runtime_error("failed to create descriptor set layout 2!");}
+            throw std::runtime_error("failed to create descriptor set layout 2!");
     }
     void postProcessing::createFirstGraphicsPipeline()
     {
@@ -751,7 +739,6 @@ void postProcessing::createPipelines()
 void postProcessing::createDescriptorPool()
 {
     size_t index = 0;
-
     std::vector<VkDescriptorPoolSize> firstPoolSizes(1);
         firstPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         firstPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
@@ -763,7 +750,7 @@ void postProcessing::createDescriptorPool()
         firstPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
 
     if (vkCreateDescriptorPool(app->getDevice(), &firstPoolInfo, nullptr, &first.DescriptorPool) != VK_SUCCESS)
-    {throw std::runtime_error("failed to create descriptor pool 1!");}
+        throw std::runtime_error("failed to create descriptor pool 1!");
 
     index = 0;
     std::vector<VkDescriptorPoolSize> secondPoolSizes(3);
@@ -783,7 +770,7 @@ void postProcessing::createDescriptorPool()
         secondPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
 
     if (vkCreateDescriptorPool(app->getDevice(), &secondPoolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
-    {throw std::runtime_error("failed to create descriptor pool 2!");}
+        throw std::runtime_error("failed to create descriptor pool 2!");
 }
 
 void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments)
@@ -797,9 +784,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
 
     first.DescriptorSets.resize(imageCount);
     if (vkAllocateDescriptorSets(app->getDevice(), &firstAllocInfo, first.DescriptorSets.data()) != VK_SUCCESS)
-    {
         throw std::runtime_error("failed to allocate descriptor sets 1!");
-    }
 
     for (size_t image = 0; image < imageCount; image++)
     {
@@ -830,7 +815,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
 
     second.DescriptorSets.resize(imageCount);
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
-    {throw std::runtime_error("failed to allocate descriptor sets 2!");}
+        throw std::runtime_error("failed to allocate descriptor sets 2!");
 
     for (size_t image = 0; image < imageCount; image++)
     {
@@ -881,17 +866,17 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
 void postProcessing::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
 {
     std::array<VkClearValue, 2> ClearValues{};
-    ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-    ClearValues[1].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+        ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+        ClearValues[1].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
     VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = framebuffers[i];
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = swapChainExtent;
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-    renderPassInfo.pClearValues = ClearValues.data();
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = framebuffers[i];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = swapChainExtent;
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+        renderPassInfo.pClearValues = ClearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

@@ -141,6 +141,9 @@ bool hasStencilComponent(
 VkFormat findDepthFormat(
         VkApplication*                  app);
 
+VkFormat findDepthStencilFormat(
+        VkApplication*                  app);
+
 VkFormat findSupportedFormat(
         VkApplication*                  app,
         const std::vector<VkFormat>&    candidates,

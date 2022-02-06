@@ -410,6 +410,7 @@ void graphics::Base::createUniformBuffers(VkApplication *app, uint32_t imageCoun
 
 void graphics::Base::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics)
 {
+    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(size_t j = 0; j<objects.size() ;j++)
     {
         VkDeviceSize offsets[1] = { 0 };
@@ -417,7 +418,6 @@ void graphics::Base::render(std::vector<VkCommandBuffer> &commandBuffers, uint32
         if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
             vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
         for (auto node : objects[j]->getModel()->nodes)
             Graphics->renderNode(node,commandBuffers[i],DescriptorSets[i],objects[j]->getDescriptorSet()[i],PipelineLayout);
 
@@ -425,4 +425,11 @@ void graphics::Base::render(std::vector<VkCommandBuffer> &commandBuffers, uint32
 //               if(glm::length(glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-cameraPosition)<object3D[j]->getVisibilityDistance())
 //                    renderNode(node,commandBuffers[i],base.DescriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
     }
+}
+
+void graphics::Base::setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics)
+{
+    for(size_t j = 0; j<objects.size() ;j++)
+        for (auto node : objects[j]->getModel()->nodes)
+            Graphics->setMaterialNode(node,nodeMaterials);
 }

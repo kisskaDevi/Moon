@@ -7,12 +7,8 @@ uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, Vk
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-    {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-        {
             return i;
-        }
-    }
 
     throw std::runtime_error("failed to find suitable memory type!");
 }
@@ -24,51 +20,41 @@ void createBuffer(VkApplication* app, VkDeviceSize size, VkBufferUsageFlags usag
      * или просто быть байтами в памяти.*/
 
     VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;                                     //задаёт размер буфера в байтах
-    bufferInfo.usage = usage;                                   //поле говорит Vulkan, как мысобираемся использовать буфер, и является набором битов из перечисления VkBufferUsageFlagBits (страница 53)
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;         //сообщает о том, как буфер будет использован в различных очередях команд. VK_SHARING_MODE_EXCLUSIVE говорит о том что данный буфер будет испольован только на одной очереди
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = size;                                                                                                 //задаёт размер буфера в байтах
+        bufferInfo.usage = usage;                                                                                               //поле говорит Vulkan, как мысобираемся использовать буфер, и является набором битов из перечисления VkBufferUsageFlagBits (страница 53)
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;                                                                     //сообщает о том, как буфер будет использован в различных очередях команд. VK_SHARING_MODE_EXCLUSIVE говорит о том что данный буфер будет испольован только на одной очереди
 
-    if (vkCreateBuffer(app->getDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS) //функция содания буфера
-    {
+    if (vkCreateBuffer(app->getDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)                                          //функция содания буфера
         throw std::runtime_error("failed to create buffer!");
-    }
 
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(app->getDevice(), buffer, &memRequirements);    //возвращает требования к памяти для указанного объекта Vulkan
+    vkGetBufferMemoryRequirements(app->getDevice(), buffer, &memRequirements);                                                  //возвращает требования к памяти для указанного объекта Vulkan
 
     VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;                                            //размеры выделяемой памяти
-    allocInfo.memoryTypeIndex = findMemoryType(app->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);     //типа памяти, который является индексом в массив типов памяти, вовращаемых vkGetPhisicalDeviceMemoryProperties()
-
-    if (vkAllocateMemory(app->getDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)             //выделение памяти устройства
-    {
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memRequirements.size;                                                                        //размеры выделяемой памяти
+        allocInfo.memoryTypeIndex = findMemoryType(app->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);       //типа памяти, который является индексом в массив типов памяти, вовращаемых vkGetPhisicalDeviceMemoryProperties()
+    if (vkAllocateMemory(app->getDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)                                   //выделение памяти устройства
         throw std::runtime_error("failed to allocate buffer memory!");
-    }
 
     vkBindBufferMemory(app->getDevice(), buffer, bufferMemory, 0);
 }
 
 VkCommandBuffer beginSingleTimeCommands(VkApplication* app)
 {
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                  //уровень командных буферов, которые вы хотите выделит. Vulkan позволяет первичным (primary) вызывать вторичные (secondary) командные буферы
-    allocInfo.commandPool = app->getCommandPool().at(0);                 //дескриптор созданного ранее командного пула
-    allocInfo.commandBufferCount = 1;                                   //число командных буферов, которые мы хотим выделить
-
     VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(app->getDevice(), &allocInfo, &commandBuffer);       //выделение командного буфера
 
-    /* Прежде чем вы сможете начать записывать команды в командный буфер, вам нужно начать
-     * командный буфер, т.е. просто сброситть к начальному состоянию*/
-
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                                                                      //уровень командных буферов, которые вы хотите выделит. Vulkan позволяет первичным (primary) вызывать вторичные (secondary) командные буферы
+        allocInfo.commandPool = app->getCommandPool().at(0);                                                                    //дескриптор созданного ранее командного пула
+        allocInfo.commandBufferCount = 1;                                                                                       //число командных буферов, которые мы хотим выделить
+    vkAllocateCommandBuffers(app->getDevice(), &allocInfo, &commandBuffer);                                                     //выделение командного буфера
+                                                                                                                                //Прежде чем вы сможете начать записывать команды в командный буфер, вам нужно начать командный буфер, т.е. просто сброситть к начальному состоянию
     VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;  //информация о том как будет использоваться этот буфер команд (все флаги смотри на 102 станице)
-                    //VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT - значит что командный буфер будет записан, один раз выполнен и затем уничтоже или преиспользован
-
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;                                                          //информация о том как будет использоваться этот буфер команд (все флаги смотри на 102 станице)
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;                                                          //VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT - значит что командный буфер будет записан, один раз выполнен и затем уничтожен или преиспользован
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
     return commandBuffer;
@@ -76,27 +62,24 @@ VkCommandBuffer beginSingleTimeCommands(VkApplication* app)
 
 void endSingleTimeCommands(VkApplication* app, VkCommandBuffer commandBuffer)
 {
-    vkEndCommandBuffer(commandBuffer);                                  //после выполнения Vulkan завершает всю работу, которая необходима, чтобы буфер стал готовым к выполнению
+    vkEndCommandBuffer(commandBuffer);                                                                                          //после выполнения Vulkan завершает всю работу, которая необходима, чтобы буфер стал готовым к выполнению
 
     VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
+    vkQueueSubmit(app->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);                                                     //эта команда может передать один или несколько командных буферов на выполенение устройством
+    vkQueueWaitIdle(app->getGraphicsQueue());                                                                                   //ждём пока очередь передачи не станет свободной
 
-    vkQueueSubmit(app->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);       //эта команда может передать один или несколько командных буферов на выполенение устройством
-    vkQueueWaitIdle(app->getGraphicsQueue());                                     //ждём пока очередь передачи не станет свободной
-
-    vkFreeCommandBuffers(app->getDevice(), app->getCommandPool().at(0), 1, &commandBuffer);       //освобождение командных буферов
+    vkFreeCommandBuffers(app->getDevice(), app->getCommandPool().at(0), 1, &commandBuffer);                                     //освобождение командных буферов
 }
 
 void copyBuffer(VkApplication* app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
-
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion); //команда используется для копирования данных между двумя буферами
-
+        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);                                                   //команда используется для копирования данных между двумя буферами
     endSingleTimeCommands(app,commandBuffer);
 }
 
@@ -612,6 +595,16 @@ VkFormat findSupportedFormat(VkApplication* app, const std::vector<VkFormat>& ca
 }
 
 VkFormat findDepthFormat(VkApplication* app)
+{
+    return findSupportedFormat(
+        app,
+        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT},
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+}
+
+VkFormat findDepthStencilFormat(VkApplication* app)
 {
     return findSupportedFormat(
         app,

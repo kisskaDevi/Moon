@@ -171,6 +171,18 @@ struct gltfModel
         glm::vec3 tangent;
         glm::vec3 bitangent;
 
+        static VkVertexInputBindingDescription getBloomBindingDescription();
+        static std::array<VkVertexInputAttributeDescription, 5> getBloomAttributeDescriptions();
+
+        static VkVertexInputBindingDescription getStencilBindingDescription();
+        static std::array<VkVertexInputAttributeDescription, 8> getStencilAttributeDescriptions();
+
+        static VkVertexInputBindingDescription getSkyboxBindingDescription();
+        static std::array<VkVertexInputAttributeDescription, 1> getSkyboxAttributeDescriptions();
+
+        static VkVertexInputBindingDescription getShadowBindingDescription();
+        static std::array<VkVertexInputAttributeDescription, 3> getShadowAttributeDescriptions();
+
         static VkVertexInputBindingDescription getBindingDescription()
         {
             VkVertexInputBindingDescription bindingDescription{};
@@ -293,20 +305,21 @@ struct gltfModel
 
 struct PushConstBlockMaterial
 {
-    glm::vec4 baseColorFactor;
-    glm::vec4 emissiveFactor;
-    glm::vec4 diffuseFactor;
-    glm::vec4 specularFactor;
-    float workflow;
-    int colorTextureSet;
-    int PhysicalDescriptorTextureSet;
-    int normalTextureSet;
-    int occlusionTextureSet;
-    int emissiveTextureSet;
-    float metallicFactor;
-    float roughnessFactor;
-    float alphaMask;
-    float alphaMaskCutoff;
+    alignas(16) glm::vec4   baseColorFactor;
+    alignas(16) glm::vec4   emissiveFactor;
+    alignas(16) glm::vec4   diffuseFactor;
+    alignas(16) glm::vec4   specularFactor;
+    alignas(4)  float       workflow;
+    alignas(4)  int         colorTextureSet;
+    alignas(4)  int         PhysicalDescriptorTextureSet;
+    alignas(4)  int         normalTextureSet;
+    alignas(4)  int         occlusionTextureSet;
+    alignas(4)  int         emissiveTextureSet;
+    alignas(4)  float       metallicFactor;
+    alignas(4)  float       roughnessFactor;
+    alignas(4)  float       alphaMask;
+    alignas(4)  float       alphaMaskCutoff;
+    alignas(4)  uint32_t    number;
 };
 
 enum PBRWorkflows{ PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };

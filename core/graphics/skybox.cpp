@@ -74,8 +74,8 @@ void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
      * генерации геометрии или же явно извлекать геометрические данные из буфера. Вместо этого вы можете
      * описать размещение геометрических данных в памяти, и Vulkan может сам извлекать эти данные для вас, передавая их прямо в шейдер*/
 
-    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+    auto bindingDescription = gltfModel::Vertex::getSkyboxBindingDescription();
+    auto attributeDescriptions = gltfModel::Vertex::getSkyboxAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

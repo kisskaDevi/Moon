@@ -8,6 +8,19 @@
 #include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3native.h>
 #include <vector>
 
+struct attachment
+{
+    VkImage image;
+    VkDeviceMemory imageMemory;
+    VkImageView imageView;
+    void deleteAttachment(VkDevice * device)
+    {
+        vkDestroyImage(*device, image, nullptr);
+        vkFreeMemory(*device, imageMemory, nullptr);
+        vkDestroyImageView(*device, imageView, nullptr);
+    }
+};
+
 class attachments
 {
 private:

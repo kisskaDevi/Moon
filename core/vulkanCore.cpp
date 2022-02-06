@@ -305,10 +305,13 @@ void VkApplication::createLogicalDevice()
 
 void VkApplication::checkSwapChainSupport()
 {
-    swapChainSupport = querySwapChainSupport(PhysicalDevice,surface);   //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
-    imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    swapChainSupport = querySwapChainSupport(PhysicalDevice,surface);                                                       //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
+    imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                           //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)        //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений
+    {                                                                                                                       //и проверяем не совпадает ли максимальное число изображений с минимальным
+        imageCount = swapChainSupport.capabilities.maxImageCount;                                                           //присываиваем максимальное значение
+    }
 }
-
 
 void VkApplication::createCommandPool()
 {
@@ -522,6 +525,9 @@ void VkApplication::createGraphics()
     Graphics.createSkyboxDescriptorSets();
     Graphics.createSecondDescriptorPool();
     Graphics.createSecondDescriptorSets(lightSource);
+
+    for(uint32_t i=0;i<imageCount;i++)
+        Graphics.updateMaterialUniformBuffer(i);
 }
 
 void VkApplication::createCommandBuffers()

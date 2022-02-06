@@ -18,15 +18,15 @@ void graphics::Second::Destroy(VkApplication *app)
         vkDestroyBuffer(app->getDevice(), uniformBuffers[i], nullptr);
         vkFreeMemory(app->getDevice(), uniformBuffersMemory[i], nullptr);
 
-        vkDestroyBuffer(app->getDevice(), emptyUniformBuffers[i], nullptr);
-        vkFreeMemory(app->getDevice(), emptyUniformBuffersMemory[i], nullptr);
+        vkDestroyBuffer(app->getDevice(), nodeMaterialUniformBuffers[i], nullptr);
+        vkFreeMemory(app->getDevice(), nodeMaterialUniformBuffersMemory[i], nullptr);
     }
 }
 
 void graphics::Second::createDescriptorSetLayout(VkApplication *app)
 {
     uint32_t index;
-    std::vector<VkDescriptorSetLayoutBinding> Binding(9);
+    std::vector<VkDescriptorSetLayoutBinding> Binding(10);
     for(index = 0; index<6;index++)
     {
         Binding.at(index).binding = index;
@@ -51,6 +51,12 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         Binding.at(index).descriptorCount = 1;
         Binding.at(index).stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        Binding.at(index).pImmutableSamplers = nullptr;
+    index++;
+        Binding.at(index).binding = index;
+        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        Binding.at(index).descriptorCount = 1;
+        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding.at(index).pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -246,6 +252,7 @@ void graphics::createSecondDescriptorPool()
     for(size_t i=0;i<MAX_LIGHT_SOURCE_COUNT;i++)
         poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)});
     poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)});
+    poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)});
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -272,7 +279,7 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
     for (size_t i = 0; i < imageCount; i++)
     {
         uint32_t index = 0;
-        std::vector<VkWriteDescriptorSet> descriptorWrites(9);
+        std::vector<VkWriteDescriptorSet> descriptorWrites(10);
         std::vector<VkDescriptorImageInfo> imageInfo(6);
         for(index = 0; index<6;index++)
         {
@@ -313,6 +320,11 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(SecondUniformBufferObject);
 
+        VkDescriptorBufferInfo MaterialBufferInfo;
+            MaterialBufferInfo.buffer = second.nodeMaterialUniformBuffers[i];
+            MaterialBufferInfo.offset = 0;
+            MaterialBufferInfo.range = second.nodeMaterialCount * sizeof(PushConstBlockMaterial);
+
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
             descriptorWrites.at(index).dstBinding = index;
@@ -336,6 +348,14 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.at(index).descriptorCount = 1;
             descriptorWrites.at(index).pBufferInfo = &bufferInfo;
+        index++;
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pBufferInfo = &MaterialBufferInfo;
 
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
@@ -366,14 +386,14 @@ void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCo
                      uniformBuffers[i], uniformBuffersMemory[i]);
     }
 
-    emptyUniformBuffers.resize(imageCount);
-    emptyUniformBuffersMemory.resize(imageCount);
+    nodeMaterialUniformBuffers.resize(imageCount);
+    nodeMaterialUniformBuffersMemory.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++)
     {
-        createBuffer(app, sizeof(LightBufferObject),
+        createBuffer(app, nodeMaterialCount*sizeof(PushConstBlockMaterial),
                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     emptyUniformBuffers[i], emptyUniformBuffersMemory[i]);
+                     nodeMaterialUniformBuffers[i], nodeMaterialUniformBuffersMemory[i]);
     }
 }
 

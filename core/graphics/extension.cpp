@@ -56,8 +56,8 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, struct Base *b
      * генерации геометрии или же явно извлекать геометрические данные из буфера. Вместо этого вы можете
      * описать размещение геометрических данных в памяти, и Vulkan может сам извлекать эти данные для вас, передавая их прямо в шейдер*/
 
-    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+    auto bindingDescription = gltfModel::Vertex::getBloomBindingDescription();
+    auto attributeDescriptions = gltfModel::Vertex::getBloomAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -437,8 +437,8 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, Base *b
      * генерации геометрии или же явно извлекать геометрические данные из буфера. Вместо этого вы можете
      * описать размещение геометрических данных в памяти, и Vulkan может сам извлекать эти данные для вас, передавая их прямо в шейдер*/
 
-    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+    auto bindingDescription = gltfModel::Vertex::getStencilBindingDescription();
+    auto attributeDescriptions = gltfModel::Vertex::getStencilAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -623,8 +623,8 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, Base *
      * генерации геометрии или же явно извлекать геометрические данные из буфера. Вместо этого вы можете
      * описать размещение геометрических данных в памяти, и Vulkan может сам извлекать эти данные для вас, передавая их прямо в шейдер*/
 
-    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+    auto bindingDescription = gltfModel::Vertex::getStencilBindingDescription();
+    auto attributeDescriptions = gltfModel::Vertex::getStencilAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -783,6 +783,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, Base *
 
 void graphics::bloomExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base)
 {
+    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(size_t j = 0; j<objects.size() ;j++)
     {
         VkDeviceSize offsets[1] = { 0 };
@@ -790,14 +791,20 @@ void graphics::bloomExtension::render(std::vector<VkCommandBuffer> &commandBuffe
         if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
             vkCmdBindIndexBuffer(commandBuffers[i],  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
         for (auto node : objects[j]->getModel()->nodes)
             Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],PipelineLayout);
     }
 }
+void graphics::bloomExtension::setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics)
+{
+    for(size_t j = 0; j<objects.size() ;j++)
+        for (auto node : objects[j]->getModel()->nodes)
+            Graphics->setMaterialNode(node,nodeMaterials);
+}
 
 void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base)
 {
+    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipeline);
     for(size_t j = 0; j<objects.size() ;j++)
     {
         VkDeviceSize offsets[1] = { 0 };
@@ -805,7 +812,6 @@ void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuf
         if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
             vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipeline);
         for (auto node : objects[j]->getModel()->nodes)
             Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],firstPipelineLayout);
 
@@ -813,15 +819,21 @@ void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuf
 
     for(size_t j = 0; j<objects.size() ;j++)
     {
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
         if(stencilEnable[j]){
             VkDeviceSize offsets[1] = { 0 };
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
             if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
                 vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
             for (auto node : objects[j]->getModel()->nodes)
                 Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],secondPipelineLayout);
         }
     }
+}
+void graphics::StencilExtension::setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics)
+{
+    for(size_t j = 0; j<objects.size() ;j++)
+        for (auto node : objects[j]->getModel()->nodes)
+            Graphics->setMaterialNode(node,nodeMaterials);
 }

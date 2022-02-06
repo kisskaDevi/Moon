@@ -96,13 +96,13 @@ void graphics::createDepthAttachment()
     createImage(app,
                 extent.width, extent.height,
                 1, msaaSamples,
-                findDepthFormat(app),
+                findDepthStencilFormat(app),
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 depthAttachment.image, depthAttachment.imageMemory);
     createImageView(app, depthAttachment.image,
-                    findDepthFormat(app), VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+                    findDepthStencilFormat(app), VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
                     1, &depthAttachment.imageView);
 }
 void graphics::createResolveAttachments()
@@ -230,7 +230,7 @@ void graphics::createRenderPass()
             attachments.push_back(colorAttachment);
         }
         VkAttachmentDescription depthAttachment{};
-            depthAttachment.format = findDepthFormat(app);
+            depthAttachment.format = findDepthStencilFormat(app);
             depthAttachment.samples = msaaSamples;
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -376,7 +376,7 @@ void graphics::createRenderPass()
         }
 
         VkAttachmentDescription depthAttachment{};
-            depthAttachment.format = findDepthFormat(app);
+            depthAttachment.format = findDepthStencilFormat(app);
             depthAttachment.samples = msaaSamples;
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -652,6 +652,8 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
 
     vkCmdBeginRenderPass(commandBuffers[i], &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+        primitiveCount = 0;
+
         skybox.render(commandBuffers,i);
         base.render(commandBuffers,i,this);
         bloom.render(commandBuffers,i,this,&base);
@@ -713,16 +715,71 @@ void graphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescript
                 pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
 
+            pushConstBlockMaterial.number = primitiveCount;
+
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConstBlockMaterial), &pushConstBlockMaterial);
 
             if (primitive->hasIndices)
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
             else
                 vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+
+            primitiveCount++;
         }
     }
     for (auto child : node->children)
         renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
+}
+
+void graphics::setMaterialNode(Node *node, std::vector<PushConstBlockMaterial> &nodeMaterials)
+{
+    if (node->mesh)
+    {
+        for (Primitive* primitive : node->mesh->primitives)
+        {
+            // Pass material parameters as push constants
+            PushConstBlockMaterial pushConstBlockMaterial{};
+
+            pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
+            // To save push constant space, availabilty and texture coordiante set are combined
+            // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
+            pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+            pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
+            pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
+            pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
+            pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
+            pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
+
+            // TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
+
+            if (primitive->material.pbrWorkflows.metallicRoughness) {
+                // Metallic roughness workflow
+                pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
+                pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
+                pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
+                pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
+                pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
+                pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+            }
+
+            if (primitive->material.pbrWorkflows.specularGlossiness) {
+                // Specular glossiness workflow
+                pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
+                pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
+                pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+                pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
+                pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
+            }
+
+            pushConstBlockMaterial.number = primitiveCount;
+
+            nodeMaterials.push_back(pushConstBlockMaterial);
+
+            primitiveCount++;
+        }
+    }
+    for (auto child : node->children)
+        setMaterialNode(child, nodeMaterials);
 }
 
 void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox)
@@ -756,6 +813,22 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *s
     vkUnmapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage]);
 }
 
+void graphics::updateMaterialUniformBuffer(uint32_t currentImage)
+{
+    void* data;
+    std::vector<PushConstBlockMaterial> nodeMaterials;
+
+    primitiveCount = 0;
+
+    base.setMaterials(nodeMaterials,this);
+    bloom.setMaterials(nodeMaterials,this);
+    stencil.setMaterials(nodeMaterials,this);
+
+    vkMapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage], 0, second.nodeMaterialCount*sizeof(PushConstBlockMaterial), 0, &data);
+        memcpy(data, nodeMaterials.data(), nodeMaterials.size()*sizeof(PushConstBlockMaterial));
+    vkUnmapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage]);
+}
+
 void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource)
 {
     void* data;
@@ -764,7 +837,7 @@ void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light
         lightUBO.buffer[i] = lightSource[i]->getLightBufferObject();
     vkMapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage], 0, sizeof(lightUBO), 0, &data);
         memcpy(data, &lightUBO, sizeof(lightUBO));
-        vkUnmapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage]);
+    vkUnmapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage]);
 }
 
 std::vector<attachments>        &graphics::getAttachments(){return Attachments;}

@@ -16,15 +16,15 @@ layout(set = 0, binding = 1) uniform LightUniformBufferObject
     LightBufferObject ubo[MAX_LIGHT_SOURCES];
 } light;
 
-layout (set = 1, binding = 0) uniform LocalUniformBuffer
-{
-    mat4 matrix;
-} local;
-
 layout (push_constant) uniform Number
 {
     int value;
 } number;
+
+layout (set = 1, binding = 0) uniform LocalUniformBuffer
+{
+    mat4 matrix;
+} local;
 
 layout (set = 2, binding = 0) uniform UBONode
 {
@@ -34,13 +34,8 @@ layout (set = 2, binding = 0) uniform UBONode
 } node;
 
 layout(location = 0)	in  vec3 inPosition;
-layout(location = 1)	in  vec3 inNormal;
-layout(location = 2)	in  vec2 inUV0;
-layout(location = 3)	in  vec2 inUV1;
-layout(location = 4)	in  vec4 inJoint0;
-layout(location = 5)	in  vec4 inWeight0;
-layout(location = 6)	in  vec3 inTangent;
-layout(location = 7)	in  vec3 inBitangent;
+layout(location = 1)	in  vec4 inJoint0;
+layout(location = 2)	in  vec4 inWeight0;
 
 void main()
 {

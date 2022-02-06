@@ -243,8 +243,8 @@ void light<spotLight>::Shadow::createPipeline(VkApplication *app, shadowInfo inf
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo};
 
-    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+    auto bindingDescription = gltfModel::Vertex::getShadowBindingDescription();
+    auto attributeDescriptions = gltfModel::Vertex::getShadowAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -540,13 +540,13 @@ void light<spotLight>::updateShadowCommandBuffers(uint32_t number, uint32_t i, s
             scissor.offset.y = 0;
         vkCmdSetScissor(shadowCommandBuffer[number][i], 0, 1, &scissor);
 
+        vkCmdBindPipeline(shadowCommandBuffer[number][i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
+        vkCmdPushConstants(shadowCommandBuffer[number][i], shadow.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(uint32_t), &this->number);
         for(size_t j = 0; j<object3D.size() ;j++)
         {
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindPipeline(shadowCommandBuffer[number][i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
             vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D[j]->getModel()->vertices.buffer, offsets);
 
-            vkCmdPushConstants(shadowCommandBuffer[number][i], shadow.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(uint32_t), &this->number);
             if (object3D[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
                 vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -683,9 +683,7 @@ void light<pointLight>::setLightColor(const glm::vec4 &color)
 void light<pointLight>::setCamera(class camera *camera)
 {
     for(uint32_t i=number;i<number+6;i++)
-    {
         lightSource.at(i)->setCamera(camera);
-    }
 }
 
 void light<pointLight>::setGlobalTransform(const glm::mat4 & transform)

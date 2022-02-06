@@ -33,6 +33,7 @@ layout (push_constant) uniform Material
 	float roughnessFactor;
 	float alphaMask;
 	float alphaMaskCutoff;
+	int number;
 } material;
 
 void main()
@@ -40,7 +41,7 @@ void main()
     outPosition = vec4(position,1.0f);
     outBaseColor = texture(baseColorTexture, UV0);
     outMetallicRoughness = texture(metallicRoughnessTexture, UV0);
-    outNormal = vec4(0.0f);
+    outNormal = vec4(0.0f,0.0f,0.0f,material.number);
     outOcclusion = texture(occlusionTexture, UV0);
     outEmissiveTexture = texture(emissiveTexture, UV0);
 

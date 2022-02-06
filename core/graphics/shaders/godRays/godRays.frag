@@ -33,6 +33,7 @@ layout (push_constant) uniform Material
 	float roughnessFactor;
 	float alphaMask;
 	float alphaMaskCutoff;
+	int number;
 } material;
 
 void main()

@@ -1,6 +1,6 @@
 #version 450
 #define MAX_NUM_JOINTS 130
-#define MAX_LIGHT_SOURCES 6
+#define MAX_LIGHT_SOURCES 10
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
@@ -12,6 +12,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
     mat4 matrix;
+    vec4 color;
 } local;
 
 layout (set = 2, binding = 0) uniform UBONode
@@ -30,11 +31,13 @@ layout(location = 4)	in  vec4 inWeight0;
 layout(location = 0)	out vec3 outPosition;
 layout(location = 1)	out vec2 outUV0;
 layout(location = 2)	out vec2 outUV1;
+layout(location = 3)	out vec4 outColor;
 
 void main()
 {
     outUV0 = inUV0;
     outUV1 = inUV1;
+    outColor = local.color;
 
     mat4x4 model = local.matrix*node.matrix;
     if (node.jointCount > 0.0)

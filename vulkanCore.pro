@@ -39,6 +39,7 @@ DISTFILES += \
     model/glb/sponza.glb \
     texture/0.png \
     texture/1.png \
+    texture/icon.ico \
     texture/skybox/back.jpg \
     texture/skybox/bottom.jpg \
     texture/skybox/front.jpg \
@@ -53,6 +54,7 @@ SOURCES += \
     core/graphics/graphics.cpp \
     core/graphics/postProcessing.cpp \
     core/graphics/second.cpp \
+    core/graphics/shadowGraphics.cpp \
     core/graphics/skybox.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
@@ -68,6 +70,7 @@ SOURCES += \
 HEADERS += \
     core/graphics/attachments.h \
     core/graphics/graphics.h \
+    core/graphics/shadowGraphics.h \
     core/transformational/transformational.h \
     core/transformational/camera.h \
     core/transformational/group.h \
@@ -77,3 +80,5 @@ HEADERS += \
     core/operations.h \
     core/texture.h \
     core/vulkanCore.h
+
+win32:RC_ICONS += texture/icon.ico

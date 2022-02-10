@@ -6,13 +6,13 @@
 class camera : public transformational
 {
 private:
-    glm::mat4x4 viewMatrix;
-    glm::vec3 m_translate;
-    glm::quat m_rotate;
-    glm::vec3 m_scale;
-    glm::mat4x4 m_globalTransform;
-    glm::quat m_rotateX;
-    glm::quat m_rotateY;
+    glm::mat4x4         viewMatrix;
+    glm::vec3           m_translate;
+    glm::quat           m_rotate;
+    glm::vec3           m_scale;
+    glm::mat4x4         m_globalTransform;
+    glm::quat           m_rotateX;
+    glm::quat           m_rotateY;
 
 public:
     camera();

@@ -5,6 +5,8 @@
 #include "transformational/camera.h"
 #include "transformational/light.h"
 #include "transformational/gltfmodel.h"
+#include "libs/stb-master/stb_image.h"
+#include "core/graphics/shadowGraphics.h"
 
 std::vector<std::string> SKYBOX = {
     ExternalPath+"texture\\skybox\\left.jpg",
@@ -25,6 +27,14 @@ void VkApplication::VkApplication::initWindow()
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);   //инициализация собственного окна
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+    int width,height,comp;
+    std::string filename = ExternalPath + "texture\\icon.png";
+    stbi_uc* img = stbi_load(filename.c_str(), &width, &height, &comp, 0);
+    images.height = height;
+    images.width = width;
+    images.pixels = img;
+    glfwSetWindowIcon(window,1,&images);
 }
     void VkApplication::VkApplication::framebufferResizeCallback(GLFWwindow* window, int width, int height)
     {
@@ -406,23 +416,35 @@ void VkApplication::createObjects()
     object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
     index++;
 
-    object3D.push_back( new object(this,{gltfModel.at(5),emptyTexture}) );
-    Graphics.bindBaseObject(object3D.at(index));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
-    object *UFO1 = object3D.at(index);
-    index++;
 
-    object3D.push_back( new object(this,{gltfModel.at(5),emptyTexture}) );
-    Graphics.bindBaseObject(object3D.at(index));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
-    object *UFO2 = object3D.at(index);
+    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
+    Graphics.bindBloomObject(object3D.at(index));
+    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    object *Box0 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
     Graphics.bindBloomObject(object3D.at(index));
-    object *Box = object3D.at(index);
+    object3D.at(index)->setColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
+    object *Box1 = object3D.at(index);
+    index++;
+
+    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
+    Graphics.bindBloomObject(object3D.at(index));
+    object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
+    object *Box2 = object3D.at(index);
+    index++;
+
+    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
+    Graphics.bindBloomObject(object3D.at(index));
+    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
+    object *Box3 = object3D.at(index);
+    index++;
+
+    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
+    Graphics.bindBloomObject(object3D.at(index));
+    object3D.at(index)->setColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
+    object *Box4 = object3D.at(index);
     index++;
 
     skyboxObject = new object(this,{gltfModel.at(2),nullptr});
@@ -431,18 +453,26 @@ void VkApplication::createObjects()
 
     groups.push_back(new group);
     groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
-    groups.at(0)->addObject(Box);
+    groups.at(0)->addObject(Box0);
 
     groups.push_back(new group);
     groups.at(1)->addObject(Duck);
 
     groups.push_back(new group);
     groups.at(2)->translate(glm::vec3(5.0f,0.0f,5.0f));
-    groups.at(2)->addObject(UFO1);
+    groups.at(2)->addObject(Box1);
 
     groups.push_back(new group);
     groups.at(3)->translate(glm::vec3(-5.0f,0.0f,5.0f));
-    groups.at(3)->addObject(UFO2);
+    groups.at(3)->addObject(Box2);
+
+    groups.push_back(new group);
+    groups.at(4)->translate(glm::vec3(10.0f,0.0f,5.0f));
+    groups.at(4)->addObject(Box3);
+
+    groups.push_back(new group);
+    groups.at(5)->translate(glm::vec3(-10.0f,0.0f,5.0f));
+    groups.at(5)->addObject(Box4);
 
     cam = new camera;
     cam->translate(glm::vec3(0.0f,0.0f,10.0f));
@@ -465,7 +495,7 @@ void VkApplication::createLight()
     glm::mat4x4 Proj;
 
     lightSource.push_back(new light<spotLight>(this,imageCount));
-        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
+        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
@@ -475,13 +505,35 @@ void VkApplication::createLight()
     index++;
 
     lightSource.push_back(new light<spotLight>(this,imageCount));
-        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getWidth()/lightSource.at(index)->getHeight(), 0.1f, 1000.0f);
+        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setCamera(cam);
     groups.at(3)->addObject(lightSource.at(index));
+    index++;
+
+    lightSource.push_back(new light<spotLight>(this,imageCount));
+        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
+        Proj[1][1] *= -1;
+    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
+    lightSource.at(index)->setCamera(cam);
+    groups.at(4)->addObject(lightSource.at(index));
+    index++;
+
+    lightSource.push_back(new light<spotLight>(this,imageCount));
+        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
+        Proj[1][1] *= -1;
+    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+    lightSource.at(index)->setCamera(cam);
+    groups.at(5)->addObject(lightSource.at(index));
+    index++;
+
 }
 
 void VkApplication::updateLight()
@@ -540,7 +592,8 @@ void VkApplication::createCommandBuffers()
 
     for(size_t i=0;i<lightSource.size();i++)
         for(size_t j=0;j<COMMAND_POOLS;j++)
-            lightSource.at(i)->createShadowCommandBuffers(j);
+            if(lightSource.at(i)->getShadowEnable())
+                lightSource.at(i)->getShadow()->createCommandBuffers(j);
 }
     void VkApplication::createCommandBuffer(uint32_t number)
     {
@@ -662,7 +715,7 @@ void VkApplication::VkApplication::mainLoop()
             int counter = 0;
             for(size_t i=0;i<lightSource.size();i++){
                 if(lightSource[i]->getShadowEnable()){
-                    commandbufferSet[counter] = lightSource[i]->getCommandBuffer(currentBuffer)[imageIndex];
+                    commandbufferSet[counter] = lightSource[i]->getShadow()->getCommandBuffer(currentBuffer)[imageIndex];
                     counter++;
                 }
             }
@@ -721,7 +774,7 @@ void VkApplication::VkApplication::mainLoop()
                 Graphics.updateLightUniformBuffer(imageIndex,lightSource);
                 for(size_t i=0;i<lightSource.size();i++)
                     if(lightSource[i]->getShadowEnable())
-                        lightSource[i]->updateShadowCommandBuffers((currentBuffer + 1) % COMMAND_POOLS,imageIndex,object3D);
+                        lightSource[i]->getShadow()->updateCommandBuffers((currentBuffer + 1) % COMMAND_POOLS,imageIndex,object3D,lightSource[i]->getLightNumber());
                 updatedLightFrames++;
                 if(updatedLightFrames==COMMAND_POOLS*imageCount)
                     updateCmdLight = false;
@@ -774,9 +827,6 @@ void VkApplication::VkApplication::mainLoop()
 void VkApplication::VkApplication::cleanup()
 {
     cleanupSwapChain();
-
-    for(size_t i=0;i<lightSource.size();i++)
-        lightSource.at(i)->deleteLight();
 
     for(size_t i=0;i<lightPoint.size();i++)
         delete lightPoint.at(i);

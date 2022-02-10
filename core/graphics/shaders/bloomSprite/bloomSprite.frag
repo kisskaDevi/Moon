@@ -9,6 +9,7 @@ layout(set = 3, binding = 4) uniform sampler2D emissiveTexture;
 layout(location = 0)	in vec3 position;
 layout(location = 1)	in vec2 UV0;
 layout(location = 2)	in vec2 UV1;
+layout(location = 3)	in vec4 outColor;
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -19,27 +20,15 @@ layout(location = 5) out vec4 outEmissiveTexture;
 
 layout (push_constant) uniform Material
 {
-        vec4 baseColorFactor;
-	vec4 emissiveFactor;
-	vec4 diffuseFactor;
-	vec4 specularFactor;
-	float workflow;
-	int baseColorTextureSet;
-	int physicalDescriptorTextureSet;
-	int normalTextureSet;
-	int occlusionTextureSet;
-	int emissiveTextureSet;
-	float metallicFactor;
-	float roughnessFactor;
-	float alphaMask;
-	float alphaMaskCutoff;
-	int number;
+    int normalTextureSet;
+    int number;
 } material;
 
 void main()
 {
     outPosition = vec4(position,1.0f);
-    outBaseColor = texture(baseColorTexture, UV0);
+    //outBaseColor = texture(baseColorTexture, UV0);
+    outBaseColor = outColor;
     outMetallicRoughness = texture(metallicRoughnessTexture, UV0);
     outNormal = vec4(0.0f,0.0f,0.0f,material.number);
     outOcclusion = texture(occlusionTexture, UV0);

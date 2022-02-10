@@ -66,6 +66,12 @@ struct QueueFamilyIndices
     //В любой момент вы можете запросить, содержит ли он значение или нет, вызвав его has_value()функцию-член.
 };
 
+struct PushConst
+{
+    alignas(4)  int         normalTextureSet;
+    alignas(4)  uint32_t    number;
+};
+
 class graphics
 {
 private:
@@ -78,6 +84,10 @@ private:
     uint32_t                        imageCount;
     VkFormat                        imageFormat;
     VkExtent2D                      extent;
+
+//    uint32_t                        postProcessingAttachmentCount = 2;
+//    uint32_t                        geometryAttachmentCount = 2;
+//    uint32_t                        textureAttachmentCount = 4;
 
     std::vector<attachment>         colorAttachments;
     attachment                      depthAttachment;

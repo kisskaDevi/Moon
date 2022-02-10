@@ -9,13 +9,8 @@
 struct UniformBuffer
 {
     alignas(16) glm::mat4x4 modelMatrix;
+    alignas(16) glm::vec4   color;
 };
-
-struct PushConstant
-{
-    alignas(16) glm::mat4x4 modelMatrix;
-};
-
 
 struct gltfModel;
 struct Node;
@@ -38,24 +33,26 @@ class object : public transformational
 {
 private:
     VkApplication*                  app;
-    gltfModel*                      m_model;
-    texture*                        m_emptyTexture;
+    gltfModel*                      model;
+    texture*                        emptyTexture;
 
-    VkDescriptorSetLayout*          m_uniformBufferSetLayout;
-    VkDescriptorSetLayout*          m_uniformBlockSetLayout;
-    VkDescriptorSetLayout*          m_materialSetLayout;
-    VkDescriptorPool                m_descriptorPool;
-    std::vector<VkDescriptorSet>    m_descriptors;
+    VkDescriptorSetLayout*          uniformBufferSetLayout;
+    VkDescriptorSetLayout*          uniformBlockSetLayout;
+    VkDescriptorSetLayout*          materialSetLayout;
+    VkDescriptorPool                descriptorPool;
+    std::vector<VkDescriptorSet>    descriptors;
 
+    glm::mat4x4                     modelMatrix;
     glm::vec3                       m_translate;
     glm::quat                       m_rotate;
     glm::vec3                       m_scale;
     glm::mat4x4                     m_globalTransform;
-    glm::mat4x4                     modelMatrix;
-    float                           visibilityDistance = 10.0f;
 
-    std::vector<VkBuffer>           m_uniformBuffers;
-    std::vector<VkDeviceMemory>     m_uniformBuffersMemory;
+    float                           visibilityDistance = 10.0f;
+    glm::vec4                       color;
+
+    std::vector<VkBuffer>           uniformBuffers;
+    std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
 public:
     object(VkApplication* app);
@@ -76,6 +73,7 @@ public:
     void setModel(gltfModel* model3D);
     void setEmptyTexture(texture* emptyTexture);
     void setVisibilityDistance(float visibilityDistance);
+    void setColor(const glm::vec4 & color);
 
     void createUniformBuffers(uint32_t imageCount);
     void updateUniformBuffer(uint32_t currentImage);
@@ -90,6 +88,7 @@ public:
 
     glm::mat4x4                     getTransformation();
     float                           getVisibilityDistance();
+    glm::vec4                       getColor();
 
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet();

@@ -1,6 +1,6 @@
 #version 450
 #define MANUAL_SRGB 1
-#define MAX_LIGHT_SOURCES 8
+#define MAX_LIGHT_SOURCES 10
 #define MAX_NODE_COUNT 256
 
 const float pi = 3.141592653589793f, minAmbientFactor = 0.05f;
@@ -59,7 +59,6 @@ layout(set = 0, binding = 7) uniform sampler2D shadowMap[MAX_LIGHT_SOURCES];
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outBloom;
-layout(location = 2) out vec4 outGodRays;
 
 layout(set = 0, binding = 9) uniform MaterialUniformBufferObject
 {
@@ -259,7 +258,8 @@ void outImage1()
 		    color = mix(color, color * ao, u_OcclusionStrength);
 	    }
 
-	    outColor += vec4(lightPower*color/lightDrop , baseColor.a);
+	    color = lightPower*color/lightDrop;
+	    outColor = vec4(max(color.r,outColor.r),max(color.g,outColor.g),max(color.b,outColor.b), baseColor.a);
 	    lightCount++;
 	}
     }
@@ -304,7 +304,6 @@ void shadingType1()
 void shadingType2()
 {
     outColor = SRGBtoLINEAR(baseColorTexture);
-    outGodRays = SRGBtoLINEAR(emissiveTexture);
 }
 
 void shadingType3()
@@ -356,13 +355,15 @@ float shadowFactor(int i)
 
     if(light.ubo[i].type==0.0f)
     {
-	if( lightSpaceNDC.x*lightSpaceNDC.x +
-	    lightSpaceNDC.y*lightSpaceNDC.y > 1.0f )
-	{return minAmbientFactor;}
+	    if( lightSpaceNDC.x*lightSpaceNDC.x +
+	        lightSpaceNDC.y*lightSpaceNDC.y -
+	        lightSpaceNDC.z*lightSpaceNDC.z > 0.0f)
+	    {return minAmbientFactor;}
     }else
     {
 	if( abs(lightSpaceNDC.x) > 1.0f ||
-	    abs(lightSpaceNDC.y) > 1.0f )
+	    abs(lightSpaceNDC.y) > 1.0f ||
+	    abs(lightSpaceNDC.z) > 1.0f)
 	{return minAmbientFactor;}
     }
 

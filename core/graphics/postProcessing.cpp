@@ -75,7 +75,7 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
         //Создаём соответствующую структуру, задержащую все парамеры списка показа
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = app->getSurface();                                   //поверхность в которую новый список показа будет показывать
+        createInfo.surface = app->getSurface();                         //поверхность в которую новый список показа будет показывать
         createInfo.minImageCount = imageCount;                          //число изображений в списке показа. Например чтобы задать двойную или тройную буфферизацию, необходимо задать это значение соответственно 2 и 3
                                                                         //Задание значения равным 1 представляет собой запрос на рендериг прямо в передний буфер или непосредственно на дисплей.
         createInfo.imageFormat = surfaceFormat.format;                  //используем ранее найденый формат и просто передаём его
@@ -142,18 +142,13 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
         VkExtent2D postProcessing::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
         {
             if (capabilities.currentExtent.width != UINT32_MAX)
-            {
                 return capabilities.currentExtent;
-            }
             else
             {
                 int width, height;
                 glfwGetFramebufferSize(&app->getWindow(), &width, &height);
 
-                VkExtent2D actualExtent = {
-                    static_cast<uint32_t>(width),
-                    static_cast<uint32_t>(height)
-                };
+                VkExtent2D actualExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
                 actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
                 actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
@@ -217,87 +212,85 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
 void postProcessing::createRenderPass()
 {
     uint32_t index = 0;
-    
-    std::vector<VkAttachmentDescription> attachments(2);
-        attachments.at(index).format = swapChainImageFormat;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
-        attachments.at(index).samples = VK_SAMPLE_COUNT_1_BIT;                            //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
-        attachments.at(index).loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                       //следующие 4 параметра смотри на странице 210
-        attachments.at(index).storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments.at(index).stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments.at(index).stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments.at(index).initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
-        attachments.at(index).finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;              //в каком размещении его нужно оставить по завершению рендеринга
+
+    std::array<VkAttachmentDescription,2> attachments{};
+        attachments[index].format = swapChainImageFormat;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
+        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;                            //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
+        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                       //следующие 4 параметра смотри на странице 210
+        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
+        attachments[index].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;              //в каком размещении его нужно оставить по завершению рендеринга
     index++;
-        attachments.at(index).format = swapChainImageFormat;
-        attachments.at(index).samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments.at(index).loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments.at(index).storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments.at(index).stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments.at(index).stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments.at(index).initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments.at(index).finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    
-    index = 0;
-    std::vector<VkAttachmentReference> firstAttachmentRef(2);
-        firstAttachmentRef.at(index).attachment = 0;
-        firstAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    index++;
-        firstAttachmentRef.at(index).attachment = 1;
-        firstAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-     
-    index = 0;
-    std::vector<VkAttachmentReference> secondAttachmentRef(1);
-        secondAttachmentRef.at(index).attachment = 0;                                                  //индекс в массив подключений
-        secondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;               //размещение
+        attachments[index].format = swapChainImageFormat;
+        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[index].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     index = 0;
-    std::vector<VkAttachmentReference> inSecondAttachmentRef(1);
-        inSecondAttachmentRef.at(index).attachment = 1;
-        inSecondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    std::array<VkAttachmentReference,2> firstAttachmentRef;
+        firstAttachmentRef[index].attachment = 0;
+        firstAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    index++;
+        firstAttachmentRef[index].attachment = 1;
+        firstAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     index = 0;
-    std::vector<VkAttachmentReference> thirdAttachmentRef(1);
-        thirdAttachmentRef.at(index).attachment = 0;
-        thirdAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
- 
+    std::array<VkAttachmentReference,1> secondAttachmentRef;
+        secondAttachmentRef[index].attachment = 0;                                                  //индекс в массив подключений
+        secondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;               //размещение
     index = 0;
-    std::vector<VkSubpassDescription> subpass(3);                                                       //подпроходы рендеринга
-        subpass.at(index).pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;                          //бит для графики
-        subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(firstAttachmentRef.size());      //количество подключений
-        subpass.at(index).pColorAttachments = firstAttachmentRef.data();                                //подключения
-    index++;
-        subpass.at(index).pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(secondAttachmentRef.size());
-        subpass.at(index).pColorAttachments = secondAttachmentRef.data();
-        subpass.at(index).inputAttachmentCount = static_cast<uint32_t>(inSecondAttachmentRef.size());
-        subpass.at(index).pInputAttachments = inSecondAttachmentRef.data();
-    index++;
-        subpass.at(index).pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.at(index).colorAttachmentCount = static_cast<uint32_t>(thirdAttachmentRef.size());
-        subpass.at(index).pColorAttachments = thirdAttachmentRef.data();
+    std::array<VkAttachmentReference,1> inSecondAttachmentRef;
+        inSecondAttachmentRef[index].attachment = 1;
+        inSecondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    index = 0;
+    std::array<VkAttachmentReference,1> thirdAttachmentRef;
+        thirdAttachmentRef[index].attachment = 0;
+        thirdAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     index = 0;
-    std::vector<VkSubpassDependency> dependency(3);                                                                                           //зависимости
-        dependency.at(index).srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
-        dependency.at(index).dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
-        dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;                                                    //задаёт как стадии конвейера в исходном проходе создают данные
-        dependency.at(index).srcAccessMask = 0;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
-        dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.at(index).dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    std::array<VkSubpassDescription,3> subpass{};
+        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass[index].colorAttachmentCount = static_cast<uint32_t>(firstAttachmentRef.size());
+        subpass[index].pColorAttachments = firstAttachmentRef.data();
     index++;
-        dependency.at(index).srcSubpass = 0;
-        dependency.at(index).dstSubpass = 1;
-        dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.at(index).srcAccessMask = 0;
-        dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.at(index).dstAccessMask = 0;
+        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass[index].colorAttachmentCount = static_cast<uint32_t>(secondAttachmentRef.size());
+        subpass[index].pColorAttachments = secondAttachmentRef.data();
+        subpass[index].inputAttachmentCount = static_cast<uint32_t>(inSecondAttachmentRef.size());
+        subpass[index].pInputAttachments = inSecondAttachmentRef.data();
     index++;
-        dependency.at(index).srcSubpass = 1;
-        dependency.at(index).dstSubpass = 2;
-        dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.at(index).srcAccessMask = 0;
-        dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.at(index).dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass[index].colorAttachmentCount = static_cast<uint32_t>(thirdAttachmentRef.size());
+        subpass[index].pColorAttachments = thirdAttachmentRef.data();
+
+    index = 0;
+    std::array<VkSubpassDependency,3> dependency{};                                                                                        //зависимости
+        dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
+        dependency[index].dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
+        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;                                                    //задаёт как стадии конвейера в исходном проходе создают данные
+        dependency[index].srcAccessMask = 0;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
+        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    index++;
+        dependency[index].srcSubpass = 0;
+        dependency[index].dstSubpass = 1;
+        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].srcAccessMask = 0;
+        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].dstAccessMask = 0;
+    index++;
+        dependency[index].srcSubpass = 1;
+        dependency[index].dstSubpass = 2;
+        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].srcAccessMask = 0;
+        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -320,6 +313,7 @@ void postProcessing::createFramebuffers()
     for (size_t i = 0; i < framebuffers.size(); i++)
     {
         uint32_t index = 0;
+
         std::vector<VkImageView> attachments(swapChainAttachments.size()+Attachments.size());
             for(size_t j=0;j<swapChainAttachments.size();j++){
                 attachments.at(index) = swapChainAttachments.at(j).imageView[i]; index++;}
@@ -334,11 +328,8 @@ void postProcessing::createFramebuffers()
             framebufferInfo.width = swapChainExtent.width;                                                              //ширина изображения
             framebufferInfo.height = swapChainExtent.height;                                                            //высота изображения
             framebufferInfo.layers = 1;                                                                                 //число слоёв
-
         if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) //создание буфера кадров
-        {
             throw std::runtime_error("failed to create framebuffer!");
-        }
     }
 }
 
@@ -354,42 +345,36 @@ void postProcessing::createPipelines()
     {
         uint32_t index = 0;
 
-        std::vector<VkDescriptorSetLayoutBinding> firstBindings(1);
-            firstBindings.at(index).binding = 0;
-            firstBindings.at(index).descriptorCount = 1;
-            firstBindings.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            firstBindings.at(index).pImmutableSamplers = nullptr;
-            firstBindings.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        std::array<VkDescriptorSetLayoutBinding,1> firstBindings{};
+            firstBindings[index].binding = 0;
+            firstBindings[index].descriptorCount = 1;
+            firstBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            firstBindings[index].pImmutableSamplers = nullptr;
+            firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         index = 0;
-        std::vector<VkDescriptorSetLayoutBinding> secondBindings(3);
-            secondBindings.at(index).binding = 0;
-            secondBindings.at(index).descriptorCount = 1;
-            secondBindings.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings.at(index).pImmutableSamplers = nullptr;
-            secondBindings.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        std::array<VkDescriptorSetLayoutBinding,2> secondBindings{};
+            secondBindings[index].binding = 0;
+            secondBindings[index].descriptorCount = 1;
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            secondBindings[index].pImmutableSamplers = nullptr;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         index++;
-            secondBindings.at(index).binding = 1;
-            secondBindings.at(index).descriptorCount = 1;
-            secondBindings.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings.at(index).pImmutableSamplers = nullptr;
-            secondBindings.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings.at(index).binding = 2;
-            secondBindings.at(index).descriptorCount = 1;
-            secondBindings.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings.at(index).pImmutableSamplers = nullptr;
-            secondBindings.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            secondBindings[index].binding = 1;
+            secondBindings[index].descriptorCount = 1;
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            secondBindings[index].pImmutableSamplers = nullptr;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         index = 0;
-        std::vector<VkDescriptorSetLayoutCreateInfo> textureLayoutInfo(2);
-            textureLayoutInfo.at(index).sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            textureLayoutInfo.at(index).bindingCount = static_cast<uint32_t>(firstBindings.size());
-            textureLayoutInfo.at(index).pBindings = firstBindings.data();
+        std::array<VkDescriptorSetLayoutCreateInfo,2> textureLayoutInfo{};
+            textureLayoutInfo[index].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            textureLayoutInfo[index].bindingCount = static_cast<uint32_t>(firstBindings.size());
+            textureLayoutInfo[index].pBindings = firstBindings.data();
         index++;
-            textureLayoutInfo.at(index).sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            textureLayoutInfo.at(index).bindingCount = static_cast<uint32_t>(secondBindings.size());
-            textureLayoutInfo.at(index).pBindings = secondBindings.data();
+            textureLayoutInfo[index].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            textureLayoutInfo[index].bindingCount = static_cast<uint32_t>(secondBindings.size());
+            textureLayoutInfo[index].pBindings = secondBindings.data();
 
         if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo.at(0), nullptr, &first.DescriptorSetLayout) != VK_SUCCESS)
             throw std::runtime_error("failed to create descriptor set layout 1!");
@@ -398,173 +383,140 @@ void postProcessing::createPipelines()
     }
     void postProcessing::createFirstGraphicsPipeline()
     {
-        //считываем шейдеры
+        uint32_t index = 0;
+
         auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingVert.spv");
         auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingFrag.spv");
-        //создаём шейдерные модули
         VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
-        //задаём стадии шейдеров в конвейере
-        //вершинный
-        VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-        vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;                             //ниформацию о всех битах смотри на странице 222
-        vertShaderStageInfo.module = vertShaderModule;                                      //сюда передаём шейдерный модуль
-        vertShaderStageInfo.pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
-        //фрагментный
-        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;                           //ниформацию о всех битах смотри на странице 222
-        fragShaderStageInfo.module = fragShaderModule;                                      //сюда передаём шейдерный модуль
-        fragShaderStageInfo.pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
-
-        VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+        std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
+            shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
+            shaderStages[index].module = vertShaderModule;
+            shaderStages[index].pName = "main";
+        index++;
+            shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            shaderStages[index].module = fragShaderModule;
+            shaderStages[index].pName = "main";
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            vertexInputInfo.vertexBindingDescriptionCount = 0;
+            vertexInputInfo.pVertexBindingDescriptions = nullptr;
+            vertexInputInfo.vertexAttributeDescriptionCount = 0;
+            vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
+            inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-        /* Преобразование области вывода - это последнее преобразование координат в конвейере Vulkan до растретизации.
-         * Оно преобразует координаты вершины из нормализованных координат устройства в оконные координаты. Одновременно
-         * может использоваться несколько областей вывода.*/
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float) swapChainExtent.width;
-        viewport.height = (float) swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-
-        VkRect2D scissor{};
-        scissor.offset = {0, 0};
-        scissor.extent = swapChainExtent;
-
+        index = 0;
+        std::array<VkViewport,1> viewport{};
+            viewport[index].x = 0.0f;
+            viewport[index].y = 0.0f;
+            viewport[index].width  = (float) swapChainExtent.width;
+            viewport[index].height= (float) swapChainExtent.height;
+            viewport[index].minDepth = 0.0f;
+            viewport[index].maxDepth = 1.0f;
+        std::array<VkRect2D,1> scissor{};
+            scissor[index].offset = {0, 0};
+            scissor[index].extent = swapChainExtent;
         VkPipelineViewportStateCreateInfo viewportState{};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = 1;                                                //число областей вывода
-        viewportState.pViewports = &viewport;                                           //размер каждой области вывода
-        viewportState.scissorCount = 1;                                                 //число прямоугольников
-        viewportState.pScissors = &scissor;                                             //эксцент
-
-        /* Растеризация - это процесс, в ходе которого примитивы, представленные вершинами, преобразуются в потоки фрагментов, которых к обработке
-         * фрагментным шейдером. Состояние растеризации управляется тем, как этот процесс происходит, и задаётся при помощи следующей структуры*/
+            viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+            viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
+            viewportState.pViewports = viewport.data();
+            viewportState.scissorCount = static_cast<uint32_t>(scissor.size());;
+            viewportState.pScissors = scissor.data();
 
         VkPipelineRasterizationStateCreateInfo rasterizer{};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;                                      //используется для того чтобы полностью выключить растеризацию. Когда флаг установлен, растеризация не работает и не создаются фрагменты
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;                                      //используется для того чтобы Vulkan автоматически превращал треугольники в точки или отрезки
-        rasterizer.lineWidth = 1.0f;                                                        //толщина линии
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;                                        //параметр обрасывания
-        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;                                     //параметр направления обхода (против часовой стрелки)
-        rasterizer.depthBiasEnable = VK_FALSE;                                              //используется для того чтобы включать отсечение глубины
-        rasterizer.depthBiasConstantFactor = 0.0f; // Optional                              //
-        rasterizer.depthBiasClamp = 0.0f; // Optional
-        rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
-
-        /* Мультсемплинг - это процесс создания нескольких образцов (sample) для каждого пиксела в изображении.
-         * Они используются для борьбы с алиансингом и может заметно улучшить общее качество изображения при эффективном использовании*/
+            rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+            rasterizer.rasterizerDiscardEnable = VK_FALSE;
+            rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+            rasterizer.lineWidth = 1.0f;
+            rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+            rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+            rasterizer.depthBiasEnable = VK_FALSE;
+            rasterizer.depthBiasConstantFactor = 0.0f;
+            rasterizer.depthBiasClamp = 0.0f;
+            rasterizer.depthBiasSlopeFactor = 0.0f;
 
         VkPipelineMultisampleStateCreateInfo multisampling{};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-        multisampling.minSampleShading = 1.0f; // Optional
-        multisampling.pSampleMask = nullptr; // Optional
-        multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-        multisampling.alphaToOneEnable = VK_FALSE; // Optional
+            multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+            multisampling.sampleShadingEnable = VK_FALSE;
+            multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+            multisampling.minSampleShading = 1.0f;
+            multisampling.pSampleMask = nullptr;
+            multisampling.alphaToCoverageEnable = VK_FALSE;
+            multisampling.alphaToOneEnable = VK_FALSE;
 
-        /* Последней стадией в графическом конвейере является стадия смешивания цветов. Эта стадия отвечает за запись фрагментов
-         * в цветовые подключения. Во многих случаях это простая операция, которая просто записывает содержимое выходного значения
-         * фрагментного шейдера поверх старого значения. Однакоподдеживаются смешивание этих значнеий со значениями,
-         * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
-         * шейдера и текущим содержанием фреймбуфера.*/
-
+        index = 0;
         std::array<VkPipelineColorBlendAttachmentState,2> colorBlendAttachment;
-        colorBlendAttachment[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[0].blendEnable = VK_FALSE;
-        colorBlendAttachment[0].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].colorBlendOp = VK_BLEND_OP_MAX;
-        colorBlendAttachment[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].alphaBlendOp = VK_BLEND_OP_MAX;
-
-        colorBlendAttachment[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[1].blendEnable = VK_FALSE;
-        colorBlendAttachment[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[1].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[1].colorBlendOp = VK_BLEND_OP_MAX;
-        colorBlendAttachment[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[1].alphaBlendOp = VK_BLEND_OP_MAX;
-
+            colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            colorBlendAttachment[index].blendEnable = VK_FALSE;
+            colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
+            colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
+        index++;
+            colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            colorBlendAttachment[index].blendEnable = VK_FALSE;
+            colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
+            colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
         VkPipelineColorBlendStateCreateInfo colorBlending{};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;                                                 //задаёт, необходимо ли выполнить логические операции между выводом фрагментного шейдера и содержанием цветовых подключений
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;                                               //Optional
-        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());     //количество подключений
-        colorBlending.pAttachments = colorBlendAttachment.data();                               //массив подключений
-        colorBlending.blendConstants[0] = 0.0f; // Optional
-        colorBlending.blendConstants[1] = 0.0f; // Optional
-        colorBlending.blendConstants[2] = 0.0f; // Optional
-        colorBlending.blendConstants[3] = 0.0f; // Optional
-
-        /* Для того чтобы сделать небольште изменения состояния более удобными, Vulkan предоставляет возможность помечать
-         * определенные части графического конвейера как динамически, что значит что они могут быть изменены прямо на месте
-         * при помощи команд прямо внутри командного буфера*/
-
-        VkDescriptorSetLayout SetLayouts[1] = {first.DescriptorSetLayout};
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = SetLayouts;
+            colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+            colorBlending.logicOpEnable = VK_FALSE;
+            colorBlending.logicOp = VK_LOGIC_OP_COPY;
+            colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());
+            colorBlending.pAttachments = colorBlendAttachment.data();
+            colorBlending.blendConstants[0] = 0.0f;
+            colorBlending.blendConstants[1] = 0.0f;
+            colorBlending.blendConstants[2] = 0.0f;
+            colorBlending.blendConstants[3] = 0.0f;
 
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_FALSE;
-        depthStencil.depthWriteEnable = VK_FALSE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.minDepthBounds = 0.0f; // Optional
-        depthStencil.maxDepthBounds = 1.0f; // Optional
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {}; // Optional
-        depthStencil.back = {}; // Optional
+            depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+            depthStencil.depthTestEnable = VK_FALSE;
+            depthStencil.depthWriteEnable = VK_FALSE;
+            depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+            depthStencil.depthBoundsTestEnable = VK_FALSE;
+            depthStencil.minDepthBounds = 0.0f;
+            depthStencil.maxDepthBounds = 1.0f;
+            depthStencil.stencilTestEnable = VK_FALSE;
+            depthStencil.front = {};
+            depthStencil.back = {};
 
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = 1;
+            pipelineLayoutInfo.pSetLayouts = &first.DescriptorSetLayout;
         if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &first.PipelineLayout) != VK_SUCCESS)
-        {
             throw std::runtime_error("failed to create pipeline layout!");
-        }
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;                                            //число структур в массиве структур
-        pipelineInfo.pStages = shaderStages;                                    //указывает на массив структур VkPipelineShaderStageCreateInfo, каждая из которых описыват одну стадию
-        pipelineInfo.pVertexInputState = &vertexInputInfo;                               //вершинный ввод
-        pipelineInfo.pInputAssemblyState = &inputAssembly;                             //фаза входной сборки
-        pipelineInfo.pViewportState = &viewportState;                           //Преобразование области вывода
-        pipelineInfo.pRasterizationState = &rasterizer;                         //растеризация
-        pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
-        pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
-        pipelineInfo.layout = first.PipelineLayout;                              //
-        pipelineInfo.renderPass = renderPass;                                   //проход рендеринга
-        pipelineInfo.subpass = 0;                                               //подпроход рендеригка
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-
+            pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+            pipelineInfo.pStages = shaderStages.data();
+            pipelineInfo.pVertexInputState = &vertexInputInfo;
+            pipelineInfo.pInputAssemblyState = &inputAssembly;
+            pipelineInfo.pViewportState = &viewportState;
+            pipelineInfo.pRasterizationState = &rasterizer;
+            pipelineInfo.pMultisampleState = &multisampling;
+            pipelineInfo.pColorBlendState = &colorBlending;
+            pipelineInfo.layout = first.PipelineLayout;
+            pipelineInfo.renderPass = renderPass;
+            pipelineInfo.subpass = 0;
+            pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+            pipelineInfo.pDepthStencilState = &depthStencil;
         if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &first.Pipeline) != VK_SUCCESS)
-        {
             throw std::runtime_error("failed to create graphics pipeline!");
-        }
 
         //можно удалить шейдерные модули после использования
         vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -572,164 +524,132 @@ void postProcessing::createPipelines()
     }
     void postProcessing::createSecondGraphicsPipeline()
     {
-        //считываем шейдеры
+        uint32_t index = 0;
+
         auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingVert.spv");
         auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingFrag.spv");
-        //создаём шейдерные модули
         VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
-        //задаём стадии шейдеров в конвейере
-        //вершинный
-        VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-        vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;                             //ниформацию о всех битах смотри на странице 222
-        vertShaderStageInfo.module = vertShaderModule;                                      //сюда передаём шейдерный модуль
-        vertShaderStageInfo.pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
-        //фрагментный
-        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;                           //ниформацию о всех битах смотри на странице 222
-        fragShaderStageInfo.module = fragShaderModule;                                      //сюда передаём шейдерный модуль
-        fragShaderStageInfo.pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
-
-        VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+        std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
+            shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
+            shaderStages[index].module = vertShaderModule;
+            shaderStages[index].pName = "main";
+        index++;
+            shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            shaderStages[index].module = fragShaderModule;
+            shaderStages[index].pName = "main";
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            vertexInputInfo.vertexBindingDescriptionCount = 0;
+            vertexInputInfo.pVertexBindingDescriptions = nullptr;
+            vertexInputInfo.vertexAttributeDescriptionCount = 0;
+            vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
+            inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-        /* Преобразование области вывода - это последнее преобразование координат в конвейере Vulkan до растретизации.
-         * Оно преобразует координаты вершины из нормализованных координат устройства в оконные координаты. Одновременно
-         * может использоваться несколько областей вывода.*/
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float) swapChainExtent.width;
-        viewport.height = (float) swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-
-        VkRect2D scissor{};
-        scissor.offset = {0, 0};
-        scissor.extent = swapChainExtent;
-
+        index = 0;
+        std::array<VkViewport,1> viewport{};
+            viewport[index].x = 0.0f;
+            viewport[index].y = 0.0f;
+            viewport[index].width  = (float) swapChainExtent.width;
+            viewport[index].height= (float) swapChainExtent.height;
+            viewport[index].minDepth = 0.0f;
+            viewport[index].maxDepth = 1.0f;
+        std::array<VkRect2D,1> scissor{};
+            scissor[index].offset = {0, 0};
+            scissor[index].extent = swapChainExtent;
         VkPipelineViewportStateCreateInfo viewportState{};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = 1;                                                //число областей вывода
-        viewportState.pViewports = &viewport;                                           //размер каждой области вывода
-        viewportState.scissorCount = 1;                                                 //число прямоугольников
-        viewportState.pScissors = &scissor;                                             //эксцент
-
-        /* Растеризация - это процесс, в ходе которого примитивы, представленные вершинами, преобразуются в потоки фрагментов, которых к обработке
-         * фрагментным шейдером. Состояние растеризации управляется тем, как этот процесс происходит, и задаётся при помощи следующей структуры*/
+            viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+            viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
+            viewportState.pViewports = viewport.data();
+            viewportState.scissorCount = static_cast<uint32_t>(scissor.size());;
+            viewportState.pScissors = scissor.data();
 
         VkPipelineRasterizationStateCreateInfo rasterizer{};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;                                      //используется для того чтобы полностью выключить растеризацию. Когда флаг установлен, растеризация не работает и не создаются фрагменты
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;                                      //используется для того чтобы Vulkan автоматически превращал треугольники в точки или отрезки
-        rasterizer.lineWidth = 1.0f;                                                        //толщина линии
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;                                        //параметр обрасывания
-        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;                                     //параметр направления обхода (против часовой стрелки)
-        rasterizer.depthBiasEnable = VK_FALSE;                                              //используется для того чтобы включать отсечение глубины
-        rasterizer.depthBiasConstantFactor = 0.0f; // Optional                              //
-        rasterizer.depthBiasClamp = 0.0f; // Optional
-        rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
-
-        /* Мультсемплинг - это процесс создания нескольких образцов (sample) для каждого пиксела в изображении.
-         * Они используются для борьбы с алиансингом и может заметно улучшить общее качество изображения при эффективном использовании*/
+            rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+            rasterizer.rasterizerDiscardEnable = VK_FALSE;
+            rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+            rasterizer.lineWidth = 1.0f;
+            rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+            rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+            rasterizer.depthBiasEnable = VK_FALSE;
+            rasterizer.depthBiasConstantFactor = 0.0f;
+            rasterizer.depthBiasClamp = 0.0f;
+            rasterizer.depthBiasSlopeFactor = 0.0f;
 
         VkPipelineMultisampleStateCreateInfo multisampling{};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-        multisampling.minSampleShading = 1.0f; // Optional
-        multisampling.pSampleMask = nullptr; // Optional
-        multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-        multisampling.alphaToOneEnable = VK_FALSE; // Optional
+            multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+            multisampling.sampleShadingEnable = VK_FALSE;
+            multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+            multisampling.minSampleShading = 1.0f;
+            multisampling.pSampleMask = nullptr;
+            multisampling.alphaToCoverageEnable = VK_FALSE;
+            multisampling.alphaToOneEnable = VK_FALSE;
 
-        /* Последней стадией в графическом конвейере является стадия смешивания цветов. Эта стадия отвечает за запись фрагментов
-         * в цветовые подключения. Во многих случаях это простая операция, которая просто записывает содержимое выходного значения
-         * фрагментного шейдера поверх старого значения. Однакоподдеживаются смешивание этих значнеий со значениями,
-         * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
-         * шейдера и текущим содержанием фреймбуфера.*/
-
+        index = 0;
         std::array<VkPipelineColorBlendAttachmentState,1> colorBlendAttachment;
-        colorBlendAttachment[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[0].blendEnable = VK_FALSE;
-        colorBlendAttachment[0].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].colorBlendOp = VK_BLEND_OP_MAX;
-        colorBlendAttachment[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[0].alphaBlendOp = VK_BLEND_OP_MAX;
-
+            colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            colorBlendAttachment[index].blendEnable = VK_FALSE;
+            colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
+            colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
         VkPipelineColorBlendStateCreateInfo colorBlending{};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;                                                 //задаёт, необходимо ли выполнить логические операции между выводом фрагментного шейдера и содержанием цветовых подключений
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;                                               //Optional
-        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());     //количество подключений
-        colorBlending.pAttachments = colorBlendAttachment.data();                               //массив подключений
-        colorBlending.blendConstants[0] = 0.0f; // Optional
-        colorBlending.blendConstants[1] = 0.0f; // Optional
-        colorBlending.blendConstants[2] = 0.0f; // Optional
-        colorBlending.blendConstants[3] = 0.0f; // Optional
-
-        /* Для того чтобы сделать небольште изменения состояния более удобными, Vulkan предоставляет возможность помечать
-         * определенные части графического конвейера как динамически, что значит что они могут быть изменены прямо на месте
-         * при помощи команд прямо внутри командного буфера*/
-
-        VkDescriptorSetLayout SetLayouts[1] = {second.DescriptorSetLayout};
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = SetLayouts;
+            colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+            colorBlending.logicOpEnable = VK_FALSE;
+            colorBlending.logicOp = VK_LOGIC_OP_COPY;
+            colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());
+            colorBlending.pAttachments = colorBlendAttachment.data();
+            colorBlending.blendConstants[0] = 0.0f;
+            colorBlending.blendConstants[1] = 0.0f;
+            colorBlending.blendConstants[2] = 0.0f;
+            colorBlending.blendConstants[3] = 0.0f;
 
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_FALSE;
-        depthStencil.depthWriteEnable = VK_FALSE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.minDepthBounds = 0.0f; // Optional
-        depthStencil.maxDepthBounds = 1.0f; // Optional
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {}; // Optional
-        depthStencil.back = {}; // Optional
+            depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+            depthStencil.depthTestEnable = VK_FALSE;
+            depthStencil.depthWriteEnable = VK_FALSE;
+            depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+            depthStencil.depthBoundsTestEnable = VK_FALSE;
+            depthStencil.minDepthBounds = 0.0f;
+            depthStencil.maxDepthBounds = 1.0f;
+            depthStencil.stencilTestEnable = VK_FALSE;
+            depthStencil.front = {};
+            depthStencil.back = {};
 
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = 1;
+            pipelineLayoutInfo.pSetLayouts = &second.DescriptorSetLayout;
         if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &second.PipelineLayout) != VK_SUCCESS)
-        {
             throw std::runtime_error("failed to create pipeline layout!");
-        }
 
-        VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;                                            //число структур в массиве структур
-        pipelineInfo.pStages = shaderStages;                                    //указывает на массив структур VkPipelineShaderStageCreateInfo, каждая из которых описыват одну стадию
-        pipelineInfo.pVertexInputState = &vertexInputInfo;                               //вершинный ввод
-        pipelineInfo.pInputAssemblyState = &inputAssembly;                             //фаза входной сборки
-        pipelineInfo.pViewportState = &viewportState;                           //Преобразование области вывода
-        pipelineInfo.pRasterizationState = &rasterizer;                         //растеризация
-        pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
-        pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
-        pipelineInfo.layout = second.PipelineLayout;                              //
-        pipelineInfo.renderPass = renderPass;                                   //проход рендеринга
-        pipelineInfo.subpass = 2;                                               //подпроход рендеригка
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-
-        if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &second.Pipeline) != VK_SUCCESS)
-        {
+        index = 0;
+        std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
+            pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
+            pipelineInfo[index].pStages = shaderStages.data();
+            pipelineInfo[index].pVertexInputState = &vertexInputInfo;
+            pipelineInfo[index].pInputAssemblyState = &inputAssembly;
+            pipelineInfo[index].pViewportState = &viewportState;
+            pipelineInfo[index].pRasterizationState = &rasterizer;
+            pipelineInfo[index].pMultisampleState = &multisampling;
+            pipelineInfo[index].pColorBlendState = &colorBlending;
+            pipelineInfo[index].layout = second.PipelineLayout;
+            pipelineInfo[index].renderPass = renderPass;
+            pipelineInfo[index].subpass = 2;
+            pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
+            pipelineInfo[index].pDepthStencilState = &depthStencil;
+        if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &second.Pipeline) != VK_SUCCESS)
             throw std::runtime_error("failed to create graphics pipeline!");
-        }
 
         //можно удалить шейдерные модули после использования
         vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -739,126 +659,101 @@ void postProcessing::createPipelines()
 void postProcessing::createDescriptorPool()
 {
     size_t index = 0;
-    std::vector<VkDescriptorPoolSize> firstPoolSizes(1);
+    std::array<VkDescriptorPoolSize,1> firstPoolSizes;
         firstPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         firstPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-
     VkDescriptorPoolCreateInfo firstPoolInfo{};
         firstPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         firstPoolInfo.poolSizeCount = static_cast<uint32_t>(firstPoolSizes.size());
         firstPoolInfo.pPoolSizes = firstPoolSizes.data();
         firstPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
-
     if (vkCreateDescriptorPool(app->getDevice(), &firstPoolInfo, nullptr, &first.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor pool 1!");
 
     index = 0;
-    std::vector<VkDescriptorPoolSize> secondPoolSizes(3);
+    std::array<VkDescriptorPoolSize,2> secondPoolSizes;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-    index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-
     VkDescriptorPoolCreateInfo secondPoolInfo{};
         secondPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         secondPoolInfo.poolSizeCount = static_cast<uint32_t>(secondPoolSizes.size());
         secondPoolInfo.pPoolSizes = secondPoolSizes.data();
         secondPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
-
     if (vkCreateDescriptorPool(app->getDevice(), &secondPoolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor pool 2!");
 }
 
 void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments)
 {
+    first.DescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> firstLayouts(imageCount, first.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo firstAllocInfo{};
         firstAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         firstAllocInfo.descriptorPool = first.DescriptorPool;
         firstAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         firstAllocInfo.pSetLayouts = firstLayouts.data();
-
-    first.DescriptorSets.resize(imageCount);
     if (vkAllocateDescriptorSets(app->getDevice(), &firstAllocInfo, first.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate descriptor sets 1!");
 
     for (size_t image = 0; image < imageCount; image++)
     {
+        uint32_t index = 0;
+
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
         std::array<VkDescriptorImageInfo, 1> imageInfo;
-
-            imageInfo[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[0].imageView = Attachments[1].imageView[image];
-            imageInfo[0].sampler = Attachments[1].sampler;
-
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = first.DescriptorSets[image];
-            descriptorWrites[0].dstBinding = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pImageInfo = &imageInfo[0];
-
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = Attachments[1].imageView[image];
+            imageInfo[index].sampler = Attachments[1].sampler;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = first.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &imageInfo[index];
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
+    second.DescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> layouts(imageCount, second.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = second.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
-
-    second.DescriptorSets.resize(imageCount);
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate descriptor sets 2!");
 
     for (size_t image = 0; image < imageCount; image++)
     {
-        uint32_t i = 0;
-        std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-        std::array<VkDescriptorImageInfo, 3> imageInfo;
+        uint32_t index = 0;
 
-            imageInfo[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[i].imageView = Attachments[0].imageView[image];
-            imageInfo[i].sampler = Attachments[0].sampler;
-
-            descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[i].dstSet = second.DescriptorSets[image];
-            descriptorWrites[i].dstBinding = i;
-            descriptorWrites[i].dstArrayElement = 0;
-            descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[i].descriptorCount = 1;
-            descriptorWrites[i].pImageInfo = &imageInfo[i];
-    i++;
-            imageInfo[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[i].imageView = this->Attachments[0].imageView[image];
-            imageInfo[i].sampler = this->Attachments[0].sampler;
-
-            descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[i].dstSet = second.DescriptorSets[image];
-            descriptorWrites[i].dstBinding = i;
-            descriptorWrites[i].dstArrayElement = 0;
-            descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[i].descriptorCount = 1;
-            descriptorWrites[i].pImageInfo = &imageInfo[i];
-     i++;
-            imageInfo[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[i].imageView = Attachments[2].imageView[image];
-            imageInfo[i].sampler = Attachments[2].sampler;
-
-            descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[i].dstSet = second.DescriptorSets[image];
-            descriptorWrites[i].dstBinding = i;
-            descriptorWrites[i].dstArrayElement = 0;
-            descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[i].descriptorCount = 1;
-            descriptorWrites[i].pImageInfo = &imageInfo[i];
-
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        std::array<VkDescriptorImageInfo, 2> imageInfo;
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = Attachments[0].imageView[image];
+            imageInfo[index].sampler = Attachments[0].sampler;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &imageInfo[index];
+        index++;
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = this->Attachments[0].imageView[image];
+            imageInfo[index].sampler = this->Attachments[0].sampler;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &imageInfo[index];
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

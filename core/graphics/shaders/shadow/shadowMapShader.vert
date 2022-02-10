@@ -1,6 +1,6 @@
 #version 450
 #define MAX_NUM_JOINTS 130
-#define MAX_LIGHT_SOURCES 8
+#define MAX_LIGHT_SOURCES 10
 
 struct LightBufferObject
 {

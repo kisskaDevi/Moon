@@ -94,6 +94,7 @@ private:
 
     VkInstance                                  instance;
     GLFWwindow                                  *window;
+    GLFWimage                                   images;
     VkSurfaceKHR                                surface;
     VkDebugUtilsMessengerEXT                    debugMessenger;
 

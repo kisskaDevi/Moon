@@ -6,11 +6,11 @@
 class group : public transformational
 {
 private:
-    std::vector<transformational *> objects;
-    glm::vec3 m_translate;
-    glm::quat m_rotate;
-    glm::vec3 m_scale;
-    glm::mat4x4 m_globalTransform;
+    std::vector<transformational *>     objects;
+    glm::vec3                           m_translate;
+    glm::quat                           m_rotate;
+    glm::vec3                           m_scale;
+    glm::mat4x4                         m_globalTransform;
 
 public:
     group();

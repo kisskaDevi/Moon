@@ -1,6 +1,6 @@
 #version 450
 #define MAX_NUM_JOINTS 130
-#define MAX_LIGHT_SOURCES 6
+#define MAX_LIGHT_SOURCES 10
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
@@ -12,6 +12,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
     mat4 matrix;
+    vec4 color;
 } local;
 
 layout (set = 2, binding = 0) uniform UBONode

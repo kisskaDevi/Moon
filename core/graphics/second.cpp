@@ -209,37 +209,37 @@ void graphics::createSecondDescriptorPool()
 
     std::array<VkDescriptorPoolSize,9+MAX_LIGHT_SOURCE_COUNT> poolSizes{};
         for(index = 0;index<6; index++)
-            poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(imageCount)};
+            poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
         for(size_t i=index;i<index+MAX_LIGHT_SOURCE_COUNT;i++)
-            poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)};
+            poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
     index+=MAX_LIGHT_SOURCE_COUNT;
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)};
+        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     index++;
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)};
+        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     index++;
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)};
+        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor pool!");
 }
 
 void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSource)
 {
-    second.DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, second.DescriptorSetLayout);
+    second.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, second.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = second.DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate descriptor sets!");
 
-    for (size_t i = 0; i < imageCount; i++)
+    for (size_t i = 0; i < image.Count; i++)
     {
         uint32_t index = 0;
 

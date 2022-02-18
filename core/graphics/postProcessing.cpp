@@ -273,16 +273,16 @@ void postProcessing::createRenderPass()
     std::array<VkSubpassDependency,3> dependency{};                                                                                        //зависимости
         dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
         dependency[index].dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;                                                    //задаёт как стадии конвейера в исходном проходе создают данные
-        dependency[index].srcAccessMask = 0;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
+        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                                                                 //задаёт как стадии конвейера в исходном проходе создают данные
+        dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
         dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     index++;
         dependency[index].srcSubpass = 0;
         dependency[index].dstSubpass = 1;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         dependency[index].srcAccessMask = 0;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         dependency[index].dstAccessMask = 0;
     index++;
         dependency[index].srcSubpass = 1;
@@ -290,7 +290,7 @@ void postProcessing::createRenderPass()
         dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency[index].srcAccessMask = 0;
         dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

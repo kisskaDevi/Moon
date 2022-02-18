@@ -186,33 +186,33 @@ void graphics::createSkyboxDescriptorPool()
 
     std::array<VkDescriptorPoolSize,2> poolSizes;
         poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
         poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &skybox.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor pool!");
 }
 
 void graphics::createSkyboxDescriptorSets()
 {
-    skybox.DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, skybox.DescriptorSetLayout);
+    skybox.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, skybox.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = skybox.DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, skybox.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate descriptor sets!");
 
-    for (size_t i = 0; i < imageCount; i++)
+    for (size_t i = 0; i < image.Count; i++)
     {
         size_t index = 0;
 

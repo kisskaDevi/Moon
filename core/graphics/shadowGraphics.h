@@ -3,7 +3,7 @@
 
 #include "core/vulkanCore.h"
 
-const int MAX_LIGHT_SOURCE_COUNT = 10;
+const int MAX_LIGHT_SOURCE_COUNT = 16;
 
 struct shadowInfo{
     uint32_t                    imageCount;
@@ -14,6 +14,8 @@ struct shadowInfo{
 
 struct LightBufferObject
 {
+    alignas(16) glm::mat4   proj;
+    alignas(16) glm::mat4   view;
     alignas(16) glm::mat4   projView;
     alignas(16) glm::vec4   position;
     alignas(16) glm::vec4   lightColor;
@@ -31,12 +33,11 @@ class shadowGraphics
 private:
     VkApplication                       *app;
 
-    int                                 LIGHT_COMMAND_POOLS = 1;
-
-    uint32_t                            SHADOW_MAP_WIDTH = 1024;
-    uint32_t                            SHADOW_MAP_HEIGHT = 1024;
-    uint32_t                            mipLevels;
-    uint32_t                            imageCount;
+    struct Image{
+        uint32_t                            Count;
+        VkExtent2D                          Extent;
+        uint32_t                            MipLevels = 1;
+    }image;
 
     attachment                          depthAttachment;
     VkSampler                           shadowSampler;
@@ -70,7 +71,7 @@ public:
     void createMapView();
     void createSampler();
 
-    void createCommandPool();
+    void createCommandPool(uint32_t commandPoolCount);
 
     void createRenderPass();
     void createFramebuffer();

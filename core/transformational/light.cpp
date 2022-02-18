@@ -94,8 +94,10 @@ void light<spotLight>::createShadow(uint32_t commandPoolsCount)
 LightBufferObject light<spotLight>::getLightBufferObject() const
 {
     LightBufferObject buffer;
+        buffer.proj = projectionMatrix;
+        buffer.view = viewMatrix;
         buffer.projView = projectionMatrix * viewMatrix;
-        buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);;
+        buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
         buffer.lightColor = lightColor;
         buffer.type = type;
         buffer.enableShadow = static_cast<uint32_t>(enableShadow);

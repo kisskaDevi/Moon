@@ -1,9 +1,11 @@
 #version 450
 #define MAX_NUM_JOINTS 130
-#define MAX_LIGHT_SOURCES 10
+#define MAX_LIGHT_SOURCES 12
 
 struct LightBufferObject
 {
+    mat4 proj;
+    mat4 view;
     mat4 projView;
     vec4 position;
     vec4 lightColor;

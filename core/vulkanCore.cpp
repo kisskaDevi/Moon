@@ -283,27 +283,25 @@ void VkApplication::createLogicalDevice()
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};              //дополнительные возможности
-    deviceFeatures.samplerAnisotropy = VK_TRUE;             //анизотропная фильтрация
-    deviceFeatures.independentBlend = VK_TRUE;
-    deviceFeatures.sampleRateShading = VK_TRUE;
-    deviceFeatures.imageCubeArray = VK_TRUE;
+        deviceFeatures.samplerAnisotropy = VK_TRUE;         //анизотропная фильтрация
+        deviceFeatures.independentBlend = VK_TRUE;
+        deviceFeatures.sampleRateShading = VK_TRUE;
+        deviceFeatures.imageCubeArray = VK_TRUE;
 
     //создаём информацию о новом логическом устройстве
     VkDeviceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());   //количество очередей в массиве
-    createInfo.pQueueCreateInfos = queueCreateInfos.data();                             //массив очередей соответственно
-    createInfo.pEnabledFeatures = &deviceFeatures;                                      //поддерживаемые дополнительные возможности устройства
-    //Для использования swapchain необходимо сначала включить VK_KHR_swapchain расширение.
-    //Для включения расширения требуется лишь небольшое изменение структуры создания логического устройства:
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());  //задаём количество расширений (оно у нас одно)
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();                       //передём имена этих расширений
-
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());   //количество очередей в массиве
+        createInfo.pQueueCreateInfos = queueCreateInfos.data();                             //массив очередей соответственно
+        createInfo.pEnabledFeatures = &deviceFeatures;                                      //поддерживаемые дополнительные возможности устройства
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());  //задаём количество расширений
+        createInfo.ppEnabledExtensionNames = deviceExtensions.data();                       //передём имена этих расширений
     if (enableValidationLayers)
     {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-    } else {createInfo.enabledLayerCount = 0;}
+    } else
+        createInfo.enabledLayerCount = 0;
 
     if (vkCreateDevice(PhysicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)    //создание логического устройства
         throw std::runtime_error("failed to create logical device!");
@@ -332,16 +330,12 @@ void VkApplication::createCommandPool()
      * Прежде чем вы можете запоминать какие-либо  команды, вам нужно создать командный буфер.
      * Командные буферы не создаются явно, а выделяются из пулов.*/
 
-    QueueFamilyIndices queueFamilyIndices = this->indices;  //находим индексы очередей
-
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();      //задаёт семейство очередей, в которые будет передаваться созданные командные буферы
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;           //задаёт флаги, определяющие поведение пула и командных буферов, выделяемых из него
-
     commandPool.resize(COMMAND_POOLS);
     commandBuffers.resize(COMMAND_POOLS);
-
+    VkCommandPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.queueFamilyIndex = indices.graphicsFamily.value();                 //задаёт семейство очередей, в которые будет передаваться созданные командные буферы
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;           //задаёт флаги, определяющие поведение пула и командных буферов, выделяемых из него
     for(size_t i=0;i<COMMAND_POOLS;i++)
         if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool.at(i)) != VK_SUCCESS) //создание пула команд
             throw std::runtime_error("failed to create command pool!");
@@ -386,14 +380,14 @@ void VkApplication::createObjects()
 {
     uint32_t index=0;
     object3D.push_back( new object(this,{gltfModel.at(0),emptyTexture}) );
-    Graphics.bindStencilObject(object3D.at(index));
+    Graphics.bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
     object3D.push_back( new object(this,{gltfModel.at(1),emptyTexture}) );
-    Graphics.bindStencilObject(object3D.at(index));
+    Graphics.bindStencilObject(object3D.at(index),1.0f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -402,7 +396,7 @@ void VkApplication::createObjects()
     index++;
 
     object3D.push_back( new object(this,{gltfModel.at(4),emptyTexture}) );
-    Graphics.bindStencilObject(object3D.at(index));
+    Graphics.bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(15.0f,15.0f,15.0f));
     object3D.at(index)->animationTimer = 0.0f;
@@ -415,7 +409,6 @@ void VkApplication::createObjects()
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
     index++;
-
 
     object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
     Graphics.bindBloomObject(object3D.at(index));
@@ -558,8 +551,7 @@ void VkApplication::createGraphics()
     PostProcessing.createPipelines();
 
     Graphics.setApplication(this);
-    Graphics.setMSAASamples(msaaSamples);
-    Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent());
+    Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent(),msaaSamples);
     Graphics.setEmptyTexture(emptyTextureW);
     Graphics.setSkyboxTexture(skybox);
 
@@ -782,7 +774,8 @@ void VkApplication::VkApplication::mainLoop()
         }
             void VkApplication::updateUniformBuffer(uint32_t currentImage)
             {
-                Graphics.updateUniformBuffer(currentImage, cam, skyboxObject);
+                Graphics.updateUniformBuffer(currentImage, cam);
+                Graphics.updateSkyboxUniformBuffer(currentImage, cam, skyboxObject);
                 for(size_t i=0;i<object3D.size();i++)
                     object3D.at(i)->updateUniformBuffer(currentImage);
             }

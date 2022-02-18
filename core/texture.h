@@ -2,11 +2,11 @@
 #define TEXTURE_H
 
 #include "vulkanCore.h"
+#include "operations.h"
 
 namespace tinygltf{
     struct Image;
 };
-
 
 struct textureSampler {
     VkFilter magFilter;
@@ -39,6 +39,7 @@ private:
     {
         VkImage textureImage;
         bool enable = false;
+        VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
         void destroy(VkApplication* app)
         {
             if(enable){
@@ -94,6 +95,7 @@ public:
     void setVkApplication(VkApplication* app);
     void setTextureNumber(uint32_t number);
     void setMipLevel(float mipLevel);
+    void setTextureFormat(VkFormat format);
 
     VkImageView & getTextureImageView();
     VkSampler   & getTextureSampler();
@@ -124,6 +126,7 @@ private:
     {
         VkImage textureImage;
         bool enable = false;
+        VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
         void destroy(VkApplication* app)
         {
             if(enable){
@@ -178,6 +181,7 @@ public:
     void setVkApplication(VkApplication* app);
     void setTextureNumber(uint32_t number);
     void setMipLevel(float mipLevel);
+    void setTextureFormat(VkFormat format);
 
     VkImageView & getTextureImageView();
     VkSampler   & getTextureSampler();

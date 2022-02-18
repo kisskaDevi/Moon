@@ -3,22 +3,23 @@
 #include "core/operations.h"
 #include "core/transformational/gltfmodel.h"
 
-shadowGraphics::shadowGraphics(VkApplication *app, uint32_t imageCount): app(app),imageCount(imageCount)
+shadowGraphics::shadowGraphics(VkApplication *app, uint32_t imageCount): app(app)
 {
-
+    image.Count = imageCount;
+    image.Extent.width = 1024;
+    image.Extent.height = 1024;
 }
 
 void shadowGraphics::createMap()
 {
-    mipLevels = 1;
     VkFormat shadowFormat = findDepthFormat(app);
-    createImage(app,SHADOW_MAP_WIDTH,SHADOW_MAP_HEIGHT,mipLevels,VK_SAMPLE_COUNT_1_BIT,shadowFormat,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthAttachment.image, depthAttachment.imageMemory);
+    createImage(app,image.Extent.width,image.Extent.height,image.MipLevels,VK_SAMPLE_COUNT_1_BIT,shadowFormat,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthAttachment.image, depthAttachment.imageMemory);
 }
 
 void shadowGraphics::createMapView()
 {
     VkFormat shadowFormat = findDepthFormat(app);
-    depthAttachment.imageView = createImageView(app,depthAttachment.image, shadowFormat, VK_IMAGE_ASPECT_DEPTH_BIT, mipLevels);
+    depthAttachment.imageView = createImageView(app,depthAttachment.image, shadowFormat, VK_IMAGE_ASPECT_DEPTH_BIT, image.MipLevels);
 }
 
 void shadowGraphics::destroy()
@@ -55,8 +56,8 @@ void shadowGraphics::createSampler()
         samplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-        samplerInfo.minLod = static_cast<float>(mipLevel*mipLevels);
-        samplerInfo.maxLod = static_cast<float>(mipLevels);
+        samplerInfo.minLod = static_cast<float>(mipLevel*image.MipLevels);
+        samplerInfo.maxLod = static_cast<float>(image.MipLevels);
         samplerInfo.mipLodBias = 0.0f;
     if (vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &shadowSampler) != VK_SUCCESS)
         throw std::runtime_error("failed to create texture sampler!");
@@ -107,7 +108,7 @@ void shadowGraphics::createRenderPass()
 
 void shadowGraphics::createFramebuffer()
 {
-    shadowMapFramebuffer.resize(imageCount);
+    shadowMapFramebuffer.resize(image.Count);
     for (size_t i = 0; i < shadowMapFramebuffer.size(); i++)
     {
         VkFramebufferCreateInfo framebufferInfo;
@@ -116,18 +117,18 @@ void shadowGraphics::createFramebuffer()
             framebufferInfo.renderPass = RenderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &depthAttachment.imageView;
-            framebufferInfo.width = SHADOW_MAP_WIDTH;
-            framebufferInfo.height = SHADOW_MAP_HEIGHT;
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
             framebufferInfo.flags = 0;
         vkCreateFramebuffer(app->getDevice(), &framebufferInfo, NULL, &shadowMapFramebuffer.at(i));
     }
 }
 
-void shadowGraphics::createCommandPool()
+void shadowGraphics::createCommandPool(uint32_t commandPoolsCount)
 {
-    shadowCommandPool.resize(LIGHT_COMMAND_POOLS);
-    shadowCommandBuffer.resize(LIGHT_COMMAND_POOLS);
+    shadowCommandPool.resize(commandPoolsCount);
+    shadowCommandBuffer.resize(commandPoolsCount);
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = app->getQueueFamilyIndices().graphicsFamily.value();
@@ -329,13 +330,13 @@ void shadowGraphics::createDescriptorPool()
     size_t index = 0;
     std::vector<VkDescriptorPoolSize> poolSizes(1);
         poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
 
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &shadow.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor pool!");
@@ -343,18 +344,18 @@ void shadowGraphics::createDescriptorPool()
 
 void shadowGraphics::createDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers)
 {
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, shadow.DescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, shadow.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = shadow.DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
 
-    shadow.DescriptorSets.resize(imageCount);
+    shadow.DescriptorSets.resize(image.Count);
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, shadow.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate descriptor sets!");
 
-    for (size_t i = 0; i < imageCount; i++)
+    for (size_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo lightBufferInfo;
             lightBufferInfo.buffer = lightUniformBuffers[i];
@@ -368,19 +369,18 @@ void shadowGraphics::createDescriptorSets(std::vector<VkBuffer> &lightUniformBuf
             descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.descriptorCount = 1;
             descriptorWrites.pBufferInfo = &lightBufferInfo;
-
         vkUpdateDescriptorSets(app->getDevice(), 1, &descriptorWrites, 0, nullptr);
     }
 }
 
 void shadowGraphics::createCommandBuffers(uint32_t number)
 {
-    shadowCommandBuffer[number].resize(imageCount);
+    shadowCommandBuffer[number].resize(image.Count);
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = shadowCommandPool[number];
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount =  imageCount;
+        allocInfo.commandBufferCount = image.Count;
     if (vkAllocateCommandBuffers(app->getDevice(), &allocInfo, shadowCommandBuffer[number].data()) != VK_SUCCESS)
     {throw std::runtime_error("failed to allocate command buffers!");}
 }
@@ -405,16 +405,16 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, std::vect
         renderPassInfo.framebuffer = shadowMapFramebuffer[i];
         renderPassInfo.renderArea.offset.x = 0;
         renderPassInfo.renderArea.offset.y = 0;
-        renderPassInfo.renderArea.extent.width = SHADOW_MAP_WIDTH;
-        renderPassInfo.renderArea.extent.height = SHADOW_MAP_HEIGHT;
+        renderPassInfo.renderArea.extent.width = image.Extent.width;
+        renderPassInfo.renderArea.extent.height = image.Extent.height;
         renderPassInfo.clearValueCount = 1;
         renderPassInfo.pClearValues = &clearValues;
 
     vkCmdBeginRenderPass(shadowCommandBuffer[number][i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         VkViewport viewport;
-            viewport.height = SHADOW_MAP_HEIGHT;
-            viewport.width = SHADOW_MAP_WIDTH;
+            viewport.width = image.Extent.width;
+            viewport.height = image.Extent.height;
             viewport.minDepth = 0.0f;
             viewport.maxDepth = 1.0f;
             viewport.x = 0;
@@ -422,8 +422,8 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, std::vect
         vkCmdSetViewport(shadowCommandBuffer[number][i], 0, 1, &viewport);
 
         VkRect2D scissor;
-            scissor.extent.width = SHADOW_MAP_WIDTH;
-            scissor.extent.height = SHADOW_MAP_HEIGHT;
+            scissor.extent.width = image.Extent.width;
+            scissor.extent.height = image.Extent.height;
             scissor.offset.x = 0;
             scissor.offset.y = 0;
         vkCmdSetScissor(shadowCommandBuffer[number][i], 0, 1, &scissor);
@@ -477,16 +477,14 @@ void shadowGraphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDe
 
 void shadowGraphics::createShadow(uint32_t commandPoolsCount)
 {
-    this->LIGHT_COMMAND_POOLS = commandPoolsCount;
-
-    createCommandPool();
+    createCommandPool(commandPoolsCount);
     createMap();
     createMapView();
     createSampler();
     createRenderPass();
     createFramebuffer();
     shadow.createDescriptorSetLayout(app);
-    shadow.createPipeline(app,{imageCount,SHADOW_MAP_WIDTH,SHADOW_MAP_HEIGHT,RenderPass});
+    shadow.createPipeline(app,{image.Count,image.Extent.width,image.Extent.height,RenderPass});
     createDescriptorPool();
 }
 
@@ -494,5 +492,5 @@ VkImageView                     & shadowGraphics::getImageView(){return depthAtt
 VkSampler                       & shadowGraphics::getSampler(){return shadowSampler;}
 std::vector<VkCommandBuffer>    & shadowGraphics::getCommandBuffer(uint32_t number){return shadowCommandBuffer[number];}
 
-uint32_t                        shadowGraphics::getWidth() const {return SHADOW_MAP_WIDTH;}
-uint32_t                        shadowGraphics::getHeight() const {return SHADOW_MAP_HEIGHT;}
+uint32_t                        shadowGraphics::getWidth() const {return image.Extent.width;}
+uint32_t                        shadowGraphics::getHeight() const {return image.Extent.height;}

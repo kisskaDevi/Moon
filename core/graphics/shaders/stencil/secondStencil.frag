@@ -15,28 +15,15 @@ layout(location = 3) out vec4 outMetallicRoughness;
 layout(location = 4) out vec4 outOcclusion;
 layout(location = 5) out vec4 outEmissiveTexture;
 
-layout (push_constant) uniform Material
+layout (push_constant) uniform Stencil
 {
-        vec4 baseColorFactor;
-	vec4 emissiveFactor;
-	vec4 diffuseFactor;
-	vec4 specularFactor;
-	float workflow;
-	int baseColorTextureSet;
-	int physicalDescriptorTextureSet;
-	int normalTextureSet;
-	int occlusionTextureSet;
-	int emissiveTextureSet;
-	float metallicFactor;
-	float roughnessFactor;
-	float alphaMask;
-	float alphaMaskCutoff;
-} material;
+    vec4 color;
+} stencil;
 
 void main()
 {
     outPosition = position;
-    outBaseColor = vec4(0.0,5.0,8.0,1.0f);
+    outBaseColor = stencil.color;
     outMetallicRoughness = vec4(0.0,0.0,0.0,0.0f);
     outNormal = vec4(0.0,0.0,0.0,0.0f);
     outOcclusion = vec4(0.0,0.0,0.0,0.0f);

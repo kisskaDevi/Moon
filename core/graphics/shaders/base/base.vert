@@ -35,7 +35,8 @@ layout(location = 1)	out vec3 outNormal;
 layout(location = 2)	out vec2 outUV0;
 layout(location = 3)	out vec2 outUV1;
 layout(location = 4)	out vec4 eyePosition;
-layout(location = 5)	out mat3 TBN;
+layout(location = 5)	out vec3 outTangent;
+layout(location = 6)	out vec3 outBitangent;
 
 void main()
 {
@@ -44,7 +45,6 @@ void main()
     eyePosition = global.eyePosition;
 
     mat4x4 model = local.matrix*node.matrix;
-    vec3 tangent, bitangent;
     if (node.jointCount > 0.0)
     {
 	    // Mesh is skinned
@@ -55,21 +55,17 @@ void main()
 	            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
 
 	    model *= skinMat;
-	    outPosition	    =		model * vec4(inPosition,1.0);
-	    mat3 mNormal = transpose(inverse(mat3(model)));
-	    outNormal	    = normalize(vec3(mNormal * inNormal));
-	    tangent	    = normalize(vec3(mNormal * inTangent));
-	    bitangent	    = normalize(vec3(mNormal * inBitangent));
+	    outPosition	    =		     model * vec4(inPosition,	1.0);
+	    outNormal	    = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
+	    outTangent	    = normalize(vec3(model * vec4(inTangent,	0.0)));
+	    outBitangent    = normalize(vec3(model * vec4(inBitangent,	0.0)));
     } else
     {
-	    outPosition	    =		model * vec4(inPosition,1.0);
-	    mat3 mNormal = transpose(inverse(mat3(model)));
-	    outNormal	    = normalize(vec3(mNormal * inNormal));
-	    tangent	    = normalize(vec3(mNormal * inTangent));
-	    bitangent	    = normalize(vec3(mNormal * inBitangent));
+	    outPosition	    =		     model * vec4(inPosition,	1.0);
+	    outNormal	    = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
+	    outTangent	    = normalize(vec3(model * vec4(inTangent,	0.0)));
+	    outBitangent    = normalize(vec3(model * vec4(inBitangent,	0.0)));
     }
-
-    TBN = mat3(tangent, bitangent, outNormal);
 
     gl_Position = global.proj * global.view * outPosition;
 }

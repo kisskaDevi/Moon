@@ -6,20 +6,19 @@
 #include "core/transformational/light.h"
 #include "core/graphics/shadowGraphics.h"
 
-graphics::graphics()
-{
+graphics::graphics(){}
 
-}
+std::vector<attachments>        &graphics::getAttachments(){return Attachments;}
 
-void graphics::setApplication(VkApplication * app){this->app = app;}
-void graphics::setEmptyTexture(texture *emptyTexture){this->emptyTexture = emptyTexture;}
-void graphics::setMSAASamples(VkSampleCountFlagBits msaaSamples){this->msaaSamples = msaaSamples;}
-void graphics::setSkyboxTexture(cubeTexture *tex){skybox.texture = tex;}
-void graphics::setImageProp(uint32_t imageCount, VkFormat format, VkExtent2D extent)
+void                            graphics::setApplication(VkApplication * app){this->app = app;}
+void                            graphics::setEmptyTexture(texture *emptyTexture){this->emptyTexture = emptyTexture;}
+void                            graphics::setSkyboxTexture(cubeTexture *tex){skybox.texture = tex;}
+void                            graphics::setImageProp(uint32_t imageCount, VkFormat imageFormat, VkExtent2D imageExtent, VkSampleCountFlagBits imageSamples)
 {
-    this->imageCount = imageCount;
-    imageFormat = format;
-    this->extent = extent;
+    image.Count = imageCount;
+    image.Format = imageFormat;
+    image.Extent = imageExtent;
+    image.Samples = imageSamples;
 }
 
 void graphics::destroy()
@@ -49,7 +48,7 @@ void graphics::destroy()
 
 void graphics::createAttachments()
 {
-    if(msaaSamples!=VK_SAMPLE_COUNT_1_BIT)
+    if(image.Samples!=VK_SAMPLE_COUNT_1_BIT)
         createColorAttachments();
     createDepthAttachment();
     createResolveAttachments();
@@ -60,19 +59,19 @@ void graphics::createColorAttachments()
     colorAttachments.resize(8);
     for(size_t i=0;i<2;i++)
     {
-        createImage(app,extent.width, extent.height,
-                    1, msaaSamples, imageFormat,
+        createImage(app,image.Extent.width, image.Extent.height,
+                    1, image.Samples, image.Format,
                     VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
         createImageView(app, colorAttachments.at(i).image,
-                        imageFormat, VK_IMAGE_ASPECT_COLOR_BIT,
+                        image.Format, VK_IMAGE_ASPECT_COLOR_BIT,
                         1, &colorAttachments.at(i).imageView);
     }
     for(size_t i=2;i<4;i++)
     {
-        createImage(app,extent.width, extent.height,
-                    1, msaaSamples, VK_FORMAT_R16G16B16A16_SFLOAT,
+        createImage(app,image.Extent.width, image.Extent.height,
+                    1, image.Samples, VK_FORMAT_R16G16B16A16_SFLOAT,
                     VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
@@ -82,21 +81,21 @@ void graphics::createColorAttachments()
     }
     for(size_t i=4;i<colorAttachments.size();i++)
     {
-        createImage(app,extent.width, extent.height,
-                    1, msaaSamples, imageFormat,
+        createImage(app,image.Extent.width, image.Extent.height,
+                    1, image.Samples, VK_FORMAT_R8G8B8A8_UNORM,
                     VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
         createImageView(app, colorAttachments.at(i).image,
-                        imageFormat, VK_IMAGE_ASPECT_COLOR_BIT,
+                        VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT,
                         1, &colorAttachments.at(i).imageView);
     }
 }
 void graphics::createDepthAttachment()
 {
     createImage(app,
-                extent.width, extent.height,
-                1, msaaSamples,
+                image.Extent.width, image.Extent.height,
+                1, image.Samples,
                 findDepthStencilFormat(app),
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -111,45 +110,46 @@ void graphics::createResolveAttachments()
     Attachments.resize(8);
     for(size_t i=0;i<2;i++)
     {
-        Attachments[i].resize(imageCount);
-        for(size_t image=0; image<imageCount; image++)
+        Attachments[i].resize(image.Count);
+        for(size_t Image=0; Image<image.Count; Image++)
         {
-            createImage(app,extent.width,extent.height,
-                        1,VK_SAMPLE_COUNT_1_BIT,imageFormat,
+            createImage(app,image.Extent.width,image.Extent.height,
+                        1,VK_SAMPLE_COUNT_1_BIT,image.Format,
                         VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[image], Attachments[i].imageMemory[image]);
-            createImageView(app, Attachments[i].image[image],
-                            imageFormat, VK_IMAGE_ASPECT_COLOR_BIT,
-                            1, &Attachments[i].imageView[image]);
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[Image], Attachments[i].imageMemory[Image]);
+            createImageView(app, Attachments[i].image[Image],
+                            image.Format, VK_IMAGE_ASPECT_COLOR_BIT,
+                            1, &Attachments[i].imageView[Image]);
         }
     }
     for(size_t i=2;i<4;i++)
     {
-        Attachments[i].resize(imageCount);
-        for(size_t image=0; image<imageCount; image++)
+        Attachments[i].resize(image.Count);
+        for(size_t Image=0; Image<image.Count; Image++)
         {
-            createImage(app,extent.width,extent.height,
+            createImage(app,image.Extent.width,image.Extent.height,
                         1,VK_SAMPLE_COUNT_1_BIT,
                         VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_TILING_OPTIMAL,
                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[image], Attachments[i].imageMemory[image]);
-            createImageView(app, Attachments[i].image[image],
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[Image], Attachments[i].imageMemory[Image]);
+            createImageView(app, Attachments[i].image[Image],
                             VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_ASPECT_COLOR_BIT,
-                            1, &Attachments[i].imageView[image]);
+                            1, &Attachments[i].imageView[Image]);
         }
     }
     for(size_t i=4;i<Attachments.size();i++)
     {
-        Attachments[i].resize(imageCount);
-        for(size_t image=0; image<imageCount; image++)
+        Attachments[i].resize(image.Count);
+        for(size_t Image=0; Image<image.Count; Image++)
         {
-            createImage(app,extent.width,extent.height,
-                        1,VK_SAMPLE_COUNT_1_BIT,imageFormat,VK_IMAGE_TILING_OPTIMAL,
+            createImage(app,image.Extent.width,image.Extent.height,
+                        1,VK_SAMPLE_COUNT_1_BIT,
+                        VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_TILING_OPTIMAL,
                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[image], Attachments[i].imageMemory[image]);
-            createImageView(app, Attachments[i].image[image],
-                            imageFormat,VK_IMAGE_ASPECT_COLOR_BIT,
-                            1, &Attachments[i].imageView[image]);
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[Image], Attachments[i].imageMemory[Image]);
+            createImageView(app, Attachments[i].image[Image],
+                            VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_ASPECT_COLOR_BIT,
+                            1, &Attachments[i].imageView[Image]);
         }
     }
 
@@ -181,7 +181,7 @@ void graphics::createResolveAttachments()
 
 void graphics::createRenderPass()
 {
-    if(msaaSamples==VK_SAMPLE_COUNT_1_BIT)
+    if(image.Samples==VK_SAMPLE_COUNT_1_BIT)
     {
         oneSampleRenderPass();
     }else{
@@ -194,7 +194,7 @@ void graphics::createRenderPass()
         for(size_t i=0;i<2;i++)
         {
             VkAttachmentDescription colorAttachment{};
-                colorAttachment.format = imageFormat;
+                colorAttachment.format = image.Format;
                 colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
                 colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -220,7 +220,7 @@ void graphics::createRenderPass()
         for(size_t i=4;i<Attachments.size();i++)
         {
             VkAttachmentDescription colorAttachment{};
-                colorAttachment.format = imageFormat;
+                colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
                 colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
                 colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -232,7 +232,7 @@ void graphics::createRenderPass()
         }
         VkAttachmentDescription depthAttachment{};
             depthAttachment.format = findDepthStencilFormat(app);
-            depthAttachment.samples = msaaSamples;
+            depthAttachment.samples = image.Samples;
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -304,7 +304,7 @@ void graphics::createRenderPass()
         std::vector<VkSubpassDependency> dependency(2);
             dependency.at(index).srcSubpass = VK_SUBPASS_EXTERNAL;                                                                              //ссылка из исходного прохода (создавшего данные)
             dependency.at(index).dstSubpass = 0;                                                                                                //в целевой подпроход (поглощающий данные)
-            dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;                                                           //задаёт как стадии конвейера в исходном проходе создают данные
+            dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                                                              //задаёт как стадии конвейера в исходном проходе создают данные
             dependency.at(index).srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;                                                                     //поля задают как каждый из исходных проходов обращается к данным
             dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
             dependency.at(index).dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -312,9 +312,9 @@ void graphics::createRenderPass()
             dependency.at(index).srcSubpass = 0;                                                                                                //ссылка из исходного прохода
             dependency.at(index).dstSubpass = 1;                                                                                                //в целевой подпроход (поглощающий данные)
             dependency.at(index).srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;                                                  //задаёт как стадии конвейера в исходном проходе создают данные
-            dependency.at(index).srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;                    //поля задают как каждый из исходных проходов обращается к данным
-            dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            dependency.at(index).dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            dependency.at(index).srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;                                                          //поля задают как каждый из исходных проходов обращается к данным
+            dependency.at(index).dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependency.at(index).dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
         //===========================createRenderPass====================================================//
 
@@ -336,8 +336,8 @@ void graphics::createRenderPass()
         for(size_t i=0;i<2;i++)
         {
             VkAttachmentDescription colorAttachment{};
-                colorAttachment.format = imageFormat;
-                colorAttachment.samples = msaaSamples;
+                colorAttachment.format = image.Format;
+                colorAttachment.samples = image.Samples;
                 colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -350,7 +350,7 @@ void graphics::createRenderPass()
         {
             VkAttachmentDescription colorAttachment{};
                 colorAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-                colorAttachment.samples = msaaSamples;
+                colorAttachment.samples = image.Samples;
                 colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -362,8 +362,8 @@ void graphics::createRenderPass()
         for(size_t i=4;i<colorAttachments.size();i++)
         {
             VkAttachmentDescription colorAttachment{};
-                colorAttachment.format = imageFormat;
-                colorAttachment.samples = msaaSamples;
+                colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
+                colorAttachment.samples = image.Samples;
                 colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -375,7 +375,7 @@ void graphics::createRenderPass()
 
         VkAttachmentDescription depthAttachment{};
             depthAttachment.format = findDepthStencilFormat(app);
-            depthAttachment.samples = msaaSamples;
+            depthAttachment.samples = image.Samples;
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -387,7 +387,7 @@ void graphics::createRenderPass()
         for(size_t i=0;i<2;i++)
         {
             VkAttachmentDescription colorAttachmentResolve{};
-                colorAttachmentResolve.format = imageFormat;
+                colorAttachmentResolve.format = image.Format;
                 colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
                 colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -413,7 +413,7 @@ void graphics::createRenderPass()
         for(size_t i=4;i<Attachments.size();i++)
         {
             VkAttachmentDescription colorAttachmentResolve{};
-                colorAttachmentResolve.format = imageFormat;
+                colorAttachmentResolve.format = VK_FORMAT_R8G8B8A8_UNORM;
                 colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
                 colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -540,7 +540,7 @@ void graphics::createRenderPass()
 
 void graphics::createFramebuffers()
 {
-    if(msaaSamples == VK_SAMPLE_COUNT_1_BIT)
+    if(image.Samples == VK_SAMPLE_COUNT_1_BIT)
     {
         oneSampleFrameBuffer();
     }else{
@@ -555,12 +555,12 @@ void graphics::createFramebuffers()
          * мультисемплинг и т.п. Фреймбуфер создаётся, используя ссылку на проход рендеринга, и может быть
          * использован с любым проходом рендеринга, имеющим похожую структуру подключений.*/
 
-        framebuffers.resize(imageCount);
-        for (size_t image = 0; image < imageCount; image++)
+        framebuffers.resize(image.Count);
+        for (size_t Image = 0; Image < image.Count; Image++)
         {
             std::vector<VkImageView> attachments;
             for(size_t i=0;i<Attachments.size();i++)
-                attachments.push_back(Attachments[i].imageView[image]);
+                attachments.push_back(Attachments[i].imageView[Image]);
             attachments.push_back(depthAttachment.imageView);
 
             VkFramebufferCreateInfo framebufferInfo{};
@@ -568,11 +568,11 @@ void graphics::createFramebuffers()
                 framebufferInfo.renderPass = renderPass;                                                                        //дескриптор объекта прохода рендеринга
                 framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                    //число изображений
                 framebufferInfo.pAttachments = attachments.data();                                                              //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
-                framebufferInfo.width = extent.width;                                                                           //ширина изображения
-                framebufferInfo.height = extent.height;                                                                         //высота изображения
+                framebufferInfo.width = image.Extent.width;                                                                           //ширина изображения
+                framebufferInfo.height = image.Extent.height;                                                                         //высота изображения
                 framebufferInfo.layers = 1;                                                                                     //число слоёв
 
-            if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[image]) != VK_SUCCESS)  //создание буфера кадров
+            if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[Image]) != VK_SUCCESS)  //создание буфера кадров
                 throw std::runtime_error("failed to create framebuffer!");
         }
     }
@@ -584,15 +584,15 @@ void graphics::createFramebuffers()
          * мультисемплинг и т.п. Фреймбуфер создаётся, используя ссылку на проход рендеринга, и может быть
          * использован с любым проходом рендеринга, имеющим похожую структуру подключений.*/
 
-        framebuffers.resize(imageCount);
-        for (size_t image = 0; image < imageCount; image++)
+        framebuffers.resize(image.Count);
+        for (size_t Image = 0; Image < image.Count; Image++)
         {
             std::vector<VkImageView> attachments;
             for(size_t i=0;i<colorAttachments.size();i++)
                 attachments.push_back(colorAttachments[i].imageView);
             attachments.push_back(depthAttachment.imageView);
             for(size_t i=0;i<Attachments.size();i++)
-                attachments.push_back(Attachments[i].imageView[image]);
+                attachments.push_back(Attachments[i].imageView[Image]);
 
 
             VkFramebufferCreateInfo framebufferInfo{};
@@ -600,11 +600,11 @@ void graphics::createFramebuffers()
                 framebufferInfo.renderPass = renderPass;                                                                            //дескриптор объекта прохода рендеринга
                 framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                        //число изображений
                 framebufferInfo.pAttachments = attachments.data();                                                                  //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
-                framebufferInfo.width = extent.width;                                                                      //ширина изображения
-                framebufferInfo.height = extent.height;                                                                    //высота изображения
+                framebufferInfo.width = image.Extent.width;                                                                      //ширина изображения
+                framebufferInfo.height = image.Extent.height;                                                                    //высота изображения
                 framebufferInfo.layers = 1;                                                                                         //число слоёв
 
-            if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[image]) != VK_SUCCESS)  //создание буфера кадров
+            if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[Image]) != VK_SUCCESS)  //создание буфера кадров
                 throw std::runtime_error("failed to create framebuffer!");
         }
     }
@@ -612,18 +612,18 @@ void graphics::createFramebuffers()
 void graphics::createPipelines()
 {
     base.createDescriptorSetLayout(app);
-    base.createPipeline(app,{imageCount,extent,msaaSamples,renderPass});
-    base.createUniformBuffers(app,imageCount);
-    bloom.createPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
-    godRays.createPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
-    stencil.createFirstPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
-    stencil.createSecondPipeline(app,&base,{imageCount,extent,msaaSamples,renderPass});
+    base.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    base.createUniformBuffers(app,image.Count);
+    bloom.createPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
+    godRays.createPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
+    stencil.createFirstPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
+    stencil.createSecondPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
     skybox.createDescriptorSetLayout(app);
-    skybox.createPipeline(app,{imageCount,extent,msaaSamples,renderPass});
-    skybox.createUniformBuffers(app,imageCount);
+    skybox.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    skybox.createUniformBuffers(app,image.Count);
     second.createDescriptorSetLayout(app);
-    second.createPipeline(app,{imageCount,extent,msaaSamples,renderPass});
-    second.createUniformBuffers(app,imageCount);
+    second.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    second.createUniformBuffers(app,image.Count);
 }
 
 void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
@@ -638,7 +638,7 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
         drawRenderPassInfo.renderPass = renderPass;
         drawRenderPassInfo.framebuffer = framebuffers[i];
         drawRenderPassInfo.renderArea.offset = {0, 0};
-        drawRenderPassInfo.renderArea.extent = extent;
+        drawRenderPassInfo.renderArea.extent = image.Extent;
         drawRenderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         drawRenderPassInfo.pClearValues = clearValues.data();
 
@@ -675,10 +675,8 @@ void graphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescript
 
             // Pass material parameters as push constants
             PushConst pushConst{};
-
-            pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-            pushConst.number = primitiveCount;
-
+                pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
+                pushConst.number = primitiveCount;
             vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConst), &pushConst);
 
             if (primitive->hasIndices)
@@ -691,6 +689,31 @@ void graphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescript
     }
     for (auto child : node->children)
         renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
+}
+
+void graphics::stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout)
+{
+    if (node->mesh)
+    {
+        for (Primitive* primitive : node->mesh->primitives)
+        {
+            const std::vector<VkDescriptorSet> descriptorsets =
+            {
+                descriptorSet,
+                objectDescriptorSet,
+                node->mesh->uniformBuffer.descriptorSet,
+                primitive->material.descriptorSet
+            };
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+
+            if (primitive->hasIndices)
+                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+            else
+                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+        }
+    }
+    for (auto child : node->children)
+        stencilRenderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
 }
 
 void graphics::setMaterialNode(Node *node, std::vector<PushConstBlockMaterial> &nodeMaterials)
@@ -744,7 +767,7 @@ void graphics::setMaterialNode(Node *node, std::vector<PushConstBlockMaterial> &
         setMaterialNode(child, nodeMaterials);
 }
 
-void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox)
+void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
 {
     cameraPosition = glm::vec4(cam->getTranslate(), 1.0);
 
@@ -752,27 +775,49 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam, object *s
 
     UniformBufferObject baseUBO{};
         baseUBO.view = cam->getViewMatrix();
-        baseUBO.proj = glm::perspective(glm::radians(45.0f), (float) extent.width / (float) extent.height, 0.1f, 1000.0f);
+        baseUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
         baseUBO.proj[1][1] *= -1;
         baseUBO.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
     vkMapMemory(app->getDevice(), base.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
         memcpy(data, &baseUBO, sizeof(baseUBO));
     vkUnmapMemory(app->getDevice(), base.uniformBuffersMemory[currentImage]);
 
-    SkyboxUniformBufferObject skyboxUBO{};
-        skyboxUBO.view = cam->getViewMatrix();
-        skyboxUBO.proj = glm::perspective(glm::radians(45.0f), (float) extent.width / (float) extent.height, 0.1f, 1000.0f);
-        skyboxUBO.proj[1][1] *= -1;
-        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox->getTransformation();
-    vkMapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
-        memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
-    vkUnmapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage]);
+//    VkMappedMemoryRange mappedMemoryRange{};
+//        mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+//        mappedMemoryRange.memory = base.uniformBuffersMemory[currentImage];
+//        mappedMemoryRange.size = VK_WHOLE_SIZE;
+//    vkFlushMappedMemoryRanges(app->getDevice(), 1, &mappedMemoryRange);
 
     SecondUniformBufferObject secondUBO{};
         secondUBO.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
     vkMapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage], 0, sizeof(secondUBO), 0, &data);
         memcpy(data, &secondUBO, sizeof(secondUBO));
     vkUnmapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage]);
+}
+
+void graphics::updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam, object *skybox)
+{
+    void* data;
+
+    SkyboxUniformBufferObject skyboxUBO{};
+        skyboxUBO.view = cam->getViewMatrix();
+        skyboxUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
+        skyboxUBO.proj[1][1] *= -1;
+        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox->getTransformation();
+    vkMapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
+        memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
+    vkUnmapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage]);
+}
+
+void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource)
+{
+    void* data;
+    LightUniformBufferObject lightUBO{};
+    for(uint32_t i=0;i<lightSource.size();i++)
+        lightUBO.buffer[i] = lightSource[i]->getLightBufferObject();
+    vkMapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage], 0, sizeof(lightUBO), 0, &data);
+        memcpy(data, &lightUBO, sizeof(lightUBO));
+    vkUnmapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage]);
 }
 
 void graphics::updateMaterialUniformBuffer(uint32_t currentImage)
@@ -791,19 +836,6 @@ void graphics::updateMaterialUniformBuffer(uint32_t currentImage)
     vkUnmapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage]);
 }
 
-void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource)
-{
-    void* data;
-    LightUniformBufferObject lightUBO{};
-    for(uint32_t i=0;i<lightSource.size();i++)
-        lightUBO.buffer[i] = lightSource[i]->getLightBufferObject();
-    vkMapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage], 0, sizeof(lightUBO), 0, &data);
-        memcpy(data, &lightUBO, sizeof(lightUBO));
-    vkUnmapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage]);
-}
-
-std::vector<attachments>        &graphics::getAttachments(){return Attachments;}
-
 void graphics::bindBaseObject(object *newObject)
 {
     base.objects.push_back(newObject);
@@ -819,9 +851,11 @@ void graphics::bindGodRaysObject(object *newObject)
     godRays.objects.push_back(newObject);
 }
 
-void graphics::bindStencilObject(object *newObject)
+void graphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor)
 {
     stencil.stencilEnable.push_back(false);
+    stencil.stencilWidth.push_back(lineWidth);
+    stencil.stencilColor.push_back(lineColor);
     stencil.objects.push_back(newObject);
 }
 

@@ -7,10 +7,10 @@ void graphics::Base::Destroy(VkApplication *app)
 {
     vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
     vkDestroyPipelineLayout(app->getDevice(), PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), uniformBufferSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), uniformBlockSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), materialSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(app->getDevice(), SceneDescriptorSetLayout,  nullptr);
+    vkDestroyDescriptorSetLayout(app->getDevice(), ObjectDescriptorSetLayout,  nullptr);
+    vkDestroyDescriptorSetLayout(app->getDevice(), PrimitiveDescriptorSetLayout,  nullptr);
+    vkDestroyDescriptorSetLayout(app->getDevice(), MaterialDescriptorSetLayout,  nullptr);
     vkDestroyDescriptorPool(app->getDevice(), DescriptorPool, nullptr);
 
     for (size_t i = 0; i < uniformBuffers.size(); i++)
@@ -34,7 +34,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(uboLayoutBinding.size());
         layoutInfo.pBindings = uboLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &SceneDescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor set layout!");
 
     index = 0;
@@ -48,7 +48,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferLayoutBinding.size());
         uniformBufferLayoutInfo.pBindings = uniformBufferLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBufferLayoutInfo, nullptr, &uniformBufferSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBufferLayoutInfo, nullptr, &ObjectDescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor set layout!");
 
     index = 0;
@@ -62,7 +62,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBlockLayoutBinding.size());
         uniformBlockLayoutInfo.pBindings = uniformBlockLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBlockLayoutInfo, nullptr, &uniformBlockSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBlockLayoutInfo, nullptr, &PrimitiveDescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor set layout!");
 
     index = 0;
@@ -105,7 +105,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         materialLayoutInfo.bindingCount = static_cast<uint32_t>(materialLayoutBinding.size());
         materialLayoutInfo.pBindings = materialLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(app->getDevice(), &materialLayoutInfo, nullptr, &materialSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(app->getDevice(), &materialLayoutInfo, nullptr, &MaterialDescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor set layout!");
 }
 
@@ -150,9 +150,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-
     /* здесь может быть добавлена тесселяция*/
-
 
     /* Преобразование области вывода - это последнее преобразование координат в конвейере Vulkan до растретизации.
      * Оно преобразует координаты вершины из нормализованных координат устройства в оконные координаты. Одновременно
@@ -241,7 +239,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
         pushConstantRange[index].size = sizeof(PushConst);
-    std::array<VkDescriptorSetLayout,4> setLayouts = {DescriptorSetLayout,uniformBufferSetLayout,uniformBufferSetLayout,materialSetLayout};
+    std::array<VkDescriptorSetLayout,4> setLayouts = {SceneDescriptorSetLayout,ObjectDescriptorSetLayout,PrimitiveDescriptorSetLayout,MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
@@ -297,29 +295,29 @@ void graphics::createBaseDescriptorPool()
 
     std::array<VkDescriptorPoolSize,1> poolSizes;
         poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;                           //Сначала нам нужно описать, какие типы дескрипторов будут содержать наши наборы дескрипторов
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);                //и сколько их, используя VkDescriptorPoolSizeструктуры.
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);                //и сколько их, используя VkDescriptorPoolSizeструктуры.
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &base.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor pool!");
 
     for(size_t i=0;i<base.objects.size();i++)
     {
-        base.objects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
-        base.objects.at(i)->createDescriptorPool(imageCount);
+        base.objects.at(i)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
+        base.objects.at(i)->createDescriptorPool(image.Count);
     }
     for(size_t i=0;i<bloom.objects.size();i++)
     {
-        bloom.objects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
-        bloom.objects.at(i)->createDescriptorPool(imageCount);
+        bloom.objects.at(i)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
+        bloom.objects.at(i)->createDescriptorPool(image.Count);
     }
     for(size_t i=0;i<stencil.objects.size();i++)
     {
-        stencil.objects.at(i)->setDescriptorSetLayouts({&base.uniformBufferSetLayout,&base.uniformBlockSetLayout,&base.materialSetLayout});
-        stencil.objects.at(i)->createDescriptorPool(imageCount);
+        stencil.objects.at(i)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
+        stencil.objects.at(i)->createDescriptorPool(image.Count);
     }
 }
 
@@ -331,25 +329,25 @@ void graphics::createBaseDescriptorSets()
      * Добавьте член класса для хранения дескрипторов набора дескрипторов и назначьте их vkAllocateDescriptorSets */
 
     for(size_t i=0;i<base.objects.size();i++)
-        base.objects.at(i)->createDescriptorSet(imageCount);
+        base.objects.at(i)->createDescriptorSet(image.Count);
     for(size_t i=0;i<bloom.objects.size();i++)
-        bloom.objects.at(i)->createDescriptorSet(imageCount);
+        bloom.objects.at(i)->createDescriptorSet(image.Count);
     for(size_t i=0;i<stencil.objects.size();i++)
-        stencil.objects.at(i)->createDescriptorSet(imageCount);
+        stencil.objects.at(i)->createDescriptorSet(image.Count);
 
-    base.DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, base.DescriptorSetLayout);
+    base.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, base.SceneDescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = base.DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, base.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate descriptor sets!");
 
     //Наборы дескрипторов уже выделены, но дескрипторы внутри еще нуждаются в настройке.
     //Теперь мы добавим цикл для заполнения каждого дескриптора:
-    for (size_t i = 0; i < imageCount; i++)
+    for (size_t i = 0; i < image.Count; i++)
     {
         uint32_t index = 0;
 

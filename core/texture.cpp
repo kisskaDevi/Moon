@@ -1,6 +1,5 @@
 #include "texture.h"
 #include <iostream>
-#include "operations.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <libs/stb-master/stb_image.h>
@@ -48,15 +47,15 @@ void texture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memo
 
     stbi_image_free(pixels);
 
-    createImage(app, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
+    createImage(app, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
 
-    transitionImageLayout(app, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+    transitionImageLayout(app, textureImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
     copyBufferToImage(app, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
     vkDestroyBuffer(app->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(app->getDevice(), stagingBufferMemory, nullptr);
 
-    generateMipmaps(app, textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
+    generateMipmaps(app, textureImage, format, texWidth, texHeight, mipLevels);
 
     enable = true;
     memory.enable = true;
@@ -108,15 +107,15 @@ void texture::createTextureImage(tinygltf::Image& gltfimage)
 
     if (deleteBuffer){   delete[] buffer;}
 
-    createImage(app, gltfimage.width, gltfimage.height, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image.textureImage, memory.textureImageMemory);
+    createImage(app, gltfimage.width, gltfimage.height, mipLevels, VK_SAMPLE_COUNT_1_BIT, image.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image.textureImage, memory.textureImageMemory);
 
-    transitionImageLayout(app, image.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+    transitionImageLayout(app, image.textureImage, image.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
     copyBufferToImage(app, stagingBuffer, image.textureImage, static_cast<uint32_t>(gltfimage.width), static_cast<uint32_t>(gltfimage.height));
 
     vkDestroyBuffer(app->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(app->getDevice(), stagingBufferMemory, nullptr);
 
-    generateMipmaps(app, image.textureImage, VK_FORMAT_R8G8B8A8_SRGB, gltfimage.width, gltfimage.height, mipLevels);
+    generateMipmaps(app, image.textureImage, image.format, gltfimage.width, gltfimage.height, mipLevels);
 
     image.enable = true;
     memory.enable = true;
@@ -137,7 +136,7 @@ void texture::createTextureImage()
 
 void texture::createTextureImageView()
 {
-    view.textureImageView = createImageView(app, image.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    view.textureImageView = createImageView(app, image.textureImage, image.format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
     view.enable = true;
 }
 
@@ -174,6 +173,7 @@ void texture::createTextureSampler(struct textureSampler TextureSampler)
 void                texture::setVkApplication(VkApplication* app){this->app=app;}
 void                texture::setTextureNumber(uint32_t number){this->number = number;}
 void                texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
+void                texture::setTextureFormat(VkFormat format){image.format = format;}
 
 VkImageView         & texture::getTextureImageView(){return view.textureImageView;}
 VkSampler           & texture::getTextureSampler(){return sampler.textureSampler;}
@@ -225,15 +225,15 @@ void cubeTexture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct 
         stbi_image_free(pixels[i]);
     }
 
-    createCubeImage(app, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
+    createCubeImage(app, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
 
-    transitionImageLayout(app, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels,0);
+    transitionImageLayout(app, textureImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels,0);
     copyBufferToImage(app, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),0);
 
     vkDestroyBuffer(app->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(app->getDevice(), stagingBufferMemory, nullptr);
 
-    generateMipmaps(app, textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels,0);
+    generateMipmaps(app, textureImage, format, texWidth, texHeight, mipLevels,0);
 
     enable = true;
     memory.enable = true;
@@ -259,7 +259,7 @@ void cubeTexture::createTextureImage()
 
 void cubeTexture::createTextureImageView()
 {
-    view.textureImageView = createCubeImageView(app, image.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    view.textureImageView = createCubeImageView(app, image.textureImage, image.format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
     view.enable = true;
 }
 
@@ -296,6 +296,7 @@ void cubeTexture::createTextureSampler(struct textureSampler TextureSampler)
 void                cubeTexture::setVkApplication(VkApplication* app){this->app=app;}
 void                cubeTexture::setTextureNumber(uint32_t number){this->number = number;}
 void                cubeTexture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
+void                cubeTexture::setTextureFormat(VkFormat format){image.format = format;}
 
 VkImageView         & cubeTexture::getTextureImageView(){return view.textureImageView;}
 VkSampler           & cubeTexture::getTextureSampler(){return sampler.textureSampler;}

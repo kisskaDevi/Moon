@@ -26,8 +26,13 @@
 
 * Отложенный рендеринг (за счёт подпроходов рендера)
 
-<img src="./screenshots/screenshot5.PNG" width="450px"> <img src="./screenshots/screenshot6.PNG" width="450px">
-<img src="./screenshots/screenshot7.PNG" width="450px"> <img src="./screenshots/screenshot8.PNG" width="450px">
+<img src="./screenshots/screenshot5.PNG" width="400px"> <img src="./screenshots/screenshot6.PNG" width="400px">
+<img src="./screenshots/screenshot7.PNG" width="400px"> <img src="./screenshots/screenshot8.PNG" width="400px">
 
 * Использование трафаретного буфера для выделения объектов (возможность включать и выключать выделение) 
 <img src="./screenshots/stencil.gif" width="1000px">
+
+* Прототип обьёмных источников света (сферические источники, плоскости)
+<img src="./screenshots/areaLight.gif" width="1000px">
+
+

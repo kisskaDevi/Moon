@@ -13,41 +13,42 @@
 #include <optional>         // нужна для вызова std::optional<uint32_t>
 #include "attachments.h"
 
-class                           VkApplication;
-class                           texture;
-class                           cubeTexture;
-class                           object;
-class                           camera;
-struct                          gltfModel;
-template <typename type> class  light;
-class                           spotLight;
-class                           pointLight;
-template <> class               light<spotLight>;
-template <> class               light<pointLight>;
-struct                          Node;
-struct                          PushConstBlockMaterial;
+class                               VkApplication;
+class                               texture;
+class                               cubeTexture;
+class                               object;
+class                               camera;
+struct                              gltfModel;
+template <typename type> class      light;
+class                               spotLight;
+class                               pointLight;
+template <> class                   light<spotLight>;
+template <> class                   light<pointLight>;
+struct                              Node;
+struct                              Material;
+struct                              PushConstBlockMaterial;
 
 struct graphicsInfo{
-    uint32_t                    imageCount;
-    VkExtent2D                  extent;
-    VkSampleCountFlagBits       msaaSamples;
-    VkRenderPass                renderPass;
+    uint32_t                        imageCount;
+    VkExtent2D                      extent;
+    VkSampleCountFlagBits           msaaSamples;
+    VkRenderPass                    renderPass;
 };
 
 struct UniformBufferObject{
-    alignas(16) glm::mat4       view;
-    alignas(16) glm::mat4       proj;
-    alignas(16) glm::vec4       eyePosition;
+    alignas(16) glm::mat4           view;
+    alignas(16) glm::mat4           proj;
+    alignas(16) glm::vec4           eyePosition;
 };
 
 struct SkyboxUniformBufferObject{
-    alignas(16) glm::mat4       proj;
-    alignas(16) glm::mat4       view;
-    alignas(16) glm::mat4       model;
+    alignas(16) glm::mat4           proj;
+    alignas(16) glm::mat4           view;
+    alignas(16) glm::mat4           model;
 };
 
 struct SecondUniformBufferObject{
-    alignas(16) glm::vec4       eyePosition;
+    alignas(16) glm::vec4           eyePosition;
 };
 
 struct SwapChainSupportDetails{
@@ -58,8 +59,8 @@ struct SwapChainSupportDetails{
 
 struct QueueFamilyIndices
 {
-    std::optional<uint32_t> graphicsFamily;                             //графикческое семейство очередей
-    std::optional<uint32_t> presentFamily;                              //семейство очередей показа
+    std::optional<uint32_t>         graphicsFamily;                     //графикческое семейство очередей
+    std::optional<uint32_t>         presentFamily;                      //семейство очередей показа
     bool isComplete()                                                   //если оба значения не пусты, а были записаны, выводит true
     {return graphicsFamily.has_value() && presentFamily.has_value();}
     //std::optional это оболочка, которая не содержит значения, пока вы ей что-то не присвоите.
@@ -68,8 +69,13 @@ struct QueueFamilyIndices
 
 struct PushConst
 {
-    alignas(4)  int         normalTextureSet;
-    alignas(4)  uint32_t    number;
+    alignas(4)  int                 normalTextureSet;
+    alignas(4)  uint32_t            number;
+};
+
+struct StencilPushConst
+{
+    alignas(16) glm::vec4           stencilColor;
 };
 
 class graphics
@@ -80,14 +86,12 @@ private:
     glm::vec3                       cameraPosition;
     uint32_t                        primitiveCount = 0;
 
-    VkSampleCountFlagBits           msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    uint32_t                        imageCount;
-    VkFormat                        imageFormat;
-    VkExtent2D                      extent;
-
-//    uint32_t                        postProcessingAttachmentCount = 2;
-//    uint32_t                        geometryAttachmentCount = 2;
-//    uint32_t                        textureAttachmentCount = 4;
+    struct Image{
+        uint32_t                        Count;
+        VkFormat                        Format;
+        VkExtent2D                      Extent;
+        VkSampleCountFlagBits           Samples = VK_SAMPLE_COUNT_1_BIT;
+    }image;
 
     std::vector<attachment>         colorAttachments;
     attachment                      depthAttachment;
@@ -99,16 +103,17 @@ private:
     struct Base{
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
-        VkDescriptorSetLayout           DescriptorSetLayout;
-        VkDescriptorSetLayout           uniformBufferSetLayout;
-        VkDescriptorSetLayout           uniformBlockSetLayout;
-        VkDescriptorSetLayout           materialSetLayout;
+        VkDescriptorSetLayout           SceneDescriptorSetLayout;
+        VkDescriptorSetLayout           ObjectDescriptorSetLayout;
+        VkDescriptorSetLayout           PrimitiveDescriptorSetLayout;
+        VkDescriptorSetLayout           MaterialDescriptorSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
         std::vector<object *>           objects;
+
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
@@ -122,6 +127,7 @@ private:
         VkPipelineLayout                PipelineLayout;
 
         std::vector<object *>           objects;
+
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base);
@@ -133,6 +139,7 @@ private:
         VkPipelineLayout                PipelineLayout;
 
         std::vector<object *>           objects;
+
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
         void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics);
@@ -146,7 +153,10 @@ private:
         VkPipelineLayout                secondPipelineLayout;
 
         std::vector<bool>               stencilEnable;
+        std::vector<float>              stencilWidth;
+        std::vector<glm::vec4>          stencilColor;
         std::vector<object *>           objects;
+
         void DestroyFirstPipeline(VkApplication *app);
         void DestroySecondPipeline(VkApplication *app);
         void createFirstPipeline(VkApplication *app, Base *base, graphicsInfo info);
@@ -167,6 +177,7 @@ private:
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
         std::vector<object *>           objects;
+
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
@@ -208,9 +219,8 @@ public:
     void destroy();
 
     void setApplication(VkApplication *app);
+    void setImageProp(uint32_t imageCount, VkFormat imageFormat, VkExtent2D imageExtent, VkSampleCountFlagBits imageSamples);
     void setEmptyTexture(texture *emptyTexture);
-    void setMSAASamples(VkSampleCountFlagBits msaaSamples);
-    void setImageProp(uint32_t imageCount, VkFormat format, VkExtent2D extent);
     void setSkyboxTexture(cubeTexture * tex);
 
     void createAttachments();
@@ -229,16 +239,18 @@ public:
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
         void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
+        void stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
         void setMaterialNode(Node* node, std::vector<PushConstBlockMaterial> &nodeMaterials);
 
-    void updateUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
+    void updateUniformBuffer(uint32_t currentImage, camera *cam);
+    void updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
     void updateMaterialUniformBuffer(uint32_t currentImage);
     void updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource);
 
     void bindBaseObject(object *newObject);
     void bindBloomObject(object *newObject);
     void bindGodRaysObject(object *newObject);
-    void bindStencilObject(object *newObject);
+    void bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor);
     void bindSkyBoxObject(object *newObject);
 
     void setStencilObject(object *oldObject);

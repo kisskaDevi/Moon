@@ -11,7 +11,8 @@ layout(location = 1)	in vec3 normal;
 layout(location = 2)	in vec2 UV0;
 layout(location = 3)	in vec2 UV1;
 layout(location = 4)	in vec4 eyePosition;
-layout(location = 5)	in mat3 TBN;
+layout(location = 5)	in vec3 tangent;
+layout(location = 6)	in vec3 bitangent;
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -26,9 +27,12 @@ layout (push_constant) uniform Material
     int number;
 } material;
 
+
 vec3 getNormal()
 {
-    vec3 tangentNormal = normalize(texture(normalTexture, UV0).xyz * 2.0f - 1.0f);
+    vec3 tangentNormal = normalize(texture(normalTexture, material.normalTextureSet == 0 ? UV0 : UV1).xyz * 2.0f - 1.0f);
+
+    mat3 TBN = mat3(tangent, bitangent, normal);
 
     return normalize(TBN * tangentNormal);
 }
@@ -38,7 +42,7 @@ void main()
     outPosition = position;
     outBaseColor = texture(baseColorTexture, UV0);
     outMetallicRoughness = texture(metallicRoughnessTexture, UV0);
-    outNormal = vec4(material.normalTextureSet > -1 ? getNormal() : normalize(normal),material.number);
+    outNormal = vec4(material.normalTextureSet > -1 ? getNormal() : normal,material.number);
     outOcclusion = texture(occlusionTexture, UV0);
     outEmissiveTexture = texture(emissiveTexture, UV0);
 

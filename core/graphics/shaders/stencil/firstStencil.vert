@@ -56,13 +56,13 @@ void main()
 
 	    model *= skinMat;
 	    outPosition	    =		model * vec4(inPosition,1.0);
-	    outNormal	    = normalize(vec3(model * vec4(inNormal,0.0)));
+	    outNormal	    = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
 	    tangent	    = normalize(vec3(model * vec4(inTangent,0.0)));
 	    bitangent	    = normalize(vec3(model * vec4(inBitangent,0.0)));
     } else
     {
 	    outPosition	    =		model * vec4(inPosition,1.0);
-	    outNormal	    = normalize(vec3(model * vec4(inNormal,0.0)));
+	    outNormal	    = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
 	    tangent	    = normalize(vec3(model * vec4(inTangent,0.0)));
 	    bitangent	    = normalize(vec3(model * vec4(inBitangent,0.0)));
     }

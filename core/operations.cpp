@@ -187,9 +187,8 @@ void createImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t m
     imageInfo.samples = numSamples;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateImage(app->getDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS) {
+    if (vkCreateImage(app->getDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
         throw std::runtime_error("failed to create image!");
-    }
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(app->getDevice(), image, &memRequirements);
@@ -199,9 +198,8 @@ void createImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t m
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(app->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
 
-    if (vkAllocateMemory(app->getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+    if (vkAllocateMemory(app->getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate image memory!");
-    }
 
     vkBindImageMemory(app->getDevice(), image, imageMemory, 0);
 }

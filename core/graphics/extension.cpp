@@ -127,7 +127,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, struct Base *b
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
         pushConstantRange[index].size = sizeof(PushConst);
-    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->DescriptorSetLayout,base->uniformBufferSetLayout,base->uniformBufferSetLayout,base->materialSetLayout};
+    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->SceneDescriptorSetLayout,base->ObjectDescriptorSetLayout,base->PrimitiveDescriptorSetLayout,base->MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
@@ -273,7 +273,7 @@ void graphics::godRaysExtension::createPipeline(VkApplication *app, struct Base 
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
         pushConstantRange[index].size = sizeof(PushConst);
-    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->DescriptorSetLayout,base->uniformBufferSetLayout,base->uniformBufferSetLayout,base->materialSetLayout};
+    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->SceneDescriptorSetLayout,base->ObjectDescriptorSetLayout,base->PrimitiveDescriptorSetLayout,base->MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
@@ -438,7 +438,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, Base *b
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
         pushConstantRange[index].size = sizeof(PushConst);
-    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->DescriptorSetLayout,base->uniformBufferSetLayout,base->uniformBufferSetLayout,base->materialSetLayout};
+    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->SceneDescriptorSetLayout,base->ObjectDescriptorSetLayout,base->PrimitiveDescriptorSetLayout,base->MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
@@ -590,8 +590,8 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, Base *
     std::array<VkPushConstantRange,1> pushConstantRange;
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
-        pushConstantRange[index].size = sizeof(PushConst);
-    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->DescriptorSetLayout,base->uniformBufferSetLayout,base->uniformBufferSetLayout,base->materialSetLayout};
+        pushConstantRange[index].size = sizeof(StencilPushConst);
+    std::array<VkDescriptorSetLayout,4> SetLayouts = {base->SceneDescriptorSetLayout,base->ObjectDescriptorSetLayout,base->PrimitiveDescriptorSetLayout,base->MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
@@ -658,7 +658,6 @@ void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuf
 
         for (auto node : objects[j]->getModel()->nodes)
             Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],firstPipelineLayout);
-
     }
 
     for(size_t j = 0; j<objects.size() ;j++)
@@ -670,8 +669,12 @@ void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuf
             if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
                 vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
+            StencilPushConst pushConst{};
+                pushConst.stencilColor = stencilColor[j];
+            vkCmdPushConstants(commandBuffers[i], secondPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(StencilPushConst), &pushConst);
+
             for (auto node : objects[j]->getModel()->nodes)
-                Graphics->renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],secondPipelineLayout);
+                Graphics->stencilRenderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],secondPipelineLayout);
         }
     }
 }

@@ -316,7 +316,6 @@ void object::createMaterialDescriptorSet(Material* material)
         descriptorWrites[i].descriptorCount = 1;
         descriptorWrites[i].pImageInfo = &descriptorImageInfos[i];
     }
-
     vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 

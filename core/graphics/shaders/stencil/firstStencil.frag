@@ -36,6 +36,7 @@ vec3 getNormal()
 void main()
 {
     outPosition = position;
+    //outBaseColor = vec4(UV0.x,UV0.y,0.0f,0.0f);
     outBaseColor = texture(baseColorTexture, UV0);
     outMetallicRoughness = texture(metallicRoughnessTexture, UV0);
     outNormal = vec4(material.normalTextureSet > -1 ? getNormal() : normalize(normal),material.number);

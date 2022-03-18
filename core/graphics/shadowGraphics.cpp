@@ -3,11 +3,13 @@
 #include "core/operations.h"
 #include "core/transformational/gltfmodel.h"
 
-shadowGraphics::shadowGraphics(VkApplication *app, uint32_t imageCount): app(app)
+#include <array>
+
+shadowGraphics::shadowGraphics(VkApplication *app, uint32_t imageCount, VkExtent2D shadowExtent): app(app)
 {
     image.Count = imageCount;
-    image.Extent.width = 1024;
-    image.Extent.height = 1024;
+    image.Extent.width = shadowExtent.width;
+    image.Extent.height = shadowExtent.height;
 }
 
 void shadowGraphics::createMap()
@@ -385,7 +387,7 @@ void shadowGraphics::createCommandBuffers(uint32_t number)
     {throw std::runtime_error("failed to allocate command buffers!");}
 }
 
-void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, std::vector<object *> & object3D, uint32_t lightNumber)
+void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, Objects object3D, uint32_t lightNumber)
 {
     VkClearValue clearValues{};
         clearValues.depthStencil.depth = 1.0f;
@@ -430,20 +432,42 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, std::vect
 
         vkCmdBindPipeline(shadowCommandBuffer[number][i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
         vkCmdPushConstants(shadowCommandBuffer[number][i], shadow.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(uint32_t), &lightNumber);
-        for(size_t j = 0; j<object3D.size() ;j++)
+        for(size_t j = 0; j<object3D.base->size() ;j++)
         {
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D[j]->getModel()->vertices.buffer, offsets);
+            vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D.base->operator[](j)->getModel()->vertices.buffer, offsets);
 
-            if (object3D[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            if (object3D.base->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D.base->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : object3D[j]->getModel()->nodes)
-                renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D[j]->getDescriptorSet()[i]);
+            for (auto node : object3D.base->operator[](j)->getModel()->nodes)
+                renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D.base->operator[](j)->getDescriptorSet()[i]);
 
 //            for (auto node : object3D[j]->getModel()->nodes)
 //                if(glm::length(glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-camera->getTranslate())<object3D[j]->getVisibilityDistance()){
 //                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D[j]->getDescriptorSet()[i]);
+        }
+        for(size_t j = 0; j<object3D.bloom->size() ;j++)
+        {
+            VkDeviceSize offsets[1] = { 0 };
+            vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D.bloom->operator[](j)->getModel()->vertices.buffer, offsets);
+
+            if (object3D.bloom->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D.bloom->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            for (auto node : object3D.bloom->operator[](j)->getModel()->nodes)
+                renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D.bloom->operator[](j)->getDescriptorSet()[i]);
+        }
+        for(size_t j = 0; j<object3D.stencil->size() ;j++)
+        {
+            VkDeviceSize offsets[1] = { 0 };
+            vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D.stencil->operator[](j)->getModel()->vertices.buffer, offsets);
+
+            if (object3D.stencil->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D.stencil->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            for (auto node : object3D.stencil->operator[](j)->getModel()->nodes)
+                renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D.stencil->operator[](j)->getDescriptorSet()[i]);
         }
 
     vkCmdEndRenderPass(shadowCommandBuffer[number][i]);

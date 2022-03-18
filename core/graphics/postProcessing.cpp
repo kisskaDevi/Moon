@@ -1,6 +1,10 @@
 #include "graphics.h"
 #include "core/operations.h"
 
+#include <cstdint>          // нужна для UINT32_MAX
+#include <array>
+#include <algorithm>        // нужна для std::min/std::max
+
 postProcessing::postProcessing(){}
 
 void postProcessing::setApplication(VkApplication * app){this->app = app;}
@@ -33,14 +37,14 @@ void postProcessing::destroy()
     vkDestroySwapchainKHR(app->getDevice(), swapChain, nullptr);
 }
 
-void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
+void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport)
 {
-    createSwapChain(swapChainSupport);
+    createSwapChain(window, swapChainSupport);
     createImageViews();
     createColorAttachments();
 }
     //Создание цепочки обмена
-    void postProcessing::createSwapChain(SwapChainSupportDetails swapChainSupport)
+    void postProcessing::createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport)
     {
         /* Независимо от платформы, на которой вы выполняете свой код, получающийся
          * дескриптор VkSurfaceKHR соответствует тому, как Vulkan видит окно. Для того
@@ -61,9 +65,9 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);                                   //задаём поддерживаемый формат
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);                                    //смотри ниже
-        VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);                                                    //задаём размер изображения в списке показа в пикселях
+        VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);                                                    //задаём размер изображения в списке показа в пикселях
 
-        imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                           //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
+        imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                           //запрос на поддержку минимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
         if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)        //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений
         {                                                                                                                       //и проверяем не совпадает ли максимальное число изображений с минимальным
             imageCount = swapChainSupport.capabilities.maxImageCount;                                                           //присываиваем максимальное значение
@@ -82,7 +86,7 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
         createInfo.imageColorSpace = surfaceFormat.colorSpace;          //и цветовое пространство
         createInfo.imageExtent = extent;                                //это поле задаёт размер изображения в спике показа в пикселах
         createInfo.imageArrayLayers = 1;                                //и это поле задаёт число слоёв в каждом изображении. Это может быть использовано для рендеринга в изображение со слояи и дальнейшего показа отдельных слоёв пользователю
-        createInfo.imageUsage = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_SAMPLED_BIT ;    //это набор сандартных битов из перечисления VkImageUsageFlags, задающих как изображение будет использовано. Например если вы хотите осуществлять рендериг в изображение
+        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ;    //это набор сандартных битов из перечисления VkImageUsageFlags, задающих как изображение будет использовано. Например если вы хотите осуществлять рендериг в изображение
                                                                         //как обычное цветовое подключение, то вам нужно включть бит VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, и если вы хотите писать в него прямо из шейдера, то выключите бит VK_IMAGE_USAGE_STORAGE_BIT
         if(indices.graphicsFamily != indices.presentFamily)
         {
@@ -139,14 +143,14 @@ void postProcessing::createAttachments(SwapChainSupportDetails swapChainSupport)
             return VK_PRESENT_MODE_FIFO_KHR;
         }
         //Экстент обмена - это разрешение изображений цепочки обмена, и оно почти всегда точно равно разрешению окна, в которое мы рисуем, в пикселях
-        VkExtent2D postProcessing::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+        VkExtent2D postProcessing::chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities)
         {
             if (capabilities.currentExtent.width != UINT32_MAX)
                 return capabilities.currentExtent;
             else
             {
                 int width, height;
-                glfwGetFramebufferSize(&app->getWindow(), &width, &height);
+                glfwGetFramebufferSize(window, &width, &height);
 
                 VkExtent2D actualExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 

@@ -6,9 +6,12 @@
 #include "core/transformational/light.h"
 #include "core/graphics/shadowGraphics.h"
 
+#include <array>
+
 graphics::graphics(){}
 
-std::vector<attachments>        &graphics::getAttachments(){return Attachments;}
+std::vector<attachments>        & graphics::getAttachments(){return Attachments;}
+Objects                         graphics::getObjects(){return Objects{&base.objects,&bloom.objects,&stencil.objects};}
 
 void                            graphics::setApplication(VkApplication * app){this->app = app;}
 void                            graphics::setEmptyTexture(texture *emptyTexture){this->emptyTexture = emptyTexture;}
@@ -42,6 +45,30 @@ void graphics::destroy()
         Attachments.at(i).deleteAttachment(&app->getDevice());
     for(size_t i=0;i<2;i++)
         Attachments.at(i).deleteSampler(&app->getDevice());
+}
+
+void graphics::destroyBuffers()
+{
+    for(size_t i=0;i<base.objects.size();i++)
+        base.objects.at(i)->destroyUniformBuffers();
+
+    for(size_t i=0;i<bloom.objects.size();i++)
+        bloom.objects.at(i)->destroyUniformBuffers();
+
+    for(size_t i=0;i<stencil.objects.size();i++)
+        stencil.objects.at(i)->destroyUniformBuffers();
+}
+
+void graphics::destroyCommandPools()
+{
+    for(size_t i=0;i<base.objects.size();i++)
+        base.objects.at(i)->destroyDescriptorPools();
+
+    for(size_t i=0;i<bloom.objects.size();i++)
+        bloom.objects.at(i)->destroyDescriptorPools();
+
+    for(size_t i=0;i<stencil.objects.size();i++)
+        stencil.objects.at(i)->destroyDescriptorPools();
 }
 
 //=========================================================================//
@@ -716,7 +743,7 @@ void graphics::stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkD
         stencilRenderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
 }
 
-void graphics::setMaterialNode(Node *node, std::vector<PushConstBlockMaterial> &nodeMaterials)
+void graphics::setMaterialNode(Node *node, std::vector<PushConstBlockMaterial> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive)
 {
     if (node->mesh)
     {
@@ -756,15 +783,16 @@ void graphics::setMaterialNode(Node *node, std::vector<PushConstBlockMaterial> &
                 pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
 
-            pushConstBlockMaterial.number = primitiveCount;
+            pushConstBlockMaterial.primitive = objectPrimitive;
+            pushConstBlockMaterial.firstIndex = firstPrimitive;
 
             nodeMaterials.push_back(pushConstBlockMaterial);
 
-            primitiveCount++;
+            objectPrimitive++;
         }
     }
     for (auto child : node->children)
-        setMaterialNode(child, nodeMaterials);
+        setMaterialNode(child, nodeMaterials, objectPrimitive, firstPrimitive);
 }
 
 void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
@@ -795,7 +823,7 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
     vkUnmapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage]);
 }
 
-void graphics::updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam, object *skybox)
+void graphics::updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam)
 {
     void* data;
 
@@ -803,7 +831,7 @@ void graphics::updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam, obj
         skyboxUBO.view = cam->getViewMatrix();
         skyboxUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
         skyboxUBO.proj[1][1] *= -1;
-        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox->getTransformation();
+        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox.objects[0]->getTransformation();
     vkMapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
         memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
     vkUnmapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage]);
@@ -825,8 +853,6 @@ void graphics::updateMaterialUniformBuffer(uint32_t currentImage)
     void* data;
     std::vector<PushConstBlockMaterial> nodeMaterials;
 
-    primitiveCount = 0;
-
     base.setMaterials(nodeMaterials,this);
     bloom.setMaterials(nodeMaterials,this);
     stencil.setMaterials(nodeMaterials,this);
@@ -836,14 +862,32 @@ void graphics::updateMaterialUniformBuffer(uint32_t currentImage)
     vkUnmapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage]);
 }
 
+void graphics::updateObjectUniformBuffer(uint32_t currentImage)
+{
+    for(size_t i=0;i<base.objects.size();i++)
+        base.objects.at(i)->updateUniformBuffer(currentImage);
+    for(size_t i=0;i<bloom.objects.size();i++)
+        bloom.objects.at(i)->updateUniformBuffer(currentImage);
+    for(size_t i=0;i<stencil.objects.size();i++)
+        stencil.objects.at(i)->updateUniformBuffer(currentImage);
+}
+
 void graphics::bindBaseObject(object *newObject)
 {
+    newObject->createUniformBuffers(image.Count);
     base.objects.push_back(newObject);
+    base.objects.at(base.objects.size()-1)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
+    base.objects.at(base.objects.size()-1)->createDescriptorPool(image.Count);
+    base.objects.at(base.objects.size()-1)->createDescriptorSet(image.Count);
 }
 
 void graphics::bindBloomObject(object *newObject)
 {
+    newObject->createUniformBuffers(image.Count);
     bloom.objects.push_back(newObject);
+    bloom.objects.at(bloom.objects.size()-1)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
+    bloom.objects.at(bloom.objects.size()-1)->createDescriptorPool(image.Count);
+    bloom.objects.at(bloom.objects.size()-1)->createDescriptorSet(image.Count);
 }
 
 void graphics::bindGodRaysObject(object *newObject)
@@ -853,10 +897,14 @@ void graphics::bindGodRaysObject(object *newObject)
 
 void graphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor)
 {
+    newObject->createUniformBuffers(image.Count);
     stencil.stencilEnable.push_back(false);
     stencil.stencilWidth.push_back(lineWidth);
     stencil.stencilColor.push_back(lineColor);
     stencil.objects.push_back(newObject);
+    stencil.objects.at(stencil.objects.size()-1)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
+    stencil.objects.at(stencil.objects.size()-1)->createDescriptorPool(image.Count);
+    stencil.objects.at(stencil.objects.size()-1)->createDescriptorSet(image.Count);
 }
 
 void graphics::bindSkyBoxObject(object *newObject)

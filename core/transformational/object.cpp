@@ -258,9 +258,7 @@ void object::createMaterialDescriptorSet(Material* material)
     descriptorSetAllocInfo.descriptorSetCount = 1;
 
     if (vkAllocateDescriptorSets(app->getDevice(), &descriptorSetAllocInfo, &material->descriptorSet) != VK_SUCCESS)
-    {
         throw std::runtime_error("failed to allocate descriptor sets!");
-    }
 
     VkDescriptorImageInfo baseColorTextureInfo;
     baseColorTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

@@ -2,6 +2,7 @@
 #define MANUAL_SRGB 1
 #define MAX_LIGHT_SOURCES 10
 #define MAX_NODE_COUNT 256
+#define MAX_TEXTURE_COUNT 1024
 
 const float pi = 3.141592653589793f, minAmbientFactor = 0.05f;
 const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;
@@ -49,7 +50,8 @@ struct Material
     float roughnessFactor;
     float alphaMask;
     float alphaMaskCutoff;
-    int number;
+    int index;
+    int firstIndex;
 };
 
 struct attenuation
@@ -76,6 +78,8 @@ layout(set = 0, binding = 9) uniform MaterialUniformBufferObject
 {
     Material ubo[MAX_NODE_COUNT];
 } material;
+
+//layout(set = 0, binding = 10) uniform sampler2D textures[MAX_TEXTURE_COUNT];
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outBloom;
@@ -285,16 +289,14 @@ void outImage1()
 
 	    color = lightPower*color/lightDrop;
 	    outColor = vec4(max(color.r,outColor.r),max(color.g,outColor.g),max(color.b,outColor.b), baseColor.a);
+	}
 
-	}
-	if(lightPower>minAmbientFactor||light.ubo[i].type == 1.0f)
-	{
-	    vec4 rayColor = vec4(0.0f,0.0f,0.0f,0.0f);
-	    vec3 pm = findMirrorVector(eyePosition.xyz,position.xyz,normal);
-	    rayColor += sInfo.areaFactor * planeIntersection(pm,position.xyz,lightPosition[i],1.0f,light.ubo[i].proj,light.ubo[i].view)*lightColor[i]/lightDrop;
+	    //vec4 rayColor = vec4(0.0f,0.0f,0.0f,0.0f);
+	    //vec3 pm = findMirrorVector(eyePosition.xyz,position.xyz,normal);
+	    //rayColor += sInfo.areaFactor * planeIntersection(pm,position.xyz,lightPosition[i],1.0f,light.ubo[i].proj,light.ubo[i].view)*lightColor[i]/lightDrop;
 	    //rayColor *= metallic;
-	    outColor = vec4(max(rayColor.r,outColor.r),max(rayColor.g,outColor.g),max(rayColor.b,outColor.b), baseColor.a);
-	}
+	    //outColor = vec4(max(rayColor.r,outColor.r),max(rayColor.g,outColor.g),max(rayColor.b,outColor.b), baseColor.a);
+
     }
 
     if(outColor.r < minAmbientFactor*diffuseColor.r)
@@ -349,7 +351,6 @@ void main()
     emissiveTexture = subpassLoad(inEmissiveTexture);
     type = int(position.a);
     number = int(subpassLoad(inNormalTexture).a);
-
 
     switch(type)
     {

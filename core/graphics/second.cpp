@@ -4,6 +4,8 @@
 #include "core/transformational/light.h"
 #include "core/graphics/shadowGraphics.h"
 
+#include <array>
+
 void graphics::Second::Destroy(VkApplication *app)
 {
     vkDestroyDescriptorSetLayout(app->getDevice(), DescriptorSetLayout, nullptr);
@@ -60,6 +62,12 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
         Binding.at(index).descriptorCount = 1;
         Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding.at(index).pImmutableSamplers = nullptr;
+//    index++;
+//        Binding.at(index).binding = index;
+//        Binding.at(index).descriptorCount = textureCount;
+//        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+//        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+//        Binding.at(index).pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
@@ -218,6 +226,9 @@ void graphics::createSecondDescriptorPool()
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     index++;
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
+    index++;
+//    for(size_t i=index;i<index+textureCount;i++)
+//        poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -227,8 +238,20 @@ void graphics::createSecondDescriptorPool()
         throw std::runtime_error("failed to create descriptor pool!");
 }
 
-void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSource)
+void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources)
 {
+//    uint32_t firstPrimitive = 0;
+//    for(auto *model: models){
+//        model->firstPrimitive = firstPrimitive;
+//        uint32_t primitives = 0;
+//        for(auto *node: model->linearNodes){
+//            if (node->mesh) {
+//                primitives += node->mesh->primitives.size();
+//            }
+//        }
+//        firstPrimitive += primitives;
+//    }
+
     second.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, second.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -255,13 +278,13 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
             lightBufferInfo.offset = 0;
             lightBufferInfo.range = sizeof(LightUniformBufferObject);
         std::array<VkDescriptorImageInfo,MAX_LIGHT_SOURCE_COUNT> shadowImageInfo{};
-            for (size_t j = 0; j < lightSource.size(); j++)
+            for (size_t j = 0; j < lightSources.size(); j++)
             {
                 shadowImageInfo[j].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                shadowImageInfo[j].imageView    = lightSource.at(j)->getShadowEnable() ? lightSource.at(j)->getShadow()->getImageView() : emptyTexture->getTextureImageView();
-                shadowImageInfo[j].sampler      = lightSource.at(j)->getShadowEnable() ? lightSource.at(j)->getShadow()->getSampler() : emptyTexture->getTextureSampler();
+                shadowImageInfo[j].imageView    = lightSources.at(j)->getShadowEnable() ? lightSources.at(j)->getShadow()->getImageView() : emptyTexture->getTextureImageView();
+                shadowImageInfo[j].sampler      = lightSources.at(j)->getShadowEnable() ? lightSources.at(j)->getShadow()->getSampler() : emptyTexture->getTextureSampler();
             }
-            for (size_t j = lightSource.size(); j < MAX_LIGHT_SOURCE_COUNT; j++)
+            for (size_t j = lightSources.size(); j < MAX_LIGHT_SOURCE_COUNT; j++)
             {
                 shadowImageInfo[j].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 shadowImageInfo[j].imageView    = emptyTexture->getTextureImageView();
@@ -275,6 +298,62 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
             MaterialBufferInfo.buffer = second.nodeMaterialUniformBuffers[i];
             MaterialBufferInfo.offset = 0;
             MaterialBufferInfo.range = second.nodeMaterialCount * sizeof(PushConstBlockMaterial);
+
+//        uint32_t imageCount = 0;
+//        std::array<VkDescriptorImageInfo,textureCount> textureInfo{};
+//        for(auto *model: models){
+//            for(auto *node: model->linearNodes){
+//                if (node->mesh) {
+//                    for(auto *primitive:node->mesh->primitives){
+//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//                        if (primitive->material.pbrWorkflows.metallicRoughness)
+//                        {
+//                            textureInfo.at(imageCount).imageView   = primitive->material.baseColorTexture ? primitive->material.baseColorTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+//                            textureInfo.at(imageCount).sampler     = primitive->material.baseColorTexture ? primitive->material.baseColorTexture->getTextureSampler()   : emptyTexture->getTextureSampler();
+//                        }
+//                        if(primitive->material.pbrWorkflows.specularGlossiness)
+//                        {
+//                            textureInfo.at(imageCount).imageView   = primitive->material.extension.diffuseTexture ? primitive->material.extension.diffuseTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+//                            textureInfo.at(imageCount).sampler     = primitive->material.extension.diffuseTexture ? primitive->material.extension.diffuseTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+//                        }
+//                        imageCount++;
+
+//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//                        if (primitive->material.pbrWorkflows.metallicRoughness)
+//                        {
+//                            textureInfo.at(imageCount).imageView   = primitive->material.metallicRoughnessTexture ? primitive->material.metallicRoughnessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+//                            textureInfo.at(imageCount).sampler     = primitive->material.metallicRoughnessTexture ? primitive->material.metallicRoughnessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+//                        }
+//                        if (primitive->material.pbrWorkflows.specularGlossiness)
+//                        {
+//                            textureInfo.at(imageCount).imageView   = primitive->material.extension.specularGlossinessTexture ? primitive->material.extension.specularGlossinessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+//                            textureInfo.at(imageCount).sampler     = primitive->material.extension.specularGlossinessTexture ? primitive->material.extension.specularGlossinessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+//                        }
+//                        imageCount++;
+
+//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//                        textureInfo.at(imageCount).imageView   = primitive->material.normalTexture ? primitive->material.normalTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+//                        textureInfo.at(imageCount).sampler     = primitive->material.normalTexture ? primitive->material.normalTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+//                        imageCount++;
+
+//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//                        textureInfo.at(imageCount).imageView   = primitive->material.occlusionTexture ? primitive->material.occlusionTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+//                        textureInfo.at(imageCount).sampler     = primitive->material.occlusionTexture ? primitive->material.occlusionTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+//                        imageCount++;
+
+//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//                        textureInfo.at(imageCount).imageView   = primitive->material.emissiveTexture ? primitive->material.emissiveTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+//                        textureInfo.at(imageCount).sampler     = primitive->material.emissiveTexture ? primitive->material.emissiveTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+//                        imageCount++;
+//                    }
+//                }
+//            }
+//        }
+//        for(uint32_t i=imageCount;i<textureCount;i++){
+//            textureInfo.at(i).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//            textureInfo.at(i).imageView   = emptyTexture->getTextureImageView();
+//            textureInfo.at(i).sampler     = emptyTexture->getTextureSampler();
+//        }
 
         std::array<VkWriteDescriptorSet,10> descriptorWrites{};
         for(index = 0; index<6;index++)
@@ -318,12 +397,20 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.at(index).descriptorCount = 1;
             descriptorWrites.at(index).pBufferInfo = &MaterialBufferInfo;
+//        index++;
+//            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+//            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
+//            descriptorWrites.at(index).dstBinding = index;
+//            descriptorWrites.at(index).dstArrayElement = 0;
+//            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+//            descriptorWrites.at(index).descriptorCount = static_cast<uint32_t>(textureInfo.size());
+//            descriptorWrites.at(index).pImageInfo = textureInfo.data();
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
-    for(size_t i=0;i<lightSource.size();i++)
-        if(lightSource[i]->getShadowEnable())
-            lightSource[i]->getShadow()->createDescriptorSets(second.lightUniformBuffers);
+    for(size_t i=0;i<lightSources.size();i++)
+        if(lightSources[i]->getShadowEnable())
+            lightSources[i]->getShadow()->createDescriptorSets(second.lightUniformBuffers);
 }
 
 void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCount)

@@ -3,6 +3,8 @@
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 
+#include <array>
+
 void graphics::bloomExtension::Destroy(VkApplication *app)
 {
     vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
@@ -642,8 +644,10 @@ void graphics::bloomExtension::render(std::vector<VkCommandBuffer> &commandBuffe
 void graphics::bloomExtension::setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics)
 {
     for(size_t j = 0; j<objects.size() ;j++)
-        for (auto node : objects[j]->getModel()->nodes)
-            Graphics->setMaterialNode(node,nodeMaterials);
+        for (auto node : objects[j]->getModel()->nodes){
+            uint32_t objectPrimitive = 0;
+            Graphics->setMaterialNode(node,nodeMaterials,objectPrimitive,objects[j]->getModel()->firstPrimitive);
+        }
 }
 
 void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base)
@@ -681,6 +685,8 @@ void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuf
 void graphics::StencilExtension::setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics)
 {
     for(size_t j = 0; j<objects.size() ;j++)
-        for (auto node : objects[j]->getModel()->nodes)
-            Graphics->setMaterialNode(node,nodeMaterials);
+        for (auto node : objects[j]->getModel()->nodes){
+            uint32_t objectPrimitive = 0;
+            Graphics->setMaterialNode(node,nodeMaterials,objectPrimitive,objects[j]->getModel()->firstPrimitive);
+        }
 }

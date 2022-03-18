@@ -1,76 +1,9 @@
 #include "vulkanCore.h"
 #include "operations.h"
-#include "transformational/object.h"
-#include "transformational/group.h"
 #include "transformational/camera.h"
 #include "transformational/light.h"
 #include "transformational/gltfmodel.h"
-#include "libs/stb-master/stb_image.h"
 #include "core/graphics/shadowGraphics.h"
-
-std::vector<std::string> SKYBOX = {
-    ExternalPath+"texture\\skybox\\left.jpg",
-    ExternalPath+"texture\\skybox\\right.jpg",
-    ExternalPath+"texture\\skybox\\front.jpg",
-    ExternalPath+"texture\\skybox\\back.jpg",
-    ExternalPath+"texture\\skybox\\top.jpg",
-    ExternalPath+"texture\\skybox\\bottom.jpg"
-};
-std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
-std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
-
-void VkApplication::VkApplication::initWindow()
-{
-    glfwInit();                                                             //инициализация библиотеки GLFW
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);                           //указывает не создавать контекст OpenGL (GLFW изначально был разработан для создания контекста OpenGL,)
-
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);   //инициализация собственного окна
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-
-    int width,height,comp;
-    std::string filename = ExternalPath + "texture\\icon.png";
-    stbi_uc* img = stbi_load(filename.c_str(), &width, &height, &comp, 0);
-    images.height = height;
-    images.width = width;
-    images.pixels = img;
-    glfwSetWindowIcon(window,1,&images);
-}
-    void VkApplication::VkApplication::framebufferResizeCallback(GLFWwindow* window, int width, int height)
-    {
-        static_cast<void>(width);
-        static_cast<void>(height);
-        auto app = reinterpret_cast<VkApplication*>(glfwGetWindowUserPointer(window));
-        app->framebufferResized = true;
-    }
-
-void VkApplication::VkApplication::initVulkan()
-{
-    createInstance();               //создание экземпляра, инициализация библиотеки vulkan происходит при создании экземпляра
-    setupDebugMessenger();          //загрузить отладочный мессенджер
-    createSurface();                //создать поверхность окна для приложения Vullkan
-
-    pickPhysicalDevice();           //выбрать физические устройства
-    createLogicalDevice();          //создать логические устройства 
-
-    checkSwapChainSupport();
-
-    createCommandPool();
-
-    createTextures();
-    loadModel();
-    createObjects();
-    createObjectsUniformBuffers();
-
-    createLight();
-    updateLight();
-
-    createGraphics();
-
-    createCommandBuffers();
-
-    createSyncObjects();
-}
 
 //==========================Instance=============================================//
 
@@ -115,12 +48,8 @@ void VkApplication::VkApplication::createInstance()
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)                //создаём экземпляр функцией vkCreateInstance, в случае успеха возвращает VK_SUCCESS
         throw std::runtime_error("failed to create instance!");                         //параметр pAllocator указывает на аллокатор памяти CPU который ваше приложение может передать для управления используемой Vulkan памятью
-
 }
-    //создадим getRequiredExtensions функцию,
-    //которая будет возвращать требуемый список расширений в зависимости от того,
-    //включены ли уровни проверки или нет
-    std::vector<const char*> VkApplication::getRequiredExtensions()
+    std::vector<const char*> VkApplication::getRequiredExtensions()                     //создадим getRequiredExtensions функцию, которая будет возвращать требуемый список расширений в зависимости от того, включены ли уровни проверки или нет
     {
         uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions;
@@ -207,7 +136,7 @@ void VkApplication::VkApplication::setupDebugMessenger()
 
 //===========================Surface==========================//
 
-void VkApplication::createSurface()
+void VkApplication::createSurface(GLFWwindow* window)
 {
     /*Объект, в который осуществляется рендеринг для показа пользователю, называется поверхностью(surface) и представлен при помощи дескриптора VkSurfaceKHR.
      * Это специальный объект, вводимый расширением VK_KHR_surface. Это расширение вводит общую функциональнать для работы с поверхностями, которая в дальнейшем
@@ -246,15 +175,11 @@ void VkApplication::VkApplication::pickPhysicalDevice()
 
     if(physicalDevices.size()!=0)
     {
-        PhysicalDevice = physicalDevices.at(0).device;
-        indices = physicalDevices.at(0).indices.at(0);
-        VkSampleCountFlagBits maxMSAASamples = getMaxUsableSampleCount(PhysicalDevice);
-
-        if(msaaSamples>maxMSAASamples)
-            msaaSamples = maxMSAASamples;
+        physicalDeviceNumber = 0;
+        indicesNumber = 0;
     }
 
-    if (PhysicalDevice == VK_NULL_HANDLE)                               //если не нашли ни одного поддерживаемого устройства, то выводим соответствующую ошибку
+    if (physicalDevices.at(physicalDeviceNumber).device == VK_NULL_HANDLE)
         throw std::runtime_error("failed to find a suitable GPU!");
 }
 
@@ -264,10 +189,8 @@ void VkApplication::createLogicalDevice()
      * с тем, как задано приложение. После выбора физического устройства вашему приложению необходимо создать
      * соответствующее ему логическое устройство.*/
 
-    QueueFamilyIndices indices = this->indices;     //при помощи этой функции ищем первое подходящее семейство очередей
-
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};  //массив очередей
+    std::set<uint32_t> uniqueQueueFamilies = {physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value(), physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).presentFamily.value()};  //массив очередей
 
     //Vulkan позволяет назначать приоритеты очередям, чтобы влиять на планирование выполнения командного буфера,
     //используя числа с плавающей запятой между 0.0 и 1.0. Это необходимо, даже если очередь одна:
@@ -288,7 +211,6 @@ void VkApplication::createLogicalDevice()
         deviceFeatures.sampleRateShading = VK_TRUE;
         deviceFeatures.imageCubeArray = VK_TRUE;
 
-    //создаём информацию о новом логическом устройстве
     VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());   //количество очередей в массиве
@@ -303,17 +225,17 @@ void VkApplication::createLogicalDevice()
     } else
         createInfo.enabledLayerCount = 0;
 
-    if (vkCreateDevice(PhysicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)    //создание логического устройства
+    if (vkCreateDevice(physicalDevices.at(physicalDeviceNumber).device, &createInfo, nullptr, &device) != VK_SUCCESS)    //создание логического устройства
         throw std::runtime_error("failed to create logical device!");
 
     //Получение дескрипторов очереди из найденного семейства очередей от выбранного устройства
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).presentFamily.value(), 0, &presentQueue);
 }
 
 void VkApplication::checkSwapChainSupport()
 {
-    swapChainSupport = querySwapChainSupport(PhysicalDevice,surface);                                                       //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
+    swapChainSupport = querySwapChainSupport(physicalDevices.at(physicalDeviceNumber).device,surface);                      //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
     imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                           //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)        //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений
     {                                                                                                                       //и проверяем не совпадает ли максимальное число изображений с минимальным
@@ -331,229 +253,43 @@ void VkApplication::createCommandPool()
      * Командные буферы не создаются явно, а выделяются из пулов.*/
 
     commandPool.resize(COMMAND_POOLS);
-    commandBuffers.resize(COMMAND_POOLS);
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = indices.graphicsFamily.value();                 //задаёт семейство очередей, в которые будет передаваться созданные командные буферы
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;           //задаёт флаги, определяющие поведение пула и командных буферов, выделяемых из него
+        poolInfo.queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value();              //задаёт семейство очередей, в которые будет передаваться созданные командные буферы
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;                                                                   //задаёт флаги, определяющие поведение пула и командных буферов, выделяемых из него
     for(size_t i=0;i<COMMAND_POOLS;i++)
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool.at(i)) != VK_SUCCESS) //создание пула команд
+        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool.at(i)) != VK_SUCCESS)                                              //создание пула команд
             throw std::runtime_error("failed to create command pool!");
-}
-
-void VkApplication::createTextures()
-{
-    skybox = new cubeTexture(this,SKYBOX);
-    skybox->setMipLevel(0.0f);
-    skybox->createTextureImage();
-    skybox->createTextureImageView();
-    skybox->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-
-    emptyTexture = new texture(this,ZERO_TEXTURE);
-    emptyTexture->createTextureImage();
-    emptyTexture->createTextureImageView();
-    emptyTexture->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-
-    emptyTextureW = new texture(this,ZERO_TEXTURE_WHITE);
-    emptyTextureW->createTextureImage();
-    emptyTextureW->createTextureImageView();
-    emptyTextureW->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-}
-
-void VkApplication::loadModel()
-{
-    gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\Bee.glb",this,1.0f);
-    gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\Bee.glb",this,1.0f);
-    gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\Box.glb",this,1.0f);
-    gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glTF\\Sponza\\Sponza.gltf",this,1.0f);
-    gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\Robot.glb",this,1.0f);
-    gltfModel.push_back(new struct gltfModel);
-    gltfModel.at(gltfModel.size()-1)->loadFromFile(ExternalPath + "model\\glb\\RetroUFO.glb",this,1.0f);
-}
-
-void VkApplication::createObjects()
-{
-    uint32_t index=0;
-    object3D.push_back( new object(this,{gltfModel.at(0),emptyTexture}) );
-    Graphics.bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
-    object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(1),emptyTexture}) );
-    Graphics.bindStencilObject(object3D.at(index),1.0f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
-    object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
-    object3D.at(index)->animationTimer = 1.0f;
-    object3D.at(index)->animationIndex = 1;
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(4),emptyTexture}) );
-    Graphics.bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(15.0f,15.0f,15.0f));
-    object3D.at(index)->animationTimer = 0.0f;
-    object3D.at(index)->animationIndex = 0;
-    object *Duck = object3D.at(index);
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(3),emptyTexture}) );
-    Graphics.bindBaseObject(object3D.at(index));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
-    Graphics.bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    object *Box0 = object3D.at(index);
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
-    Graphics.bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
-    object *Box1 = object3D.at(index);
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
-    Graphics.bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
-    object *Box2 = object3D.at(index);
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
-    Graphics.bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
-    object *Box3 = object3D.at(index);
-    index++;
-
-    object3D.push_back( new object(this,{gltfModel.at(2),emptyTextureW}) );
-    Graphics.bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
-    object *Box4 = object3D.at(index);
-    index++;
-
-    skyboxObject = new object(this,{gltfModel.at(2),nullptr});
-    Graphics.bindSkyBoxObject(skyboxObject);
-    skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
-
-    groups.push_back(new group);
-    groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
-    groups.at(0)->addObject(Box0);
-
-    groups.push_back(new group);
-    groups.at(1)->addObject(Duck);
-
-    groups.push_back(new group);
-    groups.at(2)->translate(glm::vec3(5.0f,0.0f,5.0f));
-    groups.at(2)->addObject(Box1);
-
-    groups.push_back(new group);
-    groups.at(3)->translate(glm::vec3(-5.0f,0.0f,5.0f));
-    groups.at(3)->addObject(Box2);
-
-    groups.push_back(new group);
-    groups.at(4)->translate(glm::vec3(10.0f,0.0f,5.0f));
-    groups.at(4)->addObject(Box3);
-
-    groups.push_back(new group);
-    groups.at(5)->translate(glm::vec3(-10.0f,0.0f,5.0f));
-    groups.at(5)->addObject(Box4);
-
-    cam = new camera;
-    cam->translate(glm::vec3(0.0f,0.0f,10.0f));
-}
-void VkApplication::createObjectsUniformBuffers()
-{
-    for(size_t i=0;i<object3D.size();i++)
-        object3D.at(i)->createUniformBuffers(imageCount);
-}
-
-void VkApplication::createLight()
-{
-    int index = 0;
-    lightPoint.push_back(new light<pointLight>(this,imageCount,lightSource));
-    lightPoint.at(0)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    lightPoint.at(0)->setCamera(cam);
-    groups.at(0)->addObject(lightPoint.at(0));
-    index +=6;
-
-    glm::mat4x4 Proj;
-
-    lightSource.push_back(new light<spotLight>(this,imageCount));
-        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
-        Proj[1][1] *= -1;
-    lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
-    lightSource.at(index)->setCamera(cam);
-    groups.at(2)->addObject(lightSource.at(index));
-    index++;
-
-    lightSource.push_back(new light<spotLight>(this,imageCount));
-        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
-        Proj[1][1] *= -1;
-    lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
-    lightSource.at(index)->setCamera(cam);
-    groups.at(3)->addObject(lightSource.at(index));
-    index++;
-
-    lightSource.push_back(new light<spotLight>(this,imageCount));
-        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
-        Proj[1][1] *= -1;
-    lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
-    lightSource.at(index)->setCamera(cam);
-    groups.at(4)->addObject(lightSource.at(index));
-    index++;
-
-    lightSource.push_back(new light<spotLight>(this,imageCount));
-        Proj = glm::perspective(glm::radians(90.0f), (float) lightSource.at(index)->getShadow()->getWidth()/lightSource.at(index)->getShadow()->getHeight(), 0.1f, 1000.0f);
-        Proj[1][1] *= -1;
-    lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
-    lightSource.at(index)->setCamera(cam);
-    groups.at(5)->addObject(lightSource.at(index));
-    index++;
-
 }
 
 void VkApplication::updateLight()
 {
-    shadowCount = 0;
-    for(size_t i=0; i<lightSource.size();i++)
-    {
-        lightSource.at(i)->createShadow(COMMAND_POOLS);
-        if(lightSource.at(i)->getShadowEnable())
-            shadowCount++;
-    }
+    for(size_t i=0; i<lightSources.size();i++)
+        lightSources.at(i)->createShadow(COMMAND_POOLS, imageCount);
 }
 
-void VkApplication::createGraphics()
-{    
-    PostProcessing.setApplication(this);
-    PostProcessing.setMSAASamples(msaaSamples);
+void VkApplication::createGraphics(GLFWwindow* window)
+{
+    swapChainSupport = querySwapChainSupport(physicalDevices.at(physicalDeviceNumber).device,surface);
+    imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+        imageCount = swapChainSupport.capabilities.maxImageCount;
 
-    PostProcessing.createAttachments(swapChainSupport);
+    VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    VkSampleCountFlagBits maxMSAASamples = getMaxUsableSampleCount(physicalDevices.at(physicalDeviceNumber).device);
+    if(MSAASamples>maxMSAASamples)
+        MSAASamples = maxMSAASamples;
+
+    PostProcessing.setApplication(this);
+    PostProcessing.setMSAASamples(MSAASamples);
+
+    PostProcessing.createAttachments(window, swapChainSupport);
     PostProcessing.createRenderPass();
     PostProcessing.createFramebuffers();
     PostProcessing.createPipelines();
 
     Graphics.setApplication(this);
-    Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent(),msaaSamples);
-    Graphics.setEmptyTexture(emptyTextureW);
-    Graphics.setSkyboxTexture(skybox);
+    Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent(),MSAASamples);
 
     Graphics.createAttachments();
     Graphics.createRenderPass();
@@ -568,24 +304,34 @@ void VkApplication::createGraphics()
     Graphics.createSkyboxDescriptorPool();
     Graphics.createSkyboxDescriptorSets();
     Graphics.createSecondDescriptorPool();
-    Graphics.createSecondDescriptorSets(lightSource);
-
-    for(uint32_t i=0;i<imageCount;i++)
-        Graphics.updateMaterialUniformBuffer(i);
+    Graphics.createSecondDescriptorSets(lightSources);
 }
 
 void VkApplication::createCommandBuffers()
 {
-    updateCmdLight = true;
-    updateCmdWorld = true;
+    commandBuffers.resize(COMMAND_POOLS);
 
     for(size_t i=0;i<COMMAND_POOLS;i++)
         createCommandBuffer(i);
 
-    for(size_t i=0;i<lightSource.size();i++)
-        for(size_t j=0;j<COMMAND_POOLS;j++)
-            if(lightSource.at(i)->getShadowEnable())
-                lightSource.at(i)->getShadow()->createCommandBuffers(j);
+    for(size_t i=0;i<lightSources.size();i++)
+        if(lightSources.at(i)->getShadowEnable())
+            for(size_t j=0;j<COMMAND_POOLS;j++)
+                    lightSources.at(i)->getShadow()->createCommandBuffers(j);
+
+    for(size_t i=0;i<COMMAND_POOLS;i++)
+        for(size_t j=0;j<commandBuffers[i].size();j++){
+            updateUniformBuffer(j);
+            updateCommandBuffer(i,j);
+        }
+
+    for(size_t k=0;k<lightSources.size();k++)
+        if(lightSources[k]->getShadowEnable())
+            for(size_t i=0;i<COMMAND_POOLS;i++)
+                for(size_t j=0;j<lightSources[k]->getShadow()->getCommandBuffer(i).size();j++){
+                    Graphics.updateLightUniformBuffer(j,lightSources);
+                    lightSources[k]->getShadow()->updateCommandBuffers(i,j,Graphics.getObjects(),lightSources[k]->getLightNumber());
+                }
 }
     void VkApplication::createCommandBuffer(uint32_t number)
     {
@@ -649,196 +395,124 @@ void VkApplication::createSyncObjects()
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
 }
 
-void VkApplication::VkApplication::mainLoop()
+VkResult VkApplication::drawFrame()
 {
-    static auto pastTime = std::chrono::high_resolution_clock::now();
+    uint32_t imageIndex;
+    VkResult result = vkAcquireNextImageKHR(device, PostProcessing.SwapChain(), UINT64_MAX , imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);    //Получить индекс следующего доступного презентабельного изображения
 
-    while (!glfwWindowShouldClose(window))
-    {
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        return result;
 
-            if(fpsLock){if(fps<1.0f/frameTime){continue;}}
-            pastTime = currentTime;
+    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)                                       //если нет следующего изображения
+        vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);       //ждём
+    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-            std::stringstream ss;
-            ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
-            glfwSetWindowTitle(window, ss.str().c_str());
+    updateCmd(imageIndex);
+    updateUbo(imageIndex);
 
-        updateAnimations(animate);
-        glfwPollEvents();
-        mouseEvent();
-        drawFrame();
-    }
+    VkSemaphore                         waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+    VkPipelineStageFlags                waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkSemaphore                         signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+    std::vector<VkCommandBuffer>        commandbufferSet;
 
-    vkDeviceWaitIdle(device);
-}
-    void VkApplication::updateAnimations(bool animate)
-    {
-        if(animate)
-            for(size_t j=0;j<object3D.size();j++)
-            {
-                object3D[j]->animationTimer += frameTime;
-                object3D[j]->updateAnimation();
-            }
-    }
-    void VkApplication::drawFrame()
-    {
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, PostProcessing.SwapChain(), UINT64_MAX , imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);    //Получить индекс следующего доступного презентабельного изображения
+        for(size_t i=0;i<lightSources.size();i++)
+            if(lightSources[i]->getShadowEnable())
+                commandbufferSet.push_back(lightSources[i]->getShadow()->getCommandBuffer(currentBuffer)[imageIndex]);
+        commandbufferSet.push_back(commandBuffers[currentBuffer][imageIndex]);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR){
-            recreateSwapChain();
-            return;
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-        {throw std::runtime_error("failed to acquire swap chain image!");}
-
-        if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)                                       //если нет следующего изображения
-            vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);       //ждём
-        imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-        updateCmd(imageIndex);
-
-        VkSemaphore             waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-        VkPipelineStageFlags    waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        VkSemaphore             signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
-        VkCommandBuffer         commandbufferSet[shadowCount+1];
-            int counter = 0;
-            for(size_t i=0;i<lightSource.size();i++){
-                if(lightSource[i]->getShadowEnable()){
-                    commandbufferSet[counter] = lightSource[i]->getShadow()->getCommandBuffer(currentBuffer)[imageIndex];
-                    counter++;
-                }
-            }
-            commandbufferSet[counter] = commandBuffers[currentBuffer][imageIndex];
-
-        VkSubmitInfo submitInfo{};
+    vkResetFences(device, 1, &inFlightFences[currentFrame]);
+    VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = shadowCount+1;
-        submitInfo.pCommandBuffers = commandbufferSet;
+        submitInfo.commandBufferCount = commandbufferSet.size();
+        submitInfo.pCommandBuffers = commandbufferSet.data();
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
+        submitInfo.pSignalSemaphores = signalSemaphores;                                                    //восстановить симофоры в несингнальное положение
+    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)           //отправляет последовательность семафоров или командных буферов в очередь
+        throw std::runtime_error("failed to submit draw command buffer!");
 
-        vkResetFences(device, 1, &inFlightFences[currentFrame]);                                                //восстановить симофоры в несингнальное положение
-
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)           //отправляет последовательность семафоров или командных буферов в очередь
-            throw std::runtime_error("failed to submit draw command buffer!");
-
-        VkPresentInfoKHR presentInfo{};
-        VkSwapchainKHR swapChains[] = {PostProcessing.SwapChain()};
+    VkPresentInfoKHR presentInfo{};
+    VkSwapchainKHR swapChains[] = {PostProcessing.SwapChain()};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
         presentInfo.pImageIndices = &imageIndex;
+    result = vkQueuePresentKHR(presentQueue, &presentInfo);                                                  //Поставить изображение в очередь для презентации
 
-        result = vkQueuePresentKHR(presentQueue, &presentInfo);                                                  //Поставить изображение в очередь для презентации
+    if(imageIndex==imageCount-1)
+        currentBuffer = (currentBuffer + 1) % COMMAND_POOLS;
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
-            framebufferResized = false;
-            recreateSwapChain();
-        }else if (result != VK_SUCCESS)
-        {throw std::runtime_error("failed to present swap chain image!");}
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-        if(imageIndex==imageCount-1)
-        {currentBuffer = (currentBuffer + 1) % COMMAND_POOLS;}
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    return result;
+}
+    void VkApplication::updateCmd(uint32_t imageIndex)
+    {
+        if(worldCmd.enable)
+        {
+            updateCommandBuffer((currentBuffer + 1) % COMMAND_POOLS,imageIndex);
+            worldCmd.frames++;
+            if(worldCmd.frames==COMMAND_POOLS*imageCount)
+                worldCmd.enable = false;
+        }
+        if(lightsCmd.enable)
+        {
+            for(size_t i=0;i<lightSources.size();i++)
+                if(lightSources[i]->getShadowEnable())
+                    lightSources[i]->getShadow()->updateCommandBuffers((currentBuffer + 1) % COMMAND_POOLS,imageIndex,Graphics.getObjects(),lightSources[i]->getLightNumber());
+            lightsCmd.frames++;
+            if(lightsCmd.frames==COMMAND_POOLS*imageCount)
+                lightsCmd.enable = false;
+        }
     }
-
-        void VkApplication::updateCmd(uint32_t imageIndex)
+    void VkApplication::updateUbo(uint32_t imageIndex)
+    {
+        if(worldUbo.enable)
         {
-            if(updateCmdWorld)
-            {
-                updateUniformBuffer(imageIndex);
-                updateCommandBuffer((currentBuffer + 1) % COMMAND_POOLS,imageIndex);
-                updatedWorldFrames++;
-                if(updatedWorldFrames==COMMAND_POOLS*imageCount)
-                    updateCmdWorld = false;
-            }
-            if(updateCmdLight)
-            {
-                Graphics.updateLightUniformBuffer(imageIndex,lightSource);
-                for(size_t i=0;i<lightSource.size();i++)
-                    if(lightSource[i]->getShadowEnable())
-                        lightSource[i]->getShadow()->updateCommandBuffers((currentBuffer + 1) % COMMAND_POOLS,imageIndex,object3D,lightSource[i]->getLightNumber());
-                updatedLightFrames++;
-                if(updatedLightFrames==COMMAND_POOLS*imageCount)
-                    updateCmdLight = false;
-            }
+            updateUniformBuffer(imageIndex);
+            worldUbo.frames++;
+            if(worldUbo.frames==COMMAND_POOLS*imageCount)
+                worldUbo.enable = false;
         }
-            void VkApplication::updateUniformBuffer(uint32_t currentImage)
-            {
-                Graphics.updateUniformBuffer(currentImage, cam);
-                Graphics.updateSkyboxUniformBuffer(currentImage, cam, skyboxObject);
-                for(size_t i=0;i<object3D.size();i++)
-                    object3D.at(i)->updateUniformBuffer(currentImage);
-            }
-
-        void VkApplication::recreateSwapChain()
+        if(lightsUbo.enable)
         {
-            int width = 0, height = 0;
-            glfwGetFramebufferSize(window, &width, &height);
-            while (width == 0 || height == 0)
-            {
-                glfwGetFramebufferSize(window, &width, &height);
-                glfwWaitEvents();
-            }
-            vkDeviceWaitIdle(device);
-
-            cleanupSwapChain();
-
-            checkSwapChainSupport();
-
-            updateLight();
-
-            createGraphics();
-
-            createCommandBuffers();
+            Graphics.updateLightUniformBuffer(imageIndex,lightSources);
+            lightsUbo.frames++;
+            if(lightsUbo.frames==COMMAND_POOLS*imageCount)
+                lightsUbo.enable = false;
         }
-            void VkApplication::cleanupSwapChain()
-            {
-                for(size_t i=0;i<lightSource.size();i++)
-                    lightSource.at(i)->cleanup();
+    }
+        void VkApplication::updateUniformBuffer(uint32_t currentImage)
+        {
+            Graphics.updateUniformBuffer(currentImage, cameras);
+            Graphics.updateSkyboxUniformBuffer(currentImage, cameras);
+            Graphics.updateObjectUniformBuffer(currentImage);
+            Graphics.updateMaterialUniformBuffer(currentImage);
+        }
 
-                Graphics.destroy();
-                PostProcessing.destroy();
+void VkApplication::cleanupSwapChain()
+{
+    for(size_t i=0;i<lightSources.size();i++)
+        lightSources.at(i)->cleanup();
 
-                for(size_t i=0;i<object3D.size();i++)
-                    object3D.at(i)->destroyDescriptorPools();
+    Graphics.destroy();
+    PostProcessing.destroy();
 
-                for(size_t i = 0; i< commandPool.size();i++)
-                    vkFreeCommandBuffers(device, commandPool.at(i), static_cast<uint32_t>(commandBuffers.at(i).size()),commandBuffers.at(i).data());
-            }
+    for(size_t i = 0; i< commandPool.size();i++)
+        vkFreeCommandBuffers(device, commandPool.at(i), static_cast<uint32_t>(commandBuffers.at(i).size()),commandBuffers.at(i).data());
+}
 
 
 void VkApplication::VkApplication::cleanup()
 {
     cleanupSwapChain();
 
-    for(size_t i=0;i<lightPoint.size();i++)
-        delete lightPoint.at(i);
-
-    for(size_t i =0 ;i<textures.size();i++)
-    {textures.at(i)->destroy(); delete textures.at(i);}
-
-    skybox->destroy(); delete skybox;
-    emptyTexture->destroy(); delete emptyTexture;
-    emptyTextureW->destroy(); delete emptyTextureW;
-
-    for(size_t i=0;i<object3D.size();i++)
-        object3D.at(i)->destroyUniformBuffers();
-
-    for (size_t i =0 ;i<object3D.size();i++)
-        delete object3D.at(i);
-
-    for (size_t i =0 ;i<gltfModel.size();i++)
-        gltfModel.at(i)->destroy(gltfModel.at(i)->app->getDevice());
+    Graphics.destroyCommandPools();
+    Graphics.destroyBuffers();
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -857,10 +531,6 @@ void VkApplication::VkApplication::cleanup()
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
 }
     void VkApplication::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
     {
@@ -872,10 +542,18 @@ void VkApplication::VkApplication::cleanup()
         }
     }
 
-VkPhysicalDevice                    & VkApplication::getPhysicalDevice(){return PhysicalDevice;}
+VkPhysicalDevice                    & VkApplication::getPhysicalDevice(){return physicalDevices.at(physicalDeviceNumber).device;}
 VkDevice                            & VkApplication::getDevice(){return device;}
 VkQueue                             & VkApplication::getGraphicsQueue(){return graphicsQueue;}
 std::vector<VkCommandPool>          & VkApplication::getCommandPool(){return commandPool;}
 VkSurfaceKHR                        & VkApplication::getSurface(){return surface;}
-GLFWwindow                          & VkApplication::getWindow(){return *window;}
-QueueFamilyIndices                  & VkApplication::getQueueFamilyIndices(){return indices;}
+QueueFamilyIndices                  & VkApplication::getQueueFamilyIndices(){return physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber);}
+graphics                            & VkApplication::getGraphics(){return Graphics;}
+
+void                                VkApplication::resetCmdLight(){lightsCmd.enable = true; lightsCmd.frames = 0;}
+void                                VkApplication::resetCmdWorld(){worldCmd.enable = true; worldCmd.frames = 0;}
+void                                VkApplication::resetUboLight(){lightsUbo.enable = true; lightsUbo.frames = 0;}
+void                                VkApplication::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
+
+void                                VkApplication::addlightSource(light<spotLight>* lightSource){this->lightSources.push_back(lightSource);}
+void                                VkApplication::addCamera(camera * cameras){this->cameras = cameras;}

@@ -4,7 +4,6 @@
 #include "core/vulkanCore.h"
 #include "transformational.h"
 
-class camera;
 class shadowGraphics;
 struct LightBufferObject;
 
@@ -40,7 +39,7 @@ class light<spotLight> : public transformational
 private:
     VkApplication                       *app;
     shadowGraphics                      *shadow;
-    camera                              *camera;
+    VkExtent2D                          shadowExtent = {1024,1024};
 
     bool                                enableShadow = false;
     uint32_t                            type;
@@ -61,7 +60,7 @@ private:
     void updateViewMatrix();
     void renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet);
 public:
-    light(VkApplication *app, uint32_t imageCount, uint32_t type = lightType::spot);
+    light(VkApplication *app, uint32_t type = lightType::spot);
     ~light();
     void cleanup();
 
@@ -74,13 +73,11 @@ public:
     void rotateY(const float & ang ,const glm::vec3 & ax);
 
     void createLightPVM(const glm::mat4x4 & projection);
+    void createShadow(uint32_t commandPoolsCount, uint32_t imageCount);
 
-    void createShadow(uint32_t commandPoolsCount);
-
-    void                            setImageCount(uint32_t imageCount);
-    void                            setCamera(class camera *camera);
     void                            setLightColor(const glm::vec4 & color);
     void                            setLightNumber(const uint32_t & number);
+    void                            setShadowExtent(const VkExtent2D & shadowExtent);
 
     glm::mat4x4                     getViewMatrix() const;
     glm::mat4x4                     getModelMatrix() const;
@@ -115,11 +112,10 @@ private:
     std::vector<light<spotLight> *> & lightSource;
 
 public:
-    light(VkApplication *app, uint32_t imageCount, std::vector<light<spotLight> *> & lightSource);
+    light(VkApplication *app, std::vector<light<spotLight> *> & lightSource);
     ~light();
 
     void setLightColor(const glm::vec4 & color);
-    void setCamera(class camera *camera);
     uint32_t getNumber() const;
 
     void setGlobalTransform(const glm::mat4 & transform);

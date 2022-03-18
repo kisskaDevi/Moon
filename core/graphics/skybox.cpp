@@ -3,6 +3,8 @@
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 
+#include <array>
+
 void graphics::Skybox::Destroy(VkApplication *app)
 {
     vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);

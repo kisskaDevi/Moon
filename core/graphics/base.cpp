@@ -3,6 +3,8 @@
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 
+#include <array>
+
 void graphics::Base::Destroy(VkApplication *app)
 {
     vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
@@ -303,22 +305,6 @@ void graphics::createBaseDescriptorPool()
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &base.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor pool!");
-
-    for(size_t i=0;i<base.objects.size();i++)
-    {
-        base.objects.at(i)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
-        base.objects.at(i)->createDescriptorPool(image.Count);
-    }
-    for(size_t i=0;i<bloom.objects.size();i++)
-    {
-        bloom.objects.at(i)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
-        bloom.objects.at(i)->createDescriptorPool(image.Count);
-    }
-    for(size_t i=0;i<stencil.objects.size();i++)
-    {
-        stencil.objects.at(i)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
-        stencil.objects.at(i)->createDescriptorPool(image.Count);
-    }
 }
 
 void graphics::createBaseDescriptorSets()
@@ -327,13 +313,6 @@ void graphics::createBaseDescriptorSets()
     /* В нашем случае мы создадим один набор дескрипторов для каждого изображения цепочки подкачки, все с одинаковым макетом.
      * К сожалению, нам нужны все копии макета, потому что следующая функция ожидает массив, соответствующий количеству наборов.
      * Добавьте член класса для хранения дескрипторов набора дескрипторов и назначьте их vkAllocateDescriptorSets */
-
-    for(size_t i=0;i<base.objects.size();i++)
-        base.objects.at(i)->createDescriptorSet(image.Count);
-    for(size_t i=0;i<bloom.objects.size();i++)
-        bloom.objects.at(i)->createDescriptorSet(image.Count);
-    for(size_t i=0;i<stencil.objects.size();i++)
-        stencil.objects.at(i)->createDescriptorSet(image.Count);
 
     base.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, base.SceneDescriptorSetLayout);
@@ -402,6 +381,8 @@ void graphics::Base::render(std::vector<VkCommandBuffer> &commandBuffers, uint32
 void graphics::Base::setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics)
 {
     for(size_t j = 0; j<objects.size() ;j++)
-        for (auto node : objects[j]->getModel()->nodes)
-            Graphics->setMaterialNode(node,nodeMaterials);
+        for (auto node : objects[j]->getModel()->nodes){
+            uint32_t objectPrimitive = 0;
+            Graphics->setMaterialNode(node,nodeMaterials,objectPrimitive,objects[j]->getModel()->firstPrimitive);
+        }
 }

@@ -64,7 +64,6 @@ SOURCES += \
     core/operations.cpp \
     core/texture.cpp \
     core/vulkanCore.cpp\
-    core/control.cpp \
     main.cpp
 
 HEADERS += \

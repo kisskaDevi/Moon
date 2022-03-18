@@ -3,9 +3,8 @@
 #include "core/operations.h"
 #include "core/graphics/shadowGraphics.h"
 #include "gltfmodel.h"
-#include "camera.h"
 
-light<spotLight>::light(VkApplication *app, uint32_t imageCount, uint32_t type) : app(app), type(type)
+light<spotLight>::light(VkApplication *app, uint32_t type) : app(app), type(type)
 {
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -13,8 +12,6 @@ light<spotLight>::light(VkApplication *app, uint32_t imageCount, uint32_t type) 
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
-
-    shadow = new shadowGraphics(app,imageCount);
 }
 
 light<spotLight>::~light(){}
@@ -85,9 +82,10 @@ void light<spotLight>::createLightPVM(const glm::mat4x4 & projection)
     modelMatrix = glm::mat4x4(1.0f);
 }
 
-void light<spotLight>::createShadow(uint32_t commandPoolsCount)
+void light<spotLight>::createShadow(uint32_t commandPoolsCount, uint32_t imageCount)
 {
     enableShadow = true;
+    shadow = new shadowGraphics(app,imageCount,shadowExtent);
     shadow->createShadow(commandPoolsCount);
 }
 
@@ -105,8 +103,8 @@ LightBufferObject light<spotLight>::getLightBufferObject() const
 }
 
 void                            light<spotLight>::setLightColor(const glm::vec4 &color){this->lightColor = color;}
-void                            light<spotLight>::setCamera(class camera *camera){this->camera=camera;}
 void                            light<spotLight>::setLightNumber(const uint32_t & number){this->number=number;}
+void                            light<spotLight>::setShadowExtent(const VkExtent2D & shadowExtent){this->shadowExtent=shadowExtent;}
 
 uint32_t                        light<spotLight>::getLightNumber() const {return number;}
 glm::mat4x4                     light<spotLight>::getViewMatrix() const {return viewMatrix;}
@@ -124,7 +122,7 @@ shadowGraphics                  *light<spotLight>::getShadow(){return shadow;}
 //============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
 //======================================================================================================================//
 
-light<pointLight>::light(VkApplication *app, uint32_t imageCount, std::vector<light<spotLight> *> & lightSource) : lightSource(lightSource)
+light<pointLight>::light(VkApplication *app, std::vector<light<spotLight> *> & lightSource) : lightSource(lightSource)
 {
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -138,45 +136,51 @@ light<pointLight>::light(VkApplication *app, uint32_t imageCount, std::vector<li
     Proj[1][1] *= -1;
 
     int index = number;
-    lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
+    lightSource.push_back(new light<spotLight>(app,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
+    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
+    lightSource.push_back(new light<spotLight>(app,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,0.0f,1.0f));
+    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
+    lightSource.push_back(new light<spotLight>(app,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
+    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
+    lightSource.push_back(new light<spotLight>(app,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.3f,0.6f,0.9f,1.0f));
+    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
+    lightSource.push_back(new light<spotLight>(app,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.6f,0.9f,0.3f,1.0f));
+    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,imageCount,lightType::point));
+    lightSource.push_back(new light<spotLight>(app,lightType::point));
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->rotate(glm::radians(180.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
+    app->addlightSource(lightSource.at(index));
 }
 
 light<pointLight>::~light(){}
@@ -190,12 +194,6 @@ void light<pointLight>::setLightColor(const glm::vec4 &color)
     this->lightColor = color;
     for(uint32_t i=number;i<number+6;i++)
         lightSource.at(i)->setLightColor(color);
-}
-
-void light<pointLight>::setCamera(class camera *camera)
-{
-    for(uint32_t i=number;i<number+6;i++)
-        lightSource.at(i)->setCamera(camera);
 }
 
 void light<pointLight>::setGlobalTransform(const glm::mat4 & transform)

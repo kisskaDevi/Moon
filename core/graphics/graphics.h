@@ -18,12 +18,9 @@ class                               texture;
 class                               cubeTexture;
 class                               object;
 class                               camera;
-struct                              gltfModel;
 template <typename type> class      light;
 class                               spotLight;
-class                               pointLight;
 template <> class                   light<spotLight>;
-template <> class                   light<pointLight>;
 struct                              Node;
 struct                              Material;
 struct                              PushConstBlockMaterial;
@@ -55,6 +52,12 @@ struct SwapChainSupportDetails{
     VkSurfaceCapabilitiesKHR        capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR>   presentModes;
+};
+
+struct Objects{
+    std::vector<object *> *base;
+    std::vector<object *> *bloom;
+    std::vector<object *> *stencil;
 };
 
 struct QueueFamilyIndices
@@ -217,6 +220,8 @@ private:
 public:
     graphics();
     void destroy();
+    void destroyBuffers();
+    void destroyCommandPools();
 
     void setApplication(VkApplication *app);
     void setImageProp(uint32_t imageCount, VkFormat imageFormat, VkExtent2D imageExtent, VkSampleCountFlagBits imageSamples);
@@ -235,16 +240,17 @@ public:
     void createSkyboxDescriptorSets();
 
     void createSecondDescriptorPool();
-    void createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSource);
+    void createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources);
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
         void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
         void stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
-        void setMaterialNode(Node* node, std::vector<PushConstBlockMaterial> &nodeMaterials);
+        void setMaterialNode(Node* node, std::vector<PushConstBlockMaterial> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive);
 
     void updateUniformBuffer(uint32_t currentImage, camera *cam);
-    void updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam, object *skybox);
+    void updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam);
     void updateMaterialUniformBuffer(uint32_t currentImage);
+    void updateObjectUniformBuffer(uint32_t currentImage);
     void updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource);
 
     void bindBaseObject(object *newObject);
@@ -256,6 +262,7 @@ public:
     void setStencilObject(object *oldObject);
 
     std::vector<attachments>        & getAttachments();
+    Objects                         getObjects();
 };
 
 class postProcessing
@@ -294,10 +301,10 @@ private:
     }second;
 
     //Создание цепочки обмена
-    void createSwapChain(SwapChainSupportDetails swapChainSupport);
+    void createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);    //Формат поверхности
         VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);     //Режим презентации
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);                              //Экстент - это разрешение изображений
+        VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);                              //Экстент - это разрешение изображений
     void createImageViews();
     void createColorAttachments();
 public:
@@ -306,7 +313,7 @@ public:
     void setMSAASamples(VkSampleCountFlagBits msaaSamples);
     void destroy();
 
-    void createAttachments(SwapChainSupportDetails swapChainSupport);
+    void createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();

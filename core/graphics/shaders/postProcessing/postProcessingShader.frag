@@ -47,8 +47,8 @@ vec4 godRays(sampler2D bloomSampler, vec2 TexCoord)
 
 void main()
 {
-    vec2 NDCfragCoord = fragTexCoord * 2.0f - 1.0f;
-    float factor = exp( - 2.0f * (NDCfragCoord.x*NDCfragCoord.x + NDCfragCoord.y*NDCfragCoord.y));
+    //vec2 NDCfragCoord = fragTexCoord * 2.0f - 1.0f;
+    //float factor = exp( - 2.0f * (NDCfragCoord.x*NDCfragCoord.x + NDCfragCoord.y*NDCfragCoord.y));
 
     outColor = texture(Sampler,fragTexCoord);
     outColor += blur(bloomSampler,fragTexCoord);

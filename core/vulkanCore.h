@@ -7,39 +7,17 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3native.h>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <libs/glm/glm/glm.hpp>
-#include <libs/glm/glm/gtc/matrix_transform.hpp>
-
-class texture;
-class cubeTexture;
-class object;
-class group;
 class camera;
-class spotLight;
-class pointLight;
 struct gltfModel;
 
-template <typename type>
-class light;
-
+template <typename type> class light;
+class spotLight;
 template <> class light<spotLight>;
-template <> class light<pointLight>;
 
-#include <chrono>
-
-#include <iostream>         // заголовки для
-#include <sstream>
-#include <stdexcept>        // предотвращения ошибок
-#include <cstdlib>          // заголовок для использования макросов EXIT_SUCCESS и EXIT_FAILURE
+#include <iostream>
 #include <vector>
 #include <set>
-#include <cstdint>          // нужна для UINT32_MAX
-#include <algorithm>        // нужна для std::min/std::max
-#include <fstream>
-#include <array>
-#include "graphics/attachments.h"
+
 #include "graphics/graphics.h"
 
 #ifdef NDEBUG
@@ -48,68 +26,86 @@ template <> class light<pointLight>;
     const bool enableValidationLayers = true;
 #endif
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 800;
-const double pi = 4*std::atan(1);
-
 const int MAX_FRAMES_IN_FLIGHT = 3;
 const int COMMAND_POOLS = 1;
 
-
 const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
+const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-const std::vector<const char*> validationLayers = {
-  "VK_LAYER_KHRONOS_validation"
+struct physicalDevice{
+    VkPhysicalDevice                            device;
+    std::vector<QueueFamilyIndices>             indices;
 };
 
-const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+struct updateFlag{
+    bool                                        enable = false;
+    uint32_t                                    frames = 0;
 };
 
 class VkApplication
 {
 public:
-    void run()
-    {
-        initWindow();
-        initVulkan();
-        mainLoop();
-        cleanup();
-    }
+    void initializeVulkan();
+    void mainLoop(GLFWwindow* window, bool &framebufferResized);
+    void cleanup();
 
     VkPhysicalDevice                            & getPhysicalDevice();
     VkDevice                                    & getDevice();
     VkQueue                                     & getGraphicsQueue();
     std::vector<VkCommandPool>                  & getCommandPool();
     VkSurfaceKHR                                & getSurface();
-    GLFWwindow                                  & getWindow();
     QueueFamilyIndices                          & getQueueFamilyIndices();
+    graphics                                    & getGraphics();
+
+    void                                        resetCmdLight();
+    void                                        resetCmdWorld();
+    void                                        resetUboLight();
+    void                                        resetUboWorld();
+
+    void                                        addlightSource(light<spotLight>* lightSource);
+    void                                        addCamera(camera * cameras);
+
+//step 1
+    void                                        createInstance();
+    void                                        setupDebugMessenger();
+    void                                        createSurface(GLFWwindow* window);
+//step 2
+    void                                        pickPhysicalDevice();
+    void                                        createLogicalDevice();
+    void                                        checkSwapChainSupport();
+//step 3
+    void                                        createCommandPool();
+//step 4
+    void                                        updateLight();
+//step 5
+    void                                        createGraphics(GLFWwindow* window);
+//step 6
+    void                                        createCommandBuffers();
+    void                                        createSyncObjects();
+//step 7
+    VkResult                                    drawFrame();
+    void                                        cleanupSwapChain();
 
 private:
 
-    typedef struct physicalDevice{
-        VkPhysicalDevice device;
-        std::vector<QueueFamilyIndices> indices;
-    }physicalDevice;
-
     VkInstance                                  instance;
-    GLFWwindow                                  *window;
-    GLFWimage                                   images;
     VkSurfaceKHR                                surface;
     VkDebugUtilsMessengerEXT                    debugMessenger;
 
     std::vector<physicalDevice>                 physicalDevices;
-    VkPhysicalDevice                            PhysicalDevice = VK_NULL_HANDLE;
-    QueueFamilyIndices                          indices;
+    uint32_t                                    physicalDeviceNumber;
+    uint32_t                                    indicesNumber;
+
     VkDevice                                    device;
     VkQueue                                     graphicsQueue;
     VkQueue                                     presentQueue;
+
     SwapChainSupportDetails                     swapChainSupport;
+    uint32_t                                    imageCount;
 
     graphics                                    Graphics;
     postProcessing                              PostProcessing;
-    uint32_t                                    imageCount;
-    VkSampleCountFlagBits                       msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     std::vector<VkCommandPool>                  commandPool;
     std::vector<std::vector<VkCommandBuffer>>   commandBuffers;
@@ -119,101 +115,38 @@ private:
     std::vector<VkFence>                        inFlightFences;
     std::vector<VkFence>                        imagesInFlight;
 
-    size_t                                      currentFrame = 0;
-    size_t                                      currentBuffer = 0;
+    uint32_t                                    currentFrame = 0;
+    uint32_t                                    currentBuffer = 0;
     bool                                        framebufferResized = false;
 
-    bool                                        updateCmdLight = false;
-    bool                                        updateCmdWorld = false;
-    unsigned long long                          updatedLightFrames = 0;
-    unsigned long long                          updatedWorldFrames = 0;
+    updateFlag                                  worldCmd;
+    updateFlag                                  lightsCmd;
+    updateFlag                                  worldUbo;
+    updateFlag                                  lightsUbo;
 
+    std::vector<light<spotLight>    *>          lightSources;
 
-    std::vector<texture             *>          textures;
-    std::vector<gltfModel           *>          gltfModel;
-    std::vector<object              *>          object3D;
-    std::vector<light<spotLight>    *>          lightSource;
-    std::vector<light<pointLight>   *>          lightPoint;
-    std::vector<group               *>          groups;
+    camera                                      *cameras;
 
-    camera                                      *cam;
-    texture                                     *emptyTexture;
-    texture                                     *emptyTextureW;
-    cubeTexture                                 *skybox;
-    object                                      *skyboxObject;
+    //=================================InitializeVulkan===========================================//
 
-    uint32_t                                    shadowCount = 0;
+        std::vector<const char*>                getRequiredExtensions();
+        bool                                    checkValidationLayerSupport();
 
-    double                                      xMpos, yMpos;
-    double                                      angx=0.0, angy=0.0;
+        void                                    populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+        static VKAPI_ATTR VkBool32 VKAPI_CALL   debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,VkDebugUtilsMessageTypeFlagsEXT messageType,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,void* pUserData);
+        VkResult                                CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 
-    float                                       frameTime;
-    float                                       fps = 60.0f;
-    bool                                        animate = true;
-    bool                                        fpsLock = false;
-
-    uint32_t                                    controledGroup = 0;
-
-    bool                                        backRStage = 0;
-    bool                                        backTStage = 0;
-    bool                                        backYStage = 0;
-
-    void initWindow();
-        static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
-    //=================================Initialization===========================================//
-    void initVulkan();
-
-        void createInstance();
-            std::vector<const char*> getRequiredExtensions();
-            bool checkValidationLayerSupport();
-
-        void setupDebugMessenger();
-            void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-                static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                    VkDebugUtilsMessageTypeFlagsEXT messageType,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,void* pUserData);
-            VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-
-        void createSurface();
-
-        void pickPhysicalDevice();
-        void createLogicalDevice();
-
-        void checkSwapChainSupport();
-
-        void createCommandPool();
-
-        void createTextures();
-        void loadModel();
-        void createObjects();
-        void createObjectsUniformBuffers();
-
-        void createLight();
-        void updateLight();
-
-        void createGraphics();
-
-        void createCommandBuffers();
-        void createCommandBuffer(uint32_t number);
-        void updateCommandBuffer(uint32_t number, uint32_t i);
-
-        void createSyncObjects();
+        void                                    createCommandBuffer(uint32_t number);
+        void                                    updateCommandBuffer(uint32_t number, uint32_t i);
 
     //=================================DrawLoop===========================================//
-    void mainLoop();
-        void updateAnimations(bool animate);
-        void drawFrame();
-            void recreateSwapChain();
-                void cleanupSwapChain();
-            void updateCmd(uint32_t imageIndex);
-                void updateUniformBuffer(uint32_t currentImage);            
-        void mouseEvent();
-        static void scrol(GLFWwindow* window, double xoffset, double yoffset);
+        void                                    updateCmd(uint32_t imageIndex);
+        void                                    updateUbo(uint32_t imageIndex);
+        void                                    updateUniformBuffer(uint32_t currentImage);
 
     //=================================Cleanup===========================================//
-    void cleanup();
-        void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
+        void                                    DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 };
-
 
 #endif // VULKANCORE_H

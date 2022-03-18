@@ -161,11 +161,6 @@ VkShaderModule createShaderModule(
 
 //deviceOperations
 
-typedef struct physicalDevice{
-    VkPhysicalDevice device;
-    std::vector<QueueFamilyIndices> indices;
-}physicalDevice;
-
 std::vector<QueueFamilyIndices> findQueueFamilies(
         VkPhysicalDevice                device,
         VkSurfaceKHR                    surface);

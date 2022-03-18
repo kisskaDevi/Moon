@@ -64,7 +64,7 @@ private:
 
     void renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet);
 public:
-    shadowGraphics(VkApplication *app, uint32_t imageCount);
+    shadowGraphics(VkApplication *app, uint32_t imageCount, VkExtent2D shadowExtent = {1024,1024});
     void destroy();
 
     void createMap();
@@ -80,7 +80,7 @@ public:
     void createDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers);
 
     void createCommandBuffers(uint32_t number);
-    void updateCommandBuffers(uint32_t number, uint32_t i, std::vector<object *> & object3D, uint32_t lightNumber);
+    void updateCommandBuffers(uint32_t number, uint32_t i, Objects object3D, uint32_t lightNumber);
 
     void createShadow(uint32_t commandPoolsCount);
 

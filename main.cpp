@@ -43,6 +43,8 @@ bool     backRStage = 0;
 bool     backTStage = 0;
 bool     backYStage = 0;
 bool     backNStage = 0;
+bool     backOStage = 0;
+bool     backIStage = 0;
 
 void scrol(GLFWwindow *window, double xoffset, double yoffset);
 void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras);
@@ -54,138 +56,141 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
 void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<group*>& groups, texture *emptyTexture, texture *emptyTextureW);
 void recreateSwapChain(VkApplication *app, GLFWwindow* window);
 void infoModels(std::vector<gltfModel *>& gltfModel);
+bool findCollision(object* object1, object* object2);
 
 int main()
 {
+    try
+    {
+        std::vector<gltfModel           *>          gltfModel;
+        std::vector<object              *>          object3D;
+        std::vector<light<spotLight>    *>          lightSource;
+        std::vector<light<pointLight>   *>          lightPoint;
+        std::vector<group               *>          groups;
 
-    std::vector<gltfModel           *>          gltfModel;
-    std::vector<object              *>          object3D;
-    std::vector<light<spotLight>    *>          lightSource;
-    std::vector<light<pointLight>   *>          lightPoint;
-    std::vector<group               *>          groups;
+        groups.push_back(new group);
+        groups.push_back(new group);
+        groups.push_back(new group);
+        groups.push_back(new group);
+        groups.push_back(new group);
+        groups.push_back(new group);
 
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
+        GLFWwindow* window;
+        initializeWindow(window);
 
-    GLFWwindow* window;
-    initializeWindow(window);
+        VkApplication app;
 
-    VkApplication app;
+        app.createInstance();
+        app.setupDebugMessenger();
+        app.createSurface(window);
 
-    app.createInstance();
-    app.setupDebugMessenger();
-    app.createSurface(window);
+        app.pickPhysicalDevice();
+        app.createLogicalDevice();
+        app.checkSwapChainSupport();
+        app.createCommandPool();
 
-    app.pickPhysicalDevice();
-    app.createLogicalDevice();
-    app.checkSwapChainSupport();
-    app.createCommandPool();
+        camera *cameras = new camera;
+            cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
+            //cameras->translate(glm::vec3(19.858f,-2.20515f,9.07568f));
+            //cameras->rotateX(1.35f,glm::vec3(-1.0f,0.0f,0.0f));
+            //cameras->rotateY(1.35,glm::vec3(0.0f,0.0f,-1.0f));
+        app.addCamera(cameras);
 
-    camera *cameras = new camera;
-        cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
-    app.addCamera(cameras);
+        texture *emptyTexture = new texture(&app,ZERO_TEXTURE);
+            emptyTexture->createTextureImage();
+            emptyTexture->createTextureImageView();
+            emptyTexture->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        texture *emptyTextureW = new texture(&app,ZERO_TEXTURE_WHITE);
+            emptyTextureW->createTextureImage();
+            emptyTextureW->createTextureImageView();
+            emptyTextureW->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        app.getGraphics().setEmptyTexture(emptyTexture);
 
-    texture *emptyTexture = new texture(&app,ZERO_TEXTURE);
-        emptyTexture->createTextureImage();
-        emptyTexture->createTextureImageView();
-        emptyTexture->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    texture *emptyTextureW = new texture(&app,ZERO_TEXTURE_WHITE);
-        emptyTextureW->createTextureImage();
-        emptyTextureW->createTextureImageView();
-        emptyTextureW->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    app.getGraphics().setEmptyTexture(emptyTexture);
+        loadModels(&app,gltfModel);
 
-    loadModels(&app,gltfModel);
+        cubeTexture *skybox = new cubeTexture(&app,SKYBOX);
+            skybox->setMipLevel(0.0f);
+            skybox->createTextureImage();
+            skybox->createTextureImageView();
+            skybox->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        object *skyboxObject = new object(&app,{gltfModel.at(2),nullptr});
+            skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
+        app.getGraphics().bindSkyBoxObject(skyboxObject);
+        app.getGraphics().setSkyboxTexture(skybox);
 
-    cubeTexture *skybox = new cubeTexture(&app,SKYBOX);
-        skybox->setMipLevel(0.0f);
-        skybox->createTextureImage();
-        skybox->createTextureImageView();
-        skybox->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    object *skyboxObject = new object(&app,{gltfModel.at(2),nullptr});
-        skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
-    app.getGraphics().bindSkyBoxObject(skyboxObject);
-    app.getGraphics().setSkyboxTexture(skybox);
+        app.createGraphics(window);
 
-    createLight(&app,lightSource,lightPoint,groups);
+        createLight(&app,lightSource,lightPoint,groups);
+        createObjects(&app,gltfModel,object3D,groups,emptyTexture,emptyTextureW);
 
-    app.updateLight();
-    app.createGraphics(window);
+        app.updateDescriptorSets();
+        app.createCommandBuffers();
+        app.createSyncObjects();
 
-    createObjects(&app,gltfModel,object3D,groups,emptyTexture,emptyTextureW);
+            static auto pastTime = std::chrono::high_resolution_clock::now();
 
-    app.createCommandBuffers();
-    app.createSyncObjects();
+            while (!glfwWindowShouldClose(window))
+            {
+                auto currentTime = std::chrono::high_resolution_clock::now();
+                frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
 
-    try {
+                    if(fpsLock)
+                        if(fps<1.0f/frameTime)  continue;
+                    pastTime = currentTime;
 
-        static auto pastTime = std::chrono::high_resolution_clock::now();
+                    std::stringstream ss;
+                    ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
+                    glfwSetWindowTitle(window, ss.str().c_str());
 
-        while (!glfwWindowShouldClose(window))
-        {
-            auto currentTime = std::chrono::high_resolution_clock::now();
-            frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
+                if(animate)
+                    for(size_t j=0;j<object3D.size();j++)
+                    {
+                        object3D[j]->animationTimer += frameTime;
+                        object3D[j]->updateAnimation();
+                    }
 
-                if(fpsLock){if(fps<1.0f/frameTime){continue;}}
-                pastTime = currentTime;
+                glfwPollEvents();
+                mouseEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
+                keyboardEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
+                VkResult result = app.drawFrame();
 
-                std::stringstream ss;
-                ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
-                glfwSetWindowTitle(window, ss.str().c_str());
+                if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,window);
+                else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
 
-            if(animate)
-                for(size_t j=0;j<object3D.size();j++)
-                {
-                    object3D[j]->animationTimer += frameTime;
-                    object3D[j]->updateAnimation();
-                }
-
-            glfwPollEvents();
-            mouseEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
-            keyboardEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
-            VkResult result = app.drawFrame();
-
-            if (result == VK_ERROR_OUT_OF_DATE_KHR){
-                recreateSwapChain(&app,window);
+                if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
+                    framebufferResized = false;
+                    recreateSwapChain(&app,window);
+                }else if (result != VK_SUCCESS) throw std::runtime_error("failed to present swap chain image!");
             }
-            else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {throw std::runtime_error("failed to acquire swap chain image!");}
 
-            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
-                framebufferResized = false;
-                recreateSwapChain(&app,window);
-            }else if (result != VK_SUCCESS) {throw std::runtime_error("failed to present swap chain image!");}
-        }
+            vkDeviceWaitIdle(app.getDevice());
 
-        vkDeviceWaitIdle(app.getDevice());
+        emptyTexture->destroy(); delete emptyTexture;
+        emptyTextureW->destroy(); delete emptyTextureW;
+
+        for(size_t i=0;i<lightSource.size();i++)
+            lightSource.at(i)->cleanup();
+
+        for(size_t i=0;i<lightPoint.size();i++)
+            delete lightPoint.at(i);
+
+        skybox->destroy(); delete skybox;
+
+        for (size_t i =0 ;i<gltfModel.size();i++)
+            gltfModel.at(i)->destroy(gltfModel.at(i)->app->getDevice());
+
+        app.cleanup();
+
+        glfwDestroyWindow(window);
+        glfwTerminate();
+
+        for (size_t i =0 ;i<object3D.size();i++)
+            delete object3D.at(i);
 
     } catch (const std::exception& e) {
         std::cerr<<e.what()<<std::endl;
         return EXIT_FAILURE;
     }
-
-    emptyTexture->destroy(); delete emptyTexture;
-    emptyTextureW->destroy(); delete emptyTextureW;
-
-    for(size_t i=0;i<lightPoint.size();i++)
-        delete lightPoint.at(i);
-
-    skybox->destroy(); delete skybox;
-
-    for (size_t i =0 ;i<gltfModel.size();i++)
-        gltfModel.at(i)->destroy(gltfModel.at(i)->app->getDevice());
-
-    app.cleanup();
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
-
-    for (size_t i =0 ;i<object3D.size();i++)
-        delete object3D.at(i);
 
     return EXIT_SUCCESS;
 }
@@ -203,8 +208,8 @@ void recreateSwapChain(VkApplication *app, GLFWwindow* window)
 
     app->cleanupSwapChain();
 
-    app->updateLight();
     app->createGraphics(window);
+    app->updateDescriptorSets();
     app->createCommandBuffers();
 }
 
@@ -218,7 +223,7 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 void initializeWindow(GLFWwindow* &window)
 {
     glfwInit();                                                             //инициализация библиотеки GLFW
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);                           //указывает не создавать контекст OpenGL (GLFW изначально был разработан для создания контекста OpenGL,)
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);                           //указывает не создавать контекст OpenGL (GLFW изначально был разработан для создания контекста OpenGL)
 
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);   //инициализация собственного окна
     glfwSetWindowUserPointer(window, nullptr);
@@ -480,6 +485,21 @@ void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::ve
     {
         glfwGetCursorPos(window,&xMpos,&yMpos);
     }
+    if(glfwGetKey(window,GLFW_KEY_P) == GLFW_PRESS)
+    {
+        std::cout<<"===================================="<<std::endl;
+        std::cout<<cameras->getRotateX().w<<std::endl;
+        std::cout<<cameras->getRotateX().x<<std::endl;
+        std::cout<<cameras->getRotateX().y<<std::endl;
+        std::cout<<cameras->getRotateX().z<<std::endl;
+        std::cout<<cameras->getRotateY().w<<std::endl;
+        std::cout<<cameras->getRotateY().x<<std::endl;
+        std::cout<<cameras->getRotateY().y<<std::endl;
+        std::cout<<cameras->getRotateY().z<<std::endl;
+        std::cout<<cameras->getTranslate().x<<std::endl;
+        std::cout<<cameras->getTranslate().y<<std::endl;
+        std::cout<<cameras->getTranslate().z<<std::endl;
+    }
 }
 
 void keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture,camera* cameras)
@@ -676,3 +696,38 @@ void scrol(GLFWwindow *window, double xoffset, double yoffset)
     static_cast<void>(xoffset);
     static_cast<void>(yoffset);
 }
+
+//bool findCollision(object* object1, object* object2)
+//{
+//    bool result = false;
+//    for(auto *node1: object1->getModel()->linearNodes){
+//        if (node1->mesh) {
+//            for(auto *primitive1: node1->mesh->primitives){
+//                glm::vec4 max1 = object1->ModelMatrix() * glm::vec4(primitive1->bb.max,1.0f);
+//                glm::vec4 min1 = object1->ModelMatrix() * glm::vec4(primitive1->bb.min,1.0f);
+//                for(auto *node2: object2->getModel()->linearNodes){
+//                    if (node2->mesh) {
+//                        for(auto *primitive2: node2->mesh->primitives){
+//                            glm::vec4 max2 = object2->ModelMatrix() * glm::vec4(primitive2->bb.max,1.0f);
+//                            glm::vec4 min2 = object2->ModelMatrix() * glm::vec4(primitive2->bb.min,1.0f);
+////                            bool xcollision = (min1.x>=min2.x&&min1.x<=max2.x)||(max1.x>=min2.x&&max1.x<=max2.x);
+////                            bool ycollision = (min1.y>=min2.y&&min1.y<=max2.y)||(max1.y>=min2.y&&max1.y<=max2.y);
+////                            bool zcollision = (min1.z>=min2.z&&min1.z<=max2.z)||(max1.z>=min2.z&&max1.z<=max2.z);
+//                            bool xcollision = max1.x>=min2.x&&max2.x>=min1.x;
+//                            bool ycollision = max1.y>=min2.y&&max2.y>=min1.y;
+//                            bool zcollision = max1.z>=min2.z&&max2.z>=min1.z;
+//                            std::cout<<min1.x<<'\t'<<min2.x<<";\t"<<min1.x<<'\t'<<max2.x<<"||\t"<<max1.x<<'\t'<<min2.x<<";\t"<<max1.x<<'\t'<<max2.x<<"||\t"<<xcollision<<std::endl;
+//                            std::cout<<min1.y<<'\t'<<min2.y<<";\t"<<min1.y<<'\t'<<max2.y<<"||\t"<<max1.y<<'\t'<<min2.y<<";\t"<<max1.y<<'\t'<<max2.y<<"||\t"<<ycollision<<std::endl;
+//                            std::cout<<min1.z<<'\t'<<min2.z<<";\t"<<min1.z<<'\t'<<max2.z<<"||\t"<<max1.z<<'\t'<<min2.z<<";\t"<<max1.z<<'\t'<<max2.z<<"||\t"<<zcollision<<std::endl;
+//                            result = xcollision&&ycollision&&zcollision;
+//                            if(result){
+//                                std::cout<<"coll is finded"<<std::endl;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    return result;
+//}

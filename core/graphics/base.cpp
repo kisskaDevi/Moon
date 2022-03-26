@@ -37,7 +37,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         layoutInfo.bindingCount = static_cast<uint32_t>(uboLayoutBinding.size());
         layoutInfo.pBindings = uboLayoutBinding.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &SceneDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create base uniform buffer descriptor set layout!");
 
     index = 0;
     std::array<VkDescriptorSetLayoutBinding, 1> uniformBufferLayoutBinding{};
@@ -51,7 +51,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferLayoutBinding.size());
         uniformBufferLayoutInfo.pBindings = uniformBufferLayoutBinding.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBufferLayoutInfo, nullptr, &ObjectDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create base object uniform buffer descriptor set layout!");
 
     index = 0;
     std::array<VkDescriptorSetLayoutBinding, 1> uniformBlockLayoutBinding{};
@@ -65,7 +65,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBlockLayoutBinding.size());
         uniformBlockLayoutInfo.pBindings = uniformBlockLayoutBinding.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBlockLayoutInfo, nullptr, &PrimitiveDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create base uniform block descriptor set layout!");
 
     index = 0;
     std::array<VkDescriptorSetLayoutBinding, 5> materialLayoutBinding{};
@@ -108,7 +108,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         materialLayoutInfo.bindingCount = static_cast<uint32_t>(materialLayoutBinding.size());
         materialLayoutInfo.pBindings = materialLayoutBinding.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &materialLayoutInfo, nullptr, &MaterialDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create base material descriptor set layout!");
 }
 
 void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
@@ -249,7 +249,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create base pipeline layout!");
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -280,7 +280,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create base graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -304,7 +304,7 @@ void graphics::createBaseDescriptorPool()
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &base.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool!");
+        throw std::runtime_error("failed to create base descriptor pool!");
 }
 
 void graphics::createBaseDescriptorSets()
@@ -322,7 +322,7 @@ void graphics::createBaseDescriptorSets()
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, base.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets!");
+        throw std::runtime_error("failed to allocate base descriptor sets!");
 
     //Наборы дескрипторов уже выделены, но дескрипторы внутри еще нуждаются в настройке.
     //Теперь мы добавим цикл для заполнения каждого дескриптора:

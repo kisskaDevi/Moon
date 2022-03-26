@@ -40,7 +40,7 @@ void graphics::Skybox::createDescriptorSetLayout(VkApplication *app)
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create Skybox descriptor set layout!");
 }
 
 void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
@@ -145,7 +145,7 @@ void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create Skybox pipeline layout!");
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -176,7 +176,7 @@ void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create Skybox graphics pipeline!");
 
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
@@ -199,7 +199,7 @@ void graphics::createSkyboxDescriptorPool()
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &skybox.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool!");
+        throw std::runtime_error("failed to create Skybox descriptor pool!");
 }
 
 void graphics::createSkyboxDescriptorSets()
@@ -212,7 +212,7 @@ void graphics::createSkyboxDescriptorSets()
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, skybox.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets!");
+        throw std::runtime_error("failed to allocate Skybox descriptor sets!");
 
     for (size_t i = 0; i < image.Count; i++)
     {

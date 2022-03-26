@@ -80,6 +80,7 @@ public:
     void                                        updateLight();
 //step 5
     void                                        createGraphics(GLFWwindow* window);
+    void                                        updateDescriptorSets();
 //step 6
     void                                        createCommandBuffers();
     void                                        createSyncObjects();

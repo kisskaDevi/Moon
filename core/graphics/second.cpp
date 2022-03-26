@@ -73,7 +73,7 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
         layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
         layoutInfo.pBindings = Binding.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create SecondPass descriptor set layout!");
 }
 
 void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
@@ -186,7 +186,7 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create SecondPass pipeline layout!");
 
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -205,7 +205,7 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create SecondPass graphics pipeline!");
 
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
@@ -235,10 +235,10 @@ void graphics::createSecondDescriptorPool()
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool!");
+        throw std::runtime_error("failed to create SecondPass descriptor pool!");
 }
 
-void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources)
+void graphics::createSecondDescriptorSets()
 {
 //    uint32_t firstPrimitive = 0;
 //    for(auto *model: models){
@@ -260,8 +260,11 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets!");
+        throw std::runtime_error("failed to allocate SecondPass descriptor sets!");
+}
 
+void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources)
+{
     for (size_t i = 0; i < image.Count; i++)
     {
         uint32_t index = 0;
@@ -410,7 +413,7 @@ void graphics::createSecondDescriptorSets(const std::vector<light<spotLight>*> &
 
     for(size_t i=0;i<lightSources.size();i++)
         if(lightSources[i]->getShadowEnable())
-            lightSources[i]->getShadow()->createDescriptorSets(second.lightUniformBuffers);
+            lightSources[i]->getShadow()->updateDescriptorSets(second.lightUniformBuffers);
 }
 
 void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCount)

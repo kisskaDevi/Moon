@@ -30,9 +30,7 @@ void texture::destroy()
 
 void texture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels)
 {
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
+    if(!pixels) throw std::runtime_error("failed to load texture image!");
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -90,9 +88,8 @@ void texture::createTextureImage(tinygltf::Image& gltfimage)
         bufferSize = gltfimage.image.size();
     }
 
-    if (!buffer) {
-        throw std::runtime_error("failed to load texture image!");
-    }
+    if(!buffer)    throw std::runtime_error("failed to load texture image!");
+
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(gltfimage.width, gltfimage.height)))) + 1;
 
@@ -127,9 +124,7 @@ void texture::createTextureImage()
     stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;      //Пиксели располагаются построчно с 4 байтами на пиксель
 
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
+    if(!pixels)    throw std::runtime_error("failed to load texture image!");
 
     image.create(app,mipLevels,memory,texWidth,texHeight,imageSize,pixels);
 }
@@ -163,22 +158,16 @@ void texture::createTextureSampler(struct textureSampler TextureSampler)
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0.0f; // Optional
 
-    if (vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
+    if(vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS)    throw std::runtime_error("failed to create texture sampler!");
     sampler.enable = true;
 }
 
 void                texture::setVkApplication(VkApplication* app){this->app=app;}
-void                texture::setTextureNumber(uint32_t number){this->number = number;}
 void                texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
 void                texture::setTextureFormat(VkFormat format){image.format = format;}
 
 VkImageView         & texture::getTextureImageView(){return view.textureImageView;}
 VkSampler           & texture::getTextureSampler(){return sampler.textureSampler;}
-uint32_t            & texture::getTextureNumber(){return number;}
-
 //cubeTexture
 
 cubeTexture::cubeTexture(){}
@@ -205,9 +194,7 @@ void cubeTexture::destroy()
 
 void cubeTexture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels[6])
 {
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
+    if(!pixels) throw std::runtime_error("failed to load texture image!");
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -249,9 +236,7 @@ void cubeTexture::createTextureImage()
         pixels[i]= stbi_load(TEXTURE_PATH.at(i).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         imageSize += 4 * texWidth * texHeight;
 
-        if (!pixels[i]) {
-            throw std::runtime_error("failed to load texture image!");
-        }
+        if(!pixels[i])  throw std::runtime_error("failed to load texture image!");
     }
 
     image.create(app,mipLevels,memory,texWidth,texHeight,imageSize,pixels);
@@ -286,18 +271,13 @@ void cubeTexture::createTextureSampler(struct textureSampler TextureSampler)
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0.0f; // Optional
 
-    if (vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
+    if(vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS) throw std::runtime_error("failed to create texture sampler!");
     sampler.enable = true;
 }
 
 void                cubeTexture::setVkApplication(VkApplication* app){this->app=app;}
-void                cubeTexture::setTextureNumber(uint32_t number){this->number = number;}
 void                cubeTexture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
 void                cubeTexture::setTextureFormat(VkFormat format){image.format = format;}
 
 VkImageView         & cubeTexture::getTextureImageView(){return view.textureImageView;}
 VkSampler           & cubeTexture::getTextureSampler(){return sampler.textureSampler;}
-uint32_t            & cubeTexture::getTextureNumber(){return number;}

@@ -182,9 +182,7 @@ void object::createDescriptorPool(uint32_t imageCount)
     poolInfo.maxSets = (1+meshCount+imageSamplerCount)*static_cast<uint32_t>(imageCount);
 
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create descriptor pool!");
-    }
+        throw std::runtime_error("failed to create object descriptor pool!");
 }
 
 void object::createDescriptorSet(uint32_t imageCount)
@@ -197,7 +195,7 @@ void object::createDescriptorSet(uint32_t imageCount)
         allocInfo.pSetLayouts = layouts.data();
     descriptors.resize(imageCount);
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, descriptors.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets!");
+        throw std::runtime_error("failed to allocate object descriptor sets!");
 
     for (size_t i = 0; i < imageCount; i++)
     {
@@ -233,7 +231,7 @@ void object::createNodeDescriptorSet(Node* node)
             descriptorSetAllocInfo.pSetLayouts = uniformBlockSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
         if (vkAllocateDescriptorSets(app->getDevice(), &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet) != VK_SUCCESS)
-            throw std::runtime_error("failed to allocate descriptor sets!");
+            throw std::runtime_error("failed to allocate object descriptor sets!");
 
         VkWriteDescriptorSet writeDescriptorSet{};
             writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -258,7 +256,7 @@ void object::createMaterialDescriptorSet(Material* material)
     descriptorSetAllocInfo.descriptorSetCount = 1;
 
     if (vkAllocateDescriptorSets(app->getDevice(), &descriptorSetAllocInfo, &material->descriptorSet) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets!");
+        throw std::runtime_error("failed to allocate object descriptor sets!");
 
     VkDescriptorImageInfo baseColorTextureInfo;
     baseColorTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -325,7 +323,11 @@ gltfModel*                      object::getModel(){return model;}
 float                           object::getVisibilityDistance(){return visibilityDistance;}
 glm::vec4                       object::getColor(){return color;}
 
-glm::mat4x4                     object::getTransformation(){return modelMatrix;}
+glm::mat4x4                     &object::ModelMatrix(){return modelMatrix;}
+glm::mat4x4                     &object::Transformation(){return m_globalTransform;}
+glm::vec3                       &object::Translate(){return m_translate;}
+glm::quat                       &object::Rotate(){return m_rotate;}
+glm::vec3                       &object::Scale(){return m_scale;}
 
 VkDescriptorPool                &object::getDescriptorPool(){return descriptorPool;}
 std::vector<VkDescriptorSet>    &object::getDescriptorSet(){return descriptors;}

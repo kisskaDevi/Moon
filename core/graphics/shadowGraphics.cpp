@@ -62,7 +62,7 @@ void shadowGraphics::createSampler()
         samplerInfo.maxLod = static_cast<float>(image.MipLevels);
         samplerInfo.mipLodBias = 0.0f;
     if (vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &shadowSampler) != VK_SUCCESS)
-        throw std::runtime_error("failed to create texture sampler!");
+        throw std::runtime_error("failed to create shadowGraphics sampler!");
 }
 
 void shadowGraphics::createRenderPass()
@@ -137,7 +137,7 @@ void shadowGraphics::createCommandPool(uint32_t commandPoolsCount)
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     for(size_t i = 0; i < shadowCommandPool.size(); i++)
         if (vkCreateCommandPool(app->getDevice(), &poolInfo, nullptr, &shadowCommandPool.at(i)) != VK_SUCCESS)
-            throw std::runtime_error("failed to create command pool!");
+            throw std::runtime_error("failed to create shadowGraphics command pool!");
 }
 
 void shadowGraphics::Shadow::Destroy(VkApplication  *app)
@@ -255,7 +255,7 @@ void shadowGraphics::Shadow::createPipeline(VkApplication *app, shadowInfo info)
     depthStencil.back = {}; // Optional
 
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create shadowGraphics pipeline layout!");
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -273,7 +273,7 @@ void shadowGraphics::Shadow::createPipeline(VkApplication *app, shadowInfo info)
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create shadowGraphics graphics pipeline!");
 
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
@@ -294,7 +294,7 @@ void shadowGraphics::Shadow::createDescriptorSetLayout(VkApplication *app)
     layoutInfo.pBindings = bindings.data();
 
     if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create shadowGraphics descriptor set layout!");
 
     VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
     uniformBufferLayoutBinding.binding = 0;
@@ -309,7 +309,7 @@ void shadowGraphics::Shadow::createDescriptorSetLayout(VkApplication *app)
     uniformBufferLayoutInfo.pBindings = &uniformBufferLayoutBinding;
 
     if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBufferLayoutInfo, nullptr, &uniformBufferSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create shadowGraphics uniformb buffer descriptor set layout!");
 
     VkDescriptorSetLayoutBinding uniformBlockLayoutBinding{};
     uniformBlockLayoutBinding.binding = 0;
@@ -324,7 +324,7 @@ void shadowGraphics::Shadow::createDescriptorSetLayout(VkApplication *app)
     uniformBlockLayoutInfo.pBindings = &uniformBlockLayoutBinding;
 
     if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBlockLayoutInfo, nullptr, &uniformBlockSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout!");
+        throw std::runtime_error("failed to create shadowGraphics uniformb block descriptor set layout!");
 }
 
 void shadowGraphics::createDescriptorPool()
@@ -341,10 +341,10 @@ void shadowGraphics::createDescriptorPool()
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
 
     if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &shadow.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool!");
+        throw std::runtime_error("failed to create shadowGraphics descriptor pool!");
 }
 
-void shadowGraphics::createDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers)
+void shadowGraphics::createDescriptorSets()
 {
     std::vector<VkDescriptorSetLayout> layouts(image.Count, shadow.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -355,8 +355,11 @@ void shadowGraphics::createDescriptorSets(std::vector<VkBuffer> &lightUniformBuf
 
     shadow.DescriptorSets.resize(image.Count);
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, shadow.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets!");
+        throw std::runtime_error("failed to allocate shadowGraphics descriptor sets!");
+}
 
+void shadowGraphics::updateDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers)
+{
     for (size_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo lightBufferInfo;
@@ -384,7 +387,7 @@ void shadowGraphics::createCommandBuffers(uint32_t number)
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = image.Count;
     if (vkAllocateCommandBuffers(app->getDevice(), &allocInfo, shadowCommandBuffer[number].data()) != VK_SUCCESS)
-    {throw std::runtime_error("failed to allocate command buffers!");}
+        throw std::runtime_error("failed to allocate shadowGraphics command buffers!");
 }
 
 void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, Objects object3D, uint32_t lightNumber)
@@ -398,7 +401,7 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, Objects o
         beginInfo.flags = 0;                                            //поле для передачи информации о том, как будет использоваться этот командный буфер (смотри страницу 102)
         beginInfo.pInheritanceInfo = nullptr;                           //используется при начале вторичного буфера, для того чтобы определить, какие состояния наследуются от первичного командного буфера, который его вызовет
     if (vkBeginCommandBuffer(shadowCommandBuffer[number][i], &beginInfo) != VK_SUCCESS)
-        throw std::runtime_error("failed to begin recording command buffer!");
+        throw std::runtime_error("failed to begin recording shadowGraphics command buffer!");
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -473,7 +476,7 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, Objects o
     vkCmdEndRenderPass(shadowCommandBuffer[number][i]);
 
     if (vkEndCommandBuffer(shadowCommandBuffer[number][i]) != VK_SUCCESS)
-        throw std::runtime_error("failed to record command buffer!");
+        throw std::runtime_error("failed to record shadowGraphics command buffer!");
 }
 
 void shadowGraphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet)

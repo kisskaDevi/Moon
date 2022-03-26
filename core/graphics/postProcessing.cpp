@@ -207,7 +207,7 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
                 SamplerInfo.mipLodBias = 0.0f;
 
             if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
-                throw std::runtime_error("failed to create texture sampler!");
+                throw std::runtime_error("failed to create postProcessing sampler!");
         }
     }
 
@@ -306,7 +306,7 @@ void postProcessing::createRenderPass()
         renderPassInfo.pDependencies = dependency.data();
 
     if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-        throw std::runtime_error("failed to create render pass!");
+        throw std::runtime_error("failed to create postProcessing render pass!");
 }
 
 //===================Framebuffers===================================
@@ -333,7 +333,7 @@ void postProcessing::createFramebuffers()
             framebufferInfo.height = swapChainExtent.height;                                                            //высота изображения
             framebufferInfo.layers = 1;                                                                                 //число слоёв
         if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) //создание буфера кадров
-            throw std::runtime_error("failed to create framebuffer!");
+            throw std::runtime_error("failed to create postProcessing framebuffer!");
     }
 }
 
@@ -381,9 +381,9 @@ void postProcessing::createPipelines()
             textureLayoutInfo[index].pBindings = secondBindings.data();
 
         if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo.at(0), nullptr, &first.DescriptorSetLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create descriptor set layout 1!");
+            throw std::runtime_error("failed to create postProcessing descriptor set layout 1!");
         if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo.at(1), nullptr, &second.DescriptorSetLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create descriptor set layout 2!");
+            throw std::runtime_error("failed to create postProcessing descriptor set layout 2!");
     }
     void postProcessing::createFirstGraphicsPipeline()
     {
@@ -502,7 +502,7 @@ void postProcessing::createPipelines()
             pipelineLayoutInfo.setLayoutCount = 1;
             pipelineLayoutInfo.pSetLayouts = &first.DescriptorSetLayout;
         if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &first.PipelineLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create pipeline layout!");
+            throw std::runtime_error("failed to create postProcessing pipeline layout 1!");
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -520,7 +520,7 @@ void postProcessing::createPipelines()
             pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo.pDepthStencilState = &depthStencil;
         if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &first.Pipeline) != VK_SUCCESS)
-            throw std::runtime_error("failed to create graphics pipeline!");
+            throw std::runtime_error("failed to create postProcessing graphics pipeline 1!");
 
         //можно удалить шейдерные модули после использования
         vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -634,7 +634,7 @@ void postProcessing::createPipelines()
             pipelineLayoutInfo.setLayoutCount = 1;
             pipelineLayoutInfo.pSetLayouts = &second.DescriptorSetLayout;
         if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &second.PipelineLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create pipeline layout!");
+            throw std::runtime_error("failed to create postProcessing pipeline layout 2!");
 
         index = 0;
         std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -653,7 +653,7 @@ void postProcessing::createPipelines()
             pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo[index].pDepthStencilState = &depthStencil;
         if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &second.Pipeline) != VK_SUCCESS)
-            throw std::runtime_error("failed to create graphics pipeline!");
+            throw std::runtime_error("failed to create postProcessing graphics pipeline 2!");
 
         //можно удалить шейдерные модули после использования
         vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -672,7 +672,7 @@ void postProcessing::createDescriptorPool()
         firstPoolInfo.pPoolSizes = firstPoolSizes.data();
         firstPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
     if (vkCreateDescriptorPool(app->getDevice(), &firstPoolInfo, nullptr, &first.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool 1!");
+        throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 
     index = 0;
     std::array<VkDescriptorPoolSize,2> secondPoolSizes;
@@ -687,7 +687,7 @@ void postProcessing::createDescriptorPool()
         secondPoolInfo.pPoolSizes = secondPoolSizes.data();
         secondPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
     if (vkCreateDescriptorPool(app->getDevice(), &secondPoolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool 2!");
+        throw std::runtime_error("failed to create postProcessing descriptor pool 2!");
 }
 
 void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments)
@@ -700,7 +700,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
         firstAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         firstAllocInfo.pSetLayouts = firstLayouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &firstAllocInfo, first.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets 1!");
+        throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 
     for (size_t image = 0; image < imageCount; image++)
     {
@@ -729,7 +729,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets 2!");
+        throw std::runtime_error("failed to allocate postProcessing descriptor sets 2!");
 
     for (size_t image = 0; image < imageCount; image++)
     {

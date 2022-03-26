@@ -1036,14 +1036,6 @@ void gltfModel::calculateNodeTangent(Node* node, std::vector<Vertex>& vertexBuff
                 if(dot(glm::cross(tangent,bitangent),vertexBuffer[indexBuffer[i+0]].normal)<0.0f)
                     tangent = -tangent;
 
-        //        vertexBuffer[indexBuffer[i+0]].bitangent = glm::normalize(bitangent - vertexBuffer[indexBuffer[i+0]].normal * glm::dot(vertexBuffer[indexBuffer[i+0]].normal, bitangent));
-        //        vertexBuffer[indexBuffer[i+1]].bitangent = glm::normalize(bitangent - vertexBuffer[indexBuffer[i+1]].normal * glm::dot(vertexBuffer[indexBuffer[i+1]].normal, bitangent));
-        //        vertexBuffer[indexBuffer[i+2]].bitangent = glm::normalize(bitangent - vertexBuffer[indexBuffer[i+2]].normal * glm::dot(vertexBuffer[indexBuffer[i+2]].normal, bitangent));
-
-        //        vertexBuffer[indexBuffer[i+0]].tangent = glm::normalize(tangent - vertexBuffer[indexBuffer[i+0]].normal * glm::dot(vertexBuffer[indexBuffer[i+0]].normal, tangent));
-        //        vertexBuffer[indexBuffer[i+1]].tangent = glm::normalize(tangent - vertexBuffer[indexBuffer[i+1]].normal * glm::dot(vertexBuffer[indexBuffer[i+1]].normal, tangent));
-        //        vertexBuffer[indexBuffer[i+2]].tangent = glm::normalize(tangent - vertexBuffer[indexBuffer[i+2]].normal * glm::dot(vertexBuffer[indexBuffer[i+2]].normal, tangent));
-
                 vertexBuffer[indexBuffer[i+0]].tangent      = glm::normalize(tangent - vertexBuffer[indexBuffer[i+0]].normal * glm::dot(vertexBuffer[indexBuffer[i+0]].normal, tangent));
                 vertexBuffer[indexBuffer[i+1]].tangent      = glm::normalize(tangent - vertexBuffer[indexBuffer[i+1]].normal * glm::dot(vertexBuffer[indexBuffer[i+1]].normal, tangent));
                 vertexBuffer[indexBuffer[i+2]].tangent      = glm::normalize(tangent - vertexBuffer[indexBuffer[i+2]].normal * glm::dot(vertexBuffer[indexBuffer[i+2]].normal, tangent));

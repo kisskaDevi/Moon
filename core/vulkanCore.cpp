@@ -99,9 +99,8 @@ void VkApplication::VkApplication::setupDebugMessenger()
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
         throw std::runtime_error("failed to set up debug messenger!");
-    }
 }
     void VkApplication::VkApplication::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
     {
@@ -127,11 +126,8 @@ void VkApplication::VkApplication::setupDebugMessenger()
     VkResult VkApplication::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
     {
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-        if (func != nullptr) {
-            return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-        } else {
-            return VK_ERROR_EXTENSION_NOT_PRESENT;
-        }
+        if (func != nullptr)    return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+        else                    return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
 //===========================Surface==========================//
@@ -262,12 +258,6 @@ void VkApplication::createCommandPool()
             throw std::runtime_error("failed to create command pool!");
 }
 
-void VkApplication::updateLight()
-{
-    for(size_t i=0; i<lightSources.size();i++)
-        lightSources.at(i)->createShadow(COMMAND_POOLS, imageCount);
-}
-
 void VkApplication::createGraphics(GLFWwindow* window)
 {
     swapChainSupport = querySwapChainSupport(physicalDevices.at(physicalDeviceNumber).device,surface);
@@ -304,7 +294,12 @@ void VkApplication::createGraphics(GLFWwindow* window)
     Graphics.createSkyboxDescriptorPool();
     Graphics.createSkyboxDescriptorSets();
     Graphics.createSecondDescriptorPool();
-    Graphics.createSecondDescriptorSets(lightSources);
+    Graphics.createSecondDescriptorSets();
+}
+
+void VkApplication::updateDescriptorSets()
+{
+    Graphics.updateSecondDescriptorSets(lightSources);
 }
 
 void VkApplication::createCommandBuffers()
@@ -496,16 +491,12 @@ VkResult VkApplication::drawFrame()
 
 void VkApplication::cleanupSwapChain()
 {
-    for(size_t i=0;i<lightSources.size();i++)
-        lightSources.at(i)->cleanup();
-
     Graphics.destroy();
     PostProcessing.destroy();
 
     for(size_t i = 0; i< commandPool.size();i++)
         vkFreeCommandBuffers(device, commandPool.at(i), static_cast<uint32_t>(commandBuffers.at(i).size()),commandBuffers.at(i).data());
 }
-
 
 void VkApplication::VkApplication::cleanup()
 {
@@ -555,5 +546,10 @@ void                                VkApplication::resetCmdWorld(){worldCmd.enab
 void                                VkApplication::resetUboLight(){lightsUbo.enable = true; lightsUbo.frames = 0;}
 void                                VkApplication::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
 
-void                                VkApplication::addlightSource(light<spotLight>* lightSource){this->lightSources.push_back(lightSource);}
+void                                VkApplication::addlightSource(light<spotLight>* lightSource){
+    this->lightSources.push_back(lightSource);
+    lightSources.at(lightSources.size()-1)->createShadow(COMMAND_POOLS, imageCount);
+    lightSources.at(lightSources.size()-1)->getShadow()->createDescriptorSets();
+}
+
 void                                VkApplication::addCamera(camera * cameras){this->cameras = cameras;}

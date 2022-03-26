@@ -78,9 +78,6 @@ private:
 
     std::string TEXTURE_PATH;
     VkApplication* app;
-
-    uint32_t number;
-
 public:
     texture();
     texture(VkApplication* app);
@@ -93,13 +90,11 @@ public:
     void createTextureImageView();
     void createTextureSampler(struct textureSampler TextureSampler);
     void setVkApplication(VkApplication* app);
-    void setTextureNumber(uint32_t number);
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 
     VkImageView & getTextureImageView();
     VkSampler   & getTextureSampler();
-    uint32_t    & getTextureNumber();
 };
 
 
@@ -166,8 +161,6 @@ private:
     std::vector<std::string> TEXTURE_PATH;
     VkApplication* app;
 
-    uint32_t number;
-
 public:
     cubeTexture();
     cubeTexture(VkApplication* app);
@@ -179,13 +172,11 @@ public:
     void createTextureImageView();
     void createTextureSampler(struct textureSampler TextureSampler);
     void setVkApplication(VkApplication* app);
-    void setTextureNumber(uint32_t number);
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 
     VkImageView & getTextureImageView();
     VkSampler   & getTextureSampler();
-    uint32_t    & getTextureNumber();
 };
 
 #endif // TEXTURE_H

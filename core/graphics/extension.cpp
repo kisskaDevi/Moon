@@ -137,7 +137,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, struct Base *b
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create bloom extension pipeline layout!");
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -168,7 +168,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, struct Base *b
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create bloom extension graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -283,7 +283,7 @@ void graphics::godRaysExtension::createPipeline(VkApplication *app, struct Base 
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create godRays extension pipeline layout!");
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -314,7 +314,7 @@ void graphics::godRaysExtension::createPipeline(VkApplication *app, struct Base 
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create godRays extension graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -448,7 +448,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, Base *b
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &firstPipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create stencil extension pipeline layout!");
 
     index=0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -467,7 +467,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, Base *b
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &firstPipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create stencil extension graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
@@ -601,7 +601,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, Base *
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &secondPipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create second stencil extension pipeline layout!");
 
     index=0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -620,7 +620,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, Base *
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &secondPipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create second stencil extension graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);

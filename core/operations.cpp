@@ -174,20 +174,19 @@ void generateMipmaps(VkApplication* app, VkImage image, VkFormat imageFormat, in
 void createImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
     VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = mipLevels;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.samples = numSamples;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent.width = width;
+        imageInfo.extent.height = height;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = mipLevels;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = format;
+        imageInfo.tiling = tiling;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = usage;
+        imageInfo.samples = numSamples;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     if (vkCreateImage(app->getDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
         throw std::runtime_error("failed to create image!");
 
@@ -195,10 +194,9 @@ void createImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t m
     vkGetImageMemoryRequirements(app->getDevice(), image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(app->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
-
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex = findMemoryType(app->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
     if (vkAllocateMemory(app->getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate image memory!");
 

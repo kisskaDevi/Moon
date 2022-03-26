@@ -4,8 +4,6 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3native.h>
 
 #include <libs/glm/glm/glm.hpp>
 #include <libs/glm/glm/gtc/matrix_transform.hpp>
@@ -240,7 +238,8 @@ public:
     void createSkyboxDescriptorSets();
 
     void createSecondDescriptorPool();
-    void createSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources);
+    void createSecondDescriptorSets();
+    void updateSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources);
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
         void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);

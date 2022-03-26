@@ -77,7 +77,8 @@ public:
     void createFramebuffer();
 
     void createDescriptorPool();
-    void createDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers);
+    void createDescriptorSets();
+    void updateDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers);
 
     void createCommandBuffers(uint32_t number);
     void updateCommandBuffers(uint32_t number, uint32_t i, Objects object3D, uint32_t lightNumber);

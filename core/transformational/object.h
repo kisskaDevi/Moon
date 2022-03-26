@@ -54,6 +54,7 @@ private:
     std::vector<VkBuffer>           uniformBuffers;
     std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
+    void updateModelMatrix();
 public:
     object(VkApplication* app);
     object(VkApplication* app, objectInfo info);
@@ -66,9 +67,6 @@ public:
     void translate(const glm::vec3& translate);
     void rotate(const float& ang, const glm::vec3& ax);
     void scale(const glm::vec3& scale);
-
-    void updateModelMatrix();
-    void updateAnimation();
 
     void setModel(gltfModel* model3D);
     void setEmptyTexture(texture* emptyTexture);
@@ -84,9 +82,17 @@ public:
     void createNodeDescriptorSet(Node* node);
     void createMaterialDescriptorSet(Material* material);
 
+
+    void updateAnimation();
+
     gltfModel*                      getModel();
 
-    glm::mat4x4                     getTransformation();
+    glm::mat4x4&                    ModelMatrix();
+    glm::mat4x4&                    Transformation();
+    glm::vec3&                      Translate();
+    glm::quat&                      Rotate();
+    glm::vec3&                      Scale();
+
     float                           getVisibilityDistance();
     glm::vec4                       getColor();
 

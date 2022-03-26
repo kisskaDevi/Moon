@@ -62,6 +62,16 @@ glm::vec3 camera::getTranslate() const
     return m_translate;
 }
 
+glm::quat camera::getRotateX() const
+{
+    return m_rotateX;
+}
+
+glm::quat camera::getRotateY() const
+{
+    return m_rotateY;
+}
+
 void camera::rotateX(const float & ang ,const glm::vec3 & ax)
 {
     m_rotateX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateX;

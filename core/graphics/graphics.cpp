@@ -200,7 +200,7 @@ void graphics::createResolveAttachments()
             SamplerInfo.maxLod = 0.0f;
             SamplerInfo.mipLodBias = 0.0f;
         if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
-        {throw std::runtime_error("failed to create texture sampler!");}
+            throw std::runtime_error("failed to create graphics sampler!");
     }
 }
 
@@ -355,7 +355,7 @@ void graphics::createRenderPass()
             renderPassInfo.pDependencies = dependency.data();
 
         if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)    //создаём проход рендеринга
-        {throw std::runtime_error("failed to create render pass!");}
+            throw std::runtime_error("failed to create graphics render pass!");
     }
     void graphics::multiSampleRenderPass()
     {
@@ -558,9 +558,7 @@ void graphics::createRenderPass()
             renderPassInfo.pDependencies = dependency.data();
 
         if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)    //создаём проход рендеринга
-        {
-            throw std::runtime_error("failed to create render pass!");
-        }
+            throw std::runtime_error("failed to create multiSample graphics render pass!");
     }
 
 //===================Framebuffers===================================
@@ -600,7 +598,7 @@ void graphics::createFramebuffers()
                 framebufferInfo.layers = 1;                                                                                     //число слоёв
 
             if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[Image]) != VK_SUCCESS)  //создание буфера кадров
-                throw std::runtime_error("failed to create framebuffer!");
+                throw std::runtime_error("failed to create graphics framebuffer!");
         }
     }
     void graphics::multiSampleFrameBuffer()
@@ -632,7 +630,7 @@ void graphics::createFramebuffers()
                 framebufferInfo.layers = 1;                                                                                         //число слоёв
 
             if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[Image]) != VK_SUCCESS)  //создание буфера кадров
-                throw std::runtime_error("failed to create framebuffer!");
+                throw std::runtime_error("failed to create multiSample graphics framebuffer!");
         }
     }
 
@@ -831,7 +829,7 @@ void graphics::updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam)
         skyboxUBO.view = cam->getViewMatrix();
         skyboxUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
         skyboxUBO.proj[1][1] *= -1;
-        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox.objects[0]->getTransformation();
+        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox.objects[0]->ModelMatrix();
     vkMapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
         memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
     vkUnmapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage]);

@@ -29,6 +29,8 @@ public:
     void updateViewMatrix();
     glm::mat4x4 getViewMatrix() const;
     glm::vec3 getTranslate() const;
+    glm::quat getRotateX() const;
+    glm::quat getRotateY() const;
 
 };
 

@@ -21,7 +21,7 @@ class                               spotLight;
 template <> class                   light<spotLight>;
 struct                              Node;
 struct                              Material;
-struct                              PushConstBlockMaterial;
+struct                              MaterialBlock;
 
 struct graphicsInfo{
     uint32_t                        imageCount;
@@ -46,15 +46,20 @@ struct SecondUniformBufferObject{
     alignas(16) glm::vec4           eyePosition;
 };
 
+struct StorageBufferObject{
+    alignas(16) glm::vec4           mousePosition;
+    alignas(4)  int                 number;
+};
+
 struct SwapChainSupportDetails{
     VkSurfaceCapabilitiesKHR        capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR>   presentModes;
 };
 
-struct Objects{
+struct ShadowPassObjects{
     std::vector<object *> *base;
-    std::vector<object *> *bloom;
+    std::vector<object *> *oneColor;
     std::vector<object *> *stencil;
 };
 
@@ -71,7 +76,7 @@ struct QueueFamilyIndices
 struct PushConst
 {
     alignas(4)  int                 normalTextureSet;
-    alignas(4)  uint32_t            number;
+    alignas(4)  int                 number;
 };
 
 struct StencilPushConst
@@ -110,44 +115,60 @@ private:
         VkDescriptorSetLayout           MaterialDescriptorSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
-        std::vector<VkBuffer>           uniformBuffers;
-        std::vector<VkDeviceMemory>     uniformBuffersMemory;
+        std::vector<VkBuffer>           sceneUniformBuffers;
+        std::vector<VkDeviceMemory>     sceneUniformBuffersMemory;
 
         std::vector<object *>           objects;
 
         void Destroy(VkApplication  *app);
         void createPipeline(VkApplication *app, graphicsInfo info);
+
         void createDescriptorSetLayout(VkApplication *app);
+        void createObjectDescriptorPool(VkApplication *app, object *object, uint32_t imageCount);
+        void createObjectDescriptorSet(VkApplication *app, object *object, uint32_t imageCount, texture* emptyTexture);
+            void createObjectNodeDescriptorSet(VkApplication *app, object *object, Node* node);
+            void createObjectMaterialDescriptorSet(VkApplication *app, object *object, Material* material, texture* emptyTexture);
+
         void createUniformBuffers(VkApplication *app, uint32_t imageCount);
-        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics);
-        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
+
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount);
+            void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount);
+        void setMaterials(std::vector<MaterialBlock> &nodeMaterials);
+            void setMaterialNode(Node* node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive);
     }base;
 
     struct bloomExtension{
+        Base                            *base;
         VkPipeline                      Pipeline;
         VkPipelineLayout                PipelineLayout;
 
         std::vector<object *>           objects;
 
         void Destroy(VkApplication  *app);
-        void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
-        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base);
-        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
+        void createPipeline(VkApplication *app, graphicsInfo info);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount);
+            void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount);
+        void setMaterials(std::vector<MaterialBlock> &nodeMaterials);
+            void setMaterialNode(Node* node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive);
     }bloom;
 
-    struct godRaysExtension{
+    struct oneColorExtension{
+        Base                            *base;
         VkPipeline                      Pipeline;
         VkPipelineLayout                PipelineLayout;
 
         std::vector<object *>           objects;
 
         void Destroy(VkApplication  *app);
-        void createPipeline(VkApplication *app, Base *base, graphicsInfo info);
-        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics);
-        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
-    }godRays;
+        void createPipeline(VkApplication *app, graphicsInfo info);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount);
+            void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount);
+        void setMaterials(std::vector<MaterialBlock> &nodeMaterials);
+            void setMaterialNode(Node* node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive);
+    }oneColor;
 
     struct StencilExtension{
+        Base                            *base;
         VkPipeline                      firstPipeline;
         VkPipeline                      secondPipeline;
         VkPipelineLayout                firstPipelineLayout;
@@ -160,15 +181,18 @@ private:
 
         void DestroyFirstPipeline(VkApplication *app);
         void DestroySecondPipeline(VkApplication *app);
-        void createFirstPipeline(VkApplication *app, Base *base, graphicsInfo info);
-        void createSecondPipeline(VkApplication *app, Base *base, graphicsInfo info);
-        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, graphics *Graphics, Base *base);
-        void setMaterials(std::vector<PushConstBlockMaterial> &nodeMaterials, graphics *Graphics);
+        void createFirstPipeline(VkApplication *app, graphicsInfo info);
+        void createSecondPipeline(VkApplication *app, graphicsInfo info);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount);
+            void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount);
+            void stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
+        void setMaterials(std::vector<MaterialBlock> &nodeMaterials);
+            void setMaterialNode(Node* node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive);
     }stencil;
 
     struct Skybox
     {
-        cubeTexture                     *texture;
+        cubeTexture                     *texture = nullptr;
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
         VkDescriptorSetLayout           DescriptorSetLayout;
@@ -192,12 +216,16 @@ private:
         VkDescriptorSetLayout           DescriptorSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
+
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
         std::vector<VkBuffer>           lightUniformBuffers;
         std::vector<VkDeviceMemory>     lightUniformBuffersMemory;
         std::vector<VkBuffer>           nodeMaterialUniformBuffers;
         std::vector<VkDeviceMemory>     nodeMaterialUniformBuffersMemory;
+        std::vector<VkBuffer>           storageBuffers;
+        std::vector<VkDeviceMemory>     storageBuffersMemory;
+
         uint32_t                        nodeMaterialCount = 256;
 
         void Destroy(VkApplication  *app);
@@ -215,11 +243,10 @@ private:
     void multiSampleRenderPass();
     void oneSampleFrameBuffer();
     void multiSampleFrameBuffer();
+
 public:
     graphics();
     void destroy();
-    void destroyBuffers();
-    void destroyCommandPools();
 
     void setApplication(VkApplication *app);
     void setImageProp(uint32_t imageCount, VkFormat imageFormat, VkExtent2D imageExtent, VkSampleCountFlagBits imageSamples);
@@ -233,35 +260,37 @@ public:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-
     void createSkyboxDescriptorPool();
     void createSkyboxDescriptorSets();
-
     void createSecondDescriptorPool();
     void createSecondDescriptorSets();
+
     void updateSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources);
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
-        void renderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
-        void stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout);
-        void setMaterialNode(Node* node, std::vector<PushConstBlockMaterial> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive);
 
     void updateUniformBuffer(uint32_t currentImage, camera *cam);
     void updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam);
     void updateMaterialUniformBuffer(uint32_t currentImage);
     void updateObjectUniformBuffer(uint32_t currentImage);
+
+    void updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition);
     void updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource);
+
+    uint32_t readStorageBuffer(uint32_t currentImage);
 
     void bindBaseObject(object *newObject);
     void bindBloomObject(object *newObject);
-    void bindGodRaysObject(object *newObject);
+    void bindOneColorObject(object *newObject);
     void bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor);
     void bindSkyBoxObject(object *newObject);
+
+    void removeBinds();
 
     void setStencilObject(object *oldObject);
 
     std::vector<attachments>        & getAttachments();
-    Objects                         getObjects();
+    ShadowPassObjects               getObjects();
 };
 
 class postProcessing
@@ -327,8 +356,8 @@ public:
 
     VkSwapchainKHR                  & SwapChain();
     VkFormat                        & SwapChainImageFormat();
-    VkExtent2D                      & SwapChainExtent();
-    uint32_t                        & ImageCount();
+    VkExtent2D                      & SwapChainImageExtent();
+    uint32_t                        & SwapChainImageCount();
 };
 
 #endif // GRAPHICS_H

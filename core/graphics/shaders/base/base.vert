@@ -34,15 +34,17 @@ layout(location = 0)	out vec4 outPosition;
 layout(location = 1)	out vec3 outNormal;
 layout(location = 2)	out vec2 outUV0;
 layout(location = 3)	out vec2 outUV1;
-layout(location = 4)	out vec4 eyePosition;
-layout(location = 5)	out vec3 outTangent;
-layout(location = 6)	out vec3 outBitangent;
+layout(location = 4)	out vec3 outTangent;
+layout(location = 5)	out vec3 outBitangent;
+layout(location = 6)	out vec4 outColor;
+layout(location = 7)	out vec4 outEyePosition;
 
 void main()
 {
     outUV0 = inUV0;
     outUV1 = inUV1;
-    eyePosition = global.eyePosition;
+    outColor = local.color;
+    outEyePosition = global.eyePosition;
 
     mat4x4 model = local.matrix*node.matrix;
     if (node.jointCount > 0.0)

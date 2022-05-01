@@ -206,6 +206,7 @@ void VkApplication::createLogicalDevice()
         deviceFeatures.independentBlend = VK_TRUE;
         deviceFeatures.sampleRateShading = VK_TRUE;
         deviceFeatures.imageCubeArray = VK_TRUE;
+        deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -279,7 +280,7 @@ void VkApplication::createGraphics(GLFWwindow* window)
     PostProcessing.createPipelines();
 
     Graphics.setApplication(this);
-    Graphics.setImageProp(imageCount,PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainExtent(),MSAASamples);
+    Graphics.setImageProp(PostProcessing.SwapChainImageCount(),PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainImageExtent(),MSAASamples);
 
     Graphics.createAttachments();
     Graphics.createRenderPass();
@@ -307,26 +308,30 @@ void VkApplication::createCommandBuffers()
     commandBuffers.resize(COMMAND_POOLS);
 
     for(size_t i=0;i<COMMAND_POOLS;i++)
+    {
         createCommandBuffer(i);
-
-    for(size_t i=0;i<lightSources.size();i++)
-        if(lightSources.at(i)->getShadowEnable())
-            for(size_t j=0;j<COMMAND_POOLS;j++)
-                    lightSources.at(i)->getShadow()->createCommandBuffers(j);
-
-    for(size_t i=0;i<COMMAND_POOLS;i++)
-        for(size_t j=0;j<commandBuffers[i].size();j++){
+        for(size_t j=0;j<commandBuffers[i].size();j++)
+        {
             updateUniformBuffer(j);
             updateCommandBuffer(i,j);
         }
+    }
 
     for(size_t k=0;k<lightSources.size();k++)
+    {
         if(lightSources[k]->getShadowEnable())
+        {
             for(size_t i=0;i<COMMAND_POOLS;i++)
-                for(size_t j=0;j<lightSources[k]->getShadow()->getCommandBuffer(i).size();j++){
+            {
+                lightSources[k]->getShadow()->createCommandBuffers(i);
+                for(size_t j=0;j<lightSources[k]->getShadow()->getCommandBuffer(i).size();j++)
+                {
                     Graphics.updateLightUniformBuffer(j,lightSources);
                     lightSources[k]->getShadow()->updateCommandBuffers(i,j,Graphics.getObjects(),lightSources[k]->getLightNumber());
                 }
+            }
+        }
+    }
 }
     void VkApplication::createCommandBuffer(uint32_t number)
     {
@@ -440,7 +445,6 @@ VkResult VkApplication::drawFrame()
 
     if(imageIndex==imageCount-1)
         currentBuffer = (currentBuffer + 1) % COMMAND_POOLS;
-
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
     return result;
@@ -489,21 +493,25 @@ VkResult VkApplication::drawFrame()
             Graphics.updateMaterialUniformBuffer(currentImage);
         }
 
-void VkApplication::cleanupSwapChain()
+
+void VkApplication::destroyGraphics()
 {
     Graphics.destroy();
     PostProcessing.destroy();
+}
 
+void VkApplication::freeCommandBuffers()
+{
     for(size_t i = 0; i< commandPool.size();i++)
         vkFreeCommandBuffers(device, commandPool.at(i), static_cast<uint32_t>(commandBuffers.at(i).size()),commandBuffers.at(i).data());
+
+    commandBuffers.clear();
 }
 
 void VkApplication::VkApplication::cleanup()
 {
-    cleanupSwapChain();
-
-    Graphics.destroyCommandPools();
-    Graphics.destroyBuffers();
+    destroyGraphics();
+    freeCommandBuffers();
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -540,16 +548,19 @@ std::vector<VkCommandPool>          & VkApplication::getCommandPool(){return com
 VkSurfaceKHR                        & VkApplication::getSurface(){return surface;}
 QueueFamilyIndices                  & VkApplication::getQueueFamilyIndices(){return physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber);}
 graphics                            & VkApplication::getGraphics(){return Graphics;}
+uint32_t                            VkApplication::getImageCount(){return imageCount;}
 
 void                                VkApplication::resetCmdLight(){lightsCmd.enable = true; lightsCmd.frames = 0;}
 void                                VkApplication::resetCmdWorld(){worldCmd.enable = true; worldCmd.frames = 0;}
 void                                VkApplication::resetUboLight(){lightsUbo.enable = true; lightsUbo.frames = 0;}
 void                                VkApplication::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
 
-void                                VkApplication::addlightSource(light<spotLight>* lightSource){
+void                                VkApplication::addlightSource(light<spotLight>* lightSource)
+{
     this->lightSources.push_back(lightSource);
     lightSources.at(lightSources.size()-1)->createShadow(COMMAND_POOLS, imageCount);
-    lightSources.at(lightSources.size()-1)->getShadow()->createDescriptorSets();
 }
+
+void                                VkApplication::removeLightSources(){lightSources.clear();}
 
 void                                VkApplication::addCamera(camera * cameras){this->cameras = cameras;}

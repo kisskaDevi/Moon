@@ -8,10 +8,14 @@
 
 #include <array>
 
-graphics::graphics(){}
+graphics::graphics(){
+    bloom.base = &base;
+    oneColor.base = &base;
+    stencil.base = &base;
+}
 
 std::vector<attachments>        & graphics::getAttachments(){return Attachments;}
-Objects                         graphics::getObjects(){return Objects{&base.objects,&bloom.objects,&stencil.objects};}
+ShadowPassObjects               graphics::getObjects(){return ShadowPassObjects{&base.objects,&oneColor.objects,&stencil.objects};}
 
 void                            graphics::setApplication(VkApplication * app){this->app = app;}
 void                            graphics::setEmptyTexture(texture *emptyTexture){this->emptyTexture = emptyTexture;}
@@ -28,7 +32,7 @@ void graphics::destroy()
 {
     base.Destroy(app);
     bloom.Destroy(app);
-    godRays.Destroy(app);
+    oneColor.Destroy(app);
     stencil.DestroyFirstPipeline(app);
     stencil.DestroySecondPipeline(app);
     skybox.Destroy(app);
@@ -45,30 +49,6 @@ void graphics::destroy()
         Attachments.at(i).deleteAttachment(&app->getDevice());
     for(size_t i=0;i<2;i++)
         Attachments.at(i).deleteSampler(&app->getDevice());
-}
-
-void graphics::destroyBuffers()
-{
-    for(size_t i=0;i<base.objects.size();i++)
-        base.objects.at(i)->destroyUniformBuffers();
-
-    for(size_t i=0;i<bloom.objects.size();i++)
-        bloom.objects.at(i)->destroyUniformBuffers();
-
-    for(size_t i=0;i<stencil.objects.size();i++)
-        stencil.objects.at(i)->destroyUniformBuffers();
-}
-
-void graphics::destroyCommandPools()
-{
-    for(size_t i=0;i<base.objects.size();i++)
-        base.objects.at(i)->destroyDescriptorPools();
-
-    for(size_t i=0;i<bloom.objects.size();i++)
-        bloom.objects.at(i)->destroyDescriptorPools();
-
-    for(size_t i=0;i<stencil.objects.size();i++)
-        stencil.objects.at(i)->destroyDescriptorPools();
 }
 
 //=========================================================================//
@@ -639,10 +619,10 @@ void graphics::createPipelines()
     base.createDescriptorSetLayout(app);
     base.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
     base.createUniformBuffers(app,image.Count);
-    bloom.createPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
-    godRays.createPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
-    stencil.createFirstPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
-    stencil.createSecondPipeline(app,&base,{image.Count,image.Extent,image.Samples,renderPass});
+    bloom.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    oneColor.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    stencil.createFirstPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    stencil.createSecondPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
     skybox.createDescriptorSetLayout(app);
     skybox.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
     skybox.createUniformBuffers(app,image.Count);
@@ -653,7 +633,7 @@ void graphics::createPipelines()
 
 void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
 {
-    std::array<VkClearValue, 10> clearValues{};
+    std::array<VkClearValue, 9> clearValues{};
         for(size_t i=0;i<8;i++)
             clearValues[i].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
         clearValues[8].depthStencil = {1.0f, 0};
@@ -672,125 +652,16 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
         primitiveCount = 0;
 
         skybox.render(commandBuffers,i);
-        base.render(commandBuffers,i,this);
-        bloom.render(commandBuffers,i,this,&base);
-        stencil.render(commandBuffers,i,this,&base);
+        base.render(commandBuffers,i, primitiveCount);
+        bloom.render(commandBuffers,i,primitiveCount);
+        oneColor.render(commandBuffers,i,primitiveCount);
+        stencil.render(commandBuffers,i,primitiveCount);
 
     vkCmdNextSubpass(commandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
 
         second.render(commandBuffers,i);
 
     vkCmdEndRenderPass(commandBuffers[i]);
-}
-
-void graphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet,
-                primitive->material.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
-
-            // Pass material parameters as push constants
-            PushConst pushConst{};
-                pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                pushConst.number = primitiveCount;
-            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConst), &pushConst);
-
-            if (primitive->hasIndices)
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-
-            primitiveCount++;
-        }
-    }
-    for (auto child : node->children)
-        renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
-}
-
-void graphics::stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet,
-                primitive->material.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
-
-            if (primitive->hasIndices)
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-        }
-    }
-    for (auto child : node->children)
-        stencilRenderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
-}
-
-void graphics::setMaterialNode(Node *node, std::vector<PushConstBlockMaterial> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
-            // Pass material parameters as push constants
-            PushConstBlockMaterial pushConstBlockMaterial{};
-
-            pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
-            // To save push constant space, availabilty and texture coordiante set are combined
-            // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
-            pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-            pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-            pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
-            pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-            pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
-            pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
-
-            // TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
-
-            if (primitive->material.pbrWorkflows.metallicRoughness) {
-                // Metallic roughness workflow
-                pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
-                pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
-                pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
-                pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
-                pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
-                pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-            }
-
-            if (primitive->material.pbrWorkflows.specularGlossiness) {
-                // Specular glossiness workflow
-                pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
-                pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
-                pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
-                pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
-            }
-
-            pushConstBlockMaterial.primitive = objectPrimitive;
-            pushConstBlockMaterial.firstIndex = firstPrimitive;
-
-            nodeMaterials.push_back(pushConstBlockMaterial);
-
-            objectPrimitive++;
-        }
-    }
-    for (auto child : node->children)
-        setMaterialNode(child, nodeMaterials, objectPrimitive, firstPrimitive);
 }
 
 void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
@@ -804,15 +675,9 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
         baseUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
         baseUBO.proj[1][1] *= -1;
         baseUBO.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
-    vkMapMemory(app->getDevice(), base.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
+    vkMapMemory(app->getDevice(), base.sceneUniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
         memcpy(data, &baseUBO, sizeof(baseUBO));
-    vkUnmapMemory(app->getDevice(), base.uniformBuffersMemory[currentImage]);
-
-//    VkMappedMemoryRange mappedMemoryRange{};
-//        mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-//        mappedMemoryRange.memory = base.uniformBuffersMemory[currentImage];
-//        mappedMemoryRange.size = VK_WHOLE_SIZE;
-//    vkFlushMappedMemoryRanges(app->getDevice(), 1, &mappedMemoryRange);
+    vkUnmapMemory(app->getDevice(), base.sceneUniformBuffersMemory[currentImage]);
 
     SecondUniformBufferObject secondUBO{};
         secondUBO.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
@@ -823,16 +688,19 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
 
 void graphics::updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam)
 {
-    void* data;
+    if(skybox.objects.size()!=0)
+    {
+        void* data;
 
-    SkyboxUniformBufferObject skyboxUBO{};
-        skyboxUBO.view = cam->getViewMatrix();
-        skyboxUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
-        skyboxUBO.proj[1][1] *= -1;
-        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox.objects[0]->ModelMatrix();
-    vkMapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
-        memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
-    vkUnmapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage]);
+        SkyboxUniformBufferObject skyboxUBO{};
+            skyboxUBO.view = cam->getViewMatrix();
+            skyboxUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
+            skyboxUBO.proj[1][1] *= -1;
+            skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox.objects[0]->ModelMatrix();
+        vkMapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
+            memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
+        vkUnmapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage]);
+    }
 }
 
 void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource)
@@ -846,17 +714,42 @@ void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light
     vkUnmapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage]);
 }
 
+void graphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition)
+{
+    void* data;
+
+    StorageBufferObject StorageUBO{};
+        StorageUBO.mousePosition = mousePosition;
+        StorageUBO.number = INT_FAST32_MAX;
+    vkMapMemory(app->getDevice(), second.storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
+        memcpy(data, &StorageUBO, sizeof(StorageUBO));
+    vkUnmapMemory(app->getDevice(), second.storageBuffersMemory[currentImage]);
+}
+
+uint32_t graphics::readStorageBuffer(uint32_t currentImage)
+{
+    void* data;
+
+    StorageBufferObject StorageUBO{};
+    vkMapMemory(app->getDevice(), second.storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
+        memcpy(&StorageUBO, data, sizeof(StorageUBO));
+    vkUnmapMemory(app->getDevice(), second.storageBuffersMemory[currentImage]);
+
+    return StorageUBO.number;
+}
+
 void graphics::updateMaterialUniformBuffer(uint32_t currentImage)
 {
     void* data;
-    std::vector<PushConstBlockMaterial> nodeMaterials;
+    std::vector<MaterialBlock> nodeMaterials;
 
-    base.setMaterials(nodeMaterials,this);
-    bloom.setMaterials(nodeMaterials,this);
-    stencil.setMaterials(nodeMaterials,this);
+    base.setMaterials(nodeMaterials);
+    bloom.setMaterials(nodeMaterials);
+    oneColor.setMaterials(nodeMaterials);
+    stencil.setMaterials(nodeMaterials);
 
-    vkMapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage], 0, second.nodeMaterialCount*sizeof(PushConstBlockMaterial), 0, &data);
-        memcpy(data, nodeMaterials.data(), nodeMaterials.size()*sizeof(PushConstBlockMaterial));
+    vkMapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage], 0, second.nodeMaterialCount*sizeof(MaterialBlock), 0, &data);
+        memcpy(data, nodeMaterials.data(), nodeMaterials.size()*sizeof(MaterialBlock));
     vkUnmapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage]);
 }
 
@@ -866,43 +759,41 @@ void graphics::updateObjectUniformBuffer(uint32_t currentImage)
         base.objects.at(i)->updateUniformBuffer(currentImage);
     for(size_t i=0;i<bloom.objects.size();i++)
         bloom.objects.at(i)->updateUniformBuffer(currentImage);
+    for(size_t i=0;i<oneColor.objects.size();i++)
+        oneColor.objects.at(i)->updateUniformBuffer(currentImage);
     for(size_t i=0;i<stencil.objects.size();i++)
         stencil.objects.at(i)->updateUniformBuffer(currentImage);
 }
 
 void graphics::bindBaseObject(object *newObject)
 {
-    newObject->createUniformBuffers(image.Count);
     base.objects.push_back(newObject);
-    base.objects.at(base.objects.size()-1)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
-    base.objects.at(base.objects.size()-1)->createDescriptorPool(image.Count);
-    base.objects.at(base.objects.size()-1)->createDescriptorSet(image.Count);
+    base.createObjectDescriptorPool(app,newObject,image.Count);
+    base.createObjectDescriptorSet(app,newObject,image.Count,emptyTexture);
 }
 
 void graphics::bindBloomObject(object *newObject)
 {
-    newObject->createUniformBuffers(image.Count);
     bloom.objects.push_back(newObject);
-    bloom.objects.at(bloom.objects.size()-1)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
-    bloom.objects.at(bloom.objects.size()-1)->createDescriptorPool(image.Count);
-    bloom.objects.at(bloom.objects.size()-1)->createDescriptorSet(image.Count);
+    bloom.base->createObjectDescriptorPool(app,newObject,image.Count);
+    bloom.base->createObjectDescriptorSet(app,newObject,image.Count,emptyTexture);
 }
 
-void graphics::bindGodRaysObject(object *newObject)
+void graphics::bindOneColorObject(object *newObject)
 {
-    godRays.objects.push_back(newObject);
+    oneColor.objects.push_back(newObject);
+    oneColor.base->createObjectDescriptorPool(app,newObject,image.Count);
+    oneColor.base->createObjectDescriptorSet(app,newObject,image.Count,emptyTexture);
 }
 
 void graphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor)
 {
-    newObject->createUniformBuffers(image.Count);
     stencil.stencilEnable.push_back(false);
     stencil.stencilWidth.push_back(lineWidth);
     stencil.stencilColor.push_back(lineColor);
     stencil.objects.push_back(newObject);
-    stencil.objects.at(stencil.objects.size()-1)->setDescriptorSetLayouts({&base.ObjectDescriptorSetLayout,&base.PrimitiveDescriptorSetLayout,&base.MaterialDescriptorSetLayout});
-    stencil.objects.at(stencil.objects.size()-1)->createDescriptorPool(image.Count);
-    stencil.objects.at(stencil.objects.size()-1)->createDescriptorSet(image.Count);
+    stencil.base->createObjectDescriptorPool(app,newObject,image.Count);
+    stencil.base->createObjectDescriptorSet(app,newObject,image.Count,emptyTexture);
 }
 
 void graphics::bindSkyBoxObject(object *newObject)
@@ -910,16 +801,30 @@ void graphics::bindSkyBoxObject(object *newObject)
     skybox.objects.push_back(newObject);
 }
 
+void graphics::removeBinds()
+{
+    for(auto object: base.objects)
+        object->destroyDescriptorPools();
+    for(auto object: bloom.objects)
+        object->destroyDescriptorPools();
+    for(auto object: oneColor.objects)
+        object->destroyDescriptorPools();
+    for(auto object: stencil.objects)
+        object->destroyDescriptorPools();
+
+    base.objects.clear();
+    bloom.objects.clear();
+    oneColor.objects.clear();
+    stencil.objects.clear();
+    stencil.stencilEnable.clear();
+}
+
 void graphics::setStencilObject(object *oldObject)
 {
     for(uint32_t i=0;i<stencil.objects.size();i++)
-    {
-        if(stencil.objects[i]==oldObject)
-        {
-            if(stencil.stencilEnable[i] == true)
-                stencil.stencilEnable[i] = false;
-            else
-                stencil.stencilEnable[i] = true;
+        if(stencil.objects[i]==oldObject){
+            if(stencil.stencilEnable[i] == true)    stencil.stencilEnable[i] = false;
+            else                                    stencil.stencilEnable[i] = true;
         }
-    }
 }
+

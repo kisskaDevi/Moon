@@ -306,7 +306,7 @@ struct gltfModel
     void calculateNodeTangent(Node* node, std::vector<Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer);
 };
 
-struct PushConstBlockMaterial
+struct MaterialBlock
 {
     alignas(16) glm::vec4   baseColorFactor;
     alignas(16) glm::vec4   emissiveFactor;

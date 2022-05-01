@@ -22,13 +22,6 @@ struct objectInfo
     texture*                        emptyTexture;
 };
 
-struct descriptorSetLayouts
-{
-    VkDescriptorSetLayout*          uniformBufferSetLayout;
-    VkDescriptorSetLayout*          uniformBlockSetLayout;
-    VkDescriptorSetLayout*          materialSetLayout;
-};
-
 class object : public transformational
 {
 private:
@@ -36,9 +29,6 @@ private:
     gltfModel*                      model;
     texture*                        emptyTexture;
 
-    VkDescriptorSetLayout*          uniformBufferSetLayout;
-    VkDescriptorSetLayout*          uniformBlockSetLayout;
-    VkDescriptorSetLayout*          materialSetLayout;
     VkDescriptorPool                descriptorPool;
     std::vector<VkDescriptorSet>    descriptors;
 
@@ -53,8 +43,12 @@ private:
 
     std::vector<VkBuffer>           uniformBuffers;
     std::vector<VkDeviceMemory>     uniformBuffersMemory;
+    bool                            enable = true;
 
     void updateModelMatrix();
+
+    void createUniformBuffers(uint32_t imageCount);
+
 public:
     object(VkApplication* app);
     object(VkApplication* app, objectInfo info);
@@ -67,23 +61,17 @@ public:
     void translate(const glm::vec3& translate);
     void rotate(const float& ang, const glm::vec3& ax);
     void scale(const glm::vec3& scale);
+    void setPosition(const glm::vec3& translate);
 
     void setModel(gltfModel* model3D);
     void setEmptyTexture(texture* emptyTexture);
     void setVisibilityDistance(float visibilityDistance);
     void setColor(const glm::vec4 & color);
 
-    void createUniformBuffers(uint32_t imageCount);
     void updateUniformBuffer(uint32_t currentImage);
-
-    void setDescriptorSetLayouts(descriptorSetLayouts setLayouts);
-    void createDescriptorPool(uint32_t imageCount);
-    void createDescriptorSet(uint32_t imageCount);
-    void createNodeDescriptorSet(Node* node);
-    void createMaterialDescriptorSet(Material* material);
-
-
     void updateAnimation();
+
+    void setEnable(const bool& enable);
 
     gltfModel*                      getModel();
 
@@ -98,6 +86,9 @@ public:
 
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet();
+    std::vector<VkBuffer>&          getUniformBuffers();
+
+    bool&                           getEnable();
 
     float animationTimer = 0.0f;
     uint32_t animationIndex = 0;

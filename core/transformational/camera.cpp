@@ -16,6 +16,29 @@ camera::~camera()
 
 }
 
+void camera::setPosition(const glm::vec3 & translate)
+{
+    m_translate = translate;
+    updateViewMatrix();
+}
+
+void camera::setRotation(const float & ang ,const glm::vec3 & ax)
+{
+    m_rotate = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax));
+    updateViewMatrix();
+}
+
+void camera::defaultPosition()
+{
+    m_scale = glm::vec3(1.0f,1.0f,1.0f);
+    m_globalTransform = glm::mat4x4(1.0f);
+    m_translate = glm::vec3(0.0f,0.0f,0.0f);
+    m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
+    m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
+    m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
+    viewMatrix = glm::mat4x4(1.0f);
+}
+
 void camera::setGlobalTransform(const glm::mat4 & transform)
 {
     m_globalTransform = transform;
@@ -60,16 +83,6 @@ glm::mat4x4 camera::getViewMatrix() const
 glm::vec3 camera::getTranslate() const
 {
     return m_translate;
-}
-
-glm::quat camera::getRotateX() const
-{
-    return m_rotateX;
-}
-
-glm::quat camera::getRotateY() const
-{
-    return m_rotateY;
 }
 
 void camera::rotateX(const float & ang ,const glm::vec3 & ax)

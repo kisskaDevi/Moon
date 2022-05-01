@@ -793,7 +793,7 @@ void postProcessing::render(std::vector<VkCommandBuffer> &commandBuffers, uint32
     vkCmdEndRenderPass(commandBuffers[i]);
 }
 
-uint32_t                        &postProcessing::ImageCount(){return imageCount;}
 VkSwapchainKHR                  &postProcessing::SwapChain(){return swapChain;}
+uint32_t                        &postProcessing::SwapChainImageCount(){return imageCount;}
 VkFormat                        &postProcessing::SwapChainImageFormat(){return swapChainImageFormat;}
-VkExtent2D                      &postProcessing::SwapChainExtent(){return swapChainExtent;}
+VkExtent2D                      &postProcessing::SwapChainImageExtent(){return swapChainExtent;}

@@ -181,14 +181,14 @@ void shadowGraphics::Shadow::createPipeline(VkApplication *app, shadowInfo info)
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float) info.width;
-    viewport.height = (float) info.height;
+    viewport.width = (float) info.extent.width;
+    viewport.height = (float) info.extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
-    scissor.extent.width = info.width;
-    scissor.extent.height = info.height;
+    scissor.extent.width = info.extent.width;
+    scissor.extent.height = info.extent.height;
     scissor.offset.x = 0;
     scissor.offset.y = 0;
 
@@ -390,7 +390,7 @@ void shadowGraphics::createCommandBuffers(uint32_t number)
         throw std::runtime_error("failed to allocate shadowGraphics command buffers!");
 }
 
-void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, Objects object3D, uint32_t lightNumber)
+void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, ShadowPassObjects objects, uint32_t lightNumber)
 {
     VkClearValue clearValues{};
         clearValues.depthStencil.depth = 1.0f;
@@ -435,42 +435,48 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, Objects o
 
         vkCmdBindPipeline(shadowCommandBuffer[number][i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
         vkCmdPushConstants(shadowCommandBuffer[number][i], shadow.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(uint32_t), &lightNumber);
-        for(size_t j = 0; j<object3D.base->size() ;j++)
+        for(size_t j = 0; j<objects.base->size() ;j++)
         {
-            VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D.base->operator[](j)->getModel()->vertices.buffer, offsets);
+            if(objects.base->operator[](j)->getEnable()){
+                VkDeviceSize offsets[1] = { 0 };
+                vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & objects.base->operator[](j)->getModel()->vertices.buffer, offsets);
 
-            if (object3D.base->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D.base->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                if (objects.base->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  objects.base->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : object3D.base->operator[](j)->getModel()->nodes)
-                renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D.base->operator[](j)->getDescriptorSet()[i]);
+                for (auto node : objects.base->operator[](j)->getModel()->nodes)
+                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects.base->operator[](j)->getDescriptorSet()[i]);
+            }
 
-//            for (auto node : object3D[j]->getModel()->nodes)
-//                if(glm::length(glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-camera->getTranslate())<object3D[j]->getVisibilityDistance()){
-//                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D[j]->getDescriptorSet()[i]);
+//            for (auto node : objects[j]->getModel()->nodes)
+//                if(glm::length(glm::vec3(objects[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-camera->getTranslate())<objects[j]->getVisibilityDistance()){
+//                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects[j]->getDescriptorSet()[i]);
         }
-        for(size_t j = 0; j<object3D.bloom->size() ;j++)
+        for(size_t j = 0; j<objects.oneColor->size() ;j++)
         {
-            VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D.bloom->operator[](j)->getModel()->vertices.buffer, offsets);
+            if(objects.oneColor->operator[](j)->getEnable()){
+                VkDeviceSize offsets[1] = { 0 };
+                vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & objects.oneColor->operator[](j)->getModel()->vertices.buffer, offsets);
 
-            if (object3D.bloom->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D.bloom->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                if (objects.oneColor->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  objects.oneColor->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : object3D.bloom->operator[](j)->getModel()->nodes)
-                renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D.bloom->operator[](j)->getDescriptorSet()[i]);
+                for (auto node : objects.oneColor->operator[](j)->getModel()->nodes)
+                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects.oneColor->operator[](j)->getDescriptorSet()[i]);
+            }
         }
-        for(size_t j = 0; j<object3D.stencil->size() ;j++)
+        for(size_t j = 0; j<objects.stencil->size() ;j++)
         {
-            VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & object3D.stencil->operator[](j)->getModel()->vertices.buffer, offsets);
+            if(objects.stencil->operator[](j)->getEnable()){
+                VkDeviceSize offsets[1] = { 0 };
+                vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & objects.stencil->operator[](j)->getModel()->vertices.buffer, offsets);
 
-            if (object3D.stencil->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  object3D.stencil->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                if (objects.stencil->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  objects.stencil->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : object3D.stencil->operator[](j)->getModel()->nodes)
-                renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],object3D.stencil->operator[](j)->getDescriptorSet()[i]);
+                for (auto node : objects.stencil->operator[](j)->getModel()->nodes)
+                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects.stencil->operator[](j)->getDescriptorSet()[i]);
+            }
         }
 
     vkCmdEndRenderPass(shadowCommandBuffer[number][i]);
@@ -479,7 +485,7 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, Objects o
         throw std::runtime_error("failed to record shadowGraphics command buffer!");
 }
 
-void shadowGraphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet)
+void shadowGraphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectsDescriptorSet)
 {
     if (node->mesh)
     {
@@ -488,7 +494,7 @@ void shadowGraphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDe
             const std::vector<VkDescriptorSet> descriptorsets =
             {
                 descriptorSet,
-                objectDescriptorSet,
+                objectsDescriptorSet,
                 node->mesh->uniformBuffer.descriptorSet
             };
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.PipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
@@ -499,7 +505,7 @@ void shadowGraphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDe
         }
     }
     for (auto child : node->children)
-        renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet);
+        renderNode(child, commandBuffer, descriptorSet,objectsDescriptorSet);
 }
 
 void shadowGraphics::createShadow(uint32_t commandPoolsCount)
@@ -511,8 +517,9 @@ void shadowGraphics::createShadow(uint32_t commandPoolsCount)
     createRenderPass();
     createFramebuffer();
     shadow.createDescriptorSetLayout(app);
-    shadow.createPipeline(app,{image.Count,image.Extent.width,image.Extent.height,RenderPass});
+    shadow.createPipeline(app,{image.Count,image.Extent,VK_SAMPLE_COUNT_1_BIT,RenderPass});
     createDescriptorPool();
+    createDescriptorSets();
 }
 
 VkImageView                     & shadowGraphics::getImageView(){return depthAttachment.imageView;}

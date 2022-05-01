@@ -7,8 +7,8 @@ const int MAX_LIGHT_SOURCE_COUNT = 16;
 
 struct shadowInfo{
     uint32_t                    imageCount;
-    uint32_t                    width;
-    uint32_t                    height;
+    VkExtent2D                  extent;
+    VkSampleCountFlagBits       msaaSamples;
     VkRenderPass                renderPass;
 };
 
@@ -62,7 +62,7 @@ private:
     std::vector<VkCommandPool>                      shadowCommandPool;
     std::vector<std::vector<VkCommandBuffer>>       shadowCommandBuffer;
 
-    void renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet);
+    void renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectsDescriptorSet);
 public:
     shadowGraphics(VkApplication *app, uint32_t imageCount, VkExtent2D shadowExtent = {1024,1024});
     void destroy();
@@ -81,7 +81,7 @@ public:
     void updateDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers);
 
     void createCommandBuffers(uint32_t number);
-    void updateCommandBuffers(uint32_t number, uint32_t i, Objects object3D, uint32_t lightNumber);
+    void updateCommandBuffers(uint32_t number, uint32_t i, ShadowPassObjects objects, uint32_t lightNumber);
 
     void createShadow(uint32_t commandPoolsCount);
 

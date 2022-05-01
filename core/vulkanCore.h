@@ -57,6 +57,7 @@ public:
     VkSurfaceKHR                                & getSurface();
     QueueFamilyIndices                          & getQueueFamilyIndices();
     graphics                                    & getGraphics();
+    uint32_t                                    getImageCount();
 
     void                                        resetCmdLight();
     void                                        resetCmdWorld();
@@ -77,16 +78,16 @@ public:
 //step 3
     void                                        createCommandPool();
 //step 4
-    void                                        updateLight();
-//step 5
     void                                        createGraphics(GLFWwindow* window);
     void                                        updateDescriptorSets();
-//step 6
+//step 5
     void                                        createCommandBuffers();
     void                                        createSyncObjects();
-//step 7
+//step 5
     VkResult                                    drawFrame();
-    void                                        cleanupSwapChain();
+    void                                        destroyGraphics();
+    void                                        freeCommandBuffers();
+    void                                        removeLightSources();
 
 private:
 

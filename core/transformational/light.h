@@ -68,6 +68,7 @@ public:
     void translate(const glm::vec3 & translate);
     void rotate(const float & ang,const glm::vec3 & ax);
     void scale(const glm::vec3 & scale);
+    void setPosition(const glm::vec3& translate);
 
     void rotateX(const float & ang ,const glm::vec3 & ax);
     void rotateY(const float & ang ,const glm::vec3 & ax);
@@ -122,6 +123,8 @@ public:
     void translate(const glm::vec3 & translate);
     void rotate(const float & ang,const glm::vec3 & ax);
     void scale(const glm::vec3 & scale);
+    void setPosition(const glm::vec3& translate);
+
     void updateViewMatrix();
 
     void rotateX(const float & ang ,const glm::vec3 & ax);

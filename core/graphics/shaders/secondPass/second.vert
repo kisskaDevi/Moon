@@ -7,6 +7,7 @@ layout(set = 0, binding = 8) uniform GlobalUniformBuffer
 
 layout(location = 0)	out vec4 eyePosition;
 layout(location = 1)	out vec2 fragTexCoord;
+layout(location = 2)	out vec4 glPosition;
 
 vec2 positions[6] = vec2[](
     vec2(-1.0f, -1.0f),
@@ -30,5 +31,6 @@ void main()
 {
     fragTexCoord = fragCoord[gl_VertexIndex];
     eyePosition = global.eyePosition;
+    glPosition = vec4(positions[gl_VertexIndex],0.0, 1.0);
     gl_Position = vec4(positions[gl_VertexIndex],0.0, 1.0);
 }

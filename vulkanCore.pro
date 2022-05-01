@@ -11,11 +11,13 @@ INCLUDEPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 DEPENDPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 
 DISTFILES += \
+    core/graphics/shaders/bloom/bloom.frag \
+    core/graphics/shaders/bloom/bloom.vert \
     core/graphics/shaders/compile.bat \
     core/graphics/shaders/base/base.frag \
     core/graphics/shaders/base/base.vert \
-    core/graphics/shaders/godRays/godRays.frag \
-    core/graphics/shaders/godRays/godRays.vert \
+    core/graphics/shaders/oneColor/oneColor.frag \
+    core/graphics/shaders/oneColor/oneColor.vert \
     core/graphics/shaders/postProcessing/firstPostProcessingShader.frag \
     core/graphics/shaders/postProcessing/firstPostProcessingShader.vert \
     core/graphics/shaders/secondPass/second.frag \
@@ -23,8 +25,6 @@ DISTFILES += \
     core/graphics/shaders/shadow/shadowMapShader.vert \
     core/graphics/shaders/postProcessing/postProcessingShader.frag \
     core/graphics/shaders/postProcessing/postProcessingShader.vert \
-    core/graphics/shaders/bloomSprite/bloomSprite.frag \
-    core/graphics/shaders/bloomSprite/bloomSprite.vert \
     core/graphics/shaders/skybox/skybox.frag \
     core/graphics/shaders/skybox/skybox.vert \
     core/graphics/shaders/stencil/firstStencil.frag \
@@ -49,13 +49,13 @@ DISTFILES += \
 
 SOURCES += \
     core/graphics/attachments.cpp \
-    core/graphics/base.cpp \
-    core/graphics/extension.cpp \
+    core/graphics/source/base.cpp \
+    core/graphics/source/extension.cpp \
+    core/graphics/source/second.cpp \
+    core/graphics/source/skybox.cpp \
     core/graphics/graphics.cpp \
     core/graphics/postProcessing.cpp \
-    core/graphics/second.cpp \
     core/graphics/shadowGraphics.cpp \
-    core/graphics/skybox.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/light.cpp \
@@ -64,7 +64,10 @@ SOURCES += \
     core/operations.cpp \
     core/texture.cpp \
     core/vulkanCore.cpp\
-    main.cpp
+    physicalobject.cpp \
+    main.cpp \
+    testScene1.cpp \
+    testScene2.cpp
 
 HEADERS += \
     core/graphics/attachments.h \
@@ -76,6 +79,7 @@ HEADERS += \
     core/transformational/light.h \
     core/transformational/object.h \
     core/transformational/gltfmodel.h \
+    physicalobject.h \
     core/operations.h \
     core/texture.h \
     core/vulkanCore.h

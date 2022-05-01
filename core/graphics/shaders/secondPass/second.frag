@@ -9,12 +9,13 @@ const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;
 const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;
 const float c_MinRoughness = 0.04;
 const float lightDropFactor = 0.005f;
-const float lightPowerFactor = 2.0f;
+const float lightPowerFactor = 1.0f;
 
 int type, number;
 
 layout(location = 0)	in vec4 eyePosition;
 layout(location = 1)	in vec2 fragTexCoord;
+layout(location = 2)	in vec4 glPosition;
 
 layout(input_attachment_index = 0, binding = 0) uniform subpassInput inPositionTexture;
 layout(input_attachment_index = 1, binding = 1) uniform subpassInput inNormalTexture;
@@ -79,6 +80,12 @@ layout(set = 0, binding = 9) uniform MaterialUniformBufferObject
     Material ubo[MAX_NODE_COUNT];
 } material;
 
+layout(set = 0, binding = 10) buffer StorageBuffer
+{
+    vec4 mousePosition;
+    int number;
+} storage;
+
 //layout(set = 0, binding = 10) uniform sampler2D textures[MAX_TEXTURE_COUNT];
 
 layout(location = 0) out vec4 outColor;
@@ -107,12 +114,12 @@ vec4 lightColor[MAX_LIGHT_SOURCES];
 //===================================================functions====================================================================//
 
 shadowInfo	shadowFactor(int i);
-vec4	SRGBtoLINEAR(vec4 srgbIn);
-float	convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
-vec3	specularReflection(vec3 specularEnvironmentR0, vec3 specularEnvironmentR90, float VdotH);
-float	geometricOcclusion(float NdotL, float NdotV, float r);
-float	microfacetDistribution(float NdotH, float alphaRoughness);
-vec3	diffuse(vec3 diffuseColor);
+vec4		SRGBtoLINEAR(vec4 srgbIn);
+float		convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
+vec3		specularReflection(vec3 specularEnvironmentR0, vec3 specularEnvironmentR90, float VdotH);
+float		geometricOcclusion(float NdotL, float NdotV, float r);
+float		microfacetDistribution(float NdotH, float alphaRoughness);
+vec3		diffuse(vec3 diffuseColor);
 attenuation	getK(float distance);
 
 //================================================================================================================================//
@@ -258,6 +265,7 @@ void outImage1()
 	float len = length(lightPosition[i] - position.xyz);
 	attenuation K = getK(len);
 	float lightDrop = K.C+K.L*len+K.Q*len*len;
+	lightDrop/=10.0f;
 	shadowInfo sInfo = shadowFactor(i);
 	float lightPower = sInfo.factor;
 	if(lightPower>minAmbientFactor)
@@ -310,7 +318,12 @@ void outImage1()
 void shadingType0()
 {
     outImage1();
-    outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
+    if(outColor.x>0.95f||outColor.y>0.95f||outColor.y>0.95f)
+    {
+	outBloom = outColor;
+    }else{
+	outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
+    }
     if (material.ubo[number].emissiveTextureSet > -1)
     {
 	outColor += SRGBtoLINEAR(emissiveTexture);
@@ -331,12 +344,12 @@ void shadingType1()
 void shadingType2()
 {
     outColor = SRGBtoLINEAR(baseColorTexture);
-}
-
-void shadingType3()
-{
-    outColor = baseColorTexture;
-    outBloom = vec4(0.0f);
+    if(outColor.x>1.0f||outColor.y>1.0f||outColor.y>1.0f)
+    {
+	outBloom = outColor;
+    }else{
+	outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
+    }
 }
 
 //===================================================main====================================================================//
@@ -363,12 +376,12 @@ void main()
         case 2:
 	   shadingType2();
 	   break;
-        case 3:
-	   shadingType3();
-	   break;
     }
-    //outColor = vec4(material.ubo[int(subpassLoad(inNormalTexture).a)].number/128.0f,0.0f,0.0f,1.0f);
-    //outColor = vec4(normal,1.0f);
+    if(type!=2){
+	if(abs(glPosition.x-storage.mousePosition.x)<0.002&&abs(glPosition.y-storage.mousePosition.y)<0.002){
+	    storage.number = number;
+	}
+    }
 }
 
 //===========================================================================================================================//

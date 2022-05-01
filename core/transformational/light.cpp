@@ -46,6 +46,12 @@ void light<spotLight>::scale(const glm::vec3 & scale)
     updateViewMatrix();
 }
 
+void light<spotLight>::setPosition(const glm::vec3& translate)
+{
+    m_translate = translate;
+    updateViewMatrix();
+}
+
 void light<spotLight>::updateViewMatrix()
 {
     glm::mat4x4 translateMatrix = glm::translate(glm::mat4x4(1.0f),m_translate);
@@ -218,6 +224,12 @@ void light<pointLight>::rotate(const float & ang ,const glm::vec3 & ax)
 void light<pointLight>::scale(const glm::vec3 & scale)
 {
     m_scale = scale;
+    updateViewMatrix();
+}
+
+void light<pointLight>::setPosition(const glm::vec3& translate)
+{
+    m_translate = translate;
     updateViewMatrix();
 }
 

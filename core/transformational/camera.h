@@ -26,11 +26,13 @@ public:
     void rotateX(const float & ang ,const glm::vec3 & ax);
     void rotateY(const float & ang ,const glm::vec3 & ax);
 
+    void setPosition(const glm::vec3 & translate);
+    void setRotation(const float & ang ,const glm::vec3 & ax);
+    void defaultPosition();
+
     void updateViewMatrix();
     glm::mat4x4 getViewMatrix() const;
     glm::vec3 getTranslate() const;
-    glm::quat getRotateX() const;
-    glm::quat getRotateY() const;
 
 };
 

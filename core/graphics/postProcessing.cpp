@@ -357,18 +357,36 @@ void postProcessing::createPipelines()
             firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         index = 0;
-        std::array<VkDescriptorSetLayoutBinding,2> secondBindings{};
-            secondBindings[index].binding = 0;
+        std::array<VkDescriptorSetLayoutBinding,5> secondBindings{};
+            secondBindings[index].binding = index;
             secondBindings[index].descriptorCount = 1;
             secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             secondBindings[index].pImmutableSamplers = nullptr;
             secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         index++;
-            secondBindings[index].binding = 1;
+            secondBindings[index].binding = index;
             secondBindings[index].descriptorCount = 1;
             secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             secondBindings[index].pImmutableSamplers = nullptr;
             secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            secondBindings[index].binding = index;
+            secondBindings[index].descriptorCount = 1;
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            secondBindings[index].pImmutableSamplers = nullptr;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            secondBindings[index].binding = index;
+            secondBindings[index].descriptorCount = 1;
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            secondBindings[index].pImmutableSamplers = nullptr;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            secondBindings[index].binding = index;
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            secondBindings[index].descriptorCount = 1;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            secondBindings[index].pImmutableSamplers = nullptr;
 
         index = 0;
         std::array<VkDescriptorSetLayoutCreateInfo,2> textureLayoutInfo{};
@@ -675,11 +693,20 @@ void postProcessing::createDescriptorPool()
         throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 
     index = 0;
-    std::array<VkDescriptorPoolSize,2> secondPoolSizes;
+    std::array<VkDescriptorPoolSize,5> secondPoolSizes;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+    index++;
+        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+    index++;
+        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+    index++;
+        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     VkDescriptorPoolCreateInfo secondPoolInfo{};
         secondPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -690,7 +717,7 @@ void postProcessing::createDescriptorPool()
         throw std::runtime_error("failed to create postProcessing descriptor pool 2!");
 }
 
-void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments)
+void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments, std::vector<VkBuffer>& uniformBuffers)
 {
     first.DescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> firstLayouts(imageCount, first.DescriptorSetLayout);
@@ -735,11 +762,30 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
     {
         uint32_t index = 0;
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-        std::array<VkDescriptorImageInfo, 2> imageInfo;
+        std::array<VkDescriptorImageInfo, 5> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[index].imageView = Attachments[0].imageView[image];
             imageInfo[index].sampler = Attachments[0].sampler;
+        index++;
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = this->Attachments[0].imageView[image];
+            imageInfo[index].sampler = this->Attachments[0].sampler;
+        index++;
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = Attachments[2].imageView[image];
+            imageInfo[index].sampler = Attachments[2].sampler;
+        index++;
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = Attachments[3].imageView[image];
+            imageInfo[index].sampler = Attachments[3].sampler;
+
+        VkDescriptorBufferInfo bufferInfo;
+            bufferInfo.buffer = uniformBuffers[image];
+            bufferInfo.offset = 0;
+            bufferInfo.range = sizeof(UniformBufferObject);
+
+        index = 0;
+        std::array<VkWriteDescriptorSet, 5> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = second.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
@@ -748,9 +794,6 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
             descriptorWrites[index].descriptorCount = 1;
             descriptorWrites[index].pImageInfo = &imageInfo[index];
         index++;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = this->Attachments[0].imageView[image];
-            imageInfo[index].sampler = this->Attachments[0].sampler;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = second.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
@@ -758,6 +801,30 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = 1;
             descriptorWrites[index].pImageInfo = &imageInfo[index];
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &imageInfo[index];
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &imageInfo[index];
+        index++;
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = second.DescriptorSets[image];
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pBufferInfo = &bufferInfo;
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

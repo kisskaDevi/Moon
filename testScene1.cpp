@@ -19,6 +19,7 @@ const uint32_t HEIGHT = 800;
 
 std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
 std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
+std::string LIGHT_TEXTURE  = ExternalPath + "texture\\light1.jpg";
 
 std::vector<std::string> SKYBOX = {
     ExternalPath+"texture\\skybox\\left.jpg",
@@ -57,7 +58,7 @@ void initializeWindow(GLFWwindow* &window);
 void recreateSwapChain(VkApplication* app, GLFWwindow* window);
 
 void loadModels(VkApplication* app, std::vector<gltfModel *>& gltfModel);
-void createLight(VkApplication* app, std::vector<light<spotLight>*>& lightSource, std::vector<light<pointLight>*>& lightPoint, std::vector<group*>& groups);
+void createLight(VkApplication* app, std::vector<light<spotLight>*>& lightSource, std::vector<light<pointLight>*>& lightPoint, std::vector<group*>& groups, texture* lightTex1);
 void createObjects(VkApplication* app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<group*>& groups, texture* emptyTexture, texture* emptyTextureW);
 
 int testScene1()
@@ -115,9 +116,14 @@ int testScene1()
         app.getGraphics().bindSkyBoxObject(skyboxObject);
         app.getGraphics().setSkyboxTexture(skybox);
 
+        texture *lightTex1 = new texture(&app,LIGHT_TEXTURE);
+            lightTex1->createTextureImage();
+            lightTex1->createTextureImageView();
+            lightTex1->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+
         app.createGraphics(window);
 
-        createLight(&app,lightSource,lightPoint,groups);
+        createLight(&app,lightSource,lightPoint,groups, lightTex1);
         createObjects(&app,gltfModel,object3D,groups,emptyTexture,emptyTextureW);
 
         app.updateDescriptorSets();
@@ -164,6 +170,8 @@ int testScene1()
 
         emptyTexture->destroy(); delete emptyTexture;
         emptyTextureW->destroy(); delete emptyTextureW;
+
+        lightTex1->destroy(); delete lightTex1;
 
         app.removeLightSources();
         for(size_t i=0;i<lightSource.size();i++)
@@ -267,7 +275,7 @@ void loadModels(VkApplication *app, std::vector<gltfModel *>& gltfModel)
     index++;
 }
 
-void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource, std::vector<light<pointLight>*>& lightPoint, std::vector<group*>& groups)
+void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource, std::vector<light<pointLight>*>& lightPoint, std::vector<group*>& groups, texture* lightTex1)
 {
     int index = 0;
     lightPoint.push_back(new light<pointLight>(app,lightSource));
@@ -283,6 +291,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
+    lightSource.at(index)->setScattering(true);
+    lightSource.at(index)->setTexture(lightTex1);
     groups.at(2)->addObject(lightSource.at(index));
     index++;
     app->addlightSource(lightSource.at(lightSource.size()-1));
@@ -293,6 +303,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
+    lightSource.at(index)->setScattering(true);
+    lightSource.at(index)->setTexture(lightTex1);
     groups.at(3)->addObject(lightSource.at(index));
     index++;
     app->addlightSource(lightSource.at(lightSource.size()-1));
@@ -303,6 +315,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
+    lightSource.at(index)->setScattering(true);
+    lightSource.at(index)->setTexture(lightTex1);
     groups.at(4)->addObject(lightSource.at(index));
     index++;
     app->addlightSource(lightSource.at(lightSource.size()-1));
@@ -313,6 +327,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+    lightSource.at(index)->setScattering(true);
+    lightSource.at(index)->setTexture(lightTex1);
     groups.at(5)->addObject(lightSource.at(index));
     index++;
     app->addlightSource(lightSource.at(lightSource.size()-1));

@@ -290,6 +290,7 @@ public:
     void setStencilObject(object *oldObject);
 
     std::vector<attachments>        & getAttachments();
+    std::vector<VkBuffer>           & getSceneBuffer();
     ShadowPassObjects               getObjects();
 };
 
@@ -350,7 +351,7 @@ public:
         void createSecondGraphicsPipeline();
 
     void createDescriptorPool();
-    void createDescriptorSets(std::vector<attachments> & Attachments);
+    void createDescriptorSets(std::vector<attachments>& Attachments, std::vector<VkBuffer>& uniformBuffers);
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
 

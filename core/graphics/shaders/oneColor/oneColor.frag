@@ -48,10 +48,10 @@ void main()
     outOcclusion = texture(occlusionTexture, UV0);
     outEmissiveTexture = texture(emissiveTexture, UV0);
 
-    vec3 I = normalize(position.xyz - eyePosition.xyz);
-    vec3 R = reflect(I, outNormal.xyz);
-    vec4 reflection = texture(samplerCubeMap, R);
-    outBaseColor = vec4(max(outBaseColor.r,reflection.r),max(outBaseColor.g,reflection.g),max(outBaseColor.b,reflection.b), outBaseColor.a);
+//    vec3 I = normalize(position.xyz - eyePosition.xyz);
+//    vec3 R = reflect(I, outNormal.xyz);
+//    vec4 reflection = texture(samplerCubeMap, R);
+//    outBaseColor = vec4(max(outBaseColor.r,reflection.r),max(outBaseColor.g,reflection.g),max(outBaseColor.b,reflection.b), outBaseColor.a);
 
     outPosition.a = 0.0f;
 }

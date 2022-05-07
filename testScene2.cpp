@@ -1,3 +1,5 @@
+#ifdef TestScene2
+
 #include "core/vulkanCore.h"
 #include "core/texture.h"
 #include "core/transformational/gltfmodel.h"
@@ -42,13 +44,6 @@ int mouse1Stage = 0;
 int spaceStage = 0;
 
 uint32_t controledGroup = 0;
-
-bool     backRStage = 0;
-bool     backTStage = 0;
-bool     backYStage = 0;
-bool     backNStage = 0;
-bool     backOStage = 0;
-bool     backIStage = 0;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
 void mouseEvent(VkApplication* app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<physicalObject*>& physObject, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras);
@@ -300,9 +295,23 @@ void loadModels(VkApplication *app, std::vector<gltfModel *>& gltfModel)
 
 void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource, std::vector<light<pointLight>*>& lightPoint, std::vector<group*>& groups)
 {
-    lightPoint.push_back(new light<pointLight>(app,lightSource));
-    lightPoint.at(0)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    groups.at(0)->addObject(lightPoint.at(0));
+//    lightPoint.push_back(new light<pointLight>(app,lightSource));
+//    lightPoint.at(0)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+//    groups.at(0)->addObject(lightPoint.at(0));
+
+    uint32_t index = 0;
+    glm::mat4x4 Proj;
+
+    lightSource.push_back(new light<spotLight>(app));
+    app->addlightSource(lightSource.at(lightSource.size()-1));
+        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+        Proj[1][1] *= -1;
+    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setLightNumber(index);
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    lightSource.at(index)->setScattering(true);
+    groups.at(0)->addObject(lightSource.at(index));
+    index++;
 }
 
 void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<physicalObject*>& physObject, std::vector<group*>& groups, texture *emptyTexture, texture *emptyTextureW)
@@ -339,6 +348,12 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
     app->getGraphics().bindBloomObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     object *Box = object3D.at(index);
+    index++;
+
+    object3D.push_back( new object(app,{gltfModel.at(1),emptyTextureW}) );
+    app->getGraphics().bindOneColorObject(object3D.at(index));
+    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    object3D.at(index)->scale(glm::vec3(20.0f,20.0f,0.1f));
     index++;
 
     groups.at(0)->translate(glm::vec3(0.0f,0.0f,10.0f));
@@ -533,3 +548,4 @@ void scrol(GLFWwindow *window, double xoffset, double yoffset)
     static_cast<void>(yoffset);
 }
 
+#endif

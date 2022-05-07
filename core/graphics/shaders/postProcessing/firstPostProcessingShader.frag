@@ -30,6 +30,6 @@ vec4 blur(sampler2D bloomSampler, vec2 TexCoord)
 
 void main()
 {
-    outColor = vec4(0.0f);
+    outColor = vec4(0.2f);
     bloomColor = blur(bloomSampler,fragTexCoord);
 }

@@ -288,7 +288,7 @@ void VkApplication::createGraphics(GLFWwindow* window)
     Graphics.createPipelines();
 
     PostProcessing.createDescriptorPool();
-    PostProcessing.createDescriptorSets(Graphics.getAttachments());
+    PostProcessing.createDescriptorSets(Graphics.getAttachments(),Graphics.getSceneBuffer());
 
     Graphics.createBaseDescriptorPool();
     Graphics.createBaseDescriptorSets();

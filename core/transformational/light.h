@@ -37,11 +37,13 @@ template<>
 class light<spotLight> : public transformational
 {
 private:
-    VkApplication                       *app;
-    shadowGraphics                      *shadow;
+    VkApplication                       *app = nullptr;
+    shadowGraphics                      *shadow = nullptr;
+    texture                             *tex = nullptr;
     VkExtent2D                          shadowExtent = {1024,1024};
 
     bool                                enableShadow = false;
+    bool                                enableScattering = false;
     uint32_t                            type;
     uint32_t                            number;
     glm::vec4                           lightColor;
@@ -79,12 +81,15 @@ public:
     void                            setLightColor(const glm::vec4 & color);
     void                            setLightNumber(const uint32_t & number);
     void                            setShadowExtent(const VkExtent2D & shadowExtent);
+    void                            setScattering(bool enable);
+    void                            setTexture(texture* tex);
 
     glm::mat4x4                     getViewMatrix() const;
     glm::mat4x4                     getModelMatrix() const;
     glm::vec3                       getTranslate() const;
     glm::vec4                       getLightColor() const;
     uint32_t                        getLightNumber() const;
+    texture                         *getTexture();
 
     bool                            getShadowEnable() const;
 

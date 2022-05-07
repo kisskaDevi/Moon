@@ -33,7 +33,7 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding,11> Binding{};
+    std::array<VkDescriptorSetLayoutBinding,12> Binding{};
     for(index = 0; index<6;index++)
     {
         Binding.at(index).binding = index;
@@ -69,6 +69,12 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
         Binding.at(index).binding = index;
         Binding.at(index).descriptorCount = 1;
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding.at(index).pImmutableSamplers = nullptr;
+    index++;
+        Binding.at(index).binding = index;
+        Binding.at(index).descriptorCount = MAX_LIGHT_SOURCE_COUNT;
+        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding.at(index).pImmutableSamplers = nullptr;
 //    index++;
@@ -224,11 +230,11 @@ void graphics::createSecondDescriptorPool()
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorPoolSize,10+MAX_LIGHT_SOURCE_COUNT> poolSizes{};
-        for(index = 0;index<6; index++)
-            poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
-        for(size_t i=index;i<index+MAX_LIGHT_SOURCE_COUNT;i++)
-            poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
+    std::array<VkDescriptorPoolSize,10+2*MAX_LIGHT_SOURCE_COUNT> poolSizes{};
+    for(index = 0;index<6; index++)
+        poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
+    for(size_t i=index;i<index+MAX_LIGHT_SOURCE_COUNT;i++)
+        poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
     index+=MAX_LIGHT_SOURCE_COUNT;
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     index++;
@@ -237,6 +243,9 @@ void graphics::createSecondDescriptorPool()
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     index++;
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(image.Count)};
+    index++;
+    for(size_t i=index;i<index+MAX_LIGHT_SOURCE_COUNT;i++)
+        poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
 //    for(size_t i=index;i<index+textureCount;i++)
 //        poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -315,6 +324,19 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
             StorageBufferInfo.buffer = second.storageBuffers[i];
             StorageBufferInfo.offset = 0;
             StorageBufferInfo.range = sizeof(StorageBufferObject);
+        std::array<VkDescriptorImageInfo,MAX_LIGHT_SOURCE_COUNT> lightTexture{};
+            for (size_t j = 0; j < lightSources.size(); j++)
+            {
+                lightTexture[j].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                lightTexture[j].imageView    = lightSources.at(j)->getTexture() ? lightSources.at(j)->getTexture()->getTextureImageView() : emptyTexture->getTextureImageView();
+                lightTexture[j].sampler      = lightSources.at(j)->getTexture() ? lightSources.at(j)->getTexture()->getTextureSampler() : emptyTexture->getTextureSampler();
+            }
+            for (size_t j = lightSources.size(); j < MAX_LIGHT_SOURCE_COUNT; j++)
+            {
+                lightTexture[j].imageLayout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                lightTexture[j].imageView    = emptyTexture->getTextureImageView();
+                lightTexture[j].sampler      = emptyTexture->getTextureSampler();
+            }
 
 //        uint32_t imageCount = 0;
 //        std::array<VkDescriptorImageInfo,textureCount> textureInfo{};
@@ -372,7 +394,7 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
 //            textureInfo.at(i).sampler     = emptyTexture->getTextureSampler();
 //        }
 
-        std::array<VkWriteDescriptorSet,11> descriptorWrites{};
+        std::array<VkWriteDescriptorSet,12> descriptorWrites{};
         for(index = 0; index<6;index++)
         {
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -422,6 +444,15 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descriptorWrites.at(index).descriptorCount = 1;
             descriptorWrites.at(index).pBufferInfo = &StorageBufferInfo;
+        index++;
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.at(index).descriptorCount = static_cast<uint32_t>(lightTexture.size());
+            descriptorWrites.at(index).pImageInfo = lightTexture.data();
+
 //            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 //            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
 //            descriptorWrites.at(index).dstBinding = index;

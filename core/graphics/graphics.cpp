@@ -15,6 +15,7 @@ graphics::graphics(){
 }
 
 std::vector<attachments>        & graphics::getAttachments(){return Attachments;}
+std::vector<VkBuffer>           & graphics::getSceneBuffer(){return base.sceneUniformBuffers;}
 ShadowPassObjects               graphics::getObjects(){return ShadowPassObjects{&base.objects,&oneColor.objects,&stencil.objects};}
 
 void                            graphics::setApplication(VkApplication * app){this->app = app;}
@@ -47,7 +48,7 @@ void graphics::destroy()
         colorAttachments.at(i).deleteAttachment(&app->getDevice());
     for(size_t i=0;i<Attachments.size();i++)
         Attachments.at(i).deleteAttachment(&app->getDevice());
-    for(size_t i=0;i<2;i++)
+    for(size_t i=0;i<4;i++)
         Attachments.at(i).deleteSampler(&app->getDevice());
 }
 
@@ -137,7 +138,7 @@ void graphics::createResolveAttachments()
             createImage(app,image.Extent.width,image.Extent.height,
                         1,VK_SAMPLE_COUNT_1_BIT,
                         VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[Image], Attachments[i].imageMemory[Image]);
             createImageView(app, Attachments[i].image[Image],
                             VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_ASPECT_COLOR_BIT,
@@ -160,7 +161,7 @@ void graphics::createResolveAttachments()
         }
     }
 
-    for(size_t i=0;i<2;i++)
+    for(size_t i=0;i<4;i++)
     {
         VkSamplerCreateInfo SamplerInfo{};
             SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -339,7 +340,7 @@ void graphics::createRenderPass()
     }
     void graphics::multiSampleRenderPass()
     {
-        std::vector<VkAttachmentDescription> attachments;        
+        std::vector<VkAttachmentDescription> attachments;
         for(size_t i=0;i<2;i++)
         {
             VkAttachmentDescription colorAttachment{};
@@ -545,8 +546,7 @@ void graphics::createRenderPass()
 
 void graphics::createFramebuffers()
 {
-    if(image.Samples == VK_SAMPLE_COUNT_1_BIT)
-    {
+    if(image.Samples == VK_SAMPLE_COUNT_1_BIT){
         oneSampleFrameBuffer();
     }else{
         multiSampleFrameBuffer();

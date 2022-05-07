@@ -105,12 +105,16 @@ LightBufferObject light<spotLight>::getLightBufferObject() const
         buffer.lightColor = lightColor;
         buffer.type = type;
         buffer.enableShadow = static_cast<uint32_t>(enableShadow);
+        buffer.enableScattering = static_cast<uint32_t>(enableScattering);
     return buffer;
 }
 
 void                            light<spotLight>::setLightColor(const glm::vec4 &color){this->lightColor = color;}
 void                            light<spotLight>::setLightNumber(const uint32_t & number){this->number=number;}
 void                            light<spotLight>::setShadowExtent(const VkExtent2D & shadowExtent){this->shadowExtent=shadowExtent;}
+void                            light<spotLight>::setScattering(bool enable){this->enableScattering=enable;}
+void                            light<spotLight>::setTexture(texture* tex){this->tex=tex;}
+
 
 uint32_t                        light<spotLight>::getLightNumber() const {return number;}
 glm::mat4x4                     light<spotLight>::getViewMatrix() const {return viewMatrix;}
@@ -121,6 +125,7 @@ glm::vec4                       light<spotLight>::getLightColor() const {return 
 bool                            light<spotLight>::getShadowEnable() const{return enableShadow;}
 
 shadowGraphics                  *light<spotLight>::getShadow(){return shadow;}
+texture                         *light<spotLight>::getTexture(){return tex;}
 
 //======================================================================================================================//
 //============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//

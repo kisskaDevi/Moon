@@ -33,6 +33,7 @@ struct LightBufferObject
     vec4 lightColor;
     int type;
     int enableShadow;
+    int enableScattering;
 };
 
 struct Material
@@ -74,6 +75,7 @@ layout(set = 0, binding = 6) uniform LightUniformBufferObject
 } light;
 
 layout(set = 0, binding = 7) uniform sampler2D shadowMap[MAX_LIGHT_SOURCES];
+layout(set = 0, binding = 11) uniform sampler2D lightTexture[MAX_LIGHT_SOURCES];
 
 layout(set = 0, binding = 9) uniform MaterialUniformBufferObject
 {
@@ -112,7 +114,7 @@ vec4 lightColor[MAX_LIGHT_SOURCES];
 
 
 //===================================================functions====================================================================//
-
+bool outsideSpotCondition(vec3 lightSpaceNDC, float type);
 shadowInfo	shadowFactor(int i);
 vec4		SRGBtoLINEAR(vec4 srgbIn);
 float		convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
@@ -174,6 +176,13 @@ float planeIntersection(vec3 pm, vec3 p0, vec3 pl, float R, mat4 P, mat4 V)
     }
 }
 
+float ComputeScattering(float lightDotView, float G_SCATTERING)
+{
+    float PI = pi;
+    float result = 1.0f - G_SCATTERING * G_SCATTERING;
+    result /= (4.0f * PI * pow(1.0f + G_SCATTERING * G_SCATTERING - (2.0f * G_SCATTERING) *      lightDotView, 1.5f));
+    return result;
+}
 
 //===================================================outImages====================================================================//
 
@@ -186,7 +195,7 @@ void outImage1()
 	lightColor[i] = light.ubo[i].lightColor;
     }
 
-    outColor = vec4(0.0f,0.0f,0.0f,1.0f);
+    //=========== PBR ===========//
 
     float perceptualRoughness;
     float metallic;
@@ -286,7 +295,7 @@ void outImage1()
 	    vec3 diffuseContrib = (1.0f - F) * diffuse(diffuseColor);
 	    vec3 specContrib = F * G * D / (4.0 * clamp(dot(vector.normal, vector.lightDirection), 0.001, 1.0) * clamp(abs(dot(vector.normal, vector.eyeDirection)), 0.001, 1.0));
 	    // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-	    vec3 color = clamp(dot(vector.normal, vector.lightDirection), 0.001, 1.0) * light.ubo[i].lightColor.rgb * (diffuseContrib + specContrib);
+	    vec3 color = clamp(dot(vector.normal, vector.lightDirection), 0.001, 1.0) * lightColor[i].rgb * (diffuseContrib + specContrib);
 
 	    const float u_OcclusionStrength = 1.0f;
 	    // Apply optional PBR terms for additional (optional) shading
@@ -299,11 +308,43 @@ void outImage1()
 	    outColor = vec4(max(color.r,outColor.r),max(color.g,outColor.g),max(color.b,outColor.b), baseColor.a);
 	}
 
-	    //vec4 rayColor = vec4(0.0f,0.0f,0.0f,0.0f);
-	    //vec3 pm = findMirrorVector(eyePosition.xyz,position.xyz,normal);
-	    //rayColor += sInfo.areaFactor * planeIntersection(pm,position.xyz,lightPosition[i],1.0f,light.ubo[i].proj,light.ubo[i].view)*lightColor[i]/lightDrop;
-	    //rayColor *= metallic;
-	    //outColor = vec4(max(rayColor.r,outColor.r),max(rayColor.g,outColor.g),max(rayColor.b,outColor.b), baseColor.a);
+
+	//=========== Volumetric Light ===========//
+
+//	    if(light.ubo[i].enableScattering==1.0)
+//	    {
+//		float tau = 1.0f;
+//		int steps = 32;
+//		vec3 eyeDirection;
+//		if(position.x==0.0f&&position.y==0.0f&&position.z==0.0f){
+//		    eyeDirection = 1000.0f * vec3(1.0f);
+//		}else{
+//		    eyeDirection = position.xyz - eyePosition.xyz;
+//		}
+//		vec3 step = eyeDirection/steps;
+//		for(int j=0;j<steps;j++){
+//		    vec4 scattering = light.ubo[i].projView * vec4(eyePosition.xyz + step*j, 1.0f);
+//		    vec3 lightSpaceNDC = scattering.xyz;
+//		    lightSpaceNDC /= scattering.w;
+//		    if(!outsideSpotCondition(lightSpaceNDC,light.ubo[i].type))
+//		    {
+//			vec2 shadowMapCoord = lightSpaceNDC.xy * 0.5f + 0.5f;
+//			if(lightSpaceNDC.z<texture(shadowMap[i], shadowMapCoord.xy).x)
+//			{
+//			    vec4 color = texture(lightTexture[i], shadowMapCoord.xy);
+//			    outBloom += 20.0f*ComputeScattering( dot( eyeDirection, vector.lightDirection), 0.0f ) * color/steps;
+//			}
+//		    }
+//		}
+//	    }
+
+	//=========== Area Light ===========//
+
+//	    vec4 rayColor = vec4(0.0f,0.0f,0.0f,0.0f);
+//	    vec3 pm = findMirrorVector(eyePosition.xyz,position.xyz,normal);
+//	    rayColor += sInfo.areaFactor * planeIntersection(pm,position.xyz,lightPosition[i],1.0f,light.ubo[i].proj,light.ubo[i].view)*lightColor[i]/lightDrop;
+//	    rayColor *= metallic;
+//	    outColor = vec4(max(rayColor.r,outColor.r),max(rayColor.g,outColor.g),max(rayColor.b,outColor.b), baseColor.a);
 
     }
 
@@ -320,9 +361,9 @@ void shadingType0()
     outImage1();
     if(outColor.x>0.95f||outColor.y>0.95f||outColor.y>0.95f)
     {
-	outBloom = outColor;
+	outBloom += outColor;
     }else{
-	outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
+	outBloom += vec4(0.0f,0.0f,0.0f,1.0f);
     }
     if (material.ubo[number].emissiveTextureSet > -1)
     {
@@ -346,9 +387,9 @@ void shadingType2()
     outColor = SRGBtoLINEAR(baseColorTexture);
     if(outColor.x>1.0f||outColor.y>1.0f||outColor.y>1.0f)
     {
-	outBloom = outColor;
+	outBloom += outColor;
     }else{
-	outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
+	outBloom += vec4(0.0f,0.0f,0.0f,1.0f);
     }
 }
 
@@ -364,6 +405,9 @@ void main()
     emissiveTexture = subpassLoad(inEmissiveTexture);
     type = int(position.a);
     number = int(subpassLoad(inNormalTexture).a);
+
+    outColor = vec4(0.0f,0.0f,0.0f,1.0f);
+    outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
 
     switch(type)
     {
@@ -390,7 +434,7 @@ void main()
 bool outsideSpotCondition(vec3 lightSpaceNDC, float type)
 {
     if(type==0.0f)
-	return lightSpaceNDC.x*lightSpaceNDC.x + lightSpaceNDC.y*lightSpaceNDC.y - lightSpaceNDC.z*lightSpaceNDC.z > 0.0f;
+	return sqrt(lightSpaceNDC.x*lightSpaceNDC.x + lightSpaceNDC.y*lightSpaceNDC.y) >= lightSpaceNDC.z;
     else
 	return abs(lightSpaceNDC.x) > 1.0f || abs(lightSpaceNDC.y) > 1.0f || abs(lightSpaceNDC.z) > 1.0f;
 }
@@ -416,6 +460,8 @@ shadowInfo shadowFactor(int i)
 	    }
 	}
 	shadowSample /= maxNoise*n;
+
+	lightColor[i] += texture(lightTexture[i], shadowMapCoord.xy);
     }
 
     shadowInfo info;

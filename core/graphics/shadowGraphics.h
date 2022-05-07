@@ -21,6 +21,7 @@ struct LightBufferObject
     alignas(16) glm::vec4   lightColor;
     alignas(4)  uint32_t    type;
     alignas(4)  uint32_t    enableShadow;
+    alignas(4)  uint32_t    enableScattering;
 };
 
 struct LightUniformBufferObject

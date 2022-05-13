@@ -49,6 +49,7 @@ struct SecondUniformBufferObject{
 struct StorageBufferObject{
     alignas(16) glm::vec4           mousePosition;
     alignas(4)  int                 number;
+    alignas(4)  float               depth;
 };
 
 struct SwapChainSupportDetails{
@@ -79,6 +80,11 @@ struct PushConst
     alignas(4)  int                 number;
 };
 
+struct secondPassPushConst
+{
+     int                 lightNumber;
+};
+
 struct StencilPushConst
 {
     alignas(16) glm::vec4           stencilColor;
@@ -105,6 +111,9 @@ private:
 
     VkRenderPass                    renderPass;
     std::vector<VkFramebuffer>      framebuffers;
+
+    std::vector<VkBuffer>           storageBuffers;
+    std::vector<VkDeviceMemory>     storageBuffersMemory;
 
     struct Base{
         VkPipelineLayout                PipelineLayout;
@@ -213,6 +222,8 @@ private:
     struct Second{
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
+        VkPipeline                      ScatteringPipeline;
+        VkPipeline                      AmbientPipeline;
         VkDescriptorSetLayout           DescriptorSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
@@ -223,8 +234,6 @@ private:
         std::vector<VkDeviceMemory>     lightUniformBuffersMemory;
         std::vector<VkBuffer>           nodeMaterialUniformBuffers;
         std::vector<VkDeviceMemory>     nodeMaterialUniformBuffersMemory;
-        std::vector<VkBuffer>           storageBuffers;
-        std::vector<VkDeviceMemory>     storageBuffersMemory;
 
         uint32_t                        nodeMaterialCount = 256;
 
@@ -232,7 +241,7 @@ private:
         void createPipeline(VkApplication *app, graphicsInfo info);
         void createDescriptorSetLayout(VkApplication *app);
         void createUniformBuffers(VkApplication *app, uint32_t imageCount);
-        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
+        void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<light<spotLight> *> lightSource);
     }second;
 
     void createColorAttachments();
@@ -267,7 +276,7 @@ public:
 
     void updateSecondDescriptorSets(const std::vector<light<spotLight>*> & lightSources);
 
-    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
+    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<light<spotLight> *> lightSource);
 
     void updateUniformBuffer(uint32_t currentImage, camera *cam);
     void updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam);

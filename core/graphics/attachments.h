@@ -13,11 +13,16 @@ struct attachment
     VkImage image;
     VkDeviceMemory imageMemory;
     VkImageView imageView;
+    VkSampler sampler;
     void deleteAttachment(VkDevice * device)
     {
         vkDestroyImage(*device, image, nullptr);
         vkFreeMemory(*device, imageMemory, nullptr);
         vkDestroyImageView(*device, imageView, nullptr);
+    }
+    void deleteSampler(VkDevice *device)
+    {
+        vkDestroySampler(*device,sampler,nullptr);
     }
 };
 

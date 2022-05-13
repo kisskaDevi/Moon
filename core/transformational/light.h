@@ -92,6 +92,7 @@ public:
     texture                         *getTexture();
 
     bool                            getShadowEnable() const;
+    bool                            getScatteringEnable() const;
 
     shadowGraphics                  *getShadow();
 

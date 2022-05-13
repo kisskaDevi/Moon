@@ -3,7 +3,7 @@
 
 #include "core/vulkanCore.h"
 
-const int MAX_LIGHT_SOURCE_COUNT = 16;
+const int MAX_LIGHT_SOURCE_COUNT = 20;
 
 struct shadowInfo{
     uint32_t                    imageCount;

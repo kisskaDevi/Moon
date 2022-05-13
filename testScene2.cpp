@@ -304,11 +304,11 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
 
     lightSource.push_back(new light<spotLight>(app));
     app->addlightSource(lightSource.at(lightSource.size()-1));
-        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
     lightSource.at(index)->setScattering(true);
     groups.at(0)->addObject(lightSource.at(index));
     index++;
@@ -346,7 +346,7 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
 
     object3D.push_back( new object(app,{gltfModel.at(1),emptyTextureW}) );
     app->getGraphics().bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
     object *Box = object3D.at(index);
     index++;
 
@@ -394,9 +394,10 @@ void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::ve
     }
     else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)
     {
-        if(n!=INT_FAST32_MAX && n!=0)
+        std::cout<<n<<std::endl;
+        if(n!=INT_FAST32_MAX && n>1)
         {
-            app->getGraphics().setStencilObject(physObject[n-1]);
+            app->getGraphics().setStencilObject(physObject[n-2]);
             app->resetCmdWorld();
         }
     }

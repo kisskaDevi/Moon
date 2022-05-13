@@ -122,7 +122,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, graphicsInfo i
          * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
          * шейдера и текущим содержанием фреймбуфера.*/
 
-        std::array<VkPipelineColorBlendAttachmentState,6> colorBlendAttachment;
+        std::array<VkPipelineColorBlendAttachmentState,4> colorBlendAttachment;
         for(index=0;index<colorBlendAttachment.size();index++)
         {
             colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -298,7 +298,7 @@ void graphics::oneColorExtension::createPipeline(VkApplication *app, graphicsInf
      * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
      * шейдера и текущим содержанием фреймбуфера.*/
 
-    std::array<VkPipelineColorBlendAttachmentState,6> colorBlendAttachment;
+    std::array<VkPipelineColorBlendAttachmentState,4> colorBlendAttachment;
     for(index=0;index<colorBlendAttachment.size();index++)
     {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -449,7 +449,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, graphic
         multisampling.alphaToCoverageEnable = VK_FALSE;
         multisampling.alphaToOneEnable = VK_FALSE;
 
-    std::array<VkPipelineColorBlendAttachmentState,6> colorBlendAttachment;
+    std::array<VkPipelineColorBlendAttachmentState,4> colorBlendAttachment;
     for(index=0;index<colorBlendAttachment.size();index++)
     {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -602,7 +602,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, graphi
         multisampling.alphaToCoverageEnable = VK_FALSE;
         multisampling.alphaToOneEnable = VK_FALSE;
 
-    std::array<VkPipelineColorBlendAttachmentState,6> colorBlendAttachment;
+    std::array<VkPipelineColorBlendAttachmentState,4> colorBlendAttachment;
     for(index=0;index<colorBlendAttachment.size();index++)
     {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;

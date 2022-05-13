@@ -356,7 +356,7 @@ void VkApplication::updateCommandBuffer(uint32_t number, uint32_t i)
     if (vkBeginCommandBuffer(commandBuffers[number][i], &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("failed to begin recording command buffer!");
 
-    Graphics.render(commandBuffers[number],i);
+    Graphics.render(commandBuffers[number],i,lightSources);
     PostProcessing.render(commandBuffers[number],i);
 
     if (vkEndCommandBuffer(commandBuffers[number][i]) != VK_SUCCESS)

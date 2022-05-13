@@ -38,6 +38,8 @@ layout(location = 4)	out vec3 outTangent;
 layout(location = 5)	out vec3 outBitangent;
 layout(location = 6)	out vec4 outColor;
 layout(location = 7)	out vec4 outEyePosition;
+layout(location = 8)	out float depth;
+layout(location = 9)	out vec4 glPosition;
 
 void main()
 {
@@ -70,4 +72,8 @@ void main()
     }
 
     gl_Position = global.proj * global.view * outPosition;
+    glPosition = gl_Position;
+    glPosition /= glPosition.w;
+
+    depth = gl_Position.z;
 }

@@ -28,6 +28,7 @@ layout(location = 4)	in  vec4 inJoint0;
 layout(location = 5)	in  vec4 inWeight0;
 layout(location = 6)	in  vec3 inTangent;
 layout(location = 7)	in  vec3 inBitangent;
+layout(location = 8)	out float depth;
 
 layout(location = 0)	out vec4 outPosition;
 
@@ -53,4 +54,6 @@ void main()
     }
 
     gl_Position = global.proj * global.view * outPosition;
+
+    depth = gl_Position.z;
 }

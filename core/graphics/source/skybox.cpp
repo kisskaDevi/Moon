@@ -116,7 +116,7 @@ void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
         multisampling.alphaToOneEnable = VK_FALSE;
 
 
-    std::array<VkPipelineColorBlendAttachmentState,6> colorBlendAttachment{};
+    std::array<VkPipelineColorBlendAttachmentState,4> colorBlendAttachment{};
     for(uint32_t index=0;index<colorBlendAttachment.size();index++)
     {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;

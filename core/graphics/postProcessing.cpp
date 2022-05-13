@@ -246,8 +246,8 @@ void postProcessing::createRenderPass()
 
     index = 0;
     std::array<VkAttachmentReference,1> secondAttachmentRef;
-        secondAttachmentRef[index].attachment = 0;                                                  //индекс в массив подключений
-        secondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;               //размещение
+        secondAttachmentRef[index].attachment = 0;
+        secondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     index = 0;
     std::array<VkAttachmentReference,1> inSecondAttachmentRef;
         inSecondAttachmentRef[index].attachment = 1;

@@ -19,7 +19,7 @@ const uint32_t HEIGHT = 800;
 
 std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
 std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
-std::string LIGHT_TEXTURE  = ExternalPath + "texture\\light1.jpg";
+std::string LIGHT_TEXTURE  = ExternalPath + "texture\\light2.jpg";
 
 std::vector<std::string> SKYBOX = {
     ExternalPath+"texture\\skybox\\left.jpg",
@@ -40,6 +40,9 @@ bool  fpsLock = false;
 double   xMpos, yMpos;
 double   angx=0.0, angy=0.0;
 
+float spotAngle = 90.0f;
+bool updateLightCone = false;
+
 uint32_t controledGroup = 0;
 
 bool     backRStage = 0;
@@ -51,7 +54,7 @@ bool     backIStage = 0;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
 void mouseEvent(VkApplication* app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras);
-void keyboardEvent(VkApplication* app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras);
+void keyboardEvent(VkApplication* app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, std::vector<light<spotLight>*>& lightSource, texture *emptyTexture, camera* cameras);
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
@@ -154,7 +157,7 @@ int testScene1()
 
                 glfwPollEvents();
                 mouseEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
-                keyboardEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
+                keyboardEvent(&app,window,frameTime,object3D,groups,gltfModel,lightSource,emptyTexture,cameras);
                 VkResult result = app.drawFrame();
 
                 if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,window);
@@ -267,7 +270,7 @@ void loadModels(VkApplication *app, std::vector<gltfModel *>& gltfModel)
     index++;
 
         gltfModel.push_back(new struct gltfModel);
-        gltfModel.at(index)->loadFromFile(ExternalPath + "model\\glb\\Robot.glb",app,1.0f);
+        gltfModel.at(index)->loadFromFile(ExternalPath + "model\\glb\\Duck.glb",app,1.0f);
     index++;
 
         gltfModel.push_back(new struct gltfModel);
@@ -281,16 +284,20 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     lightPoint.push_back(new light<pointLight>(app,lightSource));
     lightPoint.at(0)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     groups.at(0)->addObject(lightPoint.at(0));
-    index +=6;
+
+    for(int i=index;i<6;i++,index++){
+        //lightSource.at(i)->setScattering(true);
+    }
 
     glm::mat4x4 Proj;
 
     lightSource.push_back(new light<spotLight>(app));
-        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+        Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
+    //lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(2)->addObject(lightSource.at(index));
@@ -298,11 +305,12 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     app->addlightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new light<spotLight>(app));
-        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+        Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
+    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(3)->addObject(lightSource.at(index));
@@ -310,11 +318,12 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     app->addlightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new light<spotLight>(app));
-        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+        Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
+    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(4)->addObject(lightSource.at(index));
@@ -322,16 +331,47 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     app->addlightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new light<spotLight>(app));
-        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+        Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
     lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+    //lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(5)->addObject(lightSource.at(index));
     index++;
     app->addlightSource(lightSource.at(lightSource.size()-1));
+
+//    for(int i=0;i<5;i++){
+//        lightSource.push_back(new light<spotLight>(app));
+//            Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
+//            Proj[1][1] *= -1;
+//        lightSource.at(index)->createLightPVM(Proj);
+//        lightSource.at(index)->setLightNumber(index);
+//        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
+//        //lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+//        lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+//        lightSource.at(index)->setScattering(true);
+//        lightSource.at(index)->setTexture(lightTex1);
+//        index++;
+//        app->addlightSource(lightSource.at(lightSource.size()-1));
+//    }
+
+//    for(int i=0;i<5;i++){
+//        lightSource.push_back(new light<spotLight>(app));
+//            Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
+//            Proj[1][1] *= -1;
+//        lightSource.at(index)->createLightPVM(Proj);
+//        lightSource.at(index)->setLightNumber(index);
+//        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
+//        //lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+//        lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+//        lightSource.at(index)->setScattering(true);
+//        lightSource.at(index)->setTexture(lightTex1);
+//        index++;
+//        app->addlightSource(lightSource.at(lightSource.size()-1));
+//    }
 }
 
 void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<group*>& groups, texture *emptyTexture, texture *emptyTextureW)
@@ -356,7 +396,7 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
     object3D.push_back( new object(app,{gltfModel.at(4),emptyTexture}) );
     app->getGraphics().bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(15.0f,15.0f,15.0f));
+    object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object3D.at(index)->animationTimer = 0.0f;
     object3D.at(index)->animationIndex = 0;
     object *Duck = object3D.at(index);
@@ -374,28 +414,32 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
     object *Box0 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(app,{gltfModel.at(2),emptyTextureW}) );
-    app->getGraphics().bindBloomObject(object3D.at(index));
+    object3D.push_back( new object(app,{gltfModel.at(5),emptyTextureW}) );
+    app->getGraphics().bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
-    object *Box1 = object3D.at(index);
+    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object *UFO1 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(app,{gltfModel.at(2),emptyTextureW}) );
-    app->getGraphics().bindBloomObject(object3D.at(index));
+    object3D.push_back( new object(app,{gltfModel.at(5),emptyTextureW}) );
+    app->getGraphics().bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
-    object *Box2 = object3D.at(index);
+    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object *UFO2 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(app,{gltfModel.at(2),emptyTextureW}) );
-    app->getGraphics().bindBloomObject(object3D.at(index));
+    object3D.push_back( new object(app,{gltfModel.at(5),emptyTextureW}) );
+    app->getGraphics().bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
-    object *Box3 = object3D.at(index);
+    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object *UFO3 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(app,{gltfModel.at(2),emptyTextureW}) );
-    app->getGraphics().bindBloomObject(object3D.at(index));
+    object3D.push_back( new object(app,{gltfModel.at(5),emptyTextureW}) );
+    app->getGraphics().bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
-    object *Box4 = object3D.at(index);
+    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object *UFO4 = object3D.at(index);
     index++;
 
     groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
@@ -404,16 +448,16 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
     groups.at(1)->addObject(Duck);
 
     groups.at(2)->translate(glm::vec3(5.0f,0.0f,5.0f));
-    groups.at(2)->addObject(Box1);
+    groups.at(2)->addObject(UFO1);
 
     groups.at(3)->translate(glm::vec3(-5.0f,0.0f,5.0f));
-    groups.at(3)->addObject(Box2);
+    groups.at(3)->addObject(UFO2);
 
     groups.at(4)->translate(glm::vec3(10.0f,0.0f,5.0f));
-    groups.at(4)->addObject(Box3);
+    groups.at(4)->addObject(UFO3);
 
     groups.at(5)->translate(glm::vec3(-10.0f,0.0f,5.0f));
-    groups.at(5)->addObject(Box4);
+    groups.at(5)->addObject(UFO4);
 }
 
 void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras)
@@ -425,9 +469,10 @@ void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::ve
     static_cast<void>(emptyTexture);
 
     double x, y;
-    int button = glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT);
+
     glfwSetScrollCallback(window,&scrol);
-    if(button == GLFW_PRESS)
+
+    if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
         double sensitivity = 0.001;
         glfwGetCursorPos(window,&x,&y);
@@ -445,7 +490,7 @@ void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::ve
     }
 }
 
-void keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture,camera* cameras)
+void keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, std::vector<light<spotLight>*>& lightSource, texture *emptyTexture,camera* cameras)
 {
     float sensitivity = 5.0f*frameTime;
     if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
@@ -631,13 +676,26 @@ void keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTime, std:
         app->resetUboLight();
     }
     backNStage = glfwGetKey(window,GLFW_KEY_N);
+    if(updateLightCone){
+        for(uint32_t index=6;index<lightSource.size();index++){
+            if(spotAngle>0.0f){
+                glm::mat4x4 Proj;
+                    Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
+                    Proj[1][1] *= -1;
+                lightSource.at(index)->createLightPVM(Proj);
+            }
+        }
+        app->resetUboLight();
+        updateLightCone = false;
+    }
 }
 
 void scrol(GLFWwindow *window, double xoffset, double yoffset)
 {
     static_cast<void>(window);
     static_cast<void>(xoffset);
-    static_cast<void>(yoffset);
+    spotAngle -= yoffset;
+    updateLightCone = true;
 }
 
 #endif

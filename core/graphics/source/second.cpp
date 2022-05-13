@@ -11,6 +11,8 @@ void graphics::Second::Destroy(VkApplication *app)
     vkDestroyDescriptorSetLayout(app->getDevice(), DescriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(app->getDevice(), DescriptorPool, nullptr);
     vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
+    vkDestroyPipeline(app->getDevice(), ScatteringPipeline, nullptr);
+    vkDestroyPipeline(app->getDevice(), AmbientPipeline, nullptr);
     vkDestroyPipelineLayout(app->getDevice(), PipelineLayout, nullptr);
 
     for (size_t i = 0; i < uniformBuffers.size(); i++)
@@ -21,9 +23,6 @@ void graphics::Second::Destroy(VkApplication *app)
         vkDestroyBuffer(app->getDevice(), uniformBuffers[i], nullptr);
         vkFreeMemory(app->getDevice(), uniformBuffersMemory[i], nullptr);
 
-        vkDestroyBuffer(app->getDevice(), storageBuffers[i], nullptr);
-        vkFreeMemory(app->getDevice(), storageBuffersMemory[i], nullptr);
-
         vkDestroyBuffer(app->getDevice(), nodeMaterialUniformBuffers[i], nullptr);
         vkFreeMemory(app->getDevice(), nodeMaterialUniformBuffersMemory[i], nullptr);
     }
@@ -33,8 +32,8 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding,12> Binding{};
-    for(index = 0; index<6;index++)
+    std::array<VkDescriptorSetLayoutBinding,8> Binding{};
+    for(index = 0; index<4;index++)
     {
         Binding.at(index).binding = index;
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
@@ -45,7 +44,7 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
         Binding.at(index).binding = index;
         Binding.at(index).descriptorCount = 1;
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding.at(index).stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         Binding.at(index).pImmutableSamplers = nullptr;
     index++;
         Binding.at(index).binding = index;
@@ -61,28 +60,10 @@ void graphics::Second::createDescriptorSetLayout(VkApplication *app)
         Binding.at(index).pImmutableSamplers = nullptr;
     index++;
         Binding.at(index).binding = index;
-        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        Binding.at(index).descriptorCount = 1;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding.at(index).pImmutableSamplers = nullptr;
-    index++;
-        Binding.at(index).binding = index;
-        Binding.at(index).descriptorCount = 1;
-        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding.at(index).pImmutableSamplers = nullptr;
-    index++;
-        Binding.at(index).binding = index;
         Binding.at(index).descriptorCount = MAX_LIGHT_SOURCE_COUNT;
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding.at(index).pImmutableSamplers = nullptr;
-//    index++;
-//        Binding.at(index).binding = index;
-//        Binding.at(index).descriptorCount = textureCount;
-//        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-//        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-//        Binding.at(index).pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
@@ -164,12 +145,12 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
     for(uint32_t index=0;index<colorBlendAttachment.size();index++)
     {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[index].blendEnable = VK_FALSE;
+        colorBlendAttachment[index].blendEnable = VK_TRUE;
         colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
         colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
     }
     VkPipelineColorBlendStateCreateInfo colorBlending{};
@@ -185,8 +166,8 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthTestEnable = VK_FALSE;
+        depthStencil.depthWriteEnable = VK_FALSE;
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.minDepthBounds = 0.0f;
@@ -195,11 +176,18 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
         depthStencil.front = {};
         depthStencil.back = {};
 
+    index=0;
+    std::array<VkPushConstantRange,1> pushConstantRange{};
+        pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange[index].offset = 0;
+        pushConstantRange[index].size = sizeof(secondPassPushConst);
     std::array<VkDescriptorSetLayout,1> SetLayouts = {DescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
+        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
+        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create SecondPass pipeline layout!");
 
@@ -222,32 +210,114 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
     if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create SecondPass graphics pipeline!");
 
+    auto vertShaderCodeScattering = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondvert.spv");
+    auto fragShaderCodeScattering = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondScatteringfrag.spv");
+    VkShaderModule vertShaderModuleScattering = createShaderModule(app, vertShaderCodeScattering);
+    VkShaderModule fragShaderModuleScattering = createShaderModule(app, fragShaderCodeScattering);
+    std::array<VkPipelineShaderStageCreateInfo,2> shaderStagesScattering{};
+        shaderStagesScattering[index].pName = "main";
+        shaderStagesScattering[index].module = fragShaderModuleScattering;
+        shaderStagesScattering[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStagesScattering[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    index++;
+        shaderStagesScattering[index].pName = "main";
+        shaderStagesScattering[index].module = vertShaderModuleScattering;
+        shaderStagesScattering[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStagesScattering[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+
+    index = 0;
+    std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfoScattering{};
+        pipelineInfoScattering[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfoScattering[index].stageCount = static_cast<uint32_t>(shaderStagesScattering.size());
+        pipelineInfoScattering[index].pStages = shaderStagesScattering.data();
+        pipelineInfoScattering[index].pVertexInputState = &vertexInputInfo;
+        pipelineInfoScattering[index].pInputAssemblyState = &inputAssembly;
+        pipelineInfoScattering[index].pViewportState = &viewportState;
+        pipelineInfoScattering[index].pRasterizationState = &rasterizer;
+        pipelineInfoScattering[index].pMultisampleState = &multisampling;
+        pipelineInfoScattering[index].pColorBlendState = &colorBlending;
+        pipelineInfoScattering[index].layout = PipelineLayout;
+        pipelineInfoScattering[index].renderPass = info.renderPass;
+        pipelineInfoScattering[index].subpass = 1;
+        pipelineInfoScattering[index].basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfoScattering[index].pDepthStencilState = &depthStencil;
+    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoScattering.size()), pipelineInfoScattering.data(), nullptr, &ScatteringPipeline) != VK_SUCCESS)
+        throw std::runtime_error("failed to create SecondPass graphics pipeline!");
+
+    auto vertShaderCodeAmbient = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\AmbientSecondvert.spv");
+    auto fragShaderCodeAmbient = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\Ambientsecondfrag.spv");
+    VkShaderModule vertShaderModuleAmbient = createShaderModule(app, vertShaderCodeAmbient);
+    VkShaderModule fragShaderModuleAmbient = createShaderModule(app, fragShaderCodeAmbient);
+    std::array<VkPipelineShaderStageCreateInfo,2> shaderStagesAmbient{};
+        shaderStagesAmbient[index].pName = "main";
+        shaderStagesAmbient[index].module = fragShaderModuleAmbient;
+        shaderStagesAmbient[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStagesAmbient[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    index++;
+        shaderStagesAmbient[index].pName = "main";
+        shaderStagesAmbient[index].module = vertShaderModuleAmbient;
+        shaderStagesAmbient[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStagesAmbient[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+
+    VkPipelineDepthStencilStateCreateInfo AmbientDepthStencil{};
+        AmbientDepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        AmbientDepthStencil.depthTestEnable = VK_FALSE;
+        AmbientDepthStencil.depthWriteEnable = VK_FALSE;
+        AmbientDepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        AmbientDepthStencil.depthBoundsTestEnable = VK_FALSE;
+        AmbientDepthStencil.minDepthBounds = 0.0f;
+        AmbientDepthStencil.maxDepthBounds = 1.0f;
+        AmbientDepthStencil.stencilTestEnable = VK_FALSE;
+        AmbientDepthStencil.front = {};
+        AmbientDepthStencil.back = {};
+
+    index = 0;
+    std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfoAmbient{};
+        pipelineInfoAmbient[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfoAmbient[index].stageCount = static_cast<uint32_t>(shaderStagesAmbient.size());
+        pipelineInfoAmbient[index].pStages = shaderStagesAmbient.data();
+        pipelineInfoAmbient[index].pVertexInputState = &vertexInputInfo;
+        pipelineInfoAmbient[index].pInputAssemblyState = &inputAssembly;
+        pipelineInfoAmbient[index].pViewportState = &viewportState;
+        pipelineInfoAmbient[index].pRasterizationState = &rasterizer;
+        pipelineInfoAmbient[index].pMultisampleState = &multisampling;
+        pipelineInfoAmbient[index].pColorBlendState = &colorBlending;
+        pipelineInfoAmbient[index].layout = PipelineLayout;
+        pipelineInfoAmbient[index].renderPass = info.renderPass;
+        pipelineInfoAmbient[index].subpass = 1;
+        pipelineInfoAmbient[index].basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfoAmbient[index].pDepthStencilState = &AmbientDepthStencil;
+    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoAmbient.size()), pipelineInfoAmbient.data(), nullptr, &AmbientPipeline) != VK_SUCCESS)
+        throw std::runtime_error("failed to create SecondPass graphics pipeline!");
+
+    vkDestroyShaderModule(app->getDevice(), fragShaderModuleAmbient, nullptr);
+    vkDestroyShaderModule(app->getDevice(), vertShaderModuleAmbient, nullptr);
     vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(app->getDevice(), fragShaderModuleScattering, nullptr);
+    vkDestroyShaderModule(app->getDevice(), vertShaderModuleScattering, nullptr);
 }
 
 void graphics::createSecondDescriptorPool()
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorPoolSize,10+2*MAX_LIGHT_SOURCE_COUNT> poolSizes{};
-    for(index = 0;index<6; index++)
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
-    for(size_t i=index;i<index+MAX_LIGHT_SOURCE_COUNT;i++)
-        poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
-    index+=MAX_LIGHT_SOURCE_COUNT;
+    std::array<VkDescriptorPoolSize,6+2*MAX_LIGHT_SOURCE_COUNT> poolSizes{};
+
+        for(uint32_t i = 0;i<4;i++,index++)
+            poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
+
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     index++;
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     index++;
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
-    index++;
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<uint32_t>(image.Count)};
-    index++;
-    for(size_t i=index;i<index+MAX_LIGHT_SOURCE_COUNT;i++)
-        poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
-//    for(size_t i=index;i<index+textureCount;i++)
-//        poolSizes[i] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
+
+        for(size_t i=0;i<MAX_LIGHT_SOURCE_COUNT;i++,index++)
+            poolSizes[index] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
+
+        for(size_t i=0;i<MAX_LIGHT_SOURCE_COUNT;i++,index++)
+            poolSizes[index] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
+
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -259,18 +329,6 @@ void graphics::createSecondDescriptorPool()
 
 void graphics::createSecondDescriptorSets()
 {
-//    uint32_t firstPrimitive = 0;
-//    for(auto *model: models){
-//        model->firstPrimitive = firstPrimitive;
-//        uint32_t primitives = 0;
-//        for(auto *node: model->linearNodes){
-//            if (node->mesh) {
-//                primitives += node->mesh->primitives.size();
-//            }
-//        }
-//        firstPrimitive += primitives;
-//    }
-
     second.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, second.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -288,8 +346,8 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
     {
         uint32_t index = 0;
 
-        std::array<VkDescriptorImageInfo,6> imageInfo{};
-        for(index = 0; index<6;index++)
+        std::array<VkDescriptorImageInfo,4> imageInfo{};
+        for(index = 0; index<4;index++)
         {
             imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.at(index).imageView = Attachments.at(2+index).imageView.at(i);
@@ -315,15 +373,7 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = second.uniformBuffers[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(SecondUniformBufferObject);
-        VkDescriptorBufferInfo MaterialBufferInfo{};
-            MaterialBufferInfo.buffer = second.nodeMaterialUniformBuffers[i];
-            MaterialBufferInfo.offset = 0;
-            MaterialBufferInfo.range = second.nodeMaterialCount * sizeof(MaterialBlock);
-        VkDescriptorBufferInfo StorageBufferInfo{};
-            StorageBufferInfo.buffer = second.storageBuffers[i];
-            StorageBufferInfo.offset = 0;
-            StorageBufferInfo.range = sizeof(StorageBufferObject);
+            bufferInfo.range = sizeof(UniformBufferObject);
         std::array<VkDescriptorImageInfo,MAX_LIGHT_SOURCE_COUNT> lightTexture{};
             for (size_t j = 0; j < lightSources.size(); j++)
             {
@@ -338,64 +388,8 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
                 lightTexture[j].sampler      = emptyTexture->getTextureSampler();
             }
 
-//        uint32_t imageCount = 0;
-//        std::array<VkDescriptorImageInfo,textureCount> textureInfo{};
-//        for(auto *model: models){
-//            for(auto *node: model->linearNodes){
-//                if (node->mesh) {
-//                    for(auto *primitive:node->mesh->primitives){
-//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//                        if (primitive->material.pbrWorkflows.metallicRoughness)
-//                        {
-//                            textureInfo.at(imageCount).imageView   = primitive->material.baseColorTexture ? primitive->material.baseColorTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-//                            textureInfo.at(imageCount).sampler     = primitive->material.baseColorTexture ? primitive->material.baseColorTexture->getTextureSampler()   : emptyTexture->getTextureSampler();
-//                        }
-//                        if(primitive->material.pbrWorkflows.specularGlossiness)
-//                        {
-//                            textureInfo.at(imageCount).imageView   = primitive->material.extension.diffuseTexture ? primitive->material.extension.diffuseTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-//                            textureInfo.at(imageCount).sampler     = primitive->material.extension.diffuseTexture ? primitive->material.extension.diffuseTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-//                        }
-//                        imageCount++;
-
-//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//                        if (primitive->material.pbrWorkflows.metallicRoughness)
-//                        {
-//                            textureInfo.at(imageCount).imageView   = primitive->material.metallicRoughnessTexture ? primitive->material.metallicRoughnessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-//                            textureInfo.at(imageCount).sampler     = primitive->material.metallicRoughnessTexture ? primitive->material.metallicRoughnessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-//                        }
-//                        if (primitive->material.pbrWorkflows.specularGlossiness)
-//                        {
-//                            textureInfo.at(imageCount).imageView   = primitive->material.extension.specularGlossinessTexture ? primitive->material.extension.specularGlossinessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-//                            textureInfo.at(imageCount).sampler     = primitive->material.extension.specularGlossinessTexture ? primitive->material.extension.specularGlossinessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-//                        }
-//                        imageCount++;
-
-//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//                        textureInfo.at(imageCount).imageView   = primitive->material.normalTexture ? primitive->material.normalTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-//                        textureInfo.at(imageCount).sampler     = primitive->material.normalTexture ? primitive->material.normalTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-//                        imageCount++;
-
-//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//                        textureInfo.at(imageCount).imageView   = primitive->material.occlusionTexture ? primitive->material.occlusionTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-//                        textureInfo.at(imageCount).sampler     = primitive->material.occlusionTexture ? primitive->material.occlusionTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-//                        imageCount++;
-
-//                        textureInfo.at(imageCount).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//                        textureInfo.at(imageCount).imageView   = primitive->material.emissiveTexture ? primitive->material.emissiveTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-//                        textureInfo.at(imageCount).sampler     = primitive->material.emissiveTexture ? primitive->material.emissiveTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-//                        imageCount++;
-//                    }
-//                }
-//            }
-//        }
-//        for(uint32_t i=imageCount;i<textureCount;i++){
-//            textureInfo.at(i).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//            textureInfo.at(i).imageView   = emptyTexture->getTextureImageView();
-//            textureInfo.at(i).sampler     = emptyTexture->getTextureSampler();
-//        }
-
-        std::array<VkWriteDescriptorSet,12> descriptorWrites{};
-        for(index = 0; index<6;index++)
+        std::array<VkWriteDescriptorSet,8> descriptorWrites{};
+        for(index = 0; index<4;index++)
         {
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
@@ -433,33 +427,9 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
             descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
             descriptorWrites.at(index).dstBinding = index;
             descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &MaterialBufferInfo;
-        index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &StorageBufferInfo;
-        index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.at(index).descriptorCount = static_cast<uint32_t>(lightTexture.size());
             descriptorWrites.at(index).pImageInfo = lightTexture.data();
-
-//            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-//            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
-//            descriptorWrites.at(index).dstBinding = index;
-//            descriptorWrites.at(index).dstArrayElement = 0;
-//            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-//            descriptorWrites.at(index).descriptorCount = static_cast<uint32_t>(textureInfo.size());
-//            descriptorWrites.at(index).pImageInfo = textureInfo.data();
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
@@ -481,18 +451,10 @@ void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCo
     uniformBuffers.resize(imageCount);
     uniformBuffersMemory.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++)
-        createBuffer(app, sizeof(SecondUniformBufferObject),
+        createBuffer(app, sizeof(UniformBufferObject),
                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                      uniformBuffers[i], uniformBuffersMemory[i]);
-
-    storageBuffers.resize(imageCount);
-    storageBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-        createBuffer(app, sizeof(StorageBufferObject),
-                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     storageBuffers[i], storageBuffersMemory[i]);
 
     nodeMaterialUniformBuffers.resize(imageCount);
     nodeMaterialUniformBuffersMemory.resize(imageCount);
@@ -503,9 +465,26 @@ void graphics::Second::createUniformBuffers(VkApplication *app, uint32_t imageCo
                      nodeMaterialUniformBuffers[i], nodeMaterialUniformBuffersMemory[i]);
 }
 
-void graphics::Second::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
+void graphics::Second::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<light<spotLight> *> lightSource)
 {
-    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+    for(uint32_t lightNumber = 0; lightNumber<lightSource.size();lightNumber++)
+    {
+        if(lightSource[lightNumber]->getScatteringEnable())
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, ScatteringPipeline);
+        else
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+
+        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0, nullptr);
+        secondPassPushConst pushConst{};
+            pushConst.lightNumber = lightNumber;
+        vkCmdPushConstants(commandBuffers[i], PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(secondPassPushConst), &pushConst);
+
+        vkCmdDraw(commandBuffers[i], 18, 1, 0, 0);
+    }
+
+    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, AmbientPipeline);
     vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0, nullptr);
+    secondPassPushConst pushConst{};
+    vkCmdPushConstants(commandBuffers[i], PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(secondPassPushConst), &pushConst);
     vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
 }

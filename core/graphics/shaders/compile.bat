@@ -2,6 +2,9 @@ C:/VulkanSDK/1.2.170.0/Bin/glslc.exe base/base.vert				    -o base/basevert.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe base/base.frag				    -o base/basefrag.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe secondPass/second.vert			    -o secondPass/secondvert.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe secondPass/second.frag			    -o secondPass/secondfrag.spv
+C:/VulkanSDK/1.2.170.0/Bin/glslc.exe secondPass/secondScattering.frag		    -o secondPass/secondScatteringfrag.spv
+C:/VulkanSDK/1.2.170.0/Bin/glslc.exe secondPass/secondAmbient.vert		    -o secondPass/AmbientSecondvert.spv
+C:/VulkanSDK/1.2.170.0/Bin/glslc.exe secondPass/secondAmbient.frag		    -o secondPass/Ambientsecondfrag.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe shadow/shadowMapShader.vert		    -o shadow/shad.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe postProcessing/firstPostProcessingShader.vert  -o postProcessing/firstPostProcessingVert.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe postProcessing/firstPostProcessingShader.frag  -o postProcessing/firstPostProcessingFrag.spv

@@ -52,8 +52,7 @@ void main()
 	            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
 
 	    outPosition = vec3(local.matrix*node.matrix * skinMat* vec4(inPosition,1.0));
-    } else
-    {
+    } else {
 	    outPosition = vec3(local.matrix*node.matrix * vec4(inPosition,1.0));
     }
 

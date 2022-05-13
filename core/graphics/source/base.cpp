@@ -26,22 +26,34 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> uboLayoutBinding{};
-        uboLayoutBinding[index].binding = 0;
-        uboLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding[index].descriptorCount = 1;
-        uboLayoutBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboLayoutBinding[index].pImmutableSamplers = nullptr;
+    std::array<VkDescriptorSetLayoutBinding, 4> Binding{};
+        Binding[index].binding = index;
+        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        Binding[index].descriptorCount = 1;
+        Binding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        Binding[index].pImmutableSamplers = nullptr;
     index++;
-        uboLayoutBinding[index].binding = 1;
-        uboLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        uboLayoutBinding[index].descriptorCount = 1;
-        uboLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        uboLayoutBinding[index].pImmutableSamplers = nullptr;
+        Binding[index].binding = index;
+        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        Binding[index].descriptorCount = 1;
+        Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding[index].pImmutableSamplers = nullptr;
+    index++;
+        Binding.at(index).binding = index;
+        Binding.at(index).descriptorCount = 1;
+        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding.at(index).pImmutableSamplers = nullptr;
+    index++;
+        Binding.at(index).binding = index;
+        Binding.at(index).descriptorCount = 1;
+        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding.at(index).pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(uboLayoutBinding.size());
-        layoutInfo.pBindings = uboLayoutBinding.data();
+        layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
+        layoutInfo.pBindings = Binding.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &SceneDescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create base uniform buffer descriptor set layout!");
 
@@ -215,7 +227,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
      * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
      * шейдера и текущим содержанием фреймбуфера.*/
 
-    std::array<VkPipelineColorBlendAttachmentState,6> colorBlendAttachment;
+    std::array<VkPipelineColorBlendAttachmentState,4> colorBlendAttachment;
     for(index=0;index<colorBlendAttachment.size();index++)
     {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -301,11 +313,17 @@ void graphics::createBaseDescriptorPool()
 
     uint32_t index = 0;
 
-    std::array<VkDescriptorPoolSize,2> poolSizes;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;                           //Сначала нам нужно описать, какие типы дескрипторов будут содержать наши наборы дескрипторов
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);               //и сколько их, используя VkDescriptorPoolSizeструктуры.
+    std::array<VkDescriptorPoolSize,4> poolSizes;
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
         poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+    index++;
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);    
+    index++;
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -347,11 +365,19 @@ void graphics::createBaseDescriptorSets()
             skyboxImageInfo[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             skyboxImageInfo[0].imageView = skybox.texture ? skybox.texture->getTextureImageView() : emptyTexture->getTextureImageView();
             skyboxImageInfo[0].sampler   = skybox.texture ? skybox.texture->getTextureSampler() : emptyTexture->getTextureSampler();
+        VkDescriptorBufferInfo MaterialBufferInfo{};
+            MaterialBufferInfo.buffer = second.nodeMaterialUniformBuffers[i];
+            MaterialBufferInfo.offset = 0;
+            MaterialBufferInfo.range = second.nodeMaterialCount * sizeof(MaterialBlock);
+        VkDescriptorBufferInfo StorageBufferInfo{};
+            StorageBufferInfo.buffer = storageBuffers[i];
+            StorageBufferInfo.offset = 0;
+            StorageBufferInfo.range = sizeof(StorageBufferObject);
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = base.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = 0;
+            descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(bufferInfo.size());
@@ -359,11 +385,27 @@ void graphics::createBaseDescriptorSets()
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = base.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = 1;
+            descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(skyboxImageInfo.size());
             descriptorWrites[index].pImageInfo = skyboxImageInfo.data();
+        index++;
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = base.DescriptorSets.at(i);
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pBufferInfo = &MaterialBufferInfo;
+        index++;
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = base.DescriptorSets.at(i);
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pBufferInfo = &StorageBufferInfo;
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -598,7 +640,6 @@ void graphics::Base::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDe
             };
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
 
-            // Pass material parameters as push constants
             PushConst pushConst{};
                 pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
                 pushConst.number = primitiveCount;

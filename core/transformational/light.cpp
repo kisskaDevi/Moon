@@ -12,6 +12,8 @@ light<spotLight>::light(VkApplication *app, uint32_t type) : app(app), type(type
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
+    viewMatrix = glm::mat4x4(1.0f);
+    modelMatrix = glm::mat4x4(1.0f);
 }
 
 light<spotLight>::~light(){}
@@ -84,8 +86,6 @@ void light<spotLight>::rotateY(const float & ang ,const glm::vec3 & ax)
 void light<spotLight>::createLightPVM(const glm::mat4x4 & projection)
 {
     projectionMatrix = projection;
-    viewMatrix = glm::mat4x4(1.0f);
-    modelMatrix = glm::mat4x4(1.0f);
 }
 
 void light<spotLight>::createShadow(uint32_t commandPoolsCount, uint32_t imageCount)
@@ -123,6 +123,7 @@ glm::vec3                       light<spotLight>::getTranslate() const {return m
 
 glm::vec4                       light<spotLight>::getLightColor() const {return lightColor;}
 bool                            light<spotLight>::getShadowEnable() const{return enableShadow;}
+bool                            light<spotLight>::getScatteringEnable() const{return enableScattering;}
 
 shadowGraphics                  *light<spotLight>::getShadow(){return shadow;}
 texture                         *light<spotLight>::getTexture(){return tex;}
@@ -143,7 +144,7 @@ light<pointLight>::light(VkApplication *app, std::vector<light<spotLight> *> & l
     m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
     number = lightSource.size();
 
-    glm::mat4x4 Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+    glm::mat4x4 Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
     Proj[1][1] *= -1;
 
     int index = number;

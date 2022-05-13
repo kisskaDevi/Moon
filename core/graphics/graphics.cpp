@@ -39,6 +39,12 @@ void graphics::destroy()
     skybox.Destroy(app);
     second.Destroy(app);
 
+    for (size_t i = 0; i < storageBuffers.size(); i++)
+    {
+        vkDestroyBuffer(app->getDevice(), storageBuffers[i], nullptr);
+        vkFreeMemory(app->getDevice(), storageBuffersMemory[i], nullptr);
+    }
+
     vkDestroyRenderPass(app->getDevice(), renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         vkDestroyFramebuffer(app->getDevice(), framebuffers[i],nullptr);
@@ -48,8 +54,10 @@ void graphics::destroy()
         colorAttachments.at(i).deleteAttachment(&app->getDevice());
     for(size_t i=0;i<Attachments.size();i++)
         Attachments.at(i).deleteAttachment(&app->getDevice());
-    for(size_t i=0;i<4;i++)
+    for(size_t i=0;i<6;i++)
         Attachments.at(i).deleteSampler(&app->getDevice());
+
+    depthAttachment.deleteSampler(&app->getDevice());
 }
 
 //=========================================================================//
@@ -64,7 +72,7 @@ void graphics::createAttachments()
 
 void graphics::createColorAttachments()
 {
-    colorAttachments.resize(8);
+    colorAttachments.resize(6);
     for(size_t i=0;i<2;i++)
     {
         createImage(app,image.Extent.width, image.Extent.height,
@@ -110,12 +118,32 @@ void graphics::createDepthAttachment()
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 depthAttachment.image, depthAttachment.imageMemory);
     createImageView(app, depthAttachment.image,
-                    findDepthStencilFormat(app), VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+                    findDepthStencilFormat(app), VK_IMAGE_ASPECT_DEPTH_BIT,
                     1, &depthAttachment.imageView);
+
+    VkSamplerCreateInfo SamplerInfo{};
+        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+        SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+        SamplerInfo.anisotropyEnable = VK_TRUE;
+        SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+        SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+        SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        SamplerInfo.minLod = 0.0f;
+        SamplerInfo.maxLod = 0.0f;
+        SamplerInfo.mipLodBias = 0.0f;
+    if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &depthAttachment.sampler) != VK_SUCCESS)
+        throw std::runtime_error("failed to create graphics sampler!");
 }
 void graphics::createResolveAttachments()
 {
-    Attachments.resize(8);
+    Attachments.resize(6);
     for(size_t i=0;i<2;i++)
     {
         Attachments[i].resize(image.Count);
@@ -161,7 +189,7 @@ void graphics::createResolveAttachments()
         }
     }
 
-    for(size_t i=0;i<4;i++)
+    for(size_t i=0;i<6;i++)
     {
         VkSamplerCreateInfo SamplerInfo{};
             SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -204,7 +232,7 @@ void graphics::createRenderPass()
             VkAttachmentDescription colorAttachment{};
                 colorAttachment.format = image.Format;
                 colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-                colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -217,7 +245,7 @@ void graphics::createRenderPass()
             VkAttachmentDescription colorAttachment{};
                 colorAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
                 colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-                colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -230,7 +258,7 @@ void graphics::createRenderPass()
             VkAttachmentDescription colorAttachment{};
                 colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
                 colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-                colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
                 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -252,7 +280,7 @@ void graphics::createRenderPass()
         //===========================first=====================================================//
 
         uint32_t index = 2;
-        std::vector<VkAttachmentReference> firstAttachmentRef(6);
+        std::vector<VkAttachmentReference> firstAttachmentRef(4);
             for (size_t i=0;i<firstAttachmentRef.size();i++)
             {
                 firstAttachmentRef.at(i).attachment = index;
@@ -274,7 +302,7 @@ void graphics::createRenderPass()
             secondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         index = 0;
-        std::vector<VkAttachmentReference> secondInAttachmentRef(6);
+        std::vector<VkAttachmentReference> secondInAttachmentRef(4);
             secondInAttachmentRef.at(index).attachment = 2;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
@@ -285,12 +313,6 @@ void graphics::createRenderPass()
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
             secondInAttachmentRef.at(index).attachment = 5;
-            secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        index++;
-            secondInAttachmentRef.at(index).attachment = 6;
-            secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        index++;
-            secondInAttachmentRef.at(index).attachment = 7;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         //===========================subpass & dependency=========================================//
@@ -435,7 +457,7 @@ void graphics::createRenderPass()
         //===========================first=====================================================//
 
         uint32_t index = 2;
-        std::vector<VkAttachmentReference> firstAttachmentRef(6);
+        std::vector<VkAttachmentReference> firstAttachmentRef(4);
             for (size_t i=0;i<firstAttachmentRef.size();i++)
             {
                 firstAttachmentRef.at(i).attachment = index;
@@ -448,7 +470,7 @@ void graphics::createRenderPass()
             firstDepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         index = colorAttachments.size()+3;
-        std::vector<VkAttachmentReference> firstResolveRef(6);
+        std::vector<VkAttachmentReference> firstResolveRef(4);
             for (size_t i=0;i<firstResolveRef.size();i++)
             {
                 firstResolveRef.at(i).attachment = index;
@@ -475,7 +497,7 @@ void graphics::createRenderPass()
             secondResolveRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         index = 0;
-        std::vector<VkAttachmentReference> secondInAttachmentRef(6);
+        std::vector<VkAttachmentReference> secondInAttachmentRef(5);
             secondInAttachmentRef.at(index).attachment = colorAttachments.size()+3;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
@@ -486,12 +508,6 @@ void graphics::createRenderPass()
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
             secondInAttachmentRef.at(index).attachment = colorAttachments.size()+6;
-            secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        index++;
-            secondInAttachmentRef.at(index).attachment = colorAttachments.size()+7;
-            secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        index++;
-            secondInAttachmentRef.at(index).attachment = colorAttachments.size()+8;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         //===========================subpass & dependency=========================================//
@@ -629,14 +645,22 @@ void graphics::createPipelines()
     second.createDescriptorSetLayout(app);
     second.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
     second.createUniformBuffers(app,image.Count);
+
+    storageBuffers.resize(image.Count);
+    storageBuffersMemory.resize(image.Count);
+    for (size_t i = 0; i < image.Count; i++)
+        createBuffer(app, sizeof(StorageBufferObject),
+                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                     storageBuffers[i], storageBuffersMemory[i]);
 }
 
-void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
+void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<light<spotLight> *> lightSource)
 {
-    std::array<VkClearValue, 9> clearValues{};
-        for(size_t i=0;i<8;i++)
+    std::array<VkClearValue, 7> clearValues{};
+        for(size_t i=0;i<6;i++)
             clearValues[i].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        clearValues[8].depthStencil = {1.0f, 0};
+        clearValues[6].depthStencil = {1.0f, 0};
 
     VkRenderPassBeginInfo drawRenderPassInfo{};
         drawRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -659,7 +683,7 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
 
     vkCmdNextSubpass(commandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
 
-        second.render(commandBuffers,i);
+        second.render(commandBuffers,i,lightSource);
 
     vkCmdEndRenderPass(commandBuffers[i]);
 }
@@ -679,10 +703,8 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
         memcpy(data, &baseUBO, sizeof(baseUBO));
     vkUnmapMemory(app->getDevice(), base.sceneUniformBuffersMemory[currentImage]);
 
-    SecondUniformBufferObject secondUBO{};
-        secondUBO.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
-    vkMapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage], 0, sizeof(secondUBO), 0, &data);
-        memcpy(data, &secondUBO, sizeof(secondUBO));
+    vkMapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
+        memcpy(data, &baseUBO, sizeof(baseUBO));
     vkUnmapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage]);
 }
 
@@ -721,9 +743,10 @@ void graphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mouse
     StorageBufferObject StorageUBO{};
         StorageUBO.mousePosition = mousePosition;
         StorageUBO.number = INT_FAST32_MAX;
-    vkMapMemory(app->getDevice(), second.storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
+        StorageUBO.depth = 1.0f;
+    vkMapMemory(app->getDevice(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
         memcpy(data, &StorageUBO, sizeof(StorageUBO));
-    vkUnmapMemory(app->getDevice(), second.storageBuffersMemory[currentImage]);
+    vkUnmapMemory(app->getDevice(), storageBuffersMemory[currentImage]);
 }
 
 uint32_t graphics::readStorageBuffer(uint32_t currentImage)
@@ -731,9 +754,9 @@ uint32_t graphics::readStorageBuffer(uint32_t currentImage)
     void* data;
 
     StorageBufferObject StorageUBO{};
-    vkMapMemory(app->getDevice(), second.storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
+    vkMapMemory(app->getDevice(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
         memcpy(&StorageUBO, data, sizeof(StorageUBO));
-    vkUnmapMemory(app->getDevice(), second.storageBuffersMemory[currentImage]);
+    vkUnmapMemory(app->getDevice(), storageBuffersMemory[currentImage]);
 
     return StorageUBO.number;
 }

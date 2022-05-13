@@ -56,15 +56,15 @@ vec4 radialBlur(sampler2D bloomSampler, vec2 TexCoord)
     return vec4(Color, 1.0);
 }
 
-//========================
-const float stepScale = 0.5;
-const float maxSteps = 30;
-const int numBinarySearchSteps = 10;
-const float eps = 0.000001;
+//======================== SSR ==========================================//
+const float stepScale = 1.0;
+const float maxSteps = 20;
+const int numBinarySearchSteps = 30;
 
 vec4 BinarySearch(vec3 reflectDir, vec3 hitCoord, mat4 view, mat4 proj);
 vec4 RayMarch(vec3 rayStep, vec3 hitCoord, mat4 view, mat4 proj);
-//=======================
+vec3 fresnelSchlick(float cosTheta, vec3 F0);
+//======================================================================//
 
 void main()
 {
@@ -77,11 +77,18 @@ void main()
     mat4 view		= global.view;
     mat4 proj		= global.proj;
 
-    vec4 result = RayMarch(reflectDir,pointPosition,view,proj);
-    if(result.w==1.0f){
-	if(result.x<1.0f&&result.x>0.0f&&result.y<1.0f&&result.y>0.0f)
-	outColor += texture(Sampler,result.xy);
-    }
+//    float metallic = texture(normal,fragTexCoord).a;
+//    vec3 F0 = vec3(0.004);
+//    F0      = mix(F0, texture(Sampler, fragTexCoord).xyz, metallic);
+//    vec3 Fresnel = fresnelSchlick(max(dot(normalize(pointNormal), normalize(pointPosition-pointOfView)), 0.0), F0);
+
+//    if(pointNormal.x!=0.0f&&pointNormal.y!=0.0f&&pointNormal.z!=0.0f){
+//	vec4 result = RayMarch(reflectDir,pointPosition,view,proj);
+//	if(result.w==1.0f){
+//	    if(result.x<1.0f&&result.x>0.0f&&result.y<1.0f&&result.y>0.0f)
+//		outColor += vec4(Fresnel,1.0f)*texture(Sampler,result.xy);
+//	}
+//    }
 
     outColor += texture(Sampler,fragTexCoord);
     outColor += blur(bloomSampler,fragTexCoord);
@@ -95,33 +102,39 @@ vec4 RayMarch(vec3 reflectDir, vec3 hitCoord, mat4 view, mat4 proj)
     vec4 depthProjectedCoord;
     vec4 rayProjectedCoord;
     float delta;
+    float deltaz;
 
     for(int i = 0; i < maxSteps; i++)
     {
 	hitCoord += rayStep;
 
 	rayProjectedCoord = proj * view * vec4(hitCoord, 1.0f);
+	deltaz = rayProjectedCoord.z;
 	rayProjectedCoord /= rayProjectedCoord.w;
 	rayProjectedCoord.xy = rayProjectedCoord.xy * 0.5f + 0.5f;
 
 	vec3 depthCoord = texture(position, rayProjectedCoord.xy).xyz;
 	depthProjectedCoord = proj * view * vec4(depthCoord, 1.0f);
+	deltaz -= depthProjectedCoord.z;
 	depthProjectedCoord /= depthProjectedCoord.w;
 
 	delta = depthProjectedCoord.z - rayProjectedCoord.z;
 
-	if(delta <= 0.0)
-	{
-	    if(dot(reflectDir, texture(normal,rayProjectedCoord.xy).xyz)>=-0.3f){
-		return vec4(rayProjectedCoord.xy, 0.0f, 0.0);
-	    }else{
-		return BinarySearch(rayStep, hitCoord, view, proj);
+	if(abs(deltaz)<1.0f){
+	    if(delta <= 0.0){
+		vec4 result;
+		if(dot(reflectDir, texture(normal,rayProjectedCoord.xy).xyz)>=-0.3f){
+		    result = vec4(rayProjectedCoord.xy, 0.0f, 0.0);
+		}else{
+		    result = BinarySearch(rayStep, hitCoord, view, proj);
+		}
+		return result;
 	    }
 	}
 
     }
 
-    return vec4(rayProjectedCoord.xy, 0.0f, 0.0);
+    return vec4(rayProjectedCoord.xy, 0.0f, 0.0f);
 }
 
 vec4 BinarySearch(vec3 rayStep, vec3 hitCoord, mat4 view, mat4 proj)
@@ -131,15 +144,18 @@ vec4 BinarySearch(vec3 rayStep, vec3 hitCoord, mat4 view, mat4 proj)
     vec4 depthProjectedCoord;
     vec4 rayProjectedCoord;
     vec3 dir = rayStep;
+    float deltaz;
 
     for(int i = 0; i < numBinarySearchSteps; i++)
     {
 	rayProjectedCoord = proj * view * vec4(hitCoord, 1.0f);
+	deltaz = rayProjectedCoord.z;
 	rayProjectedCoord /= rayProjectedCoord.w;
 	rayProjectedCoord.xy = rayProjectedCoord.xy * 0.5f + 0.5f;
 
 	vec3 depthCoord = texture(position, rayProjectedCoord.xy).xyz;
 	depthProjectedCoord = proj * view * vec4(depthCoord, 1.0f);
+	deltaz -= depthProjectedCoord.z;
 	depthProjectedCoord /= depthProjectedCoord.w;
 
 	delta = depthProjectedCoord.z - rayProjectedCoord.z;
@@ -155,17 +171,14 @@ vec4 BinarySearch(vec3 rayStep, vec3 hitCoord, mat4 view, mat4 proj)
     rayProjectedCoord /= rayProjectedCoord.w;
     rayProjectedCoord.xy = rayProjectedCoord.xy * 0.5f + 0.5f;
 
-    vec3 depthCoord = texture(position, rayProjectedCoord.xy).xyz;
-    depthProjectedCoord = proj * view * vec4(depthCoord, 1.0f);
-    depthProjectedCoord /= depthProjectedCoord.w;
-
-    delta = abs(depthProjectedCoord.z/rayProjectedCoord.z - 1.0f);
-
-    if(delta<eps){
-	rayProjectedCoord.w = 1.0f;
-    }else{
-	rayProjectedCoord.w = 0.0f;
-    }
+    if(deltaz>0.05f)
+	rayProjectedCoord.w=0.0f;
 
     return rayProjectedCoord;
 }
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+

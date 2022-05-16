@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 0, binding = 0) uniform sampler2D bloomSampler;
+layout(set = 0, binding = 0) uniform sampler2D bloomSampler[8];
 
 layout(location = 0) in vec2 fragTexCoord;
 
@@ -30,6 +30,33 @@ vec4 blur(sampler2D bloomSampler, vec2 TexCoord)
 
 void main()
 {
-    outColor = vec4(0.2f);
-    bloomColor = blur(bloomSampler,fragTexCoord);
+    outColor = vec4(0.0f);
+    bloomColor = vec4(0.0f);
+
+
+        float delta[8] = float[](0.0f,1.0f,2.0f,4.0f,8.0f,16.0f,32.0f,64.0f);
+	for(int i=0;i<8;i++){
+	    vec2 textel = 1.0f / textureSize(bloomSampler[i], 0);
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-2.0f*textel.x,-2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-1.0f*textel.x,-2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-2.0f*textel.x,-1.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-1.0f*textel.x,-1.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-2.0f*textel.x, 2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-1.0f*textel.x, 2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-2.0f*textel.x, 1.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2(-1.0f*textel.x, 1.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 2.0f*textel.x,-2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 1.0f*textel.x,-2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 2.0f*textel.x,-1.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 1.0f*textel.x,-1.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 2.0f*textel.x, 2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 1.0f*textel.x, 2.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 2.0f*textel.x, 1.0f*textel.y)));
+	    bloomColor += texture(bloomSampler[i],(fragTexCoord + 1.0f * vec2( 1.0f*textel.x, 1.0f*textel.y)));
+	}
+	bloomColor /= 8.0f*12.0f;
+
+//    for(int i=0;i<8;i++){
+//	bloomColor += blur(bloomSampler[i],fragTexCoord);
+//    }
 }

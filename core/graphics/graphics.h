@@ -319,6 +319,11 @@ private:
     uint32_t                            AttachmentCount = 1;
     std::vector<attachments>            Attachments;
 
+    std::vector<attachments>            downAttachment;
+    uint32_t miplevels = 8;
+    std::vector<VkSampler>              samplers;
+    std::vector<attachments>            blitAttachment;
+
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
 
@@ -364,6 +369,8 @@ public:
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
 
+    std::vector<attachments>        & getDownAttachments();
+    std::vector<attachments>        & getBlitAttachments();
     VkSwapchainKHR                  & SwapChain();
     VkFormat                        & SwapChainImageFormat();
     VkExtent2D                      & SwapChainImageExtent();

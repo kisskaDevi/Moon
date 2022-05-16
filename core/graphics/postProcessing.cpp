@@ -31,6 +31,17 @@ void postProcessing::destroy()
         Attachments.at(i).deleteSampler(&app->getDevice());
     }
 
+    for(size_t i=0; i<downAttachment.size(); i++){
+        downAttachment[i].deleteAttachment(&app->getDevice());
+    }
+
+    for(size_t i=0; i<blitAttachment.size(); i++){
+        blitAttachment[i].deleteAttachment(&app->getDevice());
+    }
+    for(size_t i=0; i<samplers.size(); i++){
+        vkDestroySampler(app->getDevice(),samplers[i],nullptr);
+    }
+
     for(size_t i=0; i<swapChainAttachments.size(); i++)
         for(size_t image=0; image <imageCount;image++)
             vkDestroyImageView(app->getDevice(),swapChainAttachments.at(i).imageView[image],nullptr);
@@ -209,6 +220,110 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
             if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
                 throw std::runtime_error("failed to create postProcessing sampler!");
         }
+
+        downAttachment.resize(6);
+        for(uint32_t i=0;i<downAttachment.size();i++){
+            downAttachment[i].resize(imageCount);
+            for(size_t image=0; image<imageCount; image++)
+            {
+                createImage(app,swapChainExtent.width,swapChainExtent.height,1,VK_SAMPLE_COUNT_1_BIT,swapChainImageFormat,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, downAttachment[i].image[image], downAttachment[i].imageMemory[image]);
+                downAttachment[i].imageView[image] = createImageView(app, downAttachment[i].image[image], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+                VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
+
+                VkImageMemoryBarrier barrier{};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;                      //Первые два поля определяют переход макета.
+                barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;           //Можно использовать так, VK_IMAGE_LAYOUT_UNDEFINED как oldLayout будто вас не волнует существующее содержимое изображения.
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Если вы используете барьер для передачи владения семейством очередей, то эти два поля должны быть индексами семейств очередей.
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Они должны быть установлены на, VK_QUEUE_FAMILY_IGNORED если вы не хотите этого делать (не значение по умолчанию!).
+                barrier.image = downAttachment[i].image[image];                                              //изображение, на которое влияют
+                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;    //и конкретную часть изображения
+                barrier.subresourceRange.baseMipLevel = 0;                          //Наше изображение не является массивом,
+                barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;                    //поэтому указаны только один уровень и слой.
+                barrier.subresourceRange.baseArrayLayer = 0;
+                barrier.subresourceRange.layerCount = 1;
+                barrier.srcAccessMask = 0;
+                barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+                vkCmdPipelineBarrier(
+                    commandBuffer,                  //Первый параметр после буфера команд указывает, на каком этапе конвейера выполняются операции, которые должны произойти до барьера.
+                    sourceStage, destinationStage,  //Второй параметр указывает этап конвейера, на котором операции будут ожидать на барьере. Третий параметр - либо 0 или VK_DEPENDENCY_BY_REGION_BIT. Последнее превращает барьер в состояние для каждой области.
+                    0,
+                    0, nullptr,
+                    0, nullptr,
+                    1, &barrier
+                );
+
+                endSingleTimeCommands(app, commandBuffer);
+            }
+        }
+
+        blitAttachment.resize(1);
+        for(uint32_t i=0;i<blitAttachment.size();i++){
+            blitAttachment[i].resize(imageCount);
+            for(size_t image=0; image<imageCount; image++)
+            {
+                createImage(app,swapChainExtent.width,swapChainExtent.height,miplevels,VK_SAMPLE_COUNT_1_BIT,swapChainImageFormat,VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, blitAttachment[i].image[image], blitAttachment[i].imageMemory[image]);
+                blitAttachment[i].imageView[image] = createImageView(app, blitAttachment[i].image[image], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
+
+                VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
+
+                VkImageMemoryBarrier barrier{};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;       //Первые два поля определяют переход макета.
+                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;           //Можно использовать так, VK_IMAGE_LAYOUT_UNDEFINED как oldLayout будто вас не волнует существующее содержимое изображения.
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Если вы используете барьер для передачи владения семейством очередей, то эти два поля должны быть индексами семейств очередей.
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Они должны быть установлены на, VK_QUEUE_FAMILY_IGNORED если вы не хотите этого делать (не значение по умолчанию!).
+                barrier.image = blitAttachment[i].image[image];                                              //изображение, на которое влияют
+                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;    //и конкретную часть изображения
+                barrier.subresourceRange.baseMipLevel = 0;                          //Наше изображение не является массивом,
+                barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;                    //поэтому указаны только один уровень и слой.
+                barrier.subresourceRange.baseArrayLayer = 0;
+                barrier.subresourceRange.layerCount = 1;
+                barrier.srcAccessMask = 0;
+                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+                vkCmdPipelineBarrier(
+                    commandBuffer,                  //Первый параметр после буфера команд указывает, на каком этапе конвейера выполняются операции, которые должны произойти до барьера.
+                    sourceStage, destinationStage,  //Второй параметр указывает этап конвейера, на котором операции будут ожидать на барьере. Третий параметр - либо 0 или VK_DEPENDENCY_BY_REGION_BIT. Последнее превращает барьер в состояние для каждой области.
+                    0,
+                    0, nullptr,
+                    0, nullptr,
+                    1, &barrier
+                );
+
+                endSingleTimeCommands(app, commandBuffer);
+            }
+        }
+
+        samplers.resize(miplevels);
+        for(size_t i=0; i<miplevels; i++)
+        {
+            VkSamplerCreateInfo SamplerInfo{};
+                SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+                SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+                SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+                SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+                SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+                SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+                SamplerInfo.anisotropyEnable = VK_TRUE;
+                SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+                SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+                SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+                SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+                SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+                SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+                SamplerInfo.minLod = static_cast<float>(i);
+                SamplerInfo.maxLod = static_cast<float>(miplevels);
+                SamplerInfo.mipLodBias = 0.0f;
+            if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &samplers[i]) != VK_SUCCESS)
+                throw std::runtime_error("failed to create postProcessing sampler!");
+        }
     }
 
 //=======================================RenderPass======================//
@@ -351,7 +466,7 @@ void postProcessing::createPipelines()
 
         std::array<VkDescriptorSetLayoutBinding,1> firstBindings{};
             firstBindings[index].binding = 0;
-            firstBindings[index].descriptorCount = 1;
+            firstBindings[index].descriptorCount = static_cast<uint32_t>(miplevels);
             firstBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             firstBindings[index].pImmutableSamplers = nullptr;
             firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -681,9 +796,11 @@ void postProcessing::createPipelines()
 void postProcessing::createDescriptorPool()
 {
     size_t index = 0;
-    std::array<VkDescriptorPoolSize,1> firstPoolSizes;
+    std::array<VkDescriptorPoolSize,8> firstPoolSizes;
+    for(uint32_t i=0;i<firstPoolSizes.size();i++,index++){
         firstPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         firstPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+    }
     VkDescriptorPoolCreateInfo firstPoolInfo{};
         firstPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         firstPoolInfo.poolSizeCount = static_cast<uint32_t>(firstPoolSizes.size());
@@ -732,19 +849,22 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
     for (size_t image = 0; image < imageCount; image++)
     {
         uint32_t index = 0;
-
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-        std::array<VkDescriptorImageInfo, 1> imageInfo;
+        std::array<VkDescriptorImageInfo, 8> imageInfo;
+        for(uint32_t i=0;i<imageInfo.size();i++,index++){
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments[1].imageView[image];
-            imageInfo[index].sampler = Attachments[1].sampler;
+            imageInfo[index].imageView = blitAttachment[0].imageView[image];
+            imageInfo[index].sampler = samplers[i];
+        }
+
+        index = 0;
+        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = first.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &imageInfo[index];
+            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(imageInfo.size());
+            descriptorWrites[index].pImageInfo = imageInfo.data();
         vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
@@ -860,6 +980,8 @@ void postProcessing::render(std::vector<VkCommandBuffer> &commandBuffers, uint32
     vkCmdEndRenderPass(commandBuffers[i]);
 }
 
+std::vector<attachments>        &postProcessing::getDownAttachments(){return downAttachment;}
+std::vector<attachments>        &postProcessing::getBlitAttachments(){return blitAttachment;}
 VkSwapchainKHR                  &postProcessing::SwapChain(){return swapChain;}
 uint32_t                        &postProcessing::SwapChainImageCount(){return imageCount;}
 VkFormat                        &postProcessing::SwapChainImageFormat(){return swapChainImageFormat;}

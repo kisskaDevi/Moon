@@ -22,9 +22,9 @@ const float pi = 3.141592653589793f;
 vec4 blur(sampler2D Sampler, vec2 TexCoord)
 {
     float sigma = 2.0 * textureSize(Sampler, 0).y;
-    vec2 textel = 1.0 / textureSize(Sampler, 0);
+    vec2 textel = 2.0 / textureSize(Sampler, 0);
     vec3 Color = texture(Sampler, TexCoord).xyz /sqrt(pi*sigma);
-    int h = 20;
+    int h = 10;
     float Norm = 1.0f/sqrt(pi*sigma);
     for(int i=-h;i<h+1;i+=2)
     {
@@ -90,8 +90,8 @@ void main()
 //	}
 //    }
 
-    outColor += texture(Sampler,fragTexCoord);
-    outColor += blur(bloomSampler,fragTexCoord);
+    //outColor += texture(Sampler,fragTexCoord);
+    outColor += texture(bloomSampler,fragTexCoord);
 }
 
 vec4 RayMarch(vec3 reflectDir, vec3 hitCoord, mat4 view, mat4 proj)

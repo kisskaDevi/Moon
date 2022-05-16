@@ -46,10 +46,31 @@ void createImage(
         VkImage&                        image,
         VkDeviceMemory&                 imageMemory);
 
+void createImage(
+        VkApplication*                  app,
+        uint32_t                        width,
+        uint32_t                        height,
+        uint32_t                        mipLevels,
+        VkSampleCountFlagBits           numSamples,
+        VkFormat                        format,
+        VkImageTiling                   tiling,
+        VkImageUsageFlags               usage,
+        VkMemoryPropertyFlags           properties,
+        VkImageLayout                   layout,
+        VkImage&                        image,
+        VkDeviceMemory&                 imageMemory);
+
 void generateMipmaps(
         VkApplication*                  app,
         VkImage                         image,
         VkFormat                        imageFormat,
+        int32_t                         texWidth,
+        int32_t                         texHeight,
+        uint32_t                        mipLevels);
+
+void generateMipmaps(
+        VkCommandBuffer*                commandBuffer,
+        VkImage                         image,
         int32_t                         texWidth,
         int32_t                         texHeight,
         uint32_t                        mipLevels);

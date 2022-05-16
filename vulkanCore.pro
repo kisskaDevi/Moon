@@ -52,6 +52,7 @@ DISTFILES += \
 
 SOURCES += \
     core/graphics/attachments.cpp \
+    core/graphics/customfilter.cpp \
     core/graphics/source/base.cpp \
     core/graphics/source/extension.cpp \
     core/graphics/source/second.cpp \
@@ -74,6 +75,7 @@ SOURCES += \
 
 HEADERS += \
     core/graphics/attachments.h \
+    core/graphics/customfilter.h \
     core/graphics/graphics.h \
     core/graphics/shadowGraphics.h \
     core/transformational/transformational.h \

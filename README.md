@@ -26,6 +26,9 @@
 * Создание MIP-карт.
 * Скайбокс
 
+* Эффект свечения за счёт понижения разрешения изображения
+<img src="./screenshots/screenshot3.PNG" width="1000px">
+
 * Отложенный рендеринг (за счёт подпроходов рендера)
 
 <img src="./screenshots/screenshot5.PNG" width="400px"> <img src="./screenshots/screenshot6.PNG" width="400px">

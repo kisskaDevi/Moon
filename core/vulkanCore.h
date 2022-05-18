@@ -19,6 +19,7 @@ template <> class light<spotLight>;
 #include <set>
 
 #include "graphics/graphics.h"
+#include "graphics/customfilter.h"
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
@@ -107,6 +108,7 @@ private:
     uint32_t                                    imageCount;
 
     graphics                                    Graphics;
+    customFilter                                Filter;
     postProcessing                              PostProcessing;
 
     std::vector<VkCommandPool>                  commandPool;

@@ -23,7 +23,8 @@ layout (push_constant) uniform LightPushConst
 } lightPC;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outBloom;
+layout(location = 1) out vec4 outBlur;
+layout(location = 2) out vec4 outBloom;
 
 struct attenuation{
     float C;
@@ -92,6 +93,7 @@ void main()
     float depth = subpassLoad(inPositionTexture).a;
 
     outColor = vec4(0.0f,0.0f,0.0f,1.0f);
+    outBlur = vec4(0.0f,0.0f,0.0f,1.0f);
     outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
 
     shadingType0();

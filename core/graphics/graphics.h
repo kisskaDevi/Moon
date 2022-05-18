@@ -8,7 +8,7 @@
 #include <libs/glm/glm/glm.hpp>
 #include <libs/glm/glm/gtc/matrix_transform.hpp>
 
-#include <optional>         // нужна для вызова std::optional<uint32_t>
+#include <optional> // нужна для вызова std::optional<uint32_t>
 #include "attachments.h"
 
 class                               VkApplication;
@@ -319,10 +319,8 @@ private:
     uint32_t                            AttachmentCount = 1;
     std::vector<attachments>            Attachments;
 
-    std::vector<attachments>            downAttachment;
-    uint32_t miplevels = 8;
-    std::vector<VkSampler>              samplers;
-    std::vector<attachments>            blitAttachment;
+    std::vector<attachments>            blitAttachments;
+    attachments                         blitAttachment;
 
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
@@ -369,8 +367,8 @@ public:
 
     void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
 
-    std::vector<attachments>        & getDownAttachments();
     std::vector<attachments>        & getBlitAttachments();
+    attachments                     & getBlitAttachment();
     VkSwapchainKHR                  & SwapChain();
     VkFormat                        & SwapChainImageFormat();
     VkExtent2D                      & SwapChainImageExtent();

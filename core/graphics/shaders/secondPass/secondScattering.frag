@@ -30,7 +30,8 @@ layout (push_constant) uniform LightPushConst
 } lightPC;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outBloom;
+layout(location = 1) out vec4 outBlur;
+layout(location = 2) out vec4 outBloom;
 
 struct attenuation{
     float C;
@@ -225,7 +226,7 @@ void LightScattering(int steps)
 		    float len = length(lightPosition - pointOfScattering);
 		    attenuation K = getK(len);
 		    float lightDrop = K.C+K.L*len+K.Q*len*len;
-		    outBloom += ComputeScattering( dot( eyeDirection, vector.lightDirection), 0.0f ) * color/lightDrop;
+		    outBlur += ComputeScattering( dot( eyeDirection, vector.lightDirection), 0.0f ) * color/lightDrop;
 		}
 	    }
 	}
@@ -257,6 +258,7 @@ void main()
     depthMap = subpassLoad(inPositionTexture).a;
 
     outColor = vec4(.0f,0.0f,0.0f,1.0f);
+    outBlur = vec4(0.0f,0.0f,0.0f,1.0f);
     outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
 
     shadingType0();

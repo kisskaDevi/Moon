@@ -311,6 +311,74 @@ void createImage(VkApplication* app, uint32_t width, uint32_t height, uint32_t m
     vkBindImageMemory(app->getDevice(), image, imageMemory, 0);
 }
 
+void transitionImageLayout(VkCommandBuffer* commadBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
+{
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;                                      //Первые два поля определяют переход макета.
+    barrier.newLayout = newLayout;                                      //Можно использовать так, VK_IMAGE_LAYOUT_UNDEFINED как oldLayout будто вас не волнует существующее содержимое изображения.
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Если вы используете барьер для передачи владения семейством очередей, то эти два поля должны быть индексами семейств очередей.
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;              //Они должны быть установлены на, VK_QUEUE_FAMILY_IGNORED если вы не хотите этого делать (не значение по умолчанию!).
+    barrier.image = image;                                              //изображение, на которое влияют
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;    //и конкретную часть изображения
+    barrier.subresourceRange.baseMipLevel = 0;                          //Наше изображение не является массивом,
+    barrier.subresourceRange.levelCount = mipLevels;                    //поэтому указаны только один уровень и слой.
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+
+    // Нам нужно обработать два перехода:
+    //  * Не определено → пункт назначения передачи: передача пишет, что ничего не нужно ждать
+    //  * Пункт назначения передачи → чтение шейдера: чтение шейдера должно ждать записи передачи,
+    //   в частности, шейдер читает во фрагментном шейдере, потому что именно там мы собираемся использовать текстуру.*/
+
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else if(oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL){
+        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL){
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else{
+        throw std::invalid_argument("unsupported layout transition!");
+    }
+
+    /* Барьеры в основном используются для целей синхронизации, поэтому вы должны указать, какие типы операций с ресурсом
+     * должны выполняться до барьера, а какие операции, связанные с ресурсом, должны ждать на барьере.
+     * Нам нужно это сделать, несмотря на то, что мы уже используем vkQueueWaitIdle синхронизацию вручную.
+     * Правильные значения зависят от старого и нового макета, поэтому мы вернемся к этому, когда выясним,
+     * какие переходы мы собираемся использовать.*/
+
+    vkCmdPipelineBarrier(
+        *commadBuffer,                  //Первый параметр после буфера команд указывает, на каком этапе конвейера выполняются операции, которые должны произойти до барьера.
+        sourceStage, destinationStage,  //Второй параметр указывает этап конвейера, на котором операции будут ожидать на барьере. Третий параметр - либо 0 или VK_DEPENDENCY_BY_REGION_BIT. Последнее превращает барьер в состояние для каждой области.
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+}
+
 void transitionImageLayout(VkApplication* app, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
 {
     static_cast<void>(format);
@@ -350,7 +418,14 @@ void transitionImageLayout(VkApplication* app, VkImage image, VkFormat format, V
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }else{
+    } else if(oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL){
+        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else{
         throw std::invalid_argument("unsupported layout transition!");
     }
 
@@ -370,6 +445,48 @@ void transitionImageLayout(VkApplication* app, VkImage image, VkFormat format, V
     );
 
     endSingleTimeCommands(app, commandBuffer);
+}
+
+void blitDown(VkCommandBuffer* commandBuffer, VkImage srcImage, VkImage dstImage, uint32_t width, uint32_t height)
+{
+    VkImageBlit blit{};
+        blit.srcOffsets[0] = {0, 0, 0};
+        blit.srcOffsets[1] = {static_cast<int32_t>(width),static_cast<int32_t>(height),1};
+        blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.srcSubresource.mipLevel = 0;
+        blit.srcSubresource.baseArrayLayer = 0;
+        blit.srcSubresource.layerCount = 1;
+        blit.dstOffsets[0] = {0, 0, 0};
+        blit.dstOffsets[1] = {static_cast<int32_t>(width/1.5f),static_cast<int32_t>(height/1.5f),1};
+        blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.dstSubresource.mipLevel = 0;
+        blit.dstSubresource.baseArrayLayer = 0;
+        blit.dstSubresource.layerCount = 1;
+    vkCmdBlitImage(*commandBuffer,
+                    srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1, &blit, VK_FILTER_LINEAR);
+}
+
+void blitUp(VkCommandBuffer* commandBuffer, VkImage srcImage, VkImage dstImage, uint32_t width, uint32_t height)
+{
+    VkImageBlit blit{};
+        blit.srcOffsets[0] = {0, 0, 0};
+        blit.srcOffsets[1] = {static_cast<int32_t>(width/1.5f),static_cast<int32_t>(height/1.5f),1};
+        blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.srcSubresource.mipLevel = 0;
+        blit.srcSubresource.baseArrayLayer = 0;
+        blit.srcSubresource.layerCount = 1;
+        blit.dstOffsets[0] = {0, 0, 0};
+        blit.dstOffsets[1] = {static_cast<int32_t>(width),static_cast<int32_t>(height),1};
+        blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.dstSubresource.mipLevel = 0;
+        blit.dstSubresource.baseArrayLayer = 0;
+        blit.dstSubresource.layerCount = 1;
+    vkCmdBlitImage(*commandBuffer,
+                    srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1, &blit, VK_FILTER_LINEAR);
 }
 
 void copyBufferToImage(VkApplication* app, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)

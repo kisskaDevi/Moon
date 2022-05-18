@@ -141,7 +141,7 @@ void graphics::Second::createPipeline(VkApplication *app, graphicsInfo info)
         multisampling.alphaToCoverageEnable = VK_FALSE;
         multisampling.alphaToOneEnable = VK_FALSE;
 
-    std::array<VkPipelineColorBlendAttachmentState,2> colorBlendAttachment;
+    std::array<VkPipelineColorBlendAttachmentState,3> colorBlendAttachment;
     for(uint32_t index=0;index<colorBlendAttachment.size();index++)
     {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -350,7 +350,7 @@ void graphics::updateSecondDescriptorSets(const std::vector<light<spotLight>*> &
         for(index = 0; index<4;index++)
         {
             imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.at(index).imageView = Attachments.at(2+index).imageView.at(i);
+            imageInfo.at(index).imageView = Attachments.at(3+index).imageView.at(i);
             imageInfo.at(index).sampler = VK_NULL_HANDLE;
         }
         VkDescriptorBufferInfo lightBufferInfo{};

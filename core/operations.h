@@ -83,6 +83,28 @@ void transitionImageLayout(
         VkImageLayout                   newLayout,
         uint32_t                        mipLevels);
 
+
+void transitionImageLayout(
+        VkCommandBuffer*                commandBuffer,
+        VkImage                         image,
+        VkImageLayout                   oldLayout,
+        VkImageLayout                   newLayout,
+        uint32_t                        mipLevels);
+
+void blitDown(
+        VkCommandBuffer*                commandBuffer,
+        VkImage                         srcImage,
+        VkImage                         dstImage,
+        uint32_t                        width,
+        uint32_t                        height);
+
+void blitUp(
+        VkCommandBuffer*                commandBuffer,
+        VkImage                         srcImage,
+        VkImage                         dstImage,
+        uint32_t                        width,
+        uint32_t                        height);
+
 void copyBufferToImage(
         VkApplication*                  app,
         VkBuffer                        buffer,

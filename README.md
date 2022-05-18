@@ -15,7 +15,7 @@ This application makes render of scene by Vulkan API and contains some modern gr
 * Spot and point light sources with shadows.
 * Reneder in several attachments.
 * Two pass render - first pass draw and shade scene, second pass is post processing.
-* glTF models render based on [repository of Sascha Willems](https://github.com/SaschaWillems/Vulkan-glTF-PBR), переработанного под данную реализацию приложения Vulkan.
+* glTF models render based on [repository of Sascha Willems](https://github.com/SaschaWillems/Vulkan-glTF-PBR), redesigned for this implementation of the Vulkan application.
 * Animations and linear interpolation between Animations
 <img src="./screenshots/Vulkan.gif" width="1000px">
 

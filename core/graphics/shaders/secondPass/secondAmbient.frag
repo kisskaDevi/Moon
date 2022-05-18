@@ -32,11 +32,6 @@ struct attenuation{
     float Q;
 };
 
-struct shadowInfo{
-    float factor;
-    float areaFactor;
-};
-
 struct Vector{
     vec3 eyeDirection;
     vec3 lightDirection;

@@ -96,11 +96,11 @@ void main()
     outColor += blur(blurSampler,fragTexCoord);
 
     vec4 bloomColor = vec4(0.0f);
-    float c = 1.0f/1.5f;
+    float blit = 1.0f/1.5f;
     for(int i=0;i<8;i++){
-	vec2 coord = fragTexCoord*c;
-	bloomColor += texture(bloomSampler[i],coord)*exp(0.01*(i+1)*(i+1));
-	c/=1.5f;
+	vec2 coord = fragTexCoord*blit;
+	bloomColor += texture(bloomSampler[i],coord)*exp(0.01*i*i);
+	blit/=1.5f;
     }
     bloomColor /= 3.0f;
     outColor += bloomColor;

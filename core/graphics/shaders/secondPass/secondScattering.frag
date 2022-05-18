@@ -39,11 +39,6 @@ struct attenuation{
     float Q;
 };
 
-struct shadowInfo{
-    float factor;
-    float areaFactor;
-};
-
 struct Vector{
     vec3 eyeDirection;
     vec3 lightDirection;
@@ -63,7 +58,7 @@ float depthMap;
 
 //===================================================functions====================================================================//
 bool outsideSpotCondition(vec3 lightSpaceNDC, float type);
-shadowInfo	shadowFactor(int i);
+float		shadowFactor(int i);
 vec4		SRGBtoLINEAR(vec4 srgbIn);
 vec3		specularReflection(vec3 specularEnvironmentR0, vec3 specularEnvironmentR90, float VdotH);
 float		geometricOcclusion(float NdotL, float NdotV, float r);
@@ -168,8 +163,7 @@ void outImage1()
 	attenuation K = getK(len);
 	float lightDrop = K.C+K.L*len+K.Q*len*len;
 	lightDrop/=10.0f;
-	shadowInfo sInfo = shadowFactor(lightPC.number);
-	float lightPower = sInfo.factor;
+	float lightPower = shadowFactor(lightPC.number);
 	if(lightPower>minAmbientFactor)
 	{
 	    lightPower = lightPowerFactor * lightPower;
@@ -201,7 +195,7 @@ void outImage1()
 
 //	    vec4 rayColor = vec4(0.0f,0.0f,0.0f,0.0f);
 //	    vec3 pm = findMirrorVector(eyePosition.xyz,position.xyz,normal);
-//	    rayColor += sInfo.areaFactor * planeIntersection(pm,position.xyz,lightPosition,1.0f,light.ubo[i].proj,light.ubo[i].view)*lightColor/lightDrop;
+//	    rayColor += planeIntersection(pm,position.xyz,lightPosition,1.0f,light.ubo[i].proj,light.ubo[i].view)*lightColor/lightDrop;
 //	    rayColor *= metallic;
 //	    outColor = vec4(max(rayColor.r,outColor.r),max(rayColor.g,outColor.g),max(rayColor.b,outColor.b), baseColor.a);
 
@@ -226,7 +220,7 @@ void LightScattering(int steps)
 		    float len = length(lightPosition - pointOfScattering);
 		    attenuation K = getK(len);
 		    float lightDrop = K.C+K.L*len+K.Q*len*len;
-		    outBlur += ComputeScattering( dot( eyeDirection, vector.lightDirection), 0.0f ) * color/lightDrop;
+		    outBlur += ComputeScattering( dot( eyeDirection, vector.lightDirection), 0.0f ) * color/lightDrop/lightDrop;
 		}
 	    }
 	}
@@ -274,7 +268,7 @@ bool outsideSpotCondition(vec3 lightSpaceNDC, float type)
 	return abs(lightSpaceNDC.x) > 1.0f || abs(lightSpaceNDC.y) > 1.0f || abs(lightSpaceNDC.z) > 1.0f;
 }
 
-shadowInfo shadowFactor(int i)
+float shadowFactor(int i)
 {
     vec3 lightSpaceNDC = fragLightPosition.xyz;
     lightSpaceNDC /= fragLightPosition.w;
@@ -297,22 +291,12 @@ shadowInfo shadowFactor(int i)
 
 	textureLightColor += texture(lightTexture[i], shadowMapCoord.xy);
 
-    shadowInfo info;
-    if(outsideSpotCondition(lightSpaceNDC,type))
-    {
-	info.factor = minAmbientFactor;
-	if(type==0.0f)
-	    info.areaFactor = minAmbientFactor;
-	else
-	    info.areaFactor = 1.0f - shadowSample;
-    }else{
-	if(1.0f - shadowSample<minAmbientFactor)
-	    info.factor = minAmbientFactor;
-	else
-	    info.factor = 1.0f - shadowSample;
-	info.areaFactor = 1.0f - shadowSample;
-    }
-    return info;
+    float factor = minAmbientFactor;
+    if(!outsideSpotCondition(lightSpaceNDC,type))
+	if(1.0f - shadowSample>minAmbientFactor)
+	    factor = 1.0f - shadowSample;
+
+    return factor;
 }
 
 vec4 SRGBtoLINEAR(vec4 srgbIn)

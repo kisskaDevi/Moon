@@ -2,59 +2,58 @@
 
 <img src="./screenshots/screenshot2.PNG" width="1000px"> <img src="./screenshots/screenshot1.PNG" width="1000px">
 
-## Что это
+## About
 
-Данное приложение осуществляет рендеринг сцены с помощью Vulkan API. Основные файлы с кодом лежат в папке core, сторонние библиотеки лежат в папке libs, дополнительные ресурсы в виде моделей и текстур находятся в папках model и texture соответственно. Проект выполнен в Qt Creator.
+This application makes render of scene by Vulkan API and contains some modern graphics effects, which I will give below.
 
-## Схема приложения
+## Application scheme
 <img src="./screenshots/scheme.png" width="1000px">
 
-## Что реализовано
+## Content
 
-* Базовая отрисовка 3D геометрии. Текстурирование.
-* Освещение прожекторными и точечными источниками.
-* Мягкие тени.
-* Отрисовка в различные цветовые прикрепления.
-* Многопроходный рендеринг. В частности осуществляется 2 прохода - в первом осуществляется отрисовка моделей, во втором - работа над изображением, например, размытие по Гауссу.
-* Рендер glTF моделей на основе [загрузчика glTF](https://github.com/SaschaWillems/Vulkan-glTF-PBR), переработанного под данную реализацию приложения Vulkan.
-* Анимация. Линейная интерполяция между анимациями (На картинке передняя пчела плавно меняет свою анимацию на анимацию полёта, как у задней пчелы, и обратно)
+* Base render of 3D geometry and texturing.
+* Spot and point light sources with shadows.
+* Reneder in several attachments.
+* Two pass render - first pass draw and shade scene, second pass is post processing.
+* glTF models render based on [repository of Sascha Willems](https://github.com/SaschaWillems/Vulkan-glTF-PBR), переработанного под данную реализацию приложения Vulkan.
+* Animations and linear interpolation between Animations
 <img src="./screenshots/Vulkan.gif" width="1000px">
 
-* Группировка объектов (в том числе источников света и камеры) и управление группами.
-* Поддержка нескольких буферов кадра
-* Мультисемплинг.
-* Создание MIP-карт.
-* Скайбокс
+* Groups of objects, light sources, camera and groups manipulations.
+* Using three frame buffers.
+* MSAA.
+* MIP-maps.
+* Skybox
 
-* Эффект свечения за счёт понижения разрешения изображения
+* Bloom by bliting of source image
 <img src="./screenshots/screenshot3.PNG" width="1000px">
 
-* Отложенный рендеринг (за счёт подпроходов рендера)
+* deferred render by subpasses
 
 <img src="./screenshots/screenshot5.PNG" width="400px"> <img src="./screenshots/screenshot6.PNG" width="400px">
 <img src="./screenshots/screenshot7.PNG" width="400px"> <img src="./screenshots/screenshot8.PNG" width="400px">
 
-* Объёмный свет
+* Volumetric light
 <img src="./screenshots/screenshot4.PNG" width="1000px">
 
 * Screen Space Local Reflections
 <img src="./screenshots/screenshot9.PNG" width="1000px">
 
-* Использование трафаретного буфера для выделения объектов (возможность включать и выключать выделение) 
+* Using stencil buffer for highlighting objects
 <img src="./screenshots/stencil.gif" width="1000px">
 
-* Прототип обьёмных источников света (сферические источники, плоскости)
+* Prototype of area light (sphere sources and surfaces)
 <img src="./screenshots/areaLight.gif" width="1000px">
 
-* Буфер, который можно считывать со стороны CPU, благодаря чему можно распознавать объекты под курсором
-* Простая физика объектов
+* Store buffer, which can be readen by CPU, for example, I used it for detect object under cursor
+* Simple physics
 <img src="./screenshots/collisions.gif" width="1000px">
 
-## Оптимизация
+## Optimization
 
-Для каждого источника света выделен свой отдельный vkCmdDraw, в котором рисуется пирамида (её внутренняя поверхность), соответствующая его матрицам проекции и вида. Далее фрагментный шейдер проходит только по фрагментам пирамиды, соответствующей этому источнику, таким образом не “освещая” те фрагменты, на которые точно не падает свет. Результаты каждого прохода смешиваются, выбирая максимальный цвет. Мы имеем изображение, в котором отрисованы и окрашены все видимые конусы света. Для хорошего результата, следует сделать финальный проход, в котором мы просто зададим амбиентное освещение всего окружения, которое не попало ни в один конус. 
+I use a single vkCmdDraw for each light sources, in which every single pass draw inside surface of piramid, corresponded projection and view matrixes of light source. Fragment shader works only with pyramid fragments of this light point. We do not shade points out of light volume by this way. Results of every light pass is blended in attachment using function of maximum. We have image with lighted fragments of pyramids. For normal result I do final pass of ambient light. It fills fragments which outs of light pyramids.
 <img src="./screenshots/screenshot11.PNG" width="400px"> <img src="./screenshots/screenshot12.PNG" width="400px">
 
-В итоге мы имеем то же самое изображение отложенного освещения, но рисуется оно гораздо быстрее. Так же разделение отрисовки отдельным vkCmdDraw для каждого источника света, позволяет задать различные конвейеры и соответственно шейдеры для источников света. Это позволяет рендерить различные эффекты для разных типов освещения без вреда производительности, например, для некоторых источников можно задать рассеяние света в среде (объёмный свет) или не рисовать тени. Таким образом, вместо ветвлений логики шейдера, ухудшающих производительность, можно написать много шейдеров для разных типов света, избавляя машину от лишних вычислений. Так же визуализация конусов оптимизирует отрисовку объёмного освещения – точки конуса служат очень точным ориентиром для реймарчинга, поэтому вместо использования точек окружения или танцев с бубном вокруг модельной и видовой матрицы камеры, мы можем просто шагать к каждой точке конуса вдоль направления луча, собирая свет от точек, попавших внутрь конуса. Получающийся результат является очень приличным. Немного цифр – до оптимизации моя мобильная GTX 1050 выдавала 20-22 fps для 10 источников света, 4 из которых рассеивали свет. После оптимизации я получаю 35-70 fps в зависимости от того сколько конусов попадает в поле зрения, среднее значение около 60. Данный метод позволяет менее болезненно добавлять новые источники. Так сцена с +10 дополнительными источниками света с рассеиванием даёт примерно те же 40-60fps. Всё зависит в действительности не от того какое количество источников есть в сцене, а то сколько освещённых фрагментов попадает в поле зрения.
+Eventually we have same image of deferred render, but calculations are more fast. Also differentiation of light sources calculations lets using various pipelines and shaders for every light source. It lets us render variose effects without performance drop. In fact performance depends on count of shaded fragments and do not depend on light sources count.
 
 

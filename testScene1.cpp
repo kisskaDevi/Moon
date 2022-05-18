@@ -282,7 +282,7 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
 {
     int index = 0;
     lightPoint.push_back(new light<pointLight>(app,lightSource));
-    lightPoint.at(0)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    lightPoint.at(0)->setLightColor(glm::vec4(0.2f,0.4f,1.0f,1.0f));
     groups.at(0)->addObject(lightPoint.at(0));
 
     for(int i=index;i<6;i++,index++){
@@ -410,7 +410,7 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
 
     object3D.push_back( new object(app,{gltfModel.at(2),emptyTextureW}) );
     app->getGraphics().bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    object3D.at(index)->setColor(glm::vec4(0.2f,0.4f,1.0f,1.0f));
     object *Box0 = object3D.at(index);
     index++;
 

@@ -72,8 +72,8 @@ void graphics::createAttachments()
 
 void graphics::createColorAttachments()
 {
-    colorAttachments.resize(6);
-    for(size_t i=0;i<2;i++)
+    colorAttachments.resize(7);
+    for(size_t i=0;i<3;i++)
     {
         createImage(app,image.Extent.width, image.Extent.height,
                     1, image.Samples, image.Format,
@@ -84,7 +84,7 @@ void graphics::createColorAttachments()
                         image.Format, VK_IMAGE_ASPECT_COLOR_BIT,
                         1, &colorAttachments.at(i).imageView);
     }
-    for(size_t i=2;i<4;i++)
+    for(size_t i=3;i<5;i++)
     {
         createImage(app,image.Extent.width, image.Extent.height,
                     1, image.Samples, VK_FORMAT_R16G16B16A16_SFLOAT,
@@ -95,7 +95,7 @@ void graphics::createColorAttachments()
                         VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT,
                         1, &colorAttachments.at(i).imageView);
     }
-    for(size_t i=4;i<colorAttachments.size();i++)
+    for(size_t i=5;i<colorAttachments.size();i++)
     {
         createImage(app,image.Extent.width, image.Extent.height,
                     1, image.Samples, VK_FORMAT_R8G8B8A8_UNORM,
@@ -392,7 +392,7 @@ void graphics::createRenderPass()
     void graphics::multiSampleRenderPass()
     {
         std::vector<VkAttachmentDescription> attachments;
-        for(size_t i=0;i<2;i++)
+        for(size_t i=0;i<3;i++)
         {
             VkAttachmentDescription colorAttachment{};
                 colorAttachment.format = image.Format;
@@ -405,7 +405,7 @@ void graphics::createRenderPass()
                 colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             attachments.push_back(colorAttachment);
         }
-        for(size_t i=2;i<4;i++)
+        for(size_t i=3;i<5;i++)
         {
             VkAttachmentDescription colorAttachment{};
                 colorAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -418,7 +418,7 @@ void graphics::createRenderPass()
                 colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             attachments.push_back(colorAttachment);
         }
-        for(size_t i=4;i<colorAttachments.size();i++)
+        for(size_t i=5;i<colorAttachments.size();i++)
         {
             VkAttachmentDescription colorAttachment{};
                 colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -456,7 +456,17 @@ void graphics::createRenderPass()
                 colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             attachments.push_back(colorAttachmentResolve);
         }
-        for(size_t i=2;i<4;i++)
+        VkAttachmentDescription colorAttachmentResolve{};
+            colorAttachmentResolve.format = image.Format;
+            colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+            colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        attachments.push_back(colorAttachmentResolve);
+        for(size_t i=3;i<5;i++)
         {
             VkAttachmentDescription colorAttachmentResolve{};
                 colorAttachmentResolve.format = VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -469,7 +479,7 @@ void graphics::createRenderPass()
                 colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             attachments.push_back(colorAttachmentResolve);
         }
-        for(size_t i=4;i<Attachments.size();i++)
+        for(size_t i=5;i<Attachments.size();i++)
         {
             VkAttachmentDescription colorAttachmentResolve{};
                 colorAttachmentResolve.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -485,7 +495,7 @@ void graphics::createRenderPass()
 
         //===========================first=====================================================//
 
-        uint32_t index = 2;
+        uint32_t index = 3;
         std::vector<VkAttachmentReference> firstAttachmentRef(4);
             for (size_t i=0;i<firstAttachmentRef.size();i++)
             {
@@ -498,7 +508,7 @@ void graphics::createRenderPass()
             firstDepthAttachmentRef.attachment = index++;
             firstDepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        index = colorAttachments.size()+3;
+        index = colorAttachments.size()+4;
         std::vector<VkAttachmentReference> firstResolveRef(4);
             for (size_t i=0;i<firstResolveRef.size();i++)
             {
@@ -510,26 +520,29 @@ void graphics::createRenderPass()
         //===========================second====================================================//
 
         index = 0;
-        std::vector<VkAttachmentReference> secondAttachmentRef(2);
+        std::vector<VkAttachmentReference> secondAttachmentRef(3);
             secondAttachmentRef.at(index).attachment = 0;
             secondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         index++;
             secondAttachmentRef.at(index).attachment = 1;
             secondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        index++;
+            secondAttachmentRef.at(index).attachment = 2;
+            secondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         index = 0;
-        std::vector<VkAttachmentReference> secondResolveRef(2);
+        std::vector<VkAttachmentReference> secondResolveRef(3);
             secondResolveRef.at(index).attachment = colorAttachments.size()+1;
             secondResolveRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         index++;
             secondResolveRef.at(index).attachment = colorAttachments.size()+2;
             secondResolveRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        index++;
+            secondResolveRef.at(index).attachment = colorAttachments.size()+3;
+            secondResolveRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         index = 0;
         std::vector<VkAttachmentReference> secondInAttachmentRef(5);
-            secondInAttachmentRef.at(index).attachment = colorAttachments.size()+3;
-            secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        index++;
             secondInAttachmentRef.at(index).attachment = colorAttachments.size()+4;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
@@ -537,6 +550,9 @@ void graphics::createRenderPass()
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
             secondInAttachmentRef.at(index).attachment = colorAttachments.size()+6;
+            secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        index++;
+            secondInAttachmentRef.at(index).attachment = colorAttachments.size()+7;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         //===========================subpass & dependency=========================================//

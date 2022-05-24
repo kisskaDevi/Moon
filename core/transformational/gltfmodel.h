@@ -323,7 +323,6 @@ struct MaterialBlock
     alignas(4)  float       alphaMask;
     alignas(4)  float       alphaMaskCutoff;
     alignas(4)  uint32_t    primitive;
-    alignas(4)  uint32_t    firstIndex;
 };
 
 enum PBRWorkflows{ PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };

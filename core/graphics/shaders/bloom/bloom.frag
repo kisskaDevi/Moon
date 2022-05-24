@@ -1,5 +1,32 @@
 #version 450
-#define MAX_NODE_COUNT 256
+
+layout(set = 0, binding = 1)	uniform samplerCube samplerCubeMap;
+
+layout(set = 0, binding = 2) buffer StorageBuffer
+{
+    vec4 mousePosition;
+    int number;
+    float depth;
+} storage;
+
+layout (push_constant) uniform MaterialPC
+{
+    vec4 baseColorFactor;
+    vec4 emissiveFactor;
+    vec4 diffuseFactor;
+    vec4 specularFactor;
+    float workflow;
+    int baseColorTextureSet;
+    int physicalDescriptorTextureSet;
+    int normalTextureSet;
+    int occlusionTextureSet;
+    int emissiveTextureSet;
+    float metallicFactor;
+    float roughnessFactor;
+    float alphaMask;
+    float alphaMaskCutoff;
+    int number;
+} materialPC;
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D metallicRoughnessTexture;
@@ -18,45 +45,6 @@ layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outBaseColor;
 layout(location = 3) out vec4 outEmissiveTexture;
-
-struct Material
-{
-    vec4 baseColorFactor;
-    vec4 emissiveFactor;
-    vec4 diffuseFactor;
-    vec4 specularFactor;
-    float workflow;
-    int baseColorTextureSet;
-    int physicalDescriptorTextureSet;
-    int normalTextureSet;
-    int occlusionTextureSet;
-    int emissiveTextureSet;
-    float metallicFactor;
-    float roughnessFactor;
-    float alphaMask;
-    float alphaMaskCutoff;
-    int index;
-    int firstIndex;
-};
-
-layout(set = 0, binding = 2) uniform MaterialUniformBufferObject
-{
-    Material ubo[MAX_NODE_COUNT];
-} material;
-
-layout(set = 0, binding = 3) buffer StorageBuffer
-{
-    vec4 mousePosition;
-    int number;
-    float depth;
-} storage;
-
-
-layout (push_constant) uniform MaterialPC
-{
-    int normalTextureSet;
-    int number;
-} materialPC;
 
 void main()
 {

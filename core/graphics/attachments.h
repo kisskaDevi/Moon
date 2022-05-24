@@ -8,6 +8,13 @@
 #include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3native.h>
 #include <vector>
 
+struct imageInfo{
+    uint32_t                        Count;
+    VkFormat                        Format;
+    VkExtent2D                      Extent;
+    VkSampleCountFlagBits           Samples;
+};
+
 struct attachment
 {
     VkImage image;

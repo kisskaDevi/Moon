@@ -13,16 +13,11 @@ struct CustomFilterPushConst{
 class customFilter
 {
 private:
-    VkApplication                       *app;
-    std::vector<attachments>            *Attachments;
-    attachments                         *blitAttachments;
+    VkApplication*                      app;
+    std::vector<attachments *>          Attachments;
+    attachments*                        blitAttachments;
 
-    struct Image{
-        uint32_t                        Count;
-        VkFormat                        Format;
-        VkExtent2D                      Extent;
-        VkSampleCountFlagBits           Samples = VK_SAMPLE_COUNT_1_BIT;
-    }image;
+    imageInfo                           image;
 
     VkRenderPass                                renderPass;
     std::vector<std::vector<VkFramebuffer>>     framebuffers;
@@ -34,7 +29,7 @@ private:
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
         void Destroy(VkApplication* app);
-        void createPipeline(VkApplication* app, Image* image, VkRenderPass* renderPass);
+        void createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkApplication* app);
     }filter;
 
@@ -43,8 +38,8 @@ public:
     void destroy();
 
     void setApplication(VkApplication *app);
-    void setImageProp(uint32_t imageCount, VkFormat imageFormat, VkExtent2D imageExtent, VkSampleCountFlagBits imageSamples);
-    void setAttachments(std::vector<attachments>* Attachments);
+    void setImageProp(imageInfo* pInfo);
+    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void setBlitAttachments(attachments* blitAttachments);
 
     void createRenderPass();
@@ -55,7 +50,7 @@ public:
     void createDescriptorSets();
     void updateSecondDescriptorSets();
 
-    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t j, float delta);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber, float delta);
 
 };
 

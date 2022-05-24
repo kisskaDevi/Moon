@@ -8,17 +8,15 @@ customFilter::customFilter()
 
 }
 
-void customFilter::setApplication(VkApplication* app){this->app = app;}
-void customFilter::setImageProp(uint32_t imageCount, VkFormat imageFormat, VkExtent2D imageExtent, VkSampleCountFlagBits imageSamples)
+void customFilter::setApplication(VkApplication* app)                       {this->app = app;}
+void customFilter::setImageProp(imageInfo* pInfo)                           {this->image = *pInfo;}
+void customFilter::setBlitAttachments(attachments* blitAttachments)         {this->blitAttachments = blitAttachments;}
+void customFilter::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
-    image.Count = imageCount;
-    image.Format = imageFormat;
-    image.Extent = imageExtent;
-    image.Samples = imageSamples;
+    this->Attachments.resize(attachmentsCount);
+    for(uint32_t i=0;i<attachmentsCount;i++)
+        this->Attachments[i] = &Attachments[i];
 }
-void customFilter::setAttachments(std::vector<attachments>* Attachments){this->Attachments = Attachments;}
-void customFilter::setBlitAttachments(attachments* blitAttachments){this->blitAttachments = blitAttachments;}
-
 
 void customFilter::Filter::Destroy(VkApplication* app)
 {
@@ -86,8 +84,8 @@ void customFilter::createRenderPass()
 
 void customFilter::createFramebuffers()
 {
-    framebuffers.resize(Attachments->size());
-    for(size_t i = 0; i < Attachments->size(); i++){
+    framebuffers.resize(Attachments.size());
+    for(size_t i = 0; i < Attachments.size(); i++){
         framebuffers[i].resize(image.Count);
         for (size_t j = 0; j < framebuffers[i].size(); j++)
         {
@@ -95,7 +93,7 @@ void customFilter::createFramebuffers()
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
-                framebufferInfo.pAttachments = &Attachments->operator[](i).imageView[j];
+                framebufferInfo.pAttachments = &Attachments[i]->imageView[j];
                 framebufferInfo.width = image.Extent.width;
                 framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
@@ -131,7 +129,7 @@ void customFilter::Filter::createDescriptorSetLayout(VkApplication* app)
         throw std::runtime_error("failed to create postProcessing descriptor set layout 1!");
 }
 
-void customFilter::Filter::createPipeline(VkApplication* app, Image* image, VkRenderPass* renderPass)
+void customFilter::Filter::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -166,13 +164,13 @@ void customFilter::Filter::createPipeline(VkApplication* app, Image* image, VkRe
     std::array<VkViewport,1> viewport{};
         viewport[index].x = 0.0f;
         viewport[index].y = 0.0f;
-        viewport[index].width  = (float) image->Extent.width;
-        viewport[index].height = (float) image->Extent.height;
+        viewport[index].width  = (float) pInfo->Extent.width;
+        viewport[index].height = (float) pInfo->Extent.height;
         viewport[index].minDepth = 0.0f;
         viewport[index].maxDepth = 1.0f;
     std::array<VkRect2D,1> scissor{};
         scissor[index].offset = {0, 0};
-        scissor[index].extent = image->Extent;
+        scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
@@ -259,7 +257,7 @@ void customFilter::Filter::createPipeline(VkApplication* app, Image* image, VkRe
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.layout = PipelineLayout;
-        pipelineInfo.renderPass = *renderPass;
+        pipelineInfo.renderPass = *pRenderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
@@ -324,7 +322,7 @@ void customFilter::updateSecondDescriptorSets()
     }
 }
 
-void customFilter::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t j, float delta)
+void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber, float delta)
 {
     std::array<VkClearValue, 1> ClearValues{};
         ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -332,22 +330,22 @@ void customFilter::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[j][i];
+        renderPassInfo.framebuffer = framebuffers[attachmentNumber][frameNumber];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
         renderPassInfo.pClearValues = ClearValues.data();
 
-    vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         CustomFilterPushConst pushConst{};
-        pushConst.deltax = delta;
-        pushConst.deltay = delta;
-        vkCmdPushConstants(commandBuffers[i], filter.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConst), &pushConst);
+            pushConst.deltax = delta;
+            pushConst.deltay = delta;
+        vkCmdPushConstants(commandBuffer, filter.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(CustomFilterPushConst), &pushConst);
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, filter.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, filter.PipelineLayout, 0, 1, &filter.DescriptorSets[i], 0, nullptr);
-        vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, filter.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, filter.PipelineLayout, 0, 1, &filter.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
-    vkCmdEndRenderPass(commandBuffers[i]);
+    vkCmdEndRenderPass(commandBuffer);
 }

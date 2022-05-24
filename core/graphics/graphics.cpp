@@ -14,20 +14,14 @@ graphics::graphics(){
     stencil.base = &base;
 }
 
-std::vector<attachments>        & graphics::getAttachments(){return Attachments;}
-std::vector<VkBuffer>           & graphics::getSceneBuffer(){return base.sceneUniformBuffers;}
-ShadowPassObjects               graphics::getObjects(){return ShadowPassObjects{&base.objects,&oneColor.objects,&stencil.objects};}
+std::vector<attachments>&       graphics::getAttachments()  { return Attachments;}
+std::vector<VkBuffer>&          graphics::getSceneBuffer()  { return base.sceneUniformBuffers;}
+ShadowPassObjects               graphics::getObjects()      { return ShadowPassObjects{&base.objects,&oneColor.objects,&stencil.objects};}
 
-void                            graphics::setApplication(VkApplication * app){this->app = app;}
-void                            graphics::setEmptyTexture(texture *emptyTexture){this->emptyTexture = emptyTexture;}
-void                            graphics::setSkyboxTexture(cubeTexture *tex){skybox.texture = tex;}
-void                            graphics::setImageProp(uint32_t imageCount, VkFormat imageFormat, VkExtent2D imageExtent, VkSampleCountFlagBits imageSamples)
-{
-    image.Count = imageCount;
-    image.Format = imageFormat;
-    image.Extent = imageExtent;
-    image.Samples = imageSamples;
-}
+void                            graphics::setApplication(VkApplication* app)    { this->app = app;}
+void                            graphics::setEmptyTexture(texture* emptyTexture){ this->emptyTexture = emptyTexture;}
+void                            graphics::setCameraObject(camera* cameraObject) { this->cameraObject = cameraObject;}
+void                            graphics::setImageProp(imageInfo* pInfo)        { this->image = *pInfo;}
 
 void graphics::destroy()
 {
@@ -60,6 +54,42 @@ void graphics::destroy()
     depthAttachment.deleteSampler(&app->getDevice());
 }
 
+void graphics::createStorageBuffers(VkApplication *app, uint32_t imageCount)
+{
+    storageBuffers.resize(imageCount);
+    storageBuffersMemory.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++)
+        createBuffer(app, sizeof(StorageBufferObject),
+                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                     storageBuffers[i], storageBuffersMemory[i]);
+}
+
+void graphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition)
+{
+    void* data;
+
+    StorageBufferObject StorageUBO{};
+        StorageUBO.mousePosition = mousePosition;
+        StorageUBO.number = INT_FAST32_MAX;
+        StorageUBO.depth = 1.0f;
+    vkMapMemory(app->getDevice(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
+        memcpy(data, &StorageUBO, sizeof(StorageUBO));
+    vkUnmapMemory(app->getDevice(), storageBuffersMemory[currentImage]);
+}
+
+uint32_t graphics::readStorageBuffer(uint32_t currentImage)
+{
+    void* data;
+
+    StorageBufferObject StorageUBO{};
+    vkMapMemory(app->getDevice(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
+        memcpy(&StorageUBO, data, sizeof(StorageUBO));
+    vkUnmapMemory(app->getDevice(), storageBuffersMemory[currentImage]);
+
+    return StorageUBO.number;
+}
+
 //=========================================================================//
 
 void graphics::createAttachments()
@@ -75,51 +105,88 @@ void graphics::createColorAttachments()
     colorAttachments.resize(7);
     for(size_t i=0;i<3;i++)
     {
-        createImage(app,image.Extent.width, image.Extent.height,
-                    1, image.Samples, image.Format,
-                    VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
-        createImageView(app, colorAttachments.at(i).image,
-                        image.Format, VK_IMAGE_ASPECT_COLOR_BIT,
-                        1, &colorAttachments.at(i).imageView);
+        createImage(        app,
+                            image.Extent.width,
+                            image.Extent.height,
+                            1,
+                            image.Samples,
+                            image.Format,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            colorAttachments[i].image,
+                            colorAttachments[i].imageMemory);
+
+        createImageView(    app,
+                            colorAttachments[i].image,
+                            image.Format,
+                            VK_IMAGE_ASPECT_COLOR_BIT,
+                            1,
+                            &colorAttachments.at(i).imageView);
     }
     for(size_t i=3;i<5;i++)
     {
-        createImage(app,image.Extent.width, image.Extent.height,
-                    1, image.Samples, VK_FORMAT_R16G16B16A16_SFLOAT,
-                    VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
-        createImageView(app, colorAttachments.at(i).image,
-                        VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT,
-                        1, &colorAttachments.at(i).imageView);
+        createImage(        app,
+                            image.Extent.width,
+                            image.Extent.height,
+                            1,
+                            image.Samples,
+                            VK_FORMAT_R16G16B16A16_SFLOAT,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            colorAttachments[i].image,
+                            colorAttachments[i].imageMemory);
+
+        createImageView(    app,
+                            colorAttachments[i].image,
+                            VK_FORMAT_R16G16B16A16_SFLOAT,
+                            VK_IMAGE_ASPECT_COLOR_BIT,
+                            1,
+                            &colorAttachments[i].imageView);
     }
     for(size_t i=5;i<colorAttachments.size();i++)
     {
-        createImage(app,image.Extent.width, image.Extent.height,
-                    1, image.Samples, VK_FORMAT_R8G8B8A8_UNORM,
-                    VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorAttachments.at(i).image, colorAttachments.at(i).imageMemory);
-        createImageView(app, colorAttachments.at(i).image,
-                        VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT,
-                        1, &colorAttachments.at(i).imageView);
+        createImage(        app,
+                            image.Extent.width,
+                            image.Extent.height,
+                            1,
+                            image.Samples,
+                            VK_FORMAT_R8G8B8A8_UNORM,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            colorAttachments[i].image,
+                            colorAttachments[i].imageMemory);
+
+        createImageView(    app,
+                            colorAttachments[i].image,
+                            VK_FORMAT_R8G8B8A8_UNORM,
+                            VK_IMAGE_ASPECT_COLOR_BIT,
+                            1,
+                            &colorAttachments[i].imageView);
     }
 }
 void graphics::createDepthAttachment()
 {
-    createImage(app,
-                image.Extent.width, image.Extent.height,
-                1, image.Samples,
-                findDepthStencilFormat(app),
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                depthAttachment.image, depthAttachment.imageMemory);
-    createImageView(app, depthAttachment.image,
-                    findDepthStencilFormat(app), VK_IMAGE_ASPECT_DEPTH_BIT,
-                    1, &depthAttachment.imageView);
+    createImage(        app,
+                        image.Extent.width,
+                        image.Extent.height,
+                        1,
+                        image.Samples,
+                        findDepthStencilFormat(app),
+                        VK_IMAGE_TILING_OPTIMAL,
+                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        depthAttachment.image,
+                        depthAttachment.imageMemory);
+
+    createImageView(    app,
+                        depthAttachment.image,
+                        findDepthStencilFormat(app),
+                        VK_IMAGE_ASPECT_DEPTH_BIT,
+                        1,
+                        &depthAttachment.imageView);
 
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -149,39 +216,68 @@ void graphics::createResolveAttachments()
         Attachments[i].resize(image.Count);
         for(size_t Image=0; Image<image.Count; Image++)
         {
-            createImage(app,image.Extent.width,image.Extent.height,
-                        1,VK_SAMPLE_COUNT_1_BIT,image.Format,
-                        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[Image], Attachments[i].imageMemory[Image]);
-            createImageView(app, Attachments[i].image[Image],
-                            image.Format, VK_IMAGE_ASPECT_COLOR_BIT,
-                            1, &Attachments[i].imageView[Image]);
+            createImage(        app,
+                                image.Extent.width,
+                                image.Extent.height,
+                                1,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                image.Format,
+                                VK_IMAGE_TILING_OPTIMAL,
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                Attachments[i].image[Image],
+                                Attachments[i].imageMemory[Image]);
+
+            createImageView(    app,
+                                Attachments[i].image[Image],
+                                image.Format,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1,
+                                &Attachments[i].imageView[Image]);
         }
     }
     Attachments[2].resize(image.Count);
     for(size_t Image=0; Image<image.Count; Image++)
     {
-        createImage(app,image.Extent.width,image.Extent.height,
-                    1,VK_SAMPLE_COUNT_1_BIT,image.Format,
-                    VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[2].image[Image], Attachments[2].imageMemory[Image]);
-        createImageView(app, Attachments[2].image[Image],
-                        image.Format, VK_IMAGE_ASPECT_COLOR_BIT,
-                        1, &Attachments[2].imageView[Image]);
+        createImage(        app,
+                            image.Extent.width,
+                            image.Extent.height,
+                            1,
+                            VK_SAMPLE_COUNT_1_BIT,
+                            image.Format,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            Attachments[2].image[Image],
+                            Attachments[2].imageMemory[Image]);
+
+        createImageView(    app, Attachments[2].image[Image],
+                            image.Format, VK_IMAGE_ASPECT_COLOR_BIT,
+                            1, &Attachments[2].imageView[Image]);
     }
     for(size_t i=3;i<5;i++)
     {
         Attachments[i].resize(image.Count);
         for(size_t Image=0; Image<image.Count; Image++)
         {
-            createImage(app,image.Extent.width,image.Extent.height,
-                        1,VK_SAMPLE_COUNT_1_BIT,
-                        VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[Image], Attachments[i].imageMemory[Image]);
-            createImageView(app, Attachments[i].image[Image],
-                            VK_FORMAT_R16G16B16A16_SFLOAT,VK_IMAGE_ASPECT_COLOR_BIT,
-                            1, &Attachments[i].imageView[Image]);
+            createImage(        app,
+                                image.Extent.width,
+                                image.Extent.height,
+                                1,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                VK_FORMAT_R16G16B16A16_SFLOAT,
+                                VK_IMAGE_TILING_OPTIMAL,
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                Attachments[i].image[Image],
+                                Attachments[i].imageMemory[Image]);
+
+            createImageView(    app,
+                                Attachments[i].image[Image],
+                                VK_FORMAT_R16G16B16A16_SFLOAT,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1,
+                                &Attachments[i].imageView[Image]);
         }
     }
     for(size_t i=5;i<Attachments.size();i++)
@@ -189,14 +285,24 @@ void graphics::createResolveAttachments()
         Attachments[i].resize(image.Count);
         for(size_t Image=0; Image<image.Count; Image++)
         {
-            createImage(app,image.Extent.width,image.Extent.height,
-                        1,VK_SAMPLE_COUNT_1_BIT,
-                        VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[Image], Attachments[i].imageMemory[Image]);
-            createImageView(app, Attachments[i].image[Image],
-                            VK_FORMAT_R8G8B8A8_UNORM,VK_IMAGE_ASPECT_COLOR_BIT,
-                            1, &Attachments[i].imageView[Image]);
+            createImage(        app,
+                                image.Extent.width,
+                                image.Extent.height,
+                                1,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                VK_FORMAT_R8G8B8A8_UNORM,
+                                VK_IMAGE_TILING_OPTIMAL,
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                Attachments[i].image[Image],
+                                Attachments[i].imageMemory[Image]);
+
+            createImageView(    app,
+                                Attachments[i].image[Image],
+                                VK_FORMAT_R8G8B8A8_UNORM,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1,
+                                &Attachments[i].imageView[Image]);
         }
     }
 
@@ -644,12 +750,6 @@ void graphics::createFramebuffers()
     }
     void graphics::multiSampleFrameBuffer()
     {
-        /* Фреймбуфер (буфер кадра) - эо объект, представляющий набор изображений, в который
-         * графические конвейеры будут осуществлять рендеринг. Они затрагивают посление несколько
-         * стадий в кнвейере: тесты глубины и трафарета, смешивание цветов, логические операции,
-         * мультисемплинг и т.п. Фреймбуфер создаётся, используя ссылку на проход рендеринга, и может быть
-         * использован с любым проходом рендеринга, имеющим похожую структуру подключений.*/
-
         framebuffers.resize(image.Count);
         for (size_t Image = 0; Image < image.Count; Image++)
         {
@@ -678,29 +778,21 @@ void graphics::createFramebuffers()
 void graphics::createPipelines()
 {
     base.createDescriptorSetLayout(app);
-    base.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    base.createPipeline(app,&image,&renderPass);
     base.createUniformBuffers(app,image.Count);
-    bloom.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
-    oneColor.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
-    stencil.createFirstPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
-    stencil.createSecondPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    bloom.createPipeline(app,&image,&renderPass);
+    oneColor.createPipeline(app,&image,&renderPass);
+    stencil.createFirstPipeline(app,&image,&renderPass);
+    stencil.createSecondPipeline(app,&image,&renderPass);
     skybox.createDescriptorSetLayout(app);
-    skybox.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    skybox.createPipeline(app,&image,&renderPass);
     skybox.createUniformBuffers(app,image.Count);
     second.createDescriptorSetLayout(app);
-    second.createPipeline(app,{image.Count,image.Extent,image.Samples,renderPass});
+    second.createPipeline(app,&image,&renderPass);
     second.createUniformBuffers(app,image.Count);
-
-    storageBuffers.resize(image.Count);
-    storageBuffersMemory.resize(image.Count);
-    for (size_t i = 0; i < image.Count; i++)
-        createBuffer(app, sizeof(StorageBufferObject),
-                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     storageBuffers[i], storageBuffersMemory[i]);
 }
 
-void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, std::vector<light<spotLight> *> lightSource)
+void graphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t lightSourceCount, light<spotLight>** pplightSources)
 {
     std::array<VkClearValue, 8> clearValues{};
         for(size_t i=0;i<7;i++)
@@ -710,40 +802,38 @@ void graphics::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, 
     VkRenderPassBeginInfo drawRenderPassInfo{};
         drawRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         drawRenderPassInfo.renderPass = renderPass;
-        drawRenderPassInfo.framebuffer = framebuffers[i];
+        drawRenderPassInfo.framebuffer = framebuffers[frameNumber];
         drawRenderPassInfo.renderArea.offset = {0, 0};
         drawRenderPassInfo.renderArea.extent = image.Extent;
         drawRenderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         drawRenderPassInfo.pClearValues = clearValues.data();
 
-    vkCmdBeginRenderPass(commandBuffers[i], &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffers, &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         primitiveCount = 0;
 
-        skybox.render(commandBuffers,i);
-        base.render(commandBuffers,i, primitiveCount);
-        bloom.render(commandBuffers,i,primitiveCount);
-        oneColor.render(commandBuffers,i,primitiveCount);
-        stencil.render(commandBuffers,i,primitiveCount);
+        skybox.render(frameNumber,commandBuffers);
+        base.render(frameNumber,commandBuffers, primitiveCount);
+        bloom.render(frameNumber,commandBuffers,primitiveCount);
+        oneColor.render(frameNumber,commandBuffers,primitiveCount);
+        stencil.render(frameNumber,commandBuffers,primitiveCount);
 
-    vkCmdNextSubpass(commandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
 
-        second.render(commandBuffers,i,lightSource);
+        second.render(frameNumber,commandBuffers,lightSourceCount,pplightSources);
 
-    vkCmdEndRenderPass(commandBuffers[i]);
+    vkCmdEndRenderPass(commandBuffers);
 }
 
-void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
+void graphics::updateUniformBuffer(uint32_t currentImage)
 {
-    cameraPosition = glm::vec4(cam->getTranslate(), 1.0);
-
     void* data;
 
     UniformBufferObject baseUBO{};
-        baseUBO.view = cam->getViewMatrix();
+        baseUBO.view = cameraObject->getViewMatrix();
         baseUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
         baseUBO.proj[1][1] *= -1;
-        baseUBO.eyePosition = glm::vec4(cam->getTranslate(), 1.0);
+        baseUBO.eyePosition = glm::vec4(cameraObject->getTranslate(), 1.0);
     vkMapMemory(app->getDevice(), base.sceneUniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
         memcpy(data, &baseUBO, sizeof(baseUBO));
     vkUnmapMemory(app->getDevice(), base.sceneUniformBuffersMemory[currentImage]);
@@ -753,72 +843,21 @@ void graphics::updateUniformBuffer(uint32_t currentImage, camera *cam)
     vkUnmapMemory(app->getDevice(), second.uniformBuffersMemory[currentImage]);
 }
 
-void graphics::updateSkyboxUniformBuffer(uint32_t currentImage, camera *cam)
+void graphics::updateSkyboxUniformBuffer(uint32_t currentImage)
 {
     if(skybox.objects.size()!=0)
     {
         void* data;
 
         SkyboxUniformBufferObject skyboxUBO{};
-            skyboxUBO.view = cam->getViewMatrix();
+            skyboxUBO.view = cameraObject->getViewMatrix();
             skyboxUBO.proj = glm::perspective(glm::radians(45.0f), (float) image.Extent.width / (float) image.Extent.height, 0.1f, 1000.0f);
             skyboxUBO.proj[1][1] *= -1;
-            skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cam->getTranslate())*skybox.objects[0]->ModelMatrix();
+            skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cameraObject->getTranslate())*skybox.objects[0]->ModelMatrix();
         vkMapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
             memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
         vkUnmapMemory(app->getDevice(), this->skybox.uniformBuffersMemory[currentImage]);
     }
-}
-
-void graphics::updateLightUniformBuffer(uint32_t currentImage, std::vector<light<spotLight> *> lightSource)
-{
-    void* data;
-    LightUniformBufferObject lightUBO{};
-    for(uint32_t i=0;i<lightSource.size();i++)
-        lightUBO.buffer[i] = lightSource[i]->getLightBufferObject();
-    vkMapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage], 0, sizeof(lightUBO), 0, &data);
-        memcpy(data, &lightUBO, sizeof(lightUBO));
-    vkUnmapMemory(app->getDevice(), second.lightUniformBuffersMemory[currentImage]);
-}
-
-void graphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition)
-{
-    void* data;
-
-    StorageBufferObject StorageUBO{};
-        StorageUBO.mousePosition = mousePosition;
-        StorageUBO.number = INT_FAST32_MAX;
-        StorageUBO.depth = 1.0f;
-    vkMapMemory(app->getDevice(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
-        memcpy(data, &StorageUBO, sizeof(StorageUBO));
-    vkUnmapMemory(app->getDevice(), storageBuffersMemory[currentImage]);
-}
-
-uint32_t graphics::readStorageBuffer(uint32_t currentImage)
-{
-    void* data;
-
-    StorageBufferObject StorageUBO{};
-    vkMapMemory(app->getDevice(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
-        memcpy(&StorageUBO, data, sizeof(StorageUBO));
-    vkUnmapMemory(app->getDevice(), storageBuffersMemory[currentImage]);
-
-    return StorageUBO.number;
-}
-
-void graphics::updateMaterialUniformBuffer(uint32_t currentImage)
-{
-    void* data;
-    std::vector<MaterialBlock> nodeMaterials;
-
-    base.setMaterials(nodeMaterials);
-    bloom.setMaterials(nodeMaterials);
-    oneColor.setMaterials(nodeMaterials);
-    stencil.setMaterials(nodeMaterials);
-
-    vkMapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage], 0, second.nodeMaterialCount*sizeof(MaterialBlock), 0, &data);
-        memcpy(data, nodeMaterials.data(), nodeMaterials.size()*sizeof(MaterialBlock));
-    vkUnmapMemory(app->getDevice(), second.nodeMaterialUniformBuffersMemory[currentImage]);
 }
 
 void graphics::updateObjectUniformBuffer(uint32_t currentImage)
@@ -864,9 +903,10 @@ void graphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 l
     stencil.base->createObjectDescriptorSet(app,newObject,image.Count,emptyTexture);
 }
 
-void graphics::bindSkyBoxObject(object *newObject)
+void graphics::bindSkyBoxObject(object *newObject, cubeTexture* texture)
 {
     skybox.objects.push_back(newObject);
+    skybox.texture = texture;
 }
 
 void graphics::removeBinds()
@@ -896,3 +936,9 @@ void graphics::setStencilObject(object *oldObject)
         }
 }
 
+void graphics::bindLightSource(light<spotLight>* object)
+{
+    second.createLightDescriptorPool(app,object,image.Count);
+    second.createLightDescriptorSets(app,object,image.Count);
+    updateLightDescriptorSets(object);
+}

@@ -21,13 +21,8 @@ layout(input_attachment_index = 1, binding = 1) uniform subpassInput inNormalTex
 layout(input_attachment_index = 2, binding = 2) uniform subpassInput inBaseColorTexture;
 layout(input_attachment_index = 3, binding = 3) uniform subpassInput inEmissiveTexture;
 
-layout(set = 0, binding = 5) uniform sampler2D shadowMap[MAX_LIGHT_SOURCES];
-layout(set = 0, binding = 7) uniform sampler2D lightTexture[MAX_LIGHT_SOURCES];
-
-layout (push_constant) uniform LightPushConst
-{
-    int number;
-} lightPC;
+layout(set = 1, binding = 1) uniform sampler2D shadowMap;
+layout(set = 1, binding = 2) uniform sampler2D lightTexture;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outBlur;
@@ -57,8 +52,8 @@ vec4 textureLightColor;
 float depthMap;
 
 //===================================================functions====================================================================//
-bool outsideSpotCondition(vec3 lightSpaceNDC, float type);
-float		shadowFactor(int i);
+bool		outsideSpotCondition(vec3 lightSpaceNDC, float type);
+float		shadowFactor();
 vec4		SRGBtoLINEAR(vec4 srgbIn);
 vec3		specularReflection(vec3 specularEnvironmentR0, vec3 specularEnvironmentR90, float VdotH);
 float		geometricOcclusion(float NdotL, float NdotV, float r);
@@ -130,7 +125,7 @@ float ComputeScattering(float lightDotView, float G_SCATTERING)
 
 //===================================================outImages====================================================================//
 
-void outImage1()
+vec4 PBR(vec4 outColor)
 {
     fragLightPosition = lightProjView * vec4(position.xyz,1.0f);
     textureLightColor = vec4(0.0f,0.0f,0.0f,1.0f);
@@ -163,10 +158,10 @@ void outImage1()
 	attenuation K = getK(len);
 	float lightDrop = K.C+K.L*len+K.Q*len*len;
 	lightDrop/=10.0f;
-	float lightPower = shadowFactor(lightPC.number);
-	if(lightPower>minAmbientFactor)
-	{
-	    lightPower = lightPowerFactor * lightPower;
+	float ShadowFactor = shadowFactor();
+
+	if(ShadowFactor>minAmbientFactor){
+	    float lightPower = ShadowFactor*lightPowerFactor;
 
 	    vector.eyeDirection	    = normalize(eyePosition.xyz - position.xyz);
 	    vector.lightDirection   = normalize(lightPosition - position.xyz);
@@ -174,7 +169,7 @@ void outImage1()
 	    vector.reflect	    = -normalize(reflect(vector.eyeDirection, vector.normal));
 	    vector.H		    = normalize(vector.eyeDirection + vector.lightDirection);
 
-	    vec3 F = specularReflection(specularEnvironmentR0, specularEnvironmentR90, clamp(dot(vector.eyeDirection, vector.H), 0.0, 1.0));
+	    vec3  F = specularReflection(specularEnvironmentR0, specularEnvironmentR90, clamp(dot(vector.eyeDirection, vector.H), 0.0, 1.0));
 	    float G = geometricOcclusion(clamp(dot(vector.normal, vector.lightDirection), 0.001, 1.0), clamp(abs(dot(vector.normal, vector.eyeDirection)), 0.001, 1.0), alphaRoughness);
 	    float D = microfacetDistribution(clamp(dot(vector.normal, vector.H), 0.0, 1.0), alphaRoughness);
 
@@ -189,8 +184,10 @@ void outImage1()
 	    color = mix(color, color * ao, u_OcclusionStrength);
 
 	    color = lightPower*color/lightDrop;
-	    outColor += vec4(max(color.r,outColor.r),max(color.g,outColor.g),max(color.b,outColor.b), baseColor.a);
+	    outColor = vec4(color, baseColor.a);
 	}
+
+
 	//=========== Area Light ===========//
 
 //	    vec4 rayColor = vec4(0.0f,0.0f,0.0f,0.0f);
@@ -199,6 +196,7 @@ void outImage1()
 //	    rayColor *= metallic;
 //	    outColor = vec4(max(rayColor.r,outColor.r),max(rayColor.g,outColor.g),max(rayColor.b,outColor.b), baseColor.a);
 
+	return outColor;
 }
 
 void LightScattering(int steps)
@@ -207,20 +205,20 @@ void LightScattering(int steps)
     vec3 step = eyeDirection/steps;
     for(int j=0;j<steps;j++){
 	vec3 pointOfScattering = eyePosition.xyz + step*j;
-	vec4 cameraView = projview * vec4(pointOfScattering, 1.0f);
-	if(depthMap>cameraView.z){
+	float cameraView = projview[0][2]*pointOfScattering.x + projview[1][2]*pointOfScattering.y + projview[2][2]*pointOfScattering.z + projview[3][2];
+	if(depthMap>cameraView){
 	    vec4 lightView = lightProjView * vec4(pointOfScattering, 1.0f);
 	    vec3 lightSpaceNDC = lightView.xyz/lightView.w;
 	    if(!outsideSpotCondition(lightSpaceNDC,type))
 	    {
 		vec2 shadowMapCoord = lightSpaceNDC.xy * 0.5f + 0.5f;
-		if(lightSpaceNDC.z<texture(shadowMap[lightPC.number], shadowMapCoord.xy).x)
+		if(lightSpaceNDC.z<texture(shadowMap, shadowMapCoord.xy).x)
 		{
-		    vec4 color = texture(lightTexture[lightPC.number], shadowMapCoord.xy) + lightColor;
+		    vec4 color = texture(lightTexture, shadowMapCoord.xy) + lightColor;
 		    float len = length(lightPosition - pointOfScattering);
 		    attenuation K = getK(len);
 		    float lightDrop = K.C+K.L*len+K.Q*len*len;
-		    outBlur += ComputeScattering( dot( eyeDirection, vector.lightDirection), 0.0f ) * color/lightDrop/lightDrop;
+		    outBlur += ComputeScattering( dot( normalize(eyeDirection), vector.lightDirection), 0.0f ) * vec4(color.xyz,0.0f)/lightDrop/lightDrop;
 		}
 	    }
 	}
@@ -230,7 +228,7 @@ void LightScattering(int steps)
 void shadingType0()
 {
     if(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f)	outColor = SRGBtoLINEAR(baseColorTexture);
-    else						outImage1();
+    else						outColor = PBR(outColor);
 
         LightScattering(100);
 	outColor += SRGBtoLINEAR(emissiveTexture);
@@ -251,9 +249,9 @@ void main()
     emissiveTexture = subpassLoad(inEmissiveTexture);
     depthMap = subpassLoad(inPositionTexture).a;
 
-    outColor = vec4(.0f,0.0f,0.0f,1.0f);
-    outBlur = vec4(0.0f,0.0f,0.0f,1.0f);
-    outBloom = vec4(0.0f,0.0f,0.0f,1.0f);
+    outColor = vec4(.0f,0.0f,0.0f,0.0f);
+    outBlur = vec4(0.0f,0.0f,0.0f,0.0f);
+    outBloom = vec4(0.0f,0.0f,0.0f,0.0f);
 
     shadingType0();
 }
@@ -268,7 +266,7 @@ bool outsideSpotCondition(vec3 lightSpaceNDC, float type)
 	return abs(lightSpaceNDC.x) > 1.0f || abs(lightSpaceNDC.y) > 1.0f || abs(lightSpaceNDC.z) > 1.0f;
 }
 
-float shadowFactor(int i)
+float shadowFactor()
 {
     vec3 lightSpaceNDC = fragLightPosition.xyz;
     lightSpaceNDC /= fragLightPosition.w;
@@ -284,12 +282,12 @@ float shadowFactor(int i)
 	    for(float noise = dnoise; noise<dnoise*(maxNoise+1); noise+=dnoise)
 	    {
 		vec2 dx = vec2(noise*cos(j*dang), noise*sin(j*dang));
-		shadowSample += lightSpaceNDC.z-texture(shadowMap[i], shadowMapCoord.xy + dx).x > 0.001f ? 1.0f : 0.0f;
+		shadowSample += lightSpaceNDC.z-texture(shadowMap, shadowMapCoord.xy + dx).x > 0.001f ? 1.0f : 0.0f;
 	    }
 	}
 	shadowSample /= maxNoise*n;
 
-	textureLightColor += texture(lightTexture[i], shadowMapCoord.xy);
+	textureLightColor += texture(lightTexture, shadowMapCoord.xy);
 
     float factor = minAmbientFactor;
     if(!outsideSpotCondition(lightSpaceNDC,type))

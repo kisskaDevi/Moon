@@ -25,7 +25,7 @@ vec4 blur(sampler2D Sampler, vec2 TexCoord)
 {
     float sigma = 2.0 * textureSize(Sampler, 0).y;
     vec2 textel = 2.0 / textureSize(Sampler, 0);
-    vec3 Color = texture(Sampler, TexCoord).xyz /sqrt(pi*sigma);
+    vec4 Color = texture(Sampler, TexCoord) /sqrt(pi*sigma);
     int h = 20;
     float Norm = 1.0f/sqrt(pi*sigma);
     for(int i=-h;i<h+1;i+=2)
@@ -34,10 +34,10 @@ vec4 blur(sampler2D Sampler, vec2 TexCoord)
 	float I2 = Norm * exp( -((i+1)*textel.y*(i+1)*textel.y)/sigma);
 	float y = (I1*i+I2*(i+1))*textel.y/(I1+I2);
 	float I = Norm * exp( -(y*y)/sigma);
-	Color += texture(Sampler, TexCoord + vec2(0.0f,y) ).xyz * I;
-	Color += texture(Sampler, TexCoord - vec2(0.0f,y) ).xyz * I;
+	Color += texture(Sampler, TexCoord + vec2(0.0f,y) ) * I;
+	Color += texture(Sampler, TexCoord - vec2(0.0f,y) ) * I;
     }
-    return vec4(Color, 1.0);
+    return Color;
 }
 
 vec4 radialBlur(sampler2D bloomSampler, vec2 TexCoord)
@@ -79,20 +79,20 @@ void main()
     mat4 view		= global.view;
     mat4 proj		= global.proj;
 
-    float metallic = texture(normal,fragTexCoord).a;
-    vec3 F0 = vec3(0.004);
-    F0      = mix(F0, texture(Sampler, fragTexCoord).xyz, metallic);
-    vec3 Fresnel = fresnelSchlick(max(dot(normalize(pointNormal), normalize(pointPosition-pointOfView)), 0.0), F0);
+//    float metallic = texture(normal,fragTexCoord).a;
+//    vec3 F0 = vec3(0.004);
+//    F0      = mix(F0, texture(Sampler, fragTexCoord).xyz, metallic);
+//    vec3 Fresnel = fresnelSchlick(max(dot(normalize(pointNormal), normalize(pointPosition-pointOfView)), 0.0), F0);
 
-    if(pointNormal.x!=0.0f&&pointNormal.y!=0.0f&&pointNormal.z!=0.0f){
-	vec4 result = RayMarch(reflectDir,pointPosition,view,proj);
-	if(result.w==1.0f){
-	    if(result.x<1.0f&&result.x>0.0f&&result.y<1.0f&&result.y>0.0f)
-		outColor += vec4(Fresnel,1.0f)*texture(Sampler,result.xy);
-	}
-    }
+//    if(pointNormal.x!=0.0f&&pointNormal.y!=0.0f&&pointNormal.z!=0.0f){
+//	vec4 result = RayMarch(reflectDir,pointPosition,view,proj);
+//	if(result.w==1.0f){
+//	    if(result.x<1.0f&&result.x>0.0f&&result.y<1.0f&&result.y>0.0f)
+//		outColor += vec4(Fresnel,1.0f)*texture(Sampler,result.xy);
+//	}
+//    }
 
-    outColor += texture(Sampler,fragTexCoord);
+    outColor += vec4(texture(Sampler,fragTexCoord).xyz,0.0f);
     outColor += blur(blurSampler,fragTexCoord);
 
     vec4 bloomColor = vec4(0.0f);

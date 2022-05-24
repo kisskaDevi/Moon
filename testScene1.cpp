@@ -97,7 +97,7 @@ int testScene1()
 
         camera *cameras = new camera;
             cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
-        app.addCamera(cameras);
+        app.getGraphics().setCameraObject(cameras);
 
         texture *emptyTexture = new texture(&app,ZERO_TEXTURE);
             emptyTexture->createTextureImage();
@@ -116,8 +116,7 @@ int testScene1()
             skybox->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
         object *skyboxObject = new object(&app,{gltfModel.at(2),nullptr});
             skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
-        app.getGraphics().bindSkyBoxObject(skyboxObject);
-        app.getGraphics().setSkyboxTexture(skybox);
+        app.getGraphics().bindSkyBoxObject(skyboxObject, skybox);
 
         texture *lightTex1 = new texture(&app,LIGHT_TEXTURE);
             lightTex1->createTextureImage();
@@ -132,6 +131,9 @@ int testScene1()
         app.updateDescriptorSets();
         app.createCommandBuffers();
         app.createSyncObjects();
+
+        app.resetUboWorld();
+        app.resetUboLight();
 
             static auto pastTime = std::chrono::high_resolution_clock::now();
 
@@ -224,6 +226,9 @@ void recreateSwapChain(VkApplication *app, GLFWwindow* window)
     app->createGraphics(window);
     app->updateDescriptorSets();
     app->createCommandBuffers();
+
+    app->resetUboWorld();
+    app->resetUboLight();
 }
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -282,7 +287,7 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
 {
     int index = 0;
     lightPoint.push_back(new light<pointLight>(app,lightSource));
-    lightPoint.at(0)->setLightColor(glm::vec4(0.2f,0.4f,1.0f,1.0f));
+    lightPoint.at(0)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     groups.at(0)->addObject(lightPoint.at(0));
 
     for(int i=index;i<6;i++,index++){
@@ -295,9 +300,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
         Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    //lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(2)->addObject(lightSource.at(index));
@@ -308,9 +312,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
         Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,0.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(3)->addObject(lightSource.at(index));
@@ -321,9 +324,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
         Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(4)->addObject(lightSource.at(index));
@@ -334,9 +336,8 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
         Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    //lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     lightSource.at(index)->setTexture(lightTex1);
     groups.at(5)->addObject(lightSource.at(index));
@@ -348,7 +349,6 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
 //            Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
 //            Proj[1][1] *= -1;
 //        lightSource.at(index)->createLightPVM(Proj);
-//        lightSource.at(index)->setLightNumber(index);
 //        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
 //        //lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
 //        lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
@@ -363,7 +363,6 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
 //            Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
 //            Proj[1][1] *= -1;
 //        lightSource.at(index)->createLightPVM(Proj);
-//        lightSource.at(index)->setLightNumber(index);
 //        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
 //        //lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
 //        lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
@@ -410,7 +409,7 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
 
     object3D.push_back( new object(app,{gltfModel.at(2),emptyTextureW}) );
     app->getGraphics().bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(0.2f,0.4f,1.0f,1.0f));
+    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     object *Box0 = object3D.at(index);
     index++;
 

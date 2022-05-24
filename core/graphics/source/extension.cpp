@@ -29,7 +29,7 @@ void graphics::StencilExtension::DestroySecondPipeline(VkApplication *app)
     vkDestroyPipelineLayout(app->getDevice(), secondPipelineLayout,nullptr);
 }
 
-void graphics::bloomExtension::createPipeline(VkApplication *app, graphicsInfo info)
+void graphics::bloomExtension::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -75,13 +75,13 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, graphicsInfo i
         std::array<VkViewport,1> viewport{};
             viewport[index].x = 0.0f;
             viewport[index].y = 0.0f;
-            viewport[index].width = (float) info.extent.width;
-            viewport[index].height = (float) info.extent.height;
+            viewport[index].width = (float) pInfo->Extent.width;
+            viewport[index].height = (float) pInfo->Extent.height;
             viewport[index].minDepth = 0.0f;
             viewport[index].maxDepth = 1.0f;
         std::array<VkRect2D,1> scissor{};
             scissor[index].offset = {0, 0};
-            scissor[index].extent = info.extent;
+            scissor[index].extent = pInfo->Extent;
         VkPipelineViewportStateCreateInfo viewportState{};
             viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;              //число областей вывода
@@ -110,7 +110,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, graphicsInfo i
         VkPipelineMultisampleStateCreateInfo multisampling{};
             multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             multisampling.sampleShadingEnable = VK_FALSE;
-            multisampling.rasterizationSamples = info.msaaSamples;
+            multisampling.rasterizationSamples = pInfo->Samples;
             multisampling.minSampleShading = 1.0f;
             multisampling.pSampleMask = nullptr;
             multisampling.alphaToCoverageEnable = VK_FALSE;
@@ -153,7 +153,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, graphicsInfo i
         std::array<VkPushConstantRange,1> pushConstantRange{};
             pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
             pushConstantRange[index].offset = 0;
-            pushConstantRange[index].size = sizeof(PushConst);
+            pushConstantRange[index].size = sizeof(MaterialBlock);
         std::array<VkDescriptorSetLayout,4> setLayouts = {base->SceneDescriptorSetLayout,base->ObjectDescriptorSetLayout,base->PrimitiveDescriptorSetLayout,base->MaterialDescriptorSetLayout};
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -188,7 +188,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, graphicsInfo i
             pipelineInfo[index].pMultisampleState = &multisampling;                        //мультсемплинг
             pipelineInfo[index].pColorBlendState = &colorBlending;                         //смешивание цветов
             pipelineInfo[index].layout = PipelineLayout;                                   //
-            pipelineInfo[index].renderPass = info.renderPass;                              //проход рендеринга
+            pipelineInfo[index].renderPass = *pRenderPass;                              //проход рендеринга
             pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
             pipelineInfo[index].pDepthStencilState = &depthStencil;
             pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
@@ -200,7 +200,7 @@ void graphics::bloomExtension::createPipeline(VkApplication *app, graphicsInfo i
         vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
 
-void graphics::oneColorExtension::createPipeline(VkApplication *app, graphicsInfo info)
+void graphics::oneColorExtension::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -251,13 +251,13 @@ void graphics::oneColorExtension::createPipeline(VkApplication *app, graphicsInf
     std::array<VkViewport,1> viewport{};
         viewport[index].x = 0.0f;
         viewport[index].y = 0.0f;
-        viewport[index].width = (float) info.extent.width;
-        viewport[index].height = (float) info.extent.height;
+        viewport[index].width = (float) pInfo->Extent.width;
+        viewport[index].height = (float) pInfo->Extent.height;
         viewport[index].minDepth = 0.0f;
         viewport[index].maxDepth = 1.0f;
     std::array<VkRect2D,1> scissor{};
         scissor[index].offset = {0, 0};
-        scissor[index].extent = info.extent;
+        scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;              //число областей вывода
@@ -286,7 +286,7 @@ void graphics::oneColorExtension::createPipeline(VkApplication *app, graphicsInf
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = info.msaaSamples;
+        multisampling.rasterizationSamples = pInfo->Samples;
         multisampling.minSampleShading = 1.0f;
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
@@ -329,7 +329,7 @@ void graphics::oneColorExtension::createPipeline(VkApplication *app, graphicsInf
     std::array<VkPushConstantRange,1> pushConstantRange{};
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
-        pushConstantRange[index].size = sizeof(PushConst);
+        pushConstantRange[index].size = sizeof(MaterialBlock);
     std::array<VkDescriptorSetLayout,4> setLayouts = {base->SceneDescriptorSetLayout,base->ObjectDescriptorSetLayout,base->PrimitiveDescriptorSetLayout,base->MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -364,7 +364,7 @@ void graphics::oneColorExtension::createPipeline(VkApplication *app, graphicsInf
         pipelineInfo[index].pMultisampleState = &multisampling;                        //мультсемплинг
         pipelineInfo[index].pColorBlendState = &colorBlending;                         //смешивание цветов
         pipelineInfo[index].layout = PipelineLayout;                                   //
-        pipelineInfo[index].renderPass = info.renderPass;                              //проход рендеринга
+        pipelineInfo[index].renderPass = *pRenderPass;                              //проход рендеринга
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
@@ -376,7 +376,7 @@ void graphics::oneColorExtension::createPipeline(VkApplication *app, graphicsInf
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
 
-void graphics::StencilExtension::createFirstPipeline(VkApplication *app, graphicsInfo info)
+void graphics::StencilExtension::createFirstPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -414,13 +414,13 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, graphic
     std::array<VkViewport,1> viewport{};
         viewport[index].x = 0.0f;
         viewport[index].y = 0.0f;
-        viewport[index].width = (float) info.extent.width;
-        viewport[index].height = (float) info.extent.height;
+        viewport[index].width = (float) pInfo->Extent.width;
+        viewport[index].height = (float) pInfo->Extent.height;
         viewport[index].minDepth = 0.0f;
         viewport[index].maxDepth = 1.0f;
     std::array<VkRect2D,1> scissor{};
         scissor[index].offset = {0, 0};
-        scissor[index].extent = info.extent;
+        scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = static_cast<uint32_t>(viewport.size());
@@ -443,7 +443,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, graphic
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = info.msaaSamples;
+        multisampling.rasterizationSamples = pInfo->Samples;
         multisampling.minSampleShading = 1.0f;
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
@@ -494,7 +494,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, graphic
     std::array<VkPushConstantRange,1> pushConstantRange;
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
-        pushConstantRange[index].size = sizeof(PushConst);
+        pushConstantRange[index].size = sizeof(MaterialBlock);
     std::array<VkDescriptorSetLayout,4> SetLayouts = {base->SceneDescriptorSetLayout,base->ObjectDescriptorSetLayout,base->PrimitiveDescriptorSetLayout,base->MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -517,7 +517,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, graphic
         pipelineInfo[index].pMultisampleState = &multisampling;                        //мультсемплинг
         pipelineInfo[index].pColorBlendState = &colorBlending;                         //смешивание цветов
         pipelineInfo[index].layout = firstPipelineLayout;
-        pipelineInfo[index].renderPass = info.renderPass;                              //проход рендеринга
+        pipelineInfo[index].renderPass = *pRenderPass;                              //проход рендеринга
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
@@ -529,7 +529,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication *app, graphic
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
 
-void graphics::StencilExtension::createSecondPipeline(VkApplication *app, graphicsInfo info)
+void graphics::StencilExtension::createSecondPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -567,13 +567,13 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, graphi
     std::array<VkViewport,1> viewport{};
         viewport[index].x = 0.0f;
         viewport[index].y = 0.0f;
-        viewport[index].width = (float) info.extent.width;
-        viewport[index].height = (float) info.extent.height;
+        viewport[index].width = (float) pInfo->Extent.width;
+        viewport[index].height = (float) pInfo->Extent.height;
         viewport[index].minDepth = 0.0f;
         viewport[index].maxDepth = 1.0f;
     std::array<VkRect2D,1> scissor{};
         scissor[index].offset = {0, 0};
-        scissor[index].extent = info.extent;
+        scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = static_cast<uint32_t>(viewport.size());
@@ -596,7 +596,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, graphi
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = info.msaaSamples;
+        multisampling.rasterizationSamples = pInfo->Samples;
         multisampling.minSampleShading = 1.0f;
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
@@ -670,7 +670,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, graphi
         pipelineInfo[index].pMultisampleState = &multisampling;                        //мультсемплинг
         pipelineInfo[index].pColorBlendState = &colorBlending;                         //смешивание цветов
         pipelineInfo[index].layout = secondPipelineLayout;
-        pipelineInfo[index].renderPass = info.renderPass;                              //проход рендеринга
+        pipelineInfo[index].renderPass = *pRenderPass;                              //проход рендеринга
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
@@ -682,70 +682,40 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication *app, graphi
     vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
 }
 
-void graphics::bloomExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount)
+void graphics::bloomExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
-    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(size_t j = 0; j<objects.size() ;j++)
     {
         if(objects[j]->getEnable()){
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
             if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i],  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(commandBuffers,  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : objects[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],PipelineLayout, primitiveCount);
+            for (auto node : objects[j]->getModel()->nodes){
+                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+                renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
+            }
         }
     }
 }
-void graphics::bloomExtension::setMaterials(std::vector<MaterialBlock> &nodeMaterials)
-{
-    for(size_t j = 0; j<objects.size() ;j++)
-        for (auto node : objects[j]->getModel()->nodes){
-            uint32_t objectPrimitive = 0;
-            setMaterialNode(node,nodeMaterials,objectPrimitive,objects[j]->getModel()->firstPrimitive);
-        }
-}
 
-void graphics::bloomExtension::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount)
+void graphics::bloomExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
         for (Primitive* primitive : node->mesh->primitives)
         {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet,
-                primitive->material.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+2);
+            for(uint32_t i=0;i<descriptorSetsCount;i++)
+                nodeDescriptorSets[i] = descriptorSets[i];
+            nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
+            nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
             // Pass material parameters as push constants
-            PushConst pushConst{};
-                pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                pushConst.number = primitiveCount;
-            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConst), &pushConst);
-
-            if (primitive->hasIndices)
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-
-            primitiveCount++;
-        }
-    }
-    for (auto child : node->children)
-        renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout, primitiveCount);
-}
-
-void graphics::bloomExtension::setMaterialNode(Node *node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
             MaterialBlock pushConstBlockMaterial{};
 
             pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
@@ -777,63 +747,9 @@ void graphics::bloomExtension::setMaterialNode(Node *node, std::vector<MaterialB
                 pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
 
-            pushConstBlockMaterial.primitive = objectPrimitive;
-            pushConstBlockMaterial.firstIndex = firstPrimitive;
+            pushConstBlockMaterial.primitive = primitiveCount;
 
-            nodeMaterials.push_back(pushConstBlockMaterial);
-
-            objectPrimitive++;
-        }
-    }
-    for (auto child : node->children)
-        setMaterialNode(child, nodeMaterials, objectPrimitive, firstPrimitive);
-}
-
-void graphics::oneColorExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount)
-{
-    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-    for(size_t j = 0; j<objects.size() ;j++)
-    {
-        if(objects[j]->getEnable()){
-            VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
-            if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i],  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            for (auto node : objects[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],PipelineLayout, primitiveCount);
-        }
-    }
-}
-void graphics::oneColorExtension::setMaterials(std::vector<MaterialBlock> &nodeMaterials)
-{
-    for(size_t j = 0; j<objects.size() ;j++)
-        for (auto node : objects[j]->getModel()->nodes){
-            uint32_t objectPrimitive = 0;
-            setMaterialNode(node,nodeMaterials,objectPrimitive,objects[j]->getModel()->firstPrimitive);
-        }
-}
-
-void graphics::oneColorExtension::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet,
-                primitive->material.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
-
-            // Pass material parameters as push constants
-            PushConst pushConst{};
-                pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                pushConst.number = primitiveCount;
-            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConst), &pushConst);
+            vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
 
             if (primitive->hasIndices)
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -844,15 +760,43 @@ void graphics::oneColorExtension::renderNode(Node *node, VkCommandBuffer& comman
         }
     }
     for (auto child : node->children)
-        renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout, primitiveCount);
+        renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
 }
 
-void graphics::oneColorExtension::setMaterialNode(Node *node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive)
+void graphics::oneColorExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+{
+    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+    for(size_t j = 0; j<objects.size() ;j++)
+    {
+        if(objects[j]->getEnable()){
+            VkDeviceSize offsets[1] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+            if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers,  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            for (auto node : objects[j]->getModel()->nodes){
+                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+                renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
+            }
+        }
+    }
+}
+
+void graphics::oneColorExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
         for (Primitive* primitive : node->mesh->primitives)
         {
+            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+2);
+            for(uint32_t i=0;i<descriptorSetsCount;i++)
+                nodeDescriptorSets[i] = descriptorSets[i];
+            nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
+            nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
+
+            // Pass material parameters as push constants
             MaterialBlock pushConstBlockMaterial{};
 
             pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
@@ -884,127 +828,78 @@ void graphics::oneColorExtension::setMaterialNode(Node *node, std::vector<Materi
                 pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
 
-            pushConstBlockMaterial.primitive = objectPrimitive;
-            pushConstBlockMaterial.firstIndex = firstPrimitive;
+            pushConstBlockMaterial.primitive = primitiveCount;
 
-            nodeMaterials.push_back(pushConstBlockMaterial);
+            vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
 
-            objectPrimitive++;
+            if (primitive->hasIndices)
+                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+            else
+                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+
+            primitiveCount++;
         }
     }
     for (auto child : node->children)
-        setMaterialNode(child, nodeMaterials, objectPrimitive, firstPrimitive);
+        renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
 }
 
-void graphics::StencilExtension::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount)
+void graphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
-    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipeline);
+    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipeline);
     for(size_t j = 0; j<objects.size() ;j++)
     {
         if(objects[j]->getEnable()){
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
             if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(commandBuffers, objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : objects[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],firstPipelineLayout, primitiveCount);
+            for (auto node : objects[j]->getModel()->nodes){
+                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+                renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
+            }
         }
     }
 
     for(size_t j = 0; j<objects.size() ;j++)
     {
         if(objects[j]->getEnable()){
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
+            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
             if(stencilEnable[j]){
                 VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+                vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
                 if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                    vkCmdBindIndexBuffer(commandBuffers, objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
                 StencilPushConst pushConst{};
                     pushConst.stencilColor = stencilColor[j];
-                vkCmdPushConstants(commandBuffers[i], secondPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(StencilPushConst), &pushConst);
+                vkCmdPushConstants(commandBuffers, secondPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(StencilPushConst), &pushConst);
 
-                for (auto node : objects[j]->getModel()->nodes)
-                    stencilRenderNode(node,commandBuffers[i],base->DescriptorSets[i],objects[j]->getDescriptorSet()[i],secondPipelineLayout);
+                for (auto node : objects[j]->getModel()->nodes){
+                    std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+                    stencilRenderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+                }
             }
         }
     }
 }
-void graphics::StencilExtension::setMaterials(std::vector<MaterialBlock> &nodeMaterials)
-{
-    for(size_t j = 0; j<objects.size() ;j++)
-        for (auto node : objects[j]->getModel()->nodes){
-            uint32_t objectPrimitive = 0;
-            setMaterialNode(node,nodeMaterials,objectPrimitive,objects[j]->getModel()->firstPrimitive);
-        }
-}
 
-void graphics::StencilExtension::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount)
+void graphics::StencilExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
         for (Primitive* primitive : node->mesh->primitives)
         {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet,
-                primitive->material.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+2);
+            for(uint32_t i=0;i<descriptorSetsCount;i++)
+                nodeDescriptorSets[i] = descriptorSets[i];
+            nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
+            nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
             // Pass material parameters as push constants
-            PushConst pushConst{};
-                pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                pushConst.number = primitiveCount;
-            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConst), &pushConst);
-
-            if (primitive->hasIndices)
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-
-            primitiveCount++;
-        }
-    }
-    for (auto child : node->children)
-        renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout, primitiveCount);
-}
-
-void graphics::StencilExtension::stencilRenderNode(Node* node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet,
-                primitive->material.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
-
-            if (primitive->hasIndices)
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-        }
-    }
-    for (auto child : node->children)
-        stencilRenderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout);
-}
-
-void graphics::StencilExtension::setMaterialNode(Node *node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
             MaterialBlock pushConstBlockMaterial{};
 
             pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
@@ -1036,14 +931,42 @@ void graphics::StencilExtension::setMaterialNode(Node *node, std::vector<Materia
                 pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
 
-            pushConstBlockMaterial.primitive = objectPrimitive;
-            pushConstBlockMaterial.firstIndex = firstPrimitive;
+            pushConstBlockMaterial.primitive = primitiveCount;
 
-            nodeMaterials.push_back(pushConstBlockMaterial);
+            vkCmdPushConstants(commandBuffer, firstPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
 
-            objectPrimitive++;
+            if (primitive->hasIndices)
+                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+            else
+                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+
+            primitiveCount++;
         }
     }
     for (auto child : node->children)
-        setMaterialNode(child, nodeMaterials, objectPrimitive, firstPrimitive);
+        renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
+}
+
+void graphics::StencilExtension::stencilRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
+{
+    if (node->mesh)
+    {
+        for (Primitive* primitive : node->mesh->primitives)
+        {
+            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+2);
+            for(uint32_t i=0;i<descriptorSetsCount;i++)
+                nodeDescriptorSets[i] = descriptorSets[i];
+            nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
+            nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
+
+            if (primitive->hasIndices)
+                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+            else
+                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+        }
+    }
+    for (auto child : node->children)
+        stencilRenderNode(commandBuffer,child,descriptorSetsCount,descriptorSets);
 }

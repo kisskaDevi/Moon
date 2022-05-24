@@ -10,18 +10,33 @@ shadowGraphics::shadowGraphics(VkApplication *app, uint32_t imageCount, VkExtent
     image.Count = imageCount;
     image.Extent.width = shadowExtent.width;
     image.Extent.height = shadowExtent.height;
+    image.Samples = VK_SAMPLE_COUNT_1_BIT;
+    image.Format = findDepthFormat(app);
 }
 
 void shadowGraphics::createMap()
 {
-    VkFormat shadowFormat = findDepthFormat(app);
-    createImage(app,image.Extent.width,image.Extent.height,image.MipLevels,VK_SAMPLE_COUNT_1_BIT,shadowFormat,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthAttachment.image, depthAttachment.imageMemory);
+    createImage(    app,
+                    image.Extent.width,
+                    image.Extent.height,
+                    image.Samples,
+                    VK_SAMPLE_COUNT_1_BIT,
+                    image.Format,
+                    VK_IMAGE_TILING_OPTIMAL,
+                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    depthAttachment.image,
+                    depthAttachment.imageMemory);
 }
 
 void shadowGraphics::createMapView()
 {
-    VkFormat shadowFormat = findDepthFormat(app);
-    depthAttachment.imageView = createImageView(app,depthAttachment.image, shadowFormat, VK_IMAGE_ASPECT_DEPTH_BIT, image.MipLevels);
+    depthAttachment.imageView =
+            createImageView(    app,
+                                depthAttachment.image,
+                                image.Format,
+                                VK_IMAGE_ASPECT_DEPTH_BIT,
+                                image.Samples);
 }
 
 void shadowGraphics::destroy()
@@ -33,10 +48,11 @@ void shadowGraphics::destroy()
     for(uint32_t i=0;i<shadowMapFramebuffer.size();i++)
         vkDestroyFramebuffer(app->getDevice(), shadowMapFramebuffer.at(i),nullptr);
     vkDestroyRenderPass(app->getDevice(), RenderPass, nullptr);
-    for(uint32_t i=0;i<shadowCommandPool.size();i++)
-        vkFreeCommandBuffers(app->getDevice(), shadowCommandPool.at(i), static_cast<uint32_t>(shadowCommandBuffer.at(i).size()), shadowCommandBuffer.at(i).data());
-    for(size_t i = 0; i < shadowCommandPool.size(); i++)
-        vkDestroyCommandPool(app->getDevice(), shadowCommandPool.at(i), nullptr);
+
+    vkFreeCommandBuffers(app->getDevice(), shadowCommandPool, static_cast<uint32_t>(shadowCommandBuffer.size()), shadowCommandBuffer.data());
+
+    vkDestroyCommandPool(app->getDevice(), shadowCommandPool, nullptr);
+
     vkDestroySampler(app->getDevice(), shadowSampler, nullptr);
 }
 
@@ -58,8 +74,8 @@ void shadowGraphics::createSampler()
         samplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-        samplerInfo.minLod = static_cast<float>(mipLevel*image.MipLevels);
-        samplerInfo.maxLod = static_cast<float>(image.MipLevels);
+        samplerInfo.minLod = static_cast<float>(mipLevel*image.Samples);
+        samplerInfo.maxLod = static_cast<float>(image.Samples);
         samplerInfo.mipLodBias = 0.0f;
     if (vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &shadowSampler) != VK_SUCCESS)
         throw std::runtime_error("failed to create shadowGraphics sampler!");
@@ -127,17 +143,14 @@ void shadowGraphics::createFramebuffer()
     }
 }
 
-void shadowGraphics::createCommandPool(uint32_t commandPoolsCount)
+void shadowGraphics::createCommandPool()
 {
-    shadowCommandPool.resize(commandPoolsCount);
-    shadowCommandBuffer.resize(commandPoolsCount);
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = app->getQueueFamilyIndices().graphicsFamily.value();
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    for(size_t i = 0; i < shadowCommandPool.size(); i++)
-        if (vkCreateCommandPool(app->getDevice(), &poolInfo, nullptr, &shadowCommandPool.at(i)) != VK_SUCCESS)
-            throw std::runtime_error("failed to create shadowGraphics command pool!");
+    if (vkCreateCommandPool(app->getDevice(), &poolInfo, nullptr, &shadowCommandPool) != VK_SUCCESS)
+        throw std::runtime_error("failed to create shadowGraphics command pool!");
 }
 
 void shadowGraphics::Shadow::Destroy(VkApplication  *app)
@@ -230,17 +243,11 @@ void shadowGraphics::Shadow::createPipeline(VkApplication *app, shadowInfo info)
     colorBlending.attachmentCount = 1;                                              //количество подключений
     colorBlending.pAttachments = &colorBlendAttachment;                             //массив подключений
 
-    VkPushConstantRange pushConstantRange;
-        pushConstantRange.stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-        pushConstantRange.offset = 0;
-        pushConstantRange.size = sizeof(uint32_t);
-    std::array<VkDescriptorSetLayout,3> SetLayouts = {DescriptorSetLayout,uniformBufferSetLayout,uniformBufferSetLayout};
+    std::array<VkDescriptorSetLayout,3> SetLayouts = {DescriptorSetLayout,uniformBufferSetLayout,uniformBlockSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-        pipelineLayoutInfo.pushConstantRangeCount = 1;
-        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -281,48 +288,42 @@ void shadowGraphics::Shadow::createPipeline(VkApplication *app, shadowInfo info)
 void shadowGraphics::Shadow::createDescriptorSetLayout(VkApplication *app)
 {
     VkDescriptorSetLayoutBinding lightUboLayoutBinding={};
-    lightUboLayoutBinding.binding = 1;
-    lightUboLayoutBinding.descriptorCount = 1;
-    lightUboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    lightUboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    lightUboLayoutBinding.pImmutableSamplers = nullptr;
-
+        lightUboLayoutBinding.binding = 0;
+        lightUboLayoutBinding.descriptorCount = 1;
+        lightUboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        lightUboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        lightUboLayoutBinding.pImmutableSamplers = nullptr;
     std::array<VkDescriptorSetLayoutBinding, 1> bindings = {lightUboLayoutBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
     if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create shadowGraphics descriptor set layout!");
 
     VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
-    uniformBufferLayoutBinding.binding = 0;
-    uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uniformBufferLayoutBinding.descriptorCount = 1;
-    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
-
+        uniformBufferLayoutBinding.binding = 0;
+        uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayoutBinding.descriptorCount = 1;
+        uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
-    uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    uniformBufferLayoutInfo.bindingCount = 1;
-    uniformBufferLayoutInfo.pBindings = &uniformBufferLayoutBinding;
-
+        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBufferLayoutInfo.bindingCount = 1;
+        uniformBufferLayoutInfo.pBindings = &uniformBufferLayoutBinding;
     if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBufferLayoutInfo, nullptr, &uniformBufferSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create shadowGraphics uniformb buffer descriptor set layout!");
 
     VkDescriptorSetLayoutBinding uniformBlockLayoutBinding{};
-    uniformBlockLayoutBinding.binding = 0;
-    uniformBlockLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uniformBlockLayoutBinding.descriptorCount = 1;
-    uniformBlockLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uniformBlockLayoutBinding.pImmutableSamplers = nullptr;
-
+        uniformBlockLayoutBinding.binding = 0;
+        uniformBlockLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBlockLayoutBinding.descriptorCount = 1;
+        uniformBlockLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBlockLayoutBinding.pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutCreateInfo uniformBlockLayoutInfo{};
-    uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    uniformBlockLayoutInfo.bindingCount = 1;
-    uniformBlockLayoutInfo.pBindings = &uniformBlockLayoutBinding;
-
+        uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBlockLayoutInfo.bindingCount = 1;
+        uniformBlockLayoutInfo.pBindings = &uniformBlockLayoutBinding;
     if (vkCreateDescriptorSetLayout(app->getDevice(), &uniformBlockLayoutInfo, nullptr, &uniformBlockSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create shadowGraphics uniformb block descriptor set layout!");
 }
@@ -358,18 +359,18 @@ void shadowGraphics::createDescriptorSets()
         throw std::runtime_error("failed to allocate shadowGraphics descriptor sets!");
 }
 
-void shadowGraphics::updateDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers)
+void shadowGraphics::updateDescriptorSets(uint32_t lightUniformBuffersCount, VkBuffer* plightUniformBuffers)
 {
-    for (size_t i = 0; i < image.Count; i++)
+    for (size_t i=0; i<lightUniformBuffersCount; i++)
     {
         VkDescriptorBufferInfo lightBufferInfo;
-            lightBufferInfo.buffer = lightUniformBuffers[i];
+            lightBufferInfo.buffer = plightUniformBuffers[i];
             lightBufferInfo.offset = 0;
-            lightBufferInfo.range = sizeof(LightUniformBufferObject);
+            lightBufferInfo.range = sizeof(LightBufferObject);
         VkWriteDescriptorSet descriptorWrites{};
             descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.dstSet = shadow.DescriptorSets[i];
-            descriptorWrites.dstBinding = 1;
+            descriptorWrites.dstBinding = 0;
             descriptorWrites.dstArrayElement = 0;
             descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.descriptorCount = 1;
@@ -378,19 +379,19 @@ void shadowGraphics::updateDescriptorSets(std::vector<VkBuffer> &lightUniformBuf
     }
 }
 
-void shadowGraphics::createCommandBuffers(uint32_t number)
+void shadowGraphics::createCommandBuffers()
 {
-    shadowCommandBuffer[number].resize(image.Count);
+    shadowCommandBuffer.resize(image.Count);
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = shadowCommandPool[number];
+        allocInfo.commandPool = shadowCommandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = image.Count;
-    if (vkAllocateCommandBuffers(app->getDevice(), &allocInfo, shadowCommandBuffer[number].data()) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(app->getDevice(), &allocInfo, shadowCommandBuffer.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate shadowGraphics command buffers!");
 }
 
-void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, ShadowPassObjects objects, uint32_t lightNumber)
+void shadowGraphics::updateCommandBuffer(uint32_t frameNumber, ShadowPassObjects objects)
 {
     VkClearValue clearValues{};
         clearValues.depthStencil.depth = 1.0f;
@@ -400,14 +401,14 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, ShadowPas
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;                                            //поле для передачи информации о том, как будет использоваться этот командный буфер (смотри страницу 102)
         beginInfo.pInheritanceInfo = nullptr;                           //используется при начале вторичного буфера, для того чтобы определить, какие состояния наследуются от первичного командного буфера, который его вызовет
-    if (vkBeginCommandBuffer(shadowCommandBuffer[number][i], &beginInfo) != VK_SUCCESS)
+    if (vkBeginCommandBuffer(shadowCommandBuffer[frameNumber], &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("failed to begin recording shadowGraphics command buffer!");
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.pNext = NULL;
         renderPassInfo.renderPass = RenderPass;
-        renderPassInfo.framebuffer = shadowMapFramebuffer[i];
+        renderPassInfo.framebuffer = shadowMapFramebuffer[frameNumber];
         renderPassInfo.renderArea.offset.x = 0;
         renderPassInfo.renderArea.offset.y = 0;
         renderPassInfo.renderArea.extent.width = image.Extent.width;
@@ -415,7 +416,7 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, ShadowPas
         renderPassInfo.clearValueCount = 1;
         renderPassInfo.pClearValues = &clearValues;
 
-    vkCmdBeginRenderPass(shadowCommandBuffer[number][i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(shadowCommandBuffer[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         VkViewport viewport;
             viewport.width = image.Extent.width;
@@ -424,93 +425,89 @@ void shadowGraphics::updateCommandBuffers(uint32_t number, uint32_t i, ShadowPas
             viewport.maxDepth = 1.0f;
             viewport.x = 0;
             viewport.y = 0;
-        vkCmdSetViewport(shadowCommandBuffer[number][i], 0, 1, &viewport);
+        vkCmdSetViewport(shadowCommandBuffer[frameNumber], 0, 1, &viewport);
 
         VkRect2D scissor;
             scissor.extent.width = image.Extent.width;
             scissor.extent.height = image.Extent.height;
             scissor.offset.x = 0;
             scissor.offset.y = 0;
-        vkCmdSetScissor(shadowCommandBuffer[number][i], 0, 1, &scissor);
+        vkCmdSetScissor(shadowCommandBuffer[frameNumber], 0, 1, &scissor);
 
-        vkCmdBindPipeline(shadowCommandBuffer[number][i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
-        vkCmdPushConstants(shadowCommandBuffer[number][i], shadow.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(uint32_t), &lightNumber);
-        for(size_t j = 0; j<objects.base->size() ;j++)
+        vkCmdBindPipeline(shadowCommandBuffer[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
+        for(auto object: *objects.base)
         {
-            if(objects.base->operator[](j)->getEnable()){
+            if(object->getEnable()){
                 VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & objects.base->operator[](j)->getModel()->vertices.buffer, offsets);
+                vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel()->vertices.buffer, offsets);
+                if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-                if (objects.base->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  objects.base->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-                for (auto node : objects.base->operator[](j)->getModel()->nodes)
-                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects.base->operator[](j)->getDescriptorSet()[i]);
-            }
-
-//            for (auto node : objects[j]->getModel()->nodes)
-//                if(glm::length(glm::vec3(objects[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-camera->getTranslate())<objects[j]->getVisibilityDistance()){
-//                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects[j]->getDescriptorSet()[i]);
-        }
-        for(size_t j = 0; j<objects.oneColor->size() ;j++)
-        {
-            if(objects.oneColor->operator[](j)->getEnable()){
-                VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & objects.oneColor->operator[](j)->getModel()->vertices.buffer, offsets);
-
-                if (objects.oneColor->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  objects.oneColor->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-                for (auto node : objects.oneColor->operator[](j)->getModel()->nodes)
-                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects.oneColor->operator[](j)->getDescriptorSet()[i]);
+                for (auto node : object->getModel()->nodes){
+                    std::vector<VkDescriptorSet> descriptorSets = {shadow.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
+                    renderNode(shadowCommandBuffer[frameNumber],node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+                }
             }
         }
-        for(size_t j = 0; j<objects.stencil->size() ;j++)
+        for(auto object: *objects.oneColor)
         {
-            if(objects.stencil->operator[](j)->getEnable()){
+            if(object->getEnable()){
                 VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(shadowCommandBuffer[number][i], 0, 1, & objects.stencil->operator[](j)->getModel()->vertices.buffer, offsets);
+                vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel()->vertices.buffer, offsets);
 
-                if (objects.stencil->operator[](j)->getModel()->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(shadowCommandBuffer[number][i],  objects.stencil->operator[](j)->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-                for (auto node : objects.stencil->operator[](j)->getModel()->nodes)
-                    renderNode(node,shadowCommandBuffer[number][i],shadow.DescriptorSets[i],objects.stencil->operator[](j)->getDescriptorSet()[i]);
+                for (auto node : object->getModel()->nodes){
+                    std::vector<VkDescriptorSet> descriptorSets = {shadow.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
+                    renderNode(shadowCommandBuffer[frameNumber],node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+                }
+            }
+        }
+        for(auto object: *objects.stencil)
+        {
+            if(object->getEnable()){
+                VkDeviceSize offsets[1] = { 0 };
+                vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel()->vertices.buffer, offsets);
+
+                if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+                for (auto node : object->getModel()->nodes){
+                    std::vector<VkDescriptorSet> descriptorSets = {shadow.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
+                    renderNode(shadowCommandBuffer[frameNumber],node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+                }
             }
         }
 
-    vkCmdEndRenderPass(shadowCommandBuffer[number][i]);
+    vkCmdEndRenderPass(shadowCommandBuffer[frameNumber]);
 
-    if (vkEndCommandBuffer(shadowCommandBuffer[number][i]) != VK_SUCCESS)
+    if (vkEndCommandBuffer(shadowCommandBuffer[frameNumber]) != VK_SUCCESS)
         throw std::runtime_error("failed to record shadowGraphics command buffer!");
 }
 
-void shadowGraphics::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectsDescriptorSet)
+void shadowGraphics::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
 {
     if (node->mesh)
     {
+        std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+1);
+        for(uint32_t i=0;i<descriptorSetsCount;i++)
+            nodeDescriptorSets[i] = descriptorSets[i];
+        nodeDescriptorSets[descriptorSetsCount] = node->mesh->uniformBuffer.descriptorSet;
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.PipelineLayout, 0, descriptorSetsCount+1, nodeDescriptorSets.data(), 0, NULL);
+
         for (Primitive* primitive : node->mesh->primitives)
-        {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectsDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.PipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
-            if (primitive->hasIndices)
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-        }
+            if (primitive->hasIndices)  vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+            else                        vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
     }
     for (auto child : node->children)
-        renderNode(child, commandBuffer, descriptorSet,objectsDescriptorSet);
+        renderNode(commandBuffer, child, descriptorSetsCount, descriptorSets);
 }
 
-void shadowGraphics::createShadow(uint32_t commandPoolsCount)
+void shadowGraphics::createShadow()
 {
-    createCommandPool(commandPoolsCount);
+    createCommandPool();
     createMap();
     createMapView();
     createSampler();
@@ -524,7 +521,7 @@ void shadowGraphics::createShadow(uint32_t commandPoolsCount)
 
 VkImageView                     & shadowGraphics::getImageView(){return depthAttachment.imageView;}
 VkSampler                       & shadowGraphics::getSampler(){return shadowSampler;}
-std::vector<VkCommandBuffer>    & shadowGraphics::getCommandBuffer(uint32_t number){return shadowCommandBuffer[number];}
+std::vector<VkCommandBuffer>    & shadowGraphics::getCommandBuffer(){return shadowCommandBuffer;}
 
 uint32_t                        shadowGraphics::getWidth() const {return image.Extent.width;}
 uint32_t                        shadowGraphics::getHeight() const {return image.Extent.height;}

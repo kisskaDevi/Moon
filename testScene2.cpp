@@ -126,7 +126,7 @@ int testScene2()
 
         camera *cameras = new camera;
             cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
-        app.addCamera(cameras);
+        app.getGraphics().setCameraObject(cameras);
 
         texture *emptyTexture = new texture(&app,ZERO_TEXTURE);
             emptyTexture->createTextureImage();
@@ -145,8 +145,7 @@ int testScene2()
             skybox->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
         object *skyboxObject = new object(&app,{gltfModel.at(1),nullptr});
             skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
-        app.getGraphics().bindSkyBoxObject(skyboxObject);
-        app.getGraphics().setSkyboxTexture(skybox);
+        app.getGraphics().bindSkyBoxObject(skyboxObject,skybox);
 
         app.createGraphics(window);
 
@@ -156,6 +155,9 @@ int testScene2()
         app.updateDescriptorSets();
         app.createCommandBuffers();
         app.createSyncObjects();
+
+        app.resetUboWorld();
+        app.resetUboLight();
 
             static auto pastTime = std::chrono::high_resolution_clock::now();
 
@@ -254,6 +256,9 @@ void recreateSwapChain(VkApplication *app, GLFWwindow* window)
     app->createGraphics(window);
     app->updateDescriptorSets();
     app->createCommandBuffers();
+
+    app->resetUboWorld();
+    app->resetUboLight();
 }
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -303,14 +308,13 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     glm::mat4x4 Proj;
 
     lightSource.push_back(new light<spotLight>(app));
-    app->addlightSource(lightSource.at(lightSource.size()-1));
         Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
         Proj[1][1] *= -1;
     lightSource.at(index)->createLightPVM(Proj);
-    lightSource.at(index)->setLightNumber(index);
-    lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
+    lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     lightSource.at(index)->setScattering(true);
     groups.at(0)->addObject(lightSource.at(index));
+    app->addlightSource(lightSource.at(lightSource.size()-1));
     index++;
 }
 
@@ -327,7 +331,7 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
     index++;
 
     physObject.push_back( new physicalObject(app,{gltfModel.at(0),emptyTexture},5.0f) );
-    app->getGraphics().bindStencilObject(physObject.at(index),1.0f,glm::vec4(0.2f,0.8f,0.8f,1.0f));
+    app->getGraphics().bindStencilObject(physObject.at(index),1.0f,glm::vec4(1.0f,0.0f,0.8f,1.0f));
     physObject.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     physObject.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     physObject.at(index)->translate(glm::vec3(-2.0f*glm::sqrt(3.0f/4.0f),-1.0f,0.0f));
@@ -335,7 +339,7 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
     index++;
 
     physObject.push_back( new physicalObject(app,{gltfModel.at(0),emptyTexture},5.0f) );
-    app->getGraphics().bindStencilObject(physObject.at(index),1.0f,glm::vec4(0.2f,0.8f,0.8f,1.0f));
+    app->getGraphics().bindStencilObject(physObject.at(index),1.0f,glm::vec4(1.0f,1.0f,1.0f,1.0f));
     physObject.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     physObject.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     physObject.at(index)->translate(glm::vec3(2.0f*glm::sqrt(3.0f/4.0f),-1.0f,0.0f));

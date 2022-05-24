@@ -28,10 +28,19 @@ This application makes render of scene by Vulkan API and contains some modern gr
 * Bloom by bliting of source image
 <img src="./screenshots/screenshot3.PNG" width="1000px">
 
-* deferred render by subpasses
+* Deferred render by subpasses
 
-<img src="./screenshots/screenshot5.PNG" width="400px"> <img src="./screenshots/screenshot6.PNG" width="400px">
-<img src="./screenshots/screenshot7.PNG" width="400px"> <img src="./screenshots/screenshot8.PNG" width="400px">
+Positions
+<img src="./screenshots/screenshot5.PNG" width="500px">
+Normals
+<img src="./screenshots/screenshot6.PNG" width="500px">
+Albedo
+<img src="./screenshots/screenshot7.PNG" width="500px">
+Emissions
+<img src="./screenshots/screenshot8.PNG" width="500px">
+Final Image
+<img src="./screenshots/screenshot10.PNG" width="500px">
+
 
 * Volumetric light
 <img src="./screenshots/screenshot4.PNG" width="1000px">

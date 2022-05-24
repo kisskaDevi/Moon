@@ -1,5 +1,4 @@
 #version 450
-#define MAX_NODE_COUNT 256
 
 const float pi = 3.141592653589793f;
 const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;
@@ -7,6 +6,33 @@ const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;
 const float c_MinRoughness = 0.04;
 
 layout(set = 0, binding = 1)	uniform samplerCube samplerCubeMap;
+
+layout(set = 0, binding = 2) buffer StorageBuffer
+{
+    vec4 mousePosition;
+    int number;
+    float depth;
+} storage;
+
+layout (push_constant) uniform MaterialPC
+{
+    vec4 baseColorFactor;
+    vec4 emissiveFactor;
+    vec4 diffuseFactor;
+    vec4 specularFactor;
+    float workflow;
+    int baseColorTextureSet;
+    int physicalDescriptorTextureSet;
+    int normalTextureSet;
+    int occlusionTextureSet;
+    int emissiveTextureSet;
+    float metallicFactor;
+    float roughnessFactor;
+    float alphaMask;
+    float alphaMaskCutoff;
+    int number;
+} materialPC;
+
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D metallicRoughnessTexture;
@@ -30,44 +56,6 @@ layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outBaseColor;
 layout(location = 3) out vec4 outEmissiveTexture;
 
-struct Material
-{
-    vec4 baseColorFactor;
-    vec4 emissiveFactor;
-    vec4 diffuseFactor;
-    vec4 specularFactor;
-    float workflow;
-    int baseColorTextureSet;
-    int physicalDescriptorTextureSet;
-    int normalTextureSet;
-    int occlusionTextureSet;
-    int emissiveTextureSet;
-    float metallicFactor;
-    float roughnessFactor;
-    float alphaMask;
-    float alphaMaskCutoff;
-    int index;
-    int firstIndex;
-};
-
-layout(set = 0, binding = 2) uniform MaterialUniformBufferObject
-{
-    Material ubo[MAX_NODE_COUNT];
-} material;
-
-layout(set = 0, binding = 3) buffer StorageBuffer
-{
-    vec4 mousePosition;
-    int number;
-    float depth;
-} storage;
-
-layout (push_constant) uniform MaterialPC
-{
-    int normalTextureSet;
-    int number;
-} materialPC;
-
 vec3		getNormal();
 vec4		SRGBtoLINEAR(vec4 srgbIn);
 float		convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
@@ -90,14 +78,14 @@ void main()
 
     int number = materialPC.number;
 
-    if (material.ubo[number].workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS)
+    if (materialPC.workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS)
     {
 	// Metallic and Roughness material properties are packed together
 	// In glTF, these factors can be specified by fixed scalar values
 	// or from a metallic-roughness map
-	perceptualRoughness = material.ubo[number].roughnessFactor;
-	metallic	    = material.ubo[number].metallicFactor;
-	if (material.ubo[number].physicalDescriptorTextureSet > -1) {
+	perceptualRoughness = materialPC.roughnessFactor;
+	metallic	    = materialPC.metallicFactor;
+	if (materialPC.physicalDescriptorTextureSet > -1) {
 	        // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
 	        // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
 	        vec4 mrSample = texture(metallicRoughnessTexture,UV0);
@@ -109,17 +97,17 @@ void main()
 	}
 
 	// The albedo may be defined from a base texture or a flat color
-	if (material.ubo[number].baseColorTextureSet > -1) {
-	        baseColor = SRGBtoLINEAR(outBaseColor) * material.ubo[number].baseColorFactor;
+	if (materialPC.baseColorTextureSet > -1) {
+	        baseColor = SRGBtoLINEAR(outBaseColor) * materialPC.baseColorFactor;
 	} else {
-	        baseColor = material.ubo[number].baseColorFactor;
+	        baseColor = materialPC.baseColorFactor;
 	}
     }
 
-    if (material.ubo[number].workflow == PBR_WORKFLOW_SPECULAR_GLOSINESS)
+    if (materialPC.workflow == PBR_WORKFLOW_SPECULAR_GLOSINESS)
     {
 	// Values from specular glossiness workflow are converted to metallic roughness
-	if (material.ubo[number].physicalDescriptorTextureSet > -1) {
+	if (materialPC.physicalDescriptorTextureSet > -1) {
 	        perceptualRoughness = 1.0 - texture(metallicRoughnessTexture,UV0).a;
 	} else {
 	        perceptualRoughness = 0.0;
@@ -134,8 +122,8 @@ void main()
 
 	const float epsilon = 1e-6;
 
-	vec3 baseColorDiffusePart = diffuse.rgb * ((1.0 - maxSpecular) / (1 - c_MinRoughness) / max(1 - metallic, epsilon)) * material.ubo[number].diffuseFactor.rgb;
-	vec3 baseColorSpecularPart = specular - (vec3(c_MinRoughness) * (1 - metallic) * (1 / max(metallic, epsilon))) * material.ubo[number].specularFactor.rgb;
+	vec3 baseColorDiffusePart = diffuse.rgb * ((1.0 - maxSpecular) / (1 - c_MinRoughness) / max(1 - metallic, epsilon)) * materialPC.diffuseFactor.rgb;
+	vec3 baseColorSpecularPart = specular - (vec3(c_MinRoughness) * (1 - metallic) * (1 / max(metallic, epsilon))) * materialPC.specularFactor.rgb;
 	baseColor = vec4(mix(baseColorDiffusePart, baseColorSpecularPart, metallic * metallic), diffuse.a);
     }
 
@@ -143,7 +131,7 @@ void main()
     outPosition.a = depth;
     outBaseColor = vec4(baseColor.xyz,perceptualRoughness);
     outNormal.a = metallic;
-    if (material.ubo[number].occlusionTextureSet > -1) {
+    if (materialPC.occlusionTextureSet > -1) {
 	    float ao = texture(occlusionTexture,UV0).r;
 	    outEmissiveTexture.a = ao;
     }else{

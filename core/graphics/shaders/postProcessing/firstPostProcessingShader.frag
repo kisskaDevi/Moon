@@ -13,7 +13,7 @@ vec4 blur(sampler2D blurSampler, vec2 TexCoord)
 {
     float sigma = 2.0 * textureSize(blurSampler, 0).x;
     vec2 textel = 1.0 / textureSize(blurSampler, 0);
-    vec3 Color = texture(blurSampler, TexCoord).xyz /sqrt(pi*sigma);
+    vec4 Color = texture(blurSampler, TexCoord) /sqrt(pi*sigma);
     int h = 20;
     float Norm = 1.0f/sqrt(pi*sigma);
     for(int i=1;i<h+1;i+=2)
@@ -22,10 +22,10 @@ vec4 blur(sampler2D blurSampler, vec2 TexCoord)
 	float I2 = Norm * exp( -((i+1)*textel.x*(i+1)*textel.x)/sigma);
 	float x = (I1*i+I2*(i+1))*textel.x/(I1+I2);
 	float I = Norm * exp(-(x*x)/sigma);
-	Color += texture(blurSampler, TexCoord + vec2(x,0.0f) ).xyz * I;
-	Color += texture(blurSampler, TexCoord - vec2(x,0.0f) ).xyz * I;
+	Color += texture(blurSampler, TexCoord + vec2(x,0.0f) ) * I;
+	Color += texture(blurSampler, TexCoord - vec2(x,0.0f) ) * I;
     }
-    return vec4(Color, 1.0);
+    return Color;
 }
 
 void main()

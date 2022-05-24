@@ -49,7 +49,7 @@ VkCommandBuffer beginSingleTimeCommands(VkApplication* app)
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                                                                      //уровень командных буферов, которые вы хотите выделит. Vulkan позволяет первичным (primary) вызывать вторичные (secondary) командные буферы
-        allocInfo.commandPool = app->getCommandPool().at(0);                                                                    //дескриптор созданного ранее командного пула
+        allocInfo.commandPool = app->getCommandPool();                                                                    //дескриптор созданного ранее командного пула
         allocInfo.commandBufferCount = 1;                                                                                       //число командных буферов, которые мы хотим выделить
     vkAllocateCommandBuffers(app->getDevice(), &allocInfo, &commandBuffer);                                                     //выделение командного буфера
                                                                                                                                 //Прежде чем вы сможете начать записывать команды в командный буфер, вам нужно начать командный буфер, т.е. просто сброситть к начальному состоянию
@@ -72,7 +72,7 @@ void endSingleTimeCommands(VkApplication* app, VkCommandBuffer commandBuffer)
     vkQueueSubmit(app->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);                                                     //эта команда может передать один или несколько командных буферов на выполенение устройством
     vkQueueWaitIdle(app->getGraphicsQueue());                                                                                   //ждём пока очередь передачи не станет свободной
 
-    vkFreeCommandBuffers(app->getDevice(), app->getCommandPool().at(0), 1, &commandBuffer);                                     //освобождение командных буферов
+    vkFreeCommandBuffers(app->getDevice(), app->getCommandPool(), 1, &commandBuffer);                                     //освобождение командных буферов
 }
 
 void copyBuffer(VkApplication* app, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)

@@ -249,14 +249,12 @@ void VkApplication::createCommandPool()
      * Прежде чем вы можете запоминать какие-либо  команды, вам нужно создать командный буфер.
      * Командные буферы не создаются явно, а выделяются из пулов.*/
 
-    commandPool.resize(COMMAND_POOLS);
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value();              //задаёт семейство очередей, в которые будет передаваться созданные командные буферы
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;                                                                   //задаёт флаги, определяющие поведение пула и командных буферов, выделяемых из него
-    for(size_t i=0;i<COMMAND_POOLS;i++)
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool.at(i)) != VK_SUCCESS)                                              //создание пула команд
-            throw std::runtime_error("failed to create command pool!");
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)                                              //создание пула команд
+        throw std::runtime_error("failed to create command pool!");
 }
 
 void VkApplication::createGraphics(GLFWwindow* window)
@@ -272,20 +270,26 @@ void VkApplication::createGraphics(GLFWwindow* window)
         MSAASamples = maxMSAASamples;
 
     PostProcessing.setApplication(this);
-    PostProcessing.setMSAASamples(MSAASamples);
+    Graphics.setApplication(this);
+    Filter.setApplication(this);
 
     PostProcessing.createAttachments(window, swapChainSupport);
     PostProcessing.createRenderPass();
     PostProcessing.createFramebuffers();
     PostProcessing.createPipelines();
 
-    Graphics.setApplication(this);
-    Graphics.setImageProp(PostProcessing.SwapChainImageCount(),PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainImageExtent(),MSAASamples);
+    imageInfo info{};
+        info.Count = imageCount;
+        info.Format = PostProcessing.SwapChainImageFormat();
+        info.Extent = PostProcessing.SwapChainImageExtent();
+        info.Samples = MSAASamples;
+    Graphics.setImageProp(&info);
 
     Graphics.createAttachments();
     Graphics.createRenderPass();
     Graphics.createFramebuffers();
     Graphics.createPipelines();
+    Graphics.createStorageBuffers(this, imageCount);
 
     PostProcessing.createDescriptorPool();
     PostProcessing.createDescriptorSets(Graphics.getAttachments(),Graphics.getSceneBuffer());
@@ -297,10 +301,9 @@ void VkApplication::createGraphics(GLFWwindow* window)
     Graphics.createSecondDescriptorPool();
     Graphics.createSecondDescriptorSets();
 
-    Filter.setApplication(this);
-    Filter.setImageProp(PostProcessing.SwapChainImageCount(),PostProcessing.SwapChainImageFormat(),PostProcessing.SwapChainImageExtent(),MSAASamples);
+    Filter.setImageProp(&info);
     Filter.setBlitAttachments(&PostProcessing.getBlitAttachment());
-    Filter.setAttachments(&PostProcessing.getBlitAttachments());
+    Filter.setAttachments(PostProcessing.getBlitAttachments().size(),PostProcessing.getBlitAttachments().data());
 
     Filter.createRenderPass();
     Filter.createFramebuffers();
@@ -313,63 +316,51 @@ void VkApplication::createGraphics(GLFWwindow* window)
 
 void VkApplication::updateDescriptorSets()
 {
-    Graphics.updateSecondDescriptorSets(lightSources);
+    Graphics.updateSecondDescriptorSets();
+    for(auto lightSource: lightSources)
+        lightSource->getShadow()->updateDescriptorSets(static_cast<uint32_t>(lightSource->getUniformBuffers().size()),lightSource->getUniformBuffers().data());
 }
 
 void VkApplication::createCommandBuffers()
 {
-    commandBuffers.resize(COMMAND_POOLS);
+    createCommandBuffer();
+    for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
+        updateCommandBuffer(imageIndex);
 
-    for(size_t i=0;i<COMMAND_POOLS;i++)
+    for(auto lightSource: lightSources)
     {
-        createCommandBuffer(i);
-        for(size_t j=0;j<commandBuffers[i].size();j++)
+        if(lightSource->getShadowEnable())
         {
-            updateUniformBuffer(j);
-            updateCommandBuffer(i,j);
-        }
-    }
-
-    for(size_t k=0;k<lightSources.size();k++)
-    {
-        if(lightSources[k]->getShadowEnable())
-        {
-            for(size_t i=0;i<COMMAND_POOLS;i++)
-            {
-                lightSources[k]->getShadow()->createCommandBuffers(i);
-                for(size_t j=0;j<lightSources[k]->getShadow()->getCommandBuffer(i).size();j++)
-                {
-                    Graphics.updateLightUniformBuffer(j,lightSources);
-                    lightSources[k]->getShadow()->updateCommandBuffers(i,j,Graphics.getObjects(),lightSources[k]->getLightNumber());
-                }
-            }
+            lightSource->getShadow()->createCommandBuffers();
+            for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
+                lightSource->getShadow()->updateCommandBuffer(imageIndex,Graphics.getObjects());
         }
     }
 }
-    void VkApplication::createCommandBuffer(uint32_t number)
+    void VkApplication::createCommandBuffer()
     {
-        commandBuffers[number].resize(imageCount);
+        commandBuffers.resize(imageCount);
 
         VkCommandBufferAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            allocInfo.commandPool = commandPool[number];                                 //дескриптор ранее созданного командного пула
-            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                              //задаёт уровень командных буферов, которые вы хотите выделить
-            allocInfo.commandBufferCount = (uint32_t) commandBuffers[number].size();     //задаёт число командных буферов
+            allocInfo.commandPool = commandPool;                                 //дескриптор ранее созданного командного пула
+            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                  //задаёт уровень командных буферов, которые вы хотите выделить
+            allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();     //задаёт число командных буферов
 
-        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers[number].data()) != VK_SUCCESS)
+        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
             throw std::runtime_error("failed to allocate command buffers!");
     }
 
-void VkApplication::updateCommandBuffer(uint32_t number, uint32_t i)
+void VkApplication::updateCommandBuffer(uint32_t imageIndex)
 {
     VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;                                            //поле для передачи информации о том, как будет использоваться этот командный буфер (смотри страницу 102)
         beginInfo.pInheritanceInfo = nullptr;                           //используется при начале вторичного буфера, для того чтобы определить, какие состояния наследуются от первичного командного буфера, который его вызовет
-    if (vkBeginCommandBuffer(commandBuffers[number][i], &beginInfo) != VK_SUCCESS)
+    if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("failed to begin recording command buffer!");
 
-    Graphics.render(commandBuffers[number],i,lightSources);
+    Graphics.render(imageIndex,commandBuffers[imageIndex],static_cast<uint32_t>(lightSources.size()),lightSources.data());
 
         VkImageSubresourceRange ImageSubresourceRange{};
             ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -383,26 +374,33 @@ void VkApplication::updateCommandBuffer(uint32_t number, uint32_t i)
             clearColorValue.uint32[2] = 0;
             clearColorValue.uint32[3] = 0;
 
-        transitionImageLayout(&commandBuffers[number][i],PostProcessing.getBlitAttachment().image[i],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS);
-        vkCmdClearColorImage(commandBuffers[number][i],PostProcessing.getBlitAttachment().image[i],VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
-        blitDown(&commandBuffers[number][i],Graphics.getAttachments()[2].image[i],PostProcessing.getBlitAttachment().image[i],PostProcessing.SwapChainImageExtent().width,PostProcessing.SwapChainImageExtent().height);
-        transitionImageLayout(&commandBuffers[number][i],PostProcessing.getBlitAttachment().image[i],VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
-        Filter.render(commandBuffers[number],i,0,1.0);
+        VkImage blitImages[8] = {
+            Graphics.getAttachments()[2].image[imageIndex],
+            PostProcessing.getBlitAttachments()[0].image[imageIndex],
+            PostProcessing.getBlitAttachments()[1].image[imageIndex],
+            PostProcessing.getBlitAttachments()[2].image[imageIndex],
+            PostProcessing.getBlitAttachments()[3].image[imageIndex],
+            PostProcessing.getBlitAttachments()[4].image[imageIndex],
+            PostProcessing.getBlitAttachments()[5].image[imageIndex],
+            PostProcessing.getBlitAttachments()[6].image[imageIndex]
+        };
+        VkImage blitBufferImage = PostProcessing.getBlitAttachment().image[imageIndex];
+        uint32_t width = PostProcessing.SwapChainImageExtent().width;
+        uint32_t height = PostProcessing.SwapChainImageExtent().height;
 
-        for(uint32_t k=1;k<8;k++){
-            transitionImageLayout(&commandBuffers[number][i],PostProcessing.getBlitAttachment().image[i],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS);
-            vkCmdClearColorImage(commandBuffers[number][i],PostProcessing.getBlitAttachment().image[i],VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
-            blitDown(&commandBuffers[number][i],PostProcessing.getBlitAttachments()[k-1].image[i],PostProcessing.getBlitAttachment().image[i],PostProcessing.SwapChainImageExtent().width,PostProcessing.SwapChainImageExtent().height);
-            transitionImageLayout(&commandBuffers[number][i],PostProcessing.getBlitAttachment().image[i],VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
-            Filter.render(commandBuffers[number],i,k,1.0);
-        }
         for(uint32_t k=0;k<8;k++){
-            transitionImageLayout(&commandBuffers[number][i],PostProcessing.getBlitAttachments()[k].image[i],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+            transitionImageLayout(&commandBuffers[imageIndex],blitBufferImage,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+            vkCmdClearColorImage(commandBuffers[imageIndex],blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
+            blitDown(&commandBuffers[imageIndex],blitImages[k],blitBufferImage,width,height);
+            transitionImageLayout(&commandBuffers[imageIndex],blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+            Filter.render(imageIndex,commandBuffers[imageIndex],k,1.0);
         }
+        for(uint32_t k=0;k<8;k++)
+            transitionImageLayout(&commandBuffers[imageIndex],PostProcessing.getBlitAttachments()[k].image[imageIndex],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
 
-    PostProcessing.render(commandBuffers[number],i);
+    PostProcessing.render(commandBuffers,imageIndex);
 
-    if (vkEndCommandBuffer(commandBuffers[number][i]) != VK_SUCCESS)
+    if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS)
         throw std::runtime_error("failed to record command buffer!");
 }
 
@@ -431,10 +429,10 @@ void VkApplication::createSyncObjects()
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+    for (size_t imageIndex = 0; imageIndex < MAX_FRAMES_IN_FLIGHT; imageIndex++)
+        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[imageIndex]) != VK_SUCCESS ||
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[imageIndex]) != VK_SUCCESS ||
+            vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[imageIndex]) != VK_SUCCESS)
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
 }
 
@@ -458,10 +456,10 @@ VkResult VkApplication::drawFrame()
     VkSemaphore                         signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
     std::vector<VkCommandBuffer>        commandbufferSet;
 
-        for(size_t i=0;i<lightSources.size();i++)
-            if(lightSources[i]->getShadowEnable())
-                commandbufferSet.push_back(lightSources[i]->getShadow()->getCommandBuffer(currentBuffer)[imageIndex]);
-        commandbufferSet.push_back(commandBuffers[currentBuffer][imageIndex]);
+        for(auto lightSource: lightSources)
+            if(lightSource->getShadowEnable())
+                commandbufferSet.push_back(lightSource->getShadow()->getCommandBuffer()[imageIndex]);
+        commandbufferSet.push_back(commandBuffers[imageIndex]);
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
     VkSubmitInfo submitInfo{};
@@ -486,8 +484,6 @@ VkResult VkApplication::drawFrame()
         presentInfo.pImageIndices = &imageIndex;
     result = vkQueuePresentKHR(presentQueue, &presentInfo);                                                  //Поставить изображение в очередь для презентации
 
-    if(imageIndex==imageCount-1)
-        currentBuffer = (currentBuffer + 1) % COMMAND_POOLS;
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
     return result;
@@ -496,18 +492,16 @@ VkResult VkApplication::drawFrame()
     {
         if(worldCmd.enable)
         {
-            updateCommandBuffer((currentBuffer + 1) % COMMAND_POOLS,imageIndex);
-            worldCmd.frames++;
-            if(worldCmd.frames==COMMAND_POOLS*imageCount)
+            updateCommandBuffer(imageIndex);
+            if((++worldCmd.frames)==imageCount)
                 worldCmd.enable = false;
         }
         if(lightsCmd.enable)
         {
-            for(size_t i=0;i<lightSources.size();i++)
-                if(lightSources[i]->getShadowEnable())
-                    lightSources[i]->getShadow()->updateCommandBuffers((currentBuffer + 1) % COMMAND_POOLS,imageIndex,Graphics.getObjects(),lightSources[i]->getLightNumber());
-            lightsCmd.frames++;
-            if(lightsCmd.frames==COMMAND_POOLS*imageCount)
+            for(auto lightSource: lightSources)
+                if(lightSource->getShadowEnable())
+                    lightSource->getShadow()->updateCommandBuffer(imageIndex,Graphics.getObjects());
+            if((++lightsCmd.frames)==imageCount)
                 lightsCmd.enable = false;
         }
     }
@@ -516,24 +510,22 @@ VkResult VkApplication::drawFrame()
         if(worldUbo.enable)
         {
             updateUniformBuffer(imageIndex);
-            worldUbo.frames++;
-            if(worldUbo.frames==COMMAND_POOLS*imageCount)
+            if((++worldUbo.frames)==imageCount)
                 worldUbo.enable = false;
         }
         if(lightsUbo.enable)
         {
-            Graphics.updateLightUniformBuffer(imageIndex,lightSources);
-            lightsUbo.frames++;
-            if(lightsUbo.frames==COMMAND_POOLS*imageCount)
+            for(auto lightSource: lightSources)
+                lightSource->updateLightBuffer(imageIndex);
+            if((++lightsUbo.frames)==imageCount)
                 lightsUbo.enable = false;
         }
     }
-        void VkApplication::updateUniformBuffer(uint32_t currentImage)
+        void VkApplication::updateUniformBuffer(uint32_t imageIndex)
         {
-            Graphics.updateUniformBuffer(currentImage, cameras);
-            Graphics.updateSkyboxUniformBuffer(currentImage, cameras);
-            Graphics.updateObjectUniformBuffer(currentImage);
-            Graphics.updateMaterialUniformBuffer(currentImage);
+            Graphics.updateUniformBuffer(imageIndex);
+            Graphics.updateSkyboxUniformBuffer(imageIndex);
+            Graphics.updateObjectUniformBuffer(imageIndex);
         }
 
 
@@ -546,9 +538,7 @@ void VkApplication::destroyGraphics()
 
 void VkApplication::freeCommandBuffers()
 {
-    for(size_t i = 0; i< commandPool.size();i++)
-        vkFreeCommandBuffers(device, commandPool.at(i), static_cast<uint32_t>(commandBuffers.at(i).size()),commandBuffers.at(i).data());
-
+    vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()),commandBuffers.data());
     commandBuffers.clear();
 }
 
@@ -557,15 +547,14 @@ void VkApplication::VkApplication::cleanup()
     destroyGraphics();
     freeCommandBuffers();
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    for (size_t imageIndex = 0; imageIndex < MAX_FRAMES_IN_FLIGHT; imageIndex++)
     {
-        vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(device, inFlightFences[i], nullptr);
+        vkDestroySemaphore(device, renderFinishedSemaphores[imageIndex], nullptr);
+        vkDestroySemaphore(device, imageAvailableSemaphores[imageIndex], nullptr);
+        vkDestroyFence(device, inFlightFences[imageIndex], nullptr);
     }
 
-    for(size_t i = 0; i< commandPool.size();i++)
-        vkDestroyCommandPool(device, commandPool.at(i), nullptr);
+    vkDestroyCommandPool(device, commandPool, nullptr);
 
     vkDestroyDevice(device, nullptr);
 
@@ -588,7 +577,7 @@ void VkApplication::VkApplication::cleanup()
 VkPhysicalDevice                    & VkApplication::getPhysicalDevice(){return physicalDevices.at(physicalDeviceNumber).device;}
 VkDevice                            & VkApplication::getDevice(){return device;}
 VkQueue                             & VkApplication::getGraphicsQueue(){return graphicsQueue;}
-std::vector<VkCommandPool>          & VkApplication::getCommandPool(){return commandPool;}
+VkCommandPool                       & VkApplication::getCommandPool(){return commandPool;}
 VkSurfaceKHR                        & VkApplication::getSurface(){return surface;}
 QueueFamilyIndices                  & VkApplication::getQueueFamilyIndices(){return physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber);}
 graphics                            & VkApplication::getGraphics(){return Graphics;}
@@ -602,9 +591,9 @@ void                                VkApplication::resetUboWorld(){worldUbo.enab
 void                                VkApplication::addlightSource(light<spotLight>* lightSource)
 {
     this->lightSources.push_back(lightSource);
-    lightSources.at(lightSources.size()-1)->createShadow(COMMAND_POOLS, imageCount);
+    lightSources.at(lightSources.size()-1)->createShadow(imageCount);
+    Graphics.bindLightSource(lightSources.at(lightSources.size()-1));
 }
 
 void                                VkApplication::removeLightSources(){lightSources.clear();}
 
-void                                VkApplication::addCamera(camera * cameras){this->cameras = cameras;}

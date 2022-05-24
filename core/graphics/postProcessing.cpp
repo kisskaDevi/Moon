@@ -8,7 +8,6 @@
 postProcessing::postProcessing(){}
 
 void postProcessing::setApplication(VkApplication * app){this->app = app;}
-void postProcessing::setMSAASamples(VkSampleCountFlagBits msaaSamples){this->msaaSamples = msaaSamples;}
 
 void postProcessing::destroy()
 {
@@ -72,7 +71,7 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);                                   //задаём поддерживаемый формат
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);                                    //смотри ниже
-        VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);                                                    //задаём размер изображения в списке показа в пикселях
+        VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);                                            //задаём размер изображения в списке показа в пикселях
 
         imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                           //запрос на поддержку минимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
         if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)        //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений

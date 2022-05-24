@@ -3,8 +3,6 @@
 
 #include "core/vulkanCore.h"
 
-const int MAX_LIGHT_SOURCE_COUNT = 20;
-
 struct shadowInfo{
     uint32_t                    imageCount;
     VkExtent2D                  extent;
@@ -20,25 +18,13 @@ struct LightBufferObject
     alignas(16) glm::vec4   position;
     alignas(16) glm::vec4   lightColor;
     alignas(4)  uint32_t    type;
-    alignas(4)  uint32_t    enableShadow;
-    alignas(4)  uint32_t    enableScattering;
-};
-
-struct LightUniformBufferObject
-{
-    LightBufferObject buffer[MAX_LIGHT_SOURCE_COUNT];
 };
 
 class shadowGraphics
 {
 private:
     VkApplication                       *app;
-
-    struct Image{
-        uint32_t                            Count;
-        VkExtent2D                          Extent;
-        uint32_t                            MipLevels = 1;
-    }image;
+    imageInfo                           image;
 
     attachment                          depthAttachment;
     VkSampler                           shadowSampler;
@@ -60,10 +46,10 @@ private:
         void createDescriptorSetLayout(VkApplication *app);
     }shadow;
 
-    std::vector<VkCommandPool>                      shadowCommandPool;
-    std::vector<std::vector<VkCommandBuffer>>       shadowCommandBuffer;
+    VkCommandPool                       shadowCommandPool;
+    std::vector<VkCommandBuffer>        shadowCommandBuffer;
 
-    void renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectsDescriptorSet);
+    void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
 public:
     shadowGraphics(VkApplication *app, uint32_t imageCount, VkExtent2D shadowExtent = {1024,1024});
     void destroy();
@@ -72,23 +58,23 @@ public:
     void createMapView();
     void createSampler();
 
-    void createCommandPool(uint32_t commandPoolCount);
+    void createCommandPool();
 
     void createRenderPass();
     void createFramebuffer();
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(std::vector<VkBuffer> &lightUniformBuffers);
+    void updateDescriptorSets(uint32_t lightUniformBuffersCount, VkBuffer* plightUniformBuffers);
 
-    void createCommandBuffers(uint32_t number);
-    void updateCommandBuffers(uint32_t number, uint32_t i, ShadowPassObjects objects, uint32_t lightNumber);
+    void createCommandBuffers();
+    void updateCommandBuffer(uint32_t frameNumber, ShadowPassObjects objects);
 
-    void createShadow(uint32_t commandPoolsCount);
+    void createShadow();
 
     VkImageView                     & getImageView();
     VkSampler                       & getSampler();
-    std::vector<VkCommandBuffer>    & getCommandBuffer(uint32_t number);
+    std::vector<VkCommandBuffer>    & getCommandBuffer();
 
     uint32_t                        getWidth() const;
     uint32_t                        getHeight() const;

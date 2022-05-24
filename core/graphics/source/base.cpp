@@ -22,11 +22,26 @@ void graphics::Base::Destroy(VkApplication *app)
     }
 }
 
+void graphics::Base::createUniformBuffers(VkApplication *app, uint32_t imageCount)
+{
+    sceneUniformBuffers.resize(imageCount);
+    sceneUniformBuffersMemory.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        createBuffer(   app,
+                        sizeof(UniformBufferObject),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        sceneUniformBuffers[i],
+                        sceneUniformBuffersMemory[i]);
+    }
+}
+
 void graphics::Base::createDescriptorSetLayout(VkApplication *app)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding, 4> Binding{};
+    std::array<VkDescriptorSetLayoutBinding, 3> Binding{};
         Binding[index].binding = index;
         Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         Binding[index].descriptorCount = 1;
@@ -38,12 +53,6 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         Binding[index].descriptorCount = 1;
         Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding[index].pImmutableSamplers = nullptr;
-    index++;
-        Binding.at(index).binding = index;
-        Binding.at(index).descriptorCount = 1;
-        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding.at(index).pImmutableSamplers = nullptr;
     index++;
         Binding.at(index).binding = index;
         Binding.at(index).descriptorCount = 1;
@@ -129,7 +138,7 @@ void graphics::Base::createDescriptorSetLayout(VkApplication *app)
         throw std::runtime_error("failed to create base material descriptor set layout!");
 }
 
-void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
+void graphics::Base::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -180,13 +189,13 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
     std::array<VkViewport,1> viewport{};
         viewport[index].x = 0.0f;
         viewport[index].y = 0.0f;
-        viewport[index].width = (float) info.extent.width;
-        viewport[index].height = (float) info.extent.height;
+        viewport[index].width = (float) pInfo->Extent.width;
+        viewport[index].height = (float) pInfo->Extent.height;
         viewport[index].minDepth = 0.0f;
         viewport[index].maxDepth = 1.0f;
     std::array<VkRect2D,1> scissor{};
         scissor[index].offset = {0, 0};
-        scissor[index].extent = info.extent;
+        scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;              //число областей вывода
@@ -215,7 +224,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = info.msaaSamples;
+        multisampling.rasterizationSamples = pInfo->Samples;
         multisampling.minSampleShading = 1.0f;
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
@@ -258,7 +267,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
     std::array<VkPushConstantRange,1> pushConstantRange{};
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
-        pushConstantRange[index].size = sizeof(PushConst);
+        pushConstantRange[index].size = sizeof(MaterialBlock);
     std::array<VkDescriptorSetLayout,4> setLayouts = {SceneDescriptorSetLayout,ObjectDescriptorSetLayout,PrimitiveDescriptorSetLayout,MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -293,7 +302,7 @@ void graphics::Base::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineInfo[index].pMultisampleState = &multisampling;                        //мультсемплинг
         pipelineInfo[index].pColorBlendState = &colorBlending;                         //смешивание цветов
         pipelineInfo[index].layout = PipelineLayout;                                   //
-        pipelineInfo[index].renderPass = info.renderPass;                              //проход рендеринга
+        pipelineInfo[index].renderPass = *pRenderPass;                              //проход рендеринга
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
@@ -365,16 +374,12 @@ void graphics::createBaseDescriptorSets()
             skyboxImageInfo[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             skyboxImageInfo[0].imageView = skybox.texture ? skybox.texture->getTextureImageView() : emptyTexture->getTextureImageView();
             skyboxImageInfo[0].sampler   = skybox.texture ? skybox.texture->getTextureSampler() : emptyTexture->getTextureSampler();
-        VkDescriptorBufferInfo MaterialBufferInfo{};
-            MaterialBufferInfo.buffer = second.nodeMaterialUniformBuffers[i];
-            MaterialBufferInfo.offset = 0;
-            MaterialBufferInfo.range = second.nodeMaterialCount * sizeof(MaterialBlock);
         VkDescriptorBufferInfo StorageBufferInfo{};
             StorageBufferInfo.buffer = storageBuffers[i];
             StorageBufferInfo.offset = 0;
             StorageBufferInfo.range = sizeof(StorageBufferObject);
 
-        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = base.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
@@ -390,14 +395,6 @@ void graphics::createBaseDescriptorSets()
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(skyboxImageInfo.size());
             descriptorWrites[index].pImageInfo = skyboxImageInfo.data();
-        index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = base.DescriptorSets.at(i);
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &MaterialBufferInfo;
         index++;
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.at(index).dstSet = base.DescriptorSets.at(i);
@@ -434,11 +431,11 @@ void graphics::Base::createObjectDescriptorPool(VkApplication *app, object *obje
     index++;
 
     DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    DescriptorPoolSizes.at(index).descriptorCount = meshCount*static_cast<uint32_t>(imageCount);
+    DescriptorPoolSizes.at(index).descriptorCount = meshCount;
     index++;
 
     DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    DescriptorPoolSizes.at(index).descriptorCount = imageSamplerCount*static_cast<uint32_t>(imageCount);
+    DescriptorPoolSizes.at(index).descriptorCount = imageSamplerCount;
     index++;
 
     //Мы будем выделять один из этих дескрипторов для каждого кадра. На эту структуру размера пула ссылается главный VkDescriptorPoolCreateInfo:
@@ -517,11 +514,10 @@ void graphics::Base::createObjectMaterialDescriptorSet(VkApplication *app, objec
 {
     std::vector<VkDescriptorSetLayout> layouts(1, MaterialDescriptorSetLayout);
     VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-    descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocInfo.descriptorPool = object->getDescriptorPool();
-    descriptorSetAllocInfo.pSetLayouts = layouts.data();
-    descriptorSetAllocInfo.descriptorSetCount = 1;
-
+        descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        descriptorSetAllocInfo.descriptorPool = object->getDescriptorPool();
+        descriptorSetAllocInfo.pSetLayouts = layouts.data();
+        descriptorSetAllocInfo.descriptorSetCount = 1;
     if (vkAllocateDescriptorSets(app->getDevice(), &descriptorSetAllocInfo, &material->descriptorSet) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate object descriptor sets!");
 
@@ -582,87 +578,39 @@ void graphics::Base::createObjectMaterialDescriptorSet(VkApplication *app, objec
     vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
-void graphics::Base::createUniformBuffers(VkApplication *app, uint32_t imageCount)
+void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
-    sceneUniformBuffers.resize(imageCount);
-    sceneUniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-    {
-        createBuffer(app, sizeof(UniformBufferObject),
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     sceneUniformBuffers[i], sceneUniformBuffersMemory[i]);
-    }
-}
-
-void graphics::Base::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i, uint32_t& primitiveCount)
-{
-    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(size_t j = 0; j<objects.size() ;j++)
     {
         if(objects[j]->getEnable()){
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
             if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers[i], objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(commandBuffers, objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : objects[j]->getModel()->nodes)
-                renderNode(node,commandBuffers[i],DescriptorSets[i],objects[j]->getDescriptorSet()[i],PipelineLayout, primitiveCount);
+            for (auto node : objects[j]->getModel()->nodes){
+                std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+                renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
+            }
         }
-
-//            for (auto node : object3D[j]->getModel()->nodes)
-//               if(glm::length(glm::vec3(object3D[j]->getTransformation()*node->matrix*glm::vec4(0.0f,0.0f,0.0f,1.0f))-cameraPosition)<object3D[j]->getVisibilityDistance())
-//                    renderNode(node,commandBuffers[i],base.DescriptorSets[i],object3D[j]->getDescriptorSet()[i],*object3D[j]->getPipelineLayout());
     }
 }
 
-void graphics::Base::setMaterials(std::vector<MaterialBlock> &nodeMaterials)
-{
-    for(size_t j = 0; j<objects.size() ;j++)
-        for (auto node : objects[j]->getModel()->nodes){
-            uint32_t objectPrimitive = 0;
-            setMaterialNode(node,nodeMaterials,objectPrimitive,objects[j]->getModel()->firstPrimitive);
-        }
-}
-
-void graphics::Base::renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet, VkPipelineLayout& layout, uint32_t& primitiveCount)
+void graphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
         for (Primitive* primitive : node->mesh->primitives)
         {
-            const std::vector<VkDescriptorSet> descriptorsets =
-            {
-                descriptorSet,
-                objectDescriptorSet,
-                node->mesh->uniformBuffer.descriptorSet,
-                primitive->material.descriptorSet
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+2);
+            for(uint32_t i=0;i<descriptorSetsCount;i++)
+                nodeDescriptorSets[i] = descriptorSets[i];
+            nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
+            nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
 
-            PushConst pushConst{};
-                pushConst.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                pushConst.number = primitiveCount;
-            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConst), &pushConst);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
-            if (primitive->hasIndices)
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-
-            primitiveCount++;
-        }
-    }
-    for (auto child : node->children)
-        renderNode(child, commandBuffer, descriptorSet,objectDescriptorSet,layout, primitiveCount);
-}
-
-void graphics::Base::setMaterialNode(Node *node, std::vector<MaterialBlock> &nodeMaterials, uint32_t &objectPrimitive, const uint32_t firstPrimitive)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
             MaterialBlock pushConstBlockMaterial{};
 
             pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
@@ -694,14 +642,18 @@ void graphics::Base::setMaterialNode(Node *node, std::vector<MaterialBlock> &nod
                 pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
 
-            pushConstBlockMaterial.primitive = objectPrimitive;
-            pushConstBlockMaterial.firstIndex = firstPrimitive;
+            pushConstBlockMaterial.primitive = primitiveCount;
 
-            nodeMaterials.push_back(pushConstBlockMaterial);
+            vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
 
-            objectPrimitive++;
+            if (primitive->hasIndices)
+                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+            else
+                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+
+            primitiveCount++;
         }
     }
     for (auto child : node->children)
-        setMaterialNode(child, nodeMaterials, objectPrimitive, firstPrimitive);
+        renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
 }

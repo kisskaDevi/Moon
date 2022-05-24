@@ -1,7 +1,6 @@
 #version 450
-#define MAX_LIGHT_SOURCES 20
 
-layout(set = 0, binding = 6) uniform GlobalUniformBuffer
+layout(set = 0, binding = 4) uniform GlobalUniformBuffer
 {
     mat4 view;
     mat4 proj;
@@ -11,15 +10,6 @@ layout(set = 0, binding = 6) uniform GlobalUniformBuffer
 layout(location = 0)	out vec4 eyePosition;
 layout(location = 1)	out vec2 fragTexCoord;
 layout(location = 2)	out vec4 glPosition;
-
-//vec2 positions[6] = vec2[](
-//    vec2(-1.0f, -1.0f),
-//    vec2( 1.0f, -1.0f),
-//    vec2( 1.0f,  1.0f),
-//    vec2(1.0f, 1.0f),
-//    vec2(-1.0f, 1.0f),
-//    vec2( -1.0f,  -1.0f)
-//);
 
 vec2 step[6] = vec2[](
     vec2(0.0f, 0.0f),
@@ -38,28 +28,6 @@ vec2 fragCoord[6] = vec2[](
     vec2(0.0f, 1.0f),
     vec2(0.0f, 0.0f)
 );
-
-struct LightBufferObject
-{
-    mat4 proj;
-    mat4 view;
-    mat4 projView;
-    vec4 position;
-    vec4 lightColor;
-    int type;
-    int enableShadow;
-    int enableScattering;
-};
-
-layout (push_constant) uniform LightPushConst
-{
-    int number;
-} lightPC;
-
-layout(set = 0, binding = 4) uniform LightUniformBufferObject
-{
-    LightBufferObject ubo[MAX_LIGHT_SOURCES];
-} light;
 
 void main()
 {

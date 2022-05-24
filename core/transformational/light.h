@@ -45,7 +45,6 @@ private:
     bool                                enableShadow = false;
     bool                                enableScattering = false;
     uint32_t                            type;
-    uint32_t                            number;
     glm::vec4                           lightColor;
 
     glm::mat4x4                         projectionMatrix;
@@ -59,8 +58,12 @@ private:
     glm::quat                           m_rotateX;
     glm::quat                           m_rotateY;
 
+    VkDescriptorPool                    descriptorPool;
+    std::vector<VkDescriptorSet>        descriptorSets;
+    std::vector<VkBuffer>               uniformBuffers;
+    std::vector<VkDeviceMemory>         uniformBuffersMemory;
+
     void updateViewMatrix();
-    void renderNode(Node *node, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkDescriptorSet& objectDescriptorSet);
 public:
     light(VkApplication *app, uint32_t type = lightType::spot);
     ~light();
@@ -76,10 +79,11 @@ public:
     void rotateY(const float & ang ,const glm::vec3 & ax);
 
     void createLightPVM(const glm::mat4x4 & projection);
-    void createShadow(uint32_t commandPoolsCount, uint32_t imageCount);
+    void createShadow(uint32_t imageCount);
+
+    void                            updateLightBuffer(uint32_t frameNumber);
 
     void                            setLightColor(const glm::vec4 & color);
-    void                            setLightNumber(const uint32_t & number);
     void                            setShadowExtent(const VkExtent2D & shadowExtent);
     void                            setScattering(bool enable);
     void                            setTexture(texture* tex);
@@ -89,14 +93,16 @@ public:
     glm::vec3                       getTranslate() const;
     glm::vec4                       getLightColor() const;
     uint32_t                        getLightNumber() const;
-    texture                         *getTexture();
+    texture*                        getTexture();
+
+    VkDescriptorPool&               getDescriptorPool();
+    std::vector<VkDescriptorSet>&   getDescriptorSets();
+    std::vector<VkBuffer>&          getUniformBuffers();
 
     bool                            getShadowEnable() const;
     bool                            getScatteringEnable() const;
 
-    shadowGraphics                  *getShadow();
-
-    LightBufferObject               getLightBufferObject() const;
+    shadowGraphics*                 getShadow();
 
 };
 

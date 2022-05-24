@@ -1,8 +1,7 @@
 #version 450
 #define MAX_NUM_JOINTS 130
-#define MAX_LIGHT_SOURCES 12
 
-struct LightBufferObject
+layout(set = 0, binding = 0) uniform LightBufferObject
 {
     mat4 proj;
     mat4 view;
@@ -11,17 +10,7 @@ struct LightBufferObject
     vec4 lightColor;
     int type;
     int enableShadow;
-};
-
-layout(set = 0, binding = 1) uniform LightUniformBufferObject
-{
-    LightBufferObject ubo[MAX_LIGHT_SOURCES];
-} light;
-
-layout (push_constant) uniform Number
-{
-    int value;
-} number;
+}light;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
@@ -56,5 +45,5 @@ void main()
 	    outPosition = vec3(local.matrix*node.matrix * vec4(inPosition,1.0));
     }
 
-    gl_Position = light.ubo[number.value].projView * vec4(outPosition,1.0f);
+    gl_Position = light.projView * vec4(outPosition,1.0f);
 }

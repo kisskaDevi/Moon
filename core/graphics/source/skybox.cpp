@@ -19,6 +19,20 @@ void graphics::Skybox::Destroy(VkApplication *app)
     }
 }
 
+void graphics::Skybox::createUniformBuffers(VkApplication *app, uint32_t imageCount)
+{
+    uniformBuffers.resize(imageCount);
+    uniformBuffersMemory.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++){
+        createBuffer(   app,
+                        sizeof(SkyboxUniformBufferObject),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        uniformBuffers[i],
+                        uniformBuffersMemory[i]);
+    }
+}
+
 void graphics::Skybox::createDescriptorSetLayout(VkApplication *app)
 {
     uint32_t index = 0;
@@ -43,7 +57,7 @@ void graphics::Skybox::createDescriptorSetLayout(VkApplication *app)
         throw std::runtime_error("failed to create Skybox descriptor set layout!");
 }
 
-void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
+void graphics::Skybox::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -80,13 +94,13 @@ void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
     std::array<VkViewport,1> viewport{};
         viewport[index].x = 0.0f;
         viewport[index].y = 0.0f;
-        viewport[index].width = (float) info.extent.width;
-        viewport[index].height = (float) info.extent.height;
+        viewport[index].width = (float) pInfo->Extent.width;
+        viewport[index].height = (float) pInfo->Extent.height;
         viewport[index].minDepth = 0.0f;
         viewport[index].maxDepth = 1.0f;
     std::array<VkRect2D,1> scissor{};
         scissor[index].offset = {0, 0};
-        scissor[index].extent = info.extent;
+        scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = static_cast<uint32_t>(viewport.size());
@@ -109,7 +123,7 @@ void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = info.msaaSamples;
+        multisampling.rasterizationSamples = pInfo->Samples;
         multisampling.minSampleShading = 1.0f;
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
@@ -171,7 +185,7 @@ void graphics::Skybox::createPipeline(VkApplication *app, graphicsInfo info)
         pipelineInfo[index].pMultisampleState = &multisampling;
         pipelineInfo[index].pColorBlendState = &colorBlending;
         pipelineInfo[index].layout = PipelineLayout;
-        pipelineInfo[index].renderPass = info.renderPass;
+        pipelineInfo[index].renderPass = *pRenderPass;
         pipelineInfo[index].subpass = 0;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
@@ -248,26 +262,15 @@ void graphics::createSkyboxDescriptorSets()
     }
 }
 
-void graphics::Skybox::createUniformBuffers(VkApplication *app, uint32_t imageCount)
-{
-    uniformBuffers.resize(imageCount);
-    uniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-        createBuffer(app, sizeof(SkyboxUniformBufferObject),
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     uniformBuffers[i], uniformBuffersMemory[i]);
-}
-
-void graphics::Skybox::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
+void graphics::Skybox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     if(objects.size()!=0)
     {
         VkDeviceSize offsets[1] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, & objects[0]->getModel()->vertices.buffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[i],  objects[0]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0, NULL);
-        vkCmdDrawIndexed(commandBuffers[i], 36, 1, 0, 0, 0);
+        vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[0]->getModel()->vertices.buffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffers,  objects[0]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[frameNumber], 0, NULL);
+        vkCmdDrawIndexed(commandBuffers, 36, 1, 0, 0, 0);
     }
 }

@@ -31,14 +31,23 @@ This application makes render of scene by Vulkan API and contains some modern gr
 * Deferred render by subpasses
 
 Positions
+
 <img src="./screenshots/screenshot5.PNG" width="500px">
+
 Normals
+
 <img src="./screenshots/screenshot6.PNG" width="500px">
+
 Albedo
+
 <img src="./screenshots/screenshot7.PNG" width="500px">
+
 Emissions
+
 <img src="./screenshots/screenshot8.PNG" width="500px">
+
 Final Image
+
 <img src="./screenshots/screenshot10.PNG" width="500px">
 
 

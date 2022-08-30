@@ -7,15 +7,53 @@ layout (set = 0, binding = 0) uniform UniformBuffer
     mat4 model;
 } local;
 
-layout(location = 0)	in  vec3 inPosition;
-
 layout(location = 0)	out vec3 outUVW;
 layout(location = 1)	out float depth;
 
+vec3 vertex[36] = vec3[](
+    vec3(-1.0f,-1.0f,-1.0f),
+    vec3(-1.0f,-1.0f, 1.0f),
+    vec3(-1.0f, 1.0f, 1.0f),
+    vec3( 1.0f, 1.0f,-1.0f),
+    vec3(-1.0f,-1.0f,-1.0f),
+    vec3(-1.0f, 1.0f,-1.0f),
+    vec3( 1.0f,-1.0f, 1.0f),
+    vec3(-1.0f,-1.0f,-1.0f),
+    vec3( 1.0f,-1.0f,-1.0f),
+    vec3( 1.0f, 1.0f,-1.0f),
+    vec3( 1.0f,-1.0f,-1.0f),
+    vec3(-1.0f,-1.0f,-1.0f),
+    vec3(-1.0f,-1.0f,-1.0f),
+    vec3(-1.0f, 1.0f, 1.0f),
+    vec3(-1.0f, 1.0f,-1.0f),
+    vec3( 1.0f,-1.0f, 1.0f),
+    vec3(-1.0f,-1.0f, 1.0f),
+    vec3(-1.0f,-1.0f,-1.0f),
+    vec3(-1.0f, 1.0f, 1.0f),
+    vec3(-1.0f,-1.0f, 1.0f),
+    vec3( 1.0f,-1.0f, 1.0f),
+    vec3( 1.0f, 1.0f, 1.0f),
+    vec3( 1.0f,-1.0f,-1.0f),
+    vec3( 1.0f, 1.0f,-1.0f),
+    vec3( 1.0f,-1.0f,-1.0f),
+    vec3( 1.0f, 1.0f, 1.0f),
+    vec3( 1.0f,-1.0f, 1.0f),
+    vec3( 1.0f, 1.0f, 1.0f),
+    vec3( 1.0f, 1.0f,-1.0f),
+    vec3(-1.0f, 1.0f,-1.0f),
+    vec3( 1.0f, 1.0f, 1.0f),
+    vec3(-1.0f, 1.0f,-1.0f),
+    vec3(-1.0f, 1.0f, 1.0f),
+    vec3( 1.0f, 1.0f, 1.0f),
+    vec3(-1.0f, 1.0f, 1.0f),
+    vec3( 1.0f,-1.0f, 1.0f)
+);
+
 void main()
 {
-    outUVW = inPosition;
-    gl_Position = local.proj * local.view * local.model * vec4(inPosition.xyz,1.0f);
+    vec3 Position = vertex[gl_VertexIndex];
+    outUVW = Position;
+    gl_Position = local.proj * local.view * local.model * vec4(Position,1.0f);
 
     depth = gl_Position.z;
 }

@@ -19,6 +19,8 @@ struct textureSampler {
 class texture
 {
 private:
+    std::string TEXTURE_PATH;
+
     float mipLevel = 0.0f;
     uint32_t mipLevels;
 
@@ -26,10 +28,10 @@ private:
     {
         VkDeviceMemory textureImageMemory;
         bool enable = false;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkFreeMemory(app->getDevice(), textureImageMemory, nullptr);
+                vkFreeMemory(*device, textureImageMemory, nullptr);
                 enable = false;
             }
         }
@@ -40,24 +42,29 @@ private:
         VkImage textureImage;
         bool enable = false;
         VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkDestroyImage(app->getDevice(), textureImage, nullptr);
+                vkDestroyImage(*device, textureImage, nullptr);
                 enable = false;
             }
         }
-        void create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels);
+        void create(
+                VkPhysicalDevice*   physicalDevice,
+                VkDevice*           device,
+                VkQueue*            queue,
+                VkCommandPool*      commandPool,
+                uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels);
     }image;
 
     struct view
     {
         VkImageView textureImageView;
         bool enable = false;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkDestroyImageView(app->getDevice(), textureImageView, nullptr);
+                vkDestroyImageView(*device, textureImageView, nullptr);
                 enable = false;
             }
         }
@@ -67,29 +74,34 @@ private:
     {
         VkSampler textureSampler;
         bool enable = false;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkDestroySampler(app->getDevice(),textureSampler,nullptr);
+                vkDestroySampler(*device,textureSampler,nullptr);
                 enable = false;
             }
         }
     }sampler;
 
-    std::string TEXTURE_PATH;
-    VkApplication* app;
 public:
     texture();
-    texture(VkApplication* app);
-    texture(VkApplication* app, const std::string & TEXTURE_PATH);
+    texture(const std::string & TEXTURE_PATH);
     ~texture();
-    void destroy();
+    void destroy(VkDevice* device);
 
-    void createTextureImage(tinygltf::Image& gltfimage);
-    void createTextureImage();
-    void createTextureImageView();
-    void createTextureSampler(struct textureSampler TextureSampler);
-    void setVkApplication(VkApplication* app);
+    void createTextureImage(
+            VkPhysicalDevice*   physicalDevice,
+            VkDevice*           device,
+            VkQueue*            queue,
+            VkCommandPool*      commandPool,
+            tinygltf::Image&    gltfimage);
+    void createTextureImage(
+            VkPhysicalDevice*   physicalDevice,
+            VkDevice*           device,
+            VkQueue*            queue,
+            VkCommandPool*      commandPool);
+    void createTextureImageView(VkDevice* device);
+    void createTextureSampler(VkDevice* device, struct textureSampler TextureSampler);
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 
@@ -108,10 +120,10 @@ private:
     {
         VkDeviceMemory textureImageMemory;
         bool enable = false;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkFreeMemory(app->getDevice(), textureImageMemory, nullptr);
+                vkFreeMemory(*device, textureImageMemory, nullptr);
                 enable = false;
             }
         }
@@ -122,24 +134,29 @@ private:
         VkImage textureImage;
         bool enable = false;
         VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkDestroyImage(app->getDevice(), textureImage, nullptr);
+                vkDestroyImage(*device, textureImage, nullptr);
                 enable = false;
             }
         }
-        void create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels[6]);
+        void create(
+                VkPhysicalDevice*   physicalDevice,
+                VkDevice*           device,
+                VkQueue*            queue,
+                VkCommandPool*      commandPool,
+                uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels[6]);
     }image;
 
     struct view
     {
         VkImageView textureImageView;
         bool enable = false;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkDestroyImageView(app->getDevice(), textureImageView, nullptr);
+                vkDestroyImageView(*device, textureImageView, nullptr);
                 enable = false;
             }
         }
@@ -149,10 +166,10 @@ private:
     {
         VkSampler textureSampler;
         bool enable = false;
-        void destroy(VkApplication* app)
+        void destroy(VkDevice* device)
         {
             if(enable){
-                vkDestroySampler(app->getDevice(),textureSampler,nullptr);
+                vkDestroySampler(*device,textureSampler,nullptr);
                 enable = false;
             }
         }
@@ -162,15 +179,17 @@ private:
     VkApplication* app;
 
 public:
-    cubeTexture();
-    cubeTexture(VkApplication* app);
-    cubeTexture(VkApplication* app, const std::vector<std::string> & TEXTURE_PATH);
+    cubeTexture(const std::vector<std::string> & TEXTURE_PATH);
     ~cubeTexture();
-    void destroy();
+    void destroy(VkDevice* device);
 
-    void createTextureImage();
-    void createTextureImageView();
-    void createTextureSampler(struct textureSampler TextureSampler);
+    void createTextureImage(
+            VkPhysicalDevice*   physicalDevice,
+            VkDevice*           device,
+            VkQueue*            queue,
+            VkCommandPool*      commandPool);
+    void createTextureImageView(VkDevice* device);
+    void createTextureSampler(VkDevice* device, struct textureSampler TextureSampler);
     void setVkApplication(VkApplication* app);
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);

@@ -4,7 +4,7 @@
 #include "core/graphics/shadowGraphics.h"
 #include "gltfmodel.h"
 
-light<spotLight>::light(VkApplication *app, uint32_t type) : app(app), type(type)
+light<spotLight>::light(uint32_t type): type(type)
 {
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -14,37 +14,57 @@ light<spotLight>::light(VkApplication *app, uint32_t type) : app(app), type(type
     m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
     viewMatrix = glm::mat4x4(1.0f);
     modelMatrix = glm::mat4x4(1.0f);
-
-    uint32_t imageCount = app->getImageCount();
-    uniformBuffers.resize(imageCount);
-    uniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++){
-        createBuffer(   app,
-                        sizeof(LightBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        uniformBuffers[i],
-                        uniformBuffersMemory[i]);
-    }
+    lightColor = glm::vec4(0.0f);
+    lightPowerFactor = 1.0f;
+    lightDropFactor = 0.1f;
 }
 
-light<spotLight>::~light(){}
-
-void light<spotLight>::cleanup()
+light<spotLight>::light(const std::string & TEXTURE_PATH, uint32_t type): type(type)
 {
-    vkDestroyDescriptorPool(app->getDevice(), descriptorPool, nullptr);
+    m_scale = glm::vec3(1.0f,1.0f,1.0f);
+    m_globalTransform = glm::mat4x4(1.0f);
+    m_translate = glm::vec3(0.0f,0.0f,0.0f);
+    m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
+    m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
+    m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
+    viewMatrix = glm::mat4x4(1.0f);
+    modelMatrix = glm::mat4x4(1.0f);
+    lightColor = glm::vec4(0.0f);
+    lightPowerFactor = 1.0f;
+    lightDropFactor = 0.1f;
 
+    tex = new texture(TEXTURE_PATH);
+}
+
+light<spotLight>::~light(){
+    delete tex;
+}
+
+void light<spotLight>::destroyBuffer(VkDevice* device)
+{
     for(size_t i=0;i<uniformBuffers.size();i++)
     {
-        if (uniformBuffers.at(i) != VK_NULL_HANDLE)
+        if (uniformBuffers[i] != VK_NULL_HANDLE)
         {
-            vkDestroyBuffer(app->getDevice(), uniformBuffers.at(i), nullptr);
-            vkFreeMemory(app->getDevice(), uniformBuffersMemory.at(i), nullptr);
+            vkDestroyBuffer(*device, uniformBuffers.at(i), nullptr);
+            vkFreeMemory(*device, uniformBuffersMemory.at(i), nullptr);
+            uniformBuffers[i] = VK_NULL_HANDLE;
         }
     }
+    uniformBuffers.resize(0);
+}
 
-    if(enableShadow)
+void light<spotLight>::cleanup(VkDevice* device)
+{
+    if (descriptorPool != VK_NULL_HANDLE){
+        vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
+        descriptorPool = VK_NULL_HANDLE;
+    }
+
+    if(enableShadow){
         shadow->destroy();
+        enableShadow = false;
+    }
 }
 
 void light<spotLight>::setGlobalTransform(const glm::mat4 & transform)
@@ -106,19 +126,35 @@ void light<spotLight>::rotateY(const float & ang ,const glm::vec3 & ax)
     updateViewMatrix();
 }
 
-void light<spotLight>::createLightPVM(const glm::mat4x4 & projection)
+void light<spotLight>::setProjectionMatrix(const glm::mat4x4 & projection)
 {
     projectionMatrix = projection;
 }
 
-void light<spotLight>::createShadow(uint32_t imageCount)
+void light<spotLight>::createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount)
 {
     enableShadow = true;
-    shadow = new shadowGraphics(app,imageCount,shadowExtent);
+    shadow = new shadowGraphics(imageCount,shadowExtent);
+    shadow->setDeviceProp(physicalDevice,device,queueFamilyIndices);
     shadow->createShadow();
 }
 
-void light<spotLight>::updateLightBuffer(uint32_t frameNumber)
+void light<spotLight>::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+{
+    uniformBuffers.resize(imageCount);
+    uniformBuffersMemory.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++){
+        createBuffer(   physicalDevice,
+                        device,
+                        sizeof(LightBufferObject),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        uniformBuffers[i],
+                        uniformBuffersMemory[i]);
+    }
+}
+
+void light<spotLight>::updateLightBuffer(VkDevice* device, uint32_t frameNumber)
 {
     LightBufferObject buffer{};
         buffer.proj = projectionMatrix;
@@ -126,11 +162,11 @@ void light<spotLight>::updateLightBuffer(uint32_t frameNumber)
         buffer.projView = projectionMatrix * viewMatrix;
         buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
         buffer.lightColor = lightColor;
-        buffer.type = type;
+        buffer.lightProp = glm::vec4(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
     void* data;
-    vkMapMemory(app->getDevice(), uniformBuffersMemory[frameNumber], 0, sizeof(buffer), 0, &data);
+    vkMapMemory(*device, uniformBuffersMemory[frameNumber], 0, sizeof(buffer), 0, &data);
         memcpy(data, &buffer, sizeof(buffer));
-    vkUnmapMemory(app->getDevice(), uniformBuffersMemory[frameNumber]);
+    vkUnmapMemory(*device, uniformBuffersMemory[frameNumber]);
 }
 
 void                            light<spotLight>::setLightColor(const glm::vec4 &color){this->lightColor = color;}
@@ -148,19 +184,38 @@ glm::mat4x4                     light<spotLight>::getModelMatrix() const {return
 glm::vec3                       light<spotLight>::getTranslate() const {return m_translate;}
 
 glm::vec4                       light<spotLight>::getLightColor() const {return lightColor;}
-bool                            light<spotLight>::getShadowEnable() const{return enableShadow;}
-bool                            light<spotLight>::getScatteringEnable() const{return enableScattering;}
+bool                            light<spotLight>::isShadowEnable() const{return enableShadow;}
+bool                            light<spotLight>::isScatteringEnable() const{return enableScattering;}
 
-shadowGraphics                  *light<spotLight>::getShadow(){return shadow;}
 texture                         *light<spotLight>::getTexture(){return tex;}
 
+
+void                            light<spotLight>::updateShadowCommandBuffer(uint32_t frameNumber, ShadowPassObjects objects){
+    shadow->updateCommandBuffer(frameNumber,objects);
+}
+void                            light<spotLight>::createShadowCommandBuffers(){
+    shadow->createCommandBuffers();
+}
+void                            light<spotLight>::updateShadowDescriptorSets(){
+    shadow->updateDescriptorSets(uniformBuffers.size(),uniformBuffers.data(),sizeof(LightBufferObject));
+}
+std::vector<VkCommandBuffer>&   light<spotLight>::getShadowCommandBuffer(){
+    return shadow->getCommandBuffer();
+}
+VkImageView&                    light<spotLight>::getShadowImageView(){
+    return shadow->getImageView();
+}
+VkSampler&                      light<spotLight>::getShadowSampler(){
+    return shadow->getSampler();
+}
+
 //======================================================================================================================//
 //============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
 //============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
 //============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
 //======================================================================================================================//
 
-light<pointLight>::light(VkApplication *app, std::vector<light<spotLight> *> & lightSource) : lightSource(lightSource)
+light<pointLight>::light(std::vector<light<spotLight> *>& lightSource)
 {
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -168,63 +223,59 @@ light<pointLight>::light(VkApplication *app, std::vector<light<spotLight> *> & l
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    number = lightSource.size();
 
-    glm::mat4x4 Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
-    Proj[1][1] *= -1;
-
-    int index = number;
-    lightSource.push_back(new light<spotLight>(app,lightType::point));
-    lightSource.at(index)->createLightPVM(Proj);
+    uint32_t number = lightSource.size();
+    uint32_t index = number;
+    lightSource.push_back(new light<spotLight>(lightType::point));
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
-    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,lightType::point));
-    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.push_back(new light<spotLight>(lightType::point));
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,0.0f,1.0f));
-    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,lightType::point));
-    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.push_back(new light<spotLight>(lightType::point));
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
-    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,lightType::point));
-    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.push_back(new light<spotLight>(lightType::point));
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.3f,0.6f,0.9f,1.0f));
-    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,lightType::point));
-    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.push_back(new light<spotLight>(lightType::point));
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.6f,0.9f,0.3f,1.0f));
-    app->addlightSource(lightSource.at(index));
 
     index++;
-    lightSource.push_back(new light<spotLight>(app,lightType::point));
-    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.push_back(new light<spotLight>(lightType::point));
     lightSource.at(index)->rotate(glm::radians(180.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
-    app->addlightSource(lightSource.at(index));
+
+    this->lightSource.resize(6);
+    for(uint32_t i=0;i<6;i++){
+        this->lightSource[i] = lightSource[number+i];
+    }
 }
 
 light<pointLight>::~light(){}
 
 glm::vec4       light<pointLight>::getLightColor() const {return lightColor;}
-uint32_t        light<pointLight>::getNumber() const {return number;}
 glm::vec3       light<pointLight>::getTranslate() const {return m_translate;}
+
+void light<pointLight>::setProjectionMatrix(const glm::mat4x4 & projection)
+{
+    projectionMatrix = projection;
+    for(uint32_t i=0;i<6;i++)
+        lightSource.at(i)->setProjectionMatrix(projectionMatrix);
+}
 
 void light<pointLight>::setLightColor(const glm::vec4 &color)
 {
     this->lightColor = color;
-    for(uint32_t i=number;i<number+6;i++)
+    for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setLightColor(color);
 }
 
@@ -268,7 +319,7 @@ void light<pointLight>::updateViewMatrix()
     glm::mat4x4 scaleMatrix = glm::scale(glm::mat4x4(1.0f),m_scale);
     glm::mat4x4 localMatrix = m_globalTransform * translateMatrix * rotateMatrix * scaleMatrix;
 
-    for(uint32_t i=number;i<number+6;i++)
+    for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setGlobalTransform(localMatrix);
 }
 

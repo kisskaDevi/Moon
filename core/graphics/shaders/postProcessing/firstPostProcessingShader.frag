@@ -11,7 +11,7 @@ const float pi = 3.141592653589793f;
 
 vec4 blur(sampler2D blurSampler, vec2 TexCoord)
 {
-    float sigma = 2.0 * textureSize(blurSampler, 0).x;
+    float sigma = 1.0 * textureSize(blurSampler, 0).x;
     vec2 textel = 1.0 / textureSize(blurSampler, 0);
     vec4 Color = texture(blurSampler, TexCoord) /sqrt(pi*sigma);
     int h = 20;
@@ -32,6 +32,5 @@ void main()
 {
     outColor = vec4(0.0f);
     outBlur = vec4(0.0f);
-
     outBlur += blur(blurSampler,fragTexCoord);
 }

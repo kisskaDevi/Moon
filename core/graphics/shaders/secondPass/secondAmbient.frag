@@ -1,7 +1,11 @@
 #version 450
 #define MANUAL_SRGB 1
+#define pi 3.141592653589793f
 
-const float pi = 3.141592653589793f, minAmbientFactor = 0.05f;
+layout (push_constant) uniform PC
+{
+    float minAmbientFactor;
+}pc;
 
 layout(location = 0)	in vec4 eyePosition;
 layout(location = 1)	in vec2 fragTexCoord;
@@ -63,24 +67,11 @@ vec4 PBR(vec4 outColor)
 
     diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
     diffuseColor *= 1.0 - metallic;
-    diffuseColor *= minAmbientFactor;
+    diffuseColor *= pc.minAmbientFactor;
 
     outColor += vec4(diffuseColor.xyz,1.0f);
 
     return outColor;
-}
-
-void shadingType0()
-{
-    if(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f)	outColor = SRGBtoLINEAR(baseColorTexture);
-    else						outColor = PBR(outColor);
-
-        outColor += SRGBtoLINEAR(emissiveTexture);
-	outBloom += SRGBtoLINEAR(emissiveTexture);
-
-    if(outColor.x>0.95f||outColor.y>0.95f||outColor.y>0.95f)	outBloom += outColor;
-    else							outBloom += vec4(0.0f,0.0f,0.0f,1.0f);
-
 }
 
 void main()
@@ -95,6 +86,14 @@ void main()
     outBlur = vec4(0.0f,0.0f,0.0f,0.0f);
     outBloom = vec4(0.0f,0.0f,0.0f,0.0f);
 
-    shadingType0();
+    if(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f)	outColor = SRGBtoLINEAR(baseColorTexture);
+    else						outColor = PBR(outColor);
+
+        outColor += SRGBtoLINEAR(emissiveTexture);
+	outBloom += SRGBtoLINEAR(emissiveTexture);
+
+    if(outColor.x>0.95f||outColor.y>0.95f||outColor.y>0.95f)	outBloom += outColor;
+    else							outBloom += vec4(0.0f,0.0f,0.0f,1.0f);
+
 }
 

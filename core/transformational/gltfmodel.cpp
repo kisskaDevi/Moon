@@ -51,20 +51,28 @@ void Primitive::setBoundingBox(glm::vec3 min, glm::vec3 max)
     bb.valid = true;
 }
 
-Mesh::Mesh(VkApplication* app, glm::mat4 matrix)
+Mesh::Mesh(VkPhysicalDevice* physicalDevice, VkDevice* device, glm::mat4 matrix)
 {
-    this->app = app;
     this->uniformBlock.matrix = matrix;
-    createBuffer(app,sizeof(uniformBlock), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer.buffer, uniformBuffer.memory);
-    vkMapMemory(app->getDevice(), uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.mapped);
+    createBuffer(   physicalDevice,
+                    device,
+                    sizeof(uniformBlock),
+                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    uniformBuffer.buffer,
+                    uniformBuffer.memory);
+    vkMapMemory(*device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.mapped);
     uniformBuffer.descriptor = { uniformBuffer.buffer, 0, sizeof(uniformBlock) };
 };
 
-Mesh::~Mesh() {
-    vkDestroyBuffer(app->getDevice(), uniformBuffer.buffer, nullptr);
-    vkFreeMemory(app->getDevice(), uniformBuffer.memory, nullptr);
+void Mesh::destroy(VkDevice* device){
+    vkDestroyBuffer(*device, uniformBuffer.buffer, nullptr);
+    vkFreeMemory(*device, uniformBuffer.memory, nullptr);
     for (Primitive* p : primitives)
         delete p;
+}
+
+Mesh::~Mesh() {
 }
 
 void Mesh::setBoundingBox(glm::vec3 min, glm::vec3 max) {
@@ -116,40 +124,58 @@ void Node::update() {
     }
 }
 
-Node::~Node() {
+void Node::destroy(VkDevice *device)
+{
     if (mesh) {
+        mesh->destroy(device);
         delete mesh;
     }
     for (auto& child : children)
     {
+        child->destroy(device);
         delete child;
     }
+
+}
+
+Node::~Node(){
 }
 
 // Model
 
-void gltfModel::destroy(VkDevice device)
+gltfModel::gltfModel(std::string filename)
 {
+    this->filename = filename;
+}
+
+void gltfModel::destroy(VkDevice* device)
+{
+    if(DescriptorPool != VK_NULL_HANDLE){
+        vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+        DescriptorPool = VK_NULL_HANDLE;
+    }
+
     if (vertices.buffer != VK_NULL_HANDLE)
     {
-        vkDestroyBuffer(device, vertices.buffer, nullptr);
-        vkFreeMemory(device, vertices.memory, nullptr);
+        vkDestroyBuffer(*device, vertices.buffer, nullptr);
+        vkFreeMemory(*device, vertices.memory, nullptr);
         vertices.buffer = VK_NULL_HANDLE;
     }
     if (indices.buffer != VK_NULL_HANDLE)
     {
-        vkDestroyBuffer(device, indices.buffer, nullptr);
-        vkFreeMemory(device, indices.memory, nullptr);
+        vkDestroyBuffer(*device, indices.buffer, nullptr);
+        vkFreeMemory(*device, indices.memory, nullptr);
         indices.buffer = VK_NULL_HANDLE;
     }
     for (auto texture : textures)
     {
-        texture.destroy();
+        texture.destroy(device);
     }
     textures.resize(0);
     textureSamplers.resize(0);
     for (auto node : nodes)
     {
+        node->destroy(device);
         delete node;
     }
     materials.resize(0);
@@ -164,7 +190,7 @@ void gltfModel::destroy(VkDevice device)
     skins.resize(0);
 };
 
-void gltfModel::loadNode(Node *parent, const tinygltf::Node &node, uint32_t nodeIndex, const tinygltf::Model &model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale)
+void gltfModel::loadNode(VkPhysicalDevice* physicalDevice, VkDevice* device, Node *parent, const tinygltf::Node &node, uint32_t nodeIndex, const tinygltf::Model &model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale)
 {
     Node *newNode = new Node{};
     newNode->index = nodeIndex;
@@ -196,14 +222,14 @@ void gltfModel::loadNode(Node *parent, const tinygltf::Node &node, uint32_t node
     // Node with children
     if (node.children.size() > 0) {
         for (size_t i = 0; i < node.children.size(); i++) {
-            loadNode(newNode, model.nodes[node.children[i]], node.children[i], model, indexBuffer, vertexBuffer, globalscale);
+            loadNode(physicalDevice, device, newNode, model.nodes[node.children[i]], node.children[i], model, indexBuffer, vertexBuffer, globalscale);
         }
     }
 
     // Node contains mesh data
     if (node.mesh > -1) {
         const tinygltf::Mesh mesh = model.meshes[node.mesh];
-        Mesh *newMesh = new Mesh(app, newNode->matrix);
+        Mesh *newMesh = new Mesh(physicalDevice,device,newNode->matrix);
         for (size_t j = 0; j < mesh.primitives.size(); j++) {
             const tinygltf::Primitive &primitive = mesh.primitives[j];
             uint32_t indexStart = static_cast<uint32_t>(indexBuffer.size());
@@ -411,7 +437,7 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel)
     }
 }
 
-void gltfModel::loadTextures(tinygltf::Model& gltfModel)
+void gltfModel::loadTextures(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, tinygltf::Model& gltfModel)
 {
     for(tinygltf::Texture &tex : gltfModel.textures)
     {
@@ -430,10 +456,10 @@ void gltfModel::loadTextures(tinygltf::Model& gltfModel)
         {
             TextureSampler = textureSamplers[tex.sampler];
         }
-        texture Texture(app);
-        Texture.createTextureImage(image);
-        Texture.createTextureImageView();
-        Texture.createTextureSampler(TextureSampler);
+        texture Texture;
+        Texture.createTextureImage(physicalDevice,device,graphicsQueue,commandPool,image);
+        Texture.createTextureImageView(device);
+        Texture.createTextureSampler(device,TextureSampler);
         textures.push_back(Texture);
     }
 }
@@ -685,14 +711,12 @@ void gltfModel::loadAnimations(tinygltf::Model &gltfModel)
     }
 }
 
-void gltfModel::loadFromFile(std::string filename, VkApplication* app, float scale)
+void gltfModel::loadFromFile(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, float scale)
 {
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
     std::string error;
     std::string warning;
-
-    this->app = app;
 
     bool binary = false;
     size_t extpos = filename.rfind('.', filename.length());
@@ -708,14 +732,14 @@ void gltfModel::loadFromFile(std::string filename, VkApplication* app, float sca
     if (fileLoaded)
     {
         loadTextureSamplers(gltfModel);
-        loadTextures(gltfModel);
+        loadTextures(physicalDevice,device,graphicsQueue,commandPool,gltfModel);
         loadMaterials(gltfModel);
 
         // TODO: scene handling with no default scene
         const tinygltf::Scene &scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
         for (size_t i = 0; i < scene.nodes.size(); i++) {
             const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
-            loadNode(nullptr, node, scene.nodes[i], gltfModel, indexBuffer, vertexBuffer, scale);
+            loadNode(physicalDevice, device, nullptr, node, scene.nodes[i], gltfModel, indexBuffer, vertexBuffer, scale);
         }
         if (gltfModel.animations.size() > 0) {
             loadAnimations(gltfModel);
@@ -756,60 +780,38 @@ void gltfModel::loadFromFile(std::string filename, VkApplication* app, float sca
 
     // Create staging buffers
     // Vertex data
-    createBuffer(app,vertexBufferSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,vertexStaging.buffer,vertexStaging.memory);
+    createBuffer(physicalDevice,device,vertexBufferSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,vertexStaging.buffer,vertexStaging.memory);
     // Index data
-    createBuffer(app,indexBufferSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,indexStaging.buffer,indexStaging.memory);
+    createBuffer(physicalDevice,device,indexBufferSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,indexStaging.buffer,indexStaging.memory);
 
     void* data;
-    vkMapMemory(app->getDevice(), vertexStaging.memory, 0, vertexBufferSize, 0, &data);
+    vkMapMemory(*device, vertexStaging.memory, 0, vertexBufferSize, 0, &data);
         memcpy(data, vertexBuffer.data(), (size_t) vertexBufferSize);
-    vkUnmapMemory(app->getDevice(), vertexStaging.memory);
+    vkUnmapMemory(*device, vertexStaging.memory);
 
     void* indexdata;
-    vkMapMemory(app->getDevice(), indexStaging.memory, 0, indexBufferSize, 0, &indexdata);
+    vkMapMemory(*device, indexStaging.memory, 0, indexBufferSize, 0, &indexdata);
         memcpy(indexdata, indexBuffer.data(), (size_t) indexBufferSize);
-    vkUnmapMemory(app->getDevice(), indexStaging.memory);
+    vkUnmapMemory(*device, indexStaging.memory);
 
     // Create device local buffers
     // Vertex buffer
-    createBuffer(app,vertexBufferSize,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,vertices.buffer,vertices.memory);
+    createBuffer(physicalDevice,device,vertexBufferSize,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,vertices.buffer,vertices.memory);
     // Index buffer
-    createBuffer(app,indexBufferSize,VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,indices.buffer,indices.memory);
+    createBuffer(physicalDevice,device,indexBufferSize,VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,indices.buffer,indices.memory);
 
     // Copy from staging buffers
-    copyBuffer(app, vertexStaging.buffer, vertices.buffer, vertexBufferSize);
-    copyBuffer(app, indexStaging.buffer, indices.buffer, indexBufferSize);
+    copyBuffer(device, graphicsQueue, commandPool, vertexStaging.buffer, vertices.buffer, vertexBufferSize);
+    copyBuffer(device, graphicsQueue, commandPool, indexStaging.buffer, indices.buffer, indexBufferSize);
 
-    vkDestroyBuffer(app->getDevice(), vertexStaging.buffer, nullptr);
-    vkFreeMemory(app->getDevice(), vertexStaging.memory, nullptr);
+    vkDestroyBuffer(*device, vertexStaging.buffer, nullptr);
+    vkFreeMemory(*device, vertexStaging.memory, nullptr);
     if (indexBufferSize > 0) {
-        vkDestroyBuffer(app->getDevice(), indexStaging.buffer, nullptr);
-        vkFreeMemory(app->getDevice(), indexStaging.memory, nullptr);
+        vkDestroyBuffer(*device, indexStaging.buffer, nullptr);
+        vkFreeMemory(*device, indexStaging.memory, nullptr);
     }
 
     getSceneDimensions();
-}
-
-void gltfModel::drawNode(Node *node, VkCommandBuffer commandBuffer)
-{
-    if (node->mesh) {
-        for (Primitive *primitive : node->mesh->primitives) {
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(primitive->indexCount), 1, primitive->firstIndex, 0, 0);
-        }
-    }
-    for (auto& child : node->children) {
-        drawNode(child, commandBuffer);
-    }
-}
-
-void gltfModel::draw(VkCommandBuffer commandBuffer)
-{
-    const VkDeviceSize offsets[1] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertices.buffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-    for (auto& node : nodes) {
-        drawNode(node, commandBuffer);
-    }
 }
 
 void gltfModel::calculateBoundingBox(Node *node, Node *parent)
@@ -1144,27 +1146,6 @@ std::array<VkVertexInputAttributeDescription, 8> gltfModel::Vertex::getStencilAt
     attributeDescriptions[7].location = 7;
     attributeDescriptions[7].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributeDescriptions[7].offset = offsetof(Vertex, bitangent);
-
-    return attributeDescriptions;
-}
-
-VkVertexInputBindingDescription gltfModel::Vertex::getSkyboxBindingDescription()
-{
-    VkVertexInputBindingDescription bindingDescription{};
-    bindingDescription.binding = 0;
-    bindingDescription.stride = sizeof(Vertex);
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    return bindingDescription;
-}
-
-std::array<VkVertexInputAttributeDescription, 1> gltfModel::Vertex::getSkyboxAttributeDescriptions()
-{
-    std::array<VkVertexInputAttributeDescription, 1> attributeDescriptions{};
-
-    attributeDescriptions[0].binding = 0;                           //привязка к которой буфер привязан и из которого этот атрибут берёт данные
-    attributeDescriptions[0].location = 0;                          //положение которое используется для обращения к атрибуту из вершинного шейдера
-    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;   //формат вершинных данных
-    attributeDescriptions[0].offset = offsetof(Vertex, pos);        //смещение внутри каждой структуры
 
     return attributeDescriptions;
 }

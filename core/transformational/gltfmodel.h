@@ -81,7 +81,6 @@ struct Primitive
 
 struct Mesh
 {
-    VkApplication* app;
     std::vector<Primitive*> primitives;
     BoundingBox bb;
     BoundingBox aabb;
@@ -97,7 +96,8 @@ struct Mesh
         glm::mat4 jointMatrix[MAX_NUM_JOINTS]{};
         float jointcount{ 0 };
     } uniformBlock;
-    Mesh(VkApplication* app, glm::mat4 matrix);
+    Mesh(VkPhysicalDevice* physicalDevice, VkDevice* device, glm::mat4 matrix);
+    void destroy(VkDevice* device);
     ~Mesh();
     void setBoundingBox(glm::vec3 min, glm::vec3 max);
 };
@@ -128,6 +128,7 @@ struct Node
     glm::mat4 localMatrix();
     glm::mat4 getMatrix();
     void update();
+    void destroy(VkDevice* device);
     ~Node();
 };
 
@@ -158,7 +159,7 @@ struct Animation
 
 struct gltfModel
 {
-    VkApplication* app;
+    std::string filename;
 
     struct Vertex
     {
@@ -176,9 +177,6 @@ struct gltfModel
 
         static VkVertexInputBindingDescription getStencilBindingDescription();
         static std::array<VkVertexInputAttributeDescription, 8> getStencilAttributeDescriptions();
-
-        static VkVertexInputBindingDescription getSkyboxBindingDescription();
-        static std::array<VkVertexInputAttributeDescription, 1> getSkyboxAttributeDescriptions();
 
         static VkVertexInputBindingDescription getShadowBindingDescription();
         static std::array<VkVertexInputAttributeDescription, 3> getShadowAttributeDescriptions();
@@ -245,10 +243,7 @@ struct gltfModel
             return attributeDescriptions;
         }
 
-        bool operator==(const Vertex& other) const
-        {
-            return pos == other.pos;
-        }
+        bool operator==(const Vertex& other) const {return pos == other.pos;}
     };
 
     struct Vertices
@@ -264,38 +259,38 @@ struct gltfModel
         VkDeviceMemory memory;
     } indices;
 
-    glm::mat4 aabb;
+    VkDescriptorPool                DescriptorPool = VK_NULL_HANDLE;
 
-    std::vector<Node*> nodes;
-    std::vector<Node*> linearNodes;
+    glm::mat4                       aabb;
 
-    std::vector<Skin*> skins;
+    std::vector<Node*>              nodes;
+    std::vector<Node*>              linearNodes;
 
-    std::vector<texture> textures;
-    std::vector<textureSampler> textureSamplers;
-    std::vector<Material> materials;
-    std::vector<Animation> animations;
-    std::vector<std::string> extensions;
+    std::vector<Skin*>              skins;
+    std::vector<Animation>          animations;
 
-    uint32_t firstPrimitive;
+    std::vector<texture>            textures;
+    std::vector<textureSampler>     textureSamplers;
+    std::vector<Material>           materials;
+    std::vector<std::string>        extensions;
 
     struct Dimensions {
         glm::vec3 min = glm::vec3(FLT_MAX);
         glm::vec3 max = glm::vec3(-FLT_MAX);
     } dimensions;
 
-    void destroy(VkDevice device);
-    void loadNode(Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale);
+    gltfModel(std::string filename);
+
+    void destroy(VkDevice* device);
+    void loadNode(VkPhysicalDevice* physicalDevice, VkDevice* device, Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale);
     void loadSkins(tinygltf::Model& gltfModel);
-    void loadTextures(tinygltf::Model& gltfModel);
+    void loadTextures(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, tinygltf::Model& gltfModel);
     VkSamplerAddressMode getVkWrapMode(int32_t wrapMode);
     VkFilter getVkFilterMode(int32_t filterMode);
     void loadTextureSamplers(tinygltf::Model& gltfModel);
     void loadMaterials(tinygltf::Model& gltfModel);
     void loadAnimations(tinygltf::Model& gltfModel);
-    void loadFromFile(std::string filename, VkApplication* app, float scale = 1.0f);
-    void drawNode(Node* node, VkCommandBuffer commandBuffer);
-    void draw(VkCommandBuffer commandBuffer);
+    void loadFromFile(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, float scale = 1.0f);
     void calculateBoundingBox(Node* node, Node* parent);
     void getSceneDimensions();
     void updateAnimation(uint32_t index, float time);

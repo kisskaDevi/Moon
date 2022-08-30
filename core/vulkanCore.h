@@ -46,25 +46,49 @@ struct updateFlag{
 class VkApplication
 {
 public:
+    VkApplication();
+
     void initializeVulkan();
     void mainLoop(GLFWwindow* window, bool &framebufferResized);
     void cleanup();
 
-    VkPhysicalDevice                            & getPhysicalDevice();
-    VkDevice                                    & getDevice();
-    VkQueue                                     & getGraphicsQueue();
-    VkCommandPool                               & getCommandPool();
-    VkSurfaceKHR                                & getSurface();
-    QueueFamilyIndices                          & getQueueFamilyIndices();
-    graphics                                    & getGraphics();
     uint32_t                                    getImageCount();
+    uint32_t                                    getCurrentFrame();
 
     void                                        resetCmdLight();
     void                                        resetCmdWorld();
     void                                        resetUboLight();
     void                                        resetUboWorld();
 
-    void                                        addlightSource(light<spotLight>* lightSource);
+    void                                        setEmptyTexture(texture* emptyTexture);
+    void                                        setCameraObject(camera* cameraObject);
+
+    void                                        createModel(gltfModel* pModel);
+    void                                        destroyModel(gltfModel* pModel);
+
+    void                                        addLightSource(light<spotLight>* lightSource);
+    void                                        removeLightSource(light<spotLight>* lightSource);
+
+    void                                        bindBaseObject(object* newObject);
+    void                                        bindBloomObject(object* newObject);
+    void                                        bindOneColorObject(object* newObject);
+    void                                        bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor);
+    void                                        bindSkyBoxObject(object* newObject, cubeTexture* texture);
+
+    bool                                        removeBaseObject(object* object);
+    bool                                        removeBloomObject(object* object);
+    bool                                        removeOneColorObject(object* object);
+    bool                                        removeStencilObject(object* object);
+    bool                                        removeSkyBoxObject(object* object);
+
+    void                                        removeBinds();
+
+    void                                        setMinAmbientFactor(const float& minAmbientFactor);
+
+    void                                        updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition);
+    uint32_t                                    readStorageBuffer(uint32_t currentImage);
+
+    void                                        deviceWaitIdle();
 
 //step 1
     void                                        createInstance();
@@ -77,7 +101,7 @@ public:
 //step 3
     void                                        createCommandPool();
 //step 4
-    void                                        createGraphics(GLFWwindow* window);
+    void                                        createGraphics(GLFWwindow* window, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
     void                                        updateDescriptorSets();
 //step 5
     void                                        createCommandBuffers();
@@ -86,7 +110,6 @@ public:
     VkResult                                    drawFrame();
     void                                        destroyGraphics();
     void                                        freeCommandBuffers();
-    void                                        removeLightSources();
 
 private:
 

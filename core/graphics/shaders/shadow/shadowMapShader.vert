@@ -8,8 +8,7 @@ layout(set = 0, binding = 0) uniform LightBufferObject
     mat4 projView;
     vec4 position;
     vec4 lightColor;
-    int type;
-    int enableShadow;
+    vec4 lightProp;
 }light;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer

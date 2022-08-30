@@ -13,9 +13,16 @@ struct CustomFilterPushConst{
 class customFilter
 {
 private:
-    VkApplication*                      app;
+    VkPhysicalDevice*                   physicalDevice;
+    VkDevice*                           device;
+    VkQueue*                            graphicsQueue;
+    VkCommandPool*                      commandPool;
+
     std::vector<attachments *>          Attachments;
-    attachments*                        blitAttachments;
+    attachments*                        blitAttachments = nullptr;
+
+    float                               xSampleStep = 1.5f;
+    float                               ySampleStep = 1.5f;
 
     imageInfo                           image;
 
@@ -28,19 +35,21 @@ private:
         VkDescriptorSetLayout           DescriptorSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
-        void Destroy(VkApplication* app);
-        void createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void createDescriptorSetLayout(VkApplication* app);
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createDescriptorSetLayout(VkDevice* device);
     }filter;
 
 public:
     customFilter();
     void destroy();
 
-    void setApplication(VkApplication *app);
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
     void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void setBlitAttachments(attachments* blitAttachments);
+
+    void setSampleStep(float deltaX, float deltaY);
 
     void createRenderPass();
     void createFramebuffers();
@@ -50,7 +59,7 @@ public:
     void createDescriptorSets();
     void updateSecondDescriptorSets();
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber, float delta);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 
 };
 

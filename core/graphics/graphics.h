@@ -22,6 +22,7 @@ template <> class                   light<spotLight>;
 struct                              Node;
 struct                              Material;
 struct                              MaterialBlock;
+struct                              gltfModel;
 
 struct UniformBufferObject{
     alignas(16) glm::mat4           view;
@@ -39,6 +40,21 @@ struct StorageBufferObject{
     alignas(16) glm::vec4           mousePosition;
     alignas(4)  int                 number;
     alignas(4)  float               depth;
+};
+
+struct StencilPushConst
+{
+    alignas(16) glm::vec4           stencilColor;
+};
+
+struct lightPassPushConst
+{
+    alignas(4) float                minAmbientFactor;
+};
+
+struct postProcessingPushConst
+{
+    alignas(4) float                blitFactor;
 };
 
 struct SwapChainSupportDetails{
@@ -63,17 +79,30 @@ struct QueueFamilyIndices
     //В любой момент вы можете запросить, содержит ли он значение или нет, вызвав его has_value()функцию-член.
 };
 
-struct StencilPushConst
-{
-    alignas(16) glm::vec4           stencilColor;
+struct GBufferAttachments{
+    attachments*        position;
+    attachments*        normal;
+    attachments*        color;
+    attachments*        emission;
+};
+
+struct DeferredAttachments{
+    attachments*        image;
+    attachments*        blur;
+    attachments*        bloom;
+    GBufferAttachments  GBuffer;
 };
 
 class graphics
 {
 private:
-    VkApplication                   *app;
-    texture                         *emptyTexture;
-    camera                          *cameraObject;
+    VkPhysicalDevice*               physicalDevice;
+    VkDevice*                       device;
+    VkQueue*                        graphicsQueue;
+    VkCommandPool*                  commandPool;
+
+    texture*                        emptyTexture;
+    camera*                         cameraObject;
     uint32_t                        primitiveCount = 0;
 
     imageInfo                       image;
@@ -102,15 +131,18 @@ private:
 
         std::vector<object *>           objects;
 
-        void Destroy(VkApplication  *app);
-        void createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
 
-        void createDescriptorSetLayout(VkApplication *app);
-        void createObjectDescriptorPool(VkApplication *app, object *object, uint32_t imageCount);
-        void createObjectDescriptorSet(VkApplication *app, object *object, uint32_t imageCount, texture* emptyTexture);
-            void createObjectNodeDescriptorSet(VkApplication *app, object *object, Node* node);
-            void createObjectMaterialDescriptorSet(VkApplication *app, object *object, Material* material, texture* emptyTexture);
-        void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+        void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
+        void createDescriptorSetLayout(VkDevice* device);
+        void createObjectDescriptorPool(VkDevice* device, object* object, uint32_t imageCount);
+        void createObjectDescriptorSet(VkDevice* device, object* object, uint32_t imageCount);
+
+        void createModelDescriptorPool(VkDevice* device, gltfModel* pModel);
+        void createModelDescriptorSet(VkDevice* device, gltfModel* pModel, texture* emptyTexture);
+            void createModelNodeDescriptorSet(VkDevice* device, gltfModel* pModel, Node* node);
+            void createModelMaterialDescriptorSet(VkDevice* device, gltfModel* pModel, Material* material, texture* emptyTexture);
 
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
@@ -123,8 +155,8 @@ private:
 
         std::vector<object *>           objects;
 
-        void Destroy(VkApplication  *app);
-        void createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }bloom;
@@ -136,8 +168,8 @@ private:
 
         std::vector<object *>           objects;
 
-        void Destroy(VkApplication  *app);
-        void createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }oneColor;
@@ -149,15 +181,12 @@ private:
         VkPipelineLayout                firstPipelineLayout;
         VkPipelineLayout                secondPipelineLayout;
 
-        std::vector<bool>               stencilEnable;
-        std::vector<float>              stencilWidth;
-        std::vector<glm::vec4>          stencilColor;
         std::vector<object *>           objects;
 
-        void DestroyFirstPipeline(VkApplication *app);
-        void DestroySecondPipeline(VkApplication *app);
-        void createFirstPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void createSecondPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void DestroyFirstPipeline(VkDevice* device);
+        void DestroySecondPipeline(VkDevice* device);
+        void createFirstPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createSecondPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
             void stencilRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
@@ -176,10 +205,10 @@ private:
 
         std::vector<object *>           objects;
 
-        void Destroy(VkApplication* app);
-        void createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void createDescriptorSetLayout(VkApplication* app);
-        void createUniformBuffers(VkApplication* app, uint32_t imageCount);
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createDescriptorSetLayout(VkDevice* device);
+        void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }skybox;
 
@@ -196,13 +225,12 @@ private:
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
-        void Destroy(VkApplication  *app);
-        void createPipeline(VkApplication *app, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void createDescriptorSetLayout(VkApplication *app);
-        void createUniformBuffers(VkApplication *app, uint32_t imageCount);
+        float                           minAmbientFactor = 0.05f;
 
-        void createLightDescriptorPool(VkApplication* app, light<spotLight>* object, uint32_t imageCount);
-        void createLightDescriptorSets(VkApplication* app, light<spotLight>* object, uint32_t imageCount);
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createDescriptorSetLayout(VkDevice* device);
+        void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
 
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t lightSourcesCount,light<spotLight>** ppLightSources);
     }second;
@@ -219,11 +247,14 @@ private:
 public:
     graphics();
     void destroy();
+    void destroyEmptyTexture();
 
-    void setApplication(VkApplication* app);
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
     void setEmptyTexture(texture* emptyTexture);
     void setCameraObject(camera* cameraObject);
+
+    void setMinAmbientFactor(const float& minAmbientFactor);
 
     void createAttachments();
     void createRenderPass();
@@ -232,13 +263,15 @@ public:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
+    void updateBaseDescriptorSets();
+
     void createSkyboxDescriptorPool();
     void createSkyboxDescriptorSets();
+    void updateSkyboxDescriptorSets();
+
     void createSecondDescriptorPool();
     void createSecondDescriptorSets();
-
     void updateSecondDescriptorSets();
-    void updateLightDescriptorSets(light<spotLight>* object);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t lightSourceCount, light<spotLight>** pplightSources);
 
@@ -246,9 +279,12 @@ public:
     void updateSkyboxUniformBuffer(uint32_t currentImage);
     void updateObjectUniformBuffer(uint32_t currentImage);
 
-    void createStorageBuffers(VkApplication *app, uint32_t imageCount);
+    void createStorageBuffers(uint32_t imageCount);
     void updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition);
     uint32_t readStorageBuffer(uint32_t currentImage);
+
+    void createModel(gltfModel* pModel);
+    void destroyModel(gltfModel* pModel);
 
     void bindBaseObject(object* newObject);
     void bindBloomObject(object* newObject);
@@ -256,13 +292,19 @@ public:
     void bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor);
     void bindSkyBoxObject(object* newObject, cubeTexture* texture);
 
+    bool removeBaseObject(object* object);
+    bool removeBloomObject(object* object);
+    bool removeOneColorObject(object* object);
+    bool removeStencilObject(object* object);
+    bool removeSkyBoxObject(object* object);
+
     void removeBinds();
 
-    void bindLightSource(light<spotLight>* object);
+    void createLightDescriptorPool(light<spotLight>* object);
+    void createLightDescriptorSets(light<spotLight>* object);
+    void updateLightDescriptorSets(light<spotLight>* object);
 
-    void setStencilObject(object *oldObject);
-
-    std::vector<attachments>&       getAttachments();
+    DeferredAttachments             getDeferredAttachments();
     std::vector<VkBuffer>&          getSceneBuffer();
     ShadowPassObjects               getObjects();
 };
@@ -270,19 +312,24 @@ public:
 class postProcessing
 {
 private:
-    VkApplication                       *app;
-    uint32_t                            imageCount;
-    VkSampleCountFlagBits               msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkPhysicalDevice*                   physicalDevice;
+    VkDevice*                           device;
+    VkQueue*                            graphicsQueue;
+    VkCommandPool*                      commandPool;
+    QueueFamilyIndices*                 queueFamilyIndices;
+    VkSurfaceKHR*                       surface;
 
-    uint32_t                            swapChainAttachmentCount = 1;
+    imageInfo                           image;
+
     VkSwapchainKHR                      swapChain;
+    uint32_t                            swapChainAttachmentCount = 1;
     std::vector<attachments>            swapChainAttachments;
-    VkFormat                            swapChainImageFormat;
-    VkExtent2D                          swapChainExtent;
 
     uint32_t                            AttachmentCount = 1;
     std::vector<attachments>            Attachments;
 
+    float                               blitFactor = 1.5f;
+    static const uint32_t               blitAttachmentCount = 8;
     std::vector<attachments>            blitAttachments;
     attachments                         blitAttachment;
 
@@ -307,15 +354,16 @@ private:
 
     //Создание цепочки обмена
     void createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
-        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);    //Формат поверхности
-        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);     //Режим презентации
-        VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);                              //Экстент - это разрешение изображений
     void createImageViews();
     void createColorAttachments();
 public:
     postProcessing();
-    void setApplication(VkApplication *app);
     void destroy();
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, QueueFamilyIndices* queueFamilyIndices, VkSurfaceKHR* surface);
+    void setImageProp(imageInfo* pInfo);
+
+    void  setBlitFactor(const float& blitFactor);
+    float getBlitFactor();
 
     void createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
     void createRenderPass();
@@ -326,9 +374,9 @@ public:
         void createSecondGraphicsPipeline();
 
     void createDescriptorPool();
-    void createDescriptorSets(std::vector<attachments>& Attachments, std::vector<VkBuffer>& uniformBuffers);
+    void createDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
 
-    void render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
     std::vector<attachments>        & getBlitAttachments();
     attachments                     & getBlitAttachment();

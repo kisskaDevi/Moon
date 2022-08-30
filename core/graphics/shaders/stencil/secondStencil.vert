@@ -46,7 +46,7 @@ void main()
 	            inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
 	            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
 
-	    model *= skinMat;
+	    model = model * skinMat;
 	    outPosition	    =		model * outPosition;
     } else
     {

@@ -17,16 +17,16 @@ void main()
     outColor = vec4(0.0f);
 
     vec2 textel = 1.0f / textureSize(Sampler, 0);
+    float sum = 0.0f;
+    int steps = 2;
 
-    outColor += texture(Sampler,fragTexCoord + 1.5f*vec2(-textel.x*pc.dx,-textel.y*pc.dy));
-    outColor += texture(Sampler,fragTexCoord + 1.5f*vec2(-textel.x*pc.dx, textel.y*pc.dy));
-    outColor += texture(Sampler,fragTexCoord + 1.5f*vec2( textel.x*pc.dx,-textel.y*pc.dy));
-    outColor += texture(Sampler,fragTexCoord + 1.5f*vec2( textel.x*pc.dx, textel.y*pc.dy));
+    for(int i=1;i<=steps;i++){
+	outColor += texture(Sampler,fragTexCoord + i * vec2(-textel.x*pc.dx,-textel.y*pc.dy));
+	outColor += texture(Sampler,fragTexCoord + i * vec2(-textel.x*pc.dx, textel.y*pc.dy));
+	outColor += texture(Sampler,fragTexCoord + i * vec2( textel.x*pc.dx,-textel.y*pc.dy));
+	outColor += texture(Sampler,fragTexCoord + i * vec2( textel.x*pc.dx, textel.y*pc.dy));
+	sum += 4.0f;
+    }
 
-    outColor += texture(Sampler,fragTexCoord + 3.0f*vec2(-textel.x*pc.dx,-textel.y*pc.dy));
-    outColor += texture(Sampler,fragTexCoord + 3.0f*vec2(-textel.x*pc.dx, textel.y*pc.dy));
-    outColor += texture(Sampler,fragTexCoord + 3.0f*vec2( textel.x*pc.dx,-textel.y*pc.dy));
-    outColor += texture(Sampler,fragTexCoord + 3.0f*vec2( textel.x*pc.dx, textel.y*pc.dy));
-
-    outColor /= 8.0f;
+    outColor /= sum;
 }

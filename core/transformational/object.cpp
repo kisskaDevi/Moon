@@ -3,7 +3,7 @@
 
 #include "gltfmodel.h"
 
-object::object(VkApplication *app) : app(app)
+object::object()
 {
     modelMatrix = glm::mat4x4(1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -12,12 +12,9 @@ object::object(VkApplication *app) : app(app)
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
 
     model = nullptr;
-
-    uint32_t imageCount = app->getImageCount();
-    createUniformBuffers(imageCount);
 }
 
-object::object(VkApplication *app, objectInfo info): app(app)
+object::object(objectInfo info)
 {
     modelMatrix = glm::mat4x4(1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -27,21 +24,15 @@ object::object(VkApplication *app, objectInfo info): app(app)
 
     model = info.model;
     emptyTexture = info.emptyTexture;
-
-    uint32_t imageCount = app->getImageCount();
-    createUniformBuffers(imageCount);
 }
 
-object::object(VkApplication *app, gltfModel* model3D) : app(app), model(model3D)
+object::object(gltfModel* model3D): model(model3D)
 {
     modelMatrix = glm::mat4x4(1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
     m_translate = glm::vec3(0.0f,0.0f,0.0f);
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
-
-    uint32_t imageCount = app->getImageCount();
-    createUniformBuffers(imageCount);
 }
 
 object::~object()
@@ -49,21 +40,24 @@ object::~object()
 
 }
 
-void object::destroyUniformBuffers()
+void object::destroyUniformBuffers(VkDevice* device)
 {
     for(size_t i=0;i<uniformBuffers.size();i++)
     {
-        if (uniformBuffers.at(i) != VK_NULL_HANDLE)
+        if (uniformBuffers[i] != VK_NULL_HANDLE)
         {
-            vkDestroyBuffer(app->getDevice(), uniformBuffers.at(i), nullptr);
-            vkFreeMemory(app->getDevice(), uniformBuffersMemory.at(i), nullptr);
+            vkDestroyBuffer(*device, uniformBuffers.at(i), nullptr);
+            vkFreeMemory(*device, uniformBuffersMemory.at(i), nullptr);
         }
     }
 }
 
-void object::destroyDescriptorPools()
+void object::destroyDescriptorPools(VkDevice* device)
 {
-    vkDestroyDescriptorPool(app->getDevice(), descriptorPool, nullptr);
+    if (descriptorPool != VK_NULL_HANDLE){
+        vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
+        descriptorPool = VK_NULL_HANDLE;
+    }
 }
 
 void object::setGlobalTransform(const glm::mat4x4 & transform)
@@ -128,12 +122,13 @@ void object::updateAnimation()
     }
 }
 
-void object::createUniformBuffers(uint32_t imageCount)
+void object::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     uniformBuffers.resize(imageCount);
     uniformBuffersMemory.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++){
-        createBuffer(   app,
+        createBuffer(   physicalDevice,
+                        device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -142,34 +137,53 @@ void object::createUniformBuffers(uint32_t imageCount)
     }
 }
 
-void object::updateUniformBuffer(uint32_t currentImage)
+void object::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
 {
     void* data;
     UniformBuffer ubo{};
         ubo.modelMatrix = modelMatrix;
         ubo.color = color;
-    vkMapMemory(app->getDevice(), uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+    vkMapMemory(*device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
-    vkUnmapMemory(app->getDevice(), uniformBuffersMemory[currentImage]);
+    vkUnmapMemory(*device, uniformBuffersMemory[currentImage]);
 }
 
-void                            object::setVisibilityDistance(float visibilityDistance){this->visibilityDistance=visibilityDistance;}
-void                            object::setColor(const glm::vec4 &color){this->color = color;}
-void                            object::setEmptyTexture(texture* emptyTexture){this->emptyTexture = emptyTexture;}
-void                            object::setEnable(const bool& enable){this->enable = enable;}
+void                            object::setEmptyTexture(texture* emptyTexture)          {this->emptyTexture = emptyTexture;}
 
-gltfModel*                      object::getModel(){return model;}
-float                           object::getVisibilityDistance(){return visibilityDistance;}
-glm::vec4                       object::getColor(){return color;}
+void                            object::setModel(gltfModel *model3D)                    {this->model = model3D;}
+void                            object::setVisibilityDistance(float visibilityDistance) {this->visibilityDistance=visibilityDistance;}
+void                            object::setColor(const glm::vec4 &color)                {this->color = color;}
+void                            object::setEnable(const bool& enable)                   {this->enable = enable;}
 
-glm::mat4x4                     &object::ModelMatrix(){return modelMatrix;}
-glm::mat4x4                     &object::Transformation(){return m_globalTransform;}
-glm::vec3                       &object::Translate(){return m_translate;}
-glm::quat                       &object::Rotate(){return m_rotate;}
-glm::vec3                       &object::Scale(){return m_scale;}
+gltfModel*                      object::getModel()                                      {return model;}
+float                           object::getVisibilityDistance() const                   {return visibilityDistance;}
+glm::vec4                       object::getColor()              const                   {return color;}
+bool                            object::getEnable()             const                   {return enable;}
 
-VkDescriptorPool                &object::getDescriptorPool(){return descriptorPool;}
-std::vector<VkDescriptorSet>    &object::getDescriptorSet(){return descriptors;}
-std::vector<VkBuffer>           &object::getUniformBuffers(){return uniformBuffers;}
+glm::mat4x4                     &object::ModelMatrix()                                  {return modelMatrix;}
+glm::mat4x4                     &object::Transformation()                               {return m_globalTransform;}
+glm::vec3                       &object::Translate()                                    {return m_translate;}
+glm::quat                       &object::Rotate()                                       {return m_rotate;}
+glm::vec3                       &object::Scale()                                        {return m_scale;}
 
-bool                            &object::getEnable(){return enable;}
+VkDescriptorPool                &object::getDescriptorPool()                            {return descriptorPool;}
+std::vector<VkDescriptorSet>    &object::getDescriptorSet()                             {return descriptors;}
+std::vector<VkBuffer>           &object::getUniformBuffers()                            {return uniformBuffers;}
+
+
+void                            object::setStencilEnable(const bool& enable)            {stencil.Enable = enable;}
+void                            object::setStencilWidth(const float& width)             {stencil.Width = width;}
+void                            object::setStencilColor(const glm::vec4& color)         {stencil.Color = color;}
+
+bool                            object::getStencilEnable() const                        {return stencil.Enable;}
+float                           object::getStencilWidth()  const                        {return stencil.Width;}
+glm::vec4                       object::getStencilColor()  const                        {return stencil.Color;}
+
+void                            object::setFirstPrimitive(uint32_t firstPrimitive)      {this->firstPrimitive = firstPrimitive;}
+void                            object::setPrimitiveCount(uint32_t primitiveCount)      {this->primitiveCount = primitiveCount;}
+void                            object::resetPrimitiveCount()                           {primitiveCount=0;}
+void                            object::increasePrimitiveCount()                        {primitiveCount++;}
+
+bool                            object::comparePrimitive(uint32_t primitive)            {return primitive>=firstPrimitive&&primitive<firstPrimitive+primitiveCount;}
+uint32_t                        object::getFirstPrimitive() const                       {return firstPrimitive;}
+uint32_t                        object::getPrimitiveCount() const                       {return primitiveCount;}

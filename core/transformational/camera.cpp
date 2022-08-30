@@ -9,11 +9,23 @@ camera::camera()
     m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
     viewMatrix = glm::mat4x4(1.0f);
+    projMatrix = glm::mat4x4(1.0f);
 }
 
 camera::~camera()
 {
 
+}
+
+
+void camera::setProjMatrix(const glm::mat4 & proj)
+{
+    projMatrix = proj;
+}
+
+glm::mat4x4 camera::getProjMatrix() const
+{
+    return projMatrix;
 }
 
 void camera::setPosition(const glm::vec3 & translate)
@@ -26,17 +38,6 @@ void camera::setRotation(const float & ang ,const glm::vec3 & ax)
 {
     m_rotate = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax));
     updateViewMatrix();
-}
-
-void camera::defaultPosition()
-{
-    m_scale = glm::vec3(1.0f,1.0f,1.0f);
-    m_globalTransform = glm::mat4x4(1.0f);
-    m_translate = glm::vec3(0.0f,0.0f,0.0f);
-    m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    viewMatrix = glm::mat4x4(1.0f);
 }
 
 void camera::setGlobalTransform(const glm::mat4 & transform)

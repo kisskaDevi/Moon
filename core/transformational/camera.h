@@ -6,6 +6,7 @@
 class camera : public transformational
 {
 private:
+    glm::mat4x4         projMatrix;
     glm::mat4x4         viewMatrix;
     glm::vec3           m_translate;
     glm::quat           m_rotate;
@@ -28,7 +29,9 @@ public:
 
     void setPosition(const glm::vec3 & translate);
     void setRotation(const float & ang ,const glm::vec3 & ax);
-    void defaultPosition();
+
+    void setProjMatrix(const glm::mat4 & proj);
+    glm::mat4x4 getProjMatrix() const;
 
     void updateViewMatrix();
     glm::mat4x4 getViewMatrix() const;

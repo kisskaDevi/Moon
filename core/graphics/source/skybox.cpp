@@ -5,26 +5,27 @@
 
 #include <array>
 
-void graphics::Skybox::Destroy(VkApplication *app)
+void graphics::Skybox::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(app->getDevice(), DescriptorPool, nullptr);
+    vkDestroyPipeline(*device, Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 
     for (size_t i = 0; i < uniformBuffers.size(); i++)
     {
-        vkDestroyBuffer(app->getDevice(), uniformBuffers[i], nullptr);
-        vkFreeMemory(app->getDevice(), uniformBuffersMemory[i], nullptr);
+        vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
+        vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
     }
 }
 
-void graphics::Skybox::createUniformBuffers(VkApplication *app, uint32_t imageCount)
+void graphics::Skybox::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     uniformBuffers.resize(imageCount);
     uniformBuffersMemory.resize(imageCount);
     for (size_t i = 0; i < imageCount; i++){
-        createBuffer(   app,
+        createBuffer(   physicalDevice,
+                        device,
                         sizeof(SkyboxUniformBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -33,7 +34,7 @@ void graphics::Skybox::createUniformBuffers(VkApplication *app, uint32_t imageCo
     }
 }
 
-void graphics::Skybox::createDescriptorSetLayout(VkApplication *app)
+void graphics::Skybox::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
@@ -53,18 +54,18 @@ void graphics::Skybox::createDescriptorSetLayout(VkApplication *app)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    if (vkCreateDescriptorSetLayout(app->getDevice(), &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create Skybox descriptor set layout!");
 }
 
-void graphics::Skybox::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\skybox\\skyboxVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\skybox\\skyboxFrag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -76,15 +77,12 @@ void graphics::Skybox::createPipeline(VkApplication* app, imageInfo* pInfo, VkRe
         shaderStages[index].module = fragShaderModule;
         shaderStages[index].pName = "main";
 
-
-    auto bindingDescription = gltfModel::Vertex::getSkyboxBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getSkyboxAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 1;
-        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+        vertexInputInfo.vertexBindingDescriptionCount = 0;
+        vertexInputInfo.vertexAttributeDescriptionCount = 0;
+        vertexInputInfo.pVertexBindingDescriptions = nullptr;
+        vertexInputInfo.pVertexAttributeDescriptions = nullptr;
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -158,7 +156,7 @@ void graphics::Skybox::createPipeline(VkApplication* app, imageInfo* pInfo, VkRe
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create Skybox pipeline layout!");
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
@@ -189,11 +187,11 @@ void graphics::Skybox::createPipeline(VkApplication* app, imageInfo* pInfo, VkRe
         pipelineInfo[index].subpass = 0;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create Skybox graphics pipeline!");
 
-    vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-    vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
 void graphics::createSkyboxDescriptorPool()
@@ -212,7 +210,7 @@ void graphics::createSkyboxDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &skybox.DescriptorPool) != VK_SUCCESS)
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &skybox.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create Skybox descriptor pool!");
 }
 
@@ -225,9 +223,12 @@ void graphics::createSkyboxDescriptorSets()
         allocInfo.descriptorPool = skybox.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, skybox.DescriptorSets.data()) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(*device, &allocInfo, skybox.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate Skybox descriptor sets!");
+}
 
+void graphics::updateSkyboxDescriptorSets()
+{
     for (size_t i = 0; i < image.Count; i++)
     {
         size_t index = 0;
@@ -258,7 +259,7 @@ void graphics::createSkyboxDescriptorSets()
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(skyboxImageInfo.size());
             descriptorWrites[index].pImageInfo = skyboxImageInfo.data();
-        vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -266,11 +267,8 @@ void graphics::Skybox::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
 {
     if(objects.size()!=0)
     {
-        VkDeviceSize offsets[1] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[0]->getModel()->vertices.buffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffers,  objects[0]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
         vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[frameNumber], 0, NULL);
-        vkCmdDrawIndexed(commandBuffers, 36, 1, 0, 0, 0);
+        vkCmdDraw(commandBuffers, 36, 1, 0, 0);
     }
 }

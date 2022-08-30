@@ -10,20 +10,13 @@ struct shadowInfo{
     VkRenderPass                renderPass;
 };
 
-struct LightBufferObject
-{
-    alignas(16) glm::mat4   proj;
-    alignas(16) glm::mat4   view;
-    alignas(16) glm::mat4   projView;
-    alignas(16) glm::vec4   position;
-    alignas(16) glm::vec4   lightColor;
-    alignas(4)  uint32_t    type;
-};
-
 class shadowGraphics
 {
 private:
-    VkApplication                       *app;
+    VkPhysicalDevice*                   physicalDevice;
+    VkDevice*                           device;
+    QueueFamilyIndices*                 queueFamilyIndices;
+
     imageInfo                           image;
 
     attachment                          depthAttachment;
@@ -41,9 +34,9 @@ private:
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
 
-        void Destroy(VkApplication  *app);
-        void createPipeline(VkApplication *app, shadowInfo info);
-        void createDescriptorSetLayout(VkApplication *app);
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, shadowInfo info);
+        void createDescriptorSetLayout(VkDevice* device);
     }shadow;
 
     VkCommandPool                       shadowCommandPool;
@@ -51,8 +44,9 @@ private:
 
     void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
 public:
-    shadowGraphics(VkApplication *app, uint32_t imageCount, VkExtent2D shadowExtent = {1024,1024});
+    shadowGraphics(uint32_t imageCount, VkExtent2D shadowExtent = {1024,1024});
     void destroy();
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices);
 
     void createMap();
     void createMapView();
@@ -65,7 +59,7 @@ public:
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(uint32_t lightUniformBuffersCount, VkBuffer* plightUniformBuffers);
+    void updateDescriptorSets(uint32_t lightUniformBuffersCount, VkBuffer* plightUniformBuffers, unsigned long long sizeOfLightUniformBuffers);
 
     void createCommandBuffers();
     void updateCommandBuffer(uint32_t frameNumber, ShadowPassObjects objects);

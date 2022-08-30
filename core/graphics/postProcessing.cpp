@@ -7,40 +7,53 @@
 
 postProcessing::postProcessing(){}
 
-void postProcessing::setApplication(VkApplication * app){this->app = app;}
+void postProcessing::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, QueueFamilyIndices* queueFamilyIndices, VkSurfaceKHR* surface)
+{
+    this->physicalDevice = physicalDevice;
+    this->device = device;
+    this->graphicsQueue = graphicsQueue;
+    this->commandPool = commandPool;
+    this->queueFamilyIndices = queueFamilyIndices;
+    this->surface = surface;
+}
+void postProcessing::setImageProp(imageInfo* pInfo)             {this->image = *pInfo;}
+
+void  postProcessing::setBlitFactor(const float& blitFactor)    {this->blitFactor = blitFactor;}
+float postProcessing::getBlitFactor()                           {return blitFactor;}
 
 void postProcessing::destroy()
 {
-    vkDestroyPipeline(app->getDevice(), first.Pipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), first.PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), first.DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(app->getDevice(), first.DescriptorPool, nullptr);
+    vkDestroyPipeline(*device, first.Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, first.PipelineLayout,nullptr);
+    vkDestroyDescriptorSetLayout(*device, first.DescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(*device, first.DescriptorPool, nullptr);
 
-    vkDestroyPipeline(app->getDevice(), second.Pipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), second.PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), second.DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(app->getDevice(), second.DescriptorPool, nullptr);
+    vkDestroyPipeline(*device, second.Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, second.PipelineLayout,nullptr);
+    vkDestroyDescriptorSetLayout(*device, second.DescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(*device, second.DescriptorPool, nullptr);
 
-    vkDestroyRenderPass(app->getDevice(), renderPass, nullptr);
+    vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
-        vkDestroyFramebuffer(app->getDevice(), framebuffers[i],nullptr);
+        vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
 
     for(size_t i=0; i<Attachments.size(); i++){
-        Attachments[i].deleteAttachment(&app->getDevice());
-        Attachments[i].deleteSampler(&app->getDevice());
+        Attachments[i].deleteAttachment(&*device);
+        Attachments[i].deleteSampler(&*device);
     }
 
     for(size_t i=0; i<blitAttachments.size(); i++){
-        blitAttachments[i].deleteAttachment(&app->getDevice());
-        blitAttachments[i].deleteSampler(&app->getDevice());
+        blitAttachments[i].deleteAttachment(&*device);
+        blitAttachments[i].deleteSampler(&*device);
     }
-    blitAttachment.deleteAttachment(&app->getDevice());
-    blitAttachment.deleteSampler(&app->getDevice());
+    blitAttachment.deleteAttachment(&*device);
+    blitAttachment.deleteSampler(&*device);
 
+    uint32_t imageCount = image.Count;
     for(size_t i=0; i<swapChainAttachments.size(); i++)
         for(size_t image=0; image <imageCount;image++)
-            vkDestroyImageView(app->getDevice(),swapChainAttachments.at(i).imageView[image],nullptr);
-    vkDestroySwapchainKHR(app->getDevice(), swapChain, nullptr);
+            vkDestroyImageView(*device,swapChainAttachments[i].imageView[image],nullptr);
+    vkDestroySwapchainKHR(*device, swapChain, nullptr);
 }
 
 void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport)
@@ -69,23 +82,18 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
          * организации изображений в виде кольцевого буфера или очереди одно изображение может
          * показываться на экране, в то время как в другое осуществляется рендеринг*/
 
-        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);                                   //задаём поддерживаемый формат
-        VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);                                    //смотри ниже
-        VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);                                            //задаём размер изображения в списке показа в пикселях
+        VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+        VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);
+        uint32_t imageCount = image.Count;
 
-        imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                           //запрос на поддержку минимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
-        if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)        //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений
-        {                                                                                                                       //и проверяем не совпадает ли максимальное число изображений с минимальным
-            imageCount = swapChainSupport.capabilities.maxImageCount;                                                           //присываиваем максимальное значение
-        }
-
-        QueueFamilyIndices indices = app->getQueueFamilyIndices();
+        QueueFamilyIndices indices = *queueFamilyIndices;
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         //Создаём соответствующую структуру, задержащую все парамеры списка показа
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = app->getSurface();                         //поверхность в которую новый список показа будет показывать
+        createInfo.surface = *surface;                                  //поверхность в которую новый список показа будет показывать
         createInfo.minImageCount = imageCount;                          //число изображений в списке показа. Например чтобы задать двойную или тройную буфферизацию, необходимо задать это значение соответственно 2 и 3
                                                                         //Задание значения равным 1 представляет собой запрос на рендериг прямо в передний буфер или непосредственно на дисплей.
         createInfo.imageFormat = surfaceFormat.format;                  //используем ранее найденый формат и просто передаём его
@@ -109,63 +117,20 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
         createInfo.clipped = VK_TRUE;                                               //поле для оптимизации случая когда не вся поверхность видна. Избежание рендеринга частй которые не видит пользователь
         createInfo.oldSwapchain = VK_NULL_HANDLE;                                   //поле для передачи старого списк показа для переиспользования
 
-        if (vkCreateSwapchainKHR(app->getDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)     //функция дял создания цепочки обмена, устройство с которым связан список показа передаётся в параметре device
+        if (vkCreateSwapchainKHR(*device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)     //функция дял создания цепочки обмена, устройство с которым связан список показа передаётся в параметре device
             throw std::runtime_error("failed to create swap chain!");                                   //информация о списке показа передаётся в виде структуры VkSwapchainCreateInfoKHR которая определена выше
 
-        vkGetSwapchainImagesKHR(app->getDevice(), swapChain, &imageCount, nullptr);                     //записываем дескриптор изображений представляющий элементы в списке показа
+        vkGetSwapchainImagesKHR(*device, swapChain, &imageCount, nullptr);                     //записываем дескриптор изображений представляющий элементы в списке показа
 
         swapChainAttachments.resize(swapChainAttachmentCount);
         for(size_t i=0;i<swapChainAttachments.size();i++)
         {
-            swapChainAttachments.at(i).image.resize(imageCount);
-            swapChainAttachments.at(i).imageView.resize(imageCount);
-            swapChainAttachments.at(i).setSize(imageCount);
-            vkGetSwapchainImagesKHR(app->getDevice(), swapChain, &imageCount, swapChainAttachments.at(i).image.data());    //получаем дескрипторы, на них мы будем ссылаться при рендеринге
-        }
-
-        swapChainImageFormat = surfaceFormat.format;                                        //сохраним форматы
-        swapChainExtent = extent;                                                           //и размеры
+            swapChainAttachments[i].image.resize(imageCount);
+            swapChainAttachments[i].imageView.resize(imageCount);
+            swapChainAttachments[i].setSize(imageCount);
+            vkGetSwapchainImagesKHR(*device, swapChain, &imageCount, swapChainAttachments[i].image.data());    //получаем дескрипторы, на них мы будем ссылаться при рендеринге
+        }                   
     }
-        //Формат поверхности
-        VkSurfaceFormatKHR postProcessing::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-        {
-            for (const auto& availableFormat : availableFormats) {
-                if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)   //ожидаем получить нелинейные sRGB - данные
-                {
-                    return availableFormat;
-                }
-            }
-            return availableFormats[0];     //в противном случае возвращаем первое что есть
-        }
-        //Режим презентации
-        VkPresentModeKHR postProcessing::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-            for (const auto& availablePresentMode : availablePresentModes)
-            {
-                if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)    //аналогичная процедура поиска для режима показа
-                {                                                           //подробно про все биты страница 136
-                    return availablePresentMode;
-                }
-            }
-            return VK_PRESENT_MODE_FIFO_KHR;
-        }
-        //Экстент обмена - это разрешение изображений цепочки обмена, и оно почти всегда точно равно разрешению окна, в которое мы рисуем, в пикселях
-        VkExtent2D postProcessing::chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities)
-        {
-            if (capabilities.currentExtent.width != UINT32_MAX)
-                return capabilities.currentExtent;
-            else
-            {
-                int width, height;
-                glfwGetFramebufferSize(window, &width, &height);
-
-                VkExtent2D actualExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-
-                actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-                actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-                return actualExtent;
-            }
-        }
 
     void postProcessing::createImageViews()
     {
@@ -176,20 +141,43 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
          * даже если форматы полностью отличаются и даже если отличаетс ячисло каналова изображений*/
 
         for(size_t i=0;i<swapChainAttachments.size();i++)
-            for (size_t size = 0; size < swapChainAttachments.at(i).getSize(); size++)
-                swapChainAttachments.at(i).imageView[size] = createImageView(app,swapChainAttachments.at(i).image[size], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+            for (size_t size = 0; size < swapChainAttachments[i].getSize(); size++)
+                swapChainAttachments[i].imageView[size] =
+                createImageView(    device,
+                                    swapChainAttachments[i].image[size],
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1);
     }
 
     void postProcessing::createColorAttachments()
     {
+        uint32_t imageCount = image.Count;
         Attachments.resize(AttachmentCount);
         for(size_t i=0;i<AttachmentCount;i++)
         {
-            Attachments[i].resize(imageCount);
-            for(size_t image=0; image<imageCount; image++)
+            Attachments[i].resize(image.Count);
+            for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
             {
-                createImage(app,swapChainExtent.width,swapChainExtent.height,1,VK_SAMPLE_COUNT_1_BIT,swapChainImageFormat,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Attachments[i].image[image], Attachments[i].imageMemory[image]);
-                Attachments[i].imageView[image] = createImageView(app, Attachments[i].image[image], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+                createImage(        physicalDevice,
+                                    device,
+                                    image.Extent.width,
+                                    image.Extent.height,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    image.Format,
+                                    VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    Attachments[i].image[imageNumber],
+                                    Attachments[i].imageMemory[imageNumber]);
+
+                Attachments[i].imageView[imageNumber] =
+                createImageView(    device,
+                                    Attachments[i].image[imageNumber],
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1);
             }
             VkSamplerCreateInfo SamplerInfo{};
                 SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -208,17 +196,34 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
                 SamplerInfo.minLod = 0.0f;
                 SamplerInfo.maxLod = 0.0f;
                 SamplerInfo.mipLodBias = 0.0f;
-            if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
+            if (vkCreateSampler(*device, &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
                 throw std::runtime_error("failed to create postProcessing sampler!");
         }
 
-        blitAttachments.resize(8);
+        blitAttachments.resize(blitAttachmentCount);
         for(uint32_t i=0;i<blitAttachments.size();i++){
             blitAttachments[i].resize(imageCount);
-            for(size_t image=0; image<imageCount; image++)
+            for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
             {
-                createImage(app,swapChainExtent.width,swapChainExtent.height,1,VK_SAMPLE_COUNT_1_BIT,swapChainImageFormat,VK_IMAGE_TILING_OPTIMAL,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, blitAttachments[i].image[image], blitAttachments[i].imageMemory[image]);
-                blitAttachments[i].imageView[image] = createImageView(app, blitAttachments[i].image[image], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+                createImage(        physicalDevice,
+                                    device,
+                                    image.Extent.width,
+                                    image.Extent.height,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    image.Format,
+                                    VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    blitAttachments[i].image[imageNumber],
+                                    blitAttachments[i].imageMemory[imageNumber]);
+
+                blitAttachments[i].imageView[imageNumber] =
+                createImageView(    device,
+                                    blitAttachments[i].image[imageNumber],
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1);
             }
             VkSamplerCreateInfo SamplerInfo{};
                 SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -237,36 +242,40 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
                 SamplerInfo.minLod = 0.0f;
                 SamplerInfo.maxLod = 0.0f;
                 SamplerInfo.mipLodBias = 0.0f;
-            if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &blitAttachments[i].sampler) != VK_SUCCESS)
+            if (vkCreateSampler(*device, &SamplerInfo, nullptr, &blitAttachments[i].sampler) != VK_SUCCESS)
                 throw std::runtime_error("failed to create postProcessing sampler!");
         }
 
         blitAttachment.resize(imageCount);
-        for(size_t image=0; image<imageCount; image++)
+        for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
         {
-            createImage(app,swapChainExtent.width,swapChainExtent.height,1,VK_SAMPLE_COUNT_1_BIT,swapChainImageFormat,VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, blitAttachment.image[image], blitAttachment.imageMemory[image]);
-            blitAttachment.imageView[image] = createImageView(app, blitAttachment.image[image], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+            createImage(            physicalDevice,
+                                    device,
+                                    image.Extent.width,
+                                    image.Extent.height,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    image.Format,
+                                    VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT ,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    blitAttachment.image[imageNumber],
+                                    blitAttachment.imageMemory[imageNumber]);
 
-            VkCommandBuffer commandBuffer = beginSingleTimeCommands(app);
-            VkImageMemoryBarrier barrier{};
-                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-                barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.image = blitAttachment.image[image];
-                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                barrier.subresourceRange.baseMipLevel = 0;
-                barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-                barrier.subresourceRange.baseArrayLayer = 0;
-                barrier.subresourceRange.layerCount = 1;
-                barrier.srcAccessMask = 0;
-                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            vkCmdPipelineBarrier(commandBuffer,sourceStage, destinationStage,0,0, nullptr,0, nullptr,1, &barrier);
+            blitAttachment.imageView[imageNumber] =
+            createImageView(        device,
+                                    blitAttachment.image[imageNumber],
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1);
 
-            endSingleTimeCommands(app, commandBuffer);
+            transitionImageLayout(  device,
+                                    graphicsQueue,
+                                    commandPool,
+                                    blitAttachment.image[imageNumber],
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                    VK_REMAINING_MIP_LEVELS);
         }
         VkSamplerCreateInfo SamplerInfo{};
             SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -285,7 +294,7 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
             SamplerInfo.minLod = 0.0f;
             SamplerInfo.maxLod = 0.0f;
             SamplerInfo.mipLodBias = 0.0f;
-        if (vkCreateSampler(app->getDevice(), &SamplerInfo, nullptr, &blitAttachment.sampler) != VK_SUCCESS)
+        if (vkCreateSampler(*device, &SamplerInfo, nullptr, &blitAttachment.sampler) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing sampler!");
     }
 
@@ -296,7 +305,7 @@ void postProcessing::createRenderPass()
     uint32_t index = 0;
 
     std::array<VkAttachmentDescription,2> attachments{};
-        attachments[index].format = swapChainImageFormat;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
+        attachments[index].format = image.Format;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
         attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;                            //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
         attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                       //следующие 4 параметра смотри на странице 210
         attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -305,7 +314,7 @@ void postProcessing::createRenderPass()
         attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
         attachments[index].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;              //в каком размещении его нужно оставить по завершению рендеринга
     index++;
-        attachments[index].format = swapChainImageFormat;
+        attachments[index].format = image.Format;
         attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
         attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -383,7 +392,7 @@ void postProcessing::createRenderPass()
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
 
-    if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+    if (vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing render pass!");
 }
 
@@ -391,7 +400,7 @@ void postProcessing::createRenderPass()
 
 void postProcessing::createFramebuffers()
 {
-    framebuffers.resize(imageCount);
+    framebuffers.resize(image.Count);
     for (size_t i = 0; i < framebuffers.size(); i++)
     {
         uint32_t index = 0;
@@ -407,10 +416,10 @@ void postProcessing::createFramebuffers()
             framebufferInfo.renderPass = renderPass;                                                                    //дескриптор объекта прохода рендеринга
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                //число изображений
             framebufferInfo.pAttachments = attachments.data();                                                          //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
-            framebufferInfo.width = swapChainExtent.width;                                                              //ширина изображения
-            framebufferInfo.height = swapChainExtent.height;                                                            //высота изображения
+            framebufferInfo.width = image.Extent.width;                                                              //ширина изображения
+            framebufferInfo.height = image.Extent.height;                                                            //высота изображения
             framebufferInfo.layers = 1;                                                                                 //число слоёв
-        if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) //создание буфера кадров
+        if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) //создание буфера кадров
             throw std::runtime_error("failed to create postProcessing framebuffer!");
     }
 }
@@ -467,7 +476,7 @@ void postProcessing::createPipelines()
             secondBindings[index].pImmutableSamplers = nullptr;
         index++;
             secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = static_cast<uint32_t>(8);
+            secondBindings[index].descriptorCount = static_cast<uint32_t>(blitAttachmentCount);
             secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             secondBindings[index].pImmutableSamplers = nullptr;
             secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -482,9 +491,9 @@ void postProcessing::createPipelines()
             textureLayoutInfo[index].bindingCount = static_cast<uint32_t>(secondBindings.size());
             textureLayoutInfo[index].pBindings = secondBindings.data();
 
-        if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo.at(0), nullptr, &first.DescriptorSetLayout) != VK_SUCCESS)
+        if (vkCreateDescriptorSetLayout(*device, &textureLayoutInfo.at(0), nullptr, &first.DescriptorSetLayout) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing descriptor set layout 1!");
-        if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo.at(1), nullptr, &second.DescriptorSetLayout) != VK_SUCCESS)
+        if (vkCreateDescriptorSetLayout(*device, &textureLayoutInfo.at(1), nullptr, &second.DescriptorSetLayout) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing descriptor set layout 2!");
     }
     void postProcessing::createFirstGraphicsPipeline()
@@ -493,8 +502,8 @@ void postProcessing::createPipelines()
 
         auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingVert.spv");
         auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingFrag.spv");
-        VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
         std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
             shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -522,13 +531,13 @@ void postProcessing::createPipelines()
         std::array<VkViewport,1> viewport{};
             viewport[index].x = 0.0f;
             viewport[index].y = 0.0f;
-            viewport[index].width  = (float) swapChainExtent.width;
-            viewport[index].height= (float) swapChainExtent.height;
+            viewport[index].width  = (float) image.Extent.width;
+            viewport[index].height= (float) image.Extent.height;
             viewport[index].minDepth = 0.0f;
             viewport[index].maxDepth = 1.0f;
         std::array<VkRect2D,1> scissor{};
             scissor[index].offset = {0, 0};
-            scissor[index].extent = swapChainExtent;
+            scissor[index].extent = image.Extent;
         VkPipelineViewportStateCreateInfo viewportState{};
             viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
@@ -603,7 +612,7 @@ void postProcessing::createPipelines()
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.setLayoutCount = 1;
             pipelineLayoutInfo.pSetLayouts = &first.DescriptorSetLayout;
-        if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &first.PipelineLayout) != VK_SUCCESS)
+        if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &first.PipelineLayout) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing pipeline layout 1!");
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -621,12 +630,12 @@ void postProcessing::createPipelines()
             pipelineInfo.subpass = 0;
             pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo.pDepthStencilState = &depthStencil;
-        if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &first.Pipeline) != VK_SUCCESS)
+        if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &first.Pipeline) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing graphics pipeline 1!");
 
         //можно удалить шейдерные модули после использования
-        vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-        vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+        vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(*device, vertShaderModule, nullptr);
     }
     void postProcessing::createSecondGraphicsPipeline()
     {
@@ -634,8 +643,8 @@ void postProcessing::createPipelines()
 
         auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingVert.spv");
         auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingFrag.spv");
-        VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
         std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
             shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -663,13 +672,13 @@ void postProcessing::createPipelines()
         std::array<VkViewport,1> viewport{};
             viewport[index].x = 0.0f;
             viewport[index].y = 0.0f;
-            viewport[index].width  = (float) swapChainExtent.width;
-            viewport[index].height= (float) swapChainExtent.height;
+            viewport[index].width  = (float) image.Extent.width;
+            viewport[index].height= (float) image.Extent.height;
             viewport[index].minDepth = 0.0f;
             viewport[index].maxDepth = 1.0f;
         std::array<VkRect2D,1> scissor{};
             scissor[index].offset = {0, 0};
-            scissor[index].extent = swapChainExtent;
+            scissor[index].extent = image.Extent;
         VkPipelineViewportStateCreateInfo viewportState{};
             viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
@@ -731,11 +740,18 @@ void postProcessing::createPipelines()
             depthStencil.front = {};
             depthStencil.back = {};
 
+        index=0;
+        std::array<VkPushConstantRange,1> pushConstantRange{};
+            pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+            pushConstantRange[index].offset = 0;
+            pushConstantRange[index].size = sizeof(postProcessingPushConst);
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.setLayoutCount = 1;
             pipelineLayoutInfo.pSetLayouts = &second.DescriptorSetLayout;
-        if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &second.PipelineLayout) != VK_SUCCESS)
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
+            pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
+        if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &second.PipelineLayout) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing pipeline layout 2!");
 
         index = 0;
@@ -754,16 +770,17 @@ void postProcessing::createPipelines()
             pipelineInfo[index].subpass = 2;
             pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo[index].pDepthStencilState = &depthStencil;
-        if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &second.Pipeline) != VK_SUCCESS)
+        if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &second.Pipeline) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing graphics pipeline 2!");
 
         //можно удалить шейдерные модули после использования
-        vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-        vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+        vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(*device, vertShaderModule, nullptr);
     }
 
 void postProcessing::createDescriptorPool()
 {
+    uint32_t imageCount = image.Count;
     size_t index = 0;
     std::array<VkDescriptorPoolSize,1> firstPoolSizes;
     for(uint32_t i=0;i<firstPoolSizes.size();i++,index++){
@@ -775,7 +792,7 @@ void postProcessing::createDescriptorPool()
         firstPoolInfo.poolSizeCount = static_cast<uint32_t>(firstPoolSizes.size());
         firstPoolInfo.pPoolSizes = firstPoolSizes.data();
         firstPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(app->getDevice(), &firstPoolInfo, nullptr, &first.DescriptorPool) != VK_SUCCESS)
+    if (vkCreateDescriptorPool(*device, &firstPoolInfo, nullptr, &first.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 
     index = 0;
@@ -796,18 +813,19 @@ void postProcessing::createDescriptorPool()
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(8*imageCount);
+        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(blitAttachmentCount*imageCount);
     VkDescriptorPoolCreateInfo secondPoolInfo{};
         secondPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         secondPoolInfo.poolSizeCount = static_cast<uint32_t>(secondPoolSizes.size());
         secondPoolInfo.pPoolSizes = secondPoolSizes.data();
         secondPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(app->getDevice(), &secondPoolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
+    if (vkCreateDescriptorPool(*device, &secondPoolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing descriptor pool 2!");
 }
 
-void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments, std::vector<VkBuffer>& uniformBuffers)
+void postProcessing::createDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
 {
+    uint32_t imageCount = image.Count;
     first.DescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> firstLayouts(imageCount, first.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo firstAllocInfo{};
@@ -815,7 +833,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
         firstAllocInfo.descriptorPool = first.DescriptorPool;
         firstAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         firstAllocInfo.pSetLayouts = firstLayouts.data();
-    if (vkAllocateDescriptorSets(app->getDevice(), &firstAllocInfo, first.DescriptorSets.data()) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(*device, &firstAllocInfo, first.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 
     for (size_t image = 0; image < imageCount; image++)
@@ -824,8 +842,8 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
         std::array<VkDescriptorImageInfo, 1> imageInfo;
         for(uint32_t i=0;i<imageInfo.size();i++,index++){
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments[1].imageView[image];
-            imageInfo[index].sampler = Attachments[1].sampler;
+            imageInfo[index].imageView = Attachments.blur->imageView[image];
+            imageInfo[index].sampler = Attachments.blur->sampler;
         }
 
         index = 0;
@@ -837,7 +855,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(imageInfo.size());
             descriptorWrites[index].pImageInfo = imageInfo.data();
-        vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
     second.DescriptorSets.resize(imageCount);
@@ -847,7 +865,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
         allocInfo.descriptorPool = second.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(*device, &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 2!");
 
     for (size_t image = 0; image < imageCount; image++)
@@ -856,23 +874,23 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
 
         std::array<VkDescriptorImageInfo, 4> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments[0].imageView[image];
-            imageInfo[index].sampler = Attachments[0].sampler;
+            imageInfo[index].imageView = Attachments.image->imageView[image];
+            imageInfo[index].sampler = Attachments.image->sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[index].imageView = this->Attachments[0].imageView[image];
             imageInfo[index].sampler = this->Attachments[0].sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments[3].imageView[image];
-            imageInfo[index].sampler = Attachments[3].sampler;
+            imageInfo[index].imageView = Attachments.GBuffer.position->imageView[image];
+            imageInfo[index].sampler = Attachments.GBuffer.position->sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments[4].imageView[image];
-            imageInfo[index].sampler = Attachments[4].sampler;
+            imageInfo[index].imageView = Attachments.GBuffer.normal->imageView[image];
+            imageInfo[index].sampler = Attachments.GBuffer.normal->sampler;
 
         index = 0;
-            std::array<VkDescriptorImageInfo, 8> blitImageInfo;
+            std::array<VkDescriptorImageInfo, blitAttachmentCount> blitImageInfo;
             for(uint32_t i=0;i<blitImageInfo.size();i++,index++){
                 blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 blitImageInfo[index].imageView = blitAttachments[i].imageView[image];
@@ -880,7 +898,7 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
             }
 
         VkDescriptorBufferInfo bufferInfo;
-            bufferInfo.buffer = uniformBuffers[image];
+            bufferInfo.buffer = pUniformBuffers[image];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -933,11 +951,11 @@ void postProcessing::createDescriptorSets(std::vector<attachments> & Attachments
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.at(index).descriptorCount = static_cast<uint32_t>(blitImageInfo.size());
             descriptorWrites.at(index).pImageInfo = blitImageInfo.data();
-        vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-void postProcessing::render(std::vector<VkCommandBuffer> &commandBuffers, uint32_t i)
+void postProcessing::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     std::array<VkClearValue, 2> ClearValues{};
         ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -946,31 +964,35 @@ void postProcessing::render(std::vector<VkCommandBuffer> &commandBuffers, uint32
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[i];
+        renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChainExtent;
+        renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
         renderPassInfo.pClearValues = ClearValues.data();
 
-    vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffers, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, first.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, first.PipelineLayout, 0, 1, &first.DescriptorSets[i], 0, nullptr);
-        vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
+        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, first.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, first.PipelineLayout, 0, 1, &first.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdDraw(commandBuffers, 6, 1, 0, 0);
 
-    vkCmdNextSubpass(commandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdNextSubpass(commandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, second.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, second.PipelineLayout, 0, 1, &second.DescriptorSets[i], 0, nullptr);
-        vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
+        postProcessingPushConst pushConst{};
+            pushConst.blitFactor = blitFactor;
+        vkCmdPushConstants(commandBuffers, second.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(postProcessingPushConst), &pushConst);
 
-    vkCmdEndRenderPass(commandBuffers[i]);
+        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, second.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, second.PipelineLayout, 0, 1, &second.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdDraw(commandBuffers, 6, 1, 0, 0);
+
+    vkCmdEndRenderPass(commandBuffers);
 }
 
 std::vector<attachments>        &postProcessing::getBlitAttachments(){return blitAttachments;}
 attachments                     &postProcessing::getBlitAttachment(){return blitAttachment;}
 VkSwapchainKHR                  &postProcessing::SwapChain(){return swapChain;}
-uint32_t                        &postProcessing::SwapChainImageCount(){return imageCount;}
-VkFormat                        &postProcessing::SwapChainImageFormat(){return swapChainImageFormat;}
-VkExtent2D                      &postProcessing::SwapChainImageExtent(){return swapChainExtent;}
+uint32_t                        &postProcessing::SwapChainImageCount(){return image.Count;}
+VkFormat                        &postProcessing::SwapChainImageFormat(){return image.Format;}
+VkExtent2D                      &postProcessing::SwapChainImageExtent(){return image.Extent;}

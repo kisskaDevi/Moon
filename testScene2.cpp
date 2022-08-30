@@ -1,52 +1,9 @@
 #ifdef TestScene2
 
-#include "core/vulkanCore.h"
-#include "core/texture.h"
-#include "core/transformational/gltfmodel.h"
-#include "core/transformational/light.h"
-#include "core/transformational/object.h"
-#include "core/transformational/group.h"
-#include "core/transformational/camera.h"
-#include "libs/stb-master/stb_image.h"
-#include "physicalobject.h"
-
-#include <chrono>
-#include <stdexcept>        // предотвращения ошибок
-#include <cstdlib>          // заголовок для использования макросов EXIT_SUCCESS и EXIT_FAILURE
-#include <sstream>
-
-uint32_t WIDTH = 800;
-uint32_t HEIGHT = 800;
-
-std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
-std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
-
-std::vector<std::string> SKYBOX = {
-    ExternalPath+"texture\\skybox\\left.jpg",
-    ExternalPath+"texture\\skybox\\right.jpg",
-    ExternalPath+"texture\\skybox\\front.jpg",
-    ExternalPath+"texture\\skybox\\back.jpg",
-    ExternalPath+"texture\\skybox\\top.jpg",
-    ExternalPath+"texture\\skybox\\bottom.jpg"
-};
-
-bool framebufferResized = false;
-
-float frameTime;
-float fps = 60.0f;
-bool  animate = true;
-bool  fpsLock = false;
-bool  physics = false;
-
-double   xMpos, yMpos;
-double   angx=0.0, angy=0.0;
-int mouse1Stage = 0;
-int spaceStage = 0;
-
 uint32_t controledGroup = 0;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
-void mouseEvent(VkApplication* app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<physicalObject*>& physObject, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras);
+void mouseEvent(VkApplication* app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras);
 void keyboardEvent(VkApplication* app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras);
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
@@ -55,47 +12,7 @@ void recreateSwapChain(VkApplication* app, GLFWwindow* window);
 
 void loadModels(VkApplication* app, std::vector<gltfModel *>& gltfModel);
 void createLight(VkApplication* app, std::vector<light<spotLight>*>& lightSource, std::vector<light<pointLight>*>& lightPoint, std::vector<group*>& groups);
-void createObjects(VkApplication* app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<physicalObject*>& physObject, std::vector<group*>& groups, texture* emptyTexture, texture* emptyTextureW);
-
-void gravityInteraction(float frameTime,std::vector<physicalObject*>& allPhysObjects)
-{
-    std::vector<glm::vec3> acceleration(allPhysObjects.size(),glm::vec3(0.0f));
-    float G = 1.0f;
-    for(size_t i=0;i<allPhysObjects.size();i++){
-        for(size_t j=i+1;j<allPhysObjects.size();j++){
-            float m0 = allPhysObjects[i]->getMass();
-            float m1 = allPhysObjects[j]->getMass();
-            glm::vec4 pos0 = allPhysObjects[i]->ModelMatrix() * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-            glm::vec4 pos1 = allPhysObjects[j]->ModelMatrix() * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-            glm::vec3 r0 = glm::vec3(pos1-pos0);
-            glm::vec3 r1 = glm::vec3(pos0-pos1);
-            acceleration[i] += m1*G*glm::normalize(r0)/glm::dot(r0,r0);
-            acceleration[j] += m0*G*glm::normalize(r1)/glm::dot(r1,r1);
-        }
-        allPhysObjects[i]->setAcceleration(acceleration[i],frameTime);
-    }
-}
-
-void findCollisions(float frameTime,std::vector<physicalObject*>& allPhysObjects)
-{
-    for(size_t i=0;i<allPhysObjects.size();i++){
-        for(size_t j=i+1;j<allPhysObjects.size();j++){
-            bool cond1 = (allPhysObjects[i]->getCollisionRadiusСoefficient()>0.0f);
-            bool cond2 = (allPhysObjects[j]->getCollisionRadiusСoefficient()>0.0f);
-            if(cond1&&cond2){
-                findSphCollision(allPhysObjects[i],allPhysObjects[j],frameTime);
-            }else{
-                FindCollision1(allPhysObjects[i],allPhysObjects[j],frameTime);
-            }
-        }
-    }
-}
-
-void update(float frameTime, std::vector<physicalObject*>& allPhysObjects)
-{
-    for(uint32_t i=0;i<allPhysObjects.size();i++)
-        allPhysObjects[i]->update(frameTime);
-}
+void createObjects(VkApplication* app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<group*>& groups, texture* emptyTexture, texture* emptyTextureW);
 
 int testScene2()
 {
@@ -103,7 +20,6 @@ int testScene2()
     {
         std::vector<gltfModel           *>          gltfModel;
         std::vector<object              *>          object3D;
-        std::vector<physicalObject      *>          physObject;
         std::vector<light<spotLight>    *>          lightSource;
         std::vector<light<pointLight>   *>          lightPoint;
         std::vector<group               *>          groups;
@@ -122,10 +38,11 @@ int testScene2()
         app.checkSwapChainSupport();
         app.createCommandPool();
 
-        loadModels(&app,gltfModel);
-
         camera *cameras = new camera;
             cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
+            glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+            proj[1][1] *= -1.0f;
+            cameras->setProjMatrix(proj);
         app.getGraphics().setCameraObject(cameras);
 
         texture *emptyTexture = new texture(&app,ZERO_TEXTURE);
@@ -138,6 +55,9 @@ int testScene2()
             emptyTextureW->createTextureSampler({VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
         app.getGraphics().setEmptyTexture(emptyTexture);
 
+        app.createGraphics(window);
+        loadModels(&app,gltfModel);
+
         cubeTexture *skybox = new cubeTexture(&app,SKYBOX);
             skybox->setMipLevel(0.0f);
             skybox->createTextureImage();
@@ -147,10 +67,8 @@ int testScene2()
             skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
         app.getGraphics().bindSkyBoxObject(skyboxObject,skybox);
 
-        app.createGraphics(window);
-
         createLight(&app,lightSource,lightPoint,groups);
-        createObjects(&app,gltfModel,object3D,physObject,groups,emptyTexture,emptyTextureW);
+        createObjects(&app,gltfModel,object3D,groups,emptyTexture,emptyTextureW);
 
         app.updateDescriptorSets();
         app.createCommandBuffers();
@@ -175,16 +93,8 @@ int testScene2()
                     glfwSetWindowTitle(window, ss.str().c_str());
 
                 glfwPollEvents();
-                mouseEvent(&app,window,frameTime,object3D,physObject,groups,gltfModel,emptyTexture,cameras);
+                mouseEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
                 keyboardEvent(&app,window,frameTime,object3D,groups,gltfModel,emptyTexture,cameras);
-
-                if(physics){
-                    gravityInteraction(frameTime,physObject);
-                    findCollisions(frameTime,physObject);
-                    update(frameTime,physObject);
-                    app.resetUboWorld();
-                    app.resetUboLight();
-                }
 
                 VkResult result = app.drawFrame();
 
@@ -194,6 +104,9 @@ int testScene2()
                 if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
                     framebufferResized = false;
                     recreateSwapChain(&app,window);
+                    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+                    proj[1][1] *= -1.0f;
+                    cameras->setProjMatrix(proj);
                 }else if (result != VK_SUCCESS) throw std::runtime_error("failed to present swap chain image!");
             }
 
@@ -203,8 +116,10 @@ int testScene2()
         emptyTextureW->destroy(); delete emptyTextureW;
 
         app.removeLightSources();
-        for(size_t i=0;i<lightSource.size();i++)
+        for(size_t i=0;i<lightSource.size();i++){
+            lightSource.at(i)->destroyBuffer();
             lightSource.at(i)->cleanup();
+        }
         for(size_t i=0;i<lightPoint.size();i++)
             delete lightPoint.at(i);
 
@@ -215,10 +130,6 @@ int testScene2()
         for (size_t i=0 ;i<object3D.size();i++){
             object3D.at(i)->destroyUniformBuffers();
             delete object3D.at(i);
-        }
-        for (size_t i=0 ;i<physObject.size();i++){
-            physObject.at(i)->destroyUniformBuffers();
-            delete physObject.at(i);
         }
 
         for (size_t i =0 ;i<gltfModel.size();i++)
@@ -253,6 +164,7 @@ void recreateSwapChain(VkApplication *app, GLFWwindow* window)
     app->destroyGraphics();
     app->freeCommandBuffers();
 
+    app->checkSwapChainSupport();
     app->createGraphics(window);
     app->updateDescriptorSets();
     app->createCommandBuffers();
@@ -289,11 +201,13 @@ void loadModels(VkApplication *app, std::vector<gltfModel *>& gltfModel)
     size_t index = 0;
 
         gltfModel.push_back(new struct gltfModel);
-        gltfModel.at(index)->loadFromFile(ExternalPath + "model\\glb\\Duck.glb",app,1.0f);
+        gltfModel.at(index)->loadFromFile(ExternalPath + "model\\hw1.gltf",app,1.0f);
+        app->getGraphics().createModel(gltfModel.at(index));
     index++;
 
         gltfModel.push_back(new struct gltfModel);
         gltfModel.at(index)->loadFromFile(ExternalPath + "model\\glTF\\box\\Cube.gltf",app,1.0f);
+        app->getGraphics().createModel(gltfModel.at(index));
     index++;
 
 }
@@ -308,45 +222,19 @@ void createLight(VkApplication *app, std::vector<light<spotLight>*>& lightSource
     glm::mat4x4 Proj;
 
     lightSource.push_back(new light<spotLight>(app));
-        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+        Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
         Proj[1][1] *= -1;
-    lightSource.at(index)->createLightPVM(Proj);
+    lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     lightSource.at(index)->setScattering(true);
     groups.at(0)->addObject(lightSource.at(index));
-    app->addlightSource(lightSource.at(lightSource.size()-1));
+    app->addLightSource(lightSource.at(lightSource.size()-1));
     index++;
 }
 
-void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<physicalObject*>& physObject, std::vector<group*>& groups, texture *emptyTexture, texture *emptyTextureW)
+void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::vector<object*>& object3D, std::vector<group*>& groups, texture *emptyTexture, texture *emptyTextureW)
 {
     uint32_t index=0;
-
-    physObject.push_back( new physicalObject(app,{gltfModel.at(0),emptyTexture},5.0f) );
-    app->getGraphics().bindStencilObject(physObject.at(index),1.0f,glm::vec4(0.2f,0.8f,0.8f,1.0f));
-    physObject.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    physObject.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
-    physObject.at(index)->translate(glm::vec3(0.0f,2.0f,0.0f));
-    physObject.at(index)->setColor(glm::vec4(0.0f,0.0f,0.0f,1.0f));
-    index++;
-
-    physObject.push_back( new physicalObject(app,{gltfModel.at(0),emptyTexture},5.0f) );
-    app->getGraphics().bindStencilObject(physObject.at(index),1.0f,glm::vec4(1.0f,0.0f,0.8f,1.0f));
-    physObject.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    physObject.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
-    physObject.at(index)->translate(glm::vec3(-2.0f*glm::sqrt(3.0f/4.0f),-1.0f,0.0f));
-    physObject.at(index)->setColor(glm::vec4(0.0f,0.0f,0.0f,1.0f));
-    index++;
-
-    physObject.push_back( new physicalObject(app,{gltfModel.at(0),emptyTexture},5.0f) );
-    app->getGraphics().bindStencilObject(physObject.at(index),1.0f,glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    physObject.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    physObject.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
-    physObject.at(index)->translate(glm::vec3(2.0f*glm::sqrt(3.0f/4.0f),-1.0f,0.0f));
-    physObject.at(index)->setColor(glm::vec4(0.0f,0.0f,0.0f,1.0f));
-    index++;
-
-    index=0;
 
     object3D.push_back( new object(app,{gltfModel.at(1),emptyTextureW}) );
     app->getGraphics().bindBloomObject(object3D.at(index));
@@ -354,17 +242,18 @@ void createObjects(VkApplication *app, std::vector<gltfModel*>& gltfModel, std::
     object *Box = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(app,{gltfModel.at(1),emptyTextureW}) );
-    app->getGraphics().bindOneColorObject(object3D.at(index));
+    object3D.push_back( new object(app,{gltfModel.at(0),emptyTextureW}) );
+    app->getGraphics().bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    object3D.at(index)->scale(glm::vec3(20.0f,20.0f,0.1f));
+    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->scale(glm::vec3(0.01f,0.01f,0.01f));
     index++;
 
     groups.at(0)->translate(glm::vec3(0.0f,0.0f,10.0f));
     groups.at(0)->addObject(Box);
 }
 
-void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<physicalObject*>& physObject, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras)
+void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::vector<object*>& object3D, std::vector<group*>& groups, std::vector<gltfModel*>& gltfModel, texture *emptyTexture, camera* cameras)
 {
     static_cast<void>(frameTime);
     static_cast<void>(gltfModel);
@@ -398,12 +287,7 @@ void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime, std::ve
     }
     else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)
     {
-        std::cout<<n<<std::endl;
-        if(n!=INT_FAST32_MAX && n>1)
-        {
-            app->getGraphics().setStencilObject(physObject[n-2]);
-            app->resetCmdWorld();
-        }
+
     }
     else
     {
@@ -537,7 +421,7 @@ void keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTime, std:
     }
     if(spaceStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_SPACE) == 0)
     {
-        physics = !physics;
+
     }
     spaceStage = glfwGetKey(window,GLFW_KEY_SPACE);
     if(glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS)

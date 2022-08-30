@@ -13,15 +13,6 @@ layout(location = 2)	out vec4 glPosition;
 
 vec2 step[6] = vec2[](
     vec2(0.0f, 0.0f),
-    vec2( 1.0f, 0.0f),
-    vec2( 1.0f,  1.0f),
-    vec2(1.0f, 1.0f),
-    vec2(0.0f, 1.0f),
-    vec2( 0.0f,  0.0f)
-);
-
-vec2 fragCoord[6] = vec2[](
-    vec2(0.0f, 0.0f),
     vec2(1.0f, 0.0f),
     vec2(1.0f, 1.0f),
     vec2(1.0f, 1.0f),

@@ -7,9 +7,7 @@
 
 texture::texture(){}
 
-texture::texture(VkApplication* app) : app(app){}
-
-texture::texture(VkApplication* app, const std::string & TEXTURE_PATH) : app(app)
+texture::texture(const std::string & TEXTURE_PATH)
 {
     this->TEXTURE_PATH = TEXTURE_PATH;
 }
@@ -19,16 +17,20 @@ texture::~texture()
 
 }
 
-void texture::destroy()
+void texture::destroy(VkDevice* device)
 {
-    view.destroy(app);
-    image.destroy(app);
-    memory.destroy(app);
-    sampler.destroy(app);
+    view.destroy(device);
+    image.destroy(device);
+    memory.destroy(device);
+    sampler.destroy(device);
 }
 
 
-void texture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels)
+void texture::iamge::create(
+        VkPhysicalDevice*   physicalDevice,
+        VkDevice*           device,
+        VkQueue*            queue,
+        VkCommandPool*      commandPool, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels)
 {
     if(!pixels) throw std::runtime_error("failed to load texture image!");
 
@@ -37,29 +39,34 @@ void texture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memo
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    createBuffer(app, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    createBuffer(physicalDevice,device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
     void* data;
-    vkMapMemory(app->getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
+    vkMapMemory(*device, stagingBufferMemory, 0, imageSize, 0, &data);
         memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(app->getDevice(), stagingBufferMemory);
+    vkUnmapMemory(*device, stagingBufferMemory);
 
     stbi_image_free(pixels);
 
-    createImage(app, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
+    createImage(physicalDevice, device, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
 
-    transitionImageLayout(app, textureImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-    copyBufferToImage(app, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    transitionImageLayout(device,queue,commandPool, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+    copyBufferToImage(device,queue,commandPool, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-    vkDestroyBuffer(app->getDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(app->getDevice(), stagingBufferMemory, nullptr);
+    vkDestroyBuffer(*device, stagingBuffer, nullptr);
+    vkFreeMemory(*device, stagingBufferMemory, nullptr);
 
-    generateMipmaps(app, textureImage, format, texWidth, texHeight, mipLevels);
+    generateMipmaps(physicalDevice,device,queue,commandPool, textureImage, format, texWidth, texHeight, mipLevels);
 
     enable = true;
     memory.enable = true;
 }
 
-void texture::createTextureImage(tinygltf::Image& gltfimage)
+void texture::createTextureImage(
+        VkPhysicalDevice*   physicalDevice,
+        VkDevice*           device,
+        VkQueue*            queue,
+        VkCommandPool*      commandPool,
+        tinygltf::Image&    gltfimage)
 {
     stbi_uc* buffer = nullptr;
     VkDeviceSize bufferSize = 0;
@@ -96,29 +103,33 @@ void texture::createTextureImage(tinygltf::Image& gltfimage)
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    createBuffer(app, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
     void* data;
-    vkMapMemory(app->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+    vkMapMemory(*device, stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, buffer, static_cast<size_t>(bufferSize));
-    vkUnmapMemory(app->getDevice(), stagingBufferMemory);
+    vkUnmapMemory(*device, stagingBufferMemory);
 
     if (deleteBuffer){   delete[] buffer;}
 
-    createImage(app, gltfimage.width, gltfimage.height, mipLevels, VK_SAMPLE_COUNT_1_BIT, image.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image.textureImage, memory.textureImageMemory);
+    createImage(physicalDevice, device, gltfimage.width, gltfimage.height, mipLevels, VK_SAMPLE_COUNT_1_BIT, image.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image.textureImage, memory.textureImageMemory);
 
-    transitionImageLayout(app, image.textureImage, image.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-    copyBufferToImage(app, stagingBuffer, image.textureImage, static_cast<uint32_t>(gltfimage.width), static_cast<uint32_t>(gltfimage.height));
+    transitionImageLayout(device,queue,commandPool, image.textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+    copyBufferToImage(device,queue,commandPool, stagingBuffer, image.textureImage, static_cast<uint32_t>(gltfimage.width), static_cast<uint32_t>(gltfimage.height));
 
-    vkDestroyBuffer(app->getDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(app->getDevice(), stagingBufferMemory, nullptr);
+    vkDestroyBuffer(*device, stagingBuffer, nullptr);
+    vkFreeMemory(*device, stagingBufferMemory, nullptr);
 
-    generateMipmaps(app, image.textureImage, image.format, gltfimage.width, gltfimage.height, mipLevels);
+    generateMipmaps(physicalDevice,device,queue,commandPool, image.textureImage, image.format, gltfimage.width, gltfimage.height, mipLevels);
 
     image.enable = true;
     memory.enable = true;
 }
 
-void texture::createTextureImage()
+void texture::createTextureImage(
+        VkPhysicalDevice*   physicalDevice,
+        VkDevice*           device,
+        VkQueue*            queue,
+        VkCommandPool*      commandPool)
 {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -126,16 +137,16 @@ void texture::createTextureImage()
 
     if(!pixels)    throw std::runtime_error("failed to load texture image!");
 
-    image.create(app,mipLevels,memory,texWidth,texHeight,imageSize,pixels);
+    image.create(physicalDevice,device,queue,commandPool,mipLevels,memory,texWidth,texHeight,imageSize,pixels);
 }
 
-void texture::createTextureImageView()
+void texture::createTextureImageView(VkDevice* device)
 {
-    view.textureImageView = createImageView(app, image.textureImage, image.format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    view.textureImageView = createImageView(device, image.textureImage, image.format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
     view.enable = true;
 }
 
-void texture::createTextureSampler(struct textureSampler TextureSampler)
+void texture::createTextureSampler(VkDevice* device, struct textureSampler TextureSampler)
 {
     /* Сэмплеры настраиваются через VkSamplerCreateInfoструктуру, которая определяет
      * все фильтры и преобразования, которые она должна применять.*/
@@ -158,11 +169,10 @@ void texture::createTextureSampler(struct textureSampler TextureSampler)
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0.0f; // Optional
 
-    if(vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS)    throw std::runtime_error("failed to create texture sampler!");
+    if(vkCreateSampler(*device, &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS)    throw std::runtime_error("failed to create texture sampler!");
     sampler.enable = true;
 }
 
-void                texture::setVkApplication(VkApplication* app){this->app=app;}
 void                texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
 void                texture::setTextureFormat(VkFormat format){image.format = format;}
 
@@ -170,10 +180,7 @@ VkImageView         & texture::getTextureImageView(){return view.textureImageVie
 VkSampler           & texture::getTextureSampler(){return sampler.textureSampler;}
 //cubeTexture
 
-cubeTexture::cubeTexture(){}
-cubeTexture::cubeTexture(VkApplication* app) : app(app){}
-
-cubeTexture::cubeTexture(VkApplication* app, const std::vector<std::string> & TEXTURE_PATH) : app(app)
+cubeTexture::cubeTexture(const std::vector<std::string> & TEXTURE_PATH)
 {
     this->TEXTURE_PATH.resize(6);
     for(uint32_t i= 0;i<6;i++)
@@ -184,15 +191,20 @@ cubeTexture::cubeTexture(VkApplication* app, const std::vector<std::string> & TE
 
 cubeTexture::~cubeTexture(){}
 
-void cubeTexture::destroy()
+void cubeTexture::destroy(VkDevice* device)
 {
-    view.destroy(app);
-    image.destroy(app);
-    memory.destroy(app);
-    sampler.destroy(app);
+    view.destroy(device);
+    image.destroy(device);
+    memory.destroy(device);
+    sampler.destroy(device);
 }
 
-void cubeTexture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels[6])
+void cubeTexture::iamge::create(
+        VkPhysicalDevice*   physicalDevice,
+        VkDevice*           device,
+        VkQueue*            queue,
+        VkCommandPool*      commandPool,
+        uint32_t& mipLevels, struct memory& memory, int texWidth, int texHeight, VkDeviceSize imageSize, void* pixels[6])
 {
     if(!pixels) throw std::runtime_error("failed to load texture image!");
 
@@ -201,32 +213,36 @@ void cubeTexture::iamge::create(VkApplication* app, uint32_t& mipLevels, struct 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    createBuffer(app, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    createBuffer(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     for(uint32_t i=0;i<6;i++)
     {
         void* data;
-        vkMapMemory(app->getDevice(), stagingBufferMemory, static_cast<uint32_t>(i*imageSize/6), static_cast<uint32_t>(imageSize/6), 0, &data);
+        vkMapMemory(*device, stagingBufferMemory, static_cast<uint32_t>(i*imageSize/6), static_cast<uint32_t>(imageSize/6), 0, &data);
             memcpy(data, pixels[i], static_cast<uint32_t>(imageSize/6));
-        vkUnmapMemory(app->getDevice(), stagingBufferMemory);
+        vkUnmapMemory(*device, stagingBufferMemory);
         stbi_image_free(pixels[i]);
     }
 
-    createCubeImage(app, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
+    createCubeImage(physicalDevice,device, texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, memory.textureImageMemory);
 
-    transitionImageLayout(app, textureImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels,0);
-    copyBufferToImage(app, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),0);
+    transitionImageLayout(device,queue,commandPool, textureImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels,0);
+    copyBufferToImage(device,queue,commandPool, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),0);
 
-    vkDestroyBuffer(app->getDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(app->getDevice(), stagingBufferMemory, nullptr);
+    vkDestroyBuffer(*device, stagingBuffer, nullptr);
+    vkFreeMemory(*device, stagingBufferMemory, nullptr);
 
-    generateMipmaps(app, textureImage, format, texWidth, texHeight, mipLevels,0);
+    generateMipmaps(physicalDevice,device,queue,commandPool, textureImage, format, texWidth, texHeight, mipLevels,0);
 
     enable = true;
     memory.enable = true;
 }
 
-void cubeTexture::createTextureImage()
+void cubeTexture::createTextureImage(
+        VkPhysicalDevice*   physicalDevice,
+        VkDevice*           device,
+        VkQueue*            queue,
+        VkCommandPool*      commandPool)
 {
     int texWidth, texHeight, texChannels;
     void *pixels[6];
@@ -239,16 +255,16 @@ void cubeTexture::createTextureImage()
         if(!pixels[i])  throw std::runtime_error("failed to load texture image!");
     }
 
-    image.create(app,mipLevels,memory,texWidth,texHeight,imageSize,pixels);
+    image.create(physicalDevice,device,queue,commandPool,mipLevels,memory,texWidth,texHeight,imageSize,pixels);
 }
 
-void cubeTexture::createTextureImageView()
+void cubeTexture::createTextureImageView(VkDevice* device)
 {
-    view.textureImageView = createCubeImageView(app, image.textureImage, image.format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    view.textureImageView = createCubeImageView(device, image.textureImage, image.format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
     view.enable = true;
 }
 
-void cubeTexture::createTextureSampler(struct textureSampler TextureSampler)
+void cubeTexture::createTextureSampler(VkDevice* device, struct textureSampler TextureSampler)
 {
     /* Сэмплеры настраиваются через VkSamplerCreateInfoструктуру, которая определяет
      * все фильтры и преобразования, которые она должна применять.*/
@@ -271,7 +287,7 @@ void cubeTexture::createTextureSampler(struct textureSampler TextureSampler)
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0.0f; // Optional
 
-    if(vkCreateSampler(app->getDevice(), &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS) throw std::runtime_error("failed to create texture sampler!");
+    if(vkCreateSampler(*device, &samplerInfo, nullptr, &sampler.textureSampler) != VK_SUCCESS) throw std::runtime_error("failed to create texture sampler!");
     sampler.enable = true;
 }
 

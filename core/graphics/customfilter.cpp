@@ -8,9 +8,18 @@ customFilter::customFilter()
 
 }
 
-void customFilter::setApplication(VkApplication* app)                       {this->app = app;}
+void customFilter::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+{
+    this->physicalDevice = physicalDevice;
+    this->device = device;
+    this->graphicsQueue = graphicsQueue;
+    this->commandPool = commandPool;
+}
 void customFilter::setImageProp(imageInfo* pInfo)                           {this->image = *pInfo;}
 void customFilter::setBlitAttachments(attachments* blitAttachments)         {this->blitAttachments = blitAttachments;}
+
+void customFilter::setSampleStep(float deltaX, float deltaY)                {xSampleStep = deltaX; ySampleStep = deltaY;}
+
 void customFilter::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
     this->Attachments.resize(attachmentsCount);
@@ -18,22 +27,22 @@ void customFilter::setAttachments(uint32_t attachmentsCount, attachments* Attach
         this->Attachments[i] = &Attachments[i];
 }
 
-void customFilter::Filter::Destroy(VkApplication* app)
+void customFilter::Filter::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(app->getDevice(), DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(app->getDevice(), DescriptorPool, nullptr);
+    vkDestroyPipeline(*device, Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
 void customFilter::destroy()
 {
-    filter.Destroy(app);
+    filter.Destroy(device);
 
-    vkDestroyRenderPass(app->getDevice(), renderPass, nullptr);
+    vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         for(size_t j = 0; j< framebuffers[i].size();j++)
-            vkDestroyFramebuffer(app->getDevice(), framebuffers[i][j],nullptr);
+            vkDestroyFramebuffer(*device, framebuffers[i][j],nullptr);
 }
 
 void customFilter::createRenderPass()
@@ -78,7 +87,7 @@ void customFilter::createRenderPass()
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
 
-    if (vkCreateRenderPass(app->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+    if (vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
         throw std::runtime_error("failed to create filter render pass!");
 }
 
@@ -97,7 +106,7 @@ void customFilter::createFramebuffers()
                 framebufferInfo.width = image.Extent.width;
                 framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
-            if (vkCreateFramebuffer(app->getDevice(), &framebufferInfo, nullptr, &framebuffers[i][j]) != VK_SUCCESS)
+            if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i][j]) != VK_SUCCESS)
                 throw std::runtime_error("failed to create postProcessing framebuffer!");
         }
     }
@@ -105,11 +114,11 @@ void customFilter::createFramebuffers()
 
 void customFilter::createPipelines()
 {
-    filter.createDescriptorSetLayout(app);
-    filter.createPipeline(app,&image,&renderPass);
+    filter.createDescriptorSetLayout(device);
+    filter.createPipeline(device,&image,&renderPass);
 }
 
-void customFilter::Filter::createDescriptorSetLayout(VkApplication* app)
+void customFilter::Filter::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
@@ -125,18 +134,18 @@ void customFilter::Filter::createDescriptorSetLayout(VkApplication* app)
         textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         textureLayoutInfo.pBindings = bindings.data();
 
-    if (vkCreateDescriptorSetLayout(app->getDevice(), &textureLayoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(*device, &textureLayoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing descriptor set layout 1!");
 }
 
-void customFilter::Filter::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\customFilter\\customFilterVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\customFilter\\customFilterFrag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -243,7 +252,7 @@ void customFilter::Filter::createPipeline(VkApplication* app, imageInfo* pInfo, 
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing pipeline layout 1!");
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -261,12 +270,12 @@ void customFilter::Filter::createPipeline(VkApplication* app, imageInfo* pInfo, 
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing graphics pipeline 1!");
 
     //можно удалить шейдерные модули после использования
-    vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-    vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
 void customFilter::createDescriptorPool()
@@ -282,7 +291,7 @@ void customFilter::createDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(app->getDevice(), &poolInfo, nullptr, &filter.DescriptorPool) != VK_SUCCESS)
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &filter.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 }
 
@@ -295,7 +304,7 @@ void customFilter::createDescriptorSets()
         allocInfo.descriptorPool = filter.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(app->getDevice(), &allocInfo, filter.DescriptorSets.data()) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(*device, &allocInfo, filter.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 }
 
@@ -318,11 +327,11 @@ void customFilter::updateSecondDescriptorSets()
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(imageInfo.size());
             descriptorWrites[index].pImageInfo = imageInfo.data();
-        vkUpdateDescriptorSets(app->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber, float delta)
+void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber)
 {
     std::array<VkClearValue, 1> ClearValues{};
         ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -339,8 +348,8 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, u
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         CustomFilterPushConst pushConst{};
-            pushConst.deltax = delta;
-            pushConst.deltay = delta;
+            pushConst.deltax = xSampleStep;
+            pushConst.deltay = ySampleStep;
         vkCmdPushConstants(commandBuffer, filter.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(CustomFilterPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, filter.Pipeline);

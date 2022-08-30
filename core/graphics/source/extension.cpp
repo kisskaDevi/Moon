@@ -5,38 +5,38 @@
 
 #include <array>
 
-void graphics::bloomExtension::Destroy(VkApplication *app)
+void graphics::bloomExtension::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), PipelineLayout, nullptr);
+    vkDestroyPipeline(*device, Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, PipelineLayout, nullptr);
 }
 
-void graphics::oneColorExtension::Destroy(VkApplication *app)
+void graphics::oneColorExtension::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(app->getDevice(), Pipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), PipelineLayout,nullptr);
+    vkDestroyPipeline(*device, Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
 }
 
-void graphics::StencilExtension::DestroyFirstPipeline(VkApplication *app)
+void graphics::StencilExtension::DestroyFirstPipeline(VkDevice* device)
 {
-    vkDestroyPipeline(app->getDevice(), firstPipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), firstPipelineLayout,nullptr);
+    vkDestroyPipeline(*device, firstPipeline, nullptr);
+    vkDestroyPipelineLayout(*device, firstPipelineLayout,nullptr);
 }
 
-void graphics::StencilExtension::DestroySecondPipeline(VkApplication *app)
+void graphics::StencilExtension::DestroySecondPipeline(VkDevice* device)
 {
-    vkDestroyPipeline(app->getDevice(), secondPipeline, nullptr);
-    vkDestroyPipelineLayout(app->getDevice(), secondPipelineLayout,nullptr);
+    vkDestroyPipeline(*device, secondPipeline, nullptr);
+    vkDestroyPipelineLayout(*device, secondPipelineLayout,nullptr);
 }
 
-void graphics::bloomExtension::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::bloomExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\bloom\\vertBloom.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\bloom\\fragBloom.spv");
-    VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].pName = "main";
         shaderStages[index].module = fragShaderModule;
@@ -161,7 +161,7 @@ void graphics::bloomExtension::createPipeline(VkApplication* app, imageInfo* pIn
             pipelineLayoutInfo.pSetLayouts = setLayouts.data();
             pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
             pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-        if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
+        if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
             throw std::runtime_error("failed to create base pipeline layout!");
 
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
@@ -192,22 +192,22 @@ void graphics::bloomExtension::createPipeline(VkApplication* app, imageInfo* pIn
             pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
             pipelineInfo[index].pDepthStencilState = &depthStencil;
             pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-        if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
+        if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
             throw std::runtime_error("failed to create base graphics pipeline!");
 
         //можно удалить шейдерные модули после использования
-        vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-        vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+        vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::oneColorExtension::createPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::oneColorExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\oneColor\\oneColorVert.spv");   //считываем шейдеры
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\oneColor\\oneColorFrag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);                      //создаём шейдерные модули
-    VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);                      //создаём шейдерные модули
+    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};                           //задаём стадии шейдеров в конвейере
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;    //вершинный
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;                             //ниформацию о всех битах смотри на странице 222
@@ -337,7 +337,7 @@ void graphics::oneColorExtension::createPipeline(VkApplication* app, imageInfo* 
         pipelineLayoutInfo.pSetLayouts = setLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create base pipeline layout!");
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
@@ -368,23 +368,23 @@ void graphics::oneColorExtension::createPipeline(VkApplication* app, imageInfo* 
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create base graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
-    vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-    vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::StencilExtension::createFirstPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::StencilExtension::createFirstPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\firststencilvert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\firststencilfrag.spv");
     //создаём шейдерные модули
-    VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -502,7 +502,7 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication* app, imageIn
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &firstPipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &firstPipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create stencil extension pipeline layout!");
 
     index=0;
@@ -521,22 +521,22 @@ void graphics::StencilExtension::createFirstPipeline(VkApplication* app, imageIn
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &firstPipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &firstPipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create stencil extension graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
-    vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-    vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::StencilExtension::createSecondPipeline(VkApplication* app, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::StencilExtension::createSecondPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\secondstencilvert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\secondstencilfrag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(app, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(app, fragShaderCode);
+    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -655,7 +655,7 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication* app, imageI
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(app->getDevice(), &pipelineLayoutInfo, nullptr, &secondPipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &secondPipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create second stencil extension pipeline layout!");
 
     index=0;
@@ -674,29 +674,32 @@ void graphics::StencilExtension::createSecondPipeline(VkApplication* app, imageI
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    if (vkCreateGraphicsPipelines(app->getDevice(), VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &secondPipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &secondPipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create second stencil extension graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
-    vkDestroyShaderModule(app->getDevice(), fragShaderModule, nullptr);
-    vkDestroyShaderModule(app->getDevice(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(*device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
 void graphics::bloomExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-    for(size_t j = 0; j<objects.size() ;j++)
+    for(auto object: objects)
     {
-        if(objects[j]->getEnable()){
+        if(object->getEnable()){
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
-            if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers,  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel()->vertices.buffer, offsets);
+            if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers,  object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : objects[j]->getModel()->nodes){
-                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+            object->resetPrimitiveCount();
+            object->setFirstPrimitive(primitiveCount);
+            for (auto node : object->getModel()->nodes){
+                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
                 renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
             }
+            object->setPrimitiveCount(primitiveCount-object->getFirstPrimitive());
         }
     }
 }
@@ -766,18 +769,21 @@ void graphics::bloomExtension::renderNode(VkCommandBuffer commandBuffer, Node *n
 void graphics::oneColorExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-    for(size_t j = 0; j<objects.size() ;j++)
+    for(auto object: objects)
     {
-        if(objects[j]->getEnable()){
+        if(object->getEnable()){
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
-            if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers,  objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel()->vertices.buffer, offsets);
+            if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers,  object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : objects[j]->getModel()->nodes){
-                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+            object->resetPrimitiveCount();
+            object->setFirstPrimitive(primitiveCount);
+            for (auto node : object->getModel()->nodes){
+                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
                 renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
             }
+            object->setPrimitiveCount(primitiveCount-object->getFirstPrimitive());
         }
     }
 }
@@ -847,37 +853,40 @@ void graphics::oneColorExtension::renderNode(VkCommandBuffer commandBuffer, Node
 void graphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipeline);
-    for(size_t j = 0; j<objects.size() ;j++)
+    for(auto object: objects)
     {
-        if(objects[j]->getEnable()){
+        if(object->getEnable()){
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
-            if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers, objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel()->vertices.buffer, offsets);
+            if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers, object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            for (auto node : objects[j]->getModel()->nodes){
-                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+            object->resetPrimitiveCount();
+            object->setFirstPrimitive(primitiveCount);
+            for (auto node : object->getModel()->nodes){
+                std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
                 renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
             }
+            object->setPrimitiveCount(primitiveCount-object->getFirstPrimitive());
         }
     }
 
-    for(size_t j = 0; j<objects.size() ;j++)
+    for(auto object: objects)
     {
-        if(objects[j]->getEnable()){
+        if(object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
-            if(stencilEnable[j]){
+            if(object->getStencilEnable()){
                 VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(commandBuffers, 0, 1, & objects[j]->getModel()->vertices.buffer, offsets);
-                if (objects[j]->getModel()->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(commandBuffers, objects[j]->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel()->vertices.buffer, offsets);
+                if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(commandBuffers, object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
                 StencilPushConst pushConst{};
-                    pushConst.stencilColor = stencilColor[j];
+                    pushConst.stencilColor = object->getStencilColor();
                 vkCmdPushConstants(commandBuffers, secondPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(StencilPushConst), &pushConst);
 
-                for (auto node : objects[j]->getModel()->nodes){
-                    std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],objects[j]->getDescriptorSet()[frameNumber]};
+                for (auto node : object->getModel()->nodes){
+                    std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
                     stencilRenderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
                 }
             }

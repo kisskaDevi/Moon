@@ -25,11 +25,10 @@ struct objectInfo
 class object : public transformational
 {
 private:
-    VkApplication*                  app;
     gltfModel*                      model;
     texture*                        emptyTexture;
 
-    VkDescriptorPool                descriptorPool;
+    VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet>    descriptors;
 
     glm::mat4x4                     modelMatrix;
@@ -45,50 +44,74 @@ private:
     std::vector<VkDeviceMemory>     uniformBuffersMemory;
     bool                            enable = true;
 
+    uint32_t                        firstPrimitive;
+    uint32_t                        primitiveCount = 0;
+
+    struct Stencil{
+        bool                        Enable;
+        float                       Width;
+        glm::vec4                   Color;
+    }stencil;
+
     void updateModelMatrix();
 
-    void createUniformBuffers(uint32_t imageCount);
-
 public:
-    object(VkApplication* app);
-    object(VkApplication* app, objectInfo info);
-    object(VkApplication* app, gltfModel* model3D);
+    object();
+    object(objectInfo info);
+    object(gltfModel* model3D);
     ~object();
-    void destroyUniformBuffers();
-    void destroyDescriptorPools();
-
-    void setGlobalTransform(const glm::mat4& transform);
-    void translate(const glm::vec3& translate);
-    void rotate(const float& ang, const glm::vec3& ax);
-    void scale(const glm::vec3& scale);
-    void setPosition(const glm::vec3& translate);
-
-    void setModel(gltfModel* model3D);
-    void setEmptyTexture(texture* emptyTexture);
-    void setVisibilityDistance(float visibilityDistance);
-    void setColor(const glm::vec4 & color);
-
-    void updateUniformBuffer(uint32_t currentImage);
-    void updateAnimation();
-
-    void setEnable(const bool& enable);
-
-    gltfModel*                      getModel();
-
-    glm::mat4x4&                    ModelMatrix();
-    glm::mat4x4&                    Transformation();
-    glm::vec3&                      Translate();
-    glm::quat&                      Rotate();
-    glm::vec3&                      Scale();
-
-    float                           getVisibilityDistance();
-    glm::vec4                       getColor();
+    void destroyUniformBuffers(VkDevice* device);
+    void destroyDescriptorPools(VkDevice* device);
 
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet();
     std::vector<VkBuffer>&          getUniformBuffers();
 
-    bool&                           getEnable();
+    void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
+    void updateUniformBuffer(VkDevice* device, uint32_t currentImage);
+    void updateAnimation();
+
+    void                setGlobalTransform(const glm::mat4& transform);
+    void                translate(const glm::vec3& translate);
+    void                rotate(const float& ang, const glm::vec3& ax);
+    void                scale(const glm::vec3& scale);
+    void                setPosition(const glm::vec3& translate);
+
+    glm::mat4x4&        ModelMatrix();
+    glm::mat4x4&        Transformation();
+    glm::vec3&          Translate();
+    glm::quat&          Rotate();
+    glm::vec3&          Scale();
+
+    void                setEmptyTexture(texture* emptyTexture);
+
+    void                setModel(gltfModel* model3D);
+    void                setVisibilityDistance(float visibilityDistance);
+    void                setColor(const glm::vec4 & color);
+
+    gltfModel*          getModel();
+    float               getVisibilityDistance() const;
+    glm::vec4           getColor() const;
+
+    void                setEnable(const bool& enable);
+    bool                getEnable() const;
+
+    void                setStencilEnable(const bool& enable);
+    void                setStencilWidth(const float& width);
+    void                setStencilColor(const glm::vec4& color);
+
+    bool                getStencilEnable() const;
+    float               getStencilWidth() const;
+    glm::vec4           getStencilColor() const;
+
+    void                setFirstPrimitive(uint32_t firstPrimitive);
+    void                setPrimitiveCount(uint32_t primitiveCount);
+    void                resetPrimitiveCount();
+    void                increasePrimitiveCount();
+
+    bool                comparePrimitive(uint32_t primitive);
+    uint32_t            getFirstPrimitive() const;
+    uint32_t            getPrimitiveCount() const;
 
     float animationTimer = 0.0f;
     uint32_t animationIndex = 0;

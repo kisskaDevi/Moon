@@ -11,7 +11,8 @@ uint32_t findMemoryType(
         VkMemoryPropertyFlags           properties);
 
 void createBuffer(
-        VkApplication*                  app,
+        VkPhysicalDevice*               physicalDevice,
+        VkDevice*                       device,
         VkDeviceSize                    size,
         VkBufferUsageFlags              usage,
         VkMemoryPropertyFlags           properties,
@@ -19,14 +20,19 @@ void createBuffer(
         VkDeviceMemory&                 bufferMemory);
 
 VkCommandBuffer beginSingleTimeCommands(
-        VkApplication*                  app);
+        VkDevice*                       device,
+        VkCommandPool*                  commandPool);
 
 void endSingleTimeCommands(
-        VkApplication*                  app,
-        VkCommandBuffer                 commandBuffer);
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
+        VkCommandBuffer*                commandBuffer);
 
 void copyBuffer(
-        VkApplication*                  app,
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
         VkBuffer                        srcBuffer,
         VkBuffer                        dstBuffer,
         VkDeviceSize                    size);
@@ -34,7 +40,8 @@ void copyBuffer(
 //textureOperations
 
 void createImage(
-        VkApplication*                  app,
+        VkPhysicalDevice*               physicalDevice,
+        VkDevice*                       device,
         uint32_t                        width,
         uint32_t                        height,
         uint32_t                        mipLevels,
@@ -47,7 +54,8 @@ void createImage(
         VkDeviceMemory&                 imageMemory);
 
 void createImage(
-        VkApplication*                  app,
+        VkPhysicalDevice*               physicalDevice,
+        VkDevice*                       device,
         uint32_t                        width,
         uint32_t                        height,
         uint32_t                        mipLevels,
@@ -61,7 +69,10 @@ void createImage(
         VkDeviceMemory&                 imageMemory);
 
 void generateMipmaps(
-        VkApplication*                  app,
+        VkPhysicalDevice*               physicalDevice,
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
         VkImage                         image,
         VkFormat                        imageFormat,
         int32_t                         texWidth,
@@ -76,9 +87,10 @@ void generateMipmaps(
         uint32_t                        mipLevels);
 
 void transitionImageLayout(
-        VkApplication*                  app,
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
         VkImage                         image,
-        VkFormat                        format,
         VkImageLayout                   oldLayout,
         VkImageLayout                   newLayout,
         uint32_t                        mipLevels);
@@ -96,31 +108,35 @@ void blitDown(
         VkImage                         srcImage,
         VkImage                         dstImage,
         uint32_t                        width,
-        uint32_t                        height);
+        uint32_t                        height,
+        float                           blitFactor);
 
 void blitUp(
         VkCommandBuffer*                commandBuffer,
         VkImage                         srcImage,
         VkImage                         dstImage,
         uint32_t                        width,
-        uint32_t                        height);
+        uint32_t                        height,
+        float                           blitFactor);
 
 void copyBufferToImage(
-        VkApplication*                  app,
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
         VkBuffer                        buffer,
         VkImage                         image,
         uint32_t                        width,
         uint32_t                        height);
 
 VkImageView createImageView(
-        VkApplication*                  app,
+        VkDevice*                       device,
         VkImage                         image,
         VkFormat                        format,
         VkImageAspectFlags              aspectFlags,
         uint32_t                        mipLevels);
 
 void createImageView(
-        VkApplication*                  app,
+        VkDevice*                       device,
         VkImage                         image,
         VkFormat                        format,
         VkImageAspectFlags              aspectFlags,
@@ -131,7 +147,8 @@ void createImageView(
 //cubeTextureOperations
 
 void createCubeImage(
-        VkApplication*                  app,
+        VkPhysicalDevice*               physicalDevice,
+        VkDevice*                       device,
         uint32_t                        width,
         uint32_t                        height,
         uint32_t                        mipLevels,
@@ -144,14 +161,16 @@ void createCubeImage(
         VkDeviceMemory&                 imageMemory);
 
 VkImageView createCubeImageView(
-        VkApplication*                  app,
+        VkDevice*                       device,
         VkImage                         image,
         VkFormat                        format,
         VkImageAspectFlags              aspectFlags,
         uint32_t                        mipLevels);
 
 void transitionImageLayout(
-        VkApplication*                  app,
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
         VkImage                         image,
         VkFormat                        format,
         VkImageLayout                   oldLayout,
@@ -160,7 +179,9 @@ void transitionImageLayout(
         uint32_t                        baseArrayLayer);
 
 void copyBufferToImage(
-        VkApplication*                  app,
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
         VkBuffer                        buffer,
         VkImage                         image,
         uint32_t                        width,
@@ -168,7 +189,10 @@ void copyBufferToImage(
         uint32_t                        baseArrayLayer);
 
 void generateMipmaps(
-        VkApplication*                  app,
+        VkPhysicalDevice*               physicalDevice,
+        VkDevice*                       device,
+        VkQueue*                        queue,
+        VkCommandPool*                  commandPool,
         VkImage                         image,
         VkFormat                        imageFormat,
         int32_t                         texWidth,
@@ -182,13 +206,13 @@ bool hasStencilComponent(
         VkFormat                        format);
 
 VkFormat findDepthFormat(
-        VkApplication*                  app);
+        VkPhysicalDevice*               physicalDevice);
 
 VkFormat findDepthStencilFormat(
-        VkApplication*                  app);
+        VkPhysicalDevice*               physicalDevice);
 
 VkFormat findSupportedFormat(
-        VkApplication*                  app,
+        VkPhysicalDevice*               physicalDevice,
         const std::vector<VkFormat>&    candidates,
         VkImageTiling                   tiling,
         VkFormatFeatureFlags            features);
@@ -199,7 +223,7 @@ std::vector<char> readFile(
         const std::string&              filename);
 
 VkShaderModule createShaderModule(
-        VkApplication*                  app,
+        VkDevice*                       device,
         const std::vector<char>&        code);
 
 //deviceOperations
@@ -226,5 +250,13 @@ bool checkDeviceExtensionSupport(
 SwapChainSupportDetails querySwapChainSupport(
         VkPhysicalDevice                device,
         VkSurfaceKHR                    surface);
+
+//imageProp
+
+VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+
+VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+
+VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);
 
 #endif

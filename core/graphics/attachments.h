@@ -21,7 +21,7 @@ struct attachment
     VkDeviceMemory imageMemory;
     VkImageView imageView;
     VkSampler sampler;
-    void deleteAttachment(VkDevice * device)
+    void deleteAttachment(VkDevice* device)
     {
         vkDestroyImage(*device, image, nullptr);
         vkFreeMemory(*device, imageMemory, nullptr);

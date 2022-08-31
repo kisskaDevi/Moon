@@ -38,13 +38,12 @@ void loadModels(VkApplication* app);
 void createLight(VkApplication* app);
 void createObjects(VkApplication* app);
 
-std::vector<gltfModel           *>          gltfModel;
+std::vector<std::vector<gltfModel*>>         gltfModel;
 std::vector<object              *>          object3D;
 std::vector<light<spotLight>    *>          lightSource;
 std::vector<light<pointLight>   *>          lightPoint;
 std::vector<group               *>          groups;
 
-cubeTexture *skybox;
 object *skyboxObject;
 
 void createScene(VkApplication *app)
@@ -56,10 +55,9 @@ void createScene(VkApplication *app)
     groups.push_back(new group);
     groups.push_back(new group);
 
-    skybox = new cubeTexture(SKYBOX);
-    skyboxObject = new object({nullptr,nullptr});
+    skyboxObject = new object(1,nullptr);
         skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
-    app->bindSkyBoxObject(skyboxObject, skybox);
+    app->bindSkyBoxObject(skyboxObject, SKYBOX);
 
 
     loadModels(app);
@@ -84,18 +82,12 @@ void runScene(VkApplication *app, GLFWwindow* window)
             ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
             glfwSetWindowTitle(window, ss.str().c_str());
 
-        if(animate)
-            for(size_t j=0;j<object3D.size();j++)
-            {
-                object3D[j]->animationTimer += frameTime;
-                object3D[j]->updateAnimation();
-            }
 
         glfwPollEvents();
         mouseEvent(app,window,frameTime);
         keyboardEvent(app,window,frameTime);
 
-        VkResult result = app->drawFrame();
+        VkResult result = app->drawFrame(frameTime, object3D);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(app,window);
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
@@ -109,6 +101,8 @@ void runScene(VkApplication *app, GLFWwindow* window)
         }else if(result != VK_SUCCESS){
             throw std::runtime_error("failed to present swap chain image!");
         }
+
+        //app->deviceWaitIdle();  //???костыль
     }
 }
 
@@ -122,10 +116,10 @@ void destroyScene(VkApplication *app)
 
     app->removeSkyBoxObject(skyboxObject);
     delete skyboxObject;
-    delete skybox;
 
     for (size_t i =0 ;i<gltfModel.size();i++)
-        app->destroyModel(gltfModel.at(i));
+        for (size_t j =0 ;j<gltfModel.at(i).size();j++)
+            app->destroyModel(gltfModel.at(i)[j]);
 
     app->removeBinds();
     for (size_t i=0 ;i<object3D.size();i++){
@@ -137,28 +131,48 @@ void loadModels(VkApplication *app)
 {
     size_t index = 0;
 
-        gltfModel.push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel.at(index));
+    gltfModel.resize(6);
+
+    index = 0;
+        gltfModel[0].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
+        app->createModel(gltfModel[0].at(index));
+    index++;
+        gltfModel[0].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
+        app->createModel(gltfModel[0].at(index));
+    index++;
+        gltfModel[0].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
+        app->createModel(gltfModel[0].at(index));
     index++;
 
-        gltfModel.push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel.at(index));
+    index = 0;
+        gltfModel[1].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
+        app->createModel(gltfModel[1].at(index));
+    index++;
+        gltfModel[1].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
+        app->createModel(gltfModel[1].at(index));
+    index++;
+        gltfModel[1].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
+        app->createModel(gltfModel[1].at(index));
     index++;
 
-        gltfModel.push_back(new struct gltfModel(ExternalPath + "model\\glb\\Box.glb"));
-        app->createModel(gltfModel.at(index));
+    index = 0;
+        gltfModel[2].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Box.glb"));
+        app->createModel(gltfModel[2].at(index));
     index++;
 
-        gltfModel.push_back(new struct gltfModel(ExternalPath + "model\\glTF\\Sponza\\Sponza.gltf"));
-        app->createModel(gltfModel.at(index));
+    index = 0;
+        gltfModel[3].push_back(new struct gltfModel(ExternalPath + "model\\glTF\\Sponza\\Sponza.gltf"));
+        app->createModel(gltfModel[3].at(index));
     index++;
 
-        gltfModel.push_back(new struct gltfModel(ExternalPath + "model\\glb\\Duck.glb"));
-        app->createModel(gltfModel.at(index));
+    index = 0;
+        gltfModel[4].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Duck.glb"));
+        app->createModel(gltfModel[4].at(index));
     index++;
 
-        gltfModel.push_back(new struct gltfModel(ExternalPath + "model\\glb\\RetroUFO.glb"));
-        app->createModel(gltfModel.at(index));
+    index = 0;
+        gltfModel[5].push_back(new struct gltfModel(ExternalPath + "model\\glb\\RetroUFO.glb"));
+        app->createModel(gltfModel[5].at(index));
     index++;
 }
 
@@ -233,14 +247,14 @@ void createLight(VkApplication *app)
 void createObjects(VkApplication *app)
 {
     uint32_t index=0;
-    object3D.push_back( new object({gltfModel.at(0),emptyTexture}) );
+    object3D.push_back( new object(gltfModel.at(0).size(),gltfModel.at(0).data()) );
     app->bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
-    object3D.push_back( new object({gltfModel.at(1),emptyTexture}) );
+    object3D.push_back( new object(gltfModel.at(1).size(),gltfModel.at(1).data()) );
     app->bindStencilObject(object3D.at(index),1.0f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -249,7 +263,7 @@ void createObjects(VkApplication *app)
     object3D.at(index)->animationIndex = 1;
     index++;
 
-    object3D.push_back( new object({gltfModel.at(4),emptyTexture}) );
+    object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
     app->bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     //object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
@@ -259,40 +273,40 @@ void createObjects(VkApplication *app)
     object *Duck = object3D.at(index);
     index++;
 
-    object3D.push_back( new object({gltfModel.at(3),emptyTexture}) );
+    object3D.push_back( new object(gltfModel.at(3).size(),gltfModel.at(3).data()) );
     app->bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
     index++;
 
-    object3D.push_back( new object({gltfModel.at(2),emptyTextureW}) );
+    object3D.push_back( new object(gltfModel.at(2).size(),gltfModel.at(2).data()) );
     app->bindBloomObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     object *Box0 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object({gltfModel.at(5),emptyTextureW}) );
+    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     app->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO1 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object({gltfModel.at(5),emptyTextureW}) );
+    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     app->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object({gltfModel.at(5),emptyTextureW}) );
+    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     app->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO3 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object({gltfModel.at(5),emptyTextureW}) );
+    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     app->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -320,10 +334,6 @@ void createObjects(VkApplication *app)
 void mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
 {
     static_cast<void>(frameTime);
-    static_cast<void>(gltfModel);
-    static_cast<void>(object3D);
-    static_cast<void>(groups);
-    static_cast<void>(emptyTexture);
 
     double x, y;
 
@@ -568,7 +578,7 @@ void keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTime)
     if(backNStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_N) == 0)
     {
         size_t index = object3D.size();
-        object3D.push_back( new object({gltfModel.at(5),emptyTexture}) );
+        object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
         app->bindBaseObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslate());
         object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));

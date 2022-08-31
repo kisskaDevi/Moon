@@ -60,7 +60,7 @@ public:
     void                                        resetUboLight();
     void                                        resetUboWorld();
 
-    void                                        setEmptyTexture(texture* emptyTexture);
+    void                                        setEmptyTexture(std::string ZERO_TEXTURE);
     void                                        setCameraObject(camera* cameraObject);
 
     void                                        createModel(gltfModel* pModel);
@@ -73,7 +73,7 @@ public:
     void                                        bindBloomObject(object* newObject);
     void                                        bindOneColorObject(object* newObject);
     void                                        bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor);
-    void                                        bindSkyBoxObject(object* newObject, cubeTexture* texture);
+    void                                        bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
 
     bool                                        removeBaseObject(object* object);
     bool                                        removeBloomObject(object* object);
@@ -107,7 +107,7 @@ public:
     void                                        createCommandBuffers();
     void                                        createSyncObjects();
 //step 5
-    VkResult                                    drawFrame();
+    VkResult                                    drawFrame(float frametime, std::vector<object*> objects);
     void                                        destroyGraphics();
     void                                        freeCommandBuffers();
 

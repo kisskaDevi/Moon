@@ -11,10 +11,9 @@ object::object()
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
 
-    model = nullptr;
 }
 
-object::object(objectInfo info)
+object::object(uint32_t modelCount, gltfModel** model)
 {
     modelMatrix = glm::mat4x4(1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -22,17 +21,8 @@ object::object(objectInfo info)
     m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
 
-    model = info.model;
-    emptyTexture = info.emptyTexture;
-}
-
-object::object(gltfModel* model3D): model(model3D)
-{
-    modelMatrix = glm::mat4x4(1.0f);
-    m_globalTransform = glm::mat4x4(1.0f);
-    m_translate = glm::vec3(0.0f,0.0f,0.0f);
-    m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_scale = glm::vec3(1.0f,1.0f,1.0f);
+    this->pModel = model;
+    this->modelCount = modelCount;
 }
 
 object::~object()
@@ -103,20 +93,21 @@ void object::updateModelMatrix()
     modelMatrix = m_globalTransform * translateMatrix * rotateMatrix * scaleMatrix;
 }
 
-void object::updateAnimation()
+void object::updateAnimation(uint32_t imageNumber)
 {
-    if(getModel()->animations.size() > 0){
-        if(!changeAnimationFlag){
-            if (animationTimer > getModel()->animations[animationIndex].end)
-                animationTimer -= getModel()->animations[animationIndex].end;
-
-            getModel()->updateAnimation(animationIndex, animationTimer);
-        }else{
-            getModel()->changeAnimation(animationIndex, newAnimationIndex, startTimer, animationTimer, changeAnimationTime);
-            if(startTimer+changeAnimationTime<animationTimer){
-                changeAnimationFlag = false;
-                animationTimer = getModel()->animations[animationIndex+1].start;
-                animationIndex = newAnimationIndex;
+    if(modelCount>1){
+        if(pModel[imageNumber]->animations.size() > 0){
+            if(!changeAnimationFlag){
+                if (animationTimer > pModel[imageNumber]->animations[animationIndex].end)
+                    animationTimer -= pModel[imageNumber]->animations[animationIndex].end;
+                pModel[imageNumber]->updateAnimation(animationIndex, animationTimer);
+            }else{
+                pModel[imageNumber]->changeAnimation(animationIndex, newAnimationIndex, startTimer, animationTimer, changeAnimationTime);
+                if(startTimer+changeAnimationTime<animationTimer){
+                    changeAnimationFlag = false;
+                    animationTimer = pModel[imageNumber]->animations[animationIndex+1].start;
+                    animationIndex = newAnimationIndex;
+                }
             }
         }
     }
@@ -148,14 +139,22 @@ void object::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
     vkUnmapMemory(*device, uniformBuffersMemory[currentImage]);
 }
 
-void                            object::setEmptyTexture(texture* emptyTexture)          {this->emptyTexture = emptyTexture;}
-
-void                            object::setModel(gltfModel *model3D)                    {this->model = model3D;}
+void                            object::setModel(gltfModel** model3D)                    {this->pModel = model3D;}
 void                            object::setVisibilityDistance(float visibilityDistance) {this->visibilityDistance=visibilityDistance;}
 void                            object::setColor(const glm::vec4 &color)                {this->color = color;}
 void                            object::setEnable(const bool& enable)                   {this->enable = enable;}
 
-gltfModel*                      object::getModel()                                      {return model;}
+gltfModel*                      object::getModel(uint32_t index)                        {
+    gltfModel* model;
+    if(modelCount>1&&index>=modelCount){
+        model = nullptr;
+    }else if(modelCount==1){
+        model = pModel[0];
+    }else{
+        model = pModel[index];
+    }
+    return model;
+}
 float                           object::getVisibilityDistance() const                   {return visibilityDistance;}
 glm::vec4                       object::getColor()              const                   {return color;}
 bool                            object::getEnable()             const                   {return enable;}

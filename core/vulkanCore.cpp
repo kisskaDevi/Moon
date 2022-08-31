@@ -2,7 +2,7 @@
 #include "operations.h"
 #include "transformational/camera.h"
 #include "transformational/light.h"
-#include "transformational/gltfmodel.h"
+#include "transformational/object.h"
 #include "core/graphics/shadowGraphics.h"
 
 VkApplication::VkApplication()
@@ -432,7 +432,7 @@ void VkApplication::createSyncObjects()
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
 }
 
-VkResult VkApplication::drawFrame()
+VkResult VkApplication::drawFrame(float frametime, std::vector<object*> objects)
 {
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, PostProcessing.SwapChain(), UINT64_MAX , imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);    //Получить индекс следующего доступного презентабельного изображения
@@ -446,6 +446,11 @@ VkResult VkApplication::drawFrame()
 
     updateCmd(imageIndex);
     updateUbo(imageIndex);
+
+    for(size_t j=0;j<objects.size();j++){
+        objects[j]->animationTimer += frametime;
+        objects[j]->updateAnimation(imageIndex);
+    }
 
     VkSemaphore                         waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
     VkPipelineStageFlags                waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -575,11 +580,8 @@ void                                VkApplication::resetCmdWorld(){worldCmd.enab
 void                                VkApplication::resetUboLight(){lightsUbo.enable = true; lightsUbo.frames = 0;}
 void                                VkApplication::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
 
-void                                VkApplication::setEmptyTexture(texture* emptyTexture){
-    emptyTexture->createTextureImage(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
-    emptyTexture->createTextureImageView(&device);
-    emptyTexture->createTextureSampler(&device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    Graphics.setEmptyTexture(emptyTexture);
+void                                VkApplication::setEmptyTexture(std::string ZERO_TEXTURE){
+    Graphics.setEmptyTexture(ZERO_TEXTURE);
 }
 
 void                                VkApplication::setCameraObject(camera* cameraObject){
@@ -638,12 +640,8 @@ void                                VkApplication::bindOneColorObject(object* ne
 void                                VkApplication::bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor){
     Graphics.bindStencilObject(newObject,lineWidth,lineColor);
 }
-void                                VkApplication::bindSkyBoxObject(object* newObject, cubeTexture* texture){
-    texture->setMipLevel(0.0f);
-    texture->createTextureImage(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
-    texture->createTextureImageView(&device);
-    texture->createTextureSampler(&device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    Graphics.bindSkyBoxObject(newObject,texture);
+void                                VkApplication::bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH){
+    Graphics.bindSkyBoxObject(newObject,TEXTURE_PATH);
 }
 
 bool                                VkApplication::removeBaseObject(object* object){

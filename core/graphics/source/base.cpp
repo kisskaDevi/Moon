@@ -603,13 +603,13 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
     {
         if(object->getEnable()){
             VkDeviceSize offsets[1] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel()->vertices.buffer, offsets);
-            if (object->getModel()->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffers, object->getModel()->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
+            if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffers, object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
             object->resetPrimitiveCount();
             object->setFirstPrimitive(primitiveCount);
-            for (auto node : object->getModel()->nodes){
+            for (auto node : object->getModel(frameNumber)->nodes){
                 std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
                 renderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
             }

@@ -16,17 +16,11 @@ struct gltfModel;
 struct Node;
 struct Material;
 
-struct objectInfo
-{
-    gltfModel*                      model;
-    texture*                        emptyTexture;
-};
-
 class object : public transformational
 {
 private:
-    gltfModel*                      model;
-    texture*                        emptyTexture;
+    gltfModel**                      pModel;
+    uint32_t                        modelCount;
 
     VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet>    descriptors;
@@ -57,8 +51,7 @@ private:
 
 public:
     object();
-    object(objectInfo info);
-    object(gltfModel* model3D);
+    object(uint32_t modelCount, gltfModel** model);
     ~object();
     void destroyUniformBuffers(VkDevice* device);
     void destroyDescriptorPools(VkDevice* device);
@@ -69,7 +62,7 @@ public:
 
     void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
     void updateUniformBuffer(VkDevice* device, uint32_t currentImage);
-    void updateAnimation();
+    void updateAnimation(uint32_t imageNumber);
 
     void                setGlobalTransform(const glm::mat4& transform);
     void                translate(const glm::vec3& translate);
@@ -83,13 +76,11 @@ public:
     glm::quat&          Rotate();
     glm::vec3&          Scale();
 
-    void                setEmptyTexture(texture* emptyTexture);
-
-    void                setModel(gltfModel* model3D);
+    void                setModel(gltfModel** model3D);
     void                setVisibilityDistance(float visibilityDistance);
     void                setColor(const glm::vec4 & color);
 
-    gltfModel*          getModel();
+    gltfModel*          getModel(uint32_t index);
     float               getVisibilityDistance() const;
     glm::vec4           getColor() const;
 

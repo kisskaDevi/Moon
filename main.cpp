@@ -23,8 +23,6 @@ float cameraAngle = 45.0f;
 GLFWwindow* window;
 
 camera *cameras;
-texture *emptyTexture;
-texture *emptyTextureW;
 
 std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
 std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
@@ -44,7 +42,6 @@ void recreateSwapChain(VkApplication* app, GLFWwindow* window);
 
 #define TestScene1
 #include "testScene1.cpp"
-#include "testScene2.cpp"
 
 int main()
 {
@@ -58,6 +55,7 @@ int main()
     app.createLogicalDevice();
     app.checkSwapChainSupport();
     app.createCommandPool();
+    app.createGraphics(window);
 
     cameras = new camera;
         cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
@@ -66,11 +64,7 @@ int main()
         cameras->setProjMatrix(proj);
     app.setCameraObject(cameras);
 
-    emptyTexture = new texture(ZERO_TEXTURE);
-    emptyTextureW = new texture(ZERO_TEXTURE_WHITE);
-    app.setEmptyTexture(emptyTexture);
-
-    app.createGraphics(window);
+    app.setEmptyTexture(ZERO_TEXTURE);
 
     createScene(&app);
 
@@ -80,16 +74,12 @@ int main()
 
     app.resetUboWorld();
     app.resetUboLight();
-
     runScene(&app,window);
 
     app.deviceWaitIdle();
 
     destroyScene(&app);
     app.cleanup();
-
-    delete emptyTexture;
-    delete emptyTextureW;
 
     glfwDestroyWindow(window);
     glfwTerminate();

@@ -8,6 +8,7 @@
 #include <libs/glm/glm/glm.hpp>
 #include <libs/glm/glm/gtc/matrix_transform.hpp>
 
+#include <string>
 #include <optional> // нужна для вызова std::optional<uint32_t>
 #include "attachments.h"
 
@@ -251,7 +252,7 @@ public:
 
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
-    void setEmptyTexture(texture* emptyTexture);
+    void setEmptyTexture(std::string ZERO_TEXTURE);
     void setCameraObject(camera* cameraObject);
 
     void setMinAmbientFactor(const float& minAmbientFactor);
@@ -290,7 +291,7 @@ public:
     void bindBloomObject(object* newObject);
     void bindOneColorObject(object* newObject);
     void bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor);
-    void bindSkyBoxObject(object* newObject, cubeTexture* texture);
+    void bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
 
     bool removeBaseObject(object* object);
     bool removeBloomObject(object* object);

@@ -36,7 +36,12 @@ void                            graphics::setDeviceProp(VkPhysicalDevice* physic
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
 }
-void                            graphics::setEmptyTexture(texture* emptyTexture)                { this->emptyTexture = emptyTexture;}
+void                            graphics::setEmptyTexture(std::string ZERO_TEXTURE){
+    this->emptyTexture = new texture(ZERO_TEXTURE);
+    emptyTexture->createTextureImage(physicalDevice,device,graphicsQueue,commandPool);
+    emptyTexture->createTextureImageView(device);
+    emptyTexture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+}
 void                            graphics::setCameraObject(camera* cameraObject)                 { this->cameraObject = cameraObject;}
 void                            graphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
 
@@ -44,6 +49,7 @@ void                            graphics::setMinAmbientFactor(const float& minAm
 
 void graphics::destroyEmptyTexture(){
     emptyTexture->destroy(device);
+    delete emptyTexture;
 }
 
 void graphics::destroy()
@@ -958,11 +964,15 @@ void graphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 l
     stencil.base->createObjectDescriptorSet(device,newObject,image.Count);
 }
 
-void graphics::bindSkyBoxObject(object *newObject, cubeTexture* texture)
+void graphics::bindSkyBoxObject(object *newObject, const std::vector<std::string>& TEXTURE_PATH)
 {
+    skybox.texture = new cubeTexture(TEXTURE_PATH);
+    skybox.texture->setMipLevel(0.0f);
+    skybox.texture->createTextureImage(physicalDevice,device,graphicsQueue,commandPool);
+    skybox.texture->createTextureImageView(device);
+    skybox.texture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
     skybox.objects.push_back(newObject);
     skybox.objects.at(skybox.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
-    skybox.texture = texture;
 }
 
 bool graphics::removeBaseObject(object* object)
@@ -1027,6 +1037,7 @@ bool graphics::removeSkyBoxObject(object* object)
     for(uint32_t index = 0; index<skybox.objects.size(); index++){
         if(object==skybox.objects[index]){
             skybox.texture->destroy(device);
+            delete skybox.texture;
             skybox.objects.erase(skybox.objects.begin()+index);
             skybox.objects[index]->destroyUniformBuffers(device);
             result = true;

@@ -72,8 +72,7 @@ SOURCES += \
     core/vulkanCore.cpp\
     physicalobject.cpp \
     main.cpp \
-    testScene1.cpp \
-    testScene2.cpp
+    testScene1.cpp
 
 HEADERS += \
     core/graphics/attachments.h \

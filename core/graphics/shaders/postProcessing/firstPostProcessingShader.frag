@@ -1,6 +1,7 @@
 #version 450
 
 layout(set = 0, binding = 0) uniform sampler2D blurSampler;
+layout(set = 0, binding = 1) uniform sampler2D ssaoSampler;
 
 layout(location = 0) in vec2 fragTexCoord;
 
@@ -33,4 +34,5 @@ void main()
     outColor = vec4(0.0f);
     outBlur = vec4(0.0f);
     outBlur += blur(blurSampler,fragTexCoord);
+    //outBlur += vec4(blur(ssaoSampler,fragTexCoord).x);
 }

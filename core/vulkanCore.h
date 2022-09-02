@@ -20,6 +20,8 @@ template <> class light<spotLight>;
 
 #include "graphics/graphics.h"
 #include "graphics/customfilter.h"
+#include "graphics/sslr.h"
+#include "graphics/ssao.h"
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
@@ -53,6 +55,7 @@ public:
     void cleanup();
 
     uint32_t                                    getImageCount();
+    uint32_t                                    getImageIndex();
     uint32_t                                    getCurrentFrame();
 
     void                                        resetCmdLight();
@@ -107,7 +110,8 @@ public:
     void                                        createCommandBuffers();
     void                                        createSyncObjects();
 //step 5
-    VkResult                                    drawFrame(float frametime, std::vector<object*> objects);
+    VkResult                                    checkNextFrame();
+    VkResult                                    drawFrame();
     void                                        destroyGraphics();
     void                                        freeCommandBuffers();
 
@@ -130,6 +134,8 @@ private:
 
     graphics                                    Graphics;
     customFilter                                Filter;
+    SSLRGraphics                                SSLR;
+    SSAOGraphics                                SSAO;
     postProcessing                              PostProcessing;
 
     VkCommandPool                               commandPool;
@@ -140,6 +146,7 @@ private:
     std::vector<VkFence>                        inFlightFences;
     std::vector<VkFence>                        imagesInFlight;
 
+    uint32_t                                    imageIndex;
     uint32_t                                    currentFrame = 0;
     bool                                        framebufferResized = false;
 
@@ -150,25 +157,22 @@ private:
 
     std::vector<light<spotLight>    *>          lightSources;
 
-    //=================================InitializeVulkan===========================================//
 
-        std::vector<const char*>                getRequiredExtensions();
-        bool                                    checkValidationLayerSupport();
+    std::vector<const char*>                    getRequiredExtensions();
+    bool                                        checkValidationLayerSupport();
 
-        void                                    populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-        static VKAPI_ATTR VkBool32 VKAPI_CALL   debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,VkDebugUtilsMessageTypeFlagsEXT messageType,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,void* pUserData);
-        VkResult                                CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+    void                                        populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+    static VKAPI_ATTR VkBool32 VKAPI_CALL       debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,VkDebugUtilsMessageTypeFlagsEXT messageType,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,void* pUserData);
+    VkResult                                    CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 
-        void                                    createCommandBuffer();
-        void                                    updateCommandBuffer(uint32_t imageIndex);
+    void                                        createCommandBuffer();
+    void                                        updateCommandBuffer(uint32_t imageIndex);
 
-    //=================================DrawLoop===========================================//
-        void                                    updateCmd(uint32_t imageIndex);
-        void                                    updateUbo(uint32_t imageIndex);
-        void                                    updateUniformBuffer(uint32_t imageIndex);
+    void                                        updateCmd(uint32_t imageIndex);
+    void                                        updateUbo(uint32_t imageIndex);
+    void                                        updateUniformBuffer(uint32_t imageIndex);
 
-    //=================================Cleanup===========================================//
-        void                                    DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
+    void                                        DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 };
 
 #endif // VULKANCORE_H

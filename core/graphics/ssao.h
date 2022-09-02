@@ -1,14 +1,10 @@
-#ifndef CUSTOMFILTER_H
-#define CUSTOMFILTER_H
+#ifndef SSAO_H
+#define SSAO_H
 
+#include "graphics.h"
 #include "attachments.h"
 
-struct CustomFilterPushConst{
-    alignas (4) float deltax;
-    alignas (4) float deltay;
-};
-
-class customFilter
+class SSAOGraphics
 {
 private:
     VkPhysicalDevice*                   physicalDevice;
@@ -16,18 +12,14 @@ private:
     VkQueue*                            graphicsQueue;
     VkCommandPool*                      commandPool;
 
-    std::vector<attachments *>          Attachments;
-    attachments*                        blitAttachments = nullptr;
-
-    float                               xSampleStep = 1.5f;
-    float                               ySampleStep = 1.5f;
-
     imageInfo                           image;
 
-    VkRenderPass                                renderPass;
-    std::vector<std::vector<VkFramebuffer>>     framebuffers;
+    attachments*                        Attachments = nullptr;
 
-    struct Filter{
+    VkRenderPass                        renderPass;
+    std::vector<VkFramebuffer>          framebuffers;
+
+    struct SSAO{
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
         VkDescriptorSetLayout           DescriptorSetLayout;
@@ -36,18 +28,15 @@ private:
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
-    }filter;
+    }ssao;
 
 public:
-    customFilter();
+    SSAOGraphics();
     void destroy();
 
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
-    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
-    void setBlitAttachments(attachments* blitAttachments);
-
-    void setSampleStep(float deltaX, float deltaY);
+    void setSSAOAttachments(attachments* Attachments);
 
     void createRenderPass();
     void createFramebuffers();
@@ -55,9 +44,8 @@ public:
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateSecondDescriptorSets();
+    void updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
 };
-
-#endif // CUSTOMFILTER_H
+#endif // SSAO_H

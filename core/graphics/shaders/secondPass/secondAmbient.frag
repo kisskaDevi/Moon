@@ -92,7 +92,7 @@ void main()
         outColor += SRGBtoLINEAR(emissiveTexture);
 	outBloom += SRGBtoLINEAR(emissiveTexture);
 
-    if(outColor.x>0.95f||outColor.y>0.95f||outColor.y>0.95f)	outBloom += outColor;
+    if(outColor.x>0.95f&&outColor.y>0.95f&&outColor.y>0.95f)	outBloom += outColor;
     else							outBloom += vec4(0.0f,0.0f,0.0f,1.0f);
 
 }

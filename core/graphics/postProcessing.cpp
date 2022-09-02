@@ -49,6 +49,12 @@ void postProcessing::destroy()
     blitAttachment.deleteAttachment(&*device);
     blitAttachment.deleteSampler(&*device);
 
+    sslrAttachment.deleteAttachment(&*device);
+    sslrAttachment.deleteSampler(&*device);
+
+    ssaoAttachment.deleteAttachment(&*device);
+    ssaoAttachment.deleteSampler(&*device);
+
     uint32_t imageCount = image.Count;
     for(size_t i=0; i<swapChainAttachments.size(); i++)
         for(size_t image=0; image <imageCount;image++)
@@ -296,6 +302,93 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
             SamplerInfo.mipLodBias = 0.0f;
         if (vkCreateSampler(*device, &SamplerInfo, nullptr, &blitAttachment.sampler) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing sampler!");
+
+        sslrAttachment.resize(imageCount);
+        for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
+        {
+            createImage(            physicalDevice,
+                                    device,
+                                    image.Extent.width,
+                                    image.Extent.height,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    image.Format,
+                                    VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT ,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    sslrAttachment.image[imageNumber],
+                                    sslrAttachment.imageMemory[imageNumber]);
+
+            sslrAttachment.imageView[imageNumber] =
+            createImageView(        device,
+                                    sslrAttachment.image[imageNumber],
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1);
+        }
+        VkSamplerCreateInfo sslrSamplerInfo{};
+            sslrSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            sslrSamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+            sslrSamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+            sslrSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+            sslrSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+            sslrSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+            sslrSamplerInfo.anisotropyEnable = VK_TRUE;
+            sslrSamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+            sslrSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+            sslrSamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+            sslrSamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+            sslrSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+            sslrSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            sslrSamplerInfo.minLod = 0.0f;
+            sslrSamplerInfo.maxLod = 0.0f;
+            sslrSamplerInfo.mipLodBias = 0.0f;
+        if (vkCreateSampler(*device, &sslrSamplerInfo, nullptr, &sslrAttachment.sampler) != VK_SUCCESS)
+            throw std::runtime_error("failed to create postProcessing sampler!");
+
+
+        ssaoAttachment.resize(imageCount);
+        for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
+        {
+            createImage(            physicalDevice,
+                                    device,
+                                    image.Extent.width,
+                                    image.Extent.height,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    image.Format,
+                                    VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT ,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    ssaoAttachment.image[imageNumber],
+                                    ssaoAttachment.imageMemory[imageNumber]);
+
+            ssaoAttachment.imageView[imageNumber] =
+            createImageView(        device,
+                                    ssaoAttachment.image[imageNumber],
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1);
+        }
+        VkSamplerCreateInfo ssaoSamplerInfo{};
+            ssaoSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            ssaoSamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+            ssaoSamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+            ssaoSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+            ssaoSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+            ssaoSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+            ssaoSamplerInfo.anisotropyEnable = VK_TRUE;
+            ssaoSamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+            ssaoSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+            ssaoSamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+            ssaoSamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+            ssaoSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+            ssaoSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            ssaoSamplerInfo.minLod = 0.0f;
+            ssaoSamplerInfo.maxLod = 0.0f;
+            ssaoSamplerInfo.mipLodBias = 0.0f;
+        if (vkCreateSampler(*device, &ssaoSamplerInfo, nullptr, &ssaoAttachment.sampler) != VK_SUCCESS)
+            throw std::runtime_error("failed to create postProcessing sampler!");
     }
 
 //=======================================RenderPass======================//
@@ -436,15 +529,21 @@ void postProcessing::createPipelines()
     {
         uint32_t index = 0;
 
-        std::array<VkDescriptorSetLayoutBinding,1> firstBindings{};
+        std::array<VkDescriptorSetLayoutBinding,2> firstBindings{};
             firstBindings[index].binding = 0;
+            firstBindings[index].descriptorCount = 1;
+            firstBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            firstBindings[index].pImmutableSamplers = nullptr;
+            firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            firstBindings[index].binding = 1;
             firstBindings[index].descriptorCount = 1;
             firstBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             firstBindings[index].pImmutableSamplers = nullptr;
             firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         index = 0;
-        std::array<VkDescriptorSetLayoutBinding,6> secondBindings{};
+        std::array<VkDescriptorSetLayoutBinding,4> secondBindings{};
             secondBindings[index].binding = index;
             secondBindings[index].descriptorCount = 1;
             secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -462,18 +561,6 @@ void postProcessing::createPipelines()
             secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             secondBindings[index].pImmutableSamplers = nullptr;
             secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = 1;
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            secondBindings[index].descriptorCount = 1;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-            secondBindings[index].pImmutableSamplers = nullptr;
         index++;
             secondBindings[index].binding = index;
             secondBindings[index].descriptorCount = static_cast<uint32_t>(blitAttachmentCount);
@@ -782,11 +869,13 @@ void postProcessing::createDescriptorPool()
 {
     uint32_t imageCount = image.Count;
     size_t index = 0;
-    std::array<VkDescriptorPoolSize,1> firstPoolSizes;
-    for(uint32_t i=0;i<firstPoolSizes.size();i++,index++){
+    std::array<VkDescriptorPoolSize,2> firstPoolSizes;
         firstPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         firstPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-    }
+    index++;
+        firstPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        firstPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+
     VkDescriptorPoolCreateInfo firstPoolInfo{};
         firstPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         firstPoolInfo.poolSizeCount = static_cast<uint32_t>(firstPoolSizes.size());
@@ -796,7 +885,7 @@ void postProcessing::createDescriptorPool()
         throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 
     index = 0;
-    std::array<VkDescriptorPoolSize,6> secondPoolSizes;
+    std::array<VkDescriptorPoolSize,4> secondPoolSizes;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
@@ -804,12 +893,6 @@ void postProcessing::createDescriptorPool()
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-    index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-    index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -823,7 +906,7 @@ void postProcessing::createDescriptorPool()
         throw std::runtime_error("failed to create postProcessing descriptor pool 2!");
 }
 
-void postProcessing::createDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
+void postProcessing::createDescriptorSets(DeferredAttachments Attachments)
 {
     uint32_t imageCount = image.Count;
     first.DescriptorSets.resize(imageCount);
@@ -839,22 +922,32 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, VkBuf
     for (size_t image = 0; image < imageCount; image++)
     {
         uint32_t index = 0;
-        std::array<VkDescriptorImageInfo, 1> imageInfo;
-        for(uint32_t i=0;i<imageInfo.size();i++,index++){
+        std::array<VkDescriptorImageInfo,2> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[index].imageView = Attachments.blur->imageView[image];
             imageInfo[index].sampler = Attachments.blur->sampler;
-        }
+        index++;
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = ssaoAttachment.imageView[image];
+            imageInfo[index].sampler = ssaoAttachment.sampler;
 
         index = 0;
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = first.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(imageInfo.size());
-            descriptorWrites[index].pImageInfo = imageInfo.data();
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &imageInfo[index];
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = first.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &imageInfo[index];
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
@@ -882,28 +975,20 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, VkBuf
             imageInfo[index].sampler = this->Attachments[0].sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.position->imageView[image];
-            imageInfo[index].sampler = Attachments.GBuffer.position->sampler;
-        index++;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.normal->imageView[image];
-            imageInfo[index].sampler = Attachments.GBuffer.normal->sampler;
+            imageInfo[index].imageView = sslrAttachment.imageView[image];
+            imageInfo[index].sampler = sslrAttachment.sampler;
 
         index = 0;
-            std::array<VkDescriptorImageInfo, blitAttachmentCount> blitImageInfo;
+        std::array<VkDescriptorImageInfo, blitAttachmentCount> blitImageInfo;
             for(uint32_t i=0;i<blitImageInfo.size();i++,index++){
                 blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 blitImageInfo[index].imageView = blitAttachments[i].imageView[image];
                 blitImageInfo[index].sampler = blitAttachments[i].sampler;
             }
 
-        VkDescriptorBufferInfo bufferInfo;
-            bufferInfo.buffer = pUniformBuffers[image];
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
 
         index = 0;
-        std::array<VkWriteDescriptorSet, 6> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = second.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
@@ -933,24 +1018,8 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, VkBuf
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &imageInfo[index];
-        index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = second.DescriptorSets[image];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &bufferInfo;
-        index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = second.DescriptorSets[image];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.at(index).descriptorCount = static_cast<uint32_t>(blitImageInfo.size());
-            descriptorWrites.at(index).pImageInfo = blitImageInfo.data();
+            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(blitImageInfo.size());
+            descriptorWrites[index].pImageInfo = blitImageInfo.data();
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -992,6 +1061,9 @@ void postProcessing::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
 
 std::vector<attachments>        &postProcessing::getBlitAttachments(){return blitAttachments;}
 attachments                     &postProcessing::getBlitAttachment(){return blitAttachment;}
+attachments                     &postProcessing::getSSLRAttachment(){return sslrAttachment;}
+attachments                     &postProcessing::getSSAOAttachment(){return ssaoAttachment;}
+
 VkSwapchainKHR                  &postProcessing::SwapChain(){return swapChain;}
 uint32_t                        &postProcessing::SwapChainImageCount(){return image.Count;}
 VkFormat                        &postProcessing::SwapChainImageFormat(){return image.Format;}

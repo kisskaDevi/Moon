@@ -274,6 +274,8 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
     Graphics.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
     PostProcessing.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),&surface);
     Filter.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
+    SSLR.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
+    SSAO.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
 
     imageInfo info{};
         info.Count = imageCount;
@@ -283,6 +285,8 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
     PostProcessing.setImageProp(&info);
     Graphics.setImageProp(&info);
     Filter.setImageProp(&info);
+    SSLR.setImageProp(&info);
+    SSAO.setImageProp(&info);
 
     PostProcessing.createAttachments(window, swapChainSupport);
     PostProcessing.createRenderPass();
@@ -296,7 +300,7 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
     Graphics.createStorageBuffers(imageCount);
 
     PostProcessing.createDescriptorPool();
-    PostProcessing.createDescriptorSets(Graphics.getDeferredAttachments(),Graphics.getSceneBuffer().data());
+    PostProcessing.createDescriptorSets(Graphics.getDeferredAttachments());
 
     Graphics.createBaseDescriptorPool();
     Graphics.createBaseDescriptorSets();
@@ -315,6 +319,26 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
     Filter.createDescriptorPool();
     Filter.createDescriptorSets();
     Filter.updateSecondDescriptorSets();
+
+    SSLR.setSSLRAttachments(&PostProcessing.getSSLRAttachment());
+
+    SSLR.createRenderPass();
+    SSLR.createFramebuffers();
+    SSLR.createPipelines();
+
+    SSLR.createDescriptorPool();
+    SSLR.createDescriptorSets();
+    SSLR.updateSecondDescriptorSets(Graphics.getDeferredAttachments(),Graphics.getSceneBuffer().data());
+
+    SSAO.setSSAOAttachments(&PostProcessing.getSSAOAttachment());
+
+    SSAO.createRenderPass();
+    SSAO.createFramebuffers();
+    SSAO.createPipelines();
+
+    SSAO.createDescriptorPool();
+    SSAO.createDescriptorSets();
+    SSAO.updateSecondDescriptorSets(Graphics.getDeferredAttachments(),Graphics.getSceneBuffer().data());
 }
 
 void VkApplication::updateDescriptorSets()
@@ -361,6 +385,9 @@ void VkApplication::updateCommandBuffer(uint32_t imageIndex)
         throw std::runtime_error("failed to begin recording command buffer!");
 
     Graphics.render(imageIndex,commandBuffers[imageIndex],static_cast<uint32_t>(lightSources.size()),lightSources.data());
+
+    SSLR.render(imageIndex,commandBuffers[imageIndex]);
+    SSAO.render(imageIndex,commandBuffers[imageIndex]);
 
         VkImageSubresourceRange ImageSubresourceRange{};
             ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -429,12 +456,11 @@ void VkApplication::createSyncObjects()
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[imageIndex]) != VK_SUCCESS ||
             vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[imageIndex]) != VK_SUCCESS ||
             vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[imageIndex]) != VK_SUCCESS)
-                throw std::runtime_error("failed to create synchronization objects for a frame!");
+            throw std::runtime_error("failed to create synchronization objects for a frame!");
 }
 
-VkResult VkApplication::drawFrame(float frametime, std::vector<object*> objects)
+VkResult VkApplication::checkNextFrame()
 {
-    uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, PostProcessing.SwapChain(), UINT64_MAX , imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);    //Получить индекс следующего доступного презентабельного изображения
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -444,13 +470,13 @@ VkResult VkApplication::drawFrame(float frametime, std::vector<object*> objects)
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);       //ждём
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
+    return result;
+}
+
+VkResult VkApplication::drawFrame()
+{
     updateCmd(imageIndex);
     updateUbo(imageIndex);
-
-    for(size_t j=0;j<objects.size();j++){
-        objects[j]->animationTimer += frametime;
-        objects[j]->updateAnimation(imageIndex);
-    }
 
     VkSemaphore                         waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
     VkPipelineStageFlags                waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -483,7 +509,7 @@ VkResult VkApplication::drawFrame(float frametime, std::vector<object*> objects)
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
         presentInfo.pImageIndices = &imageIndex;
-    result = vkQueuePresentKHR(presentQueue, &presentInfo);                                                  //Поставить изображение в очередь для презентации
+    VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);                                                  //Поставить изображение в очередь для презентации
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -533,6 +559,8 @@ void VkApplication::destroyGraphics()
 {
     Graphics.destroy();
     Filter.destroy();
+    SSAO.destroy();
+    SSLR.destroy();
     PostProcessing.destroy();
 }
 
@@ -573,6 +601,7 @@ void VkApplication::VkApplication::cleanup()
     }
 
 uint32_t                            VkApplication::getImageCount(){return imageCount;}
+uint32_t                            VkApplication::getImageIndex(){return imageIndex;}
 uint32_t                            VkApplication::getCurrentFrame(){return currentFrame;}
 
 void                                VkApplication::resetCmdLight(){lightsCmd.enable = true; lightsCmd.frames = 0;}

@@ -12,7 +12,6 @@
 #include <optional> // нужна для вызова std::optional<uint32_t>
 #include "attachments.h"
 
-class                               VkApplication;
 class                               texture;
 class                               cubeTexture;
 class                               object;
@@ -334,6 +333,9 @@ private:
     std::vector<attachments>            blitAttachments;
     attachments                         blitAttachment;
 
+    attachments                         sslrAttachment;
+    attachments                         ssaoAttachment;
+
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
 
@@ -375,12 +377,15 @@ public:
         void createSecondGraphicsPipeline();
 
     void createDescriptorPool();
-    void createDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
+    void createDescriptorSets(DeferredAttachments Attachments);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
     std::vector<attachments>        & getBlitAttachments();
     attachments                     & getBlitAttachment();
+    attachments                     & getSSLRAttachment();
+    attachments                     & getSSAOAttachment();
+
     VkSwapchainKHR                  & SwapChain();
     VkFormat                        & SwapChainImageFormat();
     VkExtent2D                      & SwapChainImageExtent();

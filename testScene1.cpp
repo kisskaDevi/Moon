@@ -1,10 +1,11 @@
 #ifdef TestScene1
 std::string LIGHT_TEXTURE  = ExternalPath + "texture\\icon.PNG";
 
-float frameTime;
 float fps = 60.0f;
 bool  animate = true;
 bool  fpsLock = false;
+
+float globalTime = 0.0f;
 
 double   xMpos, yMpos;
 double   angx=0.0, angy=0.0;
@@ -33,6 +34,7 @@ uint32_t lightPointer = 10;
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
 void mouseEvent(VkApplication* app, GLFWwindow* window, float frameTime);
 void keyboardEvent(VkApplication* app, GLFWwindow* window, float frameTime);
+void updates(VkApplication* app, float frameTime);
 
 void loadModels(VkApplication* app);
 void createLight(VkApplication* app);
@@ -72,7 +74,7 @@ void runScene(VkApplication *app, GLFWwindow* window)
     while (!glfwWindowShouldClose(window))
     {
         auto currentTime = std::chrono::high_resolution_clock::now();
-        frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
 
             if(fpsLock)
                 if(fps<1.0f/frameTime)  continue;
@@ -86,23 +88,30 @@ void runScene(VkApplication *app, GLFWwindow* window)
         glfwPollEvents();
         mouseEvent(app,window,frameTime);
         keyboardEvent(app,window,frameTime);
+        updates(app,frameTime);
 
-        VkResult result = app->drawFrame(frameTime, object3D);
+        if(app->checkNextFrame()!=VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            for(size_t j=0;j<object3D.size();j++){
+                object3D[j]->animationTimer += frameTime;
+                object3D[j]->updateAnimation(app->getImageIndex());
+            }
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(app,window);
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
+            VkResult result = app->drawFrame();
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
-            framebufferResized = false;
-            recreateSwapChain(app,window);
-            glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
-            proj[1][1] *= -1.0f;
-            cameras->setProjMatrix(proj);
-        }else if(result != VK_SUCCESS){
-            throw std::runtime_error("failed to present swap chain image!");
+            if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(app,window);
+            else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
+
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
+                framebufferResized = false;
+                recreateSwapChain(app,window);
+                glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+                proj[1][1] *= -1.0f;
+                cameras->setProjMatrix(proj);
+            }else if(result != VK_SUCCESS){
+                throw std::runtime_error("failed to present swap chain image!");
+            }
         }
-
-        //app->deviceWaitIdle();  //???костыль
     }
 }
 
@@ -652,6 +661,23 @@ void scrol(GLFWwindow *window, double xoffset, double yoffset)
 
     cameraAngle -= xoffset;
     updateCamera = true;
+}
+
+void updates(VkApplication* app, float frameTime)
+{
+    globalTime += frameTime;
+    float w = 0.1f;
+    lightPoint.at(0)->setLightColor(
+                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
+                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
+                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
+    object3D.at(4)->setColor(
+                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
+                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
+                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
+
+    app->resetUboWorld();
+    app->resetUboLight();
 }
 
 #endif

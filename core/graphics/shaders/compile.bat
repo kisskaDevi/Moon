@@ -22,5 +22,9 @@ C:/VulkanSDK/1.2.170.0/Bin/glslc.exe stencil/firstStencil.vert			    -o stencil/
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe stencil/firstStencil.frag			    -o stencil/firststencilfrag.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe stencil/secondStencil.vert			    -o stencil/secondstencilvert.spv
 C:/VulkanSDK/1.2.170.0/Bin/glslc.exe stencil/secondStencil.frag			    -o stencil/secondstencilfrag.spv
+C:/VulkanSDK/1.2.170.0/Bin/glslc.exe sslr/SSLR.vert				    -o sslr/sslrVert.spv
+C:/VulkanSDK/1.2.170.0/Bin/glslc.exe sslr/SSLR.frag				    -o sslr/sslrFrag.spv
+C:/VulkanSDK/1.2.170.0/Bin/glslc.exe ssao/SSAO.vert				    -o ssao/ssaoVert.spv
+C:/VulkanSDK/1.2.170.0/Bin/glslc.exe ssao/SSAO.frag				    -o ssao/ssaoFrag.spv
 
 pause

@@ -32,6 +32,10 @@ DISTFILES += \
     core/graphics/shaders/postProcessing/postProcessingShader.vert \
     core/graphics/shaders/skybox/skybox.frag \
     core/graphics/shaders/skybox/skybox.vert \
+    core/graphics/shaders/ssao/SSAO.frag \
+    core/graphics/shaders/ssao/SSAO.vert \
+    core/graphics/shaders/sslr/SSLR.frag \
+    core/graphics/shaders/sslr/SSLR.vert \
     core/graphics/shaders/stencil/firstStencil.frag \
     core/graphics/shaders/stencil/firstStencil.vert \
     core/graphics/shaders/stencil/secondStencil.frag \
@@ -62,6 +66,8 @@ SOURCES += \
     core/graphics/graphics.cpp \
     core/graphics/postProcessing.cpp \
     core/graphics/shadowGraphics.cpp \
+    core/graphics/ssao.cpp \
+    core/graphics/sslr.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/light.cpp \
@@ -79,6 +85,8 @@ HEADERS += \
     core/graphics/customfilter.h \
     core/graphics/graphics.h \
     core/graphics/shadowGraphics.h \
+    core/graphics/ssao.h \
+    core/graphics/sslr.h \
     core/transformational/transformational.h \
     core/transformational/camera.h \
     core/transformational/group.h \

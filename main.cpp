@@ -1,11 +1,4 @@
 #include "core/vulkanCore.h"
-#include "core/texture.h"
-#include "core/transformational/gltfmodel.h"
-#include "core/transformational/light.h"
-#include "core/transformational/object.h"
-#include "core/transformational/group.h"
-#include "core/transformational/camera.h"
-#include "libs/stb-master/stb_image.h"
 
 #include <chrono>
 #include <stdexcept>        // предотвращения ошибок
@@ -17,31 +10,21 @@ uint32_t HEIGHT = 800;
 
 bool framebufferResized = false;
 
-bool updateCamera = false;
-float cameraAngle = 45.0f;
+float fps = 60.0f;
+bool  fpsLock = false;
 
 GLFWwindow* window;
 
-camera *cameras;
-
+const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
 std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
 std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
 
-std::vector<std::string> SKYBOX = {
-    ExternalPath+"texture\\skybox\\left.jpg",
-    ExternalPath+"texture\\skybox\\right.jpg",
-    ExternalPath+"texture\\skybox\\front.jpg",
-    ExternalPath+"texture\\skybox\\back.jpg",
-    ExternalPath+"texture\\skybox\\top.jpg",
-    ExternalPath+"texture\\skybox\\bottom.jpg"
-};
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
 void recreateSwapChain(VkApplication* app, GLFWwindow* window);
 
-#define TestScene1
-#include "testScene1.cpp"
+#include "scene.h"
 
 int main()
 {
@@ -57,16 +40,11 @@ int main()
     app.createCommandPool();
     app.createGraphics(window);
 
-    cameras = new camera;
-        cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
-        glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
-        proj[1][1] *= -1.0f;
-        cameras->setProjMatrix(proj);
-    app.setCameraObject(cameras);
-
     app.setEmptyTexture(ZERO_TEXTURE);
 
-    createScene(&app);
+    scene testScene;
+
+    testScene.createScene(&app,WIDTH,HEIGHT);
 
     app.updateDescriptorSets();
     app.createCommandBuffers();
@@ -74,11 +52,43 @@ int main()
 
     app.resetUboWorld();
     app.resetUboLight();
-    runScene(&app,window);
+
+    static auto pastTime = std::chrono::high_resolution_clock::now();
+
+    while (!glfwWindowShouldClose(window))
+    {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
+
+            if(fpsLock)
+                if(fps<1.0f/frameTime)  continue;
+            pastTime = currentTime;
+
+            std::stringstream ss;
+            ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
+            glfwSetWindowTitle(window, ss.str().c_str());
+
+        if(app.checkNextFrame()!=VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            testScene.updateFrame(&app,window,app.getImageIndex(),frameTime,WIDTH,HEIGHT);
+
+            VkResult result = app.drawFrame();
+
+            if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,window);
+            else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
+
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
+                framebufferResized = false;
+                recreateSwapChain(&app,window);
+            }else if(result != VK_SUCCESS){
+                throw std::runtime_error("failed to present swap chain image!");
+            }
+        }
+    }
 
     app.deviceWaitIdle();
 
-    destroyScene(&app);
+    testScene.destroyScene(&app);
     app.cleanup();
 
     glfwDestroyWindow(window);

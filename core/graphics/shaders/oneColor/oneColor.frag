@@ -67,6 +67,10 @@ void main()
     outNormal = vec4(materialPC.normalTextureSet > -1 ? getNormal() : normal, 0.0f);
     outEmissiveTexture = texture(emissiveTexture, UV0);
 
+    if(outBaseColor.a!=1.0f){
+	discard;
+    }
+
 //    vec3 I = normalize(position.xyz - eyePosition.xyz);
 //    vec3 R = reflect(I, outNormal.xyz);
 //    vec4 reflection = texture(samplerCubeMap, R);

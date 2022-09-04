@@ -1,9 +1,10 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include "core/vulkanCore.h"
 #include "transformational.h"
+#include "core/graphics/graphics.h"
 
+class texture;
 class shadowGraphics;
 
 struct LightBufferObject

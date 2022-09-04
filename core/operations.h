@@ -1,7 +1,30 @@
 #ifndef OPERATIONS_H
 #define OPERATIONS_H
 
-#include "vulkanCore.h"
+#include <libs/vulkan/vulkan.h>
+
+#define GLFW_INCLUDE_VULKAN
+#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
+
+#include <vector>
+#include <string>
+#include <optional> // нужна для вызова std::optional<uint32_t>
+
+struct SwapChainSupportDetails{
+    VkSurfaceCapabilitiesKHR        capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR>   presentModes;
+};
+
+struct QueueFamilyIndices
+{
+    std::optional<uint32_t>         graphicsFamily;                     //графикческое семейство очередей
+    std::optional<uint32_t>         presentFamily;                      //семейство очередей показа
+    bool isComplete()                                                   //если оба значения не пусты, а были записаны, выводит true
+    {return graphicsFamily.has_value() && presentFamily.has_value();}
+    //std::optional это оболочка, которая не содержит значения, пока вы ей что-то не присвоите.
+    //В любой момент вы можете запросить, содержит ли он значение или нет, вызвав его has_value()функцию-член.
+};
 
 //bufferOperations
 
@@ -234,9 +257,6 @@ std::vector<QueueFamilyIndices> findQueueFamilies(
 
 VkSampleCountFlagBits getMaxUsableSampleCount(
         VkPhysicalDevice                device);
-
-void outDeviceInfo(
-        std::vector<physicalDevice>&    physicalDevices);
 
 bool isDeviceSuitable(
         VkPhysicalDevice                device,

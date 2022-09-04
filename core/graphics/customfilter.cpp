@@ -1,6 +1,7 @@
 #include "customfilter.h"
 #include "core/operations.h"
 
+#include <iostream>
 #include <array>
 
 customFilter::customFilter()
@@ -142,6 +143,7 @@ void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, Vk
 {
     uint32_t index = 0;
 
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\customFilter\\customFilterVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\customFilter\\customFilterFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

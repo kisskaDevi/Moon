@@ -1,7 +1,6 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
 
@@ -9,8 +8,9 @@
 #include <libs/glm/glm/gtc/matrix_transform.hpp>
 
 #include <string>
-#include <optional> // нужна для вызова std::optional<uint32_t>
+#include <iostream>
 #include "attachments.h"
+#include "core/operations.h"
 
 class                               texture;
 class                               cubeTexture;
@@ -57,27 +57,12 @@ struct postProcessingPushConst
     alignas(4) float                blitFactor;
 };
 
-struct SwapChainSupportDetails{
-    VkSurfaceCapabilitiesKHR        capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>   presentModes;
-};
-
 struct ShadowPassObjects{
     std::vector<object *> *base;
     std::vector<object *> *oneColor;
     std::vector<object *> *stencil;
 };
 
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t>         graphicsFamily;                     //графикческое семейство очередей
-    std::optional<uint32_t>         presentFamily;                      //семейство очередей показа
-    bool isComplete()                                                   //если оба значения не пусты, а были записаны, выводит true
-    {return graphicsFamily.has_value() && presentFamily.has_value();}
-    //std::optional это оболочка, которая не содержит значения, пока вы ей что-то не присвоите.
-    //В любой момент вы можете запросить, содержит ли он значение или нет, вызвав его has_value()функцию-член.
-};
 
 struct GBufferAttachments{
     attachments*        position;

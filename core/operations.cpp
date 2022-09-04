@@ -924,16 +924,6 @@ VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice device)
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-void outDeviceInfo(std::vector<physicalDevice>& physicalDevices)
-{
-    for(size_t i=0;i<physicalDevices.size();i++)
-    {
-        std::cout<<"Physical Device "<<i<<":"<<std::endl;
-        for(size_t j=0;j<physicalDevices.at(i).indices.size();j++)
-            std::cout<<"\tQueue Family Indices "<<physicalDevices.at(i).indices.at(j).presentFamily.value()<<std::endl;
-    }
-}
-
 bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions)
 {
     bool extensionsSupported = checkDeviceExtensionSupport(device, deviceExtensions);
@@ -967,6 +957,7 @@ bool checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<cons
 
     return requiredExtensions.empty();
 }
+
 SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     SwapChainSupportDetails details;

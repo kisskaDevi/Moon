@@ -587,6 +587,7 @@ void postProcessing::createPipelines()
     {
         uint32_t index = 0;
 
+        const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
         auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingVert.spv");
         auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingFrag.spv");
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
@@ -728,6 +729,7 @@ void postProcessing::createPipelines()
     {
         uint32_t index = 0;
 
+        const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
         auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingVert.spv");
         auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingFrag.spv");
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

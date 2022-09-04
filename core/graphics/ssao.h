@@ -2,7 +2,6 @@
 #define SSAO_H
 
 #include "graphics.h"
-#include "attachments.h"
 
 class SSAOGraphics
 {

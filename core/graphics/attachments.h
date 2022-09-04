@@ -1,11 +1,7 @@
 #ifndef ATTACHMENTS_H
 #define ATTACHMENTS_H
 
-#define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3native.h>
+#include <libs/vulkan/vulkan.h>
 #include <vector>
 
 struct imageInfo{

@@ -94,6 +94,7 @@ void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
 {
     uint32_t index = 0;
 
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondvert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondfrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

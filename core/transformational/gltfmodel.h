@@ -7,7 +7,6 @@
 #include <fstream>
 #include <vector>
 
-#include "core/vulkanCore.h"
 #include "core/texture.h"
 
 #define GLM_FORCE_RADIANS

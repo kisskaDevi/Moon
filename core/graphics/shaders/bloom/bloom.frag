@@ -56,6 +56,10 @@ void main()
     outNormal = vec4(0.0f,0.0f,0.0f,0.0f);
     outEmissiveTexture = outColor+texture(emissiveTexture, UV0);
 
+    if(outBaseColor.a!=1.0f){
+	discard;
+    }
+
     outPosition.a = depth;
 
     if(storage.depth>glPosition.z/glPosition.w){

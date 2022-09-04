@@ -173,6 +173,7 @@ void shadowGraphics::Shadow::Destroy(VkDevice* device)
 
 void shadowGraphics::Shadow::createPipeline(VkDevice* device, shadowInfo info)
 {
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\shadow\\shad.spv");
     VkShaderModule vertShaderModule = createShaderModule(device,vertShaderCode);
 

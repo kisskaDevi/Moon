@@ -2,10 +2,7 @@
 #define VULKANCORE_H
 
 #define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3native.h>
+#include <libs/vulkan/vulkan.h>
 
 class camera;
 struct gltfModel;
@@ -31,7 +28,6 @@ template <> class light<spotLight>;
 
 const int MAX_FRAMES_IN_FLIGHT = 3;
 
-const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
 const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
@@ -49,9 +45,6 @@ class VkApplication
 {
 public:
     VkApplication();
-
-    void initializeVulkan();
-    void mainLoop(GLFWwindow* window, bool &framebufferResized);
     void cleanup();
 
     uint32_t                                    getImageCount();

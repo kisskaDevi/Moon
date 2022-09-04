@@ -143,6 +143,7 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
 {
     uint32_t index = 0;
 
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\ssao\\ssaoVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\ssao\\ssaoFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

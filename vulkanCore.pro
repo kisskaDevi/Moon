@@ -78,7 +78,7 @@ SOURCES += \
     core/vulkanCore.cpp\
     physicalobject.cpp \
     main.cpp \
-    testScene1.cpp
+    scene.cpp
 
 HEADERS += \
     core/graphics/attachments.h \
@@ -96,6 +96,7 @@ HEADERS += \
     physicalobject.h \
     core/operations.h \
     core/texture.h \
-    core/vulkanCore.h
+    core/vulkanCore.h \
+    scene.h
 
 win32:RC_ICONS += texture/icon.ico

@@ -1,7 +1,8 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "vulkanCore.h"
+#include <string>
+#include <vector>
 #include "operations.h"
 
 namespace tinygltf{
@@ -176,7 +177,6 @@ private:
     }sampler;
 
     std::vector<std::string> TEXTURE_PATH;
-    VkApplication* app;
 
 public:
     cubeTexture(const std::vector<std::string> & TEXTURE_PATH);
@@ -190,7 +190,6 @@ public:
             VkCommandPool*      commandPool);
     void createTextureImageView(VkDevice* device);
     void createTextureSampler(VkDevice* device, struct textureSampler TextureSampler);
-    void setVkApplication(VkApplication* app);
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 

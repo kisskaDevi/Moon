@@ -2,7 +2,6 @@
 #define SSLR_H
 
 #include "graphics.h"
-#include "attachments.h"
 
 class SSLRGraphics
 {

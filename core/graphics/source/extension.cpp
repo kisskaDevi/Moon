@@ -33,6 +33,7 @@ void graphics::bloomExtension::createPipeline(VkDevice* device, imageInfo* pInfo
 {
     uint32_t index = 0;
 
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\bloom\\vertBloom.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\bloom\\fragBloom.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
@@ -204,6 +205,7 @@ void graphics::oneColorExtension::createPipeline(VkDevice* device, imageInfo* pI
 {
     uint32_t index = 0;
 
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\oneColor\\oneColorVert.spv");   //считываем шейдеры
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\oneColor\\oneColorFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);                      //создаём шейдерные модули
@@ -380,6 +382,7 @@ void graphics::StencilExtension::createFirstPipeline(VkDevice* device, imageInfo
 {
     uint32_t index = 0;
 
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\firststencilvert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\firststencilfrag.spv");
     //создаём шейдерные модули
@@ -533,6 +536,7 @@ void graphics::StencilExtension::createSecondPipeline(VkDevice* device, imageInf
 {
     uint32_t index = 0;
 
+    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\secondstencilvert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\stencil\\secondstencilfrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

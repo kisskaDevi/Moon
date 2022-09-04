@@ -1,5 +1,4 @@
 #include "graphics.h"
-#include "core/operations.h"
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 #include "core/transformational/camera.h"

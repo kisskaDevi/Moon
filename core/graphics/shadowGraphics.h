@@ -1,7 +1,8 @@
 #ifndef SHADOWGRAPHICS_H
 #define SHADOWGRAPHICS_H
 
-#include "core/vulkanCore.h"
+#include "core/graphics/graphics.h"
+#include <libs/vulkan/vulkan.h>
 
 struct shadowInfo{
     uint32_t                    imageCount;

@@ -291,7 +291,6 @@ void cubeTexture::createTextureSampler(VkDevice* device, struct textureSampler T
     sampler.enable = true;
 }
 
-void                cubeTexture::setVkApplication(VkApplication* app){this->app=app;}
 void                cubeTexture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
 void                cubeTexture::setTextureFormat(VkFormat format){image.format = format;}
 

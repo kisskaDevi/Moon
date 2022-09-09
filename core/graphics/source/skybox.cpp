@@ -5,7 +5,7 @@
 
 #include <array>
 
-void graphics::Skybox::Destroy(VkDevice* device)
+void deferredGraphics::Skybox::Destroy(VkDevice* device)
 {
     vkDestroyPipeline(*device, Pipeline, nullptr);
     vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
@@ -19,7 +19,7 @@ void graphics::Skybox::Destroy(VkDevice* device)
     }
 }
 
-void graphics::Skybox::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+void deferredGraphics::Skybox::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     uniformBuffers.resize(imageCount);
     uniformBuffersMemory.resize(imageCount);
@@ -34,7 +34,7 @@ void graphics::Skybox::createUniformBuffers(VkPhysicalDevice* physicalDevice, Vk
     }
 }
 
-void graphics::Skybox::createDescriptorSetLayout(VkDevice* device)
+void deferredGraphics::Skybox::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
@@ -58,7 +58,7 @@ void graphics::Skybox::createDescriptorSetLayout(VkDevice* device)
         throw std::runtime_error("failed to create Skybox descriptor set layout!");
 }
 
-void graphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -195,7 +195,7 @@ void graphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::createSkyboxDescriptorPool()
+void deferredGraphics::createSkyboxDescriptorPool()
 {
     size_t index = 0;
 
@@ -215,7 +215,7 @@ void graphics::createSkyboxDescriptorPool()
         throw std::runtime_error("failed to create Skybox descriptor pool!");
 }
 
-void graphics::createSkyboxDescriptorSets()
+void deferredGraphics::createSkyboxDescriptorSets()
 {
     skybox.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, skybox.DescriptorSetLayout);
@@ -228,7 +228,7 @@ void graphics::createSkyboxDescriptorSets()
         throw std::runtime_error("failed to allocate Skybox descriptor sets!");
 }
 
-void graphics::updateSkyboxDescriptorSets()
+void deferredGraphics::updateSkyboxDescriptorSets()
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -264,7 +264,7 @@ void graphics::updateSkyboxDescriptorSets()
     }
 }
 
-void graphics::Skybox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void deferredGraphics::Skybox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     if(objects.size()!=0)
     {

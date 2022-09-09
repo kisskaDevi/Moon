@@ -1,5 +1,11 @@
 #include "scene.h"
 
+bool updateLightCone = false;
+float spotAngle = 90.0f;
+
+bool updateCamera = false;
+float cameraAngle = 45.0f;
+
 scene::scene()
 {
 
@@ -29,7 +35,7 @@ void scene::createScene(VkApplication *app, uint32_t WIDTH, uint32_t HEIGHT)
 
     cameras = new camera;
         cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
-        glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+        glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
         proj[1][1] *= -1.0f;
         cameras->setProjMatrix(proj);
     app->setCameraObject(cameras);
@@ -48,7 +54,7 @@ void scene::updateFrame(VkApplication *app, GLFWwindow* window, uint32_t frameNu
     this->WIDTH = WIDTH;
     this->HEIGHT = HEIGHT;
 
-    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+    glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
     proj[1][1] *= -1.0f;
     cameras->setProjMatrix(proj);
 
@@ -58,7 +64,7 @@ void scene::updateFrame(VkApplication *app, GLFWwindow* window, uint32_t frameNu
     updates(app,frameTime);
 
     for(size_t j=0;j<object3D.size();j++){
-        object3D[j]->animationTimer += frameTime;
+        object3D[j]->animationTimer += timeScale*frameTime;
         object3D[j]->updateAnimation(frameNumber);
     }
 }
@@ -140,13 +146,16 @@ void scene::loadModels(VkApplication *app)
 void scene::createLight(VkApplication *app)
 {
     std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
-    std::string LIGHT_TEXTURE  = ExternalPath + "texture\\icon.PNG";
+    std::string LIGHT_TEXTURE0  = ExternalPath + "texture\\icon.PNG";
+    std::string LIGHT_TEXTURE1  = ExternalPath + "texture\\light1.jpg";
+    std::string LIGHT_TEXTURE2  = ExternalPath + "texture\\light2.jpg";
+    std::string LIGHT_TEXTURE3  = ExternalPath + "texture\\light3.jpg";
 
     glm::mat4x4 Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
     Proj[1][1] *= -1;
 
     int index = 0;
-    lightPoint.push_back(new light<pointLight>(lightSource));
+    lightPoint.push_back(new pointLight(lightSource));
     lightPoint.at(index)->setProjectionMatrix(Proj);
     lightPoint.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     groups.at(0)->addObject(lightPoint.at(index));
@@ -158,40 +167,36 @@ void scene::createLight(VkApplication *app)
     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
     Proj[1][1] *= -1;
 
-    lightSource.push_back(new light<spotLight>(LIGHT_TEXTURE));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
     lightSource.at(index)->setProjectionMatrix(Proj);
-    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     groups.at(2)->addObject(lightSource.at(index));
     index++;
     app->addLightSource(lightSource.at(lightSource.size()-1));
 
-    lightSource.push_back(new light<spotLight>(LIGHT_TEXTURE));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE1));
     lightSource.at(index)->setProjectionMatrix(Proj);
-    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     groups.at(3)->addObject(lightSource.at(index));
     index++;
     app->addLightSource(lightSource.at(lightSource.size()-1));
 
-    lightSource.push_back(new light<spotLight>(LIGHT_TEXTURE));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE2));
     lightSource.at(index)->setProjectionMatrix(Proj);
-    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     groups.at(4)->addObject(lightSource.at(index));
     index++;
     app->addLightSource(lightSource.at(lightSource.size()-1));
 
-    lightSource.push_back(new light<spotLight>(LIGHT_TEXTURE));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE3));
     lightSource.at(index)->setProjectionMatrix(Proj);
-    //lightSource.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,0.0f));
     lightSource.at(index)->setScattering(true);
     groups.at(5)->addObject(lightSource.at(index));
     index++;
     app->addLightSource(lightSource.at(lightSource.size()-1));
 
     for(int i=0;i<5;i++){
-        lightSource.push_back(new light<spotLight>(LIGHT_TEXTURE));
+        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
         lightSource.at(index)->setProjectionMatrix(Proj);
         lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
         lightSource.at(index)->setScattering(true);
@@ -199,7 +204,7 @@ void scene::createLight(VkApplication *app)
     }
 
     for(int i=0;i<5;i++){
-        lightSource.push_back(new light<spotLight>(LIGHT_TEXTURE));
+        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
         lightSource.at(index)->setProjectionMatrix(Proj);
         lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
         lightSource.at(index)->setScattering(true);
@@ -211,14 +216,14 @@ void scene::createObjects(VkApplication *app)
 {
     uint32_t index=0;
     object3D.push_back( new object(gltfModel.at(0).size(),gltfModel.at(0).data()) );
-    app->bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    app->bindStencilObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
     object3D.push_back( new object(gltfModel.at(1).size(),gltfModel.at(1).data()) );
-    app->bindStencilObject(object3D.at(index),1.0f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    app->bindStencilObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -227,10 +232,9 @@ void scene::createObjects(VkApplication *app)
     index++;
 
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
-    app->bindStencilObject(object3D.at(index),1.0f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    app->bindStencilObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->translate(glm::vec3(0.0f,0.0f,3.0f));
-    //object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object3D.at(index)->animationTimer = 0.0f;
     object3D.at(index)->animationIndex = 0;
@@ -308,7 +312,7 @@ void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
             break;
     }
 
-    glfwSetScrollCallback(window,nullptr);
+    glfwSetScrollCallback(window,scrol);
 
     if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
@@ -357,7 +361,7 @@ void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
 
     if(updateCamera){
         if(cameraAngle>0.0f){
-            glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+            glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
             proj[1][1] *= -1.0f;
             cameras->setProjMatrix(proj);
         }
@@ -605,32 +609,44 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         app->setMinAmbientFactor(minAmbientFactor);
         app->resetCmdWorld();
     }
-}
 
-void scene::scrol(GLFWwindow *window, double xoffset, double yoffset)
-{
-    static_cast<void>(window);
+    if(glfwGetKey(window,GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS)
+    {
+        if(timeScale>0.0051f){
+            timeScale -= 0.005f;
+        }
+    }
 
-    spotAngle -= yoffset;
-    updateLightCone = true;
-
-    cameraAngle -= xoffset;
-    updateCamera = true;
+    if(glfwGetKey(window,GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS)
+    {
+        timeScale += 0.005f;
+    }
 }
 
 void scene::updates(VkApplication* app, float frameTime)
 {
     globalTime += frameTime;
-    float w = 0.1f;
-    lightPoint.at(0)->setLightColor(
-                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
-                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
-                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
-    object3D.at(4)->setColor(
-                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
-                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
-                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
+    //float w = 0.1f;
+    //    lightPoint.at(0)->setLightColor(
+    //                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
+    //                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
+    //                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
+    //    object3D.at(4)->setColor(
+    //                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
+    //                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
+    //                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
+    //
+    //app->resetUboWorld();
+    //app->resetUboLight();
+}
 
-    app->resetUboWorld();
-    app->resetUboLight();
+void scrol(GLFWwindow *window, double xoffset, double yoffset)
+{
+    static_cast<void>(window);
+
+    spotAngle -= yoffset;
+    if(yoffset!=0.0) updateLightCone = true;
+
+    cameraAngle -= xoffset;
+    if(xoffset!=0.0) updateCamera = true;
 }

@@ -28,13 +28,21 @@ layout(location = 4)	in  vec4 inJoint0;
 layout(location = 5)	in  vec4 inWeight0;
 layout(location = 6)	in  vec3 inTangent;
 layout(location = 7)	in  vec3 inBitangent;
-layout(location = 8)	out float depth;
+
+layout (push_constant) uniform Stencil
+{
+    vec4 color;
+    float width;
+} stencil;
 
 layout(location = 0)	out vec4 outPosition;
+layout(location = 1)	out float depth;
+layout(location = 2)	out vec2 outUV0;
+layout(location = 3)	out vec2 outUV1;
 
 void main()
 {
-    outPosition = vec4(inPosition.xyz + inNormal * 3.0f, 1.0f);
+    outPosition = vec4(inPosition.xyz, 1.0f);
 
     mat4x4 model = local.matrix*node.matrix;
     if (node.jointCount > 0.0)
@@ -52,6 +60,9 @@ void main()
     {
 	    outPosition	    =		model * outPosition;
     }
+
+    vec3 Normal = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
+    outPosition = vec4(outPosition.xyz + Normal * stencil.width, 1.0f);
 
     gl_Position = global.proj * global.view * outPosition;
 

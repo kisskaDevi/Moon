@@ -86,5 +86,5 @@ void main()
     outColor += vec4(texture(Sampler,fragTexCoord).xyz,0.0f);
     outColor += blur(blurSampler,fragTexCoord);
     outColor += bloom();
-    //outColor += vec4(texture(sslrSampler,fragTexCoord).xyz,0.0f);
+    outColor += vec4(texture(sslrSampler,fragTexCoord).xyz,0.0f);
 }

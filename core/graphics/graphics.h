@@ -16,9 +16,7 @@ class                               texture;
 class                               cubeTexture;
 class                               object;
 class                               camera;
-template <typename type> class      light;
 class                               spotLight;
-template <> class                   light<spotLight>;
 struct                              Node;
 struct                              Material;
 struct                              MaterialBlock;
@@ -45,6 +43,7 @@ struct StorageBufferObject{
 struct StencilPushConst
 {
     alignas(16) glm::vec4           stencilColor;
+    alignas(4)  float               width;
 };
 
 struct lightPassPushConst
@@ -56,13 +55,6 @@ struct postProcessingPushConst
 {
     alignas(4) float                blitFactor;
 };
-
-struct ShadowPassObjects{
-    std::vector<object *> *base;
-    std::vector<object *> *oneColor;
-    std::vector<object *> *stencil;
-};
-
 
 struct GBufferAttachments{
     attachments*        position;
@@ -78,7 +70,7 @@ struct DeferredAttachments{
     GBufferAttachments  GBuffer;
 };
 
-class graphics
+class deferredGraphics
 {
 private:
     VkPhysicalDevice*               physicalDevice;
@@ -197,7 +189,7 @@ private:
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }skybox;
 
-    struct Second{
+    struct SpotLighting{
         VkPipelineLayout                PipelineLayout;
         VkPipelineLayout                AmbientPipelineLayout;
         VkPipeline                      Pipeline;
@@ -212,13 +204,15 @@ private:
 
         float                           minAmbientFactor = 0.05f;
 
+        std::vector<spotLight*>                     lightSources;
+
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
         void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
 
-        void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t lightSourcesCount,light<spotLight>** ppLightSources);
-    }second;
+        void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
+    }spotLighting;
 
     void createColorAttachments();
     void createDepthAttachment();
@@ -230,7 +224,7 @@ private:
     void multiSampleFrameBuffer();
 
 public:
-    graphics();
+    deferredGraphics();
     void destroy();
     void destroyEmptyTexture();
 
@@ -254,11 +248,7 @@ public:
     void createSkyboxDescriptorSets();
     void updateSkyboxDescriptorSets();
 
-    void createSecondDescriptorPool();
-    void createSecondDescriptorSets();
-    void updateSecondDescriptorSets();
-
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t lightSourceCount, light<spotLight>** pplightSources);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
     void updateUniformBuffer(uint32_t currentImage);
     void updateSkyboxUniformBuffer(uint32_t currentImage);
@@ -282,16 +272,24 @@ public:
     bool removeOneColorObject(object* object);
     bool removeStencilObject(object* object);
     bool removeSkyBoxObject(object* object);
-
     void removeBinds();
 
-    void createLightDescriptorPool(light<spotLight>* object);
-    void createLightDescriptorSets(light<spotLight>* object);
-    void updateLightDescriptorSets(light<spotLight>* object);
+    void addSpotLightSource(spotLight* lightSource, QueueFamilyIndices* queueFamilyIndices);
+    void removeSpotLightSource(spotLight* lightSource);
+    void createSpotLightDescriptorPool(spotLight* object);
+    void createSpotLightDescriptorSets(spotLight* object);
+    void updateSpotLightDescriptorSets(spotLight* object);
+
+    void createSpotLightingDescriptorPool();
+    void createSpotLightingDescriptorSets();
+    void updateSpotLightingDescriptorSets();
+
+    void updateSpotLightUbo(uint32_t imageIndex);
+    void updateSpotLightCmd(uint32_t imageIndex);
+    void getSpotLightCommandbuffers(std::vector<VkCommandBuffer>* commandbufferSet, uint32_t imageIndex);
 
     DeferredAttachments             getDeferredAttachments();
     std::vector<VkBuffer>&          getSceneBuffer();
-    ShadowPassObjects               getObjects();
 };
 
 class postProcessing

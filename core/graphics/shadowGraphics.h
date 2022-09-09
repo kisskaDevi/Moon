@@ -63,7 +63,7 @@ public:
     void updateDescriptorSets(uint32_t lightUniformBuffersCount, VkBuffer* plightUniformBuffers, unsigned long long sizeOfLightUniformBuffers);
 
     void createCommandBuffers();
-    void updateCommandBuffer(uint32_t frameNumber, ShadowPassObjects objects);
+    void updateCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects);
 
     void createShadow();
 

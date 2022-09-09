@@ -6,10 +6,7 @@
 
 class camera;
 struct gltfModel;
-
-template <typename type> class light;
 class spotLight;
-template <> class light<spotLight>;
 
 #include <iostream>
 #include <vector>
@@ -62,8 +59,8 @@ public:
     void                                        createModel(gltfModel* pModel);
     void                                        destroyModel(gltfModel* pModel);
 
-    void                                        addLightSource(light<spotLight>* lightSource);
-    void                                        removeLightSource(light<spotLight>* lightSource);
+    void                                        addLightSource(spotLight* lightSource);
+    void                                        removeLightSource(spotLight* lightSource);
 
     void                                        bindBaseObject(object* newObject);
     void                                        bindBloomObject(object* newObject);
@@ -125,7 +122,7 @@ private:
     SwapChainSupportDetails                     swapChainSupport;
     uint32_t                                    imageCount;
 
-    graphics                                    Graphics;
+    deferredGraphics                            DeferredGraphics;
     customFilter                                Filter;
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
@@ -147,9 +144,6 @@ private:
     updateFlag                                  lightsCmd;
     updateFlag                                  worldUbo;
     updateFlag                                  lightsUbo;
-
-    std::vector<light<spotLight>    *>          lightSources;
-
 
     std::vector<const char*>                    getRequiredExtensions();
     bool                                        checkValidationLayerSupport();

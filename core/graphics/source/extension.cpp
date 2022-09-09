@@ -5,31 +5,31 @@
 
 #include <array>
 
-void graphics::bloomExtension::Destroy(VkDevice* device)
+void deferredGraphics::bloomExtension::Destroy(VkDevice* device)
 {
     vkDestroyPipeline(*device, Pipeline, nullptr);
     vkDestroyPipelineLayout(*device, PipelineLayout, nullptr);
 }
 
-void graphics::oneColorExtension::Destroy(VkDevice* device)
+void deferredGraphics::oneColorExtension::Destroy(VkDevice* device)
 {
     vkDestroyPipeline(*device, Pipeline, nullptr);
     vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
 }
 
-void graphics::StencilExtension::DestroyFirstPipeline(VkDevice* device)
+void deferredGraphics::StencilExtension::DestroyFirstPipeline(VkDevice* device)
 {
     vkDestroyPipeline(*device, firstPipeline, nullptr);
     vkDestroyPipelineLayout(*device, firstPipelineLayout,nullptr);
 }
 
-void graphics::StencilExtension::DestroySecondPipeline(VkDevice* device)
+void deferredGraphics::StencilExtension::DestroySecondPipeline(VkDevice* device)
 {
     vkDestroyPipeline(*device, secondPipeline, nullptr);
     vkDestroyPipelineLayout(*device, secondPipelineLayout,nullptr);
 }
 
-void graphics::bloomExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::bloomExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -201,7 +201,7 @@ void graphics::bloomExtension::createPipeline(VkDevice* device, imageInfo* pInfo
         vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::oneColorExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::oneColorExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -378,7 +378,7 @@ void graphics::oneColorExtension::createPipeline(VkDevice* device, imageInfo* pI
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::StencilExtension::createFirstPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::StencilExtension::createFirstPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -532,7 +532,7 @@ void graphics::StencilExtension::createFirstPipeline(VkDevice* device, imageInfo
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::StencilExtension::createSecondPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::StencilExtension::createSecondPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -686,7 +686,7 @@ void graphics::StencilExtension::createSecondPipeline(VkDevice* device, imageInf
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::bloomExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void deferredGraphics::bloomExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: objects)
@@ -708,7 +708,7 @@ void graphics::bloomExtension::render(uint32_t frameNumber, VkCommandBuffer comm
     }
 }
 
-void graphics::bloomExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
+void deferredGraphics::bloomExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
@@ -770,7 +770,7 @@ void graphics::bloomExtension::renderNode(VkCommandBuffer commandBuffer, Node *n
         renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
 }
 
-void graphics::oneColorExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void deferredGraphics::oneColorExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: objects)
@@ -792,7 +792,7 @@ void graphics::oneColorExtension::render(uint32_t frameNumber, VkCommandBuffer c
     }
 }
 
-void graphics::oneColorExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
+void deferredGraphics::oneColorExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
@@ -854,7 +854,7 @@ void graphics::oneColorExtension::renderNode(VkCommandBuffer commandBuffer, Node
         renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
 }
 
-void graphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void deferredGraphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, firstPipeline);
     for(auto object: objects)
@@ -878,8 +878,8 @@ void graphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer co
     for(auto object: objects)
     {
         if(object->getEnable()){
-            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
             if(object->getStencilEnable()){
+                vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
                 VkDeviceSize offsets[1] = { 0 };
                 vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
                 if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
@@ -887,6 +887,7 @@ void graphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer co
 
                 StencilPushConst pushConst{};
                     pushConst.stencilColor = object->getStencilColor();
+                    pushConst.width = object->getStencilWidth();
                 vkCmdPushConstants(commandBuffers, secondPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(StencilPushConst), &pushConst);
 
                 for (auto node : object->getModel(frameNumber)->nodes){
@@ -898,7 +899,7 @@ void graphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer co
     }
 }
 
-void graphics::StencilExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
+void deferredGraphics::StencilExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
@@ -960,7 +961,7 @@ void graphics::StencilExtension::renderNode(VkCommandBuffer commandBuffer, Node 
         renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
 }
 
-void graphics::StencilExtension::stencilRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
+void deferredGraphics::StencilExtension::stencilRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
 {
     if (node->mesh)
     {

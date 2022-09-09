@@ -19,7 +19,7 @@ struct Material;
 class object : public transformational
 {
 private:
-    gltfModel**                      pModel;
+    gltfModel**                     pModel;
     uint32_t                        modelCount;
 
     VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;

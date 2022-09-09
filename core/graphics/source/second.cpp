@@ -6,7 +6,7 @@
 
 #include <array>
 
-void graphics::Second::Destroy(VkDevice* device)
+void deferredGraphics::SpotLighting::Destroy(VkDevice* device)
 {
     vkDestroyDescriptorSetLayout(*device, LightDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
@@ -24,7 +24,7 @@ void graphics::Second::Destroy(VkDevice* device)
     }
 }
 
-void graphics::Second::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+void deferredGraphics::SpotLighting::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     uniformBuffers.resize(imageCount);
     uniformBuffersMemory.resize(imageCount);
@@ -38,7 +38,7 @@ void graphics::Second::createUniformBuffers(VkPhysicalDevice* physicalDevice, Vk
                         uniformBuffersMemory[i]);
 }
 
-void graphics::Second::createDescriptorSetLayout(VkDevice* device)
+void deferredGraphics::SpotLighting::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
@@ -61,7 +61,7 @@ void graphics::Second::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
         layoutInfo.pBindings = Binding.data();
     if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass descriptor set layout!");
+        throw std::runtime_error("failed to create SpotLightingPass descriptor set layout!");
 
     index = 0;
     std::array<VkDescriptorSetLayoutBinding,3> lihgtBinding{};
@@ -87,16 +87,16 @@ void graphics::Second::createDescriptorSetLayout(VkDevice* device)
         lihgtLayoutInfo.bindingCount = static_cast<uint32_t>(lihgtBinding.size());
         lihgtLayoutInfo.pBindings = lihgtBinding.data();
     if (vkCreateDescriptorSetLayout(*device, &lihgtLayoutInfo, nullptr, &LightDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass descriptor set layout!");
+        throw std::runtime_error("failed to create SpotLightingPass descriptor set layout!");
 }
 
-void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::SpotLighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
     const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondvert.spv");
-    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondfrag.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\SpotLightingVert.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\SpotLightingFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -208,7 +208,7 @@ void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass pipeline layout!");
+        throw std::runtime_error("failed to create SpotLightingPass pipeline layout!");
 
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -227,11 +227,11 @@ void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass graphics pipeline!");
+        throw std::runtime_error("failed to create SpotLightingPass graphics pipeline!");
 
     index = 0;
-    auto vertShaderCodeScattering = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondvert.spv");
-    auto fragShaderCodeScattering = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\secondScatteringfrag.spv");
+    auto vertShaderCodeScattering = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\SpotLightingVert.spv");
+    auto fragShaderCodeScattering = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\SpotLightingScatteringFrag.spv");
     VkShaderModule vertShaderModuleScattering = createShaderModule(device, vertShaderCodeScattering);
     VkShaderModule fragShaderModuleScattering = createShaderModule(device, fragShaderCodeScattering);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStagesScattering{};
@@ -262,11 +262,11 @@ void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
         pipelineInfoScattering[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfoScattering[index].pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoScattering.size()), pipelineInfoScattering.data(), nullptr, &ScatteringPipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass graphics pipeline!");
+        throw std::runtime_error("failed to create SpotLightingPass graphics pipeline!");
 
     index = 0;
-    auto vertShaderCodeAmbient = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\AmbientSecondvert.spv");
-    auto fragShaderCodeAmbient = readFile(ExternalPath + "core\\graphics\\shaders\\secondPass\\Ambientsecondfrag.spv");
+    auto vertShaderCodeAmbient = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\AmbientSpotLightingVert.spv");
+    auto fragShaderCodeAmbient = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\AmbientSpotLightingFrag.spv");
     VkShaderModule vertShaderModuleAmbient = createShaderModule(device, vertShaderCodeAmbient);
     VkShaderModule fragShaderModuleAmbient = createShaderModule(device, fragShaderCodeAmbient);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStagesAmbient{};
@@ -305,7 +305,7 @@ void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
         ambientPipelineLayoutInfo.pushConstantRangeCount = 1;
         ambientPipelineLayoutInfo.pPushConstantRanges = ambientPushConstantRange.data();
     if (vkCreatePipelineLayout(*device, &ambientPipelineLayoutInfo, nullptr, &AmbientPipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass pipeline layout!");
+        throw std::runtime_error("failed to create SpotLightingPass pipeline layout!");
 
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfoAmbient{};
@@ -324,7 +324,7 @@ void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
         pipelineInfoAmbient[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfoAmbient[index].pDepthStencilState = &AmbientDepthStencil;
     if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoAmbient.size()), pipelineInfoAmbient.data(), nullptr, &AmbientPipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass graphics pipeline!");
+        throw std::runtime_error("failed to create SpotLightingPass graphics pipeline!");
 
     vkDestroyShaderModule(*device, fragShaderModuleAmbient, nullptr);
     vkDestroyShaderModule(*device, vertShaderModuleAmbient, nullptr);
@@ -334,7 +334,7 @@ void graphics::Second::createPipeline(VkDevice* device, imageInfo* pInfo, VkRend
     vkDestroyShaderModule(*device, vertShaderModuleScattering, nullptr);
 }
 
-void graphics::createSecondDescriptorPool()
+void deferredGraphics::createSpotLightingDescriptorPool()
 {
     uint32_t index = 0;
 
@@ -347,24 +347,24 @@ void graphics::createSecondDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SecondPass descriptor pool!");
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &spotLighting.DescriptorPool) != VK_SUCCESS)
+        throw std::runtime_error("failed to create SpotLightingPass descriptor pool!");
 }
 
-void graphics::createSecondDescriptorSets()
+void deferredGraphics::createSpotLightingDescriptorSets()
 {
-    second.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, second.DescriptorSetLayout);
+    spotLighting.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, spotLighting.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = second.DescriptorPool;
+        allocInfo.descriptorPool = spotLighting.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate SecondPass descriptor sets!");
+    if (vkAllocateDescriptorSets(*device, &allocInfo, spotLighting.DescriptorSets.data()) != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate SpotLightingPass descriptor sets!");
 }
 
-void graphics::updateSecondDescriptorSets()
+void deferredGraphics::updateSpotLightingDescriptorSets()
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -378,7 +378,7 @@ void graphics::updateSecondDescriptorSets()
             imageInfo.at(index).sampler = VK_NULL_HANDLE;
         }
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = second.uniformBuffers[i];
+            bufferInfo.buffer = spotLighting.uniformBuffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -386,7 +386,7 @@ void graphics::updateSecondDescriptorSets()
         for(index = 0; index<4;index++)
         {
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
+            descriptorWrites.at(index).dstSet = spotLighting.DescriptorSets.at(i);
             descriptorWrites.at(index).dstBinding = index;
             descriptorWrites.at(index).dstArrayElement = 0;
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
@@ -394,7 +394,7 @@ void graphics::updateSecondDescriptorSets()
             descriptorWrites.at(index).pImageInfo = &imageInfo.at(index);
         }
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = second.DescriptorSets.at(i);
+            descriptorWrites.at(index).dstSet = spotLighting.DescriptorSets.at(i);
             descriptorWrites.at(index).dstBinding = index;
             descriptorWrites.at(index).dstArrayElement = 0;
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -404,11 +404,11 @@ void graphics::updateSecondDescriptorSets()
     }
 }
 
-void graphics::Second::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t lightSourcesCount, light<spotLight>** ppLightSources)
+void deferredGraphics::SpotLighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
-    for(uint32_t lightNumber = 0; lightNumber<lightSourcesCount;lightNumber++)
+    for(uint32_t lightNumber = 0; lightNumber<lightSources.size();lightNumber++)
     {
-        if(ppLightSources[lightNumber]->isScatteringEnable())
+        if(lightSources[lightNumber]->isScatteringEnable())
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, ScatteringPipeline);
         else
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
@@ -417,7 +417,7 @@ void graphics::Second::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
             pushConst.minAmbientFactor = minAmbientFactor;
         vkCmdPushConstants(commandBuffers, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(lightPassPushConst), &pushConst);
 
-        std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],ppLightSources[lightNumber]->getDescriptorSets()[frameNumber]};
+        std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],lightSources[lightNumber]->getDescriptorSets()[frameNumber]};
         vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
         vkCmdDraw(commandBuffers, 18, 1, 0, 0);
@@ -432,7 +432,7 @@ void graphics::Second::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
     vkCmdDraw(commandBuffers, 6, 1, 0, 0);
 }
 
-void graphics::createLightDescriptorPool(light<spotLight>* object)
+void deferredGraphics::createSpotLightDescriptorPool(spotLight* object)
 {
     uint32_t index = 0;
     std::array<VkDescriptorPoolSize,3> poolSizes{};
@@ -450,20 +450,20 @@ void graphics::createLightDescriptorPool(light<spotLight>* object)
         throw std::runtime_error("failed to create light descriptor pool!");
 }
 
-void graphics::createLightDescriptorSets(light<spotLight>* object)
+void deferredGraphics::createSpotLightDescriptorSets(spotLight* object)
 {
     object->getDescriptorSets().resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, second.LightDescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, spotLighting.LightDescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = object->getDescriptorPool();
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
     if (vkAllocateDescriptorSets(*device, &allocInfo, object->getDescriptorSets().data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate SecondPass descriptor sets!");
+        throw std::runtime_error("failed to allocate SpotLightingPass descriptor sets!");
 }
 
-void graphics::updateLightDescriptorSets(light<spotLight>* object)
+void deferredGraphics::updateSpotLightDescriptorSets(spotLight* object)
 {
     for (size_t i=0; i<image.Count; i++)
     {
@@ -509,4 +509,40 @@ void graphics::updateLightDescriptorSets(light<spotLight>* object)
             descriptorWrites.at(index).pImageInfo = &lightTexture;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+}
+
+void deferredGraphics::updateSpotLightUbo(uint32_t imageIndex)
+{
+    for(auto lightSource: spotLighting.lightSources)
+        lightSource->updateLightBuffer(device,imageIndex);
+}
+
+void deferredGraphics::updateSpotLightCmd(uint32_t imageIndex)
+{
+    std::vector<object*> objects(base.objects.size()+oneColor.objects.size()+stencil.objects.size());
+
+    uint32_t counter = 0;
+    for(auto object: base.objects){
+        objects[counter] = object;
+        counter++;
+    }
+    for(auto object: oneColor.objects){
+        objects[counter] = object;
+        counter++;
+    }
+    for(auto object: stencil.objects){
+        objects[counter] = object;
+        counter++;
+    }
+
+    for(auto lightSource: spotLighting.lightSources)
+        if(lightSource->isShadowEnable())
+            lightSource->updateShadowCommandBuffer(imageIndex,objects);
+}
+
+void deferredGraphics::getSpotLightCommandbuffers(std::vector<VkCommandBuffer>* commandbufferSet, uint32_t imageIndex)
+{
+    for(auto lightSource: spotLighting.lightSources)
+        if(lightSource->isShadowEnable())
+            commandbufferSet->push_back(lightSource->getShadowCommandBuffer()[imageIndex]);
 }

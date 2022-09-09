@@ -11,6 +11,11 @@ INCLUDEPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 DEPENDPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 
 DISTFILES += \
+    core/graphics/shaders/SpotLightingPass/SpotLighting.frag \
+    core/graphics/shaders/SpotLightingPass/SpotLighting.vert \
+    core/graphics/shaders/SpotLightingPass/SpotLightingAmbient.frag \
+    core/graphics/shaders/SpotLightingPass/SpotLightingAmbient.vert \
+    core/graphics/shaders/SpotLightingPass/SpotLightingScattering.frag \
     core/graphics/shaders/bloom/bloom.frag \
     core/graphics/shaders/bloom/bloom.vert \
     core/graphics/shaders/compile.bat \
@@ -22,11 +27,6 @@ DISTFILES += \
     core/graphics/shaders/oneColor/oneColor.vert \
     core/graphics/shaders/postProcessing/firstPostProcessingShader.frag \
     core/graphics/shaders/postProcessing/firstPostProcessingShader.vert \
-    core/graphics/shaders/secondPass/second.frag \
-    core/graphics/shaders/secondPass/second.vert \
-    core/graphics/shaders/secondPass/secondAmbient.frag \
-    core/graphics/shaders/secondPass/secondAmbient.vert \
-    core/graphics/shaders/secondPass/secondScattering.frag \
     core/graphics/shaders/shadow/shadowMapShader.vert \
     core/graphics/shaders/postProcessing/postProcessingShader.frag \
     core/graphics/shaders/postProcessing/postProcessingShader.vert \

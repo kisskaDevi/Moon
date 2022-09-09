@@ -7,15 +7,14 @@
 
 #include <array>
 
-graphics::graphics(){
+deferredGraphics::deferredGraphics(){
     bloom.base = &base;
     oneColor.base = &base;
     stencil.base = &base;
 }
 
-std::vector<VkBuffer>&          graphics::getSceneBuffer()  { return base.sceneUniformBuffers;}
-ShadowPassObjects               graphics::getObjects()      { return ShadowPassObjects{&base.objects,&oneColor.objects,&stencil.objects};}
-DeferredAttachments             graphics::getDeferredAttachments()
+std::vector<VkBuffer>&          deferredGraphics::getSceneBuffer()  { return base.sceneUniformBuffers;}
+DeferredAttachments             deferredGraphics::getDeferredAttachments()
 {
     DeferredAttachments deferredAttachments{};
         deferredAttachments.image            = &Attachments[0];
@@ -28,30 +27,30 @@ DeferredAttachments             graphics::getDeferredAttachments()
     return deferredAttachments;
 }
 
-void                            graphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void                            deferredGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
 }
-void                            graphics::setEmptyTexture(std::string ZERO_TEXTURE){
+void                            deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
     this->emptyTexture = new texture(ZERO_TEXTURE);
     emptyTexture->createTextureImage(physicalDevice,device,graphicsQueue,commandPool);
     emptyTexture->createTextureImageView(device);
     emptyTexture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
 }
-void                            graphics::setCameraObject(camera* cameraObject)                 { this->cameraObject = cameraObject;}
-void                            graphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
+void                            deferredGraphics::setCameraObject(camera* cameraObject)                 { this->cameraObject = cameraObject;}
+void                            deferredGraphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
 
-void                            graphics::setMinAmbientFactor(const float& minAmbientFactor)    {second.minAmbientFactor = minAmbientFactor;}
+void                            deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    {spotLighting.minAmbientFactor = minAmbientFactor;}
 
-void graphics::destroyEmptyTexture(){
+void deferredGraphics::destroyEmptyTexture(){
     emptyTexture->destroy(device);
     delete emptyTexture;
 }
 
-void graphics::destroy()
+void deferredGraphics::destroy()
 {
     base.Destroy(device);
     bloom.Destroy(device);
@@ -59,7 +58,7 @@ void graphics::destroy()
     stencil.DestroyFirstPipeline(device);
     stencil.DestroySecondPipeline(device);
     skybox.Destroy(device);
-    second.Destroy(device);
+    spotLighting.Destroy(device);
 
     for (size_t i = 0; i < storageBuffers.size(); i++)
     {
@@ -81,7 +80,7 @@ void graphics::destroy()
         Attachments.at(i).deleteSampler(device);
 }
 
-void graphics::createStorageBuffers(uint32_t imageCount)
+void deferredGraphics::createStorageBuffers(uint32_t imageCount)
 {
     storageBuffers.resize(imageCount);
     storageBuffersMemory.resize(imageCount);
@@ -95,7 +94,7 @@ void graphics::createStorageBuffers(uint32_t imageCount)
                         storageBuffersMemory[i]);
 }
 
-void graphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition)
+void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition)
 {
     void* data;
 
@@ -108,7 +107,7 @@ void graphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mouse
     vkUnmapMemory(*device, storageBuffersMemory[currentImage]);
 }
 
-uint32_t graphics::readStorageBuffer(uint32_t currentImage)
+uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage)
 {
     void* data;
 
@@ -122,7 +121,7 @@ uint32_t graphics::readStorageBuffer(uint32_t currentImage)
 
 //=========================================================================//
 
-void graphics::createAttachments()
+void deferredGraphics::createAttachments()
 {
     if(image.Samples!=VK_SAMPLE_COUNT_1_BIT)
         createColorAttachments();
@@ -130,7 +129,7 @@ void graphics::createAttachments()
     createResolveAttachments();
 }
 
-void graphics::createColorAttachments()
+void deferredGraphics::createColorAttachments()
 {
     colorAttachments.resize(7);
     for(size_t i=0;i<3;i++)
@@ -200,7 +199,7 @@ void graphics::createColorAttachments()
                             &colorAttachments[i].imageView);
     }
 }
-void graphics::createDepthAttachment()
+void deferredGraphics::createDepthAttachment()
 {
     createImage(        physicalDevice,
                         device,
@@ -242,7 +241,7 @@ void graphics::createDepthAttachment()
     if (vkCreateSampler(*device, &SamplerInfo, nullptr, &depthAttachment.sampler) != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics sampler!");
 }
-void graphics::createResolveAttachments()
+void deferredGraphics::createResolveAttachments()
 {
     Attachments.resize(7);
     for(size_t i=0;i<2;i++)
@@ -373,12 +372,12 @@ void graphics::createResolveAttachments()
 
 //=======================================RenderPass======================//
 
-void graphics::createRenderPass()
+void deferredGraphics::createRenderPass()
 {
     if(image.Samples==VK_SAMPLE_COUNT_1_BIT) oneSampleRenderPass();
     else                                     multiSampleRenderPass();
 }
-    void graphics::oneSampleRenderPass()
+    void deferredGraphics::oneSampleRenderPass()
     {
         std::vector<VkAttachmentDescription> attachments;
         VkAttachmentDescription colorAttachment{};
@@ -532,7 +531,7 @@ void graphics::createRenderPass()
         if (vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)    //создаём проход рендеринга
             throw std::runtime_error("failed to create graphics render pass!");
     }
-    void graphics::multiSampleRenderPass()
+    void deferredGraphics::multiSampleRenderPass()
     {
         std::vector<VkAttachmentDescription> attachments;
         for(size_t i=0;i<3;i++)
@@ -748,7 +747,7 @@ void graphics::createRenderPass()
 
 //===================Framebuffers===================================
 
-void graphics::createFramebuffers()
+void deferredGraphics::createFramebuffers()
 {
     if(image.Samples == VK_SAMPLE_COUNT_1_BIT){
         oneSampleFrameBuffer();
@@ -756,7 +755,7 @@ void graphics::createFramebuffers()
         multiSampleFrameBuffer();
     }
 }
-    void graphics::oneSampleFrameBuffer()
+    void deferredGraphics::oneSampleFrameBuffer()
     {
         /* Фреймбуфер (буфер кадра) - эо объект, представляющий набор изображений, в который
          * графические конвейеры будут осуществлять рендеринг. Они затрагивают посление несколько
@@ -785,7 +784,7 @@ void graphics::createFramebuffers()
                 throw std::runtime_error("failed to create graphics framebuffer!");
         }
     }
-    void graphics::multiSampleFrameBuffer()
+    void deferredGraphics::multiSampleFrameBuffer()
     {
         framebuffers.resize(image.Count);
         for (size_t Image = 0; Image < image.Count; Image++)
@@ -812,7 +811,7 @@ void graphics::createFramebuffers()
         }
     }
 
-void graphics::createPipelines()
+void deferredGraphics::createPipelines()
 {
     base.createDescriptorSetLayout(device);
     base.createPipeline(device,&image,&renderPass);
@@ -824,12 +823,12 @@ void graphics::createPipelines()
     skybox.createDescriptorSetLayout(device);
     skybox.createPipeline(device,&image,&renderPass);
     skybox.createUniformBuffers(physicalDevice,device,image.Count);
-    second.createDescriptorSetLayout(device);
-    second.createPipeline(device,&image,&renderPass);
-    second.createUniformBuffers(physicalDevice,device,image.Count);
+    spotLighting.createDescriptorSetLayout(device);
+    spotLighting.createPipeline(device,&image,&renderPass);
+    spotLighting.createUniformBuffers(physicalDevice,device,image.Count);
 }
 
-void graphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t lightSourceCount, light<spotLight>** pplightSources)
+void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     std::vector<VkClearValue> clearValues;
     if(image.Samples == VK_SAMPLE_COUNT_1_BIT){
@@ -867,12 +866,12 @@ void graphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint
 
     vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
 
-        second.render(frameNumber,commandBuffers,lightSourceCount,pplightSources);
+        spotLighting.render(frameNumber,commandBuffers);
 
     vkCmdEndRenderPass(commandBuffers);
 }
 
-void graphics::updateUniformBuffer(uint32_t currentImage)
+void deferredGraphics::updateUniformBuffer(uint32_t currentImage)
 {
     void* data;
 
@@ -884,12 +883,12 @@ void graphics::updateUniformBuffer(uint32_t currentImage)
         memcpy(data, &baseUBO, sizeof(baseUBO));
     vkUnmapMemory(*device, base.sceneUniformBuffersMemory[currentImage]);
 
-    vkMapMemory(*device, second.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
+    vkMapMemory(*device, spotLighting.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
         memcpy(data, &baseUBO, sizeof(baseUBO));
-    vkUnmapMemory(*device, second.uniformBuffersMemory[currentImage]);
+    vkUnmapMemory(*device, spotLighting.uniformBuffersMemory[currentImage]);
 }
 
-void graphics::updateSkyboxUniformBuffer(uint32_t currentImage)
+void deferredGraphics::updateSkyboxUniformBuffer(uint32_t currentImage)
 {
     if(skybox.objects.size()!=0)
     {
@@ -905,7 +904,7 @@ void graphics::updateSkyboxUniformBuffer(uint32_t currentImage)
     }
 }
 
-void graphics::updateObjectUniformBuffer(uint32_t currentImage)
+void deferredGraphics::updateObjectUniformBuffer(uint32_t currentImage)
 {
     for(size_t i=0;i<base.objects.size();i++)
         base.objects.at(i)->updateUniformBuffer(device,currentImage);
@@ -918,17 +917,17 @@ void graphics::updateObjectUniformBuffer(uint32_t currentImage)
 }
 
 
-void graphics::createModel(gltfModel* pModel){
+void deferredGraphics::createModel(gltfModel* pModel){
     pModel->loadFromFile(physicalDevice,device,graphicsQueue,commandPool,1.0f);
     base.createModelDescriptorPool(device,pModel);
     base.createModelDescriptorSet(device,pModel,emptyTexture);
 }
 
-void graphics::destroyModel(gltfModel* pModel){
+void deferredGraphics::destroyModel(gltfModel* pModel){
     pModel->destroy(device);
 }
 
-void graphics::bindBaseObject(object *newObject)
+void deferredGraphics::bindBaseObject(object *newObject)
 {
     base.objects.push_back(newObject);
     base.objects.at(base.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
@@ -936,7 +935,7 @@ void graphics::bindBaseObject(object *newObject)
     base.createObjectDescriptorSet(device,newObject,image.Count);
 }
 
-void graphics::bindBloomObject(object *newObject)
+void deferredGraphics::bindBloomObject(object *newObject)
 {
     bloom.objects.push_back(newObject);
     bloom.objects.at(bloom.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
@@ -944,7 +943,7 @@ void graphics::bindBloomObject(object *newObject)
     bloom.base->createObjectDescriptorSet(device,newObject,image.Count);
 }
 
-void graphics::bindOneColorObject(object *newObject)
+void deferredGraphics::bindOneColorObject(object *newObject)
 {
     oneColor.objects.push_back(newObject);
     oneColor.objects.at(oneColor.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
@@ -952,7 +951,7 @@ void graphics::bindOneColorObject(object *newObject)
     oneColor.base->createObjectDescriptorSet(device,newObject,image.Count);
 }
 
-void graphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor)
+void deferredGraphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor)
 {
     newObject->setStencilEnable(false);
     newObject->setStencilWidth(lineWidth);
@@ -963,7 +962,7 @@ void graphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 l
     stencil.base->createObjectDescriptorSet(device,newObject,image.Count);
 }
 
-void graphics::bindSkyBoxObject(object *newObject, const std::vector<std::string>& TEXTURE_PATH)
+void deferredGraphics::bindSkyBoxObject(object *newObject, const std::vector<std::string>& TEXTURE_PATH)
 {
     skybox.texture = new cubeTexture(TEXTURE_PATH);
     skybox.texture->setMipLevel(0.0f);
@@ -974,7 +973,7 @@ void graphics::bindSkyBoxObject(object *newObject, const std::vector<std::string
     skybox.objects.at(skybox.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
 }
 
-bool graphics::removeBaseObject(object* object)
+bool deferredGraphics::removeBaseObject(object* object)
 {
     bool result = false;
     for(uint32_t index = 0; index<base.objects.size(); index++){
@@ -988,7 +987,7 @@ bool graphics::removeBaseObject(object* object)
     return result;
 }
 
-bool graphics::removeBloomObject(object* object)
+bool deferredGraphics::removeBloomObject(object* object)
 {
     bool result = false;
     for(uint32_t index = 0; index<bloom.objects.size(); index++){
@@ -1002,7 +1001,7 @@ bool graphics::removeBloomObject(object* object)
     return result;
 }
 
-bool graphics::removeOneColorObject(object* object)
+bool deferredGraphics::removeOneColorObject(object* object)
 {
     bool result = false;
     for(uint32_t index = 0; index<oneColor.objects.size(); index++){
@@ -1016,7 +1015,7 @@ bool graphics::removeOneColorObject(object* object)
     return result;
 }
 
-bool graphics::removeStencilObject(object* object)
+bool deferredGraphics::removeStencilObject(object* object)
 {
     bool result = false;
     for(uint32_t index = 0; index<stencil.objects.size(); index++){
@@ -1030,7 +1029,7 @@ bool graphics::removeStencilObject(object* object)
     return result;
 }
 
-bool graphics::removeSkyBoxObject(object* object)
+bool deferredGraphics::removeSkyBoxObject(object* object)
 {
     bool result = false;
     for(uint32_t index = 0; index<skybox.objects.size(); index++){
@@ -1045,7 +1044,7 @@ bool graphics::removeSkyBoxObject(object* object)
     return result;
 }
 
-void graphics::removeBinds()
+void deferredGraphics::removeBinds()
 {
     for(auto object: base.objects){
         object->destroyDescriptorPools(device);
@@ -1068,4 +1067,34 @@ void graphics::removeBinds()
     bloom.objects.clear();
     oneColor.objects.clear();
     stencil.objects.clear();
+}
+
+void deferredGraphics::addSpotLightSource(spotLight *lightSource, QueueFamilyIndices* queueFamilyIndices)
+{
+    spotLighting.lightSources.push_back(lightSource);
+    if(spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()){
+        spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()->createTextureImage(physicalDevice,device,graphicsQueue,commandPool);
+        spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()->createTextureImageView(device);
+        spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+    }
+    spotLighting.lightSources[spotLighting.lightSources.size()-1]->createUniformBuffers(physicalDevice,device,image.Count);
+    spotLighting.lightSources[spotLighting.lightSources.size()-1]->createShadow(physicalDevice,device,queueFamilyIndices,image.Count);
+    spotLighting.lightSources[spotLighting.lightSources.size()-1]->updateShadowDescriptorSets();
+    if(lightSource->isShadowEnable()){
+        spotLighting.lightSources[spotLighting.lightSources.size()-1]->createShadowCommandBuffers();
+    }
+}
+
+void deferredGraphics::removeSpotLightSource(spotLight *lightSource)
+{
+    for(uint32_t index = 0; index<spotLighting.lightSources.size(); index++){
+        if(lightSource==spotLighting.lightSources[index]){
+            if(spotLighting.lightSources[index]->getTexture()){
+                spotLighting.lightSources[index]->getTexture()->destroy(device);
+            }
+            spotLighting.lightSources[index]->destroyBuffer(device);
+            spotLighting.lightSources[index]->cleanup(device);
+            spotLighting.lightSources.erase(spotLighting.lightSources.begin()+index);
+        }
+    }
 }

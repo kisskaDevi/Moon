@@ -271,7 +271,7 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
         if(MSAASamples>maxMSAASamples)  MSAASamples = maxMSAASamples;
     }
 
-    Graphics.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
+    DeferredGraphics.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
     PostProcessing.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),&surface);
     Filter.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
     SSLR.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
@@ -283,7 +283,7 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
         info.Extent = extent;
         info.Samples = MSAASamples;
     PostProcessing.setImageProp(&info);
-    Graphics.setImageProp(&info);
+    DeferredGraphics.setImageProp(&info);
     Filter.setImageProp(&info);
     SSLR.setImageProp(&info);
     SSAO.setImageProp(&info);
@@ -293,21 +293,21 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
     PostProcessing.createFramebuffers();
     PostProcessing.createPipelines();
 
-    Graphics.createAttachments();
-    Graphics.createRenderPass();
-    Graphics.createFramebuffers();
-    Graphics.createPipelines();
-    Graphics.createStorageBuffers(imageCount);
+    DeferredGraphics.createAttachments();
+    DeferredGraphics.createRenderPass();
+    DeferredGraphics.createFramebuffers();
+    DeferredGraphics.createPipelines();
+    DeferredGraphics.createStorageBuffers(imageCount);
 
     PostProcessing.createDescriptorPool();
-    PostProcessing.createDescriptorSets(Graphics.getDeferredAttachments());
+    PostProcessing.createDescriptorSets(DeferredGraphics.getDeferredAttachments());
 
-    Graphics.createBaseDescriptorPool();
-    Graphics.createBaseDescriptorSets();
-    Graphics.createSkyboxDescriptorPool();
-    Graphics.createSkyboxDescriptorSets();
-    Graphics.createSecondDescriptorPool();
-    Graphics.createSecondDescriptorSets();
+    DeferredGraphics.createBaseDescriptorPool();
+    DeferredGraphics.createBaseDescriptorSets();
+    DeferredGraphics.createSkyboxDescriptorPool();
+    DeferredGraphics.createSkyboxDescriptorSets();
+    DeferredGraphics.createSpotLightingDescriptorPool();
+    DeferredGraphics.createSpotLightingDescriptorSets();
 
     Filter.setBlitAttachments(&PostProcessing.getBlitAttachment());
     Filter.setAttachments(PostProcessing.getBlitAttachments().size(),PostProcessing.getBlitAttachments().data());
@@ -328,7 +328,7 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
 
     SSLR.createDescriptorPool();
     SSLR.createDescriptorSets();
-    SSLR.updateSecondDescriptorSets(Graphics.getDeferredAttachments(),Graphics.getSceneBuffer().data());
+    SSLR.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
 
     SSAO.setSSAOAttachments(&PostProcessing.getSSAOAttachment());
 
@@ -338,14 +338,14 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
 
     SSAO.createDescriptorPool();
     SSAO.createDescriptorSets();
-    SSAO.updateSecondDescriptorSets(Graphics.getDeferredAttachments(),Graphics.getSceneBuffer().data());
+    SSAO.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
 }
 
 void VkApplication::updateDescriptorSets()
 {
-    Graphics.updateBaseDescriptorSets();
-    Graphics.updateSkyboxDescriptorSets();
-    Graphics.updateSecondDescriptorSets();
+    DeferredGraphics.updateBaseDescriptorSets();
+    DeferredGraphics.updateSkyboxDescriptorSets();
+    DeferredGraphics.updateSpotLightingDescriptorSets();
 }
 
 void VkApplication::createCommandBuffers()
@@ -354,10 +354,8 @@ void VkApplication::createCommandBuffers()
     for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
         updateCommandBuffer(imageIndex);
 
-    for(auto lightSource: lightSources)
-        if(lightSource->isShadowEnable())
-            for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
-                lightSource->updateShadowCommandBuffer(imageIndex,Graphics.getObjects());
+    for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
+        DeferredGraphics.updateSpotLightCmd(imageIndex);
 }
     void VkApplication::createCommandBuffer()
     {
@@ -384,7 +382,7 @@ void VkApplication::updateCommandBuffer(uint32_t imageIndex)
     if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("failed to begin recording command buffer!");
 
-    Graphics.render(imageIndex,commandBuffers[imageIndex],static_cast<uint32_t>(lightSources.size()),lightSources.data());
+    DeferredGraphics.render(imageIndex,commandBuffers[imageIndex]);
 
     SSLR.render(imageIndex,commandBuffers[imageIndex]);
     SSAO.render(imageIndex,commandBuffers[imageIndex]);
@@ -402,7 +400,7 @@ void VkApplication::updateCommandBuffer(uint32_t imageIndex)
             clearColorValue.uint32[3] = 0;
 
         std::vector<VkImage> blitImages(PostProcessing.getBlitAttachments().size());
-        blitImages[0] = Graphics.getDeferredAttachments().bloom->image[imageIndex];
+        blitImages[0] = DeferredGraphics.getDeferredAttachments().bloom->image[imageIndex];
         for(size_t i=1;i<PostProcessing.getBlitAttachments().size();i++){
             blitImages[i] = PostProcessing.getBlitAttachments()[i-1].image[imageIndex];
         }
@@ -483,10 +481,8 @@ VkResult VkApplication::drawFrame()
     VkSemaphore                         signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
     std::vector<VkCommandBuffer>        commandbufferSet;
 
-        for(auto lightSource: lightSources)
-            if(lightSource->isShadowEnable())
-                commandbufferSet.push_back(lightSource->getShadowCommandBuffer()[imageIndex]);
-        commandbufferSet.push_back(commandBuffers[imageIndex]);
+    DeferredGraphics.getSpotLightCommandbuffers(&commandbufferSet,imageIndex);
+    commandbufferSet.push_back(commandBuffers[imageIndex]);
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
     VkSubmitInfo submitInfo{};
@@ -525,9 +521,7 @@ VkResult VkApplication::drawFrame()
         }
         if(lightsCmd.enable)
         {
-            for(auto lightSource: lightSources)
-                if(lightSource->isShadowEnable())
-                    lightSource->updateShadowCommandBuffer(imageIndex,Graphics.getObjects());
+            DeferredGraphics.updateSpotLightCmd(imageIndex);
             if((++lightsCmd.frames)==imageCount)
                 lightsCmd.enable = false;
         }
@@ -542,22 +536,21 @@ VkResult VkApplication::drawFrame()
         }
         if(lightsUbo.enable)
         {
-            for(auto lightSource: lightSources)
-                lightSource->updateLightBuffer(&device,imageIndex);
+            DeferredGraphics.updateSpotLightUbo(imageIndex);
             if((++lightsUbo.frames)==imageCount)
                 lightsUbo.enable = false;
         }
     }
         void VkApplication::updateUniformBuffer(uint32_t imageIndex)
         {
-            Graphics.updateUniformBuffer(imageIndex);
-            Graphics.updateSkyboxUniformBuffer(imageIndex);
-            Graphics.updateObjectUniformBuffer(imageIndex);
+            DeferredGraphics.updateUniformBuffer(imageIndex);
+            DeferredGraphics.updateSkyboxUniformBuffer(imageIndex);
+            DeferredGraphics.updateObjectUniformBuffer(imageIndex);
         }
 
 void VkApplication::destroyGraphics()
 {
-    Graphics.destroy();
+    DeferredGraphics.destroy();
     Filter.destroy();
     SSAO.destroy();
     SSLR.destroy();
@@ -572,7 +565,7 @@ void VkApplication::freeCommandBuffers()
 
 void VkApplication::VkApplication::cleanup()
 {
-    Graphics.destroyEmptyTexture();
+    DeferredGraphics.destroyEmptyTexture();
     destroyGraphics();
     freeCommandBuffers();
 
@@ -610,98 +603,78 @@ void                                VkApplication::resetUboLight(){lightsUbo.ena
 void                                VkApplication::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
 
 void                                VkApplication::setEmptyTexture(std::string ZERO_TEXTURE){
-    Graphics.setEmptyTexture(ZERO_TEXTURE);
+    DeferredGraphics.setEmptyTexture(ZERO_TEXTURE);
 }
 
 void                                VkApplication::setCameraObject(camera* cameraObject){
-    Graphics.setCameraObject(cameraObject);
+    DeferredGraphics.setCameraObject(cameraObject);
 }
 
 void                                VkApplication::createModel(gltfModel *pModel){
-    Graphics.createModel(pModel);
+    DeferredGraphics.createModel(pModel);
 }
 
 void                                VkApplication::destroyModel(gltfModel* pModel){
-    Graphics.destroyModel(pModel);
+    DeferredGraphics.destroyModel(pModel);
 }
 
-void                                VkApplication::addLightSource(light<spotLight>* lightSource)
+void                                VkApplication::addLightSource(spotLight* lightSource)
 {
-    lightSources.push_back(lightSource);
-    if(lightSources[lightSources.size()-1]->getTexture()){
-        lightSources[lightSources.size()-1]->getTexture()->createTextureImage(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
-        lightSources[lightSources.size()-1]->getTexture()->createTextureImageView(&device);
-        lightSources[lightSources.size()-1]->getTexture()->createTextureSampler(&device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    }
-    lightSources[lightSources.size()-1]->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
-    lightSources[lightSources.size()-1]->createShadow(&physicalDevices.at(physicalDeviceNumber).device,&device,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),imageCount);
-    lightSources[lightSources.size()-1]->updateShadowDescriptorSets();
-    if(lightSource->isShadowEnable()){
-        lightSources[lightSources.size()-1]->createShadowCommandBuffers();
-    }
-    Graphics.createLightDescriptorPool(lightSources[lightSources.size()-1]);
-    Graphics.createLightDescriptorSets(lightSources[lightSources.size()-1]);
-    Graphics.updateLightDescriptorSets(lightSources[lightSources.size()-1]);
+    DeferredGraphics.addSpotLightSource(lightSource,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber));
+    DeferredGraphics.createSpotLightDescriptorPool(lightSource);
+    DeferredGraphics.createSpotLightDescriptorSets(lightSource);
+    DeferredGraphics.updateSpotLightDescriptorSets(lightSource);
 }
-void                                VkApplication::removeLightSource(light<spotLight>* lightSource)
+void                                VkApplication::removeLightSource(spotLight* lightSource)
 {
-    for(uint32_t index = 0; index<lightSources.size(); index++){
-        if(lightSource==lightSources[index]){
-            if(lightSources[index]->getTexture()){
-                lightSources[index]->getTexture()->destroy(&device);
-            }
-            lightSources[index]->destroyBuffer(&device);
-            lightSources[index]->cleanup(&device);
-            lightSources.erase(lightSources.begin()+index);
-        }
-    }
+    DeferredGraphics.removeSpotLightSource(lightSource);
 }
 
 void                                VkApplication::bindBaseObject(object* newObject){
-    Graphics.bindBaseObject(newObject);
+    DeferredGraphics.bindBaseObject(newObject);
 }
 void                                VkApplication::bindBloomObject(object* newObject){
-    Graphics.bindBloomObject(newObject);
+    DeferredGraphics.bindBloomObject(newObject);
 }
 void                                VkApplication::bindOneColorObject(object* newObject){
-    Graphics.bindOneColorObject(newObject);
+    DeferredGraphics.bindOneColorObject(newObject);
 }
 void                                VkApplication::bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor){
-    Graphics.bindStencilObject(newObject,lineWidth,lineColor);
+    DeferredGraphics.bindStencilObject(newObject,lineWidth,lineColor);
 }
 void                                VkApplication::bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH){
-    Graphics.bindSkyBoxObject(newObject,TEXTURE_PATH);
+    DeferredGraphics.bindSkyBoxObject(newObject,TEXTURE_PATH);
 }
 
 bool                                VkApplication::removeBaseObject(object* object){
-    return Graphics.removeBaseObject(object);
+    return DeferredGraphics.removeBaseObject(object);
 }
 bool                                VkApplication::removeBloomObject(object* object){
-    return Graphics.removeBloomObject(object);
+    return DeferredGraphics.removeBloomObject(object);
 }
 bool                                VkApplication::removeOneColorObject(object* object){
-    return Graphics.removeOneColorObject(object);
+    return DeferredGraphics.removeOneColorObject(object);
 }
 bool                                VkApplication::removeStencilObject(object* object){
-    return Graphics.removeStencilObject(object);
+    return DeferredGraphics.removeStencilObject(object);
 }
 bool                                VkApplication::removeSkyBoxObject(object* object){
-    return Graphics.removeSkyBoxObject(object);
+    return DeferredGraphics.removeSkyBoxObject(object);
 }
 
 void                                VkApplication::removeBinds(){
-    Graphics.removeBinds();
+    DeferredGraphics.removeBinds();
 }
 
 void                                VkApplication::setMinAmbientFactor(const float& minAmbientFactor){
-    Graphics.setMinAmbientFactor(minAmbientFactor);
+    DeferredGraphics.setMinAmbientFactor(minAmbientFactor);
 }
 
 void                                VkApplication::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition){
-    Graphics.updateStorageBuffer(currentImage,mousePosition);
+    DeferredGraphics.updateStorageBuffer(currentImage,mousePosition);
 }
 uint32_t                            VkApplication::readStorageBuffer(uint32_t currentImage){
-    return Graphics.readStorageBuffer(currentImage);
+    return DeferredGraphics.readStorageBuffer(currentImage);
 }
 
 void                                VkApplication::deviceWaitIdle()

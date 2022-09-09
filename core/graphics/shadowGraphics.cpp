@@ -400,7 +400,7 @@ void shadowGraphics::createCommandBuffers()
         throw std::runtime_error("failed to allocate shadowGraphics command buffers!");
 }
 
-void shadowGraphics::updateCommandBuffer(uint32_t frameNumber, ShadowPassObjects objects)
+void shadowGraphics::updateCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects)
 {
     VkClearValue clearValues{};
         clearValues.depthStencil.depth = 1.0f;
@@ -444,41 +444,11 @@ void shadowGraphics::updateCommandBuffer(uint32_t frameNumber, ShadowPassObjects
         vkCmdSetScissor(shadowCommandBuffer[frameNumber], 0, 1, &scissor);
 
         vkCmdBindPipeline(shadowCommandBuffer[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
-        for(auto object: *objects.base)
+        for(auto object: objects)
         {
             if(object->getEnable()){
                 VkDeviceSize offsets[1] = { 0 };
                 vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
-                if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-                for (auto node : object->getModel(frameNumber)->nodes){
-                    std::vector<VkDescriptorSet> descriptorSets = {shadow.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-                    renderNode(shadowCommandBuffer[frameNumber],node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
-                }
-            }
-        }
-        for(auto object: *objects.oneColor)
-        {
-            if(object->getEnable()){
-                VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
-
-                if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-                for (auto node : object->getModel(frameNumber)->nodes){
-                    std::vector<VkDescriptorSet> descriptorSets = {shadow.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-                    renderNode(shadowCommandBuffer[frameNumber],node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
-                }
-            }
-        }
-        for(auto object: *objects.stencil)
-        {
-            if(object->getEnable()){
-                VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
-
                 if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
                     vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 

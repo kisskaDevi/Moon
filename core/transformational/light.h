@@ -17,34 +17,13 @@ struct LightBufferObject
     alignas(16) glm::vec4   lightProp;
 };
 
-class pointLight
+enum spotType
 {
-private:
-    int n = 6;
-public:
-    int getn(){ return n;}
+    circle,
+    square
 };
 
-class spotLight
-{
-private:
-    int n = 1;
-public:
-    int getn()
-    { return n;}
-};
-
-enum lightType
-{
-    spot,
-    point
-};
-
-template<typename type>
-class light : public transformational {};
-
-template<>
-class light<spotLight> : public transformational
+class spotLight : public transformational
 {
 private:
     shadowGraphics                      *shadow = nullptr;
@@ -77,9 +56,9 @@ private:
 
     void updateViewMatrix();
 public:
-    light(uint32_t type = lightType::spot);
-    light(const std::string & TEXTURE_PATH, uint32_t type = lightType::spot);
-    ~light();
+    spotLight(uint32_t type = spotType::circle);
+    spotLight(const std::string & TEXTURE_PATH, uint32_t type = spotType::circle);
+    ~spotLight();
     void cleanup(VkDevice* device);
     void destroyBuffer(VkDevice* device);
 
@@ -117,7 +96,7 @@ public:
     bool                            isShadowEnable() const;
     bool                            isScatteringEnable() const;
 
-    void                            updateShadowCommandBuffer(uint32_t frameNumber, ShadowPassObjects objects);
+    void                            updateShadowCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects);
     void                            createShadowCommandBuffers();
     void                            updateShadowDescriptorSets();
     std::vector<VkCommandBuffer>&   getShadowCommandBuffer();
@@ -125,8 +104,7 @@ public:
     VkSampler&                      getShadowSampler();
 };
 
-template<>
-class light<pointLight> : public transformational
+class pointLight : public transformational
 {
 private:
     glm::mat4 projectionMatrix;
@@ -140,11 +118,11 @@ private:
 
     glm::vec4 lightColor;
 
-    std::vector<light<spotLight> *> lightSource;
+    std::vector<spotLight *> lightSource;
 
 public:
-    light(std::vector<light<spotLight> *>& lightSource);
-    ~light();
+    pointLight(std::vector<spotLight *>& lightSource);
+    ~pointLight();
 
     void setLightColor(const glm::vec4 & color);
 

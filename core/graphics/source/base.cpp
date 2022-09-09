@@ -4,7 +4,7 @@
 #include "core/transformational/gltfmodel.h"
 #include <array>
 
-void graphics::Base::Destroy(VkDevice* device)
+void deferredGraphics::Base::Destroy(VkDevice* device)
 {
     vkDestroyPipeline(*device, Pipeline, nullptr);
     vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
@@ -21,7 +21,7 @@ void graphics::Base::Destroy(VkDevice* device)
     }
 }
 
-void graphics::Base::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+void deferredGraphics::Base::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     sceneUniformBuffers.resize(imageCount);
     sceneUniformBuffersMemory.resize(imageCount);
@@ -37,7 +37,7 @@ void graphics::Base::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDe
     }
 }
 
-void graphics::Base::createDescriptorSetLayout(VkDevice* device)
+void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
@@ -138,7 +138,7 @@ void graphics::Base::createDescriptorSetLayout(VkDevice* device)
         throw std::runtime_error("failed to create base material descriptor set layout!");
 }
 
-void graphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -315,7 +315,7 @@ void graphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, VkRender
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void graphics::createBaseDescriptorPool()
+void deferredGraphics::createBaseDescriptorPool()
 {
     /* Наборы дескрипторов нельзя создавать напрямую, они должны выделяться из пула, как буферы команд.
      * Эквивалент для наборов дескрипторов неудивительно называется пулом дескрипторов . Мы напишем
@@ -344,7 +344,7 @@ void graphics::createBaseDescriptorPool()
         throw std::runtime_error("failed to create base descriptor pool!");
 }
 
-void graphics::createBaseDescriptorSets()
+void deferredGraphics::createBaseDescriptorSets()
 {
     //Теперь мы можем выделить сами наборы дескрипторов
     /* В нашем случае мы создадим один набор дескрипторов для каждого изображения цепочки подкачки, все с одинаковым макетом.
@@ -362,7 +362,7 @@ void graphics::createBaseDescriptorSets()
         throw std::runtime_error("failed to allocate base descriptor sets!");
 }
 
-void graphics::updateBaseDescriptorSets()
+void deferredGraphics::updateBaseDescriptorSets()
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -409,7 +409,7 @@ void graphics::updateBaseDescriptorSets()
     }
 }
 
-void graphics::Base::createObjectDescriptorPool(VkDevice* device, object* object, uint32_t imageCount)
+void deferredGraphics::Base::createObjectDescriptorPool(VkDevice* device, object* object, uint32_t imageCount)
 {
     size_t index = 0;
     std::vector<VkDescriptorPoolSize> DescriptorPoolSizes(1);
@@ -427,7 +427,7 @@ void graphics::Base::createObjectDescriptorPool(VkDevice* device, object* object
         throw std::runtime_error("failed to create object descriptor pool!");
 }
 
-void graphics::Base::createObjectDescriptorSet(VkDevice* device, object* object, uint32_t imageCount)
+void deferredGraphics::Base::createObjectDescriptorSet(VkDevice* device, object* object, uint32_t imageCount)
 {
     std::vector<VkDescriptorSetLayout> layouts(imageCount, ObjectDescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -456,7 +456,7 @@ void graphics::Base::createObjectDescriptorSet(VkDevice* device, object* object,
     }
 }
 
-void graphics::Base::createModelDescriptorPool(VkDevice* device, gltfModel* pModel)
+void deferredGraphics::Base::createModelDescriptorPool(VkDevice* device, gltfModel* pModel)
 {
     uint32_t imageSamplerCount = 0;
     uint32_t materialCount = 0;
@@ -492,7 +492,7 @@ void graphics::Base::createModelDescriptorPool(VkDevice* device, gltfModel* pMod
     if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &pModel->DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create object descriptor pool!");
 }
-void graphics::Base::createModelDescriptorSet(VkDevice* device, gltfModel* pModel, texture* emptyTexture)
+void deferredGraphics::Base::createModelDescriptorSet(VkDevice* device, gltfModel* pModel, texture* emptyTexture)
 {
     for (auto node : pModel->linearNodes){
         if(node->mesh){
@@ -504,7 +504,7 @@ void graphics::Base::createModelDescriptorSet(VkDevice* device, gltfModel* pMode
         createModelMaterialDescriptorSet(device, pModel, &material, emptyTexture);
     }
 }
-void graphics::Base::createModelNodeDescriptorSet(VkDevice* device, gltfModel* pModel, Node* node)
+void deferredGraphics::Base::createModelNodeDescriptorSet(VkDevice* device, gltfModel* pModel, Node* node)
 {
     if (node->mesh)
     {
@@ -529,7 +529,7 @@ void graphics::Base::createModelNodeDescriptorSet(VkDevice* device, gltfModel* p
         createModelNodeDescriptorSet(device,pModel,child);
 }
 
-void graphics::Base::createModelMaterialDescriptorSet(VkDevice* device, gltfModel* pModel, Material* material, texture* emptyTexture)
+void deferredGraphics::Base::createModelMaterialDescriptorSet(VkDevice* device, gltfModel* pModel, Material* material, texture* emptyTexture)
 {
     std::vector<VkDescriptorSetLayout> layouts(1, MaterialDescriptorSetLayout);
     VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
@@ -597,7 +597,7 @@ void graphics::Base::createModelMaterialDescriptorSet(VkDevice* device, gltfMode
     vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
-void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void deferredGraphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: objects)
@@ -619,7 +619,7 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
     }
 }
 
-void graphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
+void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {

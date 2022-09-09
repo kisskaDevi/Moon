@@ -36,7 +36,7 @@ void main()
 {
     outColor = vec4(0.0f,0.0f,0.0f,0.0f);
 
-    //outColor += SSLR();
+    outColor += SSLR();
 }
 
 vec4 SSLR()
@@ -80,8 +80,8 @@ vec4 RayMarch(vec3 reflectDir, vec3 hitCoord, mat4 view, mat4 proj)
 	rayProjectedCoord.xy = rayProjectedCoord.xy * 0.5f + 0.5f;
 	deltaz -= texture(position, rayProjectedCoord.xy).a;
 
-	if(abs(deltaz)<1.0f){
-	    if(-deltaz <= 0.0){
+	if(abs(deltaz)<3.0f){
+	    if(deltaz >= 0.0){
 		vec4 result;
 		if(dot(reflectDir, texture(normal,rayProjectedCoord.xy).xyz)>=-0.3f)
 		    result = vec4(rayProjectedCoord.xy, 0.0f, 0.0);
@@ -117,8 +117,8 @@ vec4 BinarySearch(vec3 rayStep, vec3 hitCoord, mat4 view, mat4 proj)
 	else		    hitCoord -= dir;
     }
 
-    if(deltaz>0.05f)
-	rayProjectedCoord.w=0.0f;
+    //if(deltaz>0.05f)
+        //rayProjectedCoord.w=0.0f;
 
     return rayProjectedCoord;
 }

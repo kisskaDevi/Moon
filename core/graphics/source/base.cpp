@@ -41,7 +41,7 @@ void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding, 3> Binding{};
+    std::array<VkDescriptorSetLayoutBinding, 4> Binding{};
         Binding[index].binding = index;
         Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         Binding[index].descriptorCount = 1;
@@ -59,6 +59,12 @@ void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding.at(index).pImmutableSamplers = nullptr;
+    index++;
+        Binding.at(index).binding = index;
+        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        Binding.at(index).descriptorCount = 1;
+        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding.at(index).pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
@@ -66,76 +72,9 @@ void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
     if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &SceneDescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create base uniform buffer descriptor set layout!");
 
-    index = 0;
-    std::array<VkDescriptorSetLayoutBinding, 1> uniformBufferLayoutBinding{};
-        uniformBufferLayoutBinding[index].binding = 0;
-        uniformBufferLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayoutBinding[index].descriptorCount = 1;
-        uniformBufferLayoutBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayoutBinding[index].pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
-        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferLayoutBinding.size());
-        uniformBufferLayoutInfo.pBindings = uniformBufferLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &uniformBufferLayoutInfo, nullptr, &ObjectDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base object uniform buffer descriptor set layout!");
-
-    index = 0;
-    std::array<VkDescriptorSetLayoutBinding, 1> uniformBlockLayoutBinding{};
-        uniformBlockLayoutBinding[index].binding = 0;
-        uniformBlockLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBlockLayoutBinding[index].descriptorCount = 1;
-        uniformBlockLayoutBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBlockLayoutBinding[index].pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutCreateInfo uniformBlockLayoutInfo{};
-        uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBlockLayoutBinding.size());
-        uniformBlockLayoutInfo.pBindings = uniformBlockLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &uniformBlockLayoutInfo, nullptr, &PrimitiveDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base uniform block descriptor set layout!");
-
-    index = 0;
-    std::array<VkDescriptorSetLayoutBinding, 5> materialLayoutBinding{};
-    //baseColorTexture;
-        materialLayoutBinding[index].binding = 0;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //metallicRoughnessTexture;
-        materialLayoutBinding[index].binding = 1;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //normalTexture;
-        materialLayoutBinding[index].binding = 2;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //occlusionTexture;
-        materialLayoutBinding[index].binding = 3;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //emissiveTexture;
-        materialLayoutBinding[index].binding = 4;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    VkDescriptorSetLayoutCreateInfo materialLayoutInfo{};
-        materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        materialLayoutInfo.bindingCount = static_cast<uint32_t>(materialLayoutBinding.size());
-        materialLayoutInfo.pBindings = materialLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &materialLayoutInfo, nullptr, &MaterialDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base material descriptor set layout!");
+    createObjectDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
+    createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
+    createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
 }
 
 void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -324,17 +263,18 @@ void deferredGraphics::createBaseDescriptorPool()
     uint32_t index = 0;
 
     std::array<VkDescriptorPoolSize,4> poolSizes;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);    
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
+
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -362,7 +302,7 @@ void deferredGraphics::createBaseDescriptorSets()
         throw std::runtime_error("failed to allocate base descriptor sets!");
 }
 
-void deferredGraphics::updateBaseDescriptorSets()
+void deferredGraphics::updateBaseDescriptorSets(attachment* depthAttachment)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -380,8 +320,13 @@ void deferredGraphics::updateBaseDescriptorSets()
             StorageBufferInfo.buffer = storageBuffers[i];
             StorageBufferInfo.offset = 0;
             StorageBufferInfo.range = sizeof(StorageBufferObject);
+        VkDescriptorImageInfo depthImageInfo{};
+            depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthImageInfo.imageView = depthAttachment ? depthAttachment->imageView : emptyTexture->getTextureImageView();
+            depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : emptyTexture->getTextureSampler();
 
-        std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+
+        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = base.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
@@ -398,203 +343,23 @@ void deferredGraphics::updateBaseDescriptorSets()
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(skyboxImageInfo.size());
             descriptorWrites[index].pImageInfo = skyboxImageInfo.data();
         index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = base.DescriptorSets.at(i);
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &StorageBufferInfo;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = base.DescriptorSets.at(i);
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pBufferInfo = &StorageBufferInfo;
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = base.DescriptorSets.at(i);
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &depthImageInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
-}
-
-void deferredGraphics::Base::createObjectDescriptorPool(VkDevice* device, object* object, uint32_t imageCount)
-{
-    size_t index = 0;
-    std::vector<VkDescriptorPoolSize> DescriptorPoolSizes(1);
-        DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        DescriptorPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-
-    //Мы будем выделять один из этих дескрипторов для каждого кадра. На эту структуру размера пула ссылается главный VkDescriptorPoolCreateInfo:
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = static_cast<uint32_t>(DescriptorPoolSizes.size());
-    poolInfo.pPoolSizes = DescriptorPoolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &object->getDescriptorPool()) != VK_SUCCESS)
-        throw std::runtime_error("failed to create object descriptor pool!");
-}
-
-void deferredGraphics::Base::createObjectDescriptorSet(VkDevice* device, object* object, uint32_t imageCount)
-{
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, ObjectDescriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = object->getDescriptorPool();
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        allocInfo.pSetLayouts = layouts.data();
-    object->getDescriptorSet().resize(imageCount);
-    if (vkAllocateDescriptorSets(*device, &allocInfo, object->getDescriptorSet().data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate object descriptor sets!");
-
-    for (size_t i = 0; i < imageCount; i++)
-    {
-        VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = object->getUniformBuffers()[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBuffer);
-        VkWriteDescriptorSet writeDescriptorSet{};
-            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.dstSet = object->getDescriptorSet()[i];
-            writeDescriptorSet.dstBinding = 0;
-            writeDescriptorSet.pBufferInfo = &bufferInfo;
-        vkUpdateDescriptorSets(*device, 1, &writeDescriptorSet, 0, nullptr);
-    }
-}
-
-void deferredGraphics::Base::createModelDescriptorPool(VkDevice* device, gltfModel* pModel)
-{
-    uint32_t imageSamplerCount = 0;
-    uint32_t materialCount = 0;
-    uint32_t meshCount = 0;
-    for (auto &material : pModel->materials)
-    {
-        static_cast<void>(material);
-        imageSamplerCount += 5;
-        materialCount++;
-    }
-
-    for (auto node : pModel->linearNodes){
-        if(node->mesh){
-            meshCount++;
-        }
-    }
-
-    size_t index = 0;
-    std::vector<VkDescriptorPoolSize> DescriptorPoolSizes(2);
-        DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        DescriptorPoolSizes.at(index).descriptorCount = meshCount;
-    index++;
-        DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        DescriptorPoolSizes.at(index).descriptorCount = imageSamplerCount;
-    index++;
-
-    //Мы будем выделять один из этих дескрипторов для каждого кадра. На эту структуру размера пула ссылается главный VkDescriptorPoolCreateInfo:
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(DescriptorPoolSizes.size());
-        poolInfo.pPoolSizes = DescriptorPoolSizes.data();
-        poolInfo.maxSets = meshCount+imageSamplerCount;
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &pModel->DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create object descriptor pool!");
-}
-void deferredGraphics::Base::createModelDescriptorSet(VkDevice* device, gltfModel* pModel, texture* emptyTexture)
-{
-    for (auto node : pModel->linearNodes){
-        if(node->mesh){
-            createModelNodeDescriptorSet(device, pModel, node);
-        }
-    }
-
-    for (auto &material : pModel->materials){
-        createModelMaterialDescriptorSet(device, pModel, &material, emptyTexture);
-    }
-}
-void deferredGraphics::Base::createModelNodeDescriptorSet(VkDevice* device, gltfModel* pModel, Node* node)
-{
-    if (node->mesh)
-    {
-        VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-            descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            descriptorSetAllocInfo.descriptorPool = pModel->DescriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = &PrimitiveDescriptorSetLayout;
-            descriptorSetAllocInfo.descriptorSetCount = 1;
-        if (vkAllocateDescriptorSets(*device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet) != VK_SUCCESS)
-            throw std::runtime_error("failed to allocate object descriptor sets!");
-
-        VkWriteDescriptorSet writeDescriptorSet{};
-            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.dstSet = node->mesh->uniformBuffer.descriptorSet;
-            writeDescriptorSet.dstBinding = 0;
-            writeDescriptorSet.pBufferInfo = &node->mesh->uniformBuffer.descriptor;
-        vkUpdateDescriptorSets(*device, 1, &writeDescriptorSet, 0, nullptr);
-    }
-    for (auto& child : node->children)
-        createModelNodeDescriptorSet(device,pModel,child);
-}
-
-void deferredGraphics::Base::createModelMaterialDescriptorSet(VkDevice* device, gltfModel* pModel, Material* material, texture* emptyTexture)
-{
-    std::vector<VkDescriptorSetLayout> layouts(1, MaterialDescriptorSetLayout);
-    VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-        descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        descriptorSetAllocInfo.descriptorPool = pModel->DescriptorPool;
-        descriptorSetAllocInfo.pSetLayouts = layouts.data();
-        descriptorSetAllocInfo.descriptorSetCount = 1;
-    if (vkAllocateDescriptorSets(*device, &descriptorSetAllocInfo, &material->descriptorSet) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate object descriptor sets!");
-
-    VkDescriptorImageInfo baseColorTextureInfo;
-    baseColorTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (material->pbrWorkflows.metallicRoughness)
-    {
-        baseColorTextureInfo.imageView   = material->baseColorTexture ? material->baseColorTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        baseColorTextureInfo.sampler     = material->baseColorTexture ? material->baseColorTexture->getTextureSampler()   : emptyTexture->getTextureSampler();
-    }
-    if(material->pbrWorkflows.specularGlossiness)
-    {
-        baseColorTextureInfo.imageView   = material->extension.diffuseTexture ? material->extension.diffuseTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        baseColorTextureInfo.sampler     = material->extension.diffuseTexture ? material->extension.diffuseTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-    }
-
-    VkDescriptorImageInfo metallicRoughnessTextureInfo;
-    metallicRoughnessTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (material->pbrWorkflows.metallicRoughness)
-    {
-        metallicRoughnessTextureInfo.imageView   = material->metallicRoughnessTexture ? material->metallicRoughnessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        metallicRoughnessTextureInfo.sampler     = material->metallicRoughnessTexture ? material->metallicRoughnessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-    }
-    if (material->pbrWorkflows.specularGlossiness)
-    {
-        metallicRoughnessTextureInfo.imageView   = material->extension.specularGlossinessTexture ? material->extension.specularGlossinessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        metallicRoughnessTextureInfo.sampler     = material->extension.specularGlossinessTexture ? material->extension.specularGlossinessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-    }
-
-    VkDescriptorImageInfo normalTextureInfo;
-    normalTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    normalTextureInfo.imageView   = material->normalTexture ? material->normalTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-    normalTextureInfo.sampler     = material->normalTexture ? material->normalTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-
-    VkDescriptorImageInfo occlusionTextureInfo;
-    occlusionTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    occlusionTextureInfo.imageView   = material->occlusionTexture ? material->occlusionTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-    occlusionTextureInfo.sampler     = material->occlusionTexture ? material->occlusionTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-
-    VkDescriptorImageInfo emissiveTextureInfo;
-    emissiveTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    emissiveTextureInfo.imageView   = material->emissiveTexture ? material->emissiveTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-    emissiveTextureInfo.sampler     = material->emissiveTexture ? material->emissiveTexture->getTextureSampler() : emptyTexture->getTextureSampler();
-
-    std::array<VkDescriptorImageInfo, 5> descriptorImageInfos = {baseColorTextureInfo,metallicRoughnessTextureInfo,normalTextureInfo,occlusionTextureInfo,emissiveTextureInfo};
-    std::array<VkWriteDescriptorSet, 5> descriptorWrites{};
-
-    for(size_t i=0;i<5;i++)
-    {
-        descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[i].dstSet = material->descriptorSet;
-        descriptorWrites[i].dstBinding = i;
-        descriptorWrites[i].dstArrayElement = 0;
-        descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[i].descriptorCount = 1;
-        descriptorWrites[i].pImageInfo = &descriptorImageInfos[i];
-    }
-    vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
 void deferredGraphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)

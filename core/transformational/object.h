@@ -22,6 +22,7 @@ private:
     gltfModel**                     pModel;
     uint32_t                        modelCount;
 
+    VkDescriptorSetLayout           descriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet>    descriptors;
 
@@ -54,7 +55,7 @@ public:
     object(uint32_t modelCount, gltfModel** model);
     ~object();
     void destroyUniformBuffers(VkDevice* device);
-    void destroyDescriptorPools(VkDevice* device);
+    void destroy(VkDevice* device);
 
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet();
@@ -103,6 +104,9 @@ public:
     bool                comparePrimitive(uint32_t primitive);
     uint32_t            getFirstPrimitive() const;
     uint32_t            getPrimitiveCount() const;
+
+    void                createDescriptorPool(VkDevice* device, uint32_t imageCount);
+    void                createDescriptorSet(VkDevice* device, uint32_t imageCount);
 
     float animationTimer = 0.0f;
     uint32_t animationIndex = 0;

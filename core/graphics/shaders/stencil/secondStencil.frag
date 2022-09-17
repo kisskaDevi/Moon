@@ -32,6 +32,4 @@ void main()
     if(texture(baseColorTexture, UV0).a!=1.0f){
 	discard;
     }
-
-    outPosition.a = depth;
 }

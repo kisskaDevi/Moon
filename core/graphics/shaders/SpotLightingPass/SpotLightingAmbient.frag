@@ -15,6 +15,7 @@ layout(input_attachment_index = 0, binding = 0) uniform subpassInput inPositionT
 layout(input_attachment_index = 1, binding = 1) uniform subpassInput inNormalTexture;
 layout(input_attachment_index = 2, binding = 2) uniform subpassInput inBaseColorTexture;
 layout(input_attachment_index = 3, binding = 3) uniform subpassInput inEmissiveTexture;
+layout(input_attachment_index = 4, binding = 4) uniform subpassInput inDepthTexture;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outBlur;
@@ -57,10 +58,10 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)
 
 vec4 PBR(vec4 outColor)
 {
-    //=========== PBR ===========//
     float metallic = subpassLoad(inNormalTexture).a;
+    float perceptualRoughness = subpassLoad(inPositionTexture).a;
     vec3 diffuseColor;
-    vec4 baseColor = vec4(baseColorTexture.xyz,1.0f);
+    vec4 baseColor = baseColorTexture;
     baseColor = SRGBtoLINEAR(baseColor);
 
     vec3 f0 = vec3(0.04);

@@ -3,6 +3,7 @@
 #include "transformational/camera.h"
 #include "transformational/light.h"
 #include "transformational/object.h"
+#include "transformational/gltfmodel.h"
 #include "core/graphics/shadowGraphics.h"
 
 VkApplication::VkApplication()
@@ -288,20 +289,11 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
     SSLR.setImageProp(&info);
     SSAO.setImageProp(&info);
 
-    PostProcessing.createAttachments(window, swapChainSupport);
-    PostProcessing.createRenderPass();
-    PostProcessing.createFramebuffers();
-    PostProcessing.createPipelines();
-
     DeferredGraphics.createAttachments();
     DeferredGraphics.createRenderPass();
     DeferredGraphics.createFramebuffers();
     DeferredGraphics.createPipelines();
     DeferredGraphics.createStorageBuffers(imageCount);
-
-    PostProcessing.createDescriptorPool();
-    PostProcessing.createDescriptorSets(DeferredGraphics.getDeferredAttachments());
-
     DeferredGraphics.createBaseDescriptorPool();
     DeferredGraphics.createBaseDescriptorSets();
     DeferredGraphics.createSkyboxDescriptorPool();
@@ -309,43 +301,68 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
     DeferredGraphics.createSpotLightingDescriptorPool();
     DeferredGraphics.createSpotLightingDescriptorSets();
 
+    PostProcessing.createAttachments(window, swapChainSupport);
+    PostProcessing.createRenderPass();
+    PostProcessing.createFramebuffers();
+    PostProcessing.createPipelines();
+    PostProcessing.createDescriptorPool();
+    PostProcessing.createDescriptorSets(DeferredGraphics.getDeferredAttachments());
+
     Filter.setBlitAttachments(&PostProcessing.getBlitAttachment());
     Filter.setAttachments(PostProcessing.getBlitAttachments().size(),PostProcessing.getBlitAttachments().data());
-
     Filter.createRenderPass();
     Filter.createFramebuffers();
     Filter.createPipelines();
-
     Filter.createDescriptorPool();
     Filter.createDescriptorSets();
     Filter.updateSecondDescriptorSets();
 
     SSLR.setSSLRAttachments(&PostProcessing.getSSLRAttachment());
-
     SSLR.createRenderPass();
     SSLR.createFramebuffers();
     SSLR.createPipelines();
-
     SSLR.createDescriptorPool();
     SSLR.createDescriptorSets();
     SSLR.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
 
     SSAO.setSSAOAttachments(&PostProcessing.getSSAOAttachment());
-
     SSAO.createRenderPass();
     SSAO.createFramebuffers();
     SSAO.createPipelines();
-
     SSAO.createDescriptorPool();
     SSAO.createDescriptorSets();
     SSAO.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
+
+//    TransparentLayers.resize(TransparentLayersCount);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++){
+//        TransparentLayers[i].setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
+//        TransparentLayers[i].setImageProp(&info);
+//        TransparentLayers[i].setTransparencyPass(true);
+//        TransparentLayers[i].createAttachments();
+//        TransparentLayers[i].createRenderPass();
+//        TransparentLayers[i].createFramebuffers();
+//        TransparentLayers[i].createPipelines();
+//        TransparentLayers[i].createStorageBuffers(imageCount);
+//        TransparentLayers[i].createBaseDescriptorPool();
+//        TransparentLayers[i].createBaseDescriptorSets();
+//        TransparentLayers[i].createSkyboxDescriptorPool();
+//        TransparentLayers[i].createSkyboxDescriptorSets();
+//        TransparentLayers[i].createSpotLightingDescriptorPool();
+//        TransparentLayers[i].createSpotLightingDescriptorSets();
+//    }
 }
 
 void VkApplication::updateDescriptorSets()
 {
-    DeferredGraphics.updateBaseDescriptorSets();
+    DeferredGraphics.updateBaseDescriptorSets(nullptr);
     DeferredGraphics.updateSkyboxDescriptorSets();
     DeferredGraphics.updateSpotLightingDescriptorSets();
+
+//    for(uint32_t i=0;i<TransparentLayersCount;i++){
+//        TransparentLayers[i].updateBaseDescriptorSets(nullptr);
+//        TransparentLayers[i].updateSkyboxDescriptorSets();
+//        TransparentLayers[i].updateSpotLightingDescriptorSets();
+//    }
 }
 
 void VkApplication::createCommandBuffers()
@@ -356,6 +373,12 @@ void VkApplication::createCommandBuffers()
 
     for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
         DeferredGraphics.updateSpotLightCmd(imageIndex);
+
+//    for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++){
+//        for(uint32_t i=0;i<TransparentLayersCount;i++){
+//            TransparentLayers[i].updateSpotLightCmd(imageIndex);
+//        }
+//    }
 }
     void VkApplication::createCommandBuffer()
     {
@@ -555,6 +578,8 @@ void VkApplication::destroyGraphics()
     SSAO.destroy();
     SSLR.destroy();
     PostProcessing.destroy();
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].destroy();
 }
 
 void VkApplication::freeCommandBuffers()
@@ -566,6 +591,9 @@ void VkApplication::freeCommandBuffers()
 void VkApplication::VkApplication::cleanup()
 {
     DeferredGraphics.destroyEmptyTexture();
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].destroyEmptyTexture();
+
     destroyGraphics();
     freeCommandBuffers();
 
@@ -604,70 +632,150 @@ void                                VkApplication::resetUboWorld(){worldUbo.enab
 
 void                                VkApplication::setEmptyTexture(std::string ZERO_TEXTURE){
     DeferredGraphics.setEmptyTexture(ZERO_TEXTURE);
+
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].setEmptyTexture(ZERO_TEXTURE);
 }
 
 void                                VkApplication::setCameraObject(camera* cameraObject){
     DeferredGraphics.setCameraObject(cameraObject);
+
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].setCameraObject(cameraObject);
 }
 
 void                                VkApplication::createModel(gltfModel *pModel){
-    DeferredGraphics.createModel(pModel);
+    pModel->loadFromFile(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool,1.0f);
+    pModel->createDescriptorPool(&device);
+    pModel->createDescriptorSet(&device,DeferredGraphics.getEmptyTexture());
 }
 
 void                                VkApplication::destroyModel(gltfModel* pModel){
-    DeferredGraphics.destroyModel(pModel);
+    pModel->destroy(&device);
 }
 
 void                                VkApplication::addLightSource(spotLight* lightSource)
 {
-    DeferredGraphics.addSpotLightSource(lightSource,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber));
-    DeferredGraphics.createSpotLightDescriptorPool(lightSource);
-    DeferredGraphics.createSpotLightDescriptorSets(lightSource);
-    DeferredGraphics.updateSpotLightDescriptorSets(lightSource);
+    if(lightSource->getTexture()){
+        lightSource->getTexture()->createTextureImage(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
+        lightSource->getTexture()->createTextureImageView(&device);
+        lightSource->getTexture()->createTextureSampler(&device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+    }
+    lightSource->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
+    lightSource->createShadow(&physicalDevices.at(physicalDeviceNumber).device,&device,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),imageCount);
+    lightSource->updateShadowDescriptorSets();
+    if(lightSource->isShadowEnable()){
+        lightSource->createShadowCommandBuffers();
+    }
+
+    lightSource->createDescriptorPool(&device, imageCount);
+    lightSource->createDescriptorSets(&device, imageCount);
+    lightSource->updateDescriptorSets(&device, imageCount,DeferredGraphics.getEmptyTexture());
+
+    DeferredGraphics.addSpotLightSource(lightSource);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].addSpotLightSource(lightSource);
 }
 void                                VkApplication::removeLightSource(spotLight* lightSource)
 {
+    if(lightSource->getTexture()){
+        lightSource->getTexture()->destroy(&device);
+    }
+    lightSource->destroyUniformBuffers(&device);
+    lightSource->destroy(&device);
+
     DeferredGraphics.removeSpotLightSource(lightSource);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].removeSpotLightSource(lightSource);
 }
 
-void                                VkApplication::bindBaseObject(object* newObject){
+void                                VkApplication::bindBaseObject(object* newObject)
+{
+    newObject->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
+    newObject->createDescriptorPool(&device,imageCount);
+    newObject->createDescriptorSet(&device,imageCount);
     DeferredGraphics.bindBaseObject(newObject);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].bindBaseObject(newObject);
 }
-void                                VkApplication::bindBloomObject(object* newObject){
+void                                VkApplication::bindBloomObject(object* newObject)
+{
+    newObject->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
+    newObject->createDescriptorPool(&device,imageCount);
+    newObject->createDescriptorSet(&device,imageCount);
     DeferredGraphics.bindBloomObject(newObject);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].bindBloomObject(newObject);
 }
-void                                VkApplication::bindOneColorObject(object* newObject){
+void                                VkApplication::bindOneColorObject(object* newObject)
+{
+    newObject->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
+    newObject->createDescriptorPool(&device,imageCount);
+    newObject->createDescriptorSet(&device,imageCount);
     DeferredGraphics.bindOneColorObject(newObject);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].bindOneColorObject(newObject);
 }
-void                                VkApplication::bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor){
-    DeferredGraphics.bindStencilObject(newObject,lineWidth,lineColor);
+void                                VkApplication::bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor)
+{
+    newObject->setStencilEnable(false);
+    newObject->setStencilWidth(lineWidth);
+    newObject->setStencilColor(lineColor);
+    newObject->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
+    newObject->createDescriptorPool(&device,imageCount);
+    newObject->createDescriptorSet(&device,imageCount);
+    DeferredGraphics.bindStencilObject(newObject);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].bindStencilObject(newObject);
 }
-void                                VkApplication::bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH){
+void                                VkApplication::bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH)
+{
+    newObject->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
     DeferredGraphics.bindSkyBoxObject(newObject,TEXTURE_PATH);
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].bindSkyBoxObject(newObject,TEXTURE_PATH);
 }
 
-bool                                VkApplication::removeBaseObject(object* object){
+bool                                VkApplication::removeBaseObject(object* object)
+{
+    object->destroy(&device);
+    object->destroyUniformBuffers(&device);
     return DeferredGraphics.removeBaseObject(object);
 }
-bool                                VkApplication::removeBloomObject(object* object){
+bool                                VkApplication::removeBloomObject(object* object)
+{
+    object->destroy(&device);
+    object->destroyUniformBuffers(&device);
     return DeferredGraphics.removeBloomObject(object);
 }
-bool                                VkApplication::removeOneColorObject(object* object){
+bool                                VkApplication::removeOneColorObject(object* object)
+{
+    object->destroy(&device);
+    object->destroyUniformBuffers(&device);
     return DeferredGraphics.removeOneColorObject(object);
 }
-bool                                VkApplication::removeStencilObject(object* object){
+bool                                VkApplication::removeStencilObject(object* object)
+{
+    object->destroy(&device);
+    object->destroyUniformBuffers(&device);
     return DeferredGraphics.removeStencilObject(object);
 }
-bool                                VkApplication::removeSkyBoxObject(object* object){
+bool                                VkApplication::removeSkyBoxObject(object* object)
+{
+    object->destroyUniformBuffers(&device);
     return DeferredGraphics.removeSkyBoxObject(object);
 }
 
 void                                VkApplication::removeBinds(){
     DeferredGraphics.removeBinds();
+//    for(uint32_t i=0;i<TransparentLayersCount;i++)
+//        TransparentLayers[i].removeBinds();
 }
 
 void                                VkApplication::setMinAmbientFactor(const float& minAmbientFactor){
     DeferredGraphics.setMinAmbientFactor(minAmbientFactor);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].setMinAmbientFactor(minAmbientFactor);
 }
 
 void                                VkApplication::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition){

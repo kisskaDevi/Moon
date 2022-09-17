@@ -9,6 +9,8 @@ layout(set = 0, binding = 2) buffer StorageBuffer
     float depth;
 } storage;
 
+layout(set = 0, binding = 3) uniform sampler2D depthMap;
+
 layout (push_constant) uniform MaterialPC
 {
     vec4 baseColorFactor;
@@ -50,7 +52,7 @@ void main()
 {
     int number = materialPC.number;
 
-    outPosition = vec4(position,1.0f);
+    outPosition = vec4(position,0.0f);
     //outBaseColor = texture(baseColorTexture, UV0);
     outBaseColor = vec4(0.0f);
     outNormal = vec4(0.0f,0.0f,0.0f,0.0f);
@@ -59,8 +61,6 @@ void main()
     if(texture(baseColorTexture, UV0).a!=1.0f){
 	discard;
     }
-
-    outPosition.a = depth;
 
     if(storage.depth>glPosition.z/glPosition.w){
 	if(abs(glPosition.x-storage.mousePosition.x)<0.002&&abs(glPosition.y-storage.mousePosition.y)<0.002){

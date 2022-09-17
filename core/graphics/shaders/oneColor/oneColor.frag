@@ -14,6 +14,8 @@ layout(set = 0, binding = 2) buffer StorageBuffer
     float depth;
 } storage;
 
+layout(set = 0, binding = 3) uniform sampler2D depthMap;
+
 layout (push_constant) uniform MaterialPC
 {
     vec4 baseColorFactor;
@@ -50,6 +52,7 @@ layout(location = 6)	in vec4 color;
 layout(location = 7)	in vec4 eyePosition;
 layout(location = 8)	in float depth;
 layout(location = 9)	in vec4 glPosition;
+layout(location = 10)	in float transparencyPass;
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -67,8 +70,14 @@ void main()
     outNormal = vec4(materialPC.normalTextureSet > -1 ? getNormal() : normal, 0.0f);
     outEmissiveTexture = texture(emissiveTexture, UV0);
 
-    if(outBaseColor.a!=1.0f){
-	discard;
+    if(transparencyPass==0.0){
+	if(outBaseColor.a!=1.0f){
+	    discard;
+	}
+    }else{
+	if(outBaseColor.a==1.0f){
+	    discard;
+	}
     }
 
 //    vec3 I = normalize(position.xyz - eyePosition.xyz);
@@ -132,8 +141,8 @@ void main()
     }
 
 
-    outPosition.a = depth;
-    outBaseColor = vec4(baseColor.xyz,perceptualRoughness);
+    outPosition.a = perceptualRoughness;
+    outBaseColor = baseColor;
     outNormal.a = metallic;
     if (materialPC.occlusionTextureSet > -1) {
 	    float ao = texture(occlusionTexture,UV0).r;

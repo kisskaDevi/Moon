@@ -258,6 +258,8 @@ struct gltfModel
         VkDeviceMemory memory;
     } indices;
 
+    VkDescriptorSetLayout           nodeDescriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout           materialDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool                DescriptorPool = VK_NULL_HANDLE;
 
     glm::mat4                       aabb;
@@ -298,6 +300,11 @@ struct gltfModel
     Node* nodeFromIndex(uint32_t index);
     void calculateTangent(std::vector<Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer);
     void calculateNodeTangent(Node* node, std::vector<Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer);
+
+    void createDescriptorPool(VkDevice* device);
+    void createDescriptorSet(VkDevice* device, texture* emptyTexture);
+        void createNodeDescriptorSet(VkDevice* device, Node* node);
+        void createMaterialDescriptorSet(VkDevice* device, Material* material, texture* emptyTexture);
 };
 
 struct MaterialBlock

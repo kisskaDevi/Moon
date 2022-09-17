@@ -26,6 +26,7 @@ struct UniformBufferObject{
     alignas(16) glm::mat4           view;
     alignas(16) glm::mat4           proj;
     alignas(16) glm::vec4           eyePosition;
+    alignas(4)  float               enableTransparency;
 };
 
 struct SkyboxUniformBufferObject{
@@ -51,25 +52,6 @@ struct lightPassPushConst
     alignas(4) float                minAmbientFactor;
 };
 
-struct postProcessingPushConst
-{
-    alignas(4) float                blitFactor;
-};
-
-struct GBufferAttachments{
-    attachments*        position;
-    attachments*        normal;
-    attachments*        color;
-    attachments*        emission;
-};
-
-struct DeferredAttachments{
-    attachments*        image;
-    attachments*        blur;
-    attachments*        bloom;
-    GBufferAttachments  GBuffer;
-};
-
 class deferredGraphics
 {
 private:
@@ -81,6 +63,7 @@ private:
     texture*                        emptyTexture;
     camera*                         cameraObject;
     uint32_t                        primitiveCount = 0;
+    bool                            transparencyPass = false;
 
     imageInfo                       image;
 
@@ -113,13 +96,6 @@ private:
 
         void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
         void createDescriptorSetLayout(VkDevice* device);
-        void createObjectDescriptorPool(VkDevice* device, object* object, uint32_t imageCount);
-        void createObjectDescriptorSet(VkDevice* device, object* object, uint32_t imageCount);
-
-        void createModelDescriptorPool(VkDevice* device, gltfModel* pModel);
-        void createModelDescriptorSet(VkDevice* device, gltfModel* pModel, texture* emptyTexture);
-            void createModelNodeDescriptorSet(VkDevice* device, gltfModel* pModel, Node* node);
-            void createModelMaterialDescriptorSet(VkDevice* device, gltfModel* pModel, Material* material, texture* emptyTexture);
 
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
@@ -203,8 +179,9 @@ private:
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
         float                           minAmbientFactor = 0.05f;
+        bool                            enableScattering = true;
 
-        std::vector<spotLight*>                     lightSources;
+        std::vector<spotLight*>         lightSources;
 
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
@@ -234,6 +211,10 @@ public:
     void setCameraObject(camera* cameraObject);
 
     void setMinAmbientFactor(const float& minAmbientFactor);
+    void setScattering(const bool& enableScattering);
+    void setTransparencyPass(const bool& transparencyPass);
+
+    texture* getEmptyTexture();
 
     void createAttachments();
     void createRenderPass();
@@ -242,11 +223,15 @@ public:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-    void updateBaseDescriptorSets();
+    void updateBaseDescriptorSets(attachment* depthAttachment);
 
     void createSkyboxDescriptorPool();
     void createSkyboxDescriptorSets();
     void updateSkyboxDescriptorSets();
+
+    void createSpotLightingDescriptorPool();
+    void createSpotLightingDescriptorSets();
+    void updateSpotLightingDescriptorSets();
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
@@ -258,13 +243,10 @@ public:
     void updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition);
     uint32_t readStorageBuffer(uint32_t currentImage);
 
-    void createModel(gltfModel* pModel);
-    void destroyModel(gltfModel* pModel);
-
     void bindBaseObject(object* newObject);
     void bindBloomObject(object* newObject);
     void bindOneColorObject(object* newObject);
-    void bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor);
+    void bindStencilObject(object* newObject);
     void bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
 
     bool removeBaseObject(object* object);
@@ -274,15 +256,8 @@ public:
     bool removeSkyBoxObject(object* object);
     void removeBinds();
 
-    void addSpotLightSource(spotLight* lightSource, QueueFamilyIndices* queueFamilyIndices);
+    void addSpotLightSource(spotLight* lightSource);
     void removeSpotLightSource(spotLight* lightSource);
-    void createSpotLightDescriptorPool(spotLight* object);
-    void createSpotLightDescriptorSets(spotLight* object);
-    void updateSpotLightDescriptorSets(spotLight* object);
-
-    void createSpotLightingDescriptorPool();
-    void createSpotLightingDescriptorSets();
-    void updateSpotLightingDescriptorSets();
 
     void updateSpotLightUbo(uint32_t imageIndex);
     void updateSpotLightCmd(uint32_t imageIndex);
@@ -290,89 +265,6 @@ public:
 
     DeferredAttachments             getDeferredAttachments();
     std::vector<VkBuffer>&          getSceneBuffer();
-};
-
-class postProcessing
-{
-private:
-    VkPhysicalDevice*                   physicalDevice;
-    VkDevice*                           device;
-    VkQueue*                            graphicsQueue;
-    VkCommandPool*                      commandPool;
-    QueueFamilyIndices*                 queueFamilyIndices;
-    VkSurfaceKHR*                       surface;
-
-    imageInfo                           image;
-
-    VkSwapchainKHR                      swapChain;
-    uint32_t                            swapChainAttachmentCount = 1;
-    std::vector<attachments>            swapChainAttachments;
-
-    uint32_t                            AttachmentCount = 1;
-    std::vector<attachments>            Attachments;
-
-    float                               blitFactor = 1.5f;
-    static const uint32_t               blitAttachmentCount = 8;
-    std::vector<attachments>            blitAttachments;
-    attachments                         blitAttachment;
-
-    attachments                         sslrAttachment;
-    attachments                         ssaoAttachment;
-
-    VkRenderPass                        renderPass;
-    std::vector<VkFramebuffer>          framebuffers;
-
-    struct First{
-        VkPipelineLayout                    PipelineLayout;
-        VkPipeline                          Pipeline;
-        VkDescriptorSetLayout               DescriptorSetLayout;
-        VkDescriptorPool                    DescriptorPool;
-        std::vector<VkDescriptorSet>        DescriptorSets;
-    }first;
-
-    struct Second{
-        VkPipelineLayout                    PipelineLayout;
-        VkPipeline                          Pipeline;
-        VkDescriptorSetLayout               DescriptorSetLayout;
-        VkDescriptorPool                    DescriptorPool;
-        std::vector<VkDescriptorSet>        DescriptorSets;
-    }second;
-
-    //Создание цепочки обмена
-    void createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
-    void createImageViews();
-    void createColorAttachments();
-public:
-    postProcessing();
-    void destroy();
-    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, QueueFamilyIndices* queueFamilyIndices, VkSurfaceKHR* surface);
-    void setImageProp(imageInfo* pInfo);
-
-    void  setBlitFactor(const float& blitFactor);
-    float getBlitFactor();
-
-    void createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
-    void createRenderPass();
-    void createFramebuffers();
-    void createPipelines();
-        void createDescriptorSetLayout();
-        void createFirstGraphicsPipeline();
-        void createSecondGraphicsPipeline();
-
-    void createDescriptorPool();
-    void createDescriptorSets(DeferredAttachments Attachments);
-
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
-
-    std::vector<attachments>        & getBlitAttachments();
-    attachments                     & getBlitAttachment();
-    attachments                     & getSSLRAttachment();
-    attachments                     & getSSAOAttachment();
-
-    VkSwapchainKHR                  & SwapChain();
-    VkFormat                        & SwapChainImageFormat();
-    VkExtent2D                      & SwapChainImageExtent();
-    uint32_t                        & SwapChainImageCount();
 };
 
 #endif // GRAPHICS_H

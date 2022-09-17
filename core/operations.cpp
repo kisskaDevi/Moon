@@ -1024,3 +1024,112 @@ VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& 
         return actualExtent;
     }
 }
+
+void createObjectDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    uint32_t index = 0;
+    std::array<VkDescriptorSetLayoutBinding, 1> uniformBufferLayoutBinding{};
+        uniformBufferLayoutBinding[index].binding = 0;
+        uniformBufferLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayoutBinding[index].descriptorCount = 1;
+        uniformBufferLayoutBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayoutBinding[index].pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
+        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferLayoutBinding.size());
+        uniformBufferLayoutInfo.pBindings = uniformBufferLayoutBinding.data();
+    if (vkCreateDescriptorSetLayout(*device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
+        throw std::runtime_error("failed to create base object uniform buffer descriptor set layout!");
+}
+
+void createNodeDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    uint32_t index = 0;
+    std::array<VkDescriptorSetLayoutBinding, 1> uniformBlockLayoutBinding{};
+        uniformBlockLayoutBinding[index].binding = 0;
+        uniformBlockLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBlockLayoutBinding[index].descriptorCount = 1;
+        uniformBlockLayoutBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBlockLayoutBinding[index].pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutCreateInfo uniformBlockLayoutInfo{};
+        uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBlockLayoutBinding.size());
+        uniformBlockLayoutInfo.pBindings = uniformBlockLayoutBinding.data();
+    if (vkCreateDescriptorSetLayout(*device, &uniformBlockLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
+        throw std::runtime_error("failed to create base uniform block descriptor set layout!");
+}
+
+void createMaterialDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    uint32_t index = 0;
+    std::array<VkDescriptorSetLayoutBinding, 5> materialLayoutBinding{};
+    //baseColorTexture;
+        materialLayoutBinding[index].binding = 0;
+        materialLayoutBinding[index].descriptorCount = 1;
+        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        materialLayoutBinding[index].pImmutableSamplers = nullptr;
+        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    index++;
+    //metallicRoughnessTexture;
+        materialLayoutBinding[index].binding = 1;
+        materialLayoutBinding[index].descriptorCount = 1;
+        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        materialLayoutBinding[index].pImmutableSamplers = nullptr;
+        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    index++;
+    //normalTexture;
+        materialLayoutBinding[index].binding = 2;
+        materialLayoutBinding[index].descriptorCount = 1;
+        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        materialLayoutBinding[index].pImmutableSamplers = nullptr;
+        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    index++;
+    //occlusionTexture;
+        materialLayoutBinding[index].binding = 3;
+        materialLayoutBinding[index].descriptorCount = 1;
+        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        materialLayoutBinding[index].pImmutableSamplers = nullptr;
+        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    index++;
+    //emissiveTexture;
+        materialLayoutBinding[index].binding = 4;
+        materialLayoutBinding[index].descriptorCount = 1;
+        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        materialLayoutBinding[index].pImmutableSamplers = nullptr;
+        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutCreateInfo materialLayoutInfo{};
+        materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        materialLayoutInfo.bindingCount = static_cast<uint32_t>(materialLayoutBinding.size());
+        materialLayoutInfo.pBindings = materialLayoutBinding.data();
+    if (vkCreateDescriptorSetLayout(*device, &materialLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
+        throw std::runtime_error("failed to create base material descriptor set layout!");
+}
+
+void createSpotLightDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    uint32_t index = 0;
+    std::array<VkDescriptorSetLayoutBinding,3> lihgtBinding{};
+        lihgtBinding.at(index).binding = index;
+        lihgtBinding.at(index).descriptorCount = 1;
+        lihgtBinding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        lihgtBinding.at(index).stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        lihgtBinding.at(index).pImmutableSamplers = nullptr;
+    index++;
+        lihgtBinding.at(index).binding = index;
+        lihgtBinding.at(index).descriptorCount = 1;
+        lihgtBinding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        lihgtBinding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        lihgtBinding.at(index).pImmutableSamplers = nullptr;
+    index++;
+        lihgtBinding.at(index).binding = index;
+        lihgtBinding.at(index).descriptorCount = 1;
+        lihgtBinding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        lihgtBinding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        lihgtBinding.at(index).pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutCreateInfo lihgtLayoutInfo{};
+        lihgtLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        lihgtLayoutInfo.bindingCount = static_cast<uint32_t>(lihgtBinding.size());
+        lihgtLayoutInfo.pBindings = lihgtBinding.data();
+    if (vkCreateDescriptorSetLayout(*device, &lihgtLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
+        throw std::runtime_error("failed to create SpotLightingPass descriptor set layout!");
+}

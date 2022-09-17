@@ -42,8 +42,8 @@ void deferredGraphics::SpotLighting::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding,5> Binding{};
-    for(index = 0; index<4;index++)
+    std::array<VkDescriptorSetLayoutBinding,6> Binding{};
+    for(index = 0; index<5;index++)
     {
         Binding.at(index).binding = index;
         Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
@@ -63,31 +63,7 @@ void deferredGraphics::SpotLighting::createDescriptorSetLayout(VkDevice* device)
     if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create SpotLightingPass descriptor set layout!");
 
-    index = 0;
-    std::array<VkDescriptorSetLayoutBinding,3> lihgtBinding{};
-        lihgtBinding.at(index).binding = index;
-        lihgtBinding.at(index).descriptorCount = 1;
-        lihgtBinding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        lihgtBinding.at(index).stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        lihgtBinding.at(index).pImmutableSamplers = nullptr;
-    index++;
-        lihgtBinding.at(index).binding = index;
-        lihgtBinding.at(index).descriptorCount = 1;
-        lihgtBinding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        lihgtBinding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        lihgtBinding.at(index).pImmutableSamplers = nullptr;
-    index++;
-        lihgtBinding.at(index).binding = index;
-        lihgtBinding.at(index).descriptorCount = 1;
-        lihgtBinding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        lihgtBinding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        lihgtBinding.at(index).pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutCreateInfo lihgtLayoutInfo{};
-        lihgtLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        lihgtLayoutInfo.bindingCount = static_cast<uint32_t>(lihgtBinding.size());
-        lihgtLayoutInfo.pBindings = lihgtBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &lihgtLayoutInfo, nullptr, &LightDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SpotLightingPass descriptor set layout!");
+    createSpotLightDescriptorSetLayout(device,&LightDescriptorSetLayout);
 }
 
 void deferredGraphics::SpotLighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -338,8 +314,8 @@ void deferredGraphics::createSpotLightingDescriptorPool()
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorPoolSize,5> poolSizes{};
-        for(uint32_t i = 0;i<4;i++,index++)
+    std::array<VkDescriptorPoolSize,6> poolSizes{};
+        for(uint32_t i = 0;i<5;i++,index++)
             poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
         poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -370,20 +346,23 @@ void deferredGraphics::updateSpotLightingDescriptorSets()
     {
         uint32_t index = 0;
 
-        std::array<VkDescriptorImageInfo,4> imageInfo{};
+        std::array<VkDescriptorImageInfo,5> imageInfo{};
         for(index = 0; index<4;index++)
         {
             imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.at(index).imageView = Attachments.at(3+index).imageView.at(i);
             imageInfo.at(index).sampler = VK_NULL_HANDLE;
         }
+        imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.at(index).imageView = this->depthAttachment.imageView;
+        imageInfo.at(index).sampler = VK_NULL_HANDLE;
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = spotLighting.uniformBuffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
-        std::array<VkWriteDescriptorSet,5> descriptorWrites{};
-        for(index = 0; index<4;index++)
+        std::array<VkWriteDescriptorSet,6> descriptorWrites{};
+        for(index = 0; index<5;index++)
         {
             descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.at(index).dstSet = spotLighting.DescriptorSets.at(i);
@@ -400,6 +379,7 @@ void deferredGraphics::updateSpotLightingDescriptorSets()
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.at(index).descriptorCount = 1;
             descriptorWrites.at(index).pBufferInfo = &bufferInfo;
+
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -408,7 +388,7 @@ void deferredGraphics::SpotLighting::render(uint32_t frameNumber, VkCommandBuffe
 {
     for(uint32_t lightNumber = 0; lightNumber<lightSources.size();lightNumber++)
     {
-        if(lightSources[lightNumber]->isScatteringEnable())
+        if(lightSources[lightNumber]->isScatteringEnable()&&enableScattering)
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, ScatteringPipeline);
         else
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
@@ -430,85 +410,6 @@ void deferredGraphics::SpotLighting::render(uint32_t frameNumber, VkCommandBuffe
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, AmbientPipeline);
     vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, AmbientPipelineLayout, 0, 1, &DescriptorSets[frameNumber], 0, nullptr);
     vkCmdDraw(commandBuffers, 6, 1, 0, 0);
-}
-
-void deferredGraphics::createSpotLightDescriptorPool(spotLight* object)
-{
-    uint32_t index = 0;
-    std::array<VkDescriptorPoolSize,3> poolSizes{};
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
-    index++;
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
-    index++;
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(image.Count)};
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &object->getDescriptorPool()) != VK_SUCCESS)
-        throw std::runtime_error("failed to create light descriptor pool!");
-}
-
-void deferredGraphics::createSpotLightDescriptorSets(spotLight* object)
-{
-    object->getDescriptorSets().resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, spotLighting.LightDescriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = object->getDescriptorPool();
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
-        allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, object->getDescriptorSets().data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate SpotLightingPass descriptor sets!");
-}
-
-void deferredGraphics::updateSpotLightDescriptorSets(spotLight* object)
-{
-    for (size_t i=0; i<image.Count; i++)
-    {
-        uint32_t index = 0;
-
-        VkDescriptorBufferInfo lightBufferInfo{};
-            lightBufferInfo.buffer = object->getUniformBuffers()[i];
-            lightBufferInfo.offset = 0;
-            lightBufferInfo.range = sizeof(LightBufferObject);
-        VkDescriptorImageInfo shadowImageInfo{};
-            shadowImageInfo.imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView       = object->isShadowEnable() ? object->getShadowImageView() : emptyTexture->getTextureImageView();
-            shadowImageInfo.sampler         = object->isShadowEnable() ? object->getShadowSampler() : emptyTexture->getTextureSampler();
-        VkDescriptorImageInfo lightTexture{};
-            lightTexture.imageLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            lightTexture.imageView          = object->getTexture() ? object->getTexture()->getTextureImageView() : emptyTexture->getTextureImageView();
-            lightTexture.sampler            = object->getTexture() ? object->getTexture()->getTextureSampler() : emptyTexture->getTextureSampler();
-
-        index = 0;
-        std::array<VkWriteDescriptorSet,3> descriptorWrites{};
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = object->getDescriptorSets()[i];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &lightBufferInfo;
-        index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = object->getDescriptorSets()[i];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pImageInfo = &shadowImageInfo;
-        index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = object->getDescriptorSets()[i];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pImageInfo = &lightTexture;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
 }
 
 void deferredGraphics::updateSpotLightUbo(uint32_t imageIndex)

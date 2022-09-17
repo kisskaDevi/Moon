@@ -1,5 +1,4 @@
-#include "graphics.h"
-#include "core/operations.h"
+#include "postProcessing.h"
 
 #include <cstdint>          // нужна для UINT32_MAX
 #include <array>

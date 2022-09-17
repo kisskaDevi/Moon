@@ -42,11 +42,15 @@ void object::destroyUniformBuffers(VkDevice* device)
     }
 }
 
-void object::destroyDescriptorPools(VkDevice* device)
+void object::destroy(VkDevice* device)
 {
     if (descriptorPool != VK_NULL_HANDLE){
         vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
         descriptorPool = VK_NULL_HANDLE;
+    }
+    if (descriptorSetLayout != VK_NULL_HANDLE){
+        vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr);
+        descriptorSetLayout = VK_NULL_HANDLE;
     }
 }
 
@@ -137,6 +141,55 @@ void object::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
     vkMapMemory(*device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
     vkUnmapMemory(*device, uniformBuffersMemory[currentImage]);
+}
+
+void object::createDescriptorPool(VkDevice* device, uint32_t imageCount)
+{
+    size_t index = 0;
+    std::vector<VkDescriptorPoolSize> DescriptorPoolSizes(1);
+        DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        DescriptorPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+
+    //Мы будем выделять один из этих дескрипторов для каждого кадра. На эту структуру размера пула ссылается главный VkDescriptorPoolCreateInfo:
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(DescriptorPoolSizes.size());
+    poolInfo.pPoolSizes = DescriptorPoolSizes.data();
+    poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+        throw std::runtime_error("failed to create object descriptor pool!");
+}
+
+void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
+{
+    createObjectDescriptorSetLayout(device,&descriptorSetLayout);
+
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.pSetLayouts = layouts.data();
+    descriptors.resize(imageCount);
+    if (vkAllocateDescriptorSets(*device, &allocInfo, descriptors.data()) != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate object descriptor sets!");
+
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = uniformBuffers[i];
+            bufferInfo.offset = 0;
+            bufferInfo.range = sizeof(UniformBuffer);
+        VkWriteDescriptorSet writeDescriptorSet{};
+            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.dstSet = descriptors[i];
+            writeDescriptorSet.dstBinding = 0;
+            writeDescriptorSet.pBufferInfo = &bufferInfo;
+        vkUpdateDescriptorSets(*device, 1, &writeDescriptorSet, 0, nullptr);
+    }
 }
 
 void                            object::setModel(gltfModel** model3D)                    {this->pModel = model3D;}

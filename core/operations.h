@@ -273,10 +273,32 @@ SwapChainSupportDetails querySwapChainSupport(
 
 //imageProp
 
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+        const std::vector<VkSurfaceFormatKHR>&  availableFormats);
 
-VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+VkPresentModeKHR chooseSwapPresentMode(
+        const std::vector<VkPresentModeKHR>&    availablePresentModes);
 
-VkExtent2D chooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);
+VkExtent2D chooseSwapExtent(
+        GLFWwindow* window,
+        const VkSurfaceCapabilitiesKHR&         capabilities);
+
+//decriptorSetLayout
+
+void createObjectDescriptorSetLayout(
+        VkDevice*                       device,
+        VkDescriptorSetLayout*          descriptorSetLayout);
+
+void createNodeDescriptorSetLayout(
+        VkDevice*                       device,
+        VkDescriptorSetLayout*          descriptorSetLayout);
+
+void createMaterialDescriptorSetLayout(
+        VkDevice*                       device,
+        VkDescriptorSetLayout*          descriptorSetLayout);
+
+void createSpotLightDescriptorSetLayout(
+    VkDevice*                       device,
+    VkDescriptorSetLayout*          descriptorSetLayout);
 
 #endif

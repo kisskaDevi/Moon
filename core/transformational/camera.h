@@ -3,6 +3,8 @@
 
 #include "transformational.h"
 
+#include "libs/dualQuaternion.h"
+
 class camera : public transformational
 {
 private:
@@ -14,6 +16,11 @@ private:
     glm::mat4x4         m_globalTransform;
     glm::quat           m_rotateX;
     glm::quat           m_rotateY;
+
+    quaternion<float>   quat;
+    quaternion<float>   quatX;
+    quaternion<float>   quatY;
+    dualQuaternion<float>   dQuat;
 
 public:
     camera();
@@ -36,6 +43,14 @@ public:
     void updateViewMatrix();
     glm::mat4x4 getViewMatrix() const;
     glm::vec3 getTranslate() const;
+
+    void                    setDualQuaternion(const dualQuaternion<float>& dQuat);
+    dualQuaternion<float>   getDualQuaternion()const;
+
+    void                    setQuaternion(const quaternion<float>& quat);
+    void                    setQuaternions(const quaternion<float>& quatX, const quaternion<float>& quatY);
+    quaternion<float>       getquatX()const;
+    quaternion<float>       getquatY()const;
 
 };
 

@@ -13,7 +13,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 
-const float pi = 3.141592653589793f;
 vec3 pointPosition	= texture(position, fragTexCoord).xyz;
 vec3 pointNormal	= texture(normal,   fragTexCoord).xyz;
 vec3 pointOfView	= global.eyePosition.xyz;
@@ -22,7 +21,6 @@ mat4 proj = global.proj;
 mat4 view = global.view;
 mat4 projview = proj * view;
 
-//======================== SSLR ==========================================//
 const float stepScale = 1.0;
 const float maxSteps = 40;
 const int numBinarySearchSteps = 20;
@@ -36,7 +34,7 @@ void main()
 {
     outColor = vec4(0.0f,0.0f,0.0f,0.0f);
 
-    outColor += SSLR();
+    //outColor += SSLR();
 }
 
 vec4 SSLR()

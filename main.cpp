@@ -24,7 +24,7 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
 void recreateSwapChain(VkApplication* app, GLFWwindow* window);
 
-#include "scene.h"
+#include "scene2.h"
 
 int main()
 {
@@ -42,7 +42,7 @@ int main()
 
     app.setEmptyTexture(ZERO_TEXTURE);
 
-    scene testScene;
+    scene2 testScene;
 
     testScene.createScene(&app,WIDTH,HEIGHT);
 

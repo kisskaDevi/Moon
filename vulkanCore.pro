@@ -59,9 +59,9 @@ DISTFILES += \
 SOURCES += \
     core/graphics/attachments.cpp \
     core/graphics/customfilter.cpp \
+    core/graphics/source/SpotLighting.cpp \
     core/graphics/source/base.cpp \
     core/graphics/source/extension.cpp \
-    core/graphics/source/second.cpp \
     core/graphics/source/skybox.cpp \
     core/graphics/graphics.cpp \
     core/graphics/postProcessing.cpp \
@@ -78,12 +78,14 @@ SOURCES += \
     core/vulkanCore.cpp\
     physicalobject.cpp \
     main.cpp \
-    scene.cpp
+    scene.cpp \
+    scene2.cpp
 
 HEADERS += \
     core/graphics/attachments.h \
     core/graphics/customfilter.h \
     core/graphics/graphics.h \
+    core/graphics/postProcessing.h \
     core/graphics/shadowGraphics.h \
     core/graphics/ssao.h \
     core/graphics/sslr.h \
@@ -93,10 +95,13 @@ HEADERS += \
     core/transformational/light.h \
     core/transformational/object.h \
     core/transformational/gltfmodel.h \
+    libs/dualQuaternion.h \
+    libs/quaternion.h \
     physicalobject.h \
     core/operations.h \
     core/texture.h \
     core/vulkanCore.h \
-    scene.h
+    scene.h \
+    scene2.h
 
 win32:RC_ICONS += texture/icon.ico

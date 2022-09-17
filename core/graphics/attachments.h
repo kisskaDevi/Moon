@@ -49,4 +49,19 @@ public:
     size_t getSize();
 };
 
+struct GBufferAttachments{
+    attachments*        position;
+    attachments*        normal;
+    attachments*        color;
+    attachments*        emission;
+};
+
+struct DeferredAttachments{
+    attachments*        image;
+    attachments*        blur;
+    attachments*        bloom;
+    attachment*         depth;
+    GBufferAttachments  GBuffer;
+};
+
 #endif // ATTACHMENTS_H

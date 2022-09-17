@@ -24,6 +24,7 @@ DeferredAttachments             deferredGraphics::getDeferredAttachments()
         deferredAttachments.GBuffer.normal   = &Attachments[4];
         deferredAttachments.GBuffer.color    = &Attachments[5];
         deferredAttachments.GBuffer.emission = &Attachments[6];
+        deferredAttachments.depth            = &depthAttachment;
     return deferredAttachments;
 }
 
@@ -43,7 +44,11 @@ void                            deferredGraphics::setEmptyTexture(std::string ZE
 void                            deferredGraphics::setCameraObject(camera* cameraObject)                 { this->cameraObject = cameraObject;}
 void                            deferredGraphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
 
-void                            deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    {spotLighting.minAmbientFactor = minAmbientFactor;}
+void                            deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { spotLighting.minAmbientFactor = minAmbientFactor;}
+void                            deferredGraphics::setScattering(const bool &enableScattering)           { spotLighting.enableScattering = enableScattering;}
+void                            deferredGraphics::setTransparencyPass(const bool& transparencyPass)     { this->transparencyPass = transparencyPass;}
+
+texture*                        deferredGraphics::getEmptyTexture()                                     { return emptyTexture;}
 
 void deferredGraphics::destroyEmptyTexture(){
     emptyTexture->destroy(device);
@@ -209,7 +214,7 @@ void deferredGraphics::createDepthAttachment()
                         image.Samples,
                         findDepthStencilFormat(physicalDevice),
                         VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         depthAttachment.image,
                         depthAttachment.imageMemory);
@@ -442,7 +447,7 @@ void deferredGraphics::createRenderPass()
             depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            depthAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         attachments.push_back(depthAttachment);
 
         //===========================first=====================================================//
@@ -455,7 +460,7 @@ void deferredGraphics::createRenderPass()
                 firstAttachmentRef.at(i).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 index++;
             }
-            VkAttachmentReference firstDepthAttachmentRef{};
+        VkAttachmentReference firstDepthAttachmentRef{};
             firstDepthAttachmentRef.attachment = index++;
             firstDepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -473,7 +478,7 @@ void deferredGraphics::createRenderPass()
             secondAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         index = 0;
-        std::vector<VkAttachmentReference> secondInAttachmentRef(4);
+        std::vector<VkAttachmentReference> secondInAttachmentRef(5);
             secondInAttachmentRef.at(index).attachment = 3;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
@@ -484,6 +489,9 @@ void deferredGraphics::createRenderPass()
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         index++;
             secondInAttachmentRef.at(index).attachment = 6;
+            secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        index++;
+            secondInAttachmentRef.at(index).attachment = 7;
             secondInAttachmentRef.at(index).layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         //===========================subpass & dependency=========================================//
@@ -499,7 +507,7 @@ void deferredGraphics::createRenderPass()
             subpass.at(index).pColorAttachments = secondAttachmentRef.data();
             subpass.at(index).inputAttachmentCount = static_cast<uint32_t>(secondInAttachmentRef.size());
             subpass.at(index).pInputAttachments = secondInAttachmentRef.data();
-            subpass.at(index).pDepthStencilAttachment = &firstDepthAttachmentRef;
+            subpass.at(index).pDepthStencilAttachment = nullptr;
 
         index = 0;
         std::vector<VkSubpassDependency> dependency(2);
@@ -879,6 +887,7 @@ void deferredGraphics::updateUniformBuffer(uint32_t currentImage)
         baseUBO.view = cameraObject->getViewMatrix();
         baseUBO.proj = cameraObject->getProjMatrix();
         baseUBO.eyePosition = glm::vec4(cameraObject->getTranslate(), 1.0);
+        baseUBO.enableTransparency = transparencyPass ? 1.0 : 0.0;
     vkMapMemory(*device, base.sceneUniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
         memcpy(data, &baseUBO, sizeof(baseUBO));
     vkUnmapMemory(*device, base.sceneUniformBuffersMemory[currentImage]);
@@ -916,50 +925,24 @@ void deferredGraphics::updateObjectUniformBuffer(uint32_t currentImage)
         stencil.objects.at(i)->updateUniformBuffer(device,currentImage);
 }
 
-
-void deferredGraphics::createModel(gltfModel* pModel){
-    pModel->loadFromFile(physicalDevice,device,graphicsQueue,commandPool,1.0f);
-    base.createModelDescriptorPool(device,pModel);
-    base.createModelDescriptorSet(device,pModel,emptyTexture);
-}
-
-void deferredGraphics::destroyModel(gltfModel* pModel){
-    pModel->destroy(device);
-}
-
 void deferredGraphics::bindBaseObject(object *newObject)
 {
     base.objects.push_back(newObject);
-    base.objects.at(base.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
-    base.createObjectDescriptorPool(device,newObject,image.Count);
-    base.createObjectDescriptorSet(device,newObject,image.Count);
 }
 
 void deferredGraphics::bindBloomObject(object *newObject)
 {
     bloom.objects.push_back(newObject);
-    bloom.objects.at(bloom.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
-    bloom.base->createObjectDescriptorPool(device,newObject,image.Count);
-    bloom.base->createObjectDescriptorSet(device,newObject,image.Count);
 }
 
 void deferredGraphics::bindOneColorObject(object *newObject)
 {
     oneColor.objects.push_back(newObject);
-    oneColor.objects.at(oneColor.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
-    oneColor.base->createObjectDescriptorPool(device,newObject,image.Count);
-    oneColor.base->createObjectDescriptorSet(device,newObject,image.Count);
 }
 
-void deferredGraphics::bindStencilObject(object *newObject, float lineWidth, glm::vec4 lineColor)
+void deferredGraphics::bindStencilObject(object *newObject)
 {
-    newObject->setStencilEnable(false);
-    newObject->setStencilWidth(lineWidth);
-    newObject->setStencilColor(lineColor);
     stencil.objects.push_back(newObject);
-    stencil.objects.at(stencil.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
-    stencil.base->createObjectDescriptorPool(device,newObject,image.Count);
-    stencil.base->createObjectDescriptorSet(device,newObject,image.Count);
 }
 
 void deferredGraphics::bindSkyBoxObject(object *newObject, const std::vector<std::string>& TEXTURE_PATH)
@@ -970,7 +953,6 @@ void deferredGraphics::bindSkyBoxObject(object *newObject, const std::vector<std
     skybox.texture->createTextureImageView(device);
     skybox.texture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
     skybox.objects.push_back(newObject);
-    skybox.objects.at(skybox.objects.size()-1)->createUniformBuffers(physicalDevice,device,image.Count);
 }
 
 bool deferredGraphics::removeBaseObject(object* object)
@@ -978,8 +960,6 @@ bool deferredGraphics::removeBaseObject(object* object)
     bool result = false;
     for(uint32_t index = 0; index<base.objects.size(); index++){
         if(object==base.objects[index]){
-            base.objects[index]->destroyDescriptorPools(device);
-            base.objects[index]->destroyUniformBuffers(device);
             base.objects.erase(base.objects.begin()+index);
             result = true;
         }
@@ -992,8 +972,6 @@ bool deferredGraphics::removeBloomObject(object* object)
     bool result = false;
     for(uint32_t index = 0; index<bloom.objects.size(); index++){
         if(object==bloom.objects[index]){
-            bloom.objects[index]->destroyDescriptorPools(device);
-            bloom.objects[index]->destroyUniformBuffers(device);
             bloom.objects.erase(bloom.objects.begin()+index);
             result = true;
         }
@@ -1006,8 +984,6 @@ bool deferredGraphics::removeOneColorObject(object* object)
     bool result = false;
     for(uint32_t index = 0; index<oneColor.objects.size(); index++){
         if(object==oneColor.objects[index]){
-            oneColor.objects[index]->destroyDescriptorPools(device);
-            oneColor.objects[index]->destroyUniformBuffers(device);
             oneColor.objects.erase(oneColor.objects.begin()+index);
             result = true;
         }
@@ -1020,8 +996,6 @@ bool deferredGraphics::removeStencilObject(object* object)
     bool result = false;
     for(uint32_t index = 0; index<stencil.objects.size(); index++){
         if(object==stencil.objects[index]){
-            stencil.objects[index]->destroyDescriptorPools(device);
-            stencil.objects[index]->destroyUniformBuffers(device);
             stencil.objects.erase(stencil.objects.begin()+index);
             result = true;
         }
@@ -1037,7 +1011,6 @@ bool deferredGraphics::removeSkyBoxObject(object* object)
             skybox.texture->destroy(device);
             delete skybox.texture;
             skybox.objects.erase(skybox.objects.begin()+index);
-            skybox.objects[index]->destroyUniformBuffers(device);
             result = true;
         }
     }
@@ -1047,19 +1020,19 @@ bool deferredGraphics::removeSkyBoxObject(object* object)
 void deferredGraphics::removeBinds()
 {
     for(auto object: base.objects){
-        object->destroyDescriptorPools(device);
+        object->destroy(device);
         object->destroyUniformBuffers(device);
     }
     for(auto object: bloom.objects){
-        object->destroyDescriptorPools(device);
+        object->destroy(device);
         object->destroyUniformBuffers(device);
     }
     for(auto object: oneColor.objects){
-        object->destroyDescriptorPools(device);
+        object->destroy(device);
         object->destroyUniformBuffers(device);
     }
     for(auto object: stencil.objects){
-        object->destroyDescriptorPools(device);
+        object->destroy(device);
         object->destroyUniformBuffers(device);
     }
 
@@ -1069,31 +1042,15 @@ void deferredGraphics::removeBinds()
     stencil.objects.clear();
 }
 
-void deferredGraphics::addSpotLightSource(spotLight *lightSource, QueueFamilyIndices* queueFamilyIndices)
+void deferredGraphics::addSpotLightSource(spotLight *lightSource)
 {
     spotLighting.lightSources.push_back(lightSource);
-    if(spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()){
-        spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()->createTextureImage(physicalDevice,device,graphicsQueue,commandPool);
-        spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()->createTextureImageView(device);
-        spotLighting.lightSources[spotLighting.lightSources.size()-1]->getTexture()->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    }
-    spotLighting.lightSources[spotLighting.lightSources.size()-1]->createUniformBuffers(physicalDevice,device,image.Count);
-    spotLighting.lightSources[spotLighting.lightSources.size()-1]->createShadow(physicalDevice,device,queueFamilyIndices,image.Count);
-    spotLighting.lightSources[spotLighting.lightSources.size()-1]->updateShadowDescriptorSets();
-    if(lightSource->isShadowEnable()){
-        spotLighting.lightSources[spotLighting.lightSources.size()-1]->createShadowCommandBuffers();
-    }
 }
 
 void deferredGraphics::removeSpotLightSource(spotLight *lightSource)
 {
     for(uint32_t index = 0; index<spotLighting.lightSources.size(); index++){
         if(lightSource==spotLighting.lightSources[index]){
-            if(spotLighting.lightSources[index]->getTexture()){
-                spotLighting.lightSources[index]->getTexture()->destroy(device);
-            }
-            spotLighting.lightSources[index]->destroyBuffer(device);
-            spotLighting.lightSources[index]->cleanup(device);
             spotLighting.lightSources.erase(spotLighting.lightSources.begin()+index);
         }
     }

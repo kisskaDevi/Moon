@@ -323,7 +323,7 @@ void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
         xMpos = x;
         yMpos = y;
         cameras->rotateX(angy,glm::vec3(1.0f,0.0f,0.0f));
-        cameras->rotateY(angx,glm::vec3(0.0f,0.0f,-1.0f));
+        cameras->rotateY(angx,glm::vec3(0.0f,0.0f,1.0f));
         app->resetUboWorld();
 
         for(uint32_t i=0;i<app->getImageCount();i++){
@@ -626,18 +626,18 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
 void scene::updates(VkApplication* app, float frameTime)
 {
     globalTime += frameTime;
-    //float w = 0.1f;
-    //    lightPoint.at(0)->setLightColor(
-    //                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
-    //                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
-    //                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
-    //    object3D.at(4)->setColor(
-    //                glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
-    //                            sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
-    //                            sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
-    //
-    //app->resetUboWorld();
-    //app->resetUboLight();
+    float w = 0.1f;
+        lightPoint.at(0)->setLightColor(
+                    glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
+                                sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
+                                sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
+        object3D.at(4)->setColor(
+                    glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
+                                sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
+                                sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
+
+    app->resetUboWorld();
+    app->resetUboLight();
 }
 
 void scrol(GLFWwindow *window, double xoffset, double yoffset)

@@ -178,6 +178,14 @@ void gltfModel::destroy(VkDevice* device)
         node->destroy(device);
         delete node;
     }
+    if(nodeDescriptorSetLayout != VK_NULL_HANDLE){
+        vkDestroyDescriptorSetLayout(*device, nodeDescriptorSetLayout,nullptr);
+    }
+    nodeDescriptorSetLayout = VK_NULL_HANDLE;
+    if(materialDescriptorSetLayout != VK_NULL_HANDLE){
+        vkDestroyDescriptorSetLayout(*device, materialDescriptorSetLayout,nullptr);
+    }
+    materialDescriptorSetLayout = VK_NULL_HANDLE;
     materials.resize(0);
     animations.resize(0);
     nodes.resize(0);
@@ -1179,4 +1187,151 @@ std::array<VkVertexInputAttributeDescription, 3> gltfModel::Vertex::getShadowAtt
     attributeDescriptions[2].offset = offsetof(Vertex, weight0);
 
     return attributeDescriptions;
+}
+
+void gltfModel::createDescriptorPool(VkDevice* device)
+{
+    uint32_t imageSamplerCount = 0;
+    uint32_t materialCount = 0;
+    uint32_t meshCount = 0;
+    for (auto &material : materials)
+    {
+        static_cast<void>(material);
+        imageSamplerCount += 5;
+        materialCount++;
+    }
+
+    for (auto node : linearNodes){
+        if(node->mesh){
+            meshCount++;
+        }
+    }
+
+    size_t index = 0;
+    std::vector<VkDescriptorPoolSize> DescriptorPoolSizes(2);
+        DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        DescriptorPoolSizes.at(index).descriptorCount = meshCount;
+    index++;
+        DescriptorPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        DescriptorPoolSizes.at(index).descriptorCount = imageSamplerCount;
+    index++;
+
+    //Мы будем выделять один из этих дескрипторов для каждого кадра. На эту структуру размера пула ссылается главный VkDescriptorPoolCreateInfo:
+    VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(DescriptorPoolSizes.size());
+        poolInfo.pPoolSizes = DescriptorPoolSizes.data();
+        poolInfo.maxSets = meshCount+imageSamplerCount;
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
+        throw std::runtime_error("failed to create object descriptor pool!");
+}
+
+void gltfModel::createDescriptorSet(VkDevice* device, texture* emptyTexture)
+{
+    createMaterialDescriptorSetLayout(device,&materialDescriptorSetLayout);
+    createNodeDescriptorSetLayout(device,&nodeDescriptorSetLayout);
+
+    for (auto node : linearNodes){
+        if(node->mesh){
+            createNodeDescriptorSet(device, node);
+        }
+    }
+
+    for (auto &material : materials){
+        createMaterialDescriptorSet(device, &material, emptyTexture);
+    }
+}
+
+void gltfModel::createNodeDescriptorSet(VkDevice* device, Node* node)
+{
+    if (node->mesh)
+    {
+        VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+            descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            descriptorSetAllocInfo.descriptorPool = DescriptorPool;
+            descriptorSetAllocInfo.pSetLayouts = &nodeDescriptorSetLayout;
+            descriptorSetAllocInfo.descriptorSetCount = 1;
+        if (vkAllocateDescriptorSets(*device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet) != VK_SUCCESS)
+            throw std::runtime_error("failed to allocate object descriptor sets!");
+
+        VkWriteDescriptorSet writeDescriptorSet{};
+            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.dstSet = node->mesh->uniformBuffer.descriptorSet;
+            writeDescriptorSet.dstBinding = 0;
+            writeDescriptorSet.pBufferInfo = &node->mesh->uniformBuffer.descriptor;
+        vkUpdateDescriptorSets(*device, 1, &writeDescriptorSet, 0, nullptr);
+    }
+    for (auto& child : node->children)
+        createNodeDescriptorSet(device,child);
+}
+
+void gltfModel::createMaterialDescriptorSet(VkDevice* device, Material* material, texture* emptyTexture)
+{
+    std::vector<VkDescriptorSetLayout> layouts(1, materialDescriptorSetLayout);
+    VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+        descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        descriptorSetAllocInfo.descriptorPool = DescriptorPool;
+        descriptorSetAllocInfo.pSetLayouts = layouts.data();
+        descriptorSetAllocInfo.descriptorSetCount = 1;
+    if (vkAllocateDescriptorSets(*device, &descriptorSetAllocInfo, &material->descriptorSet) != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate object descriptor sets!");
+
+    VkDescriptorImageInfo baseColorTextureInfo;
+    baseColorTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    if (material->pbrWorkflows.metallicRoughness)
+    {
+        baseColorTextureInfo.imageView   = material->baseColorTexture ? material->baseColorTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+        baseColorTextureInfo.sampler     = material->baseColorTexture ? material->baseColorTexture->getTextureSampler()   : emptyTexture->getTextureSampler();
+    }
+    if(material->pbrWorkflows.specularGlossiness)
+    {
+        baseColorTextureInfo.imageView   = material->extension.diffuseTexture ? material->extension.diffuseTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+        baseColorTextureInfo.sampler     = material->extension.diffuseTexture ? material->extension.diffuseTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+    }
+
+    VkDescriptorImageInfo metallicRoughnessTextureInfo;
+    metallicRoughnessTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    if (material->pbrWorkflows.metallicRoughness)
+    {
+        metallicRoughnessTextureInfo.imageView   = material->metallicRoughnessTexture ? material->metallicRoughnessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+        metallicRoughnessTextureInfo.sampler     = material->metallicRoughnessTexture ? material->metallicRoughnessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+    }
+    if (material->pbrWorkflows.specularGlossiness)
+    {
+        metallicRoughnessTextureInfo.imageView   = material->extension.specularGlossinessTexture ? material->extension.specularGlossinessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+        metallicRoughnessTextureInfo.sampler     = material->extension.specularGlossinessTexture ? material->extension.specularGlossinessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+    }
+
+    VkDescriptorImageInfo normalTextureInfo;
+    normalTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    normalTextureInfo.imageView   = material->normalTexture ? material->normalTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+    normalTextureInfo.sampler     = material->normalTexture ? material->normalTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+
+    VkDescriptorImageInfo occlusionTextureInfo;
+    occlusionTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    occlusionTextureInfo.imageView   = material->occlusionTexture ? material->occlusionTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+    occlusionTextureInfo.sampler     = material->occlusionTexture ? material->occlusionTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+
+    VkDescriptorImageInfo emissiveTextureInfo;
+    emissiveTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    emissiveTextureInfo.imageView   = material->emissiveTexture ? material->emissiveTexture->getTextureImageView() : emptyTexture->getTextureImageView();
+    emissiveTextureInfo.sampler     = material->emissiveTexture ? material->emissiveTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+
+    std::array<VkDescriptorImageInfo, 5> descriptorImageInfos = {baseColorTextureInfo,metallicRoughnessTextureInfo,normalTextureInfo,occlusionTextureInfo,emissiveTextureInfo};
+    std::array<VkWriteDescriptorSet, 5> descriptorWrites{};
+
+    for(size_t i=0;i<5;i++)
+    {
+        descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[i].dstSet = material->descriptorSet;
+        descriptorWrites[i].dstBinding = i;
+        descriptorWrites[i].dstArrayElement = 0;
+        descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[i].descriptorCount = 1;
+        descriptorWrites[i].pImageInfo = &descriptorImageInfos[i];
+    }
+    vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
 }

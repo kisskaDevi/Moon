@@ -49,6 +49,7 @@ private:
     glm::quat                           m_rotateX;
     glm::quat                           m_rotateY;
 
+    VkDescriptorSetLayout               descriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool                    descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet>        descriptorSets;
     std::vector<VkBuffer>               uniformBuffers;
@@ -59,8 +60,8 @@ public:
     spotLight(uint32_t type = spotType::circle);
     spotLight(const std::string & TEXTURE_PATH, uint32_t type = spotType::circle);
     ~spotLight();
-    void cleanup(VkDevice* device);
-    void destroyBuffer(VkDevice* device);
+    void destroyUniformBuffers(VkDevice* device);
+    void destroy(VkDevice* device);
 
     void setGlobalTransform(const glm::mat4 & transform);
     void translate(const glm::vec3 & translate);
@@ -88,6 +89,10 @@ public:
     glm::vec4                       getLightColor() const;
     uint32_t                        getLightNumber() const;
     texture*                        getTexture();
+
+    void                            createDescriptorPool(VkDevice* device, uint32_t imageCount);
+    void                            createDescriptorSets(VkDevice* device, uint32_t imageCount);
+    void                            updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture);
 
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSets();

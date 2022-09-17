@@ -40,7 +40,7 @@ spotLight::~spotLight(){
     delete tex;
 }
 
-void spotLight::destroyBuffer(VkDevice* device)
+void spotLight::destroyUniformBuffers(VkDevice* device)
 {
     for(size_t i=0;i<uniformBuffers.size();i++)
     {
@@ -54,8 +54,13 @@ void spotLight::destroyBuffer(VkDevice* device)
     uniformBuffers.resize(0);
 }
 
-void spotLight::cleanup(VkDevice* device)
+void spotLight::destroy(VkDevice* device)
 {
+    if (descriptorSetLayout != VK_NULL_HANDLE){
+        vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr);
+        descriptorSetLayout = VK_NULL_HANDLE;
+    }
+
     if (descriptorPool != VK_NULL_HANDLE){
         vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
         descriptorPool = VK_NULL_HANDLE;
@@ -187,7 +192,7 @@ glm::vec4                       spotLight::getLightColor() const {return lightCo
 bool                            spotLight::isShadowEnable() const{return enableShadow;}
 bool                            spotLight::isScatteringEnable() const{return enableScattering;}
 
-texture                         *spotLight::getTexture(){return tex;}
+texture*                        spotLight::getTexture(){return tex;}
 
 
 void                            spotLight::updateShadowCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects){
@@ -207,6 +212,88 @@ VkImageView&                    spotLight::getShadowImageView(){
 }
 VkSampler&                      spotLight::getShadowSampler(){
     return shadow->getSampler();
+}
+
+
+void                            spotLight::createDescriptorPool(VkDevice* device, uint32_t imageCount)
+{
+    uint32_t index = 0;
+    std::array<VkDescriptorPoolSize,3> poolSizes{};
+        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)};
+    index++;
+        poolSizes[index] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)};
+    index++;
+        poolSizes[index] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)};
+    VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
+        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+        throw std::runtime_error("failed to create light descriptor pool!");
+}
+
+void                            spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
+{
+    createSpotLightDescriptorSetLayout(device,&descriptorSetLayout);
+
+    descriptorSets.resize(imageCount);
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.pSetLayouts = layouts.data();
+    if (vkAllocateDescriptorSets(*device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate SpotLightingPass descriptor sets!");
+}
+
+void                            spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture)
+{
+    for (size_t i=0; i<imageCount; i++)
+    {
+        uint32_t index = 0;
+
+        VkDescriptorBufferInfo lightBufferInfo{};
+            lightBufferInfo.buffer = uniformBuffers[i];
+            lightBufferInfo.offset = 0;
+            lightBufferInfo.range = sizeof(LightBufferObject);
+        VkDescriptorImageInfo shadowImageInfo{};
+            shadowImageInfo.imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            shadowImageInfo.imageView       = enableShadow ? getShadowImageView() : emptyTexture->getTextureImageView();
+            shadowImageInfo.sampler         = enableShadow ? getShadowSampler() : emptyTexture->getTextureSampler();
+        VkDescriptorImageInfo lightTexture{};
+            lightTexture.imageLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            lightTexture.imageView          = tex ? tex->getTextureImageView() : emptyTexture->getTextureImageView();
+            lightTexture.sampler            = tex ? tex->getTextureSampler() : emptyTexture->getTextureSampler();
+
+        index = 0;
+        std::array<VkWriteDescriptorSet,3> descriptorWrites{};
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = descriptorSets[i];
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pBufferInfo = &lightBufferInfo;
+        index++;
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = descriptorSets[i];
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pImageInfo = &shadowImageInfo;
+        index++;
+            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.at(index).dstSet = descriptorSets[i];
+            descriptorWrites.at(index).dstBinding = index;
+            descriptorWrites.at(index).dstArrayElement = 0;
+            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.at(index).descriptorCount = 1;
+            descriptorWrites.at(index).pImageInfo = &lightTexture;
+        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
 }
 
 //======================================================================================================================//
@@ -337,4 +424,5 @@ void pointLight::rotateY(const float & ang ,const glm::vec3 & ax)
     m_rotateY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateY;
     updateViewMatrix();
 }
+
 

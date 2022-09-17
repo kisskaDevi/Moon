@@ -13,6 +13,7 @@ class spotLight;
 #include <set>
 
 #include "graphics/graphics.h"
+#include "graphics/postProcessing.h"
 #include "graphics/customfilter.h"
 #include "graphics/sslr.h"
 #include "graphics/ssao.h"
@@ -127,6 +128,8 @@ private:
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
     postProcessing                              PostProcessing;
+    std::vector<deferredGraphics>               TransparentLayers;
+    uint32_t                                    TransparentLayersCount = 3;
 
     VkCommandPool                               commandPool;
     std::vector<VkCommandBuffer>                commandBuffers;

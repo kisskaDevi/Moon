@@ -21,6 +21,7 @@ layout(input_attachment_index = 0, binding = 0) uniform subpassInput inPositionT
 layout(input_attachment_index = 1, binding = 1) uniform subpassInput inNormalTexture;
 layout(input_attachment_index = 2, binding = 2) uniform subpassInput inBaseColorTexture;
 layout(input_attachment_index = 3, binding = 3) uniform subpassInput inEmissiveTexture;
+layout(input_attachment_index = 4, binding = 4) uniform subpassInput inDepthTexture;
 
 layout(set = 1, binding = 1) uniform sampler2D shadowMap;
 layout(set = 1, binding = 2) uniform sampler2D lightTexture;
@@ -73,12 +74,10 @@ vec4 PBR(vec4 outColor)
     fragLightPosition = lightProjView * vec4(position.xyz,1.0f);
     textureLightColor = vec4(0.0f,0.0f,0.0f,1.0f);
 
-    //=========== PBR ===========//
-
     float metallic = subpassLoad(inNormalTexture).a;
-    float perceptualRoughness = subpassLoad(inBaseColorTexture).a;
+    float perceptualRoughness = subpassLoad(inPositionTexture).a;
     vec3 diffuseColor;
-    vec4 baseColor = vec4(baseColorTexture.xyz,1.0f);
+    vec4 baseColor = baseColorTexture;
     baseColor = SRGBtoLINEAR(baseColor);
 
     vec3 f0 = vec3(0.04);
@@ -142,13 +141,6 @@ vec4 PBR(vec4 outColor)
 	return outColor;
 }
 
-float ComputeScattering(float lightDotView)
-{
-    float result = 1.0f/4.0f/pi;
-    result *= 1.0f/2.0f + 9.0f/2.0f * pow( (1.0f + lightDotView)/2.0f , 8.0f);
-    return result;
-}
-
 vec4 LightScattering(int steps)
 {
     vec4 outScatteringColor = vec4(0.0f,0.0f,0.0f,0.0f);
@@ -163,8 +155,9 @@ vec4 LightScattering(int steps)
 
     for(int step=1;step<=steps;step++){
 	vec3 pointOfScattering = eyePosition.xyz + step * dstep;
-	float cameraView = projview[0][2]*pointOfScattering.x + projview[1][2]*pointOfScattering.y + projview[2][2]*pointOfScattering.z + projview[3][2];
-	if(depthMap>cameraView){
+	float cameraViewZ = projview[0][2]*pointOfScattering.x + projview[1][2]*pointOfScattering.y + projview[2][2]*pointOfScattering.z + projview[3][2];
+	float cameraViewW = projview[0][3]*pointOfScattering.x + projview[1][3]*pointOfScattering.y + projview[2][3]*pointOfScattering.z + projview[3][3];
+	if(depthMap>cameraViewZ/cameraViewW){
 	    vec4 lightView = lightProjView * vec4(pointOfScattering, 1.0f);
 	    vec3 lightSpaceNDC = lightView.xyz/lightView.w;
 	    if(!outsideSpotCondition(lightSpaceNDC,type))
@@ -195,7 +188,7 @@ void main()
     normal = subpassLoad(inNormalTexture);
     baseColorTexture = subpassLoad(inBaseColorTexture);
     emissiveTexture = subpassLoad(inEmissiveTexture);
-    depthMap = subpassLoad(inPositionTexture).a;
+    depthMap = subpassLoad(inDepthTexture).r;
 
     outColor = vec4(0.0f,0.0f,0.0f,0.0f);
     outBlur = vec4(0.0f,0.0f,0.0f,0.0f);

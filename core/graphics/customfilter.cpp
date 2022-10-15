@@ -9,6 +9,11 @@ customFilter::customFilter()
 
 }
 
+void customFilter::setExternalPath(const std::string& path)
+{
+    filter.ExternalPath = path;
+}
+
 void customFilter::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
 {
     this->physicalDevice = physicalDevice;
@@ -143,7 +148,6 @@ void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, Vk
 {
     uint32_t index = 0;
 
-    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\customFilter\\customFilterVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\customFilter\\customFilterFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

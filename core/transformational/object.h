@@ -1,7 +1,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include "core/texture.h"
+#include <libs/vulkan/vulkan.h>
 #include "transformational.h"
 #include <array>
 #include <vector>

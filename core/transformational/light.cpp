@@ -2,7 +2,7 @@
 #include "object.h"
 #include "core/operations.h"
 #include "core/graphics/shadowGraphics.h"
-#include "gltfmodel.h"
+#include "core/texture.h"
 
 spotLight::spotLight(uint32_t type): type(type)
 {
@@ -136,10 +136,11 @@ void spotLight::setProjectionMatrix(const glm::mat4x4 & projection)
     projectionMatrix = projection;
 }
 
-void spotLight::createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount)
+void spotLight::createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath)
 {
     enableShadow = true;
     shadow = new shadowGraphics(imageCount,shadowExtent);
+    shadow->setExternalPath(ExternalPath);
     shadow->setDeviceProp(physicalDevice,device,queueFamilyIndices);
     shadow->createShadow();
 }

@@ -62,7 +62,6 @@ void deferredGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo
 {
     uint32_t index = 0;
 
-    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\skybox\\skyboxVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\skybox\\skyboxFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

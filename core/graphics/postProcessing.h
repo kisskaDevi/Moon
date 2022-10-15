@@ -1,8 +1,7 @@
 #ifndef POSTPROCESSING_H
 #define POSTPROCESSING_H
 
-#define GLFW_INCLUDE_VULKAN
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
+#include<libs/vulkan/vulkan.h>
 
 #include <libs/glm/glm/glm.hpp>
 #include <libs/glm/glm/gtc/matrix_transform.hpp>
@@ -48,6 +47,8 @@ private:
     std::vector<VkFramebuffer>          framebuffers;
 
     struct First{
+        std::string                         ExternalPath;
+
         VkPipelineLayout                    PipelineLayout;
         VkPipeline                          Pipeline;
         VkDescriptorSetLayout               DescriptorSetLayout;
@@ -56,6 +57,8 @@ private:
     }first;
 
     struct Second{
+        std::string                         ExternalPath;
+
         VkPipelineLayout                    PipelineLayout;
         VkPipeline                          Pipeline;
         VkDescriptorSetLayout               DescriptorSetLayout;
@@ -70,6 +73,8 @@ private:
 public:
     postProcessing();
     void destroy();
+
+    void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, QueueFamilyIndices* queueFamilyIndices, VkSurfaceKHR* surface);
     void setImageProp(imageInfo* pInfo);
 

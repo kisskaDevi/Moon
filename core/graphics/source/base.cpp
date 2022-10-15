@@ -81,7 +81,6 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
 {
     uint32_t index = 0;
 
-    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\base\\basevert.spv");   //считываем шейдеры
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\base\\basefrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);                      //создаём шейдерные модули

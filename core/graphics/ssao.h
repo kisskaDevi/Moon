@@ -1,7 +1,9 @@
 #ifndef SSAO_H
 #define SSAO_H
 
-#include "graphics.h"
+#include <string>
+#include <libs/vulkan/vulkan.h>
+#include "attachments.h"
 
 class SSAOGraphics
 {
@@ -19,6 +21,8 @@ private:
     std::vector<VkFramebuffer>          framebuffers;
 
     struct SSAO{
+        std::string                     ExternalPath;
+
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
         VkDescriptorSetLayout           DescriptorSetLayout;
@@ -33,6 +37,7 @@ public:
     SSAOGraphics();
     void destroy();
 
+    void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
     void setSSAOAttachments(attachments* Attachments);

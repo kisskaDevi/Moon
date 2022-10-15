@@ -15,7 +15,8 @@ bool  fpsLock = false;
 
 GLFWwindow* window;
 
-const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
+const std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
+//const std::string ExternalPath = "C:\\Qt\\repositories\\build-vulkanCore-Desktop_Qt_6_4_0_MinGW_64_bit-Debug\\debug\\";
 std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
 std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
 
@@ -24,13 +25,14 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
 void recreateSwapChain(VkApplication* app, GLFWwindow* window);
 
-#include "scene2.h"
+#include "scene.h"
 
 int main()
 {
     initializeWindow(window);
 
     VkApplication app;
+    app.setExternalPath(ExternalPath);
     app.createInstance();
     app.setupDebugMessenger();
     app.createSurface(window);
@@ -42,7 +44,7 @@ int main()
 
     app.setEmptyTexture(ZERO_TEXTURE);
 
-    scene2 testScene;
+    scene testScene;
 
     testScene.createScene(&app,WIDTH,HEIGHT);
 

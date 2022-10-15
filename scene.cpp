@@ -23,7 +23,7 @@ void scene::createScene(VkApplication *app, uint32_t WIDTH, uint32_t HEIGHT)
     groups.push_back(new group);
     groups.push_back(new group);
 
-    std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
+    std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
     std::vector<std::string> SKYBOX = {
         ExternalPath+"texture\\skybox\\left.jpg",
         ExternalPath+"texture\\skybox\\right.jpg",
@@ -94,7 +94,7 @@ void scene::destroyScene(VkApplication *app)
 
 void scene::loadModels(VkApplication *app)
 {
-    std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
+    std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
 
     size_t index = 0;
 
@@ -145,7 +145,7 @@ void scene::loadModels(VkApplication *app)
 
 void scene::createLight(VkApplication *app)
 {
-    std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
+    std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
     std::string LIGHT_TEXTURE0  = ExternalPath + "texture\\icon.PNG";
     std::string LIGHT_TEXTURE1  = ExternalPath + "texture\\light1.jpg";
     std::string LIGHT_TEXTURE2  = ExternalPath + "texture\\light2.jpg";

@@ -11,6 +11,8 @@ struct shadowInfo{
     VkRenderPass                renderPass;
 };
 
+struct QueueFamilyIndices;
+
 class shadowGraphics
 {
 private:
@@ -27,6 +29,8 @@ private:
     std::vector<VkFramebuffer>          shadowMapFramebuffer;
 
     struct Shadow{
+        std::string                     ExternalPath;
+
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
         VkDescriptorSetLayout           DescriptorSetLayout;
@@ -47,6 +51,8 @@ private:
 public:
     shadowGraphics(uint32_t imageCount, VkExtent2D shadowExtent = {1024,1024});
     void destroy();
+
+    void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices);
 
     void createMap();

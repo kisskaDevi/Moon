@@ -1,9 +1,9 @@
 #include "graphics.h"
 #include "core/transformational/object.h"
-#include "core/transformational/gltfmodel.h"
 #include "core/transformational/camera.h"
 #include "core/transformational/light.h"
 #include "core/graphics/shadowGraphics.h"
+#include "core/texture.h"
 
 #include <array>
 
@@ -53,6 +53,16 @@ texture*                        deferredGraphics::getEmptyTexture()             
 void deferredGraphics::destroyEmptyTexture(){
     emptyTexture->destroy(device);
     delete emptyTexture;
+}
+
+void deferredGraphics::setExternalPath(const std::string &path)
+{
+    base.ExternalPath = path;
+    bloom.ExternalPath = path;
+    oneColor.ExternalPath = path;
+    stencil.ExternalPath = path;
+    skybox.ExternalPath = path;
+    spotLighting.ExternalPath = path;
 }
 
 void deferredGraphics::destroy()

@@ -4,7 +4,6 @@
 #include "transformational/light.h"
 #include "transformational/object.h"
 #include "transformational/gltfmodel.h"
-#include "core/graphics/shadowGraphics.h"
 
 VkApplication::VkApplication()
 {
@@ -176,7 +175,7 @@ void VkApplication::VkApplication::pickPhysicalDevice()
 
     if(physicalDevices.size()!=0)
     {
-        physicalDeviceNumber = 0;
+        physicalDeviceNumber = 1;
         indicesNumber = 0;
     }
 
@@ -271,6 +270,12 @@ void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSamp
         VkSampleCountFlagBits maxMSAASamples = getMaxUsableSampleCount(physicalDevices.at(physicalDeviceNumber).device);
         if(MSAASamples>maxMSAASamples)  MSAASamples = maxMSAASamples;
     }
+
+    DeferredGraphics.setExternalPath(ExternalPath);
+    PostProcessing.setExternalPath(ExternalPath);
+    Filter.setExternalPath(ExternalPath);
+    SSLR.setExternalPath(ExternalPath);
+    SSAO.setExternalPath(ExternalPath);
 
     DeferredGraphics.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool);
     PostProcessing.setDeviceProp(&physicalDevices.at(physicalDeviceNumber).device,&device,&graphicsQueue,&commandPool,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),&surface);
@@ -629,6 +634,7 @@ void                                VkApplication::resetCmdLight(){lightsCmd.ena
 void                                VkApplication::resetCmdWorld(){worldCmd.enable = true; worldCmd.frames = 0;}
 void                                VkApplication::resetUboLight(){lightsUbo.enable = true; lightsUbo.frames = 0;}
 void                                VkApplication::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
+void                                VkApplication::setExternalPath(const std::string &path){ExternalPath = path;}
 
 void                                VkApplication::setEmptyTexture(std::string ZERO_TEXTURE){
     DeferredGraphics.setEmptyTexture(ZERO_TEXTURE);
@@ -662,7 +668,7 @@ void                                VkApplication::addLightSource(spotLight* lig
         lightSource->getTexture()->createTextureSampler(&device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
     }
     lightSource->createUniformBuffers(&physicalDevices.at(physicalDeviceNumber).device,&device,imageCount);
-    lightSource->createShadow(&physicalDevices.at(physicalDeviceNumber).device,&device,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),imageCount);
+    lightSource->createShadow(&physicalDevices.at(physicalDeviceNumber).device,&device,&physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),imageCount,ExternalPath);
     lightSource->updateShadowDescriptorSets();
     if(lightSource->isShadowEnable()){
         lightSource->createShadowCommandBuffers();

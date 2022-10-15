@@ -61,6 +61,12 @@ void postProcessing::destroy()
     vkDestroySwapchainKHR(*device, swapChain, nullptr);
 }
 
+void postProcessing::setExternalPath(const std::string &path)
+{
+    first.ExternalPath = path;
+    second.ExternalPath = path;
+}
+
 void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport)
 {
     createSwapChain(window, swapChainSupport);
@@ -586,9 +592,8 @@ void postProcessing::createPipelines()
     {
         uint32_t index = 0;
 
-        const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
-        auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingVert.spv");
-        auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingFrag.spv");
+        auto vertShaderCode = readFile(first.ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingVert.spv");
+        auto fragShaderCode = readFile(first.ExternalPath + "core\\graphics\\shaders\\postProcessing\\firstPostProcessingFrag.spv");
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
         std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -728,9 +733,8 @@ void postProcessing::createPipelines()
     {
         uint32_t index = 0;
 
-        const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
-        auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingVert.spv");
-        auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingFrag.spv");
+        auto vertShaderCode = readFile(second.ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingVert.spv");
+        auto fragShaderCode = readFile(second.ExternalPath + "core\\graphics\\shaders\\postProcessing\\postProcessingFrag.spv");
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
         std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};

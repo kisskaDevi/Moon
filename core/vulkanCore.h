@@ -18,6 +18,8 @@ class spotLight;
 #include "graphics/sslr.h"
 #include "graphics/ssao.h"
 
+//#define NDEBUG
+
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
@@ -54,6 +56,7 @@ public:
     void                                        resetUboLight();
     void                                        resetUboWorld();
 
+    void                                        setExternalPath(const std::string& ExternalPath);
     void                                        setEmptyTexture(std::string ZERO_TEXTURE);
     void                                        setCameraObject(camera* cameraObject);
 
@@ -107,6 +110,7 @@ public:
     void                                        freeCommandBuffers();
 
 private:
+    std::string                                 ExternalPath;
 
     VkInstance                                  instance;
     VkSurfaceKHR                                surface;

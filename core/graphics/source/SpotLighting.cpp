@@ -70,7 +70,6 @@ void deferredGraphics::SpotLighting::createPipeline(VkDevice* device, imageInfo*
 {
     uint32_t index = 0;
 
-    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\SpotLightingVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\SpotLightingPass\\SpotLightingFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

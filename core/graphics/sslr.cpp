@@ -1,10 +1,17 @@
 #include "sslr.h"
 #include "core/operations.h"
 #include <array>
+#include <iostream>
+#include "graphics.h"
 
 SSLRGraphics::SSLRGraphics()
 {
 
+}
+
+void SSLRGraphics::setExternalPath(const std::string &path)
+{
+    sslr.ExternalPath = path;
 }
 
 void SSLRGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
@@ -143,7 +150,6 @@ void SSLRGraphics::SSLR::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
 {
     uint32_t index = 0;
 
-    const std::string ExternalPath = "C:\\Users\\kiril\\OneDrive\\qt\\kisskaVulkan\\";
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\sslr\\sslrVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\sslr\\sslrFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);

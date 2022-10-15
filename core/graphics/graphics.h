@@ -10,7 +10,6 @@
 #include <string>
 #include <iostream>
 #include "attachments.h"
-#include "core/operations.h"
 
 class                               texture;
 class                               cubeTexture;
@@ -78,6 +77,8 @@ private:
     std::vector<VkDeviceMemory>     storageBuffersMemory;
 
     struct Base{
+        std::string                     ExternalPath;
+
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
         VkDescriptorSetLayout           SceneDescriptorSetLayout;
@@ -102,6 +103,8 @@ private:
     }base;
 
     struct bloomExtension{
+        std::string                     ExternalPath;
+
         Base                            *base;
         VkPipeline                      Pipeline;
         VkPipelineLayout                PipelineLayout;
@@ -115,6 +118,8 @@ private:
     }bloom;
 
     struct oneColorExtension{
+        std::string                     ExternalPath;
+
         Base                            *base;
         VkPipeline                      Pipeline;
         VkPipelineLayout                PipelineLayout;
@@ -128,6 +133,8 @@ private:
     }oneColor;
 
     struct StencilExtension{
+        std::string                     ExternalPath;
+
         Base                            *base;
         VkPipeline                      firstPipeline;
         VkPipeline                      secondPipeline;
@@ -147,6 +154,8 @@ private:
 
     struct Skybox
     {
+        std::string                     ExternalPath;
+
         cubeTexture                     *texture = nullptr;
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
@@ -166,6 +175,8 @@ private:
     }skybox;
 
     struct SpotLighting{
+        std::string                     ExternalPath;
+
         VkPipelineLayout                PipelineLayout;
         VkPipelineLayout                AmbientPipelineLayout;
         VkPipeline                      Pipeline;
@@ -205,6 +216,7 @@ public:
     void destroy();
     void destroyEmptyTexture();
 
+    void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
     void setEmptyTexture(std::string ZERO_TEXTURE);

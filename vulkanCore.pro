@@ -21,6 +21,7 @@ DISTFILES += \
     core/graphics/shaders/compile.bat \
     core/graphics/shaders/base/base.frag \
     core/graphics/shaders/base/base.vert \
+    core/graphics/shaders/compileBuild.bat \
     core/graphics/shaders/customFilter/customFilter.frag \
     core/graphics/shaders/customFilter/customFilter.vert \
     core/graphics/shaders/oneColor/oneColor.frag \

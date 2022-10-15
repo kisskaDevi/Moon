@@ -6,6 +6,7 @@
 
 class texture;
 class shadowGraphics;
+struct QueueFamilyIndices;
 
 struct LightBufferObject
 {
@@ -74,7 +75,7 @@ public:
 
     void setProjectionMatrix(const glm::mat4x4 & projection);
     void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
-    void createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount);
+    void createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath);
 
     void                            updateLightBuffer(VkDevice* device, uint32_t frameNumber);
 

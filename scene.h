@@ -2,7 +2,6 @@
 #define SCENE_H
 
 #include "core/vulkanCore.h"
-#include "core/texture.h"
 #include "core/transformational/gltfmodel.h"
 #include "core/transformational/light.h"
 #include "core/transformational/object.h"

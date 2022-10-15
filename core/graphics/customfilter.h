@@ -2,6 +2,7 @@
 #define CUSTOMFILTER_H
 
 #include "attachments.h"
+#include <string>
 
 struct CustomFilterPushConst{
     alignas (4) float deltax;
@@ -28,6 +29,8 @@ private:
     std::vector<std::vector<VkFramebuffer>>     framebuffers;
 
     struct Filter{
+        std::string                     ExternalPath;
+
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
         VkDescriptorSetLayout           DescriptorSetLayout;
@@ -42,6 +45,7 @@ public:
     customFilter();
     void destroy();
 
+    void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
     void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
@@ -59,5 +63,6 @@ public:
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 };
+
 
 #endif // CUSTOMFILTER_H

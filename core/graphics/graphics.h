@@ -1,15 +1,11 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#define GLFW_INCLUDE_VULKAN
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
-
+#include <libs/vulkan/vulkan.h>
 #include <libs/glm/glm/glm.hpp>
-#include <libs/glm/glm/gtc/matrix_transform.hpp>
+#include "attachments.h"
 
 #include <string>
-#include <iostream>
-#include "attachments.h"
 
 class                               texture;
 class                               cubeTexture;
@@ -156,7 +152,7 @@ private:
     {
         std::string                     ExternalPath;
 
-        cubeTexture                     *texture = nullptr;
+        cubeTexture*                    texture = nullptr;
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
         VkDescriptorSetLayout           DescriptorSetLayout;

@@ -4,6 +4,7 @@
 #include "core/transformational/gltfmodel.h"
 
 #include <array>
+#include <iostream>
 
 void deferredGraphics::bloomExtension::Destroy(VkDevice* device)
 {

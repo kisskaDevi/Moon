@@ -2,11 +2,12 @@
 #define OPERATIONS_H
 
 #include <libs/vulkan/vulkan.h>
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
 
 #include <vector>
 #include <string>
 #include <optional> // нужна для вызова std::optional<uint32_t>
+
+class GLFWwindow;
 
 struct SwapChainSupportDetails{
     VkSurfaceCapabilitiesKHR        capabilities;

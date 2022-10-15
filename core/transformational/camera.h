@@ -2,7 +2,6 @@
 #define CAMERA_H
 
 #include "transformational.h"
-
 #include "libs/dualQuaternion.h"
 
 class camera : public transformational

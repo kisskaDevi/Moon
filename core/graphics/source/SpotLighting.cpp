@@ -1,10 +1,9 @@
 #include "core/graphics/graphics.h"
 #include "core/operations.h"
-#include "core/transformational/gltfmodel.h"
 #include "core/transformational/light.h"
-#include "core/graphics/shadowGraphics.h"
 
 #include <array>
+#include <iostream>
 
 void deferredGraphics::SpotLighting::Destroy(VkDevice* device)
 {

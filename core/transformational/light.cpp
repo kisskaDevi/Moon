@@ -4,6 +4,8 @@
 #include "core/graphics/shadowGraphics.h"
 #include "core/texture.h"
 
+#include <iostream>
+
 spotLight::spotLight(uint32_t type): type(type)
 {
     m_scale = glm::vec3(1.0f,1.0f,1.0f);

@@ -3,14 +3,8 @@
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <libs/vulkan/vulkan.h>
-
-class camera;
-struct gltfModel;
-class spotLight;
-
-#include <iostream>
-#include <vector>
-#include <set>
+#include <libs/glm/glm/glm.hpp>
+#include "core/operations.h"
 
 #include "graphics/graphics.h"
 #include "graphics/postProcessing.h"
@@ -18,18 +12,12 @@ class spotLight;
 #include "graphics/sslr.h"
 #include "graphics/ssao.h"
 
-//#define NDEBUG
+#include <vector>
 
-#ifdef NDEBUG
-    const bool enableValidationLayers = false;
-#else
-    const bool enableValidationLayers = true;
-#endif
-
-const int MAX_FRAMES_IN_FLIGHT = 3;
-
-const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
-const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+class                                           object;
+class                                           camera;
+struct                                          gltfModel;
+class                                           spotLight;
 
 struct physicalDevice{
     VkPhysicalDevice                            device;
@@ -94,7 +82,6 @@ public:
 //step 2
     void                                        pickPhysicalDevice();
     void                                        createLogicalDevice();
-    void                                        checkSwapChainSupport();
 //step 3
     void                                        createCommandPool();
 //step 4
@@ -111,6 +98,14 @@ public:
 
 private:
     std::string                                 ExternalPath;
+    #ifdef NDEBUG
+        const bool                              enableValidationLayers = false;
+    #else
+        const bool                              enableValidationLayers = true;
+    #endif
+    const size_t                                MAX_FRAMES_IN_FLIGHT = 3;
+    const std::vector<const char*>              validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    const std::vector<const char*>              deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     VkInstance                                  instance;
     VkSurfaceKHR                                surface;
@@ -124,7 +119,6 @@ private:
     VkQueue                                     graphicsQueue;
     VkQueue                                     presentQueue;
 
-    SwapChainSupportDetails                     swapChainSupport;
     uint32_t                                    imageCount;
 
     deferredGraphics                            DeferredGraphics;

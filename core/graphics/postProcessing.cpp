@@ -1,5 +1,7 @@
 #include "postProcessing.h"
+#include "core/operations.h"
 
+#include <iostream>
 #include <cstdint>          // нужна для UINT32_MAX
 #include <array>
 #include <algorithm>        // нужна для std::min/std::max

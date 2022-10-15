@@ -4,6 +4,7 @@
 #include "core/transformational/gltfmodel.h"
 
 #include <array>
+#include <iostream>
 
 shadowGraphics::shadowGraphics(uint32_t imageCount, VkExtent2D shadowExtent)
 {

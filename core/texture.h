@@ -1,9 +1,10 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include <libs/vulkan/vulkan.h>
+
 #include <string>
 #include <vector>
-#include "operations.h"
 
 namespace tinygltf{
     struct Image;
@@ -106,8 +107,8 @@ public:
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 
-    VkImageView & getTextureImageView();
-    VkSampler   & getTextureSampler();
+    VkImageView& getTextureImageView();
+    VkSampler  & getTextureSampler();
 };
 
 

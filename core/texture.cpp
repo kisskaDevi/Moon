@@ -1,9 +1,11 @@
 #include "texture.h"
-#include <iostream>
+#include "operations.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <libs/stb-master/stb_image.h>
 #include "libs/tinygltf-master/tiny_gltf.h"
+
+#include <iostream>
 
 texture::texture(){}
 
@@ -133,7 +135,7 @@ void texture::createTextureImage(
 {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;      //Пиксели располагаются построчно с 4 байтами на пиксель
+    VkDeviceSize imageSize = 4 * texWidth * texHeight;      //Пиксели располагаются построчно с 4 байтами на пиксель
 
     if(!pixels)    throw std::runtime_error("failed to load texture image!");
 

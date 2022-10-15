@@ -1,7 +1,8 @@
 #include "object.h"
+#include "gltfmodel.h"
 #include "core/operations.h"
 
-#include "gltfmodel.h"
+#include <iostream>
 
 object::object()
 {

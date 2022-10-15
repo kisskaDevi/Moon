@@ -1,4 +1,5 @@
 #include "core/vulkanCore.h"
+#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
 
 #include <chrono>
 #include <stdexcept>        // предотвращения ошибок
@@ -38,7 +39,6 @@ int main()
     app.createSurface(window);
     app.pickPhysicalDevice();
     app.createLogicalDevice();
-    app.checkSwapChainSupport();
     app.createCommandPool();
     app.createGraphics(window);
 
@@ -115,7 +115,6 @@ void recreateSwapChain(VkApplication *app, GLFWwindow* window)
     app->destroyGraphics();
     app->freeCommandBuffers();
 
-    app->checkSwapChainSupport();
     app->createGraphics(window);
     app->updateDescriptorSets();
     app->createCommandBuffers();

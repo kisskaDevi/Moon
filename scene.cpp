@@ -1,4 +1,5 @@
 #include "scene.h"
+#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
 
 bool updateLightCone = false;
 float spotAngle = 90.0f;

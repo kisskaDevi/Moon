@@ -1,8 +1,14 @@
 #ifndef SHADOWGRAPHICS_H
 #define SHADOWGRAPHICS_H
 
-#include "core/graphics/graphics.h"
 #include <libs/vulkan/vulkan.h>
+#include "attachments.h"
+
+#include <vector>
+#include <string>
+
+struct Node;
+class object;
 
 struct shadowInfo{
     uint32_t                    imageCount;
@@ -47,7 +53,7 @@ private:
     VkCommandPool                       shadowCommandPool;
     std::vector<VkCommandBuffer>        shadowCommandBuffer;
 
-    void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
+    void renderNode(VkCommandBuffer commandBuffer, Node* node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
 public:
     shadowGraphics(uint32_t imageCount, VkExtent2D shadowExtent = {1024,1024});
     void destroy();

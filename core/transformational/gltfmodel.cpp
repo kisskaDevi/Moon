@@ -5,6 +5,10 @@
 #include "gltfmodel.h"
 #include "core/operations.h"
 
+#include <iostream>
+#include <fstream>
+#include <stdlib.h>
+
 /* BoundingBox */
 
 BoundingBox::BoundingBox(){};

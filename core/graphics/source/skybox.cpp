@@ -1,9 +1,10 @@
 #include "core/graphics/graphics.h"
 #include "core/operations.h"
 #include "core/transformational/object.h"
-#include "core/transformational/gltfmodel.h"
+#include "core/texture.h"
 
 #include <array>
+#include <iostream>
 
 void deferredGraphics::Skybox::Destroy(VkDevice* device)
 {

@@ -1,9 +1,10 @@
 #ifndef SSLR_H
 #define SSLR_H
 
-#include <string>
 #include <libs/vulkan/vulkan.h>
 #include "attachments.h"
+
+#include <string>
 
 class SSLRGraphics
 {

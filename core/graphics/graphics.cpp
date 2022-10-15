@@ -2,8 +2,8 @@
 #include "core/transformational/object.h"
 #include "core/transformational/camera.h"
 #include "core/transformational/light.h"
-#include "core/graphics/shadowGraphics.h"
 #include "core/texture.h"
+#include "core/operations.h"
 
 #include <array>
 

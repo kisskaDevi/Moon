@@ -2,7 +2,9 @@
 #include "core/operations.h"
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
+
 #include <array>
+#include <iostream>
 
 void deferredGraphics::Base::Destroy(VkDevice* device)
 {

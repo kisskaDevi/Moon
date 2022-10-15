@@ -2,14 +2,13 @@
 #define POSTPROCESSING_H
 
 #include<libs/vulkan/vulkan.h>
-
-#include <libs/glm/glm/glm.hpp>
-#include <libs/glm/glm/gtc/matrix_transform.hpp>
+#include "attachments.h"
 
 #include <string>
-#include <iostream>
-#include "attachments.h"
-#include "core/operations.h"
+
+struct SwapChainSupportDetails;
+struct QueueFamilyIndices;
+class GLFWwindow;
 
 struct postProcessingPushConst
 {

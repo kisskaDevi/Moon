@@ -1,9 +1,10 @@
 #ifndef SSAO_H
 #define SSAO_H
 
-#include <string>
 #include <libs/vulkan/vulkan.h>
 #include "attachments.h"
+
+#include <string>
 
 class SSAOGraphics
 {

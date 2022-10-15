@@ -1,13 +1,16 @@
 #include "vulkanCore.h"
-#include "operations.h"
 #include "transformational/camera.h"
 #include "transformational/light.h"
 #include "transformational/object.h"
 #include "transformational/gltfmodel.h"
 
+#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
+
+#include <iostream>
+#include <set>
+
 VkApplication::VkApplication()
-{
-}
+{}
 
 //==========================Instance=============================================//
 
@@ -234,14 +237,6 @@ void VkApplication::createLogicalDevice()
     vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).presentFamily.value(), 0, &presentQueue);
 }
 
-void VkApplication::checkSwapChainSupport()
-{
-    swapChainSupport = querySwapChainSupport(physicalDevices.at(physicalDeviceNumber).device,surface);                          //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
-    imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                               //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)            //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений и проверяем не совпадает ли максимальное число изображений с минимальным
-        imageCount = swapChainSupport.capabilities.maxImageCount;
-}
-
 void VkApplication::createCommandPool()
 {
     /* Главной целью очереди является выполнение работы от имени вашего приложения.
@@ -261,6 +256,11 @@ void VkApplication::createCommandPool()
 
 void VkApplication::createGraphics(GLFWwindow* window, VkExtent2D extent, VkSampleCountFlagBits MSAASamples)
 {
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevices.at(physicalDeviceNumber).device,surface);                          //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
+    imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                               //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)            //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений и проверяем не совпадает ли максимальное число изображений с минимальным
+        imageCount = swapChainSupport.capabilities.maxImageCount;
+
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 
     if(extent.height==0&&extent.width==0)

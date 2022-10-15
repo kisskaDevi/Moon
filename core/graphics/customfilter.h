@@ -1,8 +1,11 @@
 #ifndef CUSTOMFILTER_H
 #define CUSTOMFILTER_H
 
+#include <libs/vulkan/vulkan.h>
 #include "attachments.h"
+
 #include <string>
+#include <vector>
 
 struct CustomFilterPushConst{
     alignas (4) float deltax;

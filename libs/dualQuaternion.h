@@ -42,7 +42,7 @@ public:
   template<typename T> friend dualQuaternion<T> convert(const quaternion<T>& rotation, const quaternion<T>& translation);
 
   template<typename T> friend dualQuaternion<T> convert(const glm::mat<4,4,T,glm::defaultp>& SE3);
-  template<typename T> friend glm::mat4x4 convert(const dualQuaternion<T>& quat);
+  template<typename T> friend glm::mat<4,4,T,glm::defaultp> convert(const dualQuaternion<T>& quat);
 
   template<typename T> friend dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>& quat2, const T& t);
 };
@@ -231,14 +231,14 @@ dualQuaternion<T>   convert(const quaternion<T>& rotation, const quaternion<T>& 
 }
 
 template<typename T>
-glm::mat4x4 convert(const dualQuaternion<T>& quat)
+glm::mat<4,4,T,glm::defaultp> convert(const dualQuaternion<T>& quat)
 {
     quaternion<T> rotatrion = quat.rotation();
     quaternion<T> translation = quat.translation();
 
-    glm::mat3x3 R = convert(rotatrion);
+    glm::mat<3,3,T,glm::defaultp> R = convert(rotatrion);
 
-    glm::mat4x4 SE3;
+    glm::mat<4,4,T,glm::defaultp> SE3;
 
     SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = T(0);
     SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = T(0);
@@ -251,7 +251,7 @@ glm::mat4x4 convert(const dualQuaternion<T>& quat)
 template<typename T>
 dualQuaternion<T> convert(const glm::mat<4,4,T,glm::defaultp>& SE3)
 {
-    glm::mat3x3 R;
+    glm::mat<3,3,T,glm::defaultp> R;
 
     R[0][0] = SE3[0][0];    R[0][1] = SE3[0][1];    R[0][2] = SE3[0][2];
     R[1][0] = SE3[1][0];    R[1][1] = SE3[1][1];    R[1][2] = SE3[1][2];
@@ -263,6 +263,7 @@ dualQuaternion<T> convert(const glm::mat<4,4,T,glm::defaultp>& SE3)
     return convert(rotatrion,translation);
 }
 
+
 template<typename T>
 dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>& quat2, const T& t)
 {
@@ -273,11 +274,11 @@ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>&
 
     dualQuaternion<T> dQuat(conjugate(r1)*r2,T(0.5)*conjugate(r1)*(t2-t1)*r2);
     T theta = T(2)*glm::acos(dQuat.p.scalar());
-    glm::vec3 l = glm::normalize(dQuat.p.vector());
+    glm::vec<3,T,glm::defaultp> l = glm::normalize(dQuat.p.vector());
 
-    glm::vec3 tr = glm::vec3(dQuat.translation().vector());
+    glm::vec<3,T,glm::defaultp> tr = glm::vec<3,T,glm::defaultp>(dQuat.translation().vector());
     T d = tr.x*l.x + tr.y*l.y + tr.z*l.z;
-    glm::vec3 m = T(0.5)*(glm::cross(tr,l)+(tr-d*l)/glm::tan(T(0.5)*theta));
+    glm::vec<3,T,glm::defaultp> m = T(0.5)*(glm::cross(tr,l)+(tr-d*l)/glm::tan(T(0.5)*theta));
 
     theta *= t;
     d     *= t;

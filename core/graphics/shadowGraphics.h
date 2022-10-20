@@ -9,14 +9,6 @@
 
 struct Node;
 class object;
-
-struct shadowInfo{
-    uint32_t                    imageCount;
-    VkExtent2D                  extent;
-    VkSampleCountFlagBits       msaaSamples;
-    VkRenderPass                renderPass;
-};
-
 struct QueueFamilyIndices;
 
 class shadowGraphics
@@ -46,7 +38,7 @@ private:
         std::vector<VkDescriptorSet>    DescriptorSets;
 
         void Destroy(VkDevice* device);
-        void createPipeline(VkDevice* device, shadowInfo info);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
     }shadow;
 

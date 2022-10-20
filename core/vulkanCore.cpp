@@ -16,47 +16,42 @@ VkApplication::VkApplication()
 
 void VkApplication::VkApplication::createInstance()
 {
-    /*Экземпляр Vulkan - это программная конструкция, которая которая логически отделяет
-     * состояние вашего приложения от других приложений или от библиотек, выполняемых в
-     * контексте вашего приложения.*/
-
-    //Структура короая описывает ваше приложение, исползуется при создании экземплряра VkInstanceCreateInfo
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";            //имя приложения
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);  //это версия вашего приложения
-    appInfo.pEngineName = "No Engine";                      //название движка или библиотеки вашего приложения
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);       //версия движка или библиотеки вашего приложения
-    appInfo.apiVersion = VK_API_VERSION_1_0;                //содержит версию вулкана на которое расчитано ваше приложение
+    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pEngineName = "No Engine";
+    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.apiVersion = VK_API_VERSION_1_0;
 
-    auto extensions = getRequiredExtensions();                                      //получить расширения, см далее в VkInstanceCreateInfo
+    auto extensions = getRequiredExtensions();
 
     //Структура описывает экземпляр Vulkan
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;                                         //cтруктура описание которой приведена выше
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());    //число расширений которое вы хотите включить
-    createInfo.ppEnabledExtensionNames = extensions.data();                         //и их имена
+    createInfo.pApplicationInfo = &appInfo;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
 
     if (enableValidationLayers && !checkValidationLayerSupport())
         throw std::runtime_error("validation layers requested, but not available!");
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers) //если включены уравни проверки
+    if (enableValidationLayers)
     {
         populateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());  //число слоёв экземпляра, которое вы хотите разрешить
-        createInfo.ppEnabledLayerNames = validationLayers.data();                       //и их имена соответственно
-        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;      //поле позволяет передать функции связанный список стуктур
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
     } else {
-        createInfo.enabledLayerCount = 0;                                               //число слоёв экземпляра
-        createInfo.pNext = nullptr;                                                     //поле позволяет передать функции связанный список стуктур
+        createInfo.enabledLayerCount = 0;
+        createInfo.pNext = nullptr;
     }
 
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)                //создаём экземпляр функцией vkCreateInstance, в случае успеха возвращает VK_SUCCESS
-        throw std::runtime_error("failed to create instance!");                         //параметр pAllocator указывает на аллокатор памяти CPU который ваше приложение может передать для управления используемой Vulkan памятью
+    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
+        throw std::runtime_error("failed to create instance!");
 }
-    std::vector<const char*> VkApplication::getRequiredExtensions()                     //создадим getRequiredExtensions функцию, которая будет возвращать требуемый список расширений в зависимости от того, включены ли уровни проверки или нет
+    std::vector<const char*> VkApplication::getRequiredExtensions()
     {
         uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions;
@@ -65,32 +60,26 @@ void VkApplication::VkApplication::createInstance()
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
         if(enableValidationLayers)
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); //макрос, который равен буквальной строке «VK_EXT_debug_utils»
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
         return extensions;
     }
     bool VkApplication::checkValidationLayerSupport()
     {
-        uint32_t layerCount;                                        //количество слоёв экземпляра
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);   //если pProperties равен nullptr, то pPropertyCount должно указывать на переменную, в которую будет записано число доступных Vulkan слоёв
+        uint32_t layerCount;
+        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
-        std::vector<VkLayerProperties> availableLayers(layerCount);                 //массив структур в которые будет записана информация о зарегистрированных слоях проверки
-        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());    //на этом моменте будет произведена запись
+        std::vector<VkLayerProperties> availableLayers(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-        for (const char* layerName : validationLayers)                  //берём из перемененной validationLayers строки
-        {
+        for (const char* layerName : validationLayers){
             bool layerFound = false;
-
-            for(const auto& layerProperties: availableLayers)           //берём из локальной переменной availableLayers
-            {
-                if(strcmp(layerName, layerProperties.layerName)==0)     //и сравниваем, если хотя бы одно совпадение есть, выходим из цикла и попадаем в конец внешнего цикла
-                {
-                    layerFound = true;
-                    break;
+            for(const auto& layerProperties: availableLayers){
+                if(strcmp(layerName, layerProperties.layerName)==0){
+                    layerFound = true;  break;
                 }
             }
-
-            if(!layerFound)                                             //если не нашли, возвращаем false
+            if(!layerFound)
                 return false;
         }
 
@@ -141,11 +130,8 @@ void VkApplication::VkApplication::setupDebugMessenger()
 
 void VkApplication::createSurface(GLFWwindow* window)
 {
-    /*Объект, в который осуществляется рендеринг для показа пользователю, называется поверхностью(surface) и представлен при помощи дескриптора VkSurfaceKHR.
-     * Это специальный объект, вводимый расширением VK_KHR_surface. Это расширение вводит общую функциональнать для работы с поверхностями, которая в дальнейшем
-     * адаптируется под каждую платформу лоя получения платформенно-зависимого интерфейса для связи с поверхостью окна*/
 
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)         //Эта функция создает поверхность Vulkan для указанного окна window.
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
         throw std::runtime_error("failed to create window surface!");
 }
 
@@ -780,8 +766,8 @@ void                                VkApplication::removeBinds(){
 
 void                                VkApplication::setMinAmbientFactor(const float& minAmbientFactor){
     DeferredGraphics.setMinAmbientFactor(minAmbientFactor);
-    for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].setMinAmbientFactor(minAmbientFactor);
+    //for(uint32_t i=0;i<TransparentLayersCount;i++)
+    //    TransparentLayers[i].setMinAmbientFactor(minAmbientFactor);
 }
 
 void                                VkApplication::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition){

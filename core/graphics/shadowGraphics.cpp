@@ -177,7 +177,7 @@ void shadowGraphics::Shadow::Destroy(VkDevice* device)
     vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
-void shadowGraphics::Shadow::createPipeline(VkDevice* device, shadowInfo info)
+void shadowGraphics::Shadow::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\shaders\\shadow\\shad.spv");
     VkShaderModule vertShaderModule = createShaderModule(device,vertShaderCode);
@@ -208,14 +208,14 @@ void shadowGraphics::Shadow::createPipeline(VkDevice* device, shadowInfo info)
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float) info.extent.width;
-    viewport.height = (float) info.extent.height;
+    viewport.width = (float) pInfo->Extent.width;
+    viewport.height = (float) pInfo->Extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
-    scissor.extent.width = info.extent.width;
-    scissor.extent.height = info.extent.height;
+    scissor.extent.width = pInfo->Extent.width;
+    scissor.extent.height = pInfo->Extent.height;
     scissor.offset.x = 0;
     scissor.offset.y = 0;
 
@@ -280,17 +280,17 @@ void shadowGraphics::Shadow::createPipeline(VkDevice* device, shadowInfo info)
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 1;                                            //число структур в массиве структур
-        pipelineInfo.pStages = shaderStages;                                    //указывает на массив структур VkPipelineShaderStageCreateInfo, каждая из которых описыват одну стадию
-        pipelineInfo.pVertexInputState = &vertexInputInfo;                      //вершинный ввод
-        pipelineInfo.pInputAssemblyState = &inputAssembly;                      //фаза входной сборки
-        pipelineInfo.pViewportState = &viewportState;                           //Преобразование области вывода
-        pipelineInfo.pRasterizationState = &rasterizer;                         //растеризация
-        pipelineInfo.pMultisampleState = &multisampling;                        //мультсемплинг
-        pipelineInfo.pColorBlendState = &colorBlending;                         //смешивание цветов
+        pipelineInfo.stageCount = 1;
+        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.pVertexInputState = &vertexInputInfo;
+        pipelineInfo.pInputAssemblyState = &inputAssembly;
+        pipelineInfo.pViewportState = &viewportState;
+        pipelineInfo.pRasterizationState = &rasterizer;
+        pipelineInfo.pMultisampleState = &multisampling;
+        pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.layout = PipelineLayout;
-        pipelineInfo.renderPass = info.renderPass;                              //проход рендеринга
-        pipelineInfo.subpass = 0;                                               //подпроход рендеригка
+        pipelineInfo.renderPass = *pRenderPass;
+        pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
@@ -498,7 +498,7 @@ void shadowGraphics::createShadow()
     createRenderPass();
     createFramebuffer();
     shadow.createDescriptorSetLayout(device);
-    shadow.createPipeline(device,{image.Count,image.Extent,VK_SAMPLE_COUNT_1_BIT,RenderPass});
+    shadow.createPipeline(device,&image,&RenderPass);
     createDescriptorPool();
     createDescriptorSets();
 }

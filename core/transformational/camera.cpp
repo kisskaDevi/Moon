@@ -86,7 +86,7 @@ void camera::updateViewMatrix()
     rotateMatrix[3][3] = 1.0f;
 
     dQuat = convert(quat,quaternion<float>(0.0f,m_translate.x,m_translate.y,m_translate.z));
-    glm::mat4x4 transformMatrix = convert(dQuat);
+    glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
 
     viewMatrix = glm::inverse(m_globalTransform) * glm::inverse(transformMatrix);
 }

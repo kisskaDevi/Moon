@@ -1,5 +1,6 @@
 #include "scene.h"
 #include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
+#include "core/graphics/deferredGraphics/deferredgraphicsinterface.h"
 
 bool updateLightCone = false;
 float spotAngle = 90.0f;
@@ -7,12 +8,14 @@ float spotAngle = 90.0f;
 bool updateCamera = false;
 float cameraAngle = 45.0f;
 
-scene::scene()
+scene::scene(graphicsManager *app, deferredGraphicsInterface* graphics, std::string ExternalPath)
 {
-
+    this->app = app;
+    this->graphics = graphics;
+    this->ExternalPath = ExternalPath;
 }
 
-void scene::createScene(VkApplication *app, uint32_t WIDTH, uint32_t HEIGHT)
+void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
 {
     this->WIDTH = WIDTH;
     this->HEIGHT = HEIGHT;
@@ -24,7 +27,6 @@ void scene::createScene(VkApplication *app, uint32_t WIDTH, uint32_t HEIGHT)
     groups.push_back(new group);
     groups.push_back(new group);
 
-    std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
     std::vector<std::string> SKYBOX = {
         ExternalPath+"texture\\skybox\\left.jpg",
         ExternalPath+"texture\\skybox\\right.jpg",
@@ -39,18 +41,18 @@ void scene::createScene(VkApplication *app, uint32_t WIDTH, uint32_t HEIGHT)
         glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
         proj[1][1] *= -1.0f;
         cameras->setProjMatrix(proj);
-    app->setCameraObject(cameras);
+    graphics->setCameraObject(cameras);
 
     skyboxObject = new object(1,nullptr);
         skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
-    app->bindSkyBoxObject(skyboxObject, SKYBOX);
+    graphics->bindSkyBoxObject(skyboxObject, SKYBOX);
 
-    loadModels(app);
-    createLight(app);
-    createObjects(app);
+    loadModels();
+    createLight();
+    createObjects();
 }
 
-void scene::updateFrame(VkApplication *app, GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
+void scene::updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
 {
     this->WIDTH = WIDTH;
     this->HEIGHT = HEIGHT;
@@ -60,9 +62,9 @@ void scene::updateFrame(VkApplication *app, GLFWwindow* window, uint32_t frameNu
     cameras->setProjMatrix(proj);
 
     glfwPollEvents();
-    mouseEvent(app,window,frameTime);
-    keyboardEvent(app,window,frameTime);
-    updates(app,frameTime);
+    mouseEvent(window,frameTime);
+    keyboardEvent(window,frameTime);
+    updates(frameTime);
 
     for(size_t j=0;j<object3D.size();j++){
         object3D[j]->animationTimer += timeScale*frameTime;
@@ -70,22 +72,22 @@ void scene::updateFrame(VkApplication *app, GLFWwindow* window, uint32_t frameNu
     }
 }
 
-void scene::destroyScene(VkApplication *app)
+void scene::destroyScene()
 {
     for(size_t i=0;i<lightSource.size();i++){
-        app->removeLightSource(lightSource.at(i));
+        graphics->removeLightSource(lightSource.at(i));
     }
     for(size_t i=0;i<lightPoint.size();i++)
         delete lightPoint.at(i);
 
-    app->removeSkyBoxObject(skyboxObject);
+    graphics->removeSkyBoxObject(skyboxObject);
     delete skyboxObject;
 
     for (size_t i =0 ;i<gltfModel.size();i++)
         for (size_t j =0 ;j<gltfModel.at(i).size();j++)
-            app->destroyModel(gltfModel.at(i)[j]);
+            graphics->destroyModel(gltfModel.at(i)[j]);
 
-    app->removeBinds();
+    graphics->removeBinds();
     for (size_t i=0 ;i<object3D.size();i++){
         delete object3D.at(i);
     }
@@ -93,60 +95,57 @@ void scene::destroyScene(VkApplication *app)
     delete cameras;
 }
 
-void scene::loadModels(VkApplication *app)
+void scene::loadModels()
 {
-    std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
-
     size_t index = 0;
 
     gltfModel.resize(6);
 
     index = 0;
         gltfModel[0].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel[0].at(index));
+        graphics->createModel(gltfModel[0].at(index));
     index++;
         gltfModel[0].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel[0].at(index));
+        graphics->createModel(gltfModel[0].at(index));
     index++;
         gltfModel[0].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel[0].at(index));
+        graphics->createModel(gltfModel[0].at(index));
     index++;
 
     index = 0;
         gltfModel[1].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel[1].at(index));
+        graphics->createModel(gltfModel[1].at(index));
     index++;
         gltfModel[1].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel[1].at(index));
+        graphics->createModel(gltfModel[1].at(index));
     index++;
         gltfModel[1].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Bee.glb"));
-        app->createModel(gltfModel[1].at(index));
+        graphics->createModel(gltfModel[1].at(index));
     index++;
 
     index = 0;
         gltfModel[2].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Box.glb"));
-        app->createModel(gltfModel[2].at(index));
+        graphics->createModel(gltfModel[2].at(index));
     index++;
 
     index = 0;
         gltfModel[3].push_back(new struct gltfModel(ExternalPath + "model\\glTF\\Sponza\\Sponza.gltf"));
-        app->createModel(gltfModel[3].at(index));
+        graphics->createModel(gltfModel[3].at(index));
     index++;
 
     index = 0;
         gltfModel[4].push_back(new struct gltfModel(ExternalPath + "model\\gltf\\kerosene_lamp\\scene.gltf"));
-        app->createModel(gltfModel[4].at(index));
+        graphics->createModel(gltfModel[4].at(index));
     index++;
 
     index = 0;
         gltfModel[5].push_back(new struct gltfModel(ExternalPath + "model\\glb\\RetroUFO.glb"));
-        app->createModel(gltfModel[5].at(index));
+        graphics->createModel(gltfModel[5].at(index));
     index++;
 }
 
-void scene::createLight(VkApplication *app)
+void scene::createLight()
 {
-    std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
     std::string LIGHT_TEXTURE0  = ExternalPath + "texture\\icon.PNG";
     std::string LIGHT_TEXTURE1  = ExternalPath + "texture\\light1.jpg";
     std::string LIGHT_TEXTURE2  = ExternalPath + "texture\\light2.jpg";
@@ -162,7 +161,7 @@ void scene::createLight(VkApplication *app)
     groups.at(0)->addObject(lightPoint.at(index));
 
     for(int i=index;i<6;i++,index++){
-        app->addLightSource(lightSource.at(index));
+        graphics->addLightSource(lightSource.at(index));
     }
 
     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
@@ -173,28 +172,28 @@ void scene::createLight(VkApplication *app)
     lightSource.at(index)->setScattering(true);
     groups.at(2)->addObject(lightSource.at(index));
     index++;
-    app->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->addLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE1));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(3)->addObject(lightSource.at(index));
     index++;
-    app->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->addLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE2));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(4)->addObject(lightSource.at(index));
     index++;
-    app->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->addLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE3));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(5)->addObject(lightSource.at(index));
     index++;
-    app->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->addLightSource(lightSource.at(lightSource.size()-1));
 
     for(int i=0;i<5;i++){
         lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
@@ -213,18 +212,18 @@ void scene::createLight(VkApplication *app)
     }
 }
 
-void scene::createObjects(VkApplication *app)
+void scene::createObjects()
 {
     uint32_t index=0;
     object3D.push_back( new object(gltfModel.at(0).size(),gltfModel.at(0).data()) );
-    app->bindStencilObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    graphics->bindStencilObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
     object3D.push_back( new object(gltfModel.at(1).size(),gltfModel.at(1).data()) );
-    app->bindStencilObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    graphics->bindStencilObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -233,7 +232,7 @@ void scene::createObjects(VkApplication *app)
     index++;
 
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
-    app->bindStencilObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    graphics->bindStencilObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->translate(glm::vec3(0.0f,0.0f,3.0f));
     object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
@@ -243,40 +242,40 @@ void scene::createObjects(VkApplication *app)
     index++;
 
     object3D.push_back( new object(gltfModel.at(3).size(),gltfModel.at(3).data()) );
-    app->bindBaseObject(object3D.at(index));
+    graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
     index++;
 
     object3D.push_back( new object(gltfModel.at(2).size(),gltfModel.at(2).data()) );
-    app->bindBloomObject(object3D.at(index));
+    graphics->bindBloomObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     object *Box0 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
-    app->bindBaseObject(object3D.at(index));
+    graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO1 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
-    app->bindBaseObject(object3D.at(index));
+    graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
-    app->bindBaseObject(object3D.at(index));
+    graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO3 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
-    app->bindBaseObject(object3D.at(index));
+    graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO4 = object3D.at(index);
@@ -300,7 +299,7 @@ void scene::createObjects(VkApplication *app)
     groups.at(5)->addObject(UFO4);
 }
 
-void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
+void scene::mouseEvent(GLFWwindow* window, float frameTime)
 {
     static_cast<void>(frameTime);
 
@@ -308,7 +307,7 @@ void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
 
     int primitiveNumber = INT_FAST32_MAX;
     for(uint32_t i=0;i<app->getImageCount();i++){
-        primitiveNumber = app->readStorageBuffer(i);
+        primitiveNumber = graphics->readStorageBuffer(i);
         if(primitiveNumber!=INT_FAST32_MAX)
             break;
     }
@@ -325,10 +324,10 @@ void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
         yMpos = y;
         cameras->rotateX(angy,glm::vec3(1.0f,0.0f,0.0f));
         cameras->rotateY(angx,glm::vec3(0.0f,0.0f,1.0f));
-        app->resetUboWorld();
+        graphics->resetUboWorld();
 
         for(uint32_t i=0;i<app->getImageCount();i++){
-            app->updateStorageBuffer(i,glm::vec4(-1.0f+2.0f*xMpos/(WIDTH),-1.0f+2.0f*yMpos/(HEIGHT),0.0f,0.0f));
+            graphics->updateStorageBuffer(i,glm::vec4(-1.0f+2.0f*xMpos/(WIDTH),-1.0f+2.0f*yMpos/(HEIGHT),0.0f,0.0f));
         }
     }
     else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)
@@ -356,7 +355,7 @@ void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
                 lightSource.at(index)->setProjectionMatrix(Proj);
             }
         }
-        app->resetUboLight();
+        graphics->resetUboLight();
         updateLightCone = false;
     }
 
@@ -366,12 +365,12 @@ void scene::mouseEvent(VkApplication *app, GLFWwindow* window, float frameTime)
             proj[1][1] *= -1.0f;
             cameras->setProjMatrix(proj);
         }
-        app->resetUboWorld();
+        graphics->resetUboWorld();
         updateCamera = false;
     }
 }
 
-void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTime)
+void scene::keyboardEvent(GLFWwindow* window, float frameTime)
 {
     float sensitivity = 5.0f*frameTime;
     if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
@@ -380,7 +379,7 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         float y = -sensitivity*cameras->getViewMatrix()[1][2];
         float z = -sensitivity*cameras->getViewMatrix()[2][2];
         cameras->translate(glm::vec3(x,y,z));
-        app->resetUboWorld();
+        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
     {
@@ -388,7 +387,7 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         float y = sensitivity*cameras->getViewMatrix()[1][2];
         float z = sensitivity*cameras->getViewMatrix()[2][2];
         cameras->translate(glm::vec3(x,y,z));
-        app->resetUboWorld();
+        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
     {
@@ -396,7 +395,7 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         float y = -sensitivity*cameras->getViewMatrix()[1][0];
         float z = -sensitivity*cameras->getViewMatrix()[2][0];
         cameras->translate(glm::vec3(x,y,z));
-        app->resetUboWorld();
+        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
     {
@@ -404,7 +403,7 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         float y = sensitivity*cameras->getViewMatrix()[1][0];
         float z = sensitivity*cameras->getViewMatrix()[2][0];
         cameras->translate(glm::vec3(x,y,z));
-        app->resetUboWorld();
+        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_Z) == GLFW_PRESS)
     {
@@ -412,7 +411,7 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         float y = sensitivity*cameras->getViewMatrix()[1][1];
         float z = sensitivity*cameras->getViewMatrix()[2][1];
         cameras->translate(glm::vec3(x,y,z));
-        app->resetUboWorld();
+        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_X) == GLFW_PRESS)
     {
@@ -420,79 +419,79 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         float y = -sensitivity*cameras->getViewMatrix()[1][1];
         float z = -sensitivity*cameras->getViewMatrix()[2][1];
         cameras->translate(glm::vec3(x,y,z));
-        app->resetUboWorld();
+        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_4) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(0.0f,0.0f,1.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_6) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(0.0f,0.0f,1.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_8) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(1.0f,0.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_5) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(1.0f,0.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_7) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(0.0f,1.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_9) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(0.0f,1.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(-1.0f,0.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(1.0f,0.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,1.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,-1.0f,0.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_ADD) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,0.0f,1.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,0.0f,-1.0f));
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_1) == GLFW_PRESS)
     {
@@ -519,7 +518,7 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         object3D[0]->setStencilEnable(!object3D[0]->getStencilEnable());
         object3D[1]->setStencilEnable(!object3D[1]->getStencilEnable());
         object3D[2]->setStencilEnable(!object3D[2]->getStencilEnable());
-        app->resetCmdWorld();
+        graphics->resetCmdWorld();
     }
     backRStage = glfwGetKey(window,GLFW_KEY_R);
     if(backTStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_T) == 0)
@@ -548,13 +547,13 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
     {
         size_t index = object3D.size();
         object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
-        app->bindBaseObject(object3D.at(index));
+        graphics->bindBaseObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslate());
         object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-        app->resetCmdWorld();
-        app->resetCmdLight();
-        app->resetUboWorld();
-        app->resetUboLight();
+        graphics->resetCmdWorld();
+        graphics->resetCmdLight();
+        graphics->resetUboWorld();
+        graphics->resetUboLight();
     }
     backNStage = glfwGetKey(window,GLFW_KEY_N);
     if(backBStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_B) == 0)
@@ -562,13 +561,13 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         app->deviceWaitIdle();
         if(object3D.size()>0){
             size_t index = object3D.size()-1;
-            if(app->removeBaseObject(object3D[index]))
+            if(graphics->removeBaseObject(object3D[index]))
             {
                 delete object3D[index];
                 object3D.erase(object3D.begin()+index);
-                app->resetCmdWorld();
-                app->resetCmdLight();
-                app->resetUboWorld();
+                graphics->resetCmdWorld();
+                graphics->resetCmdLight();
+                graphics->resetUboWorld();
             }
         }
     }
@@ -576,12 +575,12 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
     if(backGStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_G) == 0)
     {
         if(lightPointer<20){
-            app->addLightSource(lightSource.at(lightPointer));
+            graphics->addLightSource(lightSource.at(lightPointer));
             lightPointer++;
         }
-        app->resetCmdWorld();
-        app->resetCmdLight();
-        app->resetUboLight();
+        graphics->resetCmdWorld();
+        graphics->resetCmdLight();
+        graphics->resetUboLight();
     }
     backGStage = glfwGetKey(window,GLFW_KEY_G);
     if(backHStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_H) == 0)
@@ -589,11 +588,11 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
         app->deviceWaitIdle();
         if(lightPointer>0){
             lightPointer--;
-            app->removeLightSource(lightSource.at(lightPointer));
+            graphics->removeLightSource(lightSource.at(lightPointer));
         }
-        app->resetCmdWorld();
-        app->resetCmdLight();
-        app->resetUboLight();
+        graphics->resetCmdWorld();
+        graphics->resetCmdLight();
+        graphics->resetUboLight();
 
     }
     backHStage = glfwGetKey(window,GLFW_KEY_H);
@@ -601,14 +600,14 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
     if(glfwGetKey(window,GLFW_KEY_KP_0) == GLFW_PRESS)
     {
         minAmbientFactor -= 0.1f*sensitivity;
-        app->setMinAmbientFactor(minAmbientFactor);
-        app->resetCmdWorld();
+        graphics->setMinAmbientFactor(minAmbientFactor);
+        graphics->resetCmdWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_2) == GLFW_PRESS)
     {
         minAmbientFactor += 0.1f*sensitivity;
-        app->setMinAmbientFactor(minAmbientFactor);
-        app->resetCmdWorld();
+        graphics->setMinAmbientFactor(minAmbientFactor);
+        graphics->resetCmdWorld();
     }
 
     if(glfwGetKey(window,GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS)
@@ -624,7 +623,7 @@ void scene::keyboardEvent(VkApplication *app, GLFWwindow* window, float frameTim
     }
 }
 
-void scene::updates(VkApplication* app, float frameTime)
+void scene::updates(float frameTime)
 {
     globalTime += frameTime;
     float w = 0.1f;
@@ -637,8 +636,8 @@ void scene::updates(VkApplication* app, float frameTime)
                                 sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
                                 sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
 
-    app->resetUboWorld();
-    app->resetUboLight();
+    graphics->resetUboWorld();
+    graphics->resetUboLight();
 }
 
 void scrol(GLFWwindow *window, double xoffset, double yoffset)

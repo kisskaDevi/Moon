@@ -11,36 +11,36 @@ INCLUDEPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 DEPENDPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 
 DISTFILES += \
-    core/graphics/shaders/SpotLightingPass/SpotLighting.frag \
-    core/graphics/shaders/SpotLightingPass/SpotLighting.vert \
-    core/graphics/shaders/SpotLightingPass/SpotLightingAmbient.frag \
-    core/graphics/shaders/SpotLightingPass/SpotLightingAmbient.vert \
-    core/graphics/shaders/SpotLightingPass/SpotLightingScattering.frag \
-    core/graphics/shaders/bloom/bloom.frag \
-    core/graphics/shaders/bloom/bloom.vert \
-    core/graphics/shaders/compile.bat \
-    core/graphics/shaders/base/base.frag \
-    core/graphics/shaders/base/base.vert \
-    core/graphics/shaders/compileBuild.bat \
-    core/graphics/shaders/customFilter/customFilter.frag \
-    core/graphics/shaders/customFilter/customFilter.vert \
-    core/graphics/shaders/oneColor/oneColor.frag \
-    core/graphics/shaders/oneColor/oneColor.vert \
-    core/graphics/shaders/postProcessing/firstPostProcessingShader.frag \
-    core/graphics/shaders/postProcessing/firstPostProcessingShader.vert \
-    core/graphics/shaders/shadow/shadowMapShader.vert \
-    core/graphics/shaders/postProcessing/postProcessingShader.frag \
-    core/graphics/shaders/postProcessing/postProcessingShader.vert \
-    core/graphics/shaders/skybox/skybox.frag \
-    core/graphics/shaders/skybox/skybox.vert \
-    core/graphics/shaders/ssao/SSAO.frag \
-    core/graphics/shaders/ssao/SSAO.vert \
-    core/graphics/shaders/sslr/SSLR.frag \
-    core/graphics/shaders/sslr/SSLR.vert \
-    core/graphics/shaders/stencil/firstStencil.frag \
-    core/graphics/shaders/stencil/firstStencil.vert \
-    core/graphics/shaders/stencil/secondStencil.frag \
-    core/graphics/shaders/stencil/secondStencil.vert \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLighting.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLighting.vert \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingAmbient.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingAmbient.vert \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingScattering.frag \
+    core/graphics/deferredGraphics/shaders/bloom/bloom.frag \
+    core/graphics/deferredGraphics/shaders/bloom/bloom.vert \
+    core/graphics/deferredGraphics/shaders/compile.bat \
+    core/graphics/deferredGraphics/shaders/base/base.frag \
+    core/graphics/deferredGraphics/shaders/base/base.vert \
+    core/graphics/deferredGraphics/shaders/compileBuild.bat \
+    core/graphics/deferredGraphics/shaders/customFilter/customFilter.frag \
+    core/graphics/deferredGraphics/shaders/customFilter/customFilter.vert \
+    core/graphics/deferredGraphics/shaders/oneColor/oneColor.frag \
+    core/graphics/deferredGraphics/shaders/oneColor/oneColor.vert \
+    core/graphics/deferredGraphics/shaders/postProcessing/firstPostProcessingShader.frag \
+    core/graphics/deferredGraphics/shaders/postProcessing/firstPostProcessingShader.vert \
+    core/graphics/deferredGraphics/shaders/shadow/shadowMapShader.vert \
+    core/graphics/deferredGraphics/shaders/postProcessing/postProcessingShader.frag \
+    core/graphics/deferredGraphics/shaders/postProcessing/postProcessingShader.vert \
+    core/graphics/deferredGraphics/shaders/skybox/skybox.frag \
+    core/graphics/deferredGraphics/shaders/skybox/skybox.vert \
+    core/graphics/deferredGraphics/shaders/ssao/SSAO.frag \
+    core/graphics/deferredGraphics/shaders/ssao/SSAO.vert \
+    core/graphics/deferredGraphics/shaders/sslr/SSLR.frag \
+    core/graphics/deferredGraphics/shaders/sslr/SSLR.vert \
+    core/graphics/deferredGraphics/shaders/stencil/firstStencil.frag \
+    core/graphics/deferredGraphics/shaders/stencil/firstStencil.vert \
+    core/graphics/deferredGraphics/shaders/stencil/secondStencil.frag \
+    core/graphics/deferredGraphics/shaders/stencil/secondStencil.vert \
     model/glTF/Sponza/Sponza.gltf \
     model/glb/Bee.glb \
     model/glb/Box.glb \
@@ -58,17 +58,18 @@ DISTFILES += \
     texture/skybox/top.jpg
 
 SOURCES += \
-    core/graphics/attachments.cpp \
-    core/graphics/customfilter.cpp \
-    core/graphics/source/SpotLighting.cpp \
-    core/graphics/source/base.cpp \
-    core/graphics/source/extension.cpp \
-    core/graphics/source/skybox.cpp \
-    core/graphics/graphics.cpp \
-    core/graphics/postProcessing.cpp \
-    core/graphics/shadowGraphics.cpp \
-    core/graphics/ssao.cpp \
-    core/graphics/sslr.cpp \
+    core/graphics/deferredGraphics/attachments.cpp \
+    core/graphics/deferredGraphics/customfilter.cpp \
+    core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
+    core/graphics/deferredGraphics/source/SpotLighting.cpp \
+    core/graphics/deferredGraphics/source/base.cpp \
+    core/graphics/deferredGraphics/source/extension.cpp \
+    core/graphics/deferredGraphics/source/skybox.cpp \
+    core/graphics/deferredGraphics/graphics.cpp \
+    core/graphics/deferredGraphics/postProcessing.cpp \
+    core/graphics/deferredGraphics/shadowGraphics.cpp \
+    core/graphics/deferredGraphics/ssao.cpp \
+    core/graphics/deferredGraphics/sslr.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/light.cpp \
@@ -76,20 +77,23 @@ SOURCES += \
     core/transformational/gltfmodel.cpp \
     core/operations.cpp \
     core/texture.cpp \
-    core/vulkanCore.cpp\
+    core/graphicsManager.cpp\
     physicalobject.cpp \
     main.cpp \
     scene.cpp \
     scene2.cpp
 
 HEADERS += \
-    core/graphics/attachments.h \
-    core/graphics/customfilter.h \
-    core/graphics/graphics.h \
-    core/graphics/postProcessing.h \
-    core/graphics/shadowGraphics.h \
-    core/graphics/ssao.h \
-    core/graphics/sslr.h \
+    core/graphics/deferredGraphics/attachments.h \
+    core/graphics/deferredGraphics/bufferObjects.h \
+    core/graphics/deferredGraphics/customfilter.h \
+    core/graphics/deferredGraphics/deferredgraphicsinterface.h \
+    core/graphics/deferredGraphics/graphics.h \
+    core/graphics/deferredGraphics/postProcessing.h \
+    core/graphics/deferredGraphics/shadowGraphics.h \
+    core/graphics/deferredGraphics/ssao.h \
+    core/graphics/deferredGraphics/sslr.h \
+    core/graphics/graphicsInterface.h \
     core/transformational/transformational.h \
     core/transformational/camera.h \
     core/transformational/group.h \
@@ -101,7 +105,7 @@ HEADERS += \
     physicalobject.h \
     core/operations.h \
     core/texture.h \
-    core/vulkanCore.h \
+    core/graphicsManager.h \
     scene.h \
     scene2.h
 

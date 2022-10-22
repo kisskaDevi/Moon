@@ -2,9 +2,12 @@
 #define LIGHT_H
 
 #include "transformational.h"
-#include "core/graphics/graphics.h"
+#include "libs/vulkan/vulkan.h"
+
+#include <string>
 
 class texture;
+class object;
 class shadowGraphics;
 struct QueueFamilyIndices;
 

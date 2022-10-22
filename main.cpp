@@ -1,4 +1,5 @@
-#include "core/vulkanCore.h"
+#include "core/graphicsManager.h"
+#include "core/graphics/deferredGraphics/deferredgraphicsinterface.h"
 #include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
 
 #include <chrono>
@@ -24,7 +25,7 @@ std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
-void recreateSwapChain(VkApplication* app, GLFWwindow* window);
+void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window);
 
 #include "scene.h"
 
@@ -32,28 +33,27 @@ int main()
 {
     initializeWindow(window);
 
-    VkApplication app;
-    app.setExternalPath(ExternalPath);
+    deferredGraphicsInterface graphics(ExternalPath);
+
+    graphicsManager app;
     app.createInstance();
     app.setupDebugMessenger();
     app.createSurface(window);
     app.pickPhysicalDevice();
     app.createLogicalDevice();
     app.createCommandPool();
-    app.createGraphics(window);
+    app.createGraphics(&graphics,window);
+    graphics.setEmptyTexture(ZERO_TEXTURE);
 
-    app.setEmptyTexture(ZERO_TEXTURE);
+    scene testScene(&app,&graphics,ExternalPath);
+    testScene.createScene(WIDTH,HEIGHT);
 
-    scene testScene;
-
-    testScene.createScene(&app,WIDTH,HEIGHT);
-
-    app.updateDescriptorSets();
+    graphics.updateDescriptorSets();
     app.createCommandBuffers();
     app.createSyncObjects();
 
-    app.resetUboWorld();
-    app.resetUboLight();
+    graphics.resetUboWorld();
+    graphics.resetUboLight();
 
     static auto pastTime = std::chrono::high_resolution_clock::now();
 
@@ -72,16 +72,16 @@ int main()
 
         if(app.checkNextFrame()!=VK_ERROR_OUT_OF_DATE_KHR)
         {
-            testScene.updateFrame(&app,window,app.getImageIndex(),frameTime,WIDTH,HEIGHT);
+            testScene.updateFrame(window,app.getImageIndex(),frameTime,WIDTH,HEIGHT);
 
             VkResult result = app.drawFrame();
 
-            if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,window);
+            if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,&graphics,window);
             else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
 
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
                 framebufferResized = false;
-                recreateSwapChain(&app,window);
+                recreateSwapChain(&app,&graphics,window);
             }else if(result != VK_SUCCESS){
                 throw std::runtime_error("failed to present swap chain image!");
             }
@@ -90,7 +90,9 @@ int main()
 
     app.deviceWaitIdle();
 
-    testScene.destroyScene(&app);
+    testScene.destroyScene();
+    graphics.destroyEmptyTextures();
+    graphics.destroyGraphics();
     app.cleanup();
 
     glfwDestroyWindow(window);
@@ -99,7 +101,7 @@ int main()
     return 0;
 }
 
-void recreateSwapChain(VkApplication *app, GLFWwindow* window)
+void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
@@ -112,15 +114,15 @@ void recreateSwapChain(VkApplication *app, GLFWwindow* window)
     HEIGHT = height;
     app->deviceWaitIdle();
 
-    app->destroyGraphics();
+    graphics->destroyGraphics();
     app->freeCommandBuffers();
 
-    app->createGraphics(window);
-    app->updateDescriptorSets();
+    app->createGraphics(graphics,window);
+    graphics->updateDescriptorSets();
     app->createCommandBuffers();
 
-    app->resetUboWorld();
-    app->resetUboLight();
+    graphics->resetUboWorld();
+    graphics->resetUboLight();
 }
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -132,10 +134,10 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 }
 void initializeWindow(GLFWwindow* &window)
 {
-    glfwInit();                                                             //инициализация библиотеки GLFW
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);                           //указывает не создавать контекст OpenGL (GLFW изначально был разработан для создания контекста OpenGL)
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);   //инициализация собственного окна
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(window, nullptr);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 

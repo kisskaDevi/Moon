@@ -117,6 +117,7 @@ void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics
     graphics->destroyGraphics();
     app->freeCommandBuffers();
 
+    graphics->setExtent({static_cast<uint32_t>(width),static_cast<uint32_t>(height)});
     app->createGraphics(graphics,window);
     graphics->updateDescriptorSets();
     app->createCommandBuffers();

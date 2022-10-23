@@ -6,10 +6,9 @@
 
 #include <iostream>
 
-deferredGraphicsInterface::deferredGraphicsInterface(const std::string& ExternalPath)
-{
-    this->ExternalPath = ExternalPath;
-}
+deferredGraphicsInterface::deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
+    ExternalPath(ExternalPath), extent(extent), MSAASamples(MSAASamples)
+{}
 
 deferredGraphicsInterface::~deferredGraphicsInterface()
 {}
@@ -32,24 +31,27 @@ void deferredGraphicsInterface::destroyGraphics()
 //        TransparentLayers[i].destroy();
 }
 
-VkSwapchainKHR& deferredGraphicsInterface::getSwapChain()
+uint32_t deferredGraphicsInterface::getImageCount()
 {
-    return PostProcessing.SwapChain();
+    return imageCount;
 }
 
-void deferredGraphicsInterface::createGraphics(uint32_t& imageCount, GLFWwindow* window, VkSurfaceKHR surface, VkExtent2D extent, VkSampleCountFlagBits MSAASamples, uint32_t devicesInfoCount, deviceInfo* devicesInfo)
+VkSwapchainKHR& deferredGraphicsInterface::getSwapChain()
+{
+    return swapChain;
+}
+
+void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t devicesInfoCount, deviceInfo* devicesInfo)
 {
     this->devicesInfo.resize(devicesInfoCount);
     for(uint32_t i=0;i<devicesInfoCount;i++){
         this->devicesInfo[i] = devicesInfo[i];
     }
 
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,surface);                   //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,*surface);                  //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
     imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                               //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)            //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений и проверяем не совпадает ли максимальное число изображений с минимальным
         imageCount = swapChainSupport.capabilities.maxImageCount;
-
-    this->imageCount = imageCount;
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 
@@ -61,6 +63,14 @@ void deferredGraphicsInterface::createGraphics(uint32_t& imageCount, GLFWwindow*
         if(MSAASamples>maxMSAASamples)  MSAASamples = maxMSAASamples;
     }
 
+    blitAttachments.resize(blitAttachmentCount);
+    PostProcessing.setSwapChain(&swapChain);
+    PostProcessing.setBlitFactor(blitFactor);
+    PostProcessing.setBlitAttachments(blitAttachmentCount,blitAttachments.data());
+    PostProcessing.setBlitAttachment(&blitAttachment);
+    PostProcessing.setSSAOAttachment(&ssaoAttachment);
+    PostProcessing.setSSLRAttachment(&sslrAttachment);
+
     DeferredGraphics.setExternalPath(ExternalPath);
     PostProcessing.setExternalPath(ExternalPath);
     Filter.setExternalPath(ExternalPath);
@@ -69,7 +79,7 @@ void deferredGraphicsInterface::createGraphics(uint32_t& imageCount, GLFWwindow*
 
     QueueFamilyIndices indices{*devicesInfo[0].graphicsFamily,*devicesInfo[0].presentFamily};
     DeferredGraphics.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
-    PostProcessing.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool,&indices,&surface);
+    PostProcessing.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool,&indices,surface);
     Filter.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
     SSLR.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
     SSAO.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
@@ -104,8 +114,8 @@ void deferredGraphicsInterface::createGraphics(uint32_t& imageCount, GLFWwindow*
     PostProcessing.createDescriptorPool();
     PostProcessing.createDescriptorSets(DeferredGraphics.getDeferredAttachments());
 
-    Filter.setBlitAttachments(&PostProcessing.getBlitAttachment());
-    Filter.setAttachments(PostProcessing.getBlitAttachments().size(),PostProcessing.getBlitAttachments().data());
+    Filter.setBlitAttachments(&blitAttachment);
+    Filter.setAttachments(blitAttachmentCount,blitAttachments.data());
     Filter.createRenderPass();
     Filter.createFramebuffers();
     Filter.createPipelines();
@@ -113,7 +123,7 @@ void deferredGraphicsInterface::createGraphics(uint32_t& imageCount, GLFWwindow*
     Filter.createDescriptorSets();
     Filter.updateSecondDescriptorSets();
 
-    SSLR.setSSLRAttachments(&PostProcessing.getSSLRAttachment());
+    SSLR.setSSLRAttachments(&sslrAttachment);
     SSLR.createRenderPass();
     SSLR.createFramebuffers();
     SSLR.createPipelines();
@@ -121,7 +131,7 @@ void deferredGraphicsInterface::createGraphics(uint32_t& imageCount, GLFWwindow*
     SSLR.createDescriptorSets();
     SSLR.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
 
-    SSAO.setSSAOAttachments(&PostProcessing.getSSAOAttachment());
+    SSAO.setSSAOAttachments(&ssaoAttachment);
     SSAO.createRenderPass();
     SSAO.createFramebuffers();
     SSAO.createPipelines();
@@ -161,7 +171,7 @@ void deferredGraphicsInterface::updateDescriptorSets()
 //    }
 }
 
-void deferredGraphicsInterface::updateCommandBuffers(uint32_t imageCount, VkCommandBuffer* commandBuffers)
+void deferredGraphicsInterface::updateCommandBuffers(VkCommandBuffer* commandBuffers)
 {
     for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
         updateCommandBuffer(imageIndex, &commandBuffers[imageIndex]);
@@ -204,25 +214,24 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
             clearColorValue.uint32[2] = 0;
             clearColorValue.uint32[3] = 0;
 
-        std::vector<VkImage> blitImages(PostProcessing.getBlitAttachments().size());
+        std::vector<VkImage> blitImages(blitAttachmentCount);
         blitImages[0] = DeferredGraphics.getDeferredAttachments().bloom->image[imageIndex];
-        for(size_t i=1;i<PostProcessing.getBlitAttachments().size();i++){
-            blitImages[i] = PostProcessing.getBlitAttachments()[i-1].image[imageIndex];
+        for(size_t i=1;i<blitAttachmentCount;i++){
+            blitImages[i] = blitAttachments[i-1].image[imageIndex];
         }
-        VkImage blitBufferImage = PostProcessing.getBlitAttachment().image[imageIndex];
-        uint32_t width = PostProcessing.SwapChainImageExtent().width;
-        uint32_t height = PostProcessing.SwapChainImageExtent().height;
-        float blitFactor = PostProcessing.getBlitFactor();
+        VkImage blitBufferImage = blitAttachment.image[imageIndex];
+        uint32_t width = extent.width;
+        uint32_t height = extent.height;
 
-        for(uint32_t k=0;k<PostProcessing.getBlitAttachments().size();k++){
+        for(uint32_t k=0;k<blitAttachmentCount;k++){
             transitionImageLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS);
             vkCmdClearColorImage(*commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
             blitDown(commandBuffer,blitImages[k],blitBufferImage,width,height,blitFactor);
             transitionImageLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
             Filter.render(imageIndex,*commandBuffer,k);
         }
-        for(uint32_t k=0;k<PostProcessing.getBlitAttachments().size();k++)
-            transitionImageLayout(commandBuffer,PostProcessing.getBlitAttachments()[k].image[imageIndex],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+        for(uint32_t k=0;k<blitAttachmentCount;k++)
+            transitionImageLayout(commandBuffer,blitAttachments[k].image[imageIndex],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
 
     PostProcessing.render(imageIndex,*commandBuffer);
 
@@ -230,7 +239,7 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
         throw std::runtime_error("failed to record command buffer!");
 }
 
-void deferredGraphicsInterface::fillCommandbufferSet(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex)
+void deferredGraphicsInterface::fillCommandBufferSet(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex)
 {
     DeferredGraphics.getSpotLightCommandbuffers(&commandbufferSet,imageIndex);
 }
@@ -278,6 +287,11 @@ void                                deferredGraphicsInterface::resetCmdLight(){l
 void                                deferredGraphicsInterface::resetCmdWorld(){worldCmd.enable = true; worldCmd.frames = 0;}
 void                                deferredGraphicsInterface::resetUboLight(){lightsUbo.enable = true; lightsUbo.frames = 0;}
 void                                deferredGraphicsInterface::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
+
+void deferredGraphicsInterface::setExtent(VkExtent2D extent)
+{
+    this->extent = extent;
+}
 void                                deferredGraphicsInterface::setExternalPath(const std::string &path){ExternalPath = path;}
 
 void                                deferredGraphicsInterface::setEmptyTexture(std::string ZERO_TEXTURE){

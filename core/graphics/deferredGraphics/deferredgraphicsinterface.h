@@ -19,9 +19,19 @@ class deferredGraphicsInterface: public graphicsInterface
 private:
     std::string                                 ExternalPath;
     uint32_t                                    imageCount;
+    VkExtent2D                                  extent;
+    VkSampleCountFlagBits                       MSAASamples;
 
-    uint32_t                                    devicesInfoCount;
     std::vector<deviceInfo>                     devicesInfo;
+
+    VkSwapchainKHR                              swapChain;
+
+    float                                       blitFactor = 1.5f;
+    uint32_t                                    blitAttachmentCount = 8;
+    std::vector<attachments>                    blitAttachments;
+    attachments                                 blitAttachment;
+    attachments                                 sslrAttachment;
+    attachments                                 ssaoAttachment;
 
     deferredGraphics                            DeferredGraphics;
     customFilter                                Filter;
@@ -40,18 +50,19 @@ private:
     void updateUniformBuffer(uint32_t imageIndex);
     void updateCommandBuffer(uint32_t imageIndex, VkCommandBuffer* commandBuffer);
 public:
-    deferredGraphicsInterface(const std::string& ExternalPath);
+    deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
     ~deferredGraphicsInterface();
     void destroyGraphics() override;
     void destroyEmptyTextures();
 
-    void createGraphics(uint32_t& imageCount, GLFWwindow* window, VkSurfaceKHR surface, VkExtent2D extent, VkSampleCountFlagBits MSAASamples, uint32_t devicesInfoCount, deviceInfo* devicesInfo) override;
+    void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t devicesInfoCount, deviceInfo* devicesInfo) override;
     void updateDescriptorSets() override;
-    void updateCommandBuffers(uint32_t imageCount, VkCommandBuffer* commandBuffers) override;
-    void fillCommandbufferSet(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex) override;
+    void updateCommandBuffers(VkCommandBuffer* commandBuffers) override;
+    void fillCommandBufferSet(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex) override;
     void updateCmd(uint32_t imageIndex, VkCommandBuffer* commandBuffers) override;
     void updateUbo(uint32_t imageIndex) override;
 
+    uint32_t        getImageCount() override;
     VkSwapchainKHR& getSwapChain() override;
 
     void        resetCmdLight();
@@ -59,6 +70,7 @@ public:
     void        resetUboLight();
     void        resetUboWorld();
 
+    void        setExtent(VkExtent2D extent);
     void        setExternalPath(const std::string& ExternalPath);
     void        setEmptyTexture(std::string ZERO_TEXTURE);
     void        setCameraObject(camera* cameraObject);

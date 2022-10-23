@@ -306,7 +306,7 @@ void scene::mouseEvent(GLFWwindow* window, float frameTime)
     double x, y;
 
     int primitiveNumber = INT_FAST32_MAX;
-    for(uint32_t i=0;i<app->getImageCount();i++){
+    for(uint32_t i=0;i<graphics->getImageCount();i++){
         primitiveNumber = graphics->readStorageBuffer(i);
         if(primitiveNumber!=INT_FAST32_MAX)
             break;
@@ -326,7 +326,7 @@ void scene::mouseEvent(GLFWwindow* window, float frameTime)
         cameras->rotateY(angx,glm::vec3(0.0f,0.0f,1.0f));
         graphics->resetUboWorld();
 
-        for(uint32_t i=0;i<app->getImageCount();i++){
+        for(uint32_t i=0;i<graphics->getImageCount();i++){
             graphics->updateStorageBuffer(i,glm::vec4(-1.0f+2.0f*xMpos/(WIDTH),-1.0f+2.0f*yMpos/(HEIGHT),0.0f,0.0f));
         }
     }

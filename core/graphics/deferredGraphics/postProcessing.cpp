@@ -1,5 +1,4 @@
 #include "postProcessing.h"
-#include "core/operations.h"
 #include "bufferObjects.h"
 
 #include <iostream>
@@ -10,16 +9,18 @@
 postProcessing::postProcessing()
 {}
 
-void postProcessing::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, QueueFamilyIndices* queueFamilyIndices, VkSurfaceKHR* surface)
+void postProcessing::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
-    this->queueFamilyIndices = queueFamilyIndices;
-    this->surface = surface;
+    this->queueFamilyIndices = {graphicsFamily,presentFamily};
 }
-void postProcessing::setImageProp(imageInfo* pInfo)             {this->image = *pInfo;}
+void postProcessing::setImageProp(imageInfo* pInfo)
+{
+    this->image = *pInfo;
+}
 
 void postProcessing::setSwapChain(VkSwapchainKHR *swapChain)
 {
@@ -41,6 +42,11 @@ void postProcessing::setSSLRAttachment(attachments* sslrAttachment)
 void postProcessing::setSSAOAttachment(attachments* ssaoAttachment)
 {
     this->ssaoAttachment = ssaoAttachment;
+}
+
+void postProcessing::setTransparentLayersCount(uint32_t TransparentLayersCount)
+{
+    transparentLayersCount = TransparentLayersCount;
 }
 
 void  postProcessing::setBlitFactor(const float& blitFactor)    {this->blitFactor = blitFactor;}
@@ -92,8 +98,10 @@ void postProcessing::setExternalPath(const std::string &path)
     second.ExternalPath = path;
 }
 
-void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport)
+void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface)
 {
+    this->surface = surface;
+
     createSwapChain(window, swapChainSupport);
     createImageViews();
     createColorAttachments();
@@ -123,7 +131,7 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
         VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);
         uint32_t imageCount = image.Count;
 
-        QueueFamilyIndices indices = *queueFamilyIndices;
+        QueueFamilyIndices indices = queueFamilyIndices;
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         //Создаём соответствующую структуру, задержащую все парамеры списка показа
@@ -535,13 +543,13 @@ void postProcessing::createFramebuffers()
 
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass = renderPass;                                                                    //дескриптор объекта прохода рендеринга
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());                                //число изображений
-            framebufferInfo.pAttachments = attachments.data();                                                          //набор изображений, которые должны быть привязаны к фреймбуферу, передаётся через массив дескрипторов объектов VkImageView
-            framebufferInfo.width = image.Extent.width;                                                              //ширина изображения
-            framebufferInfo.height = image.Extent.height;                                                            //высота изображения
-            framebufferInfo.layers = 1;                                                                                 //число слоёв
-        if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) //создание буфера кадров
+            framebufferInfo.renderPass = renderPass;
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            framebufferInfo.pAttachments = attachments.data();
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.layers = 1;
+        if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS)
             throw std::runtime_error("failed to create postProcessing framebuffer!");
     }
 }
@@ -572,7 +580,7 @@ void postProcessing::createPipelines()
             firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         index = 0;
-        std::array<VkDescriptorSetLayoutBinding,4> secondBindings{};
+        std::array<VkDescriptorSetLayoutBinding,7> secondBindings{};
             secondBindings[index].binding = index;
             secondBindings[index].descriptorCount = 1;
             secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -593,6 +601,24 @@ void postProcessing::createPipelines()
         index++;
             secondBindings[index].binding = index;
             secondBindings[index].descriptorCount = static_cast<uint32_t>(blitAttachmentCount);
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            secondBindings[index].pImmutableSamplers = nullptr;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            secondBindings[index].binding = index;
+            secondBindings[index].descriptorCount = static_cast<uint32_t>(3);
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            secondBindings[index].pImmutableSamplers = nullptr;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            secondBindings[index].binding = index;
+            secondBindings[index].descriptorCount = static_cast<uint32_t>(1);
+            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            secondBindings[index].pImmutableSamplers = nullptr;
+            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            secondBindings[index].binding = index;
+            secondBindings[index].descriptorCount = transparentLayersCount;
             secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             secondBindings[index].pImmutableSamplers = nullptr;
             secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -914,7 +940,7 @@ void postProcessing::createDescriptorPool()
         throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 
     index = 0;
-    std::array<VkDescriptorPoolSize,4> secondPoolSizes;
+    std::array<VkDescriptorPoolSize,7> secondPoolSizes;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
@@ -926,6 +952,15 @@ void postProcessing::createDescriptorPool()
     index++;
         secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(blitAttachmentCount*imageCount);
+    index++;
+        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(3*imageCount);
+    index++;
+        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(3);
+    index++;
+        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(transparentLayersCount*imageCount);
     VkDescriptorPoolCreateInfo secondPoolInfo{};
         secondPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         secondPoolInfo.poolSizeCount = static_cast<uint32_t>(secondPoolSizes.size());
@@ -935,7 +970,7 @@ void postProcessing::createDescriptorPool()
         throw std::runtime_error("failed to create postProcessing descriptor pool 2!");
 }
 
-void postProcessing::createDescriptorSets(DeferredAttachments Attachments)
+void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::vector<DeferredAttachments> transparentLayers)
 {
     uint32_t imageCount = image.Count;
     first.DescriptorSets.resize(imageCount);
@@ -994,7 +1029,7 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments)
     {
         uint32_t index = 0;
 
-        std::array<VkDescriptorImageInfo, 4> imageInfo;
+        std::array<VkDescriptorImageInfo, 3> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[index].imageView = Attachments.image->imageView[image];
             imageInfo[index].sampler = Attachments.image->sampler;
@@ -1015,9 +1050,29 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments)
                 blitImageInfo[index].sampler = blitAttachments[i].sampler;
             }
 
+        index = 0;
+        std::vector<VkDescriptorImageInfo> transparentLayersInfo(transparentLayers.size());
+            for(uint32_t i=0;i<transparentLayersInfo.size();i++,index++){
+                transparentLayersInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                transparentLayersInfo[index].imageView = transparentLayers[i].image->imageView[image];
+                transparentLayersInfo[index].sampler = transparentLayers[i].image->sampler;
+            }
 
         index = 0;
-        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+        std::vector<VkDescriptorImageInfo> transparentLayersDepthInfo(transparentLayersCount);
+            for(uint32_t i=0;i<transparentLayersDepthInfo.size();i++,index++){
+                transparentLayersDepthInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                transparentLayersDepthInfo[index].imageView = transparentLayers[i].depth->imageView;
+                transparentLayersDepthInfo[index].sampler = transparentLayers[i].depth->sampler;
+            }
+
+        VkDescriptorImageInfo imageDepthInfo;
+            imageDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageDepthInfo.imageView = Attachments.depth->imageView;
+            imageDepthInfo.sampler = Attachments.depth->sampler;
+
+        index = 0;
+        std::array<VkWriteDescriptorSet, 7> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = second.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
@@ -1049,6 +1104,30 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments)
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = static_cast<uint32_t>(blitImageInfo.size());
             descriptorWrites[index].pImageInfo = blitImageInfo.data();
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(transparentLayersInfo.size());
+            descriptorWrites[index].pImageInfo = transparentLayersInfo.data();
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(1);
+            descriptorWrites[index].pImageInfo = &imageDepthInfo;
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(transparentLayersDepthInfo.size());
+            descriptorWrites[index].pImageInfo = transparentLayersDepthInfo.data();
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

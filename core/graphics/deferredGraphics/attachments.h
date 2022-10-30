@@ -17,6 +17,7 @@ struct attachment
     VkDeviceMemory imageMemory;
     VkImageView imageView;
     VkSampler sampler;
+
     void deleteAttachment(VkDevice* device)
     {
         vkDestroyImage(*device, image, nullptr);
@@ -41,6 +42,8 @@ public:
 
     attachments();
     ~attachments();
+
+    attachments& operator=(const attachments& other);
 
     void resize(size_t size);
     void deleteAttachment(VkDevice * device);

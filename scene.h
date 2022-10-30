@@ -40,6 +40,9 @@ private:
     uint32_t    controledGroup = 0;
     uint32_t    lightPointer = 10;
 
+    std::string ZERO_TEXTURE;
+    std::string ZERO_TEXTURE_WHITE;
+
     camera*                                         cameras;
     object*                                         skyboxObject;
 

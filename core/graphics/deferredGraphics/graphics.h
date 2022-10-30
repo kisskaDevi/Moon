@@ -238,7 +238,7 @@ public:
 
     void updateSpotLightUbo(uint32_t imageIndex);
     void updateSpotLightCmd(uint32_t imageIndex);
-    void getSpotLightCommandbuffers(std::vector<VkCommandBuffer>* commandbufferSet, uint32_t imageIndex);
+    void getSpotLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex);
 };
 
 #endif // GRAPHICS_H

@@ -51,6 +51,9 @@ Final Image
 <img src="./screenshots/screenshot10.PNG" width="500px">
 
 
+* Transparency in deferred render
+<img src="./screenshots/screenshot13.PNG" width="1000px">
+
 * Volumetric light
 <img src="./screenshots/screenshot4.PNG" width="1000px">
 

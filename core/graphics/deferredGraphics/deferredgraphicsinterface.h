@@ -8,6 +8,7 @@
 #include "customfilter.h"
 #include "sslr.h"
 #include "ssao.h"
+#include "combiner.h"
 
 struct updateFlag{
     bool                                        enable = false;
@@ -32,11 +33,13 @@ private:
     attachments                                 blitAttachment;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
+    attachments                                 combineBloomAttachment;
 
     deferredGraphics                            DeferredGraphics;
     customFilter                                Filter;
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
+    imagesCombiner                              Combiner;
     postProcessing                              PostProcessing;
     std::vector<deferredGraphics>               TransparentLayers;
     uint32_t                                    TransparentLayersCount = 3;
@@ -46,24 +49,32 @@ private:
     updateFlag                                  worldUbo;
     updateFlag                                  lightsUbo;
 
+    std::vector<VkCommandBuffer>                commandBuffers;
+    std::vector<VkCommandBuffer>                commandBufferSet;
 
     void updateUniformBuffer(uint32_t imageIndex);
     void updateCommandBuffer(uint32_t imageIndex, VkCommandBuffer* commandBuffer);
 public:
     deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
-    ~deferredGraphicsInterface();
-    void destroyGraphics() override;
     void destroyEmptyTextures();
 
-    void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t devicesInfoCount, deviceInfo* devicesInfo) override;
-    void updateDescriptorSets() override;
-    void updateCommandBuffers(VkCommandBuffer* commandBuffers) override;
-    void fillCommandBufferSet(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex) override;
-    void updateCmd(uint32_t imageIndex, VkCommandBuffer* commandBuffers) override;
-    void updateUbo(uint32_t imageIndex) override;
+    ~deferredGraphicsInterface();
+    void destroyGraphics() override;
 
-    uint32_t        getImageCount() override;
-    VkSwapchainKHR& getSwapChain() override;
+    void setDevicesInfo(uint32_t devicesInfoCount, deviceInfo* devicesInfo) override;
+    void setSupportImageCount(VkSurfaceKHR* surface) override;
+    void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) override;
+    void updateDescriptorSets() override;
+
+    void createCommandBuffers() override;
+    void updateAllCommandBuffers() override;
+    void updateCommandBuffers(uint32_t imageIndex) override;
+    void updateBuffers(uint32_t imageIndex) override;
+    void freeCommandBuffers() override;
+
+    VkCommandBuffer*    getCommandBuffers(uint32_t& commandBuffersCount, uint32_t imageIndex) override;
+    uint32_t            getImageCount() override;
+    VkSwapchainKHR&     getSwapChain() override;
 
     void        resetCmdLight();
     void        resetCmdWorld();

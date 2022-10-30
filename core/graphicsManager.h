@@ -40,15 +40,15 @@ public:
     void                                        createLogicalDevice();
 //step 3
     void                                        createCommandPool();
-//step
-    void                                        createGraphics(graphicsInterface* graphics, GLFWwindow* window);
+//step 4
+    void                                        setGraphics(graphicsInterface* graphics);
+    void                                        createGraphics(GLFWwindow* window);
 //step 5
     void                                        createCommandBuffers();
     void                                        createSyncObjects();
-//step 5
+//step 6
     VkResult                                    checkNextFrame();
     VkResult                                    drawFrame();
-    void                                        freeCommandBuffers();
 
 private:
     #ifdef NDEBUG
@@ -75,7 +75,6 @@ private:
     graphicsInterface*                          graphics;
 
     VkCommandPool                               commandPool;
-    std::vector<VkCommandBuffer>                commandBuffers;
 
     std::vector<VkSemaphore>                    imageAvailableSemaphores;
     std::vector<VkSemaphore>                    renderFinishedSemaphores;

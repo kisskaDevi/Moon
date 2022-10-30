@@ -3,6 +3,7 @@
 
 #include<libs/vulkan/vulkan.h>
 #include "attachments.h"
+#include "core/operations.h"
 
 #include <string>
 
@@ -17,7 +18,7 @@ private:
     VkDevice*                           device;
     VkQueue*                            graphicsQueue;
     VkCommandPool*                      commandPool;
-    QueueFamilyIndices*                 queueFamilyIndices;
+    QueueFamilyIndices                  queueFamilyIndices;
     VkSurfaceKHR*                       surface;
 
     imageInfo                           image;
@@ -39,6 +40,8 @@ private:
 
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
+
+    uint32_t                            transparentLayersCount;
 
     struct First{
         std::string                         ExternalPath;
@@ -69,7 +72,7 @@ public:
     void destroy();
 
     void setExternalPath(const std::string& path);
-    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, QueueFamilyIndices* queueFamilyIndices, VkSurfaceKHR* surface);
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily);
     void setImageProp(imageInfo* pInfo);
 
     void setSwapChain(VkSwapchainKHR* swapChain);
@@ -77,10 +80,11 @@ public:
     void setBlitAttachment(attachments* blitAttachment);
     void setSSLRAttachment(attachments* sslrAttachment);
     void setSSAOAttachment(attachments* ssaoAttachment);
+    void setTransparentLayersCount(uint32_t TransparentLayersCount);
 
     void  setBlitFactor(const float& blitFactor);
 
-    void createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
+    void createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -89,7 +93,7 @@ public:
         void createSecondGraphicsPipeline();
 
     void createDescriptorPool();
-    void createDescriptorSets(DeferredAttachments Attachments);
+    void createDescriptorSets(DeferredAttachments Attachments, std::vector<DeferredAttachments> transparentLayers);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 

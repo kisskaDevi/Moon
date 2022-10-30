@@ -26,5 +26,7 @@ glslc.exe sslr/SSLR.vert				    -o sslr/sslrVert.spv
 glslc.exe sslr/SSLR.frag				    -o sslr/sslrFrag.spv
 glslc.exe ssao/SSAO.vert				    -o ssao/ssaoVert.spv
 glslc.exe ssao/SSAO.frag				    -o ssao/ssaoFrag.spv
+glslc.exe combiner/combiner.vert                            -o combiner/combinerVert.spv
+glslc.exe combiner/combiner.frag                            -o combiner/combinerFrag.spv
 
 pause

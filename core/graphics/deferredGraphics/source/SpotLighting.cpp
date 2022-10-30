@@ -440,9 +440,9 @@ void deferredGraphics::updateSpotLightCmd(uint32_t imageIndex)
             lightSource->updateShadowCommandBuffer(imageIndex,objects);
 }
 
-void deferredGraphics::getSpotLightCommandbuffers(std::vector<VkCommandBuffer>* commandbufferSet, uint32_t imageIndex)
+void deferredGraphics::getSpotLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex)
 {
     for(auto lightSource: spotLighting.lightSources)
         if(lightSource->isShadowEnable())
-            commandbufferSet->push_back(lightSource->getShadowCommandBuffer()[imageIndex]);
+            commandbufferSet.push_back(lightSource->getShadowCommandBuffer()[imageIndex]);
 }

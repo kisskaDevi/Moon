@@ -58,10 +58,6 @@ void main()
     outNormal = vec4(0.0f,0.0f,0.0f,0.0f);
     outEmissiveTexture = outColor+texture(emissiveTexture, UV0);
 
-    if(texture(baseColorTexture, UV0).a!=1.0f){
-	discard;
-    }
-
     if(storage.depth>glPosition.z/glPosition.w){
 	if(abs(glPosition.x-storage.mousePosition.x)<0.002&&abs(glPosition.y-storage.mousePosition.y)<0.002){
 	    storage.number = number;

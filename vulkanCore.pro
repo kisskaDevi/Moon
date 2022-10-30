@@ -18,6 +18,8 @@ DISTFILES += \
     core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingScattering.frag \
     core/graphics/deferredGraphics/shaders/bloom/bloom.frag \
     core/graphics/deferredGraphics/shaders/bloom/bloom.vert \
+    core/graphics/deferredGraphics/shaders/combiner/combiner.frag \
+    core/graphics/deferredGraphics/shaders/combiner/combiner.vert \
     core/graphics/deferredGraphics/shaders/compile.bat \
     core/graphics/deferredGraphics/shaders/base/base.frag \
     core/graphics/deferredGraphics/shaders/base/base.vert \
@@ -59,6 +61,7 @@ DISTFILES += \
 
 SOURCES += \
     core/graphics/deferredGraphics/attachments.cpp \
+    core/graphics/deferredGraphics/combiner.cpp \
     core/graphics/deferredGraphics/customfilter.cpp \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
     core/graphics/deferredGraphics/source/SpotLighting.cpp \
@@ -86,6 +89,7 @@ SOURCES += \
 HEADERS += \
     core/graphics/deferredGraphics/attachments.h \
     core/graphics/deferredGraphics/bufferObjects.h \
+    core/graphics/deferredGraphics/combiner.h \
     core/graphics/deferredGraphics/customfilter.h \
     core/graphics/deferredGraphics/deferredgraphicsinterface.h \
     core/graphics/deferredGraphics/graphics.h \

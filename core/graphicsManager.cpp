@@ -221,22 +221,15 @@ void graphicsManager::createLogicalDevice()
 
 void graphicsManager::createCommandPool()
 {
-    /* Главной целью очереди является выполнение работы от имени вашего приложения.
-     * Работа/задания представлены как последовательность команд, которые записываются
-     * в командные буферы. Ваше приложение создаёт командные буферы, одержащие задания,
-     * которые необходимо выполнить, и передает (submit) их в одну из очередей для выполения.
-     * Прежде чем вы можете запоминать какие-либо  команды, вам нужно создать командный буфер.
-     * Командные буферы не создаются явно, а выделяются из пулов.*/
-
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value();              //задаёт семейство очередей, в которые будет передаваться созданные командные буферы
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;                                                                   //задаёт флаги, определяющие поведение пула и командных буферов, выделяемых из него
-    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)                                                        //создание пула команд
+        poolInfo.queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value();
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create command pool!");
 }
 
-void graphicsManager::createGraphics(graphicsInterface* graphics, GLFWwindow* window)
+void graphicsManager::setGraphics(graphicsInterface* graphics)
 {
     this->graphics = graphics;
 
@@ -250,22 +243,23 @@ void graphicsManager::createGraphics(graphicsInterface* graphics, GLFWwindow* wi
                        &commandPool
                    });
 
-    graphics->createGraphics(window,&surface,static_cast<uint32_t>(info.size()),info.data());
+    this->graphics->setDevicesInfo(static_cast<uint32_t>(info.size()),info.data());
+    this->graphics->setSupportImageCount(&surface);
+}
+
+void graphicsManager::createGraphics(GLFWwindow* window)
+{
+    graphics->createGraphics(window,&surface);
+
+    graphics->updateDescriptorSets();
 }
 
 
 void graphicsManager::createCommandBuffers()
 {
-    commandBuffers.resize(graphics->getImageCount());
-    VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool;                                 //дескриптор ранее созданного командного пула
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;                   //задаёт уровень командных буферов, которые вы хотите выделить
-        allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();     //задаёт число командных буферов
-    if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate command buffers!");
+    graphics->createCommandBuffers();
 
-    graphics->updateCommandBuffers(commandBuffers.data());
+    graphics->updateAllCommandBuffers();
 }
 
 
@@ -317,16 +311,16 @@ VkResult graphicsManager::checkNextFrame()
 
 VkResult graphicsManager::drawFrame()
 {
-    graphics->updateCmd(imageIndex,commandBuffers.data());
-    graphics->updateUbo(imageIndex);
+    graphics->updateCommandBuffers(imageIndex);
+    graphics->updateBuffers(imageIndex);
 
     VkSemaphore                         waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
     VkPipelineStageFlags                waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore                         signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
-    std::vector<VkCommandBuffer>        commandbufferSet;
+    VkCommandBuffer*                    commandBufferSet;
+    uint32_t                            commandBufferCount;
 
-    graphics->fillCommandBufferSet(commandbufferSet,imageIndex);
-    commandbufferSet.push_back(commandBuffers[imageIndex]);
+    commandBufferSet = graphics->getCommandBuffers(commandBufferCount,imageIndex);
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
     VkSubmitInfo submitInfo{};
@@ -334,8 +328,8 @@ VkResult graphicsManager::drawFrame()
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = commandbufferSet.size();
-        submitInfo.pCommandBuffers = commandbufferSet.data();
+        submitInfo.commandBufferCount = commandBufferCount;
+        submitInfo.pCommandBuffers = commandBufferSet;
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;                                                    //восстановить симофоры в несингнальное положение
     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)           //отправляет последовательность семафоров или командных буферов в очередь
@@ -356,15 +350,9 @@ VkResult graphicsManager::drawFrame()
     return result;
 }
 
-void graphicsManager::freeCommandBuffers()
-{
-    vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()),commandBuffers.data());
-    commandBuffers.clear();
-}
-
 void graphicsManager::graphicsManager::cleanup()
 {
-    freeCommandBuffers();
+    graphics->freeCommandBuffers();
 
     for (size_t imageIndex = 0; imageIndex < MAX_FRAMES_IN_FLIGHT; imageIndex++)
     {
@@ -392,8 +380,4 @@ void graphicsManager::graphicsManager::cleanup()
 
 uint32_t                            graphicsManager::getImageIndex(){return imageIndex;}
 uint32_t                            graphicsManager::getCurrentFrame(){return currentFrame;}
-
-void                                graphicsManager::deviceWaitIdle()
-{
-    vkDeviceWaitIdle(device);
-}
+void                                graphicsManager::deviceWaitIdle(){vkDeviceWaitIdle(device);}

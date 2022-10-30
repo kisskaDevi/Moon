@@ -8,7 +8,18 @@
 
 deferredGraphicsInterface::deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
     ExternalPath(ExternalPath), extent(extent), MSAASamples(MSAASamples)
-{}
+{
+    DeferredGraphics.setExternalPath(ExternalPath);
+    PostProcessing.setExternalPath(ExternalPath);
+    Filter.setExternalPath(ExternalPath);
+    SSLR.setExternalPath(ExternalPath);
+    SSAO.setExternalPath(ExternalPath);
+    Combiner.setExternalPath(ExternalPath);
+
+    TransparentLayers.resize(TransparentLayersCount);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].setExternalPath(ExternalPath);
+}
 
 deferredGraphicsInterface::~deferredGraphicsInterface()
 {}
@@ -16,8 +27,9 @@ deferredGraphicsInterface::~deferredGraphicsInterface()
 void deferredGraphicsInterface::destroyEmptyTextures()
 {
     DeferredGraphics.destroyEmptyTexture();
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].destroyEmptyTexture();
+
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].destroyEmptyTexture();
 }
 
 void deferredGraphicsInterface::destroyGraphics()
@@ -27,8 +39,10 @@ void deferredGraphicsInterface::destroyGraphics()
     SSAO.destroy();
     SSLR.destroy();
     PostProcessing.destroy();
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].destroy();
+    Combiner.destroy();
+
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].destroy();
 }
 
 uint32_t deferredGraphicsInterface::getImageCount()
@@ -41,19 +55,36 @@ VkSwapchainKHR& deferredGraphicsInterface::getSwapChain()
     return swapChain;
 }
 
-void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t devicesInfoCount, deviceInfo* devicesInfo)
+void deferredGraphicsInterface::setDevicesInfo(uint32_t devicesInfoCount, deviceInfo* devicesInfo)
 {
     this->devicesInfo.resize(devicesInfoCount);
     for(uint32_t i=0;i<devicesInfoCount;i++){
         this->devicesInfo[i] = devicesInfo[i];
     }
 
+    DeferredGraphics.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
+    PostProcessing.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool,this->devicesInfo[0].graphicsFamily->value(),this->devicesInfo[0].presentFamily->value());
+    Filter.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
+    SSLR.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
+    SSAO.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
+    Combiner.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
+
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
+}
+
+void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
+{
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,*surface);                  //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
     imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                               //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)            //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений и проверяем не совпадает ли максимальное число изображений с минимальным
         imageCount = swapChainSupport.capabilities.maxImageCount;
+}
 
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
+{
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,*surface);
+    VkSurfaceFormatKHR      surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 
     if(extent.height==0&&extent.width==0)
         extent = chooseSwapExtent(window, swapChainSupport.capabilities);
@@ -71,19 +102,6 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     PostProcessing.setSSAOAttachment(&ssaoAttachment);
     PostProcessing.setSSLRAttachment(&sslrAttachment);
 
-    DeferredGraphics.setExternalPath(ExternalPath);
-    PostProcessing.setExternalPath(ExternalPath);
-    Filter.setExternalPath(ExternalPath);
-    SSLR.setExternalPath(ExternalPath);
-    SSAO.setExternalPath(ExternalPath);
-
-    QueueFamilyIndices indices{*devicesInfo[0].graphicsFamily,*devicesInfo[0].presentFamily};
-    DeferredGraphics.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
-    PostProcessing.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool,&indices,surface);
-    Filter.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
-    SSLR.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
-    SSAO.setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
-
     imageInfo info{};
         info.Count = imageCount;
         info.Format = surfaceFormat.format;
@@ -94,6 +112,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     Filter.setImageProp(&info);
     SSLR.setImageProp(&info);
     SSAO.setImageProp(&info);
+    Combiner.setImageProp(&info);
 
     DeferredGraphics.createAttachments();
     DeferredGraphics.createRenderPass();
@@ -107,12 +126,56 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     DeferredGraphics.createSpotLightingDescriptorPool();
     DeferredGraphics.createSpotLightingDescriptorSets();
 
-    PostProcessing.createAttachments(window, swapChainSupport);
+    for(uint32_t i=0;i<TransparentLayersCount;i++){
+        TransparentLayers[i].setImageProp(&info);
+        TransparentLayers[i].setTransparencyPass(true);
+        TransparentLayers[i].setScattering(false);
+        TransparentLayers[i].createAttachments();
+        TransparentLayers[i].createRenderPass();
+        TransparentLayers[i].createFramebuffers();
+        TransparentLayers[i].createPipelines();
+        TransparentLayers[i].createStorageBuffers(imageCount);
+        TransparentLayers[i].createBaseDescriptorPool();
+        TransparentLayers[i].createBaseDescriptorSets();
+        TransparentLayers[i].createSkyboxDescriptorPool();
+        TransparentLayers[i].createSkyboxDescriptorSets();
+        TransparentLayers[i].createSpotLightingDescriptorPool();
+        TransparentLayers[i].createSpotLightingDescriptorSets();
+    }
+
+    std::vector<DeferredAttachments> transparentLayers(TransparentLayersCount);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        transparentLayers[i] = TransparentLayers[i].getDeferredAttachments();
+
+    PostProcessing.setTransparentLayersCount(TransparentLayersCount);
+    PostProcessing.createAttachments(window, swapChainSupport, surface);
     PostProcessing.createRenderPass();
     PostProcessing.createFramebuffers();
     PostProcessing.createPipelines();
     PostProcessing.createDescriptorPool();
-    PostProcessing.createDescriptorSets(DeferredGraphics.getDeferredAttachments());
+    PostProcessing.createDescriptorSets(DeferredGraphics.getDeferredAttachments(),transparentLayers);
+
+    std::vector<attachments> bloomAttachments(TransparentLayersCount+1);
+    for(uint32_t i=0;i<TransparentLayersCount;i++){
+        bloomAttachments[i] = *TransparentLayers[i].getDeferredAttachments().bloom;
+    }
+    bloomAttachments[TransparentLayersCount] = *DeferredGraphics.getDeferredAttachments().bloom;
+
+    std::vector<attachment> depthAttachments(TransparentLayersCount+1);
+    for(uint32_t i=0;i<TransparentLayersCount;i++){
+        depthAttachments[i] = *TransparentLayers[i].getDeferredAttachments().depth;
+    }
+    depthAttachments[TransparentLayersCount] = *DeferredGraphics.getDeferredAttachments().depth;
+
+    Combiner.setCombineAttachmentsCount(TransparentLayersCount+1);
+    Combiner.setAttachments(&combineBloomAttachment);
+    Combiner.createAttachments();
+    Combiner.createRenderPass();
+    Combiner.createFramebuffers();
+    Combiner.createPipelines();
+    Combiner.createDescriptorPool();
+    Combiner.createDescriptorSets();
+    Combiner.updateSecondDescriptorSets(bloomAttachments.data(),depthAttachments.data(),DeferredGraphics.getDeferredAttachments().depth);
 
     Filter.setBlitAttachments(&blitAttachment);
     Filter.setAttachments(blitAttachmentCount,blitAttachments.data());
@@ -138,24 +201,18 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     SSAO.createDescriptorPool();
     SSAO.createDescriptorSets();
     SSAO.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
+}
 
-//    TransparentLayers.resize(TransparentLayersCount);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++){
-//        TransparentLayers[i].setDeviceProp(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
-//        TransparentLayers[i].setImageProp(&info);
-//        TransparentLayers[i].setTransparencyPass(true);
-//        TransparentLayers[i].createAttachments();
-//        TransparentLayers[i].createRenderPass();
-//        TransparentLayers[i].createFramebuffers();
-//        TransparentLayers[i].createPipelines();
-//        TransparentLayers[i].createStorageBuffers(imageCount);
-//        TransparentLayers[i].createBaseDescriptorPool();
-//        TransparentLayers[i].createBaseDescriptorSets();
-//        TransparentLayers[i].createSkyboxDescriptorPool();
-//        TransparentLayers[i].createSkyboxDescriptorSets();
-//        TransparentLayers[i].createSpotLightingDescriptorPool();
-//        TransparentLayers[i].createSpotLightingDescriptorSets();
-//    }
+void deferredGraphicsInterface::createCommandBuffers()
+{
+    commandBuffers.resize(imageCount);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = *devicesInfo[0].commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+    if (vkAllocateCommandBuffers(*devicesInfo[0].device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate command buffers!");
 }
 
 void deferredGraphicsInterface::updateDescriptorSets()
@@ -164,14 +221,17 @@ void deferredGraphicsInterface::updateDescriptorSets()
     DeferredGraphics.updateSkyboxDescriptorSets();
     DeferredGraphics.updateSpotLightingDescriptorSets();
 
-//    for(uint32_t i=0;i<TransparentLayersCount;i++){
-//        TransparentLayers[i].updateBaseDescriptorSets(nullptr);
-//        TransparentLayers[i].updateSkyboxDescriptorSets();
-//        TransparentLayers[i].updateSpotLightingDescriptorSets();
-//    }
+    TransparentLayers[0].updateBaseDescriptorSets(nullptr);
+    //TransparentLayers[0].updateSkyboxDescriptorSets();
+    TransparentLayers[0].updateSpotLightingDescriptorSets();
+    for(uint32_t i=1;i<TransparentLayersCount;i++){
+        TransparentLayers[i].updateBaseDescriptorSets(TransparentLayers[i-1].getDeferredAttachments().depth);
+        //TransparentLayers[i].updateSkyboxDescriptorSets();
+        TransparentLayers[i].updateSpotLightingDescriptorSets();
+    }
 }
 
-void deferredGraphicsInterface::updateCommandBuffers(VkCommandBuffer* commandBuffers)
+void deferredGraphicsInterface::updateAllCommandBuffers()
 {
     for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
         updateCommandBuffer(imageIndex, &commandBuffers[imageIndex]);
@@ -179,11 +239,11 @@ void deferredGraphicsInterface::updateCommandBuffers(VkCommandBuffer* commandBuf
     for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
         DeferredGraphics.updateSpotLightCmd(imageIndex);
 
-//    for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++){
-//        for(uint32_t i=0;i<TransparentLayersCount;i++){
-//            TransparentLayers[i].updateSpotLightCmd(imageIndex);
-//        }
-//    }
+    for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++){
+        for(uint32_t i=0;i<TransparentLayersCount;i++){
+            TransparentLayers[i].updateSpotLightCmd(imageIndex);
+        }
+    }
 }
 
 void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkCommandBuffer* commandBuffer)
@@ -198,7 +258,10 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
         throw std::runtime_error("failed to begin recording command buffer!");
 
     DeferredGraphics.render(imageIndex,*commandBuffer);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].render(imageIndex,*commandBuffer);
 
+    Combiner.render(imageIndex,*commandBuffer);
     SSLR.render(imageIndex,*commandBuffer);
     SSAO.render(imageIndex,*commandBuffer);
 
@@ -215,7 +278,7 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
             clearColorValue.uint32[3] = 0;
 
         std::vector<VkImage> blitImages(blitAttachmentCount);
-        blitImages[0] = DeferredGraphics.getDeferredAttachments().bloom->image[imageIndex];
+        blitImages[0] = combineBloomAttachment.image[imageIndex];
         for(size_t i=1;i<blitAttachmentCount;i++){
             blitImages[i] = blitAttachments[i-1].image[imageIndex];
         }
@@ -239,12 +302,18 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
         throw std::runtime_error("failed to record command buffer!");
 }
 
-void deferredGraphicsInterface::fillCommandBufferSet(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex)
+VkCommandBuffer* deferredGraphicsInterface::getCommandBuffers(uint32_t& commandBuffersCount, uint32_t imageIndex)
 {
-    DeferredGraphics.getSpotLightCommandbuffers(&commandbufferSet,imageIndex);
+    commandBufferSet.clear();
+
+    DeferredGraphics.getSpotLightCommandbuffers(commandBufferSet,imageIndex);
+    commandBufferSet.push_back(this->commandBuffers[imageIndex]);
+
+    commandBuffersCount = commandBufferSet.size();
+    return commandBufferSet.data();
 }
 
-void deferredGraphicsInterface::updateCmd(uint32_t imageIndex, VkCommandBuffer* commandBuffers)
+void deferredGraphicsInterface::updateCommandBuffers(uint32_t imageIndex)
 {
     if(worldCmd.enable)
     {
@@ -260,7 +329,7 @@ void deferredGraphicsInterface::updateCmd(uint32_t imageIndex, VkCommandBuffer* 
     }
 }
 
-void deferredGraphicsInterface::updateUbo(uint32_t imageIndex)
+void deferredGraphicsInterface::updateBuffers(uint32_t imageIndex)
 {
     if(worldUbo.enable)
     {
@@ -276,36 +345,44 @@ void deferredGraphicsInterface::updateUbo(uint32_t imageIndex)
     }
 }
 
+void deferredGraphicsInterface::freeCommandBuffers()
+{
+    vkFreeCommandBuffers(*devicesInfo[0].device, *devicesInfo[0].commandPool, static_cast<uint32_t>(commandBuffers.size()),commandBuffers.data());
+    commandBuffers.clear();
+}
+
 void deferredGraphicsInterface::updateUniformBuffer(uint32_t imageIndex)
 {
     DeferredGraphics.updateUniformBuffer(imageIndex);
-    DeferredGraphics.updateSkyboxUniformBuffer(imageIndex);
+    //DeferredGraphics.updateSkyboxUniformBuffer(imageIndex);
     DeferredGraphics.updateObjectUniformBuffer(imageIndex);
+
+    for(uint32_t i=0;i<TransparentLayersCount;i++){
+        TransparentLayers[i].updateUniformBuffer(imageIndex);
+        //TransparentLayers[i].updateSkyboxUniformBuffer(imageIndex);
+        TransparentLayers[i].updateObjectUniformBuffer(imageIndex);
+    }
 }
 
-void                                deferredGraphicsInterface::resetCmdLight(){lightsCmd.enable = true; lightsCmd.frames = 0;}
-void                                deferredGraphicsInterface::resetCmdWorld(){worldCmd.enable = true; worldCmd.frames = 0;}
-void                                deferredGraphicsInterface::resetUboLight(){lightsUbo.enable = true; lightsUbo.frames = 0;}
-void                                deferredGraphicsInterface::resetUboWorld(){worldUbo.enable = true; worldUbo.frames = 0;}
+void                                deferredGraphicsInterface::resetCmdLight(){ lightsCmd.enable = true; lightsCmd.frames = 0;}
+void                                deferredGraphicsInterface::resetCmdWorld(){ worldCmd.enable = true;  worldCmd.frames = 0;}
+void                                deferredGraphicsInterface::resetUboLight(){ lightsUbo.enable = true; lightsUbo.frames = 0;}
+void                                deferredGraphicsInterface::resetUboWorld(){ worldUbo.enable = true;  worldUbo.frames = 0;}
 
-void deferredGraphicsInterface::setExtent(VkExtent2D extent)
-{
-    this->extent = extent;
-}
-void                                deferredGraphicsInterface::setExternalPath(const std::string &path){ExternalPath = path;}
-
+void                                deferredGraphicsInterface::setExtent(VkExtent2D extent)             {   this->extent = extent;}
+void                                deferredGraphicsInterface::setExternalPath(const std::string &path) {   ExternalPath = path;}
 void                                deferredGraphicsInterface::setEmptyTexture(std::string ZERO_TEXTURE){
     DeferredGraphics.setEmptyTexture(ZERO_TEXTURE);
 
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].setEmptyTexture(ZERO_TEXTURE);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].setEmptyTexture(ZERO_TEXTURE);
 }
 
 void                                deferredGraphicsInterface::setCameraObject(camera* cameraObject){
     DeferredGraphics.setCameraObject(cameraObject);
 
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].setCameraObject(cameraObject);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].setCameraObject(cameraObject);
 }
 
 void                                deferredGraphicsInterface::createModel(gltfModel *pModel){
@@ -338,8 +415,8 @@ void                                deferredGraphicsInterface::addLightSource(sp
     lightSource->updateDescriptorSets(devicesInfo[0].device, imageCount,DeferredGraphics.getEmptyTexture());
 
     DeferredGraphics.addSpotLightSource(lightSource);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].addSpotLightSource(lightSource);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].addSpotLightSource(lightSource);
 }
 void                                deferredGraphicsInterface::removeLightSource(spotLight* lightSource)
 {
@@ -350,8 +427,8 @@ void                                deferredGraphicsInterface::removeLightSource
     lightSource->destroy(devicesInfo[0].device);
 
     DeferredGraphics.removeSpotLightSource(lightSource);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].removeSpotLightSource(lightSource);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].removeSpotLightSource(lightSource);
 }
 
 void                                deferredGraphicsInterface::bindBaseObject(object* newObject)
@@ -360,8 +437,8 @@ void                                deferredGraphicsInterface::bindBaseObject(ob
     newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
     newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
     DeferredGraphics.bindBaseObject(newObject);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].bindBaseObject(newObject);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].bindBaseObject(newObject);
 }
 void                                deferredGraphicsInterface::bindBloomObject(object* newObject)
 {
@@ -369,8 +446,8 @@ void                                deferredGraphicsInterface::bindBloomObject(o
     newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
     newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
     DeferredGraphics.bindBloomObject(newObject);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].bindBloomObject(newObject);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].bindBloomObject(newObject);
 }
 void                                deferredGraphicsInterface::bindOneColorObject(object* newObject)
 {
@@ -378,8 +455,8 @@ void                                deferredGraphicsInterface::bindOneColorObjec
     newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
     newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
     DeferredGraphics.bindOneColorObject(newObject);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].bindOneColorObject(newObject);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].bindOneColorObject(newObject);
 }
 void                                deferredGraphicsInterface::bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor)
 {
@@ -390,57 +467,62 @@ void                                deferredGraphicsInterface::bindStencilObject
     newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
     newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
     DeferredGraphics.bindStencilObject(newObject);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].bindStencilObject(newObject);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].bindStencilObject(newObject);
 }
 void                                deferredGraphicsInterface::bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH)
 {
     newObject->createUniformBuffers(devicesInfo[0].physicalDevice,devicesInfo[0].device,imageCount);
     DeferredGraphics.bindSkyBoxObject(newObject,TEXTURE_PATH);
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].bindSkyBoxObject(newObject,TEXTURE_PATH);
+    //for(uint32_t i=0;i<TransparentLayersCount;i++)
+        //TransparentLayers[i].bindSkyBoxObject(newObject,TEXTURE_PATH);
 }
 
 bool                                deferredGraphicsInterface::removeBaseObject(object* object)
 {
     object->destroy(devicesInfo[0].device);
     object->destroyUniformBuffers(devicesInfo[0].device);
+
     return DeferredGraphics.removeBaseObject(object);
 }
 bool                                deferredGraphicsInterface::removeBloomObject(object* object)
 {
     object->destroy(devicesInfo[0].device);
     object->destroyUniformBuffers(devicesInfo[0].device);
+
     return DeferredGraphics.removeBloomObject(object);
 }
 bool                                deferredGraphicsInterface::removeOneColorObject(object* object)
 {
     object->destroy(devicesInfo[0].device);
     object->destroyUniformBuffers(devicesInfo[0].device);
+
     return DeferredGraphics.removeOneColorObject(object);
 }
 bool                                deferredGraphicsInterface::removeStencilObject(object* object)
 {
     object->destroy(devicesInfo[0].device);
     object->destroyUniformBuffers(devicesInfo[0].device);
+
     return DeferredGraphics.removeStencilObject(object);
 }
 bool                                deferredGraphicsInterface::removeSkyBoxObject(object* object)
 {
     object->destroyUniformBuffers(devicesInfo[0].device);
+    //for(uint32_t i=0;i<TransparentLayersCount;i++)
+        //TransparentLayers[i].removeSkyBoxObject(object);
+
     return DeferredGraphics.removeSkyBoxObject(object);
 }
 
 void                                deferredGraphicsInterface::removeBinds(){
     DeferredGraphics.removeBinds();
-//    for(uint32_t i=0;i<TransparentLayersCount;i++)
-//        TransparentLayers[i].removeBinds();
 }
 
 void                                deferredGraphicsInterface::setMinAmbientFactor(const float& minAmbientFactor){
     DeferredGraphics.setMinAmbientFactor(minAmbientFactor);
-    //for(uint32_t i=0;i<TransparentLayersCount;i++)
-    //    TransparentLayers[i].setMinAmbientFactor(minAmbientFactor);
+    for(uint32_t i=0;i<TransparentLayersCount;i++)
+        TransparentLayers[i].setMinAmbientFactor(minAmbientFactor);
 }
 
 void                                deferredGraphicsInterface::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition){

@@ -71,13 +71,15 @@ void main()
     outEmissiveTexture = texture(emissiveTexture, UV0);
 
     if(transparencyPass==0.0){
-	if(outBaseColor.a!=1.0f){
-	    discard;
-	}
+        if(outBaseColor.a!=1.0f){
+            discard;
+        }
     }else{
-	if(outBaseColor.a==1.0f){
-	    discard;
-	}
+        if(outBaseColor.a==1.0f||outBaseColor.a<0.1f){
+            discard;
+        }else if(glPosition.z - 0.000005 < texture(depthMap , glPosition.xy * 0.5f + 0.5f).r){
+            discard;
+        }
     }
 
 //    vec3 I = normalize(position.xyz - eyePosition.xyz);

@@ -67,10 +67,17 @@ vec4 PBR(vec4 outColor)
     vec3 f0 = vec3(0.04);
 
     diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
-    diffuseColor *= 1.0 - metallic;
+    //diffuseColor *= 1.0 - metallic;
     diffuseColor *= pc.minAmbientFactor;
+    diffuseColor *= perceptualRoughness*perceptualRoughness;
 
-    outColor += vec4(diffuseColor.xyz,1.0f);
+    vec3 color = diffuseColor;
+
+    const float u_OcclusionStrength = 1.0f;
+    float ao = emissiveTexture.a;
+    color = mix(color, color * ao, u_OcclusionStrength);
+
+    outColor += vec4(diffuseColor.xyz,baseColorTexture.a);
 
     return outColor;
 }

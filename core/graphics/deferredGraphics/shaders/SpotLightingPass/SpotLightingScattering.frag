@@ -147,14 +147,10 @@ vec4 LightScattering(int steps)
     vec3 eyeDirection = glPosition.xyz - eyePosition.xyz;
     vec3 dstep = eyeDirection/steps;
 
-    //    float dstep = 0.3f;
-    //    eyeDirection = normalize(eyeDirection);
-    //	  vec3 pointOfScattering = eyePosition.xyz + dstep * step * eyeDirection;
-
     int insideCounter = 0;
 
     for(int step=1;step<=steps;step++){
-	vec3 pointOfScattering = eyePosition.xyz + step * dstep;
+        vec3 pointOfScattering = eyePosition.xyz + step * dstep;
 	float cameraViewZ = projview[0][2]*pointOfScattering.x + projview[1][2]*pointOfScattering.y + projview[2][2]*pointOfScattering.z + projview[3][2];
 	float cameraViewW = projview[0][3]*pointOfScattering.x + projview[1][3]*pointOfScattering.y + projview[2][3]*pointOfScattering.z + projview[3][3];
 	if(depthMap>cameraViewZ/cameraViewW){

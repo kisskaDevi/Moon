@@ -22,15 +22,21 @@ public:
     virtual ~graphicsInterface(){};
     virtual void destroyGraphics() = 0;
 
-    virtual void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t devicesInfoCount, deviceInfo* devicesInfo) = 0;
+    virtual void setDevicesInfo(uint32_t devicesInfoCount, deviceInfo* devicesInfo) = 0;
+    virtual void setSupportImageCount(VkSurfaceKHR* surface) = 0;
+    virtual void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) = 0;
     virtual void updateDescriptorSets() = 0;
-    virtual void updateCommandBuffers(VkCommandBuffer* commandBuffers) = 0;
-    virtual void fillCommandBufferSet(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex) = 0;
-    virtual void updateCmd(uint32_t imageIndex, VkCommandBuffer* commandBuffers) = 0;
-    virtual void updateUbo(uint32_t imageIndex) = 0;
 
-    virtual uint32_t        getImageCount() = 0;
-    virtual VkSwapchainKHR& getSwapChain() = 0;
+    virtual void createCommandBuffers() = 0;
+    virtual void updateAllCommandBuffers() = 0;
+    virtual void updateCommandBuffers(uint32_t imageIndex) = 0;
+    virtual void freeCommandBuffers() = 0;
+
+    virtual void updateBuffers(uint32_t imageIndex) = 0;
+
+    virtual VkCommandBuffer*    getCommandBuffers(uint32_t& commandBuffersCount, uint32_t imageIndex) = 0;
+    virtual uint32_t            getImageCount() = 0;
+    virtual VkSwapchainKHR&     getSwapChain() = 0;
 };
 
 #endif // GRAPHICSINTERFACE_H

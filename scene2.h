@@ -37,6 +37,8 @@ private:
     quaternion<float>                               quatX[2];
     quaternion<float>                               quatY[2];
 
+    std::string ZERO_TEXTURE;
+    std::string ZERO_TEXTURE_WHITE;
 
     camera*                                         cameras;
     object*                                         skyboxObject;

@@ -7,6 +7,9 @@ scene2::scene2(graphicsManager *app, deferredGraphicsInterface* graphics, std::s
     this->app = app;
     this->graphics = graphics;
     this->ExternalPath = ExternalPath;
+
+    ExternalPath + "texture\\0.png";
+    ExternalPath + "texture\\1.png";
 }
 
 void scene2::createScene(uint32_t WIDTH, uint32_t HEIGHT)
@@ -29,6 +32,8 @@ void scene2::createScene(uint32_t WIDTH, uint32_t HEIGHT)
         ExternalPath+"texture\\skybox\\top.jpg",
         ExternalPath+"texture\\skybox\\bottom.jpg"
     };
+
+    graphics->setEmptyTexture(ZERO_TEXTURE);
 
     cameras = new camera;
         cameras->translate(glm::vec3(0.0f,0.0f,10.0f));

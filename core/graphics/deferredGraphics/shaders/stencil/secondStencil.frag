@@ -28,8 +28,4 @@ void main()
     outBaseColor = vec4(0.0,0.0,0.0,0.0f);
     outNormal = vec4(0.0,0.0,0.0,0.0f);
     outEmissiveTexture = stencil.color;
-
-    if(texture(baseColorTexture, UV0).a!=1.0f){
-	discard;
-    }
 }

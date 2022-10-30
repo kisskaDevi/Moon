@@ -19,9 +19,6 @@ GLFWwindow* window;
 
 const std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
 //const std::string ExternalPath = "C:\\Qt\\repositories\\build-vulkanCore-Desktop_Qt_6_4_0_MinGW_64_bit-Debug\\debug\\";
-std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
-std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
-
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
@@ -42,13 +39,13 @@ int main()
     app.pickPhysicalDevice();
     app.createLogicalDevice();
     app.createCommandPool();
-    app.createGraphics(&graphics,window);
-    graphics.setEmptyTexture(ZERO_TEXTURE);
+    app.setGraphics(&graphics);
 
     scene testScene(&app,&graphics,ExternalPath);
     testScene.createScene(WIDTH,HEIGHT);
 
-    graphics.updateDescriptorSets();
+    //сделать проверку в апдейте дескрипторсетов
+    app.createGraphics(window);
     app.createCommandBuffers();
     app.createSyncObjects();
 
@@ -91,7 +88,6 @@ int main()
     app.deviceWaitIdle();
 
     testScene.destroyScene();
-    graphics.destroyEmptyTextures();
     graphics.destroyGraphics();
     app.cleanup();
 
@@ -113,14 +109,11 @@ void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics
     WIDTH = width;
     HEIGHT = height;
     app->deviceWaitIdle();
-
     graphics->destroyGraphics();
-    app->freeCommandBuffers();
 
     graphics->setExtent({static_cast<uint32_t>(width),static_cast<uint32_t>(height)});
-    app->createGraphics(graphics,window);
-    graphics->updateDescriptorSets();
-    app->createCommandBuffers();
+    app->createGraphics(window);
+    graphics->updateAllCommandBuffers();
 
     graphics->resetUboWorld();
     graphics->resetUboLight();

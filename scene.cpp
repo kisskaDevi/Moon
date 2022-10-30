@@ -13,6 +13,9 @@ scene::scene(graphicsManager *app, deferredGraphicsInterface* graphics, std::str
     this->app = app;
     this->graphics = graphics;
     this->ExternalPath = ExternalPath;
+
+    ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
+    ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
 }
 
 void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
@@ -35,6 +38,8 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
         ExternalPath+"texture\\skybox\\top.jpg",
         ExternalPath+"texture\\skybox\\bottom.jpg"
     };
+
+    graphics->setEmptyTexture(ZERO_TEXTURE);
 
     cameras = new camera;
         cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
@@ -91,6 +96,8 @@ void scene::destroyScene()
     for (size_t i=0 ;i<object3D.size();i++){
         delete object3D.at(i);
     }
+
+    graphics->destroyEmptyTextures();
 
     delete cameras;
 }
@@ -233,6 +240,7 @@ void scene::createObjects()
 
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
     graphics->bindStencilObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    //graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->translate(glm::vec3(0.0f,0.0f,3.0f));
     object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));

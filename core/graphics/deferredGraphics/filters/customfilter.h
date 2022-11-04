@@ -1,12 +1,13 @@
-#ifndef SSLR_H
-#define SSLR_H
+#ifndef CUSTOMFILTER_H
+#define CUSTOMFILTER_H
 
 #include <libs/vulkan/vulkan.h>
-#include "attachments.h"
+#include "../attachments.h"
 
 #include <string>
+#include <vector>
 
-class SSLRGraphics
+class customFilter
 {
 private:
     VkPhysicalDevice*                   physicalDevice;
@@ -14,14 +15,18 @@ private:
     VkQueue*                            graphicsQueue;
     VkCommandPool*                      commandPool;
 
+    std::vector<attachments *>          Attachments;
+    attachments*                        blitAttachments = nullptr;
+
+    float                               xSampleStep = 1.5f;
+    float                               ySampleStep = 1.5f;
+
     imageInfo                           image;
 
-    attachments*                        Attachments = nullptr;
+    VkRenderPass                                renderPass;
+    std::vector<std::vector<VkFramebuffer>>     framebuffers;
 
-    VkRenderPass                        renderPass;
-    std::vector<VkFramebuffer>          framebuffers;
-
-    struct SSLR{
+    struct Filter{
         std::string                     ExternalPath;
 
         VkPipelineLayout                PipelineLayout;
@@ -32,16 +37,19 @@ private:
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
-    }sslr;
+    }filter;
 
 public:
-    SSLRGraphics();
+    customFilter();
     void destroy();
 
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
-    void setSSLRAttachments(attachments* Attachments);
+    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
+    void setBlitAttachments(attachments* blitAttachments);
+
+    void setSampleStep(float deltaX, float deltaY);
 
     void createRenderPass();
     void createFramebuffers();
@@ -49,9 +57,10 @@ public:
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
+    void updateSecondDescriptorSets();
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 };
 
-#endif // SSLR_H
+
+#endif // CUSTOMFILTER_H

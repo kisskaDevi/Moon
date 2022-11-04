@@ -1,7 +1,7 @@
 #include "../graphics.h"
 #include "core/operations.h"
 #include "core/transformational/light.h"
-#include "../bufferObjects.h"
+#include "../../bufferObjects.h"
 
 #include <array>
 #include <iostream>
@@ -419,14 +419,10 @@ void deferredGraphics::updateSpotLightUbo(uint32_t imageIndex)
 
 void deferredGraphics::updateSpotLightCmd(uint32_t imageIndex)
 {
-    std::vector<object*> objects(base.objects.size()+oneColor.objects.size()+stencil.objects.size());
+    std::vector<object*> objects(base.objects.size()+stencil.objects.size());
 
     uint32_t counter = 0;
     for(auto object: base.objects){
-        objects[counter] = object;
-        counter++;
-    }
-    for(auto object: oneColor.objects){
         objects[counter] = object;
         counter++;
     }

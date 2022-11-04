@@ -1,31 +1,31 @@
-#include "ssao.h"
+#include "sslr.h"
 #include "core/operations.h"
-#include "bufferObjects.h"
+#include "../bufferObjects.h"
 
 #include <array>
 #include <iostream>
 
-SSAOGraphics::SSAOGraphics()
+SSLRGraphics::SSLRGraphics()
 {
 
 }
 
-void SSAOGraphics::setExternalPath(const std::string &path)
+void SSLRGraphics::setExternalPath(const std::string &path)
 {
-    ssao.ExternalPath = path;
+    sslr.ExternalPath = path;
 }
 
-void SSAOGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void SSLRGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
 }
-void SSAOGraphics::setImageProp(imageInfo* pInfo)                       {this->image = *pInfo;}
-void SSAOGraphics::setSSAOAttachments(attachments* Attachments)         {this->Attachments = Attachments;}
+void SSLRGraphics::setImageProp(imageInfo* pInfo)                       {this->image = *pInfo;}
+void SSLRGraphics::setSSLRAttachments(attachments* Attachments)         {this->Attachments = Attachments;}
 
-void SSAOGraphics::SSAO::Destroy(VkDevice* device)
+void SSLRGraphics::SSLR::Destroy(VkDevice* device)
 {
     vkDestroyPipeline(*device, Pipeline, nullptr);
     vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
@@ -33,16 +33,16 @@ void SSAOGraphics::SSAO::Destroy(VkDevice* device)
     vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
-void SSAOGraphics::destroy()
+void SSLRGraphics::destroy()
 {
-    ssao.Destroy(device);
+    sslr.Destroy(device);
 
     vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
 }
 
-void SSAOGraphics::createRenderPass()
+void SSLRGraphics::createRenderPass()
 {
     uint32_t index = 0;
     std::array<VkAttachmentDescription,1> attachments{};
@@ -88,7 +88,7 @@ void SSAOGraphics::createRenderPass()
         throw std::runtime_error("failed to create filter render pass!");
 }
 
-void SSAOGraphics::createFramebuffers()
+void SSLRGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
@@ -105,13 +105,13 @@ void SSAOGraphics::createFramebuffers()
     }
 }
 
-void SSAOGraphics::createPipelines()
+void SSLRGraphics::createPipelines()
 {
-    ssao.createDescriptorSetLayout(device);
-    ssao.createPipeline(device,&image,&renderPass);
+    sslr.createDescriptorSetLayout(device);
+    sslr.createPipeline(device,&image,&renderPass);
 }
 
-void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice* device)
+void SSLRGraphics::SSLR::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
@@ -144,15 +144,15 @@ void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
     if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao descriptor set layout!");
+        throw std::runtime_error("failed to create sslr descriptor set layout!");
 }
 
-void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void SSLRGraphics::SSLR::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoVert.spv");
-    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoFrag.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\sslr\\sslrVert.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\sslr\\sslrFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -255,7 +255,7 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
     if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao pipeline layout!");
+        throw std::runtime_error("failed to create sslr pipeline layout!");
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -273,14 +273,14 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao graphics pipeline!");
+        throw std::runtime_error("failed to create sslr graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void SSAOGraphics::createDescriptorPool()
+void SSLRGraphics::createDescriptorPool()
 {
     uint32_t imageCount = image.Count;
     size_t index = 0;
@@ -301,24 +301,24 @@ void SSAOGraphics::createDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &ssao.DescriptorPool) != VK_SUCCESS)
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &sslr.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 }
 
-void SSAOGraphics::createDescriptorSets()
+void SSLRGraphics::createDescriptorSets()
 {
-    ssao.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, ssao.DescriptorSetLayout);
+    sslr.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, sslr.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = ssao.DescriptorPool;
+        allocInfo.descriptorPool = sslr.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, ssao.DescriptorSets.data()) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(*device, &allocInfo, sslr.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 }
 
-void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
+void SSLRGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -344,7 +344,7 @@ void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, V
         index = 0;
         std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = ssao.DescriptorSets[i];
+            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -352,7 +352,7 @@ void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, V
             descriptorWrites[index].pBufferInfo = &bufferInfo;
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = ssao.DescriptorSets[i];
+            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -360,7 +360,7 @@ void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, V
             descriptorWrites[index].pImageInfo = &imageInfo[0];
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = ssao.DescriptorSets[i];
+            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -368,7 +368,7 @@ void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, V
             descriptorWrites[index].pImageInfo = &imageInfo[1];
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = ssao.DescriptorSets[i];
+            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -378,7 +378,7 @@ void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, V
     }
 }
 
-void SSAOGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void SSLRGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     std::array<VkClearValue, 1> ClearValues{};
         ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -394,8 +394,8 @@ void SSAOGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.PipelineLayout, 0, 1, &ssao.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sslr.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sslr.PipelineLayout, 0, 1, &sslr.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);

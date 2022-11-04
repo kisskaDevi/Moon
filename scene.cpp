@@ -168,7 +168,7 @@ void scene::createLight()
     groups.at(0)->addObject(lightPoint.at(index));
 
     for(int i=index;i<6;i++,index++){
-        graphics->addLightSource(lightSource.at(index));
+        graphics->bindLightSource(lightSource.at(index));
     }
 
     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
@@ -179,28 +179,28 @@ void scene::createLight()
     lightSource.at(index)->setScattering(true);
     groups.at(2)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE1));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(3)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE2));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(4)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE3));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(5)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
     for(int i=0;i<5;i++){
         lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
@@ -223,14 +223,16 @@ void scene::createObjects()
 {
     uint32_t index=0;
     object3D.push_back( new object(gltfModel.at(0).size(),gltfModel.at(0).data()) );
-    graphics->bindStencilObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    object3D.at(index)->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
     object3D.push_back( new object(gltfModel.at(1).size(),gltfModel.at(1).data()) );
-    graphics->bindStencilObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(1.0,0.0,0.0,-0.5));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -239,7 +241,7 @@ void scene::createObjects()
     index++;
 
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
-    graphics->bindStencilObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    graphics->bindOutliningObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
     //graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->translate(glm::vec3(0.0f,0.0f,3.0f));
@@ -256,35 +258,38 @@ void scene::createObjects()
     index++;
 
     object3D.push_back( new object(gltfModel.at(2).size(),gltfModel.at(2).data()) );
-    graphics->bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    graphics->bindBaseObject(object3D.at(index));
+    object3D.at(index)->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    object3D.at(index)->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     object *Box0 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
+    object3D.at(index)->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO1 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
+    object3D.at(index)->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO3 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO4 = object3D.at(index);
     index++;
@@ -523,9 +528,9 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
     }
     if(backRStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_R) == 0)
     {
-        object3D[0]->setStencilEnable(!object3D[0]->getStencilEnable());
-        object3D[1]->setStencilEnable(!object3D[1]->getStencilEnable());
-        object3D[2]->setStencilEnable(!object3D[2]->getStencilEnable());
+        object3D[0]->setOutliningEnable(!object3D[0]->getOutliningEnable());
+        object3D[1]->setOutliningEnable(!object3D[1]->getOutliningEnable());
+        object3D[2]->setOutliningEnable(!object3D[2]->getOutliningEnable());
         graphics->resetCmdWorld();
     }
     backRStage = glfwGetKey(window,GLFW_KEY_R);
@@ -583,7 +588,7 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
     if(backGStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_G) == 0)
     {
         if(lightPointer<20){
-            graphics->addLightSource(lightSource.at(lightPointer));
+            graphics->bindLightSource(lightSource.at(lightPointer));
             lightPointer++;
         }
         graphics->resetCmdWorld();
@@ -639,7 +644,7 @@ void scene::updates(float frameTime)
                     glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
                                 sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
                                 sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
-        object3D.at(4)->setColor(
+        object3D.at(4)->setBloomColor(
                     glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
                                 sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
                                 sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));

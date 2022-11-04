@@ -22,19 +22,16 @@ struct StorageBufferObject{
     alignas(4)  float               depth;
 };
 
-struct StencilPushConst
-{
+struct StencilPushConst{
     alignas(16) glm::vec4           stencilColor;
     alignas(4)  float               width;
 };
 
-struct lightPassPushConst
-{
+struct lightPassPushConst{
     alignas(4) float                minAmbientFactor;
 };
 
-struct postProcessingPushConst
-{
+struct postProcessingPushConst{
     alignas(4) float                blitFactor;
 };
 

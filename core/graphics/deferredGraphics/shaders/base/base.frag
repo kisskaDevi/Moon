@@ -47,11 +47,14 @@ layout(location = 2)	in vec2 UV0;
 layout(location = 3)	in vec2 UV1;
 layout(location = 4)	in vec3 tangent;
 layout(location = 5)	in vec3 bitangent;
-layout(location = 6)	in vec4 color;
-layout(location = 7)	in vec4 eyePosition;
-layout(location = 8)	in float depth;
-layout(location = 9)	in vec4 glPosition;
-layout(location = 10)	in float transparencyPass;
+layout(location = 6)	in vec4 constColor;
+layout(location = 7)	in vec4 colorFactor;
+layout(location = 8)	in vec4 bloomColor;
+layout(location = 9)	in vec4 bloomFactor;
+layout(location = 10)	in vec4 eyePosition;
+layout(location = 11)	in float depth;
+layout(location = 12)	in vec4 glPosition;
+layout(location = 13)	in float transparencyPass;
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -64,18 +67,18 @@ float		convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
 
 void main()
 {
-    outPosition = position;
-    outBaseColor = texture(baseColorTexture, UV0);
-    outNormal = vec4(materialPC.normalTextureSet > -1 ? getNormal() : normal, 0.0f);
-    outEmissiveTexture = texture(emissiveTexture, UV0);
+    outPosition         = position;
+    outNormal           = vec4(materialPC.normalTextureSet > -1 ? getNormal() : normal, 0.0f);
+    outBaseColor        = vec4(colorFactor.x,colorFactor.y,colorFactor.z,1.0f) * texture(baseColorTexture, UV0) + constColor;
+    outEmissiveTexture  = vec4(bloomFactor.x,bloomFactor.y,bloomFactor.z,1.0f) * texture(emissiveTexture,  UV0) + bloomColor;
 
     if(transparencyPass==0.0){
-        if(outBaseColor.a!=1.0f){
+        if(outBaseColor.a<1.0f){
             discard;
-	}
+        }
     }else{
-        if(outBaseColor.a==1.0f||outBaseColor.a<0.1f){
-	    discard;
+        if(outBaseColor.a>=1.0f||outBaseColor.a<=0.1f){
+            discard;
         }else if(glPosition.z - 0.000005 < texture(depthMap , glPosition.xy * 0.5f + 0.5f).r){
             discard;
         }

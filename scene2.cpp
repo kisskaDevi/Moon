@@ -160,7 +160,7 @@ void scene2::createLight()
     groups.at(0)->addObject(lightPoint.at(index));
 
     for(int i=index;i<6;i++,index++){
-        graphics->addLightSource(lightSource.at(index));
+        graphics->bindLightSource(lightSource.at(index));
     }
 
     Proj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
@@ -171,42 +171,42 @@ void scene2::createLight()
     lightSource.at(index)->setScattering(true);
     groups.at(2)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE1));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(3)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE2));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(4)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
     lightSource.push_back(new spotLight(LIGHT_TEXTURE3));
     lightSource.at(index)->setProjectionMatrix(Proj);
     lightSource.at(index)->setScattering(true);
     groups.at(5)->addObject(lightSource.at(index));
     index++;
-    graphics->addLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 }
 
 void scene2::createObjects()
 {
     uint32_t index=0;
     object3D.push_back( new object(gltfModel.at(0).size(),gltfModel.at(0).data()) );
-    graphics->bindStencilObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(5.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
     object3D.push_back( new object(gltfModel.at(1).size(),gltfModel.at(1).data()) );
-    graphics->bindStencilObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->translate(glm::vec3(-5.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -221,35 +221,36 @@ void scene2::createObjects()
     index++;
 
     object3D.push_back( new object(gltfModel.at(2).size(),gltfModel.at(2).data()) );
-    graphics->bindBloomObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    graphics->bindBaseObject(object3D.at(index));
+    object3D.at(index)->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    object3D.at(index)->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     object *Box0 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO1 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO3 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,1.0f));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO4 = object3D.at(index);
     index++;

@@ -4,13 +4,11 @@
 #include "core/transformational/light.h"
 #include "core/texture.h"
 #include "core/operations.h"
-#include "bufferObjects.h"
+#include "../bufferObjects.h"
 
 #include <array>
 
 deferredGraphics::deferredGraphics(){
-    bloom.base = &base;
-    oneColor.base = &base;
     stencil.base = &base;
 }
 
@@ -59,8 +57,6 @@ void deferredGraphics::destroyEmptyTexture(){
 void deferredGraphics::setExternalPath(const std::string &path)
 {
     base.ExternalPath = path;
-    bloom.ExternalPath = path;
-    oneColor.ExternalPath = path;
     stencil.ExternalPath = path;
     skybox.ExternalPath = path;
     spotLighting.ExternalPath = path;
@@ -69,10 +65,8 @@ void deferredGraphics::setExternalPath(const std::string &path)
 void deferredGraphics::destroy()
 {
     base.Destroy(device);
-    bloom.Destroy(device);
-    oneColor.Destroy(device);
-    stencil.DestroyFirstPipeline(device);
-    stencil.DestroySecondPipeline(device);
+    stencil.DestroyStencilPipeline(device);
+    stencil.DestroyOutliningPipeline(device);
     skybox.Destroy(device);
     spotLighting.Destroy(device);
 
@@ -835,10 +829,8 @@ void deferredGraphics::createPipelines()
     base.createDescriptorSetLayout(device);
     base.createPipeline(device,&image,&renderPass);
     base.createUniformBuffers(physicalDevice,device,image.Count);
-    bloom.createPipeline(device,&image,&renderPass);
-    oneColor.createPipeline(device,&image,&renderPass);
-    stencil.createFirstPipeline(device,&image,&renderPass);
-    stencil.createSecondPipeline(device,&image,&renderPass);
+    stencil.createStencilPipeline(device,&image,&renderPass);
+    stencil.createOutliningPipeline(device,&image,&renderPass);
     skybox.createDescriptorSetLayout(device);
     skybox.createPipeline(device,&image,&renderPass);
     skybox.createUniformBuffers(physicalDevice,device,image.Count);
@@ -879,8 +871,6 @@ void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
 
         skybox.render(frameNumber,commandBuffers);
         base.render(frameNumber,commandBuffers, primitiveCount);
-        bloom.render(frameNumber,commandBuffers,primitiveCount);
-        oneColor.render(frameNumber,commandBuffers,primitiveCount);
         stencil.render(frameNumber,commandBuffers,primitiveCount);
 
     vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
@@ -928,10 +918,6 @@ void deferredGraphics::updateObjectUniformBuffer(uint32_t currentImage)
 {
     for(size_t i=0;i<base.objects.size();i++)
         base.objects.at(i)->updateUniformBuffer(device,currentImage);
-    for(size_t i=0;i<bloom.objects.size();i++)
-        bloom.objects.at(i)->updateUniformBuffer(device,currentImage);
-    for(size_t i=0;i<oneColor.objects.size();i++)
-        oneColor.objects.at(i)->updateUniformBuffer(device,currentImage);
     for(size_t i=0;i<stencil.objects.size();i++)
         stencil.objects.at(i)->updateUniformBuffer(device,currentImage);
 }
@@ -941,17 +927,8 @@ void deferredGraphics::bindBaseObject(object *newObject)
     base.objects.push_back(newObject);
 }
 
-void deferredGraphics::bindBloomObject(object *newObject)
-{
-    bloom.objects.push_back(newObject);
-}
 
-void deferredGraphics::bindOneColorObject(object *newObject)
-{
-    oneColor.objects.push_back(newObject);
-}
-
-void deferredGraphics::bindStencilObject(object *newObject)
+void deferredGraphics::bindOutliningObject(object *newObject)
 {
     stencil.objects.push_back(newObject);
 }
@@ -978,31 +955,7 @@ bool deferredGraphics::removeBaseObject(object* object)
     return result;
 }
 
-bool deferredGraphics::removeBloomObject(object* object)
-{
-    bool result = false;
-    for(uint32_t index = 0; index<bloom.objects.size(); index++){
-        if(object==bloom.objects[index]){
-            bloom.objects.erase(bloom.objects.begin()+index);
-            result = true;
-        }
-    }
-    return result;
-}
-
-bool deferredGraphics::removeOneColorObject(object* object)
-{
-    bool result = false;
-    for(uint32_t index = 0; index<oneColor.objects.size(); index++){
-        if(object==oneColor.objects[index]){
-            oneColor.objects.erase(oneColor.objects.begin()+index);
-            result = true;
-        }
-    }
-    return result;
-}
-
-bool deferredGraphics::removeStencilObject(object* object)
+bool deferredGraphics::removeOutliningObject(object* object)
 {
     bool result = false;
     for(uint32_t index = 0; index<stencil.objects.size(); index++){
@@ -1034,22 +987,12 @@ void deferredGraphics::removeBinds()
         object->destroy(device);
         object->destroyUniformBuffers(device);
     }
-    for(auto object: bloom.objects){
-        object->destroy(device);
-        object->destroyUniformBuffers(device);
-    }
-    for(auto object: oneColor.objects){
-        object->destroy(device);
-        object->destroyUniformBuffers(device);
-    }
     for(auto object: stencil.objects){
         object->destroy(device);
         object->destroyUniformBuffers(device);
     }
 
     base.objects.clear();
-    bloom.objects.clear();
-    oneColor.objects.clear();
     stencil.objects.clear();
 }
 

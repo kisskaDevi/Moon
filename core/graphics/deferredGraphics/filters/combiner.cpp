@@ -1,31 +1,82 @@
-#include "sslr.h"
+#include "combiner.h"
+
 #include "core/operations.h"
-#include "bufferObjects.h"
 
 #include <array>
 #include <iostream>
 
-SSLRGraphics::SSLRGraphics()
+imagesCombiner::imagesCombiner()
 {
 
 }
 
-void SSLRGraphics::setExternalPath(const std::string &path)
+void imagesCombiner::setExternalPath(const std::string &path)
 {
-    sslr.ExternalPath = path;
+    combiner.ExternalPath = path;
 }
 
-void SSLRGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void imagesCombiner::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
 }
-void SSLRGraphics::setImageProp(imageInfo* pInfo)                       {this->image = *pInfo;}
-void SSLRGraphics::setSSLRAttachments(attachments* Attachments)         {this->Attachments = Attachments;}
+void imagesCombiner::setImageProp(imageInfo* pInfo)                   {this->image = *pInfo;}
+void imagesCombiner::setAttachments(attachments* Attachments)         {this->Attachments = Attachments;}
 
-void SSLRGraphics::SSLR::Destroy(VkDevice* device)
+void imagesCombiner::setCombineAttachmentsCount(uint32_t attachmentsCount)
+{
+    combiner.combineAttachmentsCount = attachmentsCount;
+}
+
+void imagesCombiner::createAttachments()
+{
+    Attachments->resize(image.Count);
+    for(size_t Image=0; Image<image.Count; Image++)
+    {
+        createImage(        physicalDevice,
+                            device,
+                            image.Extent.width,
+                            image.Extent.height,
+                            1,
+                            VK_SAMPLE_COUNT_1_BIT,
+                            image.Format,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            Attachments->image[Image],
+                            Attachments->imageMemory[Image]);
+
+        createImageView(    device,
+                            Attachments->image[Image],
+                            image.Format,
+                            VK_IMAGE_ASPECT_COLOR_BIT,
+                            1,
+                            &Attachments->imageView[Image]);
+    }
+    VkSamplerCreateInfo SamplerInfo{};
+        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+        SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+        SamplerInfo.anisotropyEnable = VK_TRUE;
+        SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+        SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+        SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        SamplerInfo.minLod = 0.0f;
+        SamplerInfo.maxLod = 0.0f;
+        SamplerInfo.mipLodBias = 0.0f;
+    if (vkCreateSampler(*device, &SamplerInfo, nullptr, &Attachments->sampler) != VK_SUCCESS)
+        throw std::runtime_error("failed to create graphics sampler!");
+}
+
+void imagesCombiner::Combiner::Destroy(VkDevice* device)
 {
     vkDestroyPipeline(*device, Pipeline, nullptr);
     vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
@@ -33,16 +84,19 @@ void SSLRGraphics::SSLR::Destroy(VkDevice* device)
     vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
-void SSLRGraphics::destroy()
+void imagesCombiner::destroy()
 {
-    sslr.Destroy(device);
+    combiner.Destroy(device);
 
     vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+
+    Attachments->deleteAttachment(&*device);
+    Attachments->deleteSampler(&*device);
 }
 
-void SSLRGraphics::createRenderPass()
+void imagesCombiner::createRenderPass()
 {
     uint32_t index = 0;
     std::array<VkAttachmentDescription,1> attachments{};
@@ -53,7 +107,7 @@ void SSLRGraphics::createRenderPass()
         attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[index].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        attachments[index].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
     index = 0;
     std::array<VkAttachmentReference,1> attachmentRef;
@@ -88,7 +142,7 @@ void SSLRGraphics::createRenderPass()
         throw std::runtime_error("failed to create filter render pass!");
 }
 
-void SSLRGraphics::createFramebuffers()
+void imagesCombiner::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
@@ -105,25 +159,25 @@ void SSLRGraphics::createFramebuffers()
     }
 }
 
-void SSLRGraphics::createPipelines()
+void imagesCombiner::createPipelines()
 {
-    sslr.createDescriptorSetLayout(device);
-    sslr.createPipeline(device,&image,&renderPass);
+    combiner.createDescriptorSetLayout(device);
+    combiner.createPipeline(device,&image,&renderPass);
 }
 
-void SSLRGraphics::SSLR::createDescriptorSetLayout(VkDevice* device)
+void imagesCombiner::Combiner::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding,4> bindings{};
+    std::array<VkDescriptorSetLayoutBinding,3> bindings;
         bindings[index].binding = 0;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindings[index].descriptorCount = combineAttachmentsCount;
+        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         bindings[index].pImmutableSamplers = nullptr;
         bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     index++;
         bindings[index].binding = 1;
-        bindings[index].descriptorCount = 1;
+        bindings[index].descriptorCount = combineAttachmentsCount;
         bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         bindings[index].pImmutableSamplers = nullptr;
         bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -133,26 +187,20 @@ void SSLRGraphics::SSLR::createDescriptorSetLayout(VkDevice* device)
         bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         bindings[index].pImmutableSamplers = nullptr;
         bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = 3;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
     if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create sslr descriptor set layout!");
+        throw std::runtime_error("failed to create ssao descriptor set layout!");
 }
 
-void SSLRGraphics::SSLR::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void imagesCombiner::Combiner::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\sslr\\sslrVert.spv");
-    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\sslr\\sslrFrag.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\combiner\\combinerVert.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\combiner\\combinerFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -255,7 +303,7 @@ void SSLRGraphics::SSLR::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
     if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create sslr pipeline layout!");
+        throw std::runtime_error("failed to create ssao pipeline layout!");
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -273,26 +321,23 @@ void SSLRGraphics::SSLR::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create sslr graphics pipeline!");
+        throw std::runtime_error("failed to create ssao graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void SSLRGraphics::createDescriptorPool()
+void imagesCombiner::createDescriptorPool()
 {
     uint32_t imageCount = image.Count;
     size_t index = 0;
-    std::array<VkDescriptorPoolSize,4> poolSizes;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+    std::array<VkDescriptorPoolSize,3> poolSizes;
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount*combiner.combineAttachmentsCount);
     index++;
         poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-    index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount*combiner.combineAttachmentsCount);
     index++;
         poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
@@ -301,84 +346,76 @@ void SSLRGraphics::createDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &sslr.DescriptorPool) != VK_SUCCESS)
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &combiner.DescriptorPool) != VK_SUCCESS)
         throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
 }
 
-void SSLRGraphics::createDescriptorSets()
+void imagesCombiner::createDescriptorSets()
 {
-    sslr.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, sslr.DescriptorSetLayout);
+    combiner.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, combiner.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = sslr.DescriptorPool;
+        allocInfo.descriptorPool = combiner.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, sslr.DescriptorSets.data()) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(*device, &allocInfo, combiner.DescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 }
 
-void SSLRGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
+void imagesCombiner::updateSecondDescriptorSets(attachments* Attachments, attachment* depthAttachments, attachment* depthStencil)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo;
-            bufferInfo.buffer = pUniformBuffers[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
+        VkDescriptorImageInfo depthStencilInfo;
+            depthStencilInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthStencilInfo.imageView = depthStencil->imageView;
+            depthStencilInfo.sampler = depthStencil->sampler;
+
+        std::vector<VkDescriptorImageInfo> imageInfo(combiner.combineAttachmentsCount);
+        for(uint32_t index = 0; index<combiner.combineAttachmentsCount; index++){
+            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[index].imageView = Attachments[index].imageView[i];
+            imageInfo[index].sampler = Attachments[index].sampler;
+        }
+
+        std::vector<VkDescriptorImageInfo> depthImageInfo(combiner.combineAttachmentsCount);
+        for(uint32_t index = 0; index<combiner.combineAttachmentsCount; index++){
+            depthImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthImageInfo[index].imageView = depthAttachments[index].imageView;
+            depthImageInfo[index].sampler = depthAttachments[index].sampler;
+        }
 
         uint32_t index = 0;
-        std::array<VkDescriptorImageInfo, 3> imageInfo;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.position->imageView[i];
-            imageInfo[index].sampler = Attachments.GBuffer.position->sampler;
-        index++;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.normal->imageView[i];
-            imageInfo[index].sampler = Attachments.GBuffer.normal->sampler;
-        index++;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.image->imageView[i];
-            imageInfo[index].sampler = Attachments.image->sampler;
-
-        index = 0;
-        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+        std::array<VkWriteDescriptorSet,3> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
+            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pBufferInfo = &bufferInfo;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = combiner.combineAttachmentsCount;
+            descriptorWrites[index].pImageInfo = imageInfo.data();
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
+            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = combiner.combineAttachmentsCount;
+            descriptorWrites[index].pImageInfo = depthImageInfo.data();
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &imageInfo[0];
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &imageInfo[1];
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = sslr.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &imageInfo[2];
+            descriptorWrites[index].pImageInfo = &depthStencilInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-void SSLRGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void imagesCombiner::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     std::array<VkClearValue, 1> ClearValues{};
         ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -394,9 +431,10 @@ void SSLRGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sslr.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sslr.PipelineLayout, 0, 1, &sslr.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.PipelineLayout, 0, 1, &combiner.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 }
+

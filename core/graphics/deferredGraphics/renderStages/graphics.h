@@ -3,7 +3,7 @@
 
 #include <libs/vulkan/vulkan.h>
 #include <libs/glm/glm/glm.hpp>
-#include "attachments.h"
+#include "../attachments.h"
 
 #include <string>
 
@@ -47,12 +47,15 @@ private:
 
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
+
         VkDescriptorSetLayout           SceneDescriptorSetLayout;
         VkDescriptorSetLayout           ObjectDescriptorSetLayout;
         VkDescriptorSetLayout           PrimitiveDescriptorSetLayout;
         VkDescriptorSetLayout           MaterialDescriptorSetLayout;
+
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
+
         std::vector<VkBuffer>           sceneUniformBuffers;
         std::vector<VkDeviceMemory>     sceneUniformBuffersMemory;
 
@@ -66,51 +69,21 @@ private:
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }base;
 
-    struct bloomExtension{
-        std::string                     ExternalPath;
-
-        Base*                           base;
-        VkPipeline                      Pipeline;
-        VkPipelineLayout                PipelineLayout;
-
-        std::vector<object *>           objects;
-
-        void Destroy(VkDevice* device);
-        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
-            void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
-    }bloom;
-
-    struct oneColorExtension{
-        std::string                     ExternalPath;
-
-        Base*                           base;
-        VkPipeline                      Pipeline;
-        VkPipelineLayout                PipelineLayout;
-
-        std::vector<object *>           objects;
-
-        void Destroy(VkDevice* device);
-        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
-            void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
-    }oneColor;
-
     struct StencilExtension{
         std::string                     ExternalPath;
 
         Base*                           base;
-        VkPipeline                      firstPipeline;
-        VkPipeline                      secondPipeline;
-        VkPipelineLayout                firstPipelineLayout;
-        VkPipelineLayout                secondPipelineLayout;
+        VkPipeline                      stencilPipeline;
+        VkPipeline                      outliningPipeline;
+        VkPipelineLayout                stencilPipelineLayout;
+        VkPipelineLayout                outliningPipelineLayout;
 
         std::vector<object *>           objects;
 
-        void DestroyFirstPipeline(VkDevice* device);
-        void DestroySecondPipeline(VkDevice* device);
-        void createFirstPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void createSecondPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void DestroyStencilPipeline(VkDevice* device);
+        void DestroyOutliningPipeline(VkDevice* device);
+        void createStencilPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
             void stencilRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
@@ -119,13 +92,15 @@ private:
     struct Skybox
     {
         std::string                     ExternalPath;
-
         cubeTexture*                    texture = nullptr;
+
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
+
         VkDescriptorSetLayout           DescriptorSetLayout;
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
+
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
@@ -221,15 +196,11 @@ public:
     uint32_t readStorageBuffer(uint32_t currentImage);
 
     void bindBaseObject(object* newObject);
-    void bindBloomObject(object* newObject);
-    void bindOneColorObject(object* newObject);
-    void bindStencilObject(object* newObject);
+    void bindOutliningObject(object* newObject);
     void bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
 
     bool removeBaseObject(object* object);
-    bool removeBloomObject(object* object);
-    bool removeOneColorObject(object* object);
-    bool removeStencilObject(object* object);
+    bool removeOutliningObject(object* object);
     bool removeSkyBoxObject(object* object);
     void removeBinds();
 

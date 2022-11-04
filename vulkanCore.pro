@@ -16,8 +16,6 @@ DISTFILES += \
     core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingAmbient.frag \
     core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingAmbient.vert \
     core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingScattering.frag \
-    core/graphics/deferredGraphics/shaders/bloom/bloom.frag \
-    core/graphics/deferredGraphics/shaders/bloom/bloom.vert \
     core/graphics/deferredGraphics/shaders/combiner/combiner.frag \
     core/graphics/deferredGraphics/shaders/combiner/combiner.vert \
     core/graphics/deferredGraphics/shaders/compile.bat \
@@ -26,8 +24,6 @@ DISTFILES += \
     core/graphics/deferredGraphics/shaders/compileBuild.bat \
     core/graphics/deferredGraphics/shaders/customFilter/customFilter.frag \
     core/graphics/deferredGraphics/shaders/customFilter/customFilter.vert \
-    core/graphics/deferredGraphics/shaders/oneColor/oneColor.frag \
-    core/graphics/deferredGraphics/shaders/oneColor/oneColor.vert \
     core/graphics/deferredGraphics/shaders/postProcessing/firstPostProcessingShader.frag \
     core/graphics/deferredGraphics/shaders/postProcessing/firstPostProcessingShader.vert \
     core/graphics/deferredGraphics/shaders/shadow/shadowMapShader.vert \
@@ -39,8 +35,6 @@ DISTFILES += \
     core/graphics/deferredGraphics/shaders/ssao/SSAO.vert \
     core/graphics/deferredGraphics/shaders/sslr/SSLR.frag \
     core/graphics/deferredGraphics/shaders/sslr/SSLR.vert \
-    core/graphics/deferredGraphics/shaders/stencil/firstStencil.frag \
-    core/graphics/deferredGraphics/shaders/stencil/firstStencil.vert \
     core/graphics/deferredGraphics/shaders/stencil/secondStencil.frag \
     core/graphics/deferredGraphics/shaders/stencil/secondStencil.vert \
     model/glTF/Sponza/Sponza.gltf \
@@ -61,18 +55,18 @@ DISTFILES += \
 
 SOURCES += \
     core/graphics/deferredGraphics/attachments.cpp \
-    core/graphics/deferredGraphics/combiner.cpp \
-    core/graphics/deferredGraphics/customfilter.cpp \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
-    core/graphics/deferredGraphics/source/SpotLighting.cpp \
-    core/graphics/deferredGraphics/source/base.cpp \
-    core/graphics/deferredGraphics/source/extension.cpp \
-    core/graphics/deferredGraphics/source/skybox.cpp \
-    core/graphics/deferredGraphics/graphics.cpp \
-    core/graphics/deferredGraphics/postProcessing.cpp \
-    core/graphics/deferredGraphics/shadowGraphics.cpp \
-    core/graphics/deferredGraphics/ssao.cpp \
-    core/graphics/deferredGraphics/sslr.cpp \
+    core/graphics/deferredGraphics/renderStages/source/spotLighting.cpp \
+    core/graphics/deferredGraphics/renderStages/source/base.cpp \
+    core/graphics/deferredGraphics/renderStages/source/extension.cpp \
+    core/graphics/deferredGraphics/renderStages/source/skybox.cpp \
+    core/graphics/deferredGraphics/renderStages/graphics.cpp \
+    core/graphics/deferredGraphics/renderStages/postProcessing.cpp \
+    core/graphics/deferredGraphics/renderStages/shadowGraphics.cpp \
+    core/graphics/deferredGraphics/filters/combiner.cpp \
+    core/graphics/deferredGraphics/filters/customfilter.cpp \
+    core/graphics/deferredGraphics/filters/ssao.cpp \
+    core/graphics/deferredGraphics/filters/sslr.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/light.cpp \
@@ -89,14 +83,14 @@ SOURCES += \
 HEADERS += \
     core/graphics/deferredGraphics/attachments.h \
     core/graphics/deferredGraphics/bufferObjects.h \
-    core/graphics/deferredGraphics/combiner.h \
-    core/graphics/deferredGraphics/customfilter.h \
     core/graphics/deferredGraphics/deferredgraphicsinterface.h \
-    core/graphics/deferredGraphics/graphics.h \
-    core/graphics/deferredGraphics/postProcessing.h \
-    core/graphics/deferredGraphics/shadowGraphics.h \
-    core/graphics/deferredGraphics/ssao.h \
-    core/graphics/deferredGraphics/sslr.h \
+    core/graphics/deferredGraphics/renderStages/graphics.h \
+    core/graphics/deferredGraphics/renderStages/postProcessing.h \
+    core/graphics/deferredGraphics/renderStages/shadowGraphics.h \
+    core/graphics/deferredGraphics/filters/combiner.h \
+    core/graphics/deferredGraphics/filters/customfilter.h \
+    core/graphics/deferredGraphics/filters/ssao.h \
+    core/graphics/deferredGraphics/filters/sslr.h \
     core/graphics/graphicsInterface.h \
     core/transformational/transformational.h \
     core/transformational/camera.h \

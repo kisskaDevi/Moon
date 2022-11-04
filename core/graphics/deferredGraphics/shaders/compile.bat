@@ -12,14 +12,8 @@ glslc.exe postProcessing/firstPostProcessingShader.vert     -o postProcessing/fi
 glslc.exe postProcessing/firstPostProcessingShader.frag     -o postProcessing/firstPostProcessingFrag.spv
 glslc.exe postProcessing/postProcessingShader.vert	    -o postProcessing/postProcessingVert.spv
 glslc.exe postProcessing/postProcessingShader.frag	    -o postProcessing/postProcessingFrag.spv
-glslc.exe bloom/bloom.vert				    -o bloom/vertBloom.spv
-glslc.exe bloom/bloom.frag				    -o bloom/fragBloom.spv
-glslc.exe oneColor/oneColor.vert			    -o oneColor/oneColorVert.spv
-glslc.exe oneColor/oneColor.frag			    -o oneColor/oneColorFrag.spv
 glslc.exe skybox/skybox.vert				    -o skybox/skyboxVert.spv
 glslc.exe skybox/skybox.frag				    -o skybox/skyboxFrag.spv
-glslc.exe stencil/firstStencil.vert			    -o stencil/firststencilvert.spv
-glslc.exe stencil/firstStencil.frag			    -o stencil/firststencilfrag.spv
 glslc.exe stencil/secondStencil.vert			    -o stencil/secondstencilvert.spv
 glslc.exe stencil/secondStencil.frag			    -o stencil/secondstencilfrag.spv
 glslc.exe sslr/SSLR.vert				    -o sslr/sslrVert.spv

@@ -1,7 +1,7 @@
 #include "light.h"
 #include "object.h"
 #include "core/operations.h"
-#include "core/graphics/deferredGraphics/shadowGraphics.h"
+#include "core/graphics/deferredGraphics/renderStages/shadowGraphics.h"
 #include "core/texture.h"
 
 #include <iostream>

@@ -3,12 +3,12 @@
 
 #include "../graphicsInterface.h"
 
-#include "graphics.h"
-#include "postProcessing.h"
-#include "customfilter.h"
-#include "sslr.h"
-#include "ssao.h"
-#include "combiner.h"
+#include "renderStages/graphics.h"
+#include "renderStages/postProcessing.h"
+#include "filters/customfilter.h"
+#include "filters/sslr.h"
+#include "filters/ssao.h"
+#include "filters/combiner.h"
 
 struct updateFlag{
     bool                                        enable = false;
@@ -89,19 +89,15 @@ public:
     void        createModel(gltfModel* pModel);
     void        destroyModel(gltfModel* pModel);
 
-    void        addLightSource(spotLight* lightSource);
+    void        bindLightSource(spotLight* lightSource);
     void        removeLightSource(spotLight* lightSource);
 
     void        bindBaseObject(object* newObject);
-    void        bindBloomObject(object* newObject);
-    void        bindOneColorObject(object* newObject);
-    void        bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor);
+    void        bindOutliningObject(object* newObject, float lineWidth, glm::vec4 lineColor);
     void        bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
 
     bool        removeBaseObject(object* object);
-    bool        removeBloomObject(object* object);
-    bool        removeOneColorObject(object* object);
-    bool        removeStencilObject(object* object);
+    bool        removeOutliningObject(object* object);
     bool        removeSkyBoxObject(object* object);
 
     void        removeBinds();

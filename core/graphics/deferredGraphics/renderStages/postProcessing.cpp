@@ -1,5 +1,5 @@
 #include "postProcessing.h"
-#include "bufferObjects.h"
+#include "../bufferObjects.h"
 
 #include <iostream>
 #include <cstdint>          // нужна для UINT32_MAX
@@ -22,7 +22,7 @@ void postProcessing::setImageProp(imageInfo* pInfo)
     this->image = *pInfo;
 }
 
-void postProcessing::setSwapChain(VkSwapchainKHR *swapChain)
+void postProcessing::setSwapChain(VkSwapchainKHR* swapChain)
 {
     this->swapChain = swapChain;
 }

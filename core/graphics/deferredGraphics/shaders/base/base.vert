@@ -12,7 +12,10 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
     mat4 matrix;
-    vec4 color;
+    vec4 constColor;
+    vec4 colorFactor;
+    vec4 bloomColor;
+    vec4 bloomFactor;
 } local;
 
 layout (set = 2, binding = 0) uniform UBONode
@@ -37,17 +40,23 @@ layout(location = 2)	out vec2 outUV0;
 layout(location = 3)	out vec2 outUV1;
 layout(location = 4)	out vec3 outTangent;
 layout(location = 5)	out vec3 outBitangent;
-layout(location = 6)	out vec4 outColor;
-layout(location = 7)	out vec4 outEyePosition;
-layout(location = 8)	out float depth;
-layout(location = 9)	out vec4 glPosition;
-layout(location = 10)	out float transparencyPass;
+layout(location = 6)	out vec4 outConstColor;
+layout(location = 7)	out vec4 outColorFactor;
+layout(location = 8)	out vec4 outBloomColor;
+layout(location = 9)	out vec4 outBloomFactor;
+layout(location = 10)	out vec4 outEyePosition;
+layout(location = 11)	out float depth;
+layout(location = 12)	out vec4 glPosition;
+layout(location = 13)	out float transparencyPass;
 
 void main()
 {
     outUV0 = inUV0;
     outUV1 = inUV1;
-    outColor = local.color;
+    outConstColor = local.constColor;
+    outColorFactor = local.colorFactor;
+    outBloomColor = local.bloomColor;
+    outBloomFactor = local.bloomFactor;
     outEyePosition = global.eyePosition;
     transparencyPass = global.transparencyPass;
 

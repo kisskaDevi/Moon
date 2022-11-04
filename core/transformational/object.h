@@ -10,7 +10,10 @@
 struct UniformBuffer
 {
     alignas(16) glm::mat4x4 modelMatrix;
-    alignas(16) glm::vec4   color;
+    alignas(16) glm::vec4   constantColor;
+    alignas(16) glm::vec4   colorFactor;
+    alignas(16) glm::vec4   bloomColor;
+    alignas(16) glm::vec4   bloomFactor;
 };
 
 struct gltfModel;
@@ -20,6 +23,8 @@ struct Material;
 class object : public transformational
 {
 private:
+    bool                            enable = true;
+
     gltfModel**                     pModel;
     uint32_t                        modelCount;
 
@@ -27,27 +32,28 @@ private:
     VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet>    descriptors;
 
+    std::vector<VkBuffer>           uniformBuffers;
+    std::vector<VkDeviceMemory>     uniformBuffersMemory;
+
     glm::mat4x4                     modelMatrix;
     glm::vec3                       m_translate;
     glm::quat                       m_rotate;
     glm::vec3                       m_scale;
     glm::mat4x4                     m_globalTransform;
 
-    float                           visibilityDistance = 10.0f;
-    glm::vec4                       color;
-
-    std::vector<VkBuffer>           uniformBuffers;
-    std::vector<VkDeviceMemory>     uniformBuffersMemory;
-    bool                            enable = true;
+    glm::vec4                       colorFactor     = glm::vec4(1.0f,1.0f,1.0f,1.0f);
+    glm::vec4                       constantColor   = glm::vec4(0.0f,0.0f,0.0f,0.0f);
+    glm::vec4                       bloomFactor     = glm::vec4(1.0f,1.0f,1.0f,1.0f);
+    glm::vec4                       bloomColor      = glm::vec4(0.0f,0.0f,0.0f,0.0f);
 
     uint32_t                        firstPrimitive;
     uint32_t                        primitiveCount = 0;
 
-    struct Stencil{
-        bool                        Enable;
+    struct Outlining{
+        bool                        Enable = false;
         float                       Width;
         glm::vec4                   Color;
-    }stencil;
+    }outlining;
 
     void updateModelMatrix();
 
@@ -79,23 +85,25 @@ public:
     glm::vec3&          Scale();
 
     void                setModel(gltfModel** model3D);
-    void                setVisibilityDistance(float visibilityDistance);
-    void                setColor(const glm::vec4 & color);
+    void                setConstantColor(const glm::vec4 & color);
+    void                setColorFactor(const glm::vec4 & color);
+    void                setBloomColor(const glm::vec4 & color);
+    void                setBloomFactor(const glm::vec4 & color);
 
     gltfModel*          getModel(uint32_t index);
-    float               getVisibilityDistance() const;
-    glm::vec4           getColor() const;
+    glm::vec4           getConstantColor() const;
+    glm::vec4           getColorFactor() const;
 
     void                setEnable(const bool& enable);
     bool                getEnable() const;
 
-    void                setStencilEnable(const bool& enable);
-    void                setStencilWidth(const float& width);
-    void                setStencilColor(const glm::vec4& color);
+    void                setOutliningEnable(const bool& enable);
+    void                setOutliningWidth(const float& width);
+    void                setOutliningColor(const glm::vec4& color);
 
-    bool                getStencilEnable() const;
-    float               getStencilWidth() const;
-    glm::vec4           getStencilColor() const;
+    bool                getOutliningEnable() const;
+    float               getOutliningWidth() const;
+    glm::vec4           getOutliningColor() const;
 
     void                setFirstPrimitive(uint32_t firstPrimitive);
     void                setPrimitiveCount(uint32_t primitiveCount);

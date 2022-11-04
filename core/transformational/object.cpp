@@ -138,7 +138,10 @@ void object::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
     void* data;
     UniformBuffer ubo{};
         ubo.modelMatrix = modelMatrix;
-        ubo.color = color;
+        ubo.constantColor = constantColor;
+        ubo.colorFactor = colorFactor;
+        ubo.bloomColor = bloomColor;
+        ubo.bloomFactor = bloomFactor;
     vkMapMemory(*device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
     vkUnmapMemory(*device, uniformBuffersMemory[currentImage]);
@@ -193,11 +196,14 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
     }
 }
 
-void                            object::setModel(gltfModel** model3D)                    {this->pModel = model3D;}
-void                            object::setVisibilityDistance(float visibilityDistance) {this->visibilityDistance=visibilityDistance;}
-void                            object::setColor(const glm::vec4 &color)                {this->color = color;}
 void                            object::setEnable(const bool& enable)                   {this->enable = enable;}
+void                            object::setModel(gltfModel** model3D)                   {this->pModel = model3D;}
+void                            object::setConstantColor(const glm::vec4 &color)        {this->constantColor = color;}
+void                            object::setColorFactor(const glm::vec4 & color)         {this->colorFactor = color;}
+void                            object::setBloomColor(const glm::vec4 & color)          {this->bloomColor = color;}
+void                            object::setBloomFactor(const glm::vec4 &color)          {this->bloomFactor = color;}
 
+bool                            object::getEnable()             const                   {return enable;}
 gltfModel*                      object::getModel(uint32_t index)                        {
     gltfModel* model;
     if(modelCount>1&&index>=modelCount){
@@ -209,9 +215,8 @@ gltfModel*                      object::getModel(uint32_t index)                
     }
     return model;
 }
-float                           object::getVisibilityDistance() const                   {return visibilityDistance;}
-glm::vec4                       object::getColor()              const                   {return color;}
-bool                            object::getEnable()             const                   {return enable;}
+glm::vec4                       object::getConstantColor()      const                   {return constantColor;}
+glm::vec4                       object::getColorFactor()        const                   {return colorFactor;}
 
 glm::mat4x4                     &object::ModelMatrix()                                  {return modelMatrix;}
 glm::mat4x4                     &object::Transformation()                               {return m_globalTransform;}
@@ -223,14 +228,13 @@ VkDescriptorPool                &object::getDescriptorPool()                    
 std::vector<VkDescriptorSet>    &object::getDescriptorSet()                             {return descriptors;}
 std::vector<VkBuffer>           &object::getUniformBuffers()                            {return uniformBuffers;}
 
+void                            object::setOutliningEnable(const bool& enable)            {outlining.Enable = enable;}
+void                            object::setOutliningWidth(const float& width)             {outlining.Width = width;}
+void                            object::setOutliningColor(const glm::vec4& color)         {outlining.Color = color;}
 
-void                            object::setStencilEnable(const bool& enable)            {stencil.Enable = enable;}
-void                            object::setStencilWidth(const float& width)             {stencil.Width = width;}
-void                            object::setStencilColor(const glm::vec4& color)         {stencil.Color = color;}
-
-bool                            object::getStencilEnable() const                        {return stencil.Enable;}
-float                           object::getStencilWidth()  const                        {return stencil.Width;}
-glm::vec4                       object::getStencilColor()  const                        {return stencil.Color;}
+bool                            object::getOutliningEnable() const                        {return outlining.Enable;}
+float                           object::getOutliningWidth()  const                        {return outlining.Width;}
+glm::vec4                       object::getOutliningColor()  const                        {return outlining.Color;}
 
 void                            object::setFirstPrimitive(uint32_t firstPrimitive)      {this->firstPrimitive = firstPrimitive;}
 void                            object::setPrimitiveCount(uint32_t primitiveCount)      {this->primitiveCount = primitiveCount;}

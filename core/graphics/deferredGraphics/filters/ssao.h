@@ -1,12 +1,12 @@
-#ifndef COMBINER_H
-#define COMBINER_H
+#ifndef SSAO_H
+#define SSAO_H
 
 #include <libs/vulkan/vulkan.h>
-#include "attachments.h"
+#include "../attachments.h"
 
 #include <string>
 
-class imagesCombiner
+class SSAOGraphics
 {
 private:
     VkPhysicalDevice*                   physicalDevice;
@@ -21,9 +21,8 @@ private:
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
 
-    struct Combiner{
+    struct SSAO{
         std::string                     ExternalPath;
-        uint32_t                        combineAttachmentsCount = 0;
 
         VkPipelineLayout                PipelineLayout;
         VkPipeline                      Pipeline;
@@ -33,28 +32,25 @@ private:
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
-    }combiner;
+    }ssao;
 
 public:
-    imagesCombiner();
+    SSAOGraphics();
     void destroy();
 
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
-    void setAttachments(attachments* Attachments);
-    void setCombineAttachmentsCount(uint32_t attachmentsCount);
+    void setSSAOAttachments(attachments* Attachments);
 
-    void createAttachments();
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateSecondDescriptorSets(attachments* Attachments, attachment* depthAttachments, attachment* depthStencil);
+    void updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
 };
-
-#endif // COMBINER_H
+#endif // SSAO_H

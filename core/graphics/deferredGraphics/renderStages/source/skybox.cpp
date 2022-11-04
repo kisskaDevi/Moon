@@ -2,7 +2,7 @@
 #include "core/operations.h"
 #include "core/transformational/object.h"
 #include "core/texture.h"
-#include "../bufferObjects.h"
+#include "../../bufferObjects.h"
 
 #include <array>
 #include <iostream>

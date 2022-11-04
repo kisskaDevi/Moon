@@ -354,7 +354,7 @@ void deferredGraphicsInterface::freeCommandBuffers()
 void deferredGraphicsInterface::updateUniformBuffer(uint32_t imageIndex)
 {
     DeferredGraphics.updateUniformBuffer(imageIndex);
-    //DeferredGraphics.updateSkyboxUniformBuffer(imageIndex);
+    DeferredGraphics.updateSkyboxUniformBuffer(imageIndex);
     DeferredGraphics.updateObjectUniformBuffer(imageIndex);
 
     for(uint32_t i=0;i<TransparentLayersCount;i++){
@@ -395,7 +395,7 @@ void                                deferredGraphicsInterface::destroyModel(gltf
     pModel->destroy(devicesInfo[0].device);
 }
 
-void                                deferredGraphicsInterface::addLightSource(spotLight* lightSource)
+void                                deferredGraphicsInterface::bindLightSource(spotLight* lightSource)
 {
     QueueFamilyIndices indices{*devicesInfo[0].graphicsFamily,*devicesInfo[0].presentFamily};
     if(lightSource->getTexture()){
@@ -436,46 +436,26 @@ void                                deferredGraphicsInterface::bindBaseObject(ob
     newObject->createUniformBuffers(devicesInfo[0].physicalDevice,devicesInfo[0].device,imageCount);
     newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
     newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
+
     DeferredGraphics.bindBaseObject(newObject);
     for(uint32_t i=0;i<TransparentLayersCount;i++)
         TransparentLayers[i].bindBaseObject(newObject);
 }
-void                                deferredGraphicsInterface::bindBloomObject(object* newObject)
+void                                deferredGraphicsInterface::bindOutliningObject(object* newObject, float lineWidth, glm::vec4 lineColor)
 {
+    newObject->setOutliningEnable(false);
+    newObject->setOutliningWidth(lineWidth);
+    newObject->setOutliningColor(lineColor);
     newObject->createUniformBuffers(devicesInfo[0].physicalDevice,devicesInfo[0].device,imageCount);
     newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
     newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
-    DeferredGraphics.bindBloomObject(newObject);
+    DeferredGraphics.bindOutliningObject(newObject);
     for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].bindBloomObject(newObject);
-}
-void                                deferredGraphicsInterface::bindOneColorObject(object* newObject)
-{
-    newObject->createUniformBuffers(devicesInfo[0].physicalDevice,devicesInfo[0].device,imageCount);
-    newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
-    newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
-    DeferredGraphics.bindOneColorObject(newObject);
-    for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].bindOneColorObject(newObject);
-}
-void                                deferredGraphicsInterface::bindStencilObject(object* newObject, float lineWidth, glm::vec4 lineColor)
-{
-    newObject->setStencilEnable(false);
-    newObject->setStencilWidth(lineWidth);
-    newObject->setStencilColor(lineColor);
-    newObject->createUniformBuffers(devicesInfo[0].physicalDevice,devicesInfo[0].device,imageCount);
-    newObject->createDescriptorPool(devicesInfo[0].device,imageCount);
-    newObject->createDescriptorSet(devicesInfo[0].device,imageCount);
-    DeferredGraphics.bindStencilObject(newObject);
-    for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].bindStencilObject(newObject);
+        TransparentLayers[i].bindOutliningObject(newObject);
 }
 void                                deferredGraphicsInterface::bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH)
 {
-    newObject->createUniformBuffers(devicesInfo[0].physicalDevice,devicesInfo[0].device,imageCount);
     DeferredGraphics.bindSkyBoxObject(newObject,TEXTURE_PATH);
-    //for(uint32_t i=0;i<TransparentLayersCount;i++)
-        //TransparentLayers[i].bindSkyBoxObject(newObject,TEXTURE_PATH);
 }
 
 bool                                deferredGraphicsInterface::removeBaseObject(object* object)
@@ -485,33 +465,15 @@ bool                                deferredGraphicsInterface::removeBaseObject(
 
     return DeferredGraphics.removeBaseObject(object);
 }
-bool                                deferredGraphicsInterface::removeBloomObject(object* object)
+bool                                deferredGraphicsInterface::removeOutliningObject(object* object)
 {
     object->destroy(devicesInfo[0].device);
     object->destroyUniformBuffers(devicesInfo[0].device);
 
-    return DeferredGraphics.removeBloomObject(object);
-}
-bool                                deferredGraphicsInterface::removeOneColorObject(object* object)
-{
-    object->destroy(devicesInfo[0].device);
-    object->destroyUniformBuffers(devicesInfo[0].device);
-
-    return DeferredGraphics.removeOneColorObject(object);
-}
-bool                                deferredGraphicsInterface::removeStencilObject(object* object)
-{
-    object->destroy(devicesInfo[0].device);
-    object->destroyUniformBuffers(devicesInfo[0].device);
-
-    return DeferredGraphics.removeStencilObject(object);
+    return DeferredGraphics.removeOutliningObject(object);
 }
 bool                                deferredGraphicsInterface::removeSkyBoxObject(object* object)
 {
-    object->destroyUniformBuffers(devicesInfo[0].device);
-    //for(uint32_t i=0;i<TransparentLayersCount;i++)
-        //TransparentLayers[i].removeSkyBoxObject(object);
-
     return DeferredGraphics.removeSkyBoxObject(object);
 }
 

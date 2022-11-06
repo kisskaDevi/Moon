@@ -7,19 +7,19 @@
 #include <array>
 #include <iostream>
 
-void deferredGraphics::StencilExtension::DestroyStencilPipeline(VkDevice* device)
+void deferredGraphics::OutliningExtension::DestroyPipeline(VkDevice* device)
 {
-    vkDestroyPipeline(*device, stencilPipeline, nullptr);
-    vkDestroyPipelineLayout(*device, stencilPipelineLayout,nullptr);
+    vkDestroyPipeline(*device, Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
 }
 
-void deferredGraphics::StencilExtension::DestroyOutliningPipeline(VkDevice* device)
+void deferredGraphics::OutliningExtension::DestroyOutliningPipeline(VkDevice* device)
 {
     vkDestroyPipeline(*device, outliningPipeline, nullptr);
     vkDestroyPipelineLayout(*device, outliningPipelineLayout,nullptr);
 }
 
-void deferredGraphics::StencilExtension::createStencilPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -145,7 +145,7 @@ void deferredGraphics::StencilExtension::createStencilPipeline(VkDevice* device,
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &stencilPipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create stencil extension pipeline layout!");
 
     index=0;
@@ -159,12 +159,12 @@ void deferredGraphics::StencilExtension::createStencilPipeline(VkDevice* device,
         pipelineInfo[index].pRasterizationState = &rasterizer;                         //растеризация
         pipelineInfo[index].pMultisampleState = &multisampling;                        //мультсемплинг
         pipelineInfo[index].pColorBlendState = &colorBlending;                         //смешивание цветов
-        pipelineInfo[index].layout = stencilPipelineLayout;
+        pipelineInfo[index].layout = PipelineLayout;
         pipelineInfo[index].renderPass = *pRenderPass;                              //проход рендеринга
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &stencilPipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
         throw std::runtime_error("failed to create stencil extension graphics pipeline!");
 
     //можно удалить шейдерные модули после использования
@@ -172,7 +172,7 @@ void deferredGraphics::StencilExtension::createStencilPipeline(VkDevice* device,
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void deferredGraphics::StencilExtension::createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -325,9 +325,9 @@ void deferredGraphics::StencilExtension::createOutliningPipeline(VkDevice* devic
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void deferredGraphics::StencilExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void deferredGraphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
-    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, stencilPipeline);
+    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: objects)
     {
         if(object->getEnable()){
@@ -363,14 +363,14 @@ void deferredGraphics::StencilExtension::render(uint32_t frameNumber, VkCommandB
 
                 for (auto node : object->getModel(frameNumber)->nodes){
                     std::vector<VkDescriptorSet> descriptorSets = {base->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-                    stencilRenderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+                    outliningRenderNode(commandBuffers,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
                 }
             }
         }
     }
 }
 
-void deferredGraphics::StencilExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
+void deferredGraphics::OutliningExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
 {
     if (node->mesh)
     {
@@ -382,7 +382,7 @@ void deferredGraphics::StencilExtension::renderNode(VkCommandBuffer commandBuffe
             nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
             nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, stencilPipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
             // Pass material parameters as push constants
             MaterialBlock pushConstBlockMaterial{};
@@ -418,7 +418,7 @@ void deferredGraphics::StencilExtension::renderNode(VkCommandBuffer commandBuffe
 
             pushConstBlockMaterial.primitive = primitiveCount;
 
-            vkCmdPushConstants(commandBuffer, stencilPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
+            vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
 
             if (primitive->hasIndices)
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -432,7 +432,7 @@ void deferredGraphics::StencilExtension::renderNode(VkCommandBuffer commandBuffe
         renderNode(commandBuffer,child,descriptorSetsCount,descriptorSets,primitiveCount);
 }
 
-void deferredGraphics::StencilExtension::stencilRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
+void deferredGraphics::OutliningExtension::outliningRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
 {
     if (node->mesh)
     {
@@ -453,5 +453,5 @@ void deferredGraphics::StencilExtension::stencilRenderNode(VkCommandBuffer comma
         }
     }
     for (auto child : node->children)
-        stencilRenderNode(commandBuffer,child,descriptorSetsCount,descriptorSets);
+        outliningRenderNode(commandBuffer,child,descriptorSetsCount,descriptorSets);
 }

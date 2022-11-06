@@ -1,13 +1,14 @@
 #version 450
 #define bloomCount 8
+#define transparentLayersCount 3
 
 layout(set = 0, binding = 0) uniform sampler2D Sampler;
 layout(set = 0, binding = 1) uniform sampler2D blurSampler;
 layout(set = 0, binding = 2) uniform sampler2D sslrSampler;
 layout(set = 0, binding = 3) uniform sampler2D bloomSampler[bloomCount];
-layout(set = 0, binding = 4) uniform sampler2D transparentLayers[3];
+layout(set = 0, binding = 4) uniform sampler2D transparentLayers[transparentLayersCount];
 layout(set = 0, binding = 5) uniform sampler2D depth;
-layout(set = 0, binding = 6) uniform sampler2D transparentLayersDepth[3];
+layout(set = 0, binding = 6) uniform sampler2D transparentLayersDepth[transparentLayersCount];
 
 vec4 colorBloomFactor[bloomCount] = vec4[](
     vec4(1.0f,0.0f,0.0f,1.0f),
@@ -29,25 +30,6 @@ layout (push_constant) uniform PC
 }pc;
 
 const float pi = 3.141592653589793f;
-
-vec4 blur(sampler2D Sampler, vec2 TexCoord)
-{
-    float sigma = 1.0 * textureSize(Sampler, 0).y;
-    vec2 textel = 1.0 / textureSize(Sampler, 0);
-    vec4 Color = texture(Sampler, TexCoord) /sqrt(pi*sigma);
-    int h = 20;
-    float Norm = 1.0f/sqrt(pi*sigma);
-    for(int i=-h;i<h+1;i+=2)
-    {
-	float I1 = Norm * exp( -(i*textel.y*i*textel.y)/sigma);
-	float I2 = Norm * exp( -((i+1)*textel.y*(i+1)*textel.y)/sigma);
-	float y = (I1*i+I2*(i+1))*textel.y/(I1+I2);
-	float I = Norm * exp( -(y*y)/sigma);
-	Color += texture(Sampler, TexCoord + vec2(0.0f,y) ) * I;
-	Color += texture(Sampler, TexCoord - vec2(0.0f,y) ) * I;
-    }
-    return Color;
-}
 
 vec4 radialBlur(sampler2D Sampler, vec2 TexCoord)
 {
@@ -88,7 +70,7 @@ void main()
 
     outColor += vec4(texture(Sampler,fragTexCoord));
 
-    for(int i=0;i<3;i++){
+    for(int i=0;i<transparentLayersCount;i++){
         if(texture(transparentLayersDepth[i],fragTexCoord).r<texture(depth,fragTexCoord).r){
             vec4 layerColor = texture(transparentLayers[i],fragTexCoord);
             //outColor = outColor * outColor.a  + layerColor * layerColor.a;
@@ -96,7 +78,7 @@ void main()
         }
     }
 
-    outColor += blur(blurSampler,fragTexCoord);
+    outColor += texture(blurSampler,fragTexCoord);
     outColor += bloom();
     outColor += vec4(texture(sslrSampler,fragTexCoord).xyz,0.0f);
 }

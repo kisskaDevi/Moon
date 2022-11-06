@@ -15,6 +15,7 @@ deferredGraphicsInterface::deferredGraphicsInterface(const std::string& External
     SSLR.setExternalPath(ExternalPath);
     SSAO.setExternalPath(ExternalPath);
     Combiner.setExternalPath(ExternalPath);
+    Blur.setExternalPath(ExternalPath);
 
     TransparentLayers.resize(TransparentLayersCount);
     for(uint32_t i=0;i<TransparentLayersCount;i++)
@@ -40,6 +41,7 @@ void deferredGraphicsInterface::destroyGraphics()
     SSLR.destroy();
     PostProcessing.destroy();
     Combiner.destroy();
+    Blur.destroy();
 
     for(uint32_t i=0;i<TransparentLayersCount;i++)
         TransparentLayers[i].destroy();
@@ -68,6 +70,7 @@ void deferredGraphicsInterface::setDevicesInfo(uint32_t devicesInfoCount, device
     SSLR.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
     SSAO.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
     Combiner.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
+    Blur.setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
 
     for(uint32_t i=0;i<TransparentLayersCount;i++)
         TransparentLayers[i].setDeviceProp(this->devicesInfo[0].physicalDevice,this->devicesInfo[0].device,this->devicesInfo[0].queue,this->devicesInfo[0].commandPool);
@@ -75,9 +78,9 @@ void deferredGraphicsInterface::setDevicesInfo(uint32_t devicesInfoCount, device
 
 void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
 {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,*surface);                  //здест происходит запрос поддерживаемы режимов и форматов которые в следующий строчках передаются в соответствующие переменные через фукцнии
-    imageCount = swapChainSupport.capabilities.minImageCount + 1;                                                               //запрос на поддержк уминимального количества числа изображений, число изображений равное 2 означает что один буфер передний, а второй задний
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)            //в первом условии мы проверяем доступно ли нам вообще какое-то количество изображений и проверяем не совпадает ли максимальное число изображений с минимальным
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,*surface);
+    imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
         imageCount = swapChainSupport.capabilities.maxImageCount;
 }
 
@@ -94,27 +97,20 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
         if(MSAASamples>maxMSAASamples)  MSAASamples = maxMSAASamples;
     }
 
-    blitAttachments.resize(blitAttachmentCount);
-    PostProcessing.setSwapChain(&swapChain);
-    PostProcessing.setBlitFactor(blitFactor);
-    PostProcessing.setBlitAttachments(blitAttachmentCount,blitAttachments.data());
-    PostProcessing.setBlitAttachment(&blitAttachment);
-    PostProcessing.setSSAOAttachment(&ssaoAttachment);
-    PostProcessing.setSSLRAttachment(&sslrAttachment);
-
     imageInfo info{};
         info.Count = imageCount;
         info.Format = surfaceFormat.format;
         info.Extent = extent;
         info.Samples = MSAASamples;
-    PostProcessing.setImageProp(&info);
     DeferredGraphics.setImageProp(&info);
+    Blur.setImageProp(&info);
+    Combiner.setImageProp(&info);
     Filter.setImageProp(&info);
     SSLR.setImageProp(&info);
     SSAO.setImageProp(&info);
-    Combiner.setImageProp(&info);
+    PostProcessing.setImageProp(&info);
 
-    DeferredGraphics.createAttachments();
+    DeferredGraphics.createAttachments(&deferredAttachments);
     DeferredGraphics.createRenderPass();
     DeferredGraphics.createFramebuffers();
     DeferredGraphics.createPipelines();
@@ -126,11 +122,12 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     DeferredGraphics.createSpotLightingDescriptorPool();
     DeferredGraphics.createSpotLightingDescriptorSets();
 
+    transparentLayersAttachments.resize(TransparentLayersCount);
     for(uint32_t i=0;i<TransparentLayersCount;i++){
         TransparentLayers[i].setImageProp(&info);
         TransparentLayers[i].setTransparencyPass(true);
         TransparentLayers[i].setScattering(false);
-        TransparentLayers[i].createAttachments();
+        TransparentLayers[i].createAttachments(&transparentLayersAttachments[i]);
         TransparentLayers[i].createRenderPass();
         TransparentLayers[i].createFramebuffers();
         TransparentLayers[i].createPipelines();
@@ -143,64 +140,81 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
         TransparentLayers[i].createSpotLightingDescriptorSets();
     }
 
+    std::vector<attachments> bloomAttachments(TransparentLayersCount+1);
+    for(uint32_t i=0;i<TransparentLayersCount;i++){
+        bloomAttachments[i] = transparentLayersAttachments[i].bloom;
+    }
+    bloomAttachments[TransparentLayersCount] = deferredAttachments.bloom;
+
+    std::vector<attachment> depthAttachments(TransparentLayersCount+1);
+    for(uint32_t i=0;i<TransparentLayersCount;i++){
+        depthAttachments[i] = transparentLayersAttachments[i].depth;
+    }
+    depthAttachments[TransparentLayersCount] = deferredAttachments.depth;
+
+    Blur.createBufferAttachments();
+    Blur.createAttachments(1,&blurAttachment);
+    Blur.createRenderPass();
+    Blur.createFramebuffers();
+    Blur.createPipelines();
+    Blur.createDescriptorPool();
+    Blur.createDescriptorSets();
+    Blur.updateDescriptorSets(&deferredAttachments.blur);
+
+    Combiner.setCombineAttachmentsCount(TransparentLayersCount+1);
+    Combiner.createAttachments(1,&combineBloomAttachment);
+    Combiner.createRenderPass();
+    Combiner.createFramebuffers();
+    Combiner.createPipelines();
+    Combiner.createDescriptorPool();
+    Combiner.createDescriptorSets();
+    Combiner.updateDescriptorSets(bloomAttachments.data(),depthAttachments.data(),&deferredAttachments.depth);
+
+    blitAttachments.resize(blitAttachmentCount);
+    Filter.createBufferAttachments();
+    Filter.setBlitFactor(blitFactor);
+    Filter.setSrcAttachment(&combineBloomAttachment);
+    Filter.createAttachments(blitAttachmentCount,blitAttachments.data());
+    Filter.createRenderPass();
+    Filter.createFramebuffers();
+    Filter.createPipelines();
+    Filter.createDescriptorPool();
+    Filter.createDescriptorSets();
+    Filter.updateDescriptorSets();
+
+    SSAO.createAttachments(1,&ssaoAttachment);
+    SSAO.createRenderPass();
+    SSAO.createFramebuffers();
+    SSAO.createPipelines();
+    SSAO.createDescriptorPool();
+    SSAO.createDescriptorSets();
+    SSAO.updateDescriptorSets(deferredAttachments,DeferredGraphics.getSceneBuffer().data());
+
+    SSLR.createAttachments(1,&sslrAttachment);
+    SSLR.createRenderPass();
+    SSLR.createFramebuffers();
+    SSLR.createPipelines();
+    SSLR.createDescriptorPool();
+    SSLR.createDescriptorSets();
+    SSLR.updateDescriptorSets(deferredAttachments,DeferredGraphics.getSceneBuffer().data());
+
     std::vector<DeferredAttachments> transparentLayers(TransparentLayersCount);
     for(uint32_t i=0;i<TransparentLayersCount;i++)
-        transparentLayers[i] = TransparentLayers[i].getDeferredAttachments();
+        transparentLayers[i] = transparentLayersAttachments[i];
 
+    PostProcessing.setSwapChain(&swapChain);
+    PostProcessing.setBlurAttachment(&blurAttachment);
+    PostProcessing.setBlitAttachments(blitAttachmentCount,blitAttachments.data(),blitFactor);
+    PostProcessing.setSSAOAttachment(&ssaoAttachment);
+    PostProcessing.setSSLRAttachment(&sslrAttachment);
     PostProcessing.setTransparentLayersCount(TransparentLayersCount);
     PostProcessing.createAttachments(window, swapChainSupport, surface);
     PostProcessing.createRenderPass();
     PostProcessing.createFramebuffers();
     PostProcessing.createPipelines();
     PostProcessing.createDescriptorPool();
-    PostProcessing.createDescriptorSets(DeferredGraphics.getDeferredAttachments(),transparentLayers);
-
-    std::vector<attachments> bloomAttachments(TransparentLayersCount+1);
-    for(uint32_t i=0;i<TransparentLayersCount;i++){
-        bloomAttachments[i] = *TransparentLayers[i].getDeferredAttachments().bloom;
-    }
-    bloomAttachments[TransparentLayersCount] = *DeferredGraphics.getDeferredAttachments().bloom;
-
-    std::vector<attachment> depthAttachments(TransparentLayersCount+1);
-    for(uint32_t i=0;i<TransparentLayersCount;i++){
-        depthAttachments[i] = *TransparentLayers[i].getDeferredAttachments().depth;
-    }
-    depthAttachments[TransparentLayersCount] = *DeferredGraphics.getDeferredAttachments().depth;
-
-    Combiner.setCombineAttachmentsCount(TransparentLayersCount+1);
-    Combiner.setAttachments(&combineBloomAttachment);
-    Combiner.createAttachments();
-    Combiner.createRenderPass();
-    Combiner.createFramebuffers();
-    Combiner.createPipelines();
-    Combiner.createDescriptorPool();
-    Combiner.createDescriptorSets();
-    Combiner.updateSecondDescriptorSets(bloomAttachments.data(),depthAttachments.data(),DeferredGraphics.getDeferredAttachments().depth);
-
-    Filter.setBlitAttachments(&blitAttachment);
-    Filter.setAttachments(blitAttachmentCount,blitAttachments.data());
-    Filter.createRenderPass();
-    Filter.createFramebuffers();
-    Filter.createPipelines();
-    Filter.createDescriptorPool();
-    Filter.createDescriptorSets();
-    Filter.updateSecondDescriptorSets();
-
-    SSLR.setSSLRAttachments(&sslrAttachment);
-    SSLR.createRenderPass();
-    SSLR.createFramebuffers();
-    SSLR.createPipelines();
-    SSLR.createDescriptorPool();
-    SSLR.createDescriptorSets();
-    SSLR.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
-
-    SSAO.setSSAOAttachments(&ssaoAttachment);
-    SSAO.createRenderPass();
-    SSAO.createFramebuffers();
-    SSAO.createPipelines();
-    SSAO.createDescriptorPool();
-    SSAO.createDescriptorSets();
-    SSAO.updateSecondDescriptorSets(DeferredGraphics.getDeferredAttachments(),DeferredGraphics.getSceneBuffer().data());
+    PostProcessing.createDescriptorSets();
+    PostProcessing.updateDescriptorSets(deferredAttachments,transparentLayers);
 }
 
 void deferredGraphicsInterface::createCommandBuffers()
@@ -225,7 +239,7 @@ void deferredGraphicsInterface::updateDescriptorSets()
     //TransparentLayers[0].updateSkyboxDescriptorSets();
     TransparentLayers[0].updateSpotLightingDescriptorSets();
     for(uint32_t i=1;i<TransparentLayersCount;i++){
-        TransparentLayers[i].updateBaseDescriptorSets(TransparentLayers[i-1].getDeferredAttachments().depth);
+        TransparentLayers[i].updateBaseDescriptorSets(&transparentLayersAttachments[i-1].depth);
         //TransparentLayers[i].updateSkyboxDescriptorSets();
         TransparentLayers[i].updateSpotLightingDescriptorSets();
     }
@@ -252,8 +266,8 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
 
     VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;                                            //поле для передачи информации о том, как будет использоваться этот командный буфер (смотри страницу 102)
-        beginInfo.pInheritanceInfo = nullptr;                           //используется при начале вторичного буфера, для того чтобы определить, какие состояния наследуются от первичного командного буфера, который его вызовет
+        beginInfo.flags = 0;                                            
+        beginInfo.pInheritanceInfo = nullptr;
     if (vkBeginCommandBuffer(*commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("failed to begin recording command buffer!");
 
@@ -261,40 +275,11 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
     for(uint32_t i=0;i<TransparentLayersCount;i++)
         TransparentLayers[i].render(imageIndex,*commandBuffer);
 
+    Blur.render(imageIndex,*commandBuffer);
     Combiner.render(imageIndex,*commandBuffer);
     SSLR.render(imageIndex,*commandBuffer);
     SSAO.render(imageIndex,*commandBuffer);
-
-        VkImageSubresourceRange ImageSubresourceRange{};
-            ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            ImageSubresourceRange.baseMipLevel = 0;
-            ImageSubresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-            ImageSubresourceRange.baseArrayLayer = 0;
-            ImageSubresourceRange.layerCount = 1;
-        VkClearColorValue clearColorValue{};
-            clearColorValue.uint32[0] = 0;
-            clearColorValue.uint32[1] = 0;
-            clearColorValue.uint32[2] = 0;
-            clearColorValue.uint32[3] = 0;
-
-        std::vector<VkImage> blitImages(blitAttachmentCount);
-        blitImages[0] = combineBloomAttachment.image[imageIndex];
-        for(size_t i=1;i<blitAttachmentCount;i++){
-            blitImages[i] = blitAttachments[i-1].image[imageIndex];
-        }
-        VkImage blitBufferImage = blitAttachment.image[imageIndex];
-        uint32_t width = extent.width;
-        uint32_t height = extent.height;
-
-        for(uint32_t k=0;k<blitAttachmentCount;k++){
-            transitionImageLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS);
-            vkCmdClearColorImage(*commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
-            blitDown(commandBuffer,blitImages[k],blitBufferImage,width,height,blitFactor);
-            transitionImageLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
-            Filter.render(imageIndex,*commandBuffer,k);
-        }
-        for(uint32_t k=0;k<blitAttachmentCount;k++)
-            transitionImageLayout(commandBuffer,blitAttachments[k].image[imageIndex],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+    Filter.render(imageIndex,*commandBuffer);
 
     PostProcessing.render(imageIndex,*commandBuffer);
 

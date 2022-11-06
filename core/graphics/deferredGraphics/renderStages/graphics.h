@@ -33,8 +33,8 @@ private:
     imageInfo                       image;
 
     std::vector<attachment>         colorAttachments;
-    std::vector<attachments>        Attachments;
-    attachment                      depthAttachment;
+    std::vector<attachments*>       Attachments;
+    attachment*                     depthAttachment;
 
     VkRenderPass                    renderPass;
     std::vector<VkFramebuffer>      framebuffers;
@@ -69,25 +69,27 @@ private:
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }base;
 
-    struct StencilExtension{
+    struct OutliningExtension{
         std::string                     ExternalPath;
 
         Base*                           base;
-        VkPipeline                      stencilPipeline;
-        VkPipeline                      outliningPipeline;
-        VkPipelineLayout                stencilPipelineLayout;
+
+        VkPipelineLayout                PipelineLayout;
+        VkPipeline                      Pipeline;
+
         VkPipelineLayout                outliningPipelineLayout;
+        VkPipeline                      outliningPipeline;
 
         std::vector<object *>           objects;
 
-        void DestroyStencilPipeline(VkDevice* device);
+        void DestroyPipeline(VkDevice* device);
         void DestroyOutliningPipeline(VkDevice* device);
-        void createStencilPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
-            void stencilRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
-    }stencil;
+            void outliningRenderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
+    }outlining;
 
     struct Skybox
     {
@@ -117,14 +119,18 @@ private:
         std::string                     ExternalPath;
 
         VkPipelineLayout                PipelineLayout;
-        VkPipelineLayout                AmbientPipelineLayout;
         VkPipeline                      Pipeline;
         VkPipeline                      ScatteringPipeline;
+
+        VkPipelineLayout                AmbientPipelineLayout;
         VkPipeline                      AmbientPipeline;
+
         VkDescriptorSetLayout           DescriptorSetLayout;
         VkDescriptorSetLayout           LightDescriptorSetLayout;
+
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
+
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
@@ -149,6 +155,7 @@ private:
     void oneSampleFrameBuffer();
     void multiSampleFrameBuffer();
 
+    void setAttachments(DeferredAttachments* Attachments);
 public:
     deferredGraphics();
     void destroy();
@@ -165,10 +172,9 @@ public:
     void setTransparencyPass(const bool& transparencyPass);
 
     texture*                getEmptyTexture();
-    DeferredAttachments     getDeferredAttachments();
     std::vector<VkBuffer>&  getSceneBuffer();
 
-    void createAttachments();
+    void createAttachments(DeferredAttachments* Attachments);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();

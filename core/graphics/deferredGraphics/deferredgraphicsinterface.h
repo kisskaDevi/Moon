@@ -5,6 +5,7 @@
 
 #include "renderStages/graphics.h"
 #include "renderStages/postProcessing.h"
+#include "filters/blur.h"
 #include "filters/customfilter.h"
 #include "filters/sslr.h"
 #include "filters/ssao.h"
@@ -27,20 +28,24 @@ private:
 
     VkSwapchainKHR                              swapChain;
 
+    DeferredAttachments                         deferredAttachments;
+    std::vector<DeferredAttachments>            transparentLayersAttachments;
+
+    attachments                                 blurAttachment;
     float                                       blitFactor = 1.5f;
     uint32_t                                    blitAttachmentCount = 8;
     std::vector<attachments>                    blitAttachments;
-    attachments                                 blitAttachment;
+    attachments                                 combineBloomAttachment;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
-    attachments                                 combineBloomAttachment;
 
     deferredGraphics                            DeferredGraphics;
+    gaussianBlur                                Blur;
     customFilter                                Filter;
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
     imagesCombiner                              Combiner;
-    postProcessing                              PostProcessing;
+    postProcessingGraphics                      PostProcessing;
     std::vector<deferredGraphics>               TransparentLayers;
     uint32_t                                    TransparentLayersCount = 3;
 

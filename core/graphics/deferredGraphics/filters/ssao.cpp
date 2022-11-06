@@ -23,7 +23,58 @@ void SSAOGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* dev
     this->commandPool = commandPool;
 }
 void SSAOGraphics::setImageProp(imageInfo* pInfo)                       {this->image = *pInfo;}
-void SSAOGraphics::setSSAOAttachments(attachments* Attachments)         {this->Attachments = Attachments;}
+void SSAOGraphics::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
+{
+    this->attachmentsCount = attachmentsCount;
+    this->Attachments = Attachments;
+}
+
+void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
+{
+    setAttachments(attachmentsCount,Attachments);
+    Attachments->resize(image.Count);
+    for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
+    {
+        createImage(            physicalDevice,
+                                device,
+                                image.Extent.width,
+                                image.Extent.height,
+                                1,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                image.Format,
+                                VK_IMAGE_TILING_OPTIMAL,
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT ,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                Attachments->image[imageNumber],
+                                Attachments->imageMemory[imageNumber]);
+
+        Attachments->imageView[imageNumber] =
+        createImageView(        device,
+                                Attachments->image[imageNumber],
+                                image.Format,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1);
+    }
+    VkSamplerCreateInfo ssaoSamplerInfo{};
+        ssaoSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        ssaoSamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+        ssaoSamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+        ssaoSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+        ssaoSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+        ssaoSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+        ssaoSamplerInfo.anisotropyEnable = VK_TRUE;
+        ssaoSamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+        ssaoSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+        ssaoSamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+        ssaoSamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+        ssaoSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        ssaoSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        ssaoSamplerInfo.minLod = 0.0f;
+        ssaoSamplerInfo.maxLod = 0.0f;
+        ssaoSamplerInfo.mipLodBias = 0.0f;
+    if (vkCreateSampler(*device, &ssaoSamplerInfo, nullptr, &Attachments->sampler) != VK_SUCCESS)
+        throw std::runtime_error("failed to create postProcessing sampler!");
+}
 
 void SSAOGraphics::SSAO::Destroy(VkDevice* device)
 {
@@ -35,6 +86,9 @@ void SSAOGraphics::SSAO::Destroy(VkDevice* device)
 
 void SSAOGraphics::destroy()
 {
+    Attachments->deleteAttachment(device);
+    Attachments->deleteSampler(device);
+
     ssao.Destroy(device);
 
     vkDestroyRenderPass(*device, renderPass, nullptr);
@@ -318,7 +372,7 @@ void SSAOGraphics::createDescriptorSets()
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 }
 
-void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
+void SSAOGraphics::updateDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -330,16 +384,16 @@ void SSAOGraphics::updateSecondDescriptorSets(DeferredAttachments Attachments, V
         uint32_t index = 0;
         std::array<VkDescriptorImageInfo, 3> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.position->imageView[i];
-            imageInfo[index].sampler = Attachments.GBuffer.position->sampler;
+            imageInfo[index].imageView = Attachments.GBuffer.position.imageView[i];
+            imageInfo[index].sampler = Attachments.GBuffer.position.sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.normal->imageView[i];
-            imageInfo[index].sampler = Attachments.GBuffer.normal->sampler;
+            imageInfo[index].imageView = Attachments.GBuffer.normal.imageView[i];
+            imageInfo[index].sampler = Attachments.GBuffer.normal.sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.image->imageView[i];
-            imageInfo[index].sampler = Attachments.image->sampler;
+            imageInfo[index].imageView = Attachments.image.imageView[i];
+            imageInfo[index].sampler = Attachments.image.sampler;
 
         index = 0;
         std::array<VkWriteDescriptorSet, 4> descriptorWrites{};

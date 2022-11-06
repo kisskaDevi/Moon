@@ -15,13 +15,16 @@ private:
     VkQueue*                            graphicsQueue;
     VkCommandPool*                      commandPool;
 
-    std::vector<attachments *>          Attachments;
-    attachments*                        blitAttachments = nullptr;
+    imageInfo                           image;
 
+    uint32_t                            attachmentsCount = 0;
+    attachments*                        Attachments = nullptr;
+
+    attachments                         bufferAttachment;
+    attachments*                        srcAttachment;
+    float                               blitFactor;
     float                               xSampleStep = 1.5f;
     float                               ySampleStep = 1.5f;
-
-    imageInfo                           image;
 
     VkRenderPass                                renderPass;
     std::vector<std::vector<VkFramebuffer>>     framebuffers;
@@ -39,6 +42,8 @@ private:
         void createDescriptorSetLayout(VkDevice* device);
     }filter;
 
+    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 public:
     customFilter();
     void destroy();
@@ -46,20 +51,22 @@ public:
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
-    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
-    void setBlitAttachments(attachments* blitAttachments);
 
-    void setSampleStep(float deltaX, float deltaY);
-
+    void createAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateSecondDescriptorSets();
+    void updateDescriptorSets();
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
+
+    void createBufferAttachments();
+    void setSrcAttachment(attachments* srcAttachment);
+    void setBlitFactor(const float& blitFactor);
+    void setSampleStep(float deltaX, float deltaY);
 };
 
 

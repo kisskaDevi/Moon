@@ -11,7 +11,7 @@ struct SwapChainSupportDetails;
 struct QueueFamilyIndices;
 class GLFWwindow;
 
-class postProcessing
+class postProcessingGraphics
 {
 private:
     VkPhysicalDevice*                   physicalDevice;
@@ -27,48 +27,35 @@ private:
     uint32_t                            swapChainAttachmentCount = 1;
     std::vector<attachments>            swapChainAttachments;
 
-    uint32_t                            AttachmentCount = 1;
-    std::vector<attachments>            Attachments;
-
-    float                               blitFactor;
-    uint32_t                            blitAttachmentCount;
+    attachments*                        blurAttachment;
     attachments*                        blitAttachments;
-    attachments*                        blitAttachment;
-
     attachments*                        sslrAttachment;
     attachments*                        ssaoAttachment;
 
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
 
-    uint32_t                            transparentLayersCount;
-
-    struct First{
+    struct PostProcessing{
         std::string                         ExternalPath;
+        float                               blitFactor;
+        uint32_t                            blitAttachmentCount;
+        uint32_t                            transparentLayersCount;
 
         VkPipelineLayout                    PipelineLayout;
         VkPipeline                          Pipeline;
         VkDescriptorSetLayout               DescriptorSetLayout;
         VkDescriptorPool                    DescriptorPool;
         std::vector<VkDescriptorSet>        DescriptorSets;
-    }first;
 
-    struct Second{
-        std::string                         ExternalPath;
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createDescriptorSetLayout(VkDevice* device);
+    }postProcessing;
 
-        VkPipelineLayout                    PipelineLayout;
-        VkPipeline                          Pipeline;
-        VkDescriptorSetLayout               DescriptorSetLayout;
-        VkDescriptorPool                    DescriptorPool;
-        std::vector<VkDescriptorSet>        DescriptorSets;
-    }second;
-
-    //Создание цепочки обмена
     void createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
     void createImageViews();
-    void createColorAttachments();
 public:
-    postProcessing();
+    postProcessingGraphics();
     void destroy();
 
     void setExternalPath(const std::string& path);
@@ -76,29 +63,25 @@ public:
     void setImageProp(imageInfo* pInfo);
 
     void setSwapChain(VkSwapchainKHR* swapChain);
-    void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments);
-    void setBlitAttachment(attachments* blitAttachment);
+    void setBlurAttachment(attachments* blurAttachment);
+    void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor);
     void setSSLRAttachment(attachments* sslrAttachment);
     void setSSAOAttachment(attachments* ssaoAttachment);
     void setTransparentLayersCount(uint32_t TransparentLayersCount);
-
-    void  setBlitFactor(const float& blitFactor);
 
     void createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
-        void createDescriptorSetLayout();
-        void createFirstGraphicsPipeline();
-        void createSecondGraphicsPipeline();
 
     void createDescriptorPool();
-    void createDescriptorSets(DeferredAttachments Attachments, std::vector<DeferredAttachments> transparentLayers);
+    void createDescriptorSets();
+    void updateDescriptorSets(DeferredAttachments Attachments, std::vector<DeferredAttachments> transparentLayers);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
-    VkFormat                        & SwapChainImageFormat();
-    uint32_t                        & SwapChainImageCount();
+    VkFormat& SwapChainImageFormat();
+    uint32_t& SwapChainImageCount();
 };
 
 #endif // POSTPROCESSING_H

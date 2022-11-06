@@ -16,6 +16,7 @@ private:
 
     imageInfo                           image;
 
+    uint32_t                            attachmentsCount = 0;
     attachments*                        Attachments = nullptr;
 
     VkRenderPass                        renderPass;
@@ -34,6 +35,7 @@ private:
         void createDescriptorSetLayout(VkDevice* device);
     }sslr;
 
+    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
 public:
     SSLRGraphics();
     void destroy();
@@ -41,15 +43,15 @@ public:
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
-    void setSSLRAttachments(attachments* Attachments);
 
+    void createAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateSecondDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
+    void updateDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
 };

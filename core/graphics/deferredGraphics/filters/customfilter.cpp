@@ -23,15 +23,124 @@ void customFilter::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* dev
     this->commandPool = commandPool;
 }
 void customFilter::setImageProp(imageInfo* pInfo)                           {this->image = *pInfo;}
-void customFilter::setBlitAttachments(attachments* blitAttachments)         {this->blitAttachments = blitAttachments;}
-
 void customFilter::setSampleStep(float deltaX, float deltaY)                {xSampleStep = deltaX; ySampleStep = deltaY;}
-
 void customFilter::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
-    this->Attachments.resize(attachmentsCount);
-    for(uint32_t i=0;i<attachmentsCount;i++)
-        this->Attachments[i] = &Attachments[i];
+    this->attachmentsCount = attachmentsCount;
+    this->Attachments = Attachments;
+}
+
+void customFilter::setSrcAttachment(attachments *srcAttachment)
+{
+    this->srcAttachment = srcAttachment;
+}
+
+void customFilter::setBlitFactor(const float &blitFactor)
+{
+    this->blitFactor = blitFactor;
+}
+
+void customFilter::createBufferAttachments()
+{
+    bufferAttachment.resize(image.Count);
+    for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
+    {
+        createImage(            physicalDevice,
+                                device,
+                                image.Extent.width,
+                                image.Extent.height,
+                                1,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                image.Format,
+                                VK_IMAGE_TILING_OPTIMAL,
+                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT ,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                bufferAttachment.image[imageNumber],
+                                bufferAttachment.imageMemory[imageNumber]);
+
+        bufferAttachment.imageView[imageNumber] =
+        createImageView(        device,
+                                bufferAttachment.image[imageNumber],
+                                image.Format,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1);
+
+        transitionImageLayout(  device,
+                                graphicsQueue,
+                                commandPool,
+                                bufferAttachment.image[imageNumber],
+                                VK_IMAGE_LAYOUT_UNDEFINED,
+                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                VK_REMAINING_MIP_LEVELS);
+    }
+    VkSamplerCreateInfo SamplerInfo{};
+        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+        SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+        SamplerInfo.anisotropyEnable = VK_TRUE;
+        SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+        SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+        SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        SamplerInfo.minLod = 0.0f;
+        SamplerInfo.maxLod = 0.0f;
+        SamplerInfo.mipLodBias = 0.0f;
+    if (vkCreateSampler(*device, &SamplerInfo, nullptr, &bufferAttachment.sampler) != VK_SUCCESS)
+        throw std::runtime_error("failed to create postProcessing sampler!");
+}
+
+void customFilter::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
+{
+    setAttachments(attachmentsCount,Attachments);
+    for(uint32_t i=0;i<attachmentsCount;i++){
+        Attachments[i].resize(image.Count);
+        for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
+        {
+            createImage(        physicalDevice,
+                                device,
+                                image.Extent.width,
+                                image.Extent.height,
+                                1,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                image.Format,
+                                VK_IMAGE_TILING_OPTIMAL,
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                Attachments[i].image[imageNumber],
+                                Attachments[i].imageMemory[imageNumber]);
+
+            Attachments[i].imageView[imageNumber] =
+            createImageView(    device,
+                                Attachments[i].image[imageNumber],
+                                image.Format,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1);
+        }
+        VkSamplerCreateInfo SamplerInfo{};
+            SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
+            SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
+            SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
+            SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
+            SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+            SamplerInfo.anisotropyEnable = VK_TRUE;
+            SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
+            SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
+            SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
+            SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
+            SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+            SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            SamplerInfo.minLod = 0.0f;
+            SamplerInfo.maxLod = 0.0f;
+            SamplerInfo.mipLodBias = 0.0f;
+        if (vkCreateSampler(*device, &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
+            throw std::runtime_error("failed to create postProcessing sampler!");
+    }
 }
 
 void customFilter::Filter::Destroy(VkDevice* device)
@@ -44,6 +153,14 @@ void customFilter::Filter::Destroy(VkDevice* device)
 
 void customFilter::destroy()
 {
+    bufferAttachment.deleteAttachment(&*device);
+    bufferAttachment.deleteSampler(&*device);
+
+    for(size_t i=0; i<attachmentsCount; i++){
+        Attachments[i].deleteAttachment(device);
+        Attachments[i].deleteSampler(device);
+    }
+
     filter.Destroy(device);
 
     vkDestroyRenderPass(*device, renderPass, nullptr);
@@ -77,11 +194,11 @@ void customFilter::createRenderPass()
         subpass[index].pColorAttachments = attachmentRef.data();
 
     index = 0;
-    std::array<VkSubpassDependency,1> dependency{};                                                                                        //зависимости
-        dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
-        dependency[index].dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                                                                 //задаёт как стадии конвейера в исходном проходе создают данные
-        dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
+    std::array<VkSubpassDependency,1> dependency{};                                                                                        
+        dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency[index].dstSubpass = 0;
+        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
@@ -100,21 +217,20 @@ void customFilter::createRenderPass()
 
 void customFilter::createFramebuffers()
 {
-    framebuffers.resize(Attachments.size());
-    for(size_t i = 0; i < Attachments.size(); i++){
+    framebuffers.resize(attachmentsCount);
+    for(size_t i = 0; i < attachmentsCount; i++){
         framebuffers[i].resize(image.Count);
-        for (size_t j = 0; j < framebuffers[i].size(); j++)
-        {
+        for (size_t j = 0; j < framebuffers[i].size(); j++){
             VkFramebufferCreateInfo framebufferInfo{};
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
-                framebufferInfo.pAttachments = &Attachments[i]->imageView[j];
+                framebufferInfo.pAttachments = &Attachments[i].imageView[j];
                 framebufferInfo.width = image.Extent.width;
                 framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
             if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i][j]) != VK_SUCCESS)
-                throw std::runtime_error("failed to create postProcessing framebuffer!");
+                throw std::runtime_error("failed to create framebuffer!");
         }
     }
 }
@@ -315,15 +431,15 @@ void customFilter::createDescriptorSets()
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 }
 
-void customFilter::updateSecondDescriptorSets()
+void customFilter::updateDescriptorSets()
 {
     for (size_t i = 0; i < image.Count; i++)
     {
         uint32_t index = 0;
         std::array<VkDescriptorImageInfo, 1> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = blitAttachments->imageView[i];
-            imageInfo[index].sampler = blitAttachments->sampler;
+            imageInfo[index].imageView = bufferAttachment.imageView[i];
+            imageInfo[index].sampler = bufferAttachment.sampler;
 
         index = 0;
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
@@ -364,4 +480,39 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, u
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
+}
+
+void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+{
+    VkImageSubresourceRange ImageSubresourceRange{};
+        ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        ImageSubresourceRange.baseMipLevel = 0;
+        ImageSubresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        ImageSubresourceRange.baseArrayLayer = 0;
+        ImageSubresourceRange.layerCount = 1;
+    VkClearColorValue clearColorValue{};
+        clearColorValue.uint32[0] = 0;
+        clearColorValue.uint32[1] = 0;
+        clearColorValue.uint32[2] = 0;
+        clearColorValue.uint32[3] = 0;
+
+    std::vector<VkImage> blitImages(attachmentsCount);
+    blitImages[0] = srcAttachment->image[frameNumber];
+    for(size_t i=1;i<attachmentsCount;i++){
+        blitImages[i] = Attachments[i-1].image[frameNumber];
+    }
+    VkImage blitBufferImage = bufferAttachment.image[frameNumber];
+    uint32_t width = image.Extent.width;
+    uint32_t height = image.Extent.height;
+
+    for(uint32_t k=0;k<attachmentsCount;k++){
+        transitionImageLayout(&commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+        vkCmdClearColorImage(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
+        blitDown(&commandBuffer,blitImages[k],blitBufferImage,width,height,blitFactor);
+        transitionImageLayout(&commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+        render(frameNumber,commandBuffer,k);
+    }
+    for(uint32_t k=0;k<attachmentsCount;k++)
+        transitionImageLayout(&commandBuffer,Attachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+
 }

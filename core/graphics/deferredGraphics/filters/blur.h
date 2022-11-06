@@ -1,12 +1,12 @@
-#ifndef SSAO_H
-#define SSAO_H
+#ifndef BLUR_H
+#define BLUR_H
 
 #include <libs/vulkan/vulkan.h>
 #include "../attachments.h"
 
 #include <string>
 
-class SSAOGraphics
+class gaussianBlur
 {
 private:
     VkPhysicalDevice*                   physicalDevice;
@@ -19,10 +19,12 @@ private:
     uint32_t                            attachmentsCount = 0;
     attachments*                        Attachments = nullptr;
 
+    attachments                         bufferAttachment;
+
     VkRenderPass                        renderPass;
     std::vector<VkFramebuffer>          framebuffers;
 
-    struct SSAO{
+    struct xBlur{
         std::string                     ExternalPath;
 
         VkPipelineLayout                PipelineLayout;
@@ -33,11 +35,24 @@ private:
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
-    }ssao;
+    }xblur;
+
+    struct yBlur{
+        std::string                     ExternalPath;
+
+        VkPipelineLayout                PipelineLayout;
+        VkPipeline                      Pipeline;
+        VkDescriptorSetLayout           DescriptorSetLayout;
+        VkDescriptorPool                DescriptorPool;
+        std::vector<VkDescriptorSet>    DescriptorSets;
+        void Destroy(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void createDescriptorSetLayout(VkDevice* device);
+    }yblur;
 
     void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
 public:
-    SSAOGraphics();
+    gaussianBlur();
     void destroy();
 
     void setExternalPath(const std::string& path);
@@ -51,8 +66,11 @@ public:
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
+    void updateDescriptorSets(attachments* blurAttachment);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
+
+    void createBufferAttachments();
 };
-#endif // SSAO_H
+
+#endif // BLUR_H

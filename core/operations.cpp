@@ -360,8 +360,7 @@ void transitionImageLayout(VkCommandBuffer* commadBuffer, VkImage image, VkImage
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }
-    else{
+    }else{
         throw std::invalid_argument("unsupported layout transition!");
     }
 
@@ -437,8 +436,7 @@ void transitionImageLayout(VkDevice* device, VkQueue* queue, VkCommandPool* comm
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }
-    else{
+    }else{
         throw std::invalid_argument("unsupported layout transition!");
     }
 

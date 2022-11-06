@@ -6,10 +6,10 @@
 #include <array>
 #include <algorithm>        // нужна для std::min/std::max
 
-postProcessing::postProcessing()
+postProcessingGraphics::postProcessingGraphics()
 {}
 
-void postProcessing::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily)
+void postProcessingGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
@@ -17,73 +17,55 @@ void postProcessing::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* d
     this->commandPool = commandPool;
     this->queueFamilyIndices = {graphicsFamily,presentFamily};
 }
-void postProcessing::setImageProp(imageInfo* pInfo)
+void postProcessingGraphics::setImageProp(imageInfo* pInfo)
 {
     this->image = *pInfo;
 }
 
-void postProcessing::setSwapChain(VkSwapchainKHR* swapChain)
+void postProcessingGraphics::setSwapChain(VkSwapchainKHR* swapChain)
 {
     this->swapChain = swapChain;
 }
-void postProcessing::setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments)
+
+void postProcessingGraphics::setBlurAttachment(attachments *blurAttachment)
 {
-    this->blitAttachmentCount = blitAttachmentCount;
+    this->blurAttachment = blurAttachment;
+}
+void postProcessingGraphics::setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor)
+{
+    postProcessing.blitFactor = blitFactor;
+    postProcessing.blitAttachmentCount = blitAttachmentCount;
     this->blitAttachments = blitAttachments;
 }
-void postProcessing::setBlitAttachment(attachments* blitAttachment)
-{
-    this->blitAttachment = blitAttachment;
-}
-void postProcessing::setSSLRAttachment(attachments* sslrAttachment)
+void postProcessingGraphics::setSSLRAttachment(attachments* sslrAttachment)
 {
     this->sslrAttachment = sslrAttachment;
 }
-void postProcessing::setSSAOAttachment(attachments* ssaoAttachment)
+void postProcessingGraphics::setSSAOAttachment(attachments* ssaoAttachment)
 {
     this->ssaoAttachment = ssaoAttachment;
 }
 
-void postProcessing::setTransparentLayersCount(uint32_t TransparentLayersCount)
+void postProcessingGraphics::setTransparentLayersCount(uint32_t TransparentLayersCount)
 {
-    transparentLayersCount = TransparentLayersCount;
+    postProcessing.transparentLayersCount = TransparentLayersCount;
 }
 
-void  postProcessing::setBlitFactor(const float& blitFactor)    {this->blitFactor = blitFactor;}
-
-void postProcessing::destroy()
+void postProcessingGraphics::PostProcessing::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(*device, first.Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, first.PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, first.DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, first.DescriptorPool, nullptr);
+    vkDestroyPipeline(*device, Pipeline, nullptr);
+    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+}
 
-    vkDestroyPipeline(*device, second.Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, second.PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, second.DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, second.DescriptorPool, nullptr);
+void postProcessingGraphics::destroy()
+{
+    postProcessing.Destroy(device);
 
     vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
-
-    for(size_t i=0; i<Attachments.size(); i++){
-        Attachments[i].deleteAttachment(&*device);
-        Attachments[i].deleteSampler(&*device);
-    }
-
-    for(size_t i=0; i<blitAttachmentCount; i++){
-        blitAttachments[i].deleteAttachment(&*device);
-        blitAttachments[i].deleteSampler(&*device);
-    }
-    blitAttachment->deleteAttachment(&*device);
-    blitAttachment->deleteSampler(&*device);
-
-    sslrAttachment->deleteAttachment(&*device);
-    sslrAttachment->deleteSampler(&*device);
-
-    ssaoAttachment->deleteAttachment(&*device);
-    ssaoAttachment->deleteSampler(&*device);
 
     uint32_t imageCount = image.Count;
     for(size_t i=0; i<swapChainAttachments.size(); i++)
@@ -92,22 +74,20 @@ void postProcessing::destroy()
     vkDestroySwapchainKHR(*device, *swapChain, nullptr);
 }
 
-void postProcessing::setExternalPath(const std::string &path)
+void postProcessingGraphics::setExternalPath(const std::string &path)
 {
-    first.ExternalPath = path;
-    second.ExternalPath = path;
+    postProcessing.ExternalPath = path;
 }
 
-void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface)
+void postProcessingGraphics::createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface)
 {
     this->surface = surface;
 
     createSwapChain(window, swapChainSupport);
     createImageViews();
-    createColorAttachments();
 }
     //Создание цепочки обмена
-    void postProcessing::createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport)
+    void postProcessingGraphics::createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport)
     {
         /* Независимо от платформы, на которой вы выполняете свой код, получающийся
          * дескриптор VkSurfaceKHR соответствует тому, как Vulkan видит окно. Для того
@@ -162,9 +142,9 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
         createInfo.oldSwapchain = VK_NULL_HANDLE;                                   //поле для передачи старого списк показа для переиспользования
 
         if (vkCreateSwapchainKHR(*device, &createInfo, nullptr, swapChain) != VK_SUCCESS)     //функция дял создания цепочки обмена, устройство с которым связан список показа передаётся в параметре device
-            throw std::runtime_error("failed to create swap chain!");                                   //информация о списке показа передаётся в виде структуры VkSwapchainCreateInfoKHR которая определена выше
+            throw std::runtime_error("failed to create swap chain!");                         //информация о списке показа передаётся в виде структуры VkSwapchainCreateInfoKHR которая определена выше
 
-        vkGetSwapchainImagesKHR(*device, *swapChain, &imageCount, nullptr);                     //записываем дескриптор изображений представляющий элементы в списке показа
+        vkGetSwapchainImagesKHR(*device, *swapChain, &imageCount, nullptr);                   //записываем дескриптор изображений представляющий элементы в списке показа
 
         swapChainAttachments.resize(swapChainAttachmentCount);
         for(size_t i=0;i<swapChainAttachments.size();i++)
@@ -176,7 +156,7 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
         }                   
     }
 
-    void postProcessing::createImageViews()
+    void postProcessingGraphics::createImageViews()
     {
         /* Вид изображения позволяет части или всему изображению рассматриваться при помощи другого фрагмента.
          * Получающийся вид родительского изображения должен иметь те же размеры, что и родитель, хотя в вид
@@ -194,247 +174,10 @@ void postProcessing::createAttachments(GLFWwindow* window, SwapChainSupportDetai
                                     1);
     }
 
-    void postProcessing::createColorAttachments()
-    {
-        uint32_t imageCount = image.Count;
-        Attachments.resize(AttachmentCount);
-        for(size_t i=0;i<AttachmentCount;i++)
-        {
-            Attachments[i].resize(image.Count);
-            for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
-            {
-                createImage(        physicalDevice,
-                                    device,
-                                    image.Extent.width,
-                                    image.Extent.height,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    image.Format,
-                                    VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    Attachments[i].image[imageNumber],
-                                    Attachments[i].imageMemory[imageNumber]);
-
-                Attachments[i].imageView[imageNumber] =
-                createImageView(    device,
-                                    Attachments[i].image[imageNumber],
-                                    image.Format,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1);
-            }
-            VkSamplerCreateInfo SamplerInfo{};
-                SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-                SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-                SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-                SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-                SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-                SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
-                SamplerInfo.anisotropyEnable = VK_TRUE;
-                SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-                SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-                SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-                SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-                SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
-                SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-                SamplerInfo.minLod = 0.0f;
-                SamplerInfo.maxLod = 0.0f;
-                SamplerInfo.mipLodBias = 0.0f;
-            if (vkCreateSampler(*device, &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
-                throw std::runtime_error("failed to create postProcessing sampler!");
-        }
-
-        for(uint32_t i=0;i<blitAttachmentCount;i++){
-            blitAttachments[i].resize(imageCount);
-            for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
-            {
-                createImage(        physicalDevice,
-                                    device,
-                                    image.Extent.width,
-                                    image.Extent.height,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    image.Format,
-                                    VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    blitAttachments[i].image[imageNumber],
-                                    blitAttachments[i].imageMemory[imageNumber]);
-
-                blitAttachments[i].imageView[imageNumber] =
-                createImageView(    device,
-                                    blitAttachments[i].image[imageNumber],
-                                    image.Format,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1);
-            }
-            VkSamplerCreateInfo SamplerInfo{};
-                SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-                SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-                SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-                SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-                SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-                SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
-                SamplerInfo.anisotropyEnable = VK_TRUE;
-                SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-                SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-                SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-                SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-                SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
-                SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-                SamplerInfo.minLod = 0.0f;
-                SamplerInfo.maxLod = 0.0f;
-                SamplerInfo.mipLodBias = 0.0f;
-            if (vkCreateSampler(*device, &SamplerInfo, nullptr, &blitAttachments[i].sampler) != VK_SUCCESS)
-                throw std::runtime_error("failed to create postProcessing sampler!");
-        }
-
-        blitAttachment->resize(imageCount);
-        for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
-        {
-            createImage(            physicalDevice,
-                                    device,
-                                    image.Extent.width,
-                                    image.Extent.height,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    image.Format,
-                                    VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT ,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    blitAttachment->image[imageNumber],
-                                    blitAttachment->imageMemory[imageNumber]);
-
-            blitAttachment->imageView[imageNumber] =
-            createImageView(        device,
-                                    blitAttachment->image[imageNumber],
-                                    image.Format,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1);
-
-            transitionImageLayout(  device,
-                                    graphicsQueue,
-                                    commandPool,
-                                    blitAttachment->image[imageNumber],
-                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                    VK_REMAINING_MIP_LEVELS);
-        }
-        VkSamplerCreateInfo SamplerInfo{};
-            SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-            SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-            SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-            SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-            SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-            SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
-            SamplerInfo.anisotropyEnable = VK_TRUE;
-            SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-            SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-            SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-            SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-            SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
-            SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            SamplerInfo.minLod = 0.0f;
-            SamplerInfo.maxLod = 0.0f;
-            SamplerInfo.mipLodBias = 0.0f;
-        if (vkCreateSampler(*device, &SamplerInfo, nullptr, &blitAttachment->sampler) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing sampler!");
-
-        sslrAttachment->resize(imageCount);
-        for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
-        {
-            createImage(            physicalDevice,
-                                    device,
-                                    image.Extent.width,
-                                    image.Extent.height,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    image.Format,
-                                    VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT ,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    sslrAttachment->image[imageNumber],
-                                    sslrAttachment->imageMemory[imageNumber]);
-
-            sslrAttachment->imageView[imageNumber] =
-            createImageView(        device,
-                                    sslrAttachment->image[imageNumber],
-                                    image.Format,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1);
-        }
-        VkSamplerCreateInfo sslrSamplerInfo{};
-            sslrSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-            sslrSamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-            sslrSamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-            sslrSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-            sslrSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-            sslrSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
-            sslrSamplerInfo.anisotropyEnable = VK_TRUE;
-            sslrSamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-            sslrSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-            sslrSamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-            sslrSamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-            sslrSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
-            sslrSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            sslrSamplerInfo.minLod = 0.0f;
-            sslrSamplerInfo.maxLod = 0.0f;
-            sslrSamplerInfo.mipLodBias = 0.0f;
-        if (vkCreateSampler(*device, &sslrSamplerInfo, nullptr, &sslrAttachment->sampler) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing sampler!");
-
-
-        ssaoAttachment->resize(imageCount);
-        for(size_t imageNumber=0; imageNumber<imageCount; imageNumber++)
-        {
-            createImage(            physicalDevice,
-                                    device,
-                                    image.Extent.width,
-                                    image.Extent.height,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    image.Format,
-                                    VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT ,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    ssaoAttachment->image[imageNumber],
-                                    ssaoAttachment->imageMemory[imageNumber]);
-
-            ssaoAttachment->imageView[imageNumber] =
-            createImageView(        device,
-                                    ssaoAttachment->image[imageNumber],
-                                    image.Format,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1);
-        }
-        VkSamplerCreateInfo ssaoSamplerInfo{};
-            ssaoSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-            ssaoSamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-            ssaoSamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-            ssaoSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-            ssaoSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-            ssaoSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
-            ssaoSamplerInfo.anisotropyEnable = VK_TRUE;
-            ssaoSamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-            ssaoSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-            ssaoSamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-            ssaoSamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-            ssaoSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
-            ssaoSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            ssaoSamplerInfo.minLod = 0.0f;
-            ssaoSamplerInfo.maxLod = 0.0f;
-            ssaoSamplerInfo.mipLodBias = 0.0f;
-        if (vkCreateSampler(*device, &ssaoSamplerInfo, nullptr, &ssaoAttachment->sampler) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing sampler!");
-    }
-
-//=======================================RenderPass======================//
-
-void postProcessing::createRenderPass()
+void postProcessingGraphics::createRenderPass()
 {
     uint32_t index = 0;
-
-    std::array<VkAttachmentDescription,2> attachments{};
+    std::array<VkAttachmentDescription,1> attachments{};
         attachments[index].format = image.Format;                              //это поле задаёт формат подключений. Должно соответствовать фомрату используемого изображения
         attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;                            //задаёт число образцов в изображении и используется при мультисемплинге. VK_SAMPLE_COUNT_1_BIT - означает что мультисемплинг не используется
         attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                       //следующие 4 параметра смотри на странице 210
@@ -443,75 +186,26 @@ void postProcessing::createRenderPass()
         attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;                  //в каком размещении будет изображение в начале прохода
         attachments[index].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;              //в каком размещении его нужно оставить по завершению рендеринга
-    index++;
-        attachments[index].format = image.Format;
-        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[index].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     index = 0;
-    std::array<VkAttachmentReference,2> firstAttachmentRef;
-        firstAttachmentRef[index].attachment = 0;
-        firstAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    index++;
-        firstAttachmentRef[index].attachment = 1;
-        firstAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    std::array<VkAttachmentReference,1> attachmentRef;
+        attachmentRef[index].attachment = 0;
+        attachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     index = 0;
-    std::array<VkAttachmentReference,1> secondAttachmentRef;
-        secondAttachmentRef[index].attachment = 0;
-        secondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    index = 0;
-    std::array<VkAttachmentReference,1> inSecondAttachmentRef;
-        inSecondAttachmentRef[index].attachment = 1;
-        inSecondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    index = 0;
-    std::array<VkAttachmentReference,1> thirdAttachmentRef;
-        thirdAttachmentRef[index].attachment = 0;
-        thirdAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    index = 0;
-    std::array<VkSubpassDescription,3> subpass{};
+    std::array<VkSubpassDescription,1> subpass{};
         subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass[index].colorAttachmentCount = static_cast<uint32_t>(firstAttachmentRef.size());
-        subpass[index].pColorAttachments = firstAttachmentRef.data();
-    index++;
-        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass[index].colorAttachmentCount = static_cast<uint32_t>(secondAttachmentRef.size());
-        subpass[index].pColorAttachments = secondAttachmentRef.data();
-        subpass[index].inputAttachmentCount = static_cast<uint32_t>(inSecondAttachmentRef.size());
-        subpass[index].pInputAttachments = inSecondAttachmentRef.data();
-    index++;
-        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass[index].colorAttachmentCount = static_cast<uint32_t>(thirdAttachmentRef.size());
-        subpass[index].pColorAttachments = thirdAttachmentRef.data();
+        subpass[index].colorAttachmentCount = static_cast<uint32_t>(attachmentRef.size());
+        subpass[index].pColorAttachments = attachmentRef.data();
 
     index = 0;
-    std::array<VkSubpassDependency,3> dependency{};                                                                                        //зависимости
+    std::array<VkSubpassDependency,1> dependency{};                                                                                        //зависимости
         dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
         dependency[index].dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
         dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                                                                 //задаёт как стадии конвейера в исходном проходе создают данные
         dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;                                                                                               //поля задают как каждый из исходных проходов обращается к данным
         dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    index++;
-        dependency[index].srcSubpass = 0;
-        dependency[index].dstSubpass = 1;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency[index].srcAccessMask = 0;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency[index].dstAccessMask = 0;
-    index++;
-        dependency[index].srcSubpass = 1;
-        dependency[index].dstSubpass = 2;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].srcAccessMask = 0;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -521,25 +215,19 @@ void postProcessing::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-
     if (vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing render pass!");
+        throw std::runtime_error("failed to create postProcessingGraphics render pass!");
 }
 
-//===================Framebuffers===================================
-
-void postProcessing::createFramebuffers()
+void postProcessingGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for (size_t i = 0; i < framebuffers.size(); i++)
     {
         uint32_t index = 0;
-
-        std::vector<VkImageView> attachments(swapChainAttachments.size()+Attachments.size());
+        std::vector<VkImageView> attachments(swapChainAttachments.size());
             for(size_t j=0;j<swapChainAttachments.size();j++){
                 attachments.at(index) = swapChainAttachments.at(j).imageView[i]; index++;}
-            for(size_t j=0;j<Attachments.size();j++){
-                attachments.at(index) = Attachments.at(j).imageView[i]; index++;}
 
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -550,100 +238,74 @@ void postProcessing::createFramebuffers()
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
         if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing framebuffer!");
+            throw std::runtime_error("failed to create postProcessingGraphics framebuffer!");
     }
 }
 
-//===================Pipelines===================================
-
-void postProcessing::createPipelines()
+void postProcessingGraphics::createPipelines()
 {
-    createDescriptorSetLayout();
-    createFirstGraphicsPipeline();
-    createSecondGraphicsPipeline();
+    postProcessing.createDescriptorSetLayout(device);
+    postProcessing.createPipeline(device,&image,&renderPass);
 }
-    void postProcessing::createDescriptorSetLayout()
+    void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice* device)
     {
         uint32_t index = 0;
+        std::array<VkDescriptorSetLayoutBinding,7> bindings{};
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = 1;
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = 1;
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = 1;
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = static_cast<uint32_t>(blitAttachmentCount);
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = static_cast<uint32_t>(3);
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = static_cast<uint32_t>(1);
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = transparentLayersCount;
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        std::array<VkDescriptorSetLayoutBinding,2> firstBindings{};
-            firstBindings[index].binding = 0;
-            firstBindings[index].descriptorCount = 1;
-            firstBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            firstBindings[index].pImmutableSamplers = nullptr;
-            firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            firstBindings[index].binding = 1;
-            firstBindings[index].descriptorCount = 1;
-            firstBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            firstBindings[index].pImmutableSamplers = nullptr;
-            firstBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        index = 0;
-        std::array<VkDescriptorSetLayoutBinding,7> secondBindings{};
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = 1;
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = 1;
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = 1;
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = static_cast<uint32_t>(blitAttachmentCount);
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = static_cast<uint32_t>(3);
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = static_cast<uint32_t>(1);
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
-            secondBindings[index].binding = index;
-            secondBindings[index].descriptorCount = transparentLayersCount;
-            secondBindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            secondBindings[index].pImmutableSamplers = nullptr;
-            secondBindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        index = 0;
-        std::array<VkDescriptorSetLayoutCreateInfo,2> textureLayoutInfo{};
-            textureLayoutInfo[index].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            textureLayoutInfo[index].bindingCount = static_cast<uint32_t>(firstBindings.size());
-            textureLayoutInfo[index].pBindings = firstBindings.data();
-        index++;
-            textureLayoutInfo[index].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            textureLayoutInfo[index].bindingCount = static_cast<uint32_t>(secondBindings.size());
-            textureLayoutInfo[index].pBindings = secondBindings.data();
-
-        if (vkCreateDescriptorSetLayout(*device, &textureLayoutInfo.at(0), nullptr, &first.DescriptorSetLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing descriptor set layout 1!");
-        if (vkCreateDescriptorSetLayout(*device, &textureLayoutInfo.at(1), nullptr, &second.DescriptorSetLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing descriptor set layout 2!");
+        VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
+            textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+            textureLayoutInfo.pBindings = bindings.data();
+        if (vkCreateDescriptorSetLayout(*device, &textureLayoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
+            throw std::runtime_error("failed to create postProcessingGraphics descriptor set layout!");
     }
-    void postProcessing::createFirstGraphicsPipeline()
+    void postProcessingGraphics::PostProcessing::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
     {
         uint32_t index = 0;
 
-        auto vertShaderCode = readFile(first.ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\firstPostProcessingVert.spv");
-        auto fragShaderCode = readFile(first.ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\firstPostProcessingFrag.spv");
+        auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingVert.spv");
+        auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingFrag.spv");
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
         std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -673,154 +335,13 @@ void postProcessing::createPipelines()
         std::array<VkViewport,1> viewport{};
             viewport[index].x = 0.0f;
             viewport[index].y = 0.0f;
-            viewport[index].width  = (float) image.Extent.width;
-            viewport[index].height= (float) image.Extent.height;
+            viewport[index].width  = (float) pInfo->Extent.width;
+            viewport[index].height= (float) pInfo->Extent.height;
             viewport[index].minDepth = 0.0f;
             viewport[index].maxDepth = 1.0f;
         std::array<VkRect2D,1> scissor{};
             scissor[index].offset = {0, 0};
-            scissor[index].extent = image.Extent;
-        VkPipelineViewportStateCreateInfo viewportState{};
-            viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-            viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
-            viewportState.pViewports = viewport.data();
-            viewportState.scissorCount = static_cast<uint32_t>(scissor.size());;
-            viewportState.pScissors = scissor.data();
-
-        VkPipelineRasterizationStateCreateInfo rasterizer{};
-            rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-            rasterizer.rasterizerDiscardEnable = VK_FALSE;
-            rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-            rasterizer.lineWidth = 1.0f;
-            rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-            rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-            rasterizer.depthBiasEnable = VK_FALSE;
-            rasterizer.depthBiasConstantFactor = 0.0f;
-            rasterizer.depthBiasClamp = 0.0f;
-            rasterizer.depthBiasSlopeFactor = 0.0f;
-
-        VkPipelineMultisampleStateCreateInfo multisampling{};
-            multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-            multisampling.sampleShadingEnable = VK_FALSE;
-            multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-            multisampling.minSampleShading = 1.0f;
-            multisampling.pSampleMask = nullptr;
-            multisampling.alphaToCoverageEnable = VK_FALSE;
-            multisampling.alphaToOneEnable = VK_FALSE;
-
-        index = 0;
-        std::array<VkPipelineColorBlendAttachmentState,2> colorBlendAttachment;
-            colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachment[index].blendEnable = VK_FALSE;
-            colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
-            colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
-        index++;
-            colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachment[index].blendEnable = VK_FALSE;
-            colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
-            colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
-        VkPipelineColorBlendStateCreateInfo colorBlending{};
-            colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-            colorBlending.logicOpEnable = VK_FALSE;
-            colorBlending.logicOp = VK_LOGIC_OP_COPY;
-            colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());
-            colorBlending.pAttachments = colorBlendAttachment.data();
-            colorBlending.blendConstants[0] = 0.0f;
-            colorBlending.blendConstants[1] = 0.0f;
-            colorBlending.blendConstants[2] = 0.0f;
-            colorBlending.blendConstants[3] = 0.0f;
-
-        VkPipelineDepthStencilStateCreateInfo depthStencil{};
-            depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-            depthStencil.depthTestEnable = VK_FALSE;
-            depthStencil.depthWriteEnable = VK_FALSE;
-            depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-            depthStencil.depthBoundsTestEnable = VK_FALSE;
-            depthStencil.minDepthBounds = 0.0f;
-            depthStencil.maxDepthBounds = 1.0f;
-            depthStencil.stencilTestEnable = VK_FALSE;
-            depthStencil.front = {};
-            depthStencil.back = {};
-
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipelineLayoutInfo.setLayoutCount = 1;
-            pipelineLayoutInfo.pSetLayouts = &first.DescriptorSetLayout;
-        if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &first.PipelineLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing pipeline layout 1!");
-
-        VkGraphicsPipelineCreateInfo pipelineInfo{};
-            pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-            pipelineInfo.pStages = shaderStages.data();
-            pipelineInfo.pVertexInputState = &vertexInputInfo;
-            pipelineInfo.pInputAssemblyState = &inputAssembly;
-            pipelineInfo.pViewportState = &viewportState;
-            pipelineInfo.pRasterizationState = &rasterizer;
-            pipelineInfo.pMultisampleState = &multisampling;
-            pipelineInfo.pColorBlendState = &colorBlending;
-            pipelineInfo.layout = first.PipelineLayout;
-            pipelineInfo.renderPass = renderPass;
-            pipelineInfo.subpass = 0;
-            pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-            pipelineInfo.pDepthStencilState = &depthStencil;
-        if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &first.Pipeline) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing graphics pipeline 1!");
-
-        //можно удалить шейдерные модули после использования
-        vkDestroyShaderModule(*device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(*device, vertShaderModule, nullptr);
-    }
-    void postProcessing::createSecondGraphicsPipeline()
-    {
-        uint32_t index = 0;
-
-        auto vertShaderCode = readFile(second.ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingVert.spv");
-        auto fragShaderCode = readFile(second.ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingFrag.spv");
-        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
-        std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
-            shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
-            shaderStages[index].module = vertShaderModule;
-            shaderStages[index].pName = "main";
-        index++;
-            shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-            shaderStages[index].module = fragShaderModule;
-            shaderStages[index].pName = "main";
-
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-            vertexInputInfo.vertexBindingDescriptionCount = 0;
-            vertexInputInfo.pVertexBindingDescriptions = nullptr;
-            vertexInputInfo.vertexAttributeDescriptionCount = 0;
-            vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-
-        VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-            inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-        index = 0;
-        std::array<VkViewport,1> viewport{};
-            viewport[index].x = 0.0f;
-            viewport[index].y = 0.0f;
-            viewport[index].width  = (float) image.Extent.width;
-            viewport[index].height= (float) image.Extent.height;
-            viewport[index].minDepth = 0.0f;
-            viewport[index].maxDepth = 1.0f;
-        std::array<VkRect2D,1> scissor{};
-            scissor[index].offset = {0, 0};
-            scissor[index].extent = image.Extent;
+            scissor[index].extent = pInfo->Extent;
         VkPipelineViewportStateCreateInfo viewportState{};
             viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
@@ -890,11 +411,11 @@ void postProcessing::createPipelines()
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.setLayoutCount = 1;
-            pipelineLayoutInfo.pSetLayouts = &second.DescriptorSetLayout;
+            pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
             pipelineLayoutInfo.pushConstantRangeCount = 1;
             pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-        if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &second.PipelineLayout) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing pipeline layout 2!");
+        if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
+            throw std::runtime_error("failed to create postProcessingGraphics pipeline layout 2!");
 
         index = 0;
         std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -907,143 +428,88 @@ void postProcessing::createPipelines()
             pipelineInfo[index].pRasterizationState = &rasterizer;
             pipelineInfo[index].pMultisampleState = &multisampling;
             pipelineInfo[index].pColorBlendState = &colorBlending;
-            pipelineInfo[index].layout = second.PipelineLayout;
-            pipelineInfo[index].renderPass = renderPass;
-            pipelineInfo[index].subpass = 2;
+            pipelineInfo[index].layout = PipelineLayout;
+            pipelineInfo[index].renderPass = *pRenderPass;
+            pipelineInfo[index].subpass = 0;
             pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo[index].pDepthStencilState = &depthStencil;
-        if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &second.Pipeline) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing graphics pipeline 2!");
+        if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
+            throw std::runtime_error("failed to create postProcessingGraphics graphics pipeline 2!");
 
         //можно удалить шейдерные модули после использования
         vkDestroyShaderModule(*device, fragShaderModule, nullptr);
         vkDestroyShaderModule(*device, vertShaderModule, nullptr);
     }
 
-void postProcessing::createDescriptorPool()
+void postProcessingGraphics::createDescriptorPool()
 {
     uint32_t imageCount = image.Count;
-    size_t index = 0;
-    std::array<VkDescriptorPoolSize,2> firstPoolSizes;
-        firstPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        firstPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+    uint32_t index = 0;
+    std::array<VkDescriptorPoolSize,7> poolSizes;
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
-        firstPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        firstPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
-
-    VkDescriptorPoolCreateInfo firstPoolInfo{};
-        firstPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        firstPoolInfo.poolSizeCount = static_cast<uint32_t>(firstPoolSizes.size());
-        firstPoolInfo.pPoolSizes = firstPoolSizes.data();
-        firstPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(*device, &firstPoolInfo, nullptr, &first.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
-
-    index = 0;
-    std::array<VkDescriptorPoolSize,7> secondPoolSizes;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
     index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(postProcessing.blitAttachmentCount*imageCount);
     index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(blitAttachmentCount*imageCount);
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(3*imageCount);
     index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(3*imageCount);
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(3);
     index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(3);
-    index++;
-        secondPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        secondPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(transparentLayersCount*imageCount);
-    VkDescriptorPoolCreateInfo secondPoolInfo{};
-        secondPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        secondPoolInfo.poolSizeCount = static_cast<uint32_t>(secondPoolSizes.size());
-        secondPoolInfo.pPoolSizes = secondPoolSizes.data();
-        secondPoolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(*device, &secondPoolInfo, nullptr, &second.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing descriptor pool 2!");
+        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(postProcessing.transparentLayersCount*imageCount);
+    VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
+        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &postProcessing.DescriptorPool) != VK_SUCCESS)
+        throw std::runtime_error("failed to create postProcessingGraphics descriptor pool 2!");
 }
 
-void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::vector<DeferredAttachments> transparentLayers)
+void postProcessingGraphics::createDescriptorSets()
 {
-    uint32_t imageCount = image.Count;
-    first.DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> firstLayouts(imageCount, first.DescriptorSetLayout);
-    VkDescriptorSetAllocateInfo firstAllocInfo{};
-        firstAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        firstAllocInfo.descriptorPool = first.DescriptorPool;
-        firstAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        firstAllocInfo.pSetLayouts = firstLayouts.data();
-    if (vkAllocateDescriptorSets(*device, &firstAllocInfo, first.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
-
-    for (size_t image = 0; image < imageCount; image++)
-    {
-        uint32_t index = 0;
-        std::array<VkDescriptorImageInfo,2> imageInfo;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.blur->imageView[image];
-            imageInfo[index].sampler = Attachments.blur->sampler;
-        index++;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = ssaoAttachment->imageView[image];
-            imageInfo[index].sampler = ssaoAttachment->sampler;
-
-        index = 0;
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = first.DescriptorSets[image];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &imageInfo[index];
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = first.DescriptorSets[image];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &imageInfo[index];
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-
-    second.DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, second.DescriptorSetLayout);
+    postProcessing.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, postProcessing.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = second.DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.descriptorPool = postProcessing.DescriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, second.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate postProcessing descriptor sets 2!");
+    if (vkAllocateDescriptorSets(*device, &allocInfo, postProcessing.DescriptorSets.data()) != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate postProcessingGraphics descriptor sets 2!");
 
-    for (size_t image = 0; image < imageCount; image++)
+}
+
+void postProcessingGraphics::updateDescriptorSets(DeferredAttachments Attachments, std::vector<DeferredAttachments> transparentLayers)
+{
+    for (size_t image = 0; image < this->image.Count; image++)
     {
         uint32_t index = 0;
 
         std::array<VkDescriptorImageInfo, 3> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.image->imageView[image];
-            imageInfo[index].sampler = Attachments.image->sampler;
+            imageInfo[index].imageView = Attachments.image.imageView[image];
+            imageInfo[index].sampler = Attachments.image.sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = this->Attachments[0].imageView[image];
-            imageInfo[index].sampler = this->Attachments[0].sampler;
+            imageInfo[index].imageView = blurAttachment->imageView[image];
+            imageInfo[index].sampler = blurAttachment->sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo[index].imageView = sslrAttachment->imageView[image];
             imageInfo[index].sampler = sslrAttachment->sampler;
 
         index = 0;
-        std::vector<VkDescriptorImageInfo> blitImageInfo(blitAttachmentCount);
+        std::vector<VkDescriptorImageInfo> blitImageInfo(postProcessing.blitAttachmentCount);
             for(uint32_t i=0;i<blitImageInfo.size();i++,index++){
                 blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 blitImageInfo[index].imageView = blitAttachments[i].imageView[image];
@@ -1054,27 +520,27 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
         std::vector<VkDescriptorImageInfo> transparentLayersInfo(transparentLayers.size());
             for(uint32_t i=0;i<transparentLayersInfo.size();i++,index++){
                 transparentLayersInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                transparentLayersInfo[index].imageView = transparentLayers[i].image->imageView[image];
-                transparentLayersInfo[index].sampler = transparentLayers[i].image->sampler;
+                transparentLayersInfo[index].imageView = transparentLayers[i].image.imageView[image];
+                transparentLayersInfo[index].sampler = transparentLayers[i].image.sampler;
             }
 
         index = 0;
-        std::vector<VkDescriptorImageInfo> transparentLayersDepthInfo(transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> transparentLayersDepthInfo(postProcessing.transparentLayersCount);
             for(uint32_t i=0;i<transparentLayersDepthInfo.size();i++,index++){
                 transparentLayersDepthInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                transparentLayersDepthInfo[index].imageView = transparentLayers[i].depth->imageView;
-                transparentLayersDepthInfo[index].sampler = transparentLayers[i].depth->sampler;
+                transparentLayersDepthInfo[index].imageView = transparentLayers[i].depth.imageView;
+                transparentLayersDepthInfo[index].sampler = transparentLayers[i].depth.sampler;
             }
 
         VkDescriptorImageInfo imageDepthInfo;
             imageDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageDepthInfo.imageView = Attachments.depth->imageView;
-            imageDepthInfo.sampler = Attachments.depth->sampler;
+            imageDepthInfo.imageView = Attachments.depth.imageView;
+            imageDepthInfo.sampler = Attachments.depth.sampler;
 
         index = 0;
         std::array<VkWriteDescriptorSet, 7> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1082,7 +548,7 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
             descriptorWrites[index].pImageInfo = &imageInfo[index];
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1090,7 +556,7 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
             descriptorWrites[index].pImageInfo = &imageInfo[index];
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1098,7 +564,7 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
             descriptorWrites[index].pImageInfo = &imageInfo[index];
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1106,7 +572,7 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
             descriptorWrites[index].pImageInfo = blitImageInfo.data();
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1114,7 +580,7 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
             descriptorWrites[index].pImageInfo = transparentLayersInfo.data();
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1122,7 +588,7 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
             descriptorWrites[index].pImageInfo = &imageDepthInfo;
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = second.DescriptorSets[image];
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1132,11 +598,10 @@ void postProcessing::createDescriptorSets(DeferredAttachments Attachments, std::
     }
 }
 
-void postProcessing::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void postProcessingGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
-    std::array<VkClearValue, 2> ClearValues{};
+    std::array<VkClearValue, 1> ClearValues{};
         ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        ClearValues[1].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1149,23 +614,16 @@ void postProcessing::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
 
     vkCmdBeginRenderPass(commandBuffers, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, first.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, first.PipelineLayout, 0, 1, &first.DescriptorSets[frameNumber], 0, nullptr);
-        vkCmdDraw(commandBuffers, 6, 1, 0, 0);
-
-    vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
-
         postProcessingPushConst pushConst{};
-            pushConst.blitFactor = blitFactor;
-        vkCmdPushConstants(commandBuffers, second.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(postProcessingPushConst), &pushConst);
+            pushConst.blitFactor = postProcessing.blitFactor;
+        vkCmdPushConstants(commandBuffers, postProcessing.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(postProcessingPushConst), &pushConst);
 
-        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, second.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, second.PipelineLayout, 0, 1, &second.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.PipelineLayout, 0, 1, &postProcessing.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers);
 }
 
-uint32_t                        &postProcessing::SwapChainImageCount(){return image.Count;}
-VkFormat                        &postProcessing::SwapChainImageFormat(){return image.Format;}
+uint32_t                        &postProcessingGraphics::SwapChainImageCount(){return image.Count;}
+VkFormat                        &postProcessingGraphics::SwapChainImageFormat(){return image.Format;}

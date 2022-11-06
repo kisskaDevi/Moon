@@ -349,11 +349,11 @@ void deferredGraphics::updateSpotLightingDescriptorSets()
         for(index = 0; index<4;index++)
         {
             imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.at(index).imageView = Attachments.at(3+index).imageView.at(i);
+            imageInfo.at(index).imageView = Attachments.at(3+index)->imageView.at(i);
             imageInfo.at(index).sampler = VK_NULL_HANDLE;
         }
         imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.at(index).imageView = this->depthAttachment.imageView;
+        imageInfo.at(index).imageView = this->depthAttachment->imageView;
         imageInfo.at(index).sampler = VK_NULL_HANDLE;
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = spotLighting.uniformBuffers[i];
@@ -419,14 +419,14 @@ void deferredGraphics::updateSpotLightUbo(uint32_t imageIndex)
 
 void deferredGraphics::updateSpotLightCmd(uint32_t imageIndex)
 {
-    std::vector<object*> objects(base.objects.size()+stencil.objects.size());
+    std::vector<object*> objects(base.objects.size()+outlining.objects.size());
 
     uint32_t counter = 0;
     for(auto object: base.objects){
         objects[counter] = object;
         counter++;
     }
-    for(auto object: stencil.objects){
+    for(auto object: outlining.objects){
         objects[counter] = object;
         counter++;
     }

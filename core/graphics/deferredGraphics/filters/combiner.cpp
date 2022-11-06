@@ -22,16 +22,23 @@ void imagesCombiner::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* d
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
 }
-void imagesCombiner::setImageProp(imageInfo* pInfo)                   {this->image = *pInfo;}
-void imagesCombiner::setAttachments(attachments* Attachments)         {this->Attachments = Attachments;}
-
-void imagesCombiner::setCombineAttachmentsCount(uint32_t attachmentsCount)
+void imagesCombiner::setCombineAttachmentsCount(uint32_t combineAttachmentsCount)
 {
-    combiner.combineAttachmentsCount = attachmentsCount;
+    combiner.combineAttachmentsCount = combineAttachmentsCount;
+}
+void imagesCombiner::setImageProp(imageInfo* pInfo)
+{
+    this->image = *pInfo;
+}
+void imagesCombiner::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
+{
+    this->attachmentsCount = attachmentsCount;
+    this->Attachments = Attachments;
 }
 
-void imagesCombiner::createAttachments()
+void imagesCombiner::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
+    setAttachments(attachmentsCount, Attachments);
     Attachments->resize(image.Count);
     for(size_t Image=0; Image<image.Count; Image++)
     {
@@ -363,7 +370,7 @@ void imagesCombiner::createDescriptorSets()
         throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
 }
 
-void imagesCombiner::updateSecondDescriptorSets(attachments* Attachments, attachment* depthAttachments, attachment* depthStencil)
+void imagesCombiner::updateDescriptorSets(attachments* Attachments, attachment* depthAttachments, attachment* depthStencil)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -435,6 +442,5 @@ void imagesCombiner::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.PipelineLayout, 0, 1, &combiner.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
-    vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffer);
 }
-

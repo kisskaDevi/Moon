@@ -43,6 +43,7 @@ public:
     attachments();
     ~attachments();
 
+    attachments(const attachments& other);
     attachments& operator=(const attachments& other);
 
     void resize(size_t size);
@@ -53,18 +54,26 @@ public:
 };
 
 struct GBufferAttachments{
-    attachments*        position;
-    attachments*        normal;
-    attachments*        color;
-    attachments*        emission;
+    attachments        position;
+    attachments        normal;
+    attachments        color;
+    attachments        emission;
+
+    GBufferAttachments();
+    GBufferAttachments(const GBufferAttachments& other);
+    GBufferAttachments& operator=(const GBufferAttachments& other);
 };
 
 struct DeferredAttachments{
-    attachments*        image;
-    attachments*        blur;
-    attachments*        bloom;
-    attachment*         depth;
+    attachments         image;
+    attachments         blur;
+    attachments         bloom;
+    attachment          depth;
     GBufferAttachments  GBuffer;
+
+    DeferredAttachments();
+    DeferredAttachments(const DeferredAttachments& other);
+    DeferredAttachments& operator=(const DeferredAttachments& other);
 };
 
 #endif // ATTACHMENTS_H

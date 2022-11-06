@@ -24,8 +24,10 @@ DISTFILES += \
     core/graphics/deferredGraphics/shaders/compileBuild.bat \
     core/graphics/deferredGraphics/shaders/customFilter/customFilter.frag \
     core/graphics/deferredGraphics/shaders/customFilter/customFilter.vert \
-    core/graphics/deferredGraphics/shaders/postProcessing/firstPostProcessingShader.frag \
-    core/graphics/deferredGraphics/shaders/postProcessing/firstPostProcessingShader.vert \
+    core/graphics/deferredGraphics/shaders/gaussianBlur/xBlur.frag \
+    core/graphics/deferredGraphics/shaders/gaussianBlur/xBlur.vert \
+    core/graphics/deferredGraphics/shaders/gaussianBlur/yBlur.frag \
+    core/graphics/deferredGraphics/shaders/gaussianBlur/yBlur.vert \
     core/graphics/deferredGraphics/shaders/shadow/shadowMapShader.vert \
     core/graphics/deferredGraphics/shaders/postProcessing/postProcessingShader.frag \
     core/graphics/deferredGraphics/shaders/postProcessing/postProcessingShader.vert \
@@ -56,6 +58,7 @@ DISTFILES += \
 SOURCES += \
     core/graphics/deferredGraphics/attachments.cpp \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
+    core/graphics/deferredGraphics/filters/blur.cpp \
     core/graphics/deferredGraphics/renderStages/source/spotLighting.cpp \
     core/graphics/deferredGraphics/renderStages/source/base.cpp \
     core/graphics/deferredGraphics/renderStages/source/extension.cpp \
@@ -84,6 +87,7 @@ HEADERS += \
     core/graphics/deferredGraphics/attachments.h \
     core/graphics/deferredGraphics/bufferObjects.h \
     core/graphics/deferredGraphics/deferredgraphicsinterface.h \
+    core/graphics/deferredGraphics/filters/blur.h \
     core/graphics/deferredGraphics/renderStages/graphics.h \
     core/graphics/deferredGraphics/renderStages/postProcessing.h \
     core/graphics/deferredGraphics/renderStages/shadowGraphics.h \

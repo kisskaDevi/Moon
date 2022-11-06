@@ -8,8 +8,6 @@ glslc.exe SpotLightingPass/SpotLightingAmbient.frag	    -o SpotLightingPass/Ambi
 glslc.exe shadow/shadowMapShader.vert                       -o shadow/shad.spv
 glslc.exe customFilter/customFilter.vert		    -o customFilter/customFilterVert.spv
 glslc.exe customFilter/customFilter.frag		    -o customFilter/customFilterFrag.spv
-glslc.exe postProcessing/firstPostProcessingShader.vert     -o postProcessing/firstPostProcessingVert.spv
-glslc.exe postProcessing/firstPostProcessingShader.frag     -o postProcessing/firstPostProcessingFrag.spv
 glslc.exe postProcessing/postProcessingShader.vert	    -o postProcessing/postProcessingVert.spv
 glslc.exe postProcessing/postProcessingShader.frag	    -o postProcessing/postProcessingFrag.spv
 glslc.exe skybox/skybox.vert				    -o skybox/skyboxVert.spv
@@ -22,5 +20,9 @@ glslc.exe ssao/SSAO.vert				    -o ssao/ssaoVert.spv
 glslc.exe ssao/SSAO.frag				    -o ssao/ssaoFrag.spv
 glslc.exe combiner/combiner.vert                            -o combiner/combinerVert.spv
 glslc.exe combiner/combiner.frag                            -o combiner/combinerFrag.spv
+glslc.exe gaussianBlur/xBlur.vert                           -o gaussianBlur/xBlurVert.spv
+glslc.exe gaussianBlur/xBlur.frag                           -o gaussianBlur/xBlurFrag.spv
+glslc.exe gaussianBlur/yBlur.vert               	    -o gaussianBlur/yBlurVert.spv
+glslc.exe gaussianBlur/yBlur.frag               	    -o gaussianBlur/yBlurFrag.spv
 
 pause

@@ -2,16 +2,17 @@
 #define GRAPHICS_H
 
 #include <libs/vulkan/vulkan.h>
-#include <libs/glm/glm/glm.hpp>
+#include <libs/glm/glm.hpp>
 #include "../attachments.h"
 
 #include <string>
+#include <unordered_map>
 
 class                               texture;
 class                               cubeTexture;
 class                               object;
 class                               camera;
-class                               spotLight;
+class                               light;
 struct                              Node;
 struct                              Material;
 struct                              MaterialBlock;
@@ -83,8 +84,8 @@ private:
         std::vector<object *>           objects;
 
         void DestroyPipeline(VkDevice* device);
-        void DestroyOutliningPipeline(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void DestroyOutliningPipeline(VkDevice* device);
         void createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
@@ -115,12 +116,11 @@ private:
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }skybox;
 
-    struct SpotLighting{
+    struct Lighting{
         std::string                     ExternalPath;
 
-        VkPipelineLayout                PipelineLayout;
-        VkPipeline                      Pipeline;
-        VkPipeline                      ScatteringPipeline;
+        std::unordered_map<uint8_t, VkPipelineLayout>  PipelineLayoutDictionary;
+        std::unordered_map<uint8_t, VkPipeline>        PipelinesDictionary;
 
         VkPipelineLayout                AmbientPipelineLayout;
         VkPipeline                      AmbientPipeline;
@@ -137,14 +137,19 @@ private:
         float                           minAmbientFactor = 0.05f;
         bool                            enableScattering = true;
 
-        std::vector<spotLight*>         lightSources;
+        std::vector<light*>             lightSources;
 
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+            void createAmbientPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+            void createSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+            void createShadowSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+            void createScatteringSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+            void createScatteringShadowSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
         void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
-    }spotLighting;
+    }lighting;
 
     void createColorAttachments();
     void createDepthAttachment();
@@ -187,9 +192,9 @@ public:
     void createSkyboxDescriptorSets();
     void updateSkyboxDescriptorSets();
 
-    void createSpotLightingDescriptorPool();
-    void createSpotLightingDescriptorSets();
-    void updateSpotLightingDescriptorSets();
+    void createLightingDescriptorPool();
+    void createLightingDescriptorSets();
+    void updateLightingDescriptorSets();
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
@@ -210,12 +215,12 @@ public:
     bool removeSkyBoxObject(object* object);
     void removeBinds();
 
-    void addSpotLightSource(spotLight* lightSource);
-    void removeSpotLightSource(spotLight* lightSource);
+    void addLightSource(light* lightSource);
+    void removeLightSource(light* lightSource);
 
-    void updateSpotLightUbo(uint32_t imageIndex);
-    void updateSpotLightCmd(uint32_t imageIndex);
-    void getSpotLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex);
+    void updateLightUbo(uint32_t imageIndex);
+    void updateLightCmd(uint32_t imageIndex);
+    void getLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex);
 };
 
 #endif // GRAPHICS_H

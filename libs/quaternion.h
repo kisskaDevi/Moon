@@ -1,7 +1,7 @@
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
-#include"glm/glm/glm.hpp"
+#include"glm/glm.hpp"
 #include <iostream>
 
 template<typename type>

@@ -31,7 +31,7 @@ void SSAOGraphics::setAttachments(uint32_t attachmentsCount, attachments* Attach
 
 void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
-    setAttachments(attachmentsCount,Attachments);
+    static_cast<void>(attachmentsCount);
     Attachments->resize(image.Count);
     for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
     {
@@ -86,9 +86,6 @@ void SSAOGraphics::SSAO::Destroy(VkDevice* device)
 
 void SSAOGraphics::destroy()
 {
-    Attachments->deleteAttachment(device);
-    Attachments->deleteSampler(device);
-
     ssao.Destroy(device);
 
     vkDestroyRenderPass(*device, renderPass, nullptr);

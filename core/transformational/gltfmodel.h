@@ -4,10 +4,10 @@
 #include <libs/vulkan/vulkan.h>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <libs/glm/glm/glm.hpp>
-#include <libs/glm/glm/gtc/matrix_transform.hpp>
-#include <libs/glm/glm/gtc/type_ptr.hpp>
-#include <libs/glm/glm/gtx/string_cast.hpp>
+#include <libs/glm/glm.hpp>
+#include <libs/glm/gtc/matrix_transform.hpp>
+#include <libs/glm/gtc/type_ptr.hpp>
+#include <libs/glm/gtx/string_cast.hpp>
 #include "libs/tinygltf-master/tiny_gltf.h"
 
 #include "core/texture.h"

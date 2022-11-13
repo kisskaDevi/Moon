@@ -46,7 +46,7 @@ private:
     std::vector<std::vector<gltfModel   *>>         gltfModel;
     std::vector<object                  *>          object3D;
     std::vector<spotLight               *>          lightSource;
-    std::vector<pointLight              *>          lightPoint;
+    std::vector<isotropicLight              *>          lightPoint;
     std::vector<group                   *>          groups;
 
     graphicsManager*            app;

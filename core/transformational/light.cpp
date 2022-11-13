@@ -6,37 +6,18 @@
 
 #include <iostream>
 
-spotLight::spotLight(uint32_t type): type(type)
-{
-    m_scale = glm::vec3(1.0f,1.0f,1.0f);
-    m_globalTransform = glm::mat4x4(1.0f);
-    m_translate = glm::vec3(0.0f,0.0f,0.0f);
-    m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    viewMatrix = glm::mat4x4(1.0f);
-    modelMatrix = glm::mat4x4(1.0f);
-    lightColor = glm::vec4(0.0f);
-    lightPowerFactor = 1.0f;
-    lightDropFactor = 0.1f;
-}
+spotLight::spotLight(bool enableShadow, bool enableScattering, uint32_t type):
+    enableShadow(enableShadow),
+    enableScattering(enableScattering),
+    type(type)
+{}
 
-spotLight::spotLight(const std::string & TEXTURE_PATH, uint32_t type): type(type)
-{
-    m_scale = glm::vec3(1.0f,1.0f,1.0f);
-    m_globalTransform = glm::mat4x4(1.0f);
-    m_translate = glm::vec3(0.0f,0.0f,0.0f);
-    m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    viewMatrix = glm::mat4x4(1.0f);
-    modelMatrix = glm::mat4x4(1.0f);
-    lightColor = glm::vec4(0.0f);
-    lightPowerFactor = 1.0f;
-    lightDropFactor = 0.1f;
-
-    tex = new texture(TEXTURE_PATH);
-}
+spotLight::spotLight(const std::string & TEXTURE_PATH, bool enableShadow, bool enableScattering, uint32_t type):
+    tex(new texture(TEXTURE_PATH)),
+    enableShadow(enableShadow),
+    enableScattering(enableScattering),
+    type(type)
+{}
 
 spotLight::~spotLight(){
     delete tex;
@@ -68,43 +49,58 @@ void spotLight::destroy(VkDevice* device)
         descriptorPool = VK_NULL_HANDLE;
     }
 
-    if(enableShadow){
+    if(shadow){
         shadow->destroy();
-        enableShadow = false;
     }
 }
 
 void spotLight::setGlobalTransform(const glm::mat4 & transform)
 {
     m_globalTransform = transform;
-    updateViewMatrix();
+    updateModelMatrix();
 }
 
 void spotLight::translate(const glm::vec3 & translate)
 {
     m_translate += translate;
-    updateViewMatrix();
+    updateModelMatrix();
 }
 
 void spotLight::rotate(const float & ang ,const glm::vec3 & ax)
 {
     m_rotate = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax))*m_rotate;
-    updateViewMatrix();
+    updateModelMatrix();
 }
 
 void spotLight::scale(const glm::vec3 & scale)
 {
     m_scale = scale;
-    updateViewMatrix();
+    updateModelMatrix();
 }
 
 void spotLight::setPosition(const glm::vec3& translate)
 {
     m_translate = translate;
-    updateViewMatrix();
+    updateModelMatrix();
 }
 
-void spotLight::updateViewMatrix()
+void spotLight::rotateX(const float & ang ,const glm::vec3 & ax)
+{
+    glm::normalize(ax);
+    m_rotateX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateX;
+    m_rotate = m_rotateX * m_rotateY;
+    updateModelMatrix();
+}
+
+void spotLight::rotateY(const float & ang ,const glm::vec3 & ax)
+{
+    glm::normalize(ax);
+    m_rotateY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateY;
+    m_rotate = m_rotateX * m_rotateY;
+    updateModelMatrix();
+}
+
+void spotLight::updateModelMatrix()
 {
     glm::mat4x4 translateMatrix = glm::translate(glm::mat4x4(1.0f),m_translate);
     glm::mat4x4 rotateMatrix = glm::mat4x4(1.0f);
@@ -114,38 +110,27 @@ void spotLight::updateViewMatrix()
     }
     glm::mat4x4 scaleMatrix = glm::scale(glm::mat4x4(1.0f),m_scale);
     modelMatrix = m_globalTransform * translateMatrix * rotateMatrix * scaleMatrix;
-    viewMatrix = glm::inverse(modelMatrix);
 }
 
-void spotLight::rotateX(const float & ang ,const glm::vec3 & ax)
-{
-    glm::normalize(ax);
-    m_rotateX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateX;
-    m_rotate = m_rotateX * m_rotateY;
-    updateViewMatrix();
-}
+void                            spotLight::setLightColor(const glm::vec4 &color)                {lightColor = color;}
+void                            spotLight::setShadowExtent(const VkExtent2D & shadowExtent)     {this->shadowExtent = shadowExtent;}
+void                            spotLight::setShadow(bool enable)                               {enableShadow = enable;}
+void                            spotLight::setScattering(bool enable)                           {enableScattering = enable;}
+void                            spotLight::setTexture(texture* tex)                             {this->tex = tex;}
+void                            spotLight::setProjectionMatrix(const glm::mat4x4 & projection)  {projectionMatrix = projection;}
 
-void spotLight::rotateY(const float & ang ,const glm::vec3 & ax)
-{
-    glm::normalize(ax);
-    m_rotateY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateY;
-    m_rotate = m_rotateX * m_rotateY;
-    updateViewMatrix();
-}
+glm::mat4x4                     spotLight::getModelMatrix() const {return modelMatrix;}
+glm::vec3                       spotLight::getTranslate() const {return m_translate;}
+glm::vec4                       spotLight::getLightColor() const {return lightColor;}
+texture*                        spotLight::getTexture(){return tex;}
 
-void spotLight::setProjectionMatrix(const glm::mat4x4 & projection)
-{
-    projectionMatrix = projection;
-}
+uint8_t                         spotLight::getPipelineBitMask()     {return (enableScattering<<5)|(isShadowEnable()<<4)|(0x0);}
 
-void spotLight::createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath)
-{
-    enableShadow = true;
-    shadow = new shadowGraphics(imageCount,shadowExtent);
-    shadow->setExternalPath(ExternalPath);
-    shadow->setDeviceProp(physicalDevice,device,queueFamilyIndices);
-    shadow->createShadow();
-}
+bool                            spotLight::isShadowEnable() const{return shadow ? true : false;}
+bool                            spotLight::isScatteringEnable() const{return enableScattering;}
+
+VkDescriptorSet*                spotLight::getDescriptorSets(){return descriptorSets.data();}
+VkCommandBuffer*                spotLight::getShadowCommandBuffer() {return shadow->getCommandBuffer().data();}
 
 void spotLight::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
@@ -162,12 +147,12 @@ void spotLight::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice*
     }
 }
 
-void spotLight::updateLightBuffer(VkDevice* device, uint32_t frameNumber)
+void spotLight::updateUniformBuffer(VkDevice* device, uint32_t frameNumber)
 {
     LightBufferObject buffer{};
         buffer.proj = projectionMatrix;
-        buffer.view = viewMatrix;
-        buffer.projView = projectionMatrix * viewMatrix;
+        buffer.view = glm::inverse(modelMatrix);
+        buffer.projView = projectionMatrix * buffer.view;
         buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
         buffer.lightColor = lightColor;
         buffer.lightProp = glm::vec4(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
@@ -177,48 +162,35 @@ void spotLight::updateLightBuffer(VkDevice* device, uint32_t frameNumber)
     vkUnmapMemory(*device, uniformBuffersMemory[frameNumber]);
 }
 
-void                            spotLight::setLightColor(const glm::vec4 &color){this->lightColor = color;}
-void                            spotLight::setShadowExtent(const VkExtent2D & shadowExtent){this->shadowExtent=shadowExtent;}
-void                            spotLight::setScattering(bool enable){this->enableScattering=enable;}
-void                            spotLight::setTexture(texture* tex){this->tex=tex;}
-
-
-VkDescriptorPool&               spotLight::getDescriptorPool(){return descriptorPool;}
-std::vector<VkDescriptorSet>&   spotLight::getDescriptorSets(){return descriptorSets;}
-std::vector<VkBuffer>&          spotLight::getUniformBuffers(){return uniformBuffers;}
-
-glm::mat4x4                     spotLight::getViewMatrix() const {return viewMatrix;}
-glm::mat4x4                     spotLight::getModelMatrix() const {return modelMatrix;}
-glm::vec3                       spotLight::getTranslate() const {return m_translate;}
-
-glm::vec4                       spotLight::getLightColor() const {return lightColor;}
-bool                            spotLight::isShadowEnable() const{return enableShadow;}
-bool                            spotLight::isScatteringEnable() const{return enableScattering;}
-
-texture*                        spotLight::getTexture(){return tex;}
-
-
-void                            spotLight::updateShadowCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects){
-    shadow->updateCommandBuffer(frameNumber,objects);
+void spotLight::createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath)
+{
+    if(enableShadow){
+        shadow = new shadowGraphics(imageCount,shadowExtent);
+        shadow->setExternalPath(ExternalPath);
+        shadow->setDeviceProp(physicalDevice,device,queueFamilyIndices);
+        shadow->createShadow();
+    }
 }
-void                            spotLight::createShadowCommandBuffers(){
-    shadow->createCommandBuffers();
+void spotLight::updateShadowDescriptorSets()
+{
+    if(shadow){
+        shadow->updateDescriptorSets(uniformBuffers.size(),uniformBuffers.data(),sizeof(LightBufferObject));
+    }
 }
-void                            spotLight::updateShadowDescriptorSets(){
-    shadow->updateDescriptorSets(uniformBuffers.size(),uniformBuffers.data(),sizeof(LightBufferObject));
+void spotLight::createShadowCommandBuffers()
+{
+    if(shadow){
+        shadow->createCommandBuffers();
+    }
 }
-std::vector<VkCommandBuffer>&   spotLight::getShadowCommandBuffer(){
-    return shadow->getCommandBuffer();
-}
-VkImageView&                    spotLight::getShadowImageView(){
-    return shadow->getImageView();
-}
-VkSampler&                      spotLight::getShadowSampler(){
-    return shadow->getSampler();
+void spotLight::updateShadowCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects)
+{
+    if(shadow){
+        shadow->updateCommandBuffer(frameNumber,objects);
+    }
 }
 
-
-void                            spotLight::createDescriptorPool(VkDevice* device, uint32_t imageCount)
+void spotLight::createDescriptorPool(VkDevice* device, uint32_t imageCount)
 {
     uint32_t index = 0;
     std::array<VkDescriptorPoolSize,3> poolSizes{};
@@ -236,7 +208,7 @@ void                            spotLight::createDescriptorPool(VkDevice* device
         throw std::runtime_error("failed to create light descriptor pool!");
 }
 
-void                            spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
+void spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
 {
     createSpotLightDescriptorSetLayout(device,&descriptorSetLayout);
 
@@ -251,7 +223,7 @@ void                            spotLight::createDescriptorSets(VkDevice* device
         throw std::runtime_error("failed to allocate SpotLightingPass descriptor sets!");
 }
 
-void                            spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture)
+void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture)
 {
     for (size_t i=0; i<imageCount; i++)
     {
@@ -263,8 +235,8 @@ void                            spotLight::updateDescriptorSets(VkDevice* device
             lightBufferInfo.range = sizeof(LightBufferObject);
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView       = enableShadow ? getShadowImageView() : emptyTexture->getTextureImageView();
-            shadowImageInfo.sampler         = enableShadow ? getShadowSampler() : emptyTexture->getTextureSampler();
+            shadowImageInfo.imageView       = isShadowEnable() ? shadow->getImageView() : emptyTexture->getTextureImageView();
+            shadowImageInfo.sampler         = isShadowEnable() ? shadow->getSampler() : emptyTexture->getTextureSampler();
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             lightTexture.imageView          = tex ? tex->getTextureImageView() : emptyTexture->getTextureImageView();
@@ -305,7 +277,7 @@ void                            spotLight::updateDescriptorSets(VkDevice* device
 //============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
 //======================================================================================================================//
 
-pointLight::pointLight(std::vector<spotLight *>& lightSource)
+isotropicLight::isotropicLight(std::vector<spotLight *>& lightSource)
 {
     m_scale = glm::vec3(1.0f,1.0f,1.0f);
     m_globalTransform = glm::mat4x4(1.0f);
@@ -316,31 +288,31 @@ pointLight::pointLight(std::vector<spotLight *>& lightSource)
 
     uint32_t number = lightSource.size();
     uint32_t index = number;
-    lightSource.push_back(new spotLight(spotType::square));
+    lightSource.push_back(new spotLight(true,false,spotType::square));
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
 
     index++;
-    lightSource.push_back(new spotLight(spotType::square));
+    lightSource.push_back(new spotLight(true,false,spotType::square));
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,0.0f,1.0f));
 
     index++;
-    lightSource.push_back(new spotLight(spotType::square));
+    lightSource.push_back(new spotLight(true,false,spotType::square));
     lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
 
     index++;
-    lightSource.push_back(new spotLight(spotType::square));
+    lightSource.push_back(new spotLight(true,false,spotType::square));
     lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.3f,0.6f,0.9f,1.0f));
 
     index++;
-    lightSource.push_back(new spotLight(spotType::square));
+    lightSource.push_back(new spotLight(true,false,spotType::square));
     lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.6f,0.9f,0.3f,1.0f));
 
     index++;
-    lightSource.push_back(new spotLight(spotType::square));
+    lightSource.push_back(new spotLight(true,false,spotType::square));
     lightSource.at(index)->rotate(glm::radians(180.0f),glm::vec3(1.0f,0.0f,0.0f));
     lightSource.at(index)->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
 
@@ -350,57 +322,57 @@ pointLight::pointLight(std::vector<spotLight *>& lightSource)
     }
 }
 
-pointLight::~pointLight(){}
+isotropicLight::~isotropicLight(){}
 
-glm::vec4       pointLight::getLightColor() const {return lightColor;}
-glm::vec3       pointLight::getTranslate() const {return m_translate;}
+glm::vec4       isotropicLight::getLightColor() const {return lightColor;}
+glm::vec3       isotropicLight::getTranslate() const {return m_translate;}
 
-void pointLight::setProjectionMatrix(const glm::mat4x4 & projection)
+void isotropicLight::setProjectionMatrix(const glm::mat4x4 & projection)
 {
     projectionMatrix = projection;
     for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setProjectionMatrix(projectionMatrix);
 }
 
-void pointLight::setLightColor(const glm::vec4 &color)
+void isotropicLight::setLightColor(const glm::vec4 &color)
 {
     this->lightColor = color;
     for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setLightColor(color);
 }
 
-void pointLight::setGlobalTransform(const glm::mat4 & transform)
+void isotropicLight::setGlobalTransform(const glm::mat4 & transform)
 {
     m_globalTransform = transform;
     updateViewMatrix();
 }
 
-void pointLight::translate(const glm::vec3 & translate)
+void isotropicLight::translate(const glm::vec3 & translate)
 {
     m_translate += translate;
     updateViewMatrix();
 }
 
-void pointLight::rotate(const float & ang ,const glm::vec3 & ax)
+void isotropicLight::rotate(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     m_rotate = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax))*m_rotate;
     updateViewMatrix();
 }
 
-void pointLight::scale(const glm::vec3 & scale)
+void isotropicLight::scale(const glm::vec3 & scale)
 {
     m_scale = scale;
     updateViewMatrix();
 }
 
-void pointLight::setPosition(const glm::vec3& translate)
+void isotropicLight::setPosition(const glm::vec3& translate)
 {
     m_translate = translate;
     updateViewMatrix();
 }
 
-void pointLight::updateViewMatrix()
+void isotropicLight::updateViewMatrix()
 {
     glm::mat4x4 translateMatrix = glm::translate(glm::mat4x4(1.0f),-m_translate);
     glm::mat4x4 rotateMatrix = glm::mat4x4(1.0f);
@@ -413,7 +385,7 @@ void pointLight::updateViewMatrix()
         lightSource.at(i)->setGlobalTransform(localMatrix);
 }
 
-void pointLight::rotateX(const float & ang ,const glm::vec3 & ax)
+void isotropicLight::rotateX(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     m_rotateX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateX;
@@ -421,11 +393,12 @@ void pointLight::rotateX(const float & ang ,const glm::vec3 & ax)
     updateViewMatrix();
 }
 
-void pointLight::rotateY(const float & ang ,const glm::vec3 & ax)
+void isotropicLight::rotateY(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     m_rotateY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateY;
     updateViewMatrix();
 }
+
 
 

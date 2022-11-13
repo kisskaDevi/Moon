@@ -38,7 +38,7 @@ void imagesCombiner::setAttachments(uint32_t attachmentsCount, attachments* Atta
 
 void imagesCombiner::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
-    setAttachments(attachmentsCount, Attachments);
+    static_cast<void>(attachmentsCount);
     Attachments->resize(image.Count);
     for(size_t Image=0; Image<image.Count; Image++)
     {
@@ -98,9 +98,6 @@ void imagesCombiner::destroy()
     vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
-
-    Attachments->deleteAttachment(&*device);
-    Attachments->deleteSampler(&*device);
 }
 
 void imagesCombiner::createRenderPass()

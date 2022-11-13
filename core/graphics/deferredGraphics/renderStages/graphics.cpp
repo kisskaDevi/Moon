@@ -18,7 +18,7 @@ void deferredGraphics::setExternalPath(const std::string &path)
     base.ExternalPath = path;
     outlining.ExternalPath = path;
     skybox.ExternalPath = path;
-    spotLighting.ExternalPath = path;
+    lighting.ExternalPath = path;
 }
 
 void                            deferredGraphics::setAttachments(DeferredAttachments* Attachments)
@@ -49,8 +49,8 @@ void                            deferredGraphics::setEmptyTexture(std::string ZE
 void                            deferredGraphics::setCameraObject(camera* cameraObject)                 { this->cameraObject = cameraObject;}
 void                            deferredGraphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
 
-void                            deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { spotLighting.minAmbientFactor = minAmbientFactor;}
-void                            deferredGraphics::setScattering(const bool &enableScattering)           { spotLighting.enableScattering = enableScattering;}
+void                            deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { lighting.minAmbientFactor = minAmbientFactor;}
+void                            deferredGraphics::setScattering(const bool &enableScattering)           { lighting.enableScattering = enableScattering;}
 void                            deferredGraphics::setTransparencyPass(const bool& transparencyPass)     { this->transparencyPass = transparencyPass;}
 
 texture*                        deferredGraphics::getEmptyTexture()                                     { return emptyTexture;}
@@ -67,7 +67,7 @@ void deferredGraphics::destroy()
     outlining.DestroyPipeline(device);
     outlining.DestroyOutliningPipeline(device);
     skybox.Destroy(device);
-    spotLighting.Destroy(device);
+    lighting.Destroy(device);
 
     for (size_t i = 0; i < storageBuffers.size(); i++)
     {
@@ -833,9 +833,9 @@ void deferredGraphics::createPipelines()
     skybox.createDescriptorSetLayout(device);
     skybox.createPipeline(device,&image,&renderPass);
     skybox.createUniformBuffers(physicalDevice,device,image.Count);
-    spotLighting.createDescriptorSetLayout(device);
-    spotLighting.createPipeline(device,&image,&renderPass);
-    spotLighting.createUniformBuffers(physicalDevice,device,image.Count);
+    lighting.createDescriptorSetLayout(device);
+    lighting.createPipeline(device,&image,&renderPass);
+    lighting.createUniformBuffers(physicalDevice,device,image.Count);
 }
 
 void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
@@ -874,7 +874,7 @@ void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
 
     vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
 
-        spotLighting.render(frameNumber,commandBuffers);
+        lighting.render(frameNumber,commandBuffers);
 
     vkCmdEndRenderPass(commandBuffers);
 }
@@ -892,9 +892,9 @@ void deferredGraphics::updateUniformBuffer(uint32_t currentImage)
         memcpy(data, &baseUBO, sizeof(baseUBO));
     vkUnmapMemory(*device, base.sceneUniformBuffersMemory[currentImage]);
 
-    vkMapMemory(*device, spotLighting.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
+    vkMapMemory(*device, lighting.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
         memcpy(data, &baseUBO, sizeof(baseUBO));
-    vkUnmapMemory(*device, spotLighting.uniformBuffersMemory[currentImage]);
+    vkUnmapMemory(*device, lighting.uniformBuffersMemory[currentImage]);
 }
 
 void deferredGraphics::updateSkyboxUniformBuffer(uint32_t currentImage)
@@ -995,16 +995,16 @@ void deferredGraphics::removeBinds()
     outlining.objects.clear();
 }
 
-void deferredGraphics::addSpotLightSource(spotLight *lightSource)
+void deferredGraphics::addLightSource(light* lightSource)
 {
-    spotLighting.lightSources.push_back(lightSource);
+    lighting.lightSources.push_back(lightSource);
 }
 
-void deferredGraphics::removeSpotLightSource(spotLight *lightSource)
+void deferredGraphics::removeLightSource(light* lightSource)
 {
-    for(uint32_t index = 0; index<spotLighting.lightSources.size(); index++){
-        if(lightSource==spotLighting.lightSources[index]){
-            spotLighting.lightSources.erase(spotLighting.lightSources.begin()+index);
+    for(uint32_t index = 0; index<lighting.lightSources.size(); index++){
+        if(lightSource==lighting.lightSources[index]){
+            lighting.lightSources.erase(lighting.lightSources.begin()+index);
         }
     }
 }

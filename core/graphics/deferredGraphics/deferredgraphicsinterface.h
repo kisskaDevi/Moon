@@ -94,8 +94,8 @@ public:
     void        createModel(gltfModel* pModel);
     void        destroyModel(gltfModel* pModel);
 
-    void        bindLightSource(spotLight* lightSource);
-    void        removeLightSource(spotLight* lightSource);
+    void        bindLightSource(light* lightSource);
+    void        removeLightSource(light* lightSource);
 
     void        bindBaseObject(object* newObject);
     void        bindOutliningObject(object* newObject, float lineWidth, glm::vec4 lineColor);

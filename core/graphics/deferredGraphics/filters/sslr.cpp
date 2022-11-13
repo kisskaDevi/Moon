@@ -39,7 +39,7 @@ void SSLRGraphics::SSLR::Destroy(VkDevice* device)
 
 void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
-    setAttachments(attachmentsCount,Attachments);
+    static_cast<void>(attachmentsCount);
     Attachments->resize(image.Count);
     for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
     {
@@ -86,9 +86,6 @@ void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* Att
 
 void SSLRGraphics::destroy()
 {
-    Attachments->deleteAttachment(device);
-    Attachments->deleteSampler(device);
-
     sslr.Destroy(device);
 
     vkDestroyRenderPass(*device, renderPass, nullptr);

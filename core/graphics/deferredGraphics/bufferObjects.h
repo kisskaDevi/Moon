@@ -1,7 +1,7 @@
 #ifndef BUFFEROBJECTS_H
 #define BUFFEROBJECTS_H
 
-#include <libs/glm/glm/glm.hpp>
+#include <libs/glm/glm.hpp>
 
 struct UniformBufferObject{
     alignas(16) glm::mat4           view;

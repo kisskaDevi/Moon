@@ -1,9 +1,9 @@
 CONFIG += c++17 console
 
-win32: LIBS += -L$$PWD/libs/Lib/vulkan/x64/ -lvulkan-1
+win32: LIBS += -L$$PWD/libs/vulkan/x64/ -lvulkan-1
 
-INCLUDEPATH += $$PWD/libs/Lib/vulkan/x64
-DEPENDPATH += $$PWD/libs/Lib/vulkan/x64
+INCLUDEPATH += $$PWD/libs/vulkan/x64
+DEPENDPATH += $$PWD/libs/vulkan/x64
 
 win32: LIBS += -L$$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt/ -lglfw3dll
 
@@ -11,11 +11,18 @@ INCLUDEPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 DEPENDPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 
 DISTFILES += \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLighting.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLighting.vert \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingAmbient.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingAmbient.vert \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/SpotLightingScattering.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/lightDrop.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/outsideSpotCondition.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/pbr.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/scattering.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/shadow.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/scatteringShadowSpotLighting.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/scatteringSpotLighting.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/shadowSpotLighting.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/spotLighting.frag \
+    core/graphics/deferredGraphics/shaders/SpotLightingPass/spotLighting.vert \
+    core/graphics/deferredGraphics/shaders/ambientLightingPass/ambientLighting.frag \
+    core/graphics/deferredGraphics/shaders/ambientLightingPass/ambientLighting.vert \
     core/graphics/deferredGraphics/shaders/combiner/combiner.frag \
     core/graphics/deferredGraphics/shaders/combiner/combiner.vert \
     core/graphics/deferredGraphics/shaders/compile.bat \
@@ -59,7 +66,8 @@ SOURCES += \
     core/graphics/deferredGraphics/attachments.cpp \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
     core/graphics/deferredGraphics/filters/blur.cpp \
-    core/graphics/deferredGraphics/renderStages/source/spotLighting.cpp \
+    core/graphics/deferredGraphics/renderStages/source/lighting.cpp \
+    core/graphics/deferredGraphics/renderStages/source/lightingPipelines.cpp \
     core/graphics/deferredGraphics/renderStages/source/base.cpp \
     core/graphics/deferredGraphics/renderStages/source/extension.cpp \
     core/graphics/deferredGraphics/renderStages/source/skybox.cpp \
@@ -96,6 +104,7 @@ HEADERS += \
     core/graphics/deferredGraphics/filters/ssao.h \
     core/graphics/deferredGraphics/filters/sslr.h \
     core/graphics/graphicsInterface.h \
+    core/transformational/lightInterface.h \
     core/transformational/transformational.h \
     core/transformational/camera.h \
     core/transformational/group.h \

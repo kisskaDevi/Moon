@@ -96,7 +96,6 @@ void customFilter::createBufferAttachments()
 
 void customFilter::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
-    setAttachments(attachmentsCount,Attachments);
     for(uint32_t i=0;i<attachmentsCount;i++){
         Attachments[i].resize(image.Count);
         for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
@@ -155,11 +154,6 @@ void customFilter::destroy()
 {
     bufferAttachment.deleteAttachment(&*device);
     bufferAttachment.deleteSampler(&*device);
-
-    for(size_t i=0; i<attachmentsCount; i++){
-        Attachments[i].deleteAttachment(device);
-        Attachments[i].deleteSampler(device);
-    }
 
     filter.Destroy(device);
 

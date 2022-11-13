@@ -162,7 +162,7 @@ void scene::createLight()
     Proj[1][1] *= -1;
 
     int index = 0;
-    lightPoint.push_back(new pointLight(lightSource));
+    lightPoint.push_back(new isotropicLight(lightSource));
     lightPoint.at(index)->setProjectionMatrix(Proj);
     lightPoint.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     groups.at(0)->addObject(lightPoint.at(index));

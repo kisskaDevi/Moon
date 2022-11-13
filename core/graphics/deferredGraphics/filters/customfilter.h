@@ -42,7 +42,6 @@ private:
         void createDescriptorSetLayout(VkDevice* device);
     }filter;
 
-    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 public:
     customFilter();
@@ -52,6 +51,7 @@ public:
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
 
+    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void createAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void createRenderPass();
     void createFramebuffers();

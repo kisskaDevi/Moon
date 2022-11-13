@@ -36,7 +36,6 @@ private:
         void createDescriptorSetLayout(VkDevice* device);
     }combiner;
 
-    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
 public:
     imagesCombiner();
     void destroy();
@@ -45,6 +44,7 @@ public:
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
 
+    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void createAttachments(uint32_t attachmentsCount, attachments* Attachments);
     void createRenderPass();
     void createFramebuffers();

@@ -1,7 +1,7 @@
 #include "deferredgraphicsinterface.h"
 #include "core/operations.h"
 #include "core/transformational/gltfmodel.h"
-#include "core/transformational/light.h"
+#include "core/transformational/lightInterface.h"
 #include "core/transformational/object.h"
 
 #include <iostream>
@@ -42,6 +42,23 @@ void deferredGraphicsInterface::destroyGraphics()
     PostProcessing.destroy();
     Combiner.destroy();
     Blur.destroy();
+
+    blurAttachment.deleteAttachment(devicesInfo[0].device);
+    blurAttachment.deleteSampler(devicesInfo[0].device);
+
+    combineBloomAttachment.deleteAttachment(devicesInfo[0].device);
+    combineBloomAttachment.deleteSampler(devicesInfo[0].device);
+
+    for(size_t i=0; i<blitAttachmentCount; i++){
+        blitAttachments[i].deleteAttachment(devicesInfo[0].device);
+        blitAttachments[i].deleteSampler(devicesInfo[0].device);
+    }
+
+    ssaoAttachment.deleteAttachment(devicesInfo[0].device);
+    ssaoAttachment.deleteSampler(devicesInfo[0].device);
+
+    sslrAttachment.deleteAttachment(devicesInfo[0].device);
+    sslrAttachment.deleteSampler(devicesInfo[0].device);
 
     for(uint32_t i=0;i<TransparentLayersCount;i++)
         TransparentLayers[i].destroy();
@@ -119,8 +136,8 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     DeferredGraphics.createBaseDescriptorSets();
     DeferredGraphics.createSkyboxDescriptorPool();
     DeferredGraphics.createSkyboxDescriptorSets();
-    DeferredGraphics.createSpotLightingDescriptorPool();
-    DeferredGraphics.createSpotLightingDescriptorSets();
+    DeferredGraphics.createLightingDescriptorPool();
+    DeferredGraphics.createLightingDescriptorSets();
 
     transparentLayersAttachments.resize(TransparentLayersCount);
     for(uint32_t i=0;i<TransparentLayersCount;i++){
@@ -136,8 +153,8 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
         TransparentLayers[i].createBaseDescriptorSets();
         TransparentLayers[i].createSkyboxDescriptorPool();
         TransparentLayers[i].createSkyboxDescriptorSets();
-        TransparentLayers[i].createSpotLightingDescriptorPool();
-        TransparentLayers[i].createSpotLightingDescriptorSets();
+        TransparentLayers[i].createLightingDescriptorPool();
+        TransparentLayers[i].createLightingDescriptorSets();
     }
 
     std::vector<attachments> bloomAttachments(TransparentLayersCount+1);
@@ -153,6 +170,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     depthAttachments[TransparentLayersCount] = deferredAttachments.depth;
 
     Blur.createBufferAttachments();
+    Blur.setAttachments(1,&blurAttachment);
     Blur.createAttachments(1,&blurAttachment);
     Blur.createRenderPass();
     Blur.createFramebuffers();
@@ -162,6 +180,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     Blur.updateDescriptorSets(&deferredAttachments.blur);
 
     Combiner.setCombineAttachmentsCount(TransparentLayersCount+1);
+    Combiner.setAttachments(1,&combineBloomAttachment);
     Combiner.createAttachments(1,&combineBloomAttachment);
     Combiner.createRenderPass();
     Combiner.createFramebuffers();
@@ -174,6 +193,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     Filter.createBufferAttachments();
     Filter.setBlitFactor(blitFactor);
     Filter.setSrcAttachment(&combineBloomAttachment);
+    Filter.setAttachments(blitAttachmentCount,blitAttachments.data());
     Filter.createAttachments(blitAttachmentCount,blitAttachments.data());
     Filter.createRenderPass();
     Filter.createFramebuffers();
@@ -182,6 +202,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     Filter.createDescriptorSets();
     Filter.updateDescriptorSets();
 
+    SSAO.setAttachments(1,&ssaoAttachment);
     SSAO.createAttachments(1,&ssaoAttachment);
     SSAO.createRenderPass();
     SSAO.createFramebuffers();
@@ -190,6 +211,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     SSAO.createDescriptorSets();
     SSAO.updateDescriptorSets(deferredAttachments,DeferredGraphics.getSceneBuffer().data());
 
+    SSLR.setAttachments(1,&sslrAttachment);
     SSLR.createAttachments(1,&sslrAttachment);
     SSLR.createRenderPass();
     SSLR.createFramebuffers();
@@ -233,15 +255,15 @@ void deferredGraphicsInterface::updateDescriptorSets()
 {
     DeferredGraphics.updateBaseDescriptorSets(nullptr);
     DeferredGraphics.updateSkyboxDescriptorSets();
-    DeferredGraphics.updateSpotLightingDescriptorSets();
+    DeferredGraphics.updateLightingDescriptorSets();
 
     TransparentLayers[0].updateBaseDescriptorSets(nullptr);
     //TransparentLayers[0].updateSkyboxDescriptorSets();
-    TransparentLayers[0].updateSpotLightingDescriptorSets();
+    TransparentLayers[0].updateLightingDescriptorSets();
     for(uint32_t i=1;i<TransparentLayersCount;i++){
         TransparentLayers[i].updateBaseDescriptorSets(&transparentLayersAttachments[i-1].depth);
         //TransparentLayers[i].updateSkyboxDescriptorSets();
-        TransparentLayers[i].updateSpotLightingDescriptorSets();
+        TransparentLayers[i].updateLightingDescriptorSets();
     }
 }
 
@@ -251,11 +273,11 @@ void deferredGraphicsInterface::updateAllCommandBuffers()
         updateCommandBuffer(imageIndex, &commandBuffers[imageIndex]);
 
     for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
-        DeferredGraphics.updateSpotLightCmd(imageIndex);
+        DeferredGraphics.updateLightCmd(imageIndex);
 
     for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++){
         for(uint32_t i=0;i<TransparentLayersCount;i++){
-            TransparentLayers[i].updateSpotLightCmd(imageIndex);
+            TransparentLayers[i].updateLightCmd(imageIndex);
         }
     }
 }
@@ -291,7 +313,7 @@ VkCommandBuffer* deferredGraphicsInterface::getCommandBuffers(uint32_t& commandB
 {
     commandBufferSet.clear();
 
-    DeferredGraphics.getSpotLightCommandbuffers(commandBufferSet,imageIndex);
+    DeferredGraphics.getLightCommandbuffers(commandBufferSet,imageIndex);
     commandBufferSet.push_back(this->commandBuffers[imageIndex]);
 
     commandBuffersCount = commandBufferSet.size();
@@ -308,7 +330,7 @@ void deferredGraphicsInterface::updateCommandBuffers(uint32_t imageIndex)
     }
     if(lightsCmd.enable)
     {
-        DeferredGraphics.updateSpotLightCmd(imageIndex);
+        DeferredGraphics.updateLightCmd(imageIndex);
         if((++lightsCmd.frames)==imageCount)
             lightsCmd.enable = false;
     }
@@ -324,7 +346,7 @@ void deferredGraphicsInterface::updateBuffers(uint32_t imageIndex)
     }
     if(lightsUbo.enable)
     {
-        DeferredGraphics.updateSpotLightUbo(imageIndex);
+        DeferredGraphics.updateLightUbo(imageIndex);
         if((++lightsUbo.frames)==imageCount)
             lightsUbo.enable = false;
     }
@@ -380,7 +402,7 @@ void                                deferredGraphicsInterface::destroyModel(gltf
     pModel->destroy(devicesInfo[0].device);
 }
 
-void                                deferredGraphicsInterface::bindLightSource(spotLight* lightSource)
+void                                deferredGraphicsInterface::bindLightSource(light* lightSource)
 {
     QueueFamilyIndices indices{*devicesInfo[0].graphicsFamily,*devicesInfo[0].presentFamily};
     if(lightSource->getTexture()){
@@ -389,21 +411,20 @@ void                                deferredGraphicsInterface::bindLightSource(s
         lightSource->getTexture()->createTextureSampler(devicesInfo[0].device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
     }
     lightSource->createUniformBuffers(devicesInfo[0].physicalDevice,devicesInfo[0].device,imageCount);
+
     lightSource->createShadow(devicesInfo[0].physicalDevice,devicesInfo[0].device,&indices,imageCount,ExternalPath);
     lightSource->updateShadowDescriptorSets();
-    if(lightSource->isShadowEnable()){
-        lightSource->createShadowCommandBuffers();
-    }
+    lightSource->createShadowCommandBuffers();
 
     lightSource->createDescriptorPool(devicesInfo[0].device, imageCount);
     lightSource->createDescriptorSets(devicesInfo[0].device, imageCount);
     lightSource->updateDescriptorSets(devicesInfo[0].device, imageCount,DeferredGraphics.getEmptyTexture());
 
-    DeferredGraphics.addSpotLightSource(lightSource);
+    DeferredGraphics.addLightSource(lightSource);
     for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].addSpotLightSource(lightSource);
+        TransparentLayers[i].addLightSource(lightSource);
 }
-void                                deferredGraphicsInterface::removeLightSource(spotLight* lightSource)
+void                                deferredGraphicsInterface::removeLightSource(light* lightSource)
 {
     if(lightSource->getTexture()){
         lightSource->getTexture()->destroy(devicesInfo[0].device);
@@ -411,9 +432,9 @@ void                                deferredGraphicsInterface::removeLightSource
     lightSource->destroyUniformBuffers(devicesInfo[0].device);
     lightSource->destroy(devicesInfo[0].device);
 
-    DeferredGraphics.removeSpotLightSource(lightSource);
+    DeferredGraphics.removeLightSource(lightSource);
     for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].removeSpotLightSource(lightSource);
+        TransparentLayers[i].removeLightSource(lightSource);
 }
 
 void                                deferredGraphicsInterface::bindBaseObject(object* newObject)

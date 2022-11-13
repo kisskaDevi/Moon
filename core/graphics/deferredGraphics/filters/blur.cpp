@@ -81,7 +81,7 @@ void gaussianBlur::createBufferAttachments()
 
 void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
 {
-    setAttachments(attachmentsCount, Attachments);
+    static_cast<void>(attachmentsCount);
     Attachments->resize(image.Count);
     for(size_t Image=0; Image<image.Count; Image++)
     {
@@ -151,11 +151,8 @@ void gaussianBlur::destroy()
     for(size_t i = 0; i< framebuffers.size();i++)
         vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
 
-    bufferAttachment.deleteAttachment(&*device);
-    bufferAttachment.deleteSampler(&*device);
-
-    Attachments->deleteAttachment(&*device);
-    Attachments->deleteSampler(&*device);
+    bufferAttachment.deleteAttachment(device);
+    bufferAttachment.deleteSampler(device);
 }
 
 void gaussianBlur::createRenderPass()

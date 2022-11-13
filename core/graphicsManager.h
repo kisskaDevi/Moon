@@ -3,7 +3,7 @@
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <libs/vulkan/vulkan.h>
-#include <libs/glm/glm/glm.hpp>
+#include <libs/glm/glm.hpp>
 #include "core/operations.h"
 
 #include "graphics/graphicsInterface.h"

@@ -8,8 +8,6 @@
 graphicsManager::graphicsManager()
 {}
 
-//==========================Instance=============================================//
-
 void graphicsManager::graphicsManager::createInstance()
 {
     VkApplicationInfo appInfo{};

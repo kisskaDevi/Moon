@@ -126,7 +126,7 @@ private:
         VkPipeline                      AmbientPipeline;
 
         VkDescriptorSetLayout           DescriptorSetLayout;
-        VkDescriptorSetLayout           LightDescriptorSetLayout;
+        std::unordered_map<uint8_t, VkDescriptorSetLayout>  LightDescriptorSetLayout;
 
         VkDescriptorPool                DescriptorPool;
         std::vector<VkDescriptorSet>    DescriptorSets;
@@ -142,10 +142,7 @@ private:
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
             void createAmbientPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-            void createSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-            void createShadowSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-            void createScatteringSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-            void createScatteringShadowSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+            void createSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout,VkPipeline* pipeline);
         void createDescriptorSetLayout(VkDevice* device);
         void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);

@@ -40,12 +40,12 @@ private:
     glm::mat4x4                         projectionMatrix{1.0f};
     glm::mat4x4                         modelMatrix{1.0f};
 
-    glm::mat4x4                         m_globalTransform{1.0f};
-    glm::vec3                           m_translate{0.0f};
-    glm::vec3                           m_scale{1.0f};
-    glm::quat                           m_rotate{1.0f,0.0f,0.0f,0.0f};
-    glm::quat                           m_rotateX{1.0f,0.0f,0.0f,0.0f};
-    glm::quat                           m_rotateY{1.0f,0.0f,0.0f,0.0f};
+    glm::mat4x4                         globalTransformation{1.0f};
+    glm::vec3                           translation{0.0f};
+    glm::vec3                           scaling{1.0f};
+    glm::quat                           rotation{1.0f,0.0f,0.0f,0.0f};
+    glm::quat                           rotationX{1.0f,0.0f,0.0f,0.0f};
+    glm::quat                           rotationY{1.0f,0.0f,0.0f,0.0f};
 
     VkDescriptorSetLayout               descriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool                    descriptorPool = VK_NULL_HANDLE;

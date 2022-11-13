@@ -56,60 +56,60 @@ void spotLight::destroy(VkDevice* device)
 
 void spotLight::setGlobalTransform(const glm::mat4 & transform)
 {
-    m_globalTransform = transform;
+    globalTransformation = transform;
     updateModelMatrix();
 }
 
 void spotLight::translate(const glm::vec3 & translate)
 {
-    m_translate += translate;
+    translation += translate;
     updateModelMatrix();
 }
 
 void spotLight::rotate(const float & ang ,const glm::vec3 & ax)
 {
-    m_rotate = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax))*m_rotate;
+    rotation = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax))*rotation;
     updateModelMatrix();
 }
 
 void spotLight::scale(const glm::vec3 & scale)
 {
-    m_scale = scale;
+    scaling = scale;
     updateModelMatrix();
 }
 
 void spotLight::setPosition(const glm::vec3& translate)
 {
-    m_translate = translate;
+    translation = translate;
     updateModelMatrix();
 }
 
 void spotLight::rotateX(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    m_rotateX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateX;
-    m_rotate = m_rotateX * m_rotateY;
+    rotationX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * rotationX;
+    rotation = rotationX * rotationY;
     updateModelMatrix();
 }
 
 void spotLight::rotateY(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    m_rotateY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateY;
-    m_rotate = m_rotateX * m_rotateY;
+    rotationY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * rotationY;
+    rotation = rotationX * rotationY;
     updateModelMatrix();
 }
 
 void spotLight::updateModelMatrix()
 {
-    glm::mat4x4 translateMatrix = glm::translate(glm::mat4x4(1.0f),m_translate);
+    glm::mat4x4 translateMatrix = glm::translate(glm::mat4x4(1.0f),translation);
     glm::mat4x4 rotateMatrix = glm::mat4x4(1.0f);
-    if(!(m_rotate.x==0&&m_rotate.y==0&&m_rotate.z==0))
+    if(!(rotation.x==0&&rotation.y==0&&rotation.z==0))
     {
-        rotateMatrix = glm::rotate(glm::mat4x4(1.0f),2.0f*glm::acos(m_rotate.w),glm::vec3(m_rotate.x,m_rotate.y,m_rotate.z));
+        rotateMatrix = glm::rotate(glm::mat4x4(1.0f),2.0f*glm::acos(rotation.w),glm::vec3(rotation.x,rotation.y,rotation.z));
     }
-    glm::mat4x4 scaleMatrix = glm::scale(glm::mat4x4(1.0f),m_scale);
-    modelMatrix = m_globalTransform * translateMatrix * rotateMatrix * scaleMatrix;
+    glm::mat4x4 scaleMatrix = glm::scale(glm::mat4x4(1.0f), scaling);
+    modelMatrix = globalTransformation * translateMatrix * rotateMatrix * scaleMatrix;
 }
 
 void                            spotLight::setLightColor(const glm::vec4 &color)                {lightColor = color;}
@@ -120,7 +120,7 @@ void                            spotLight::setTexture(texture* tex)             
 void                            spotLight::setProjectionMatrix(const glm::mat4x4 & projection)  {projectionMatrix = projection;}
 
 glm::mat4x4                     spotLight::getModelMatrix() const {return modelMatrix;}
-glm::vec3                       spotLight::getTranslate() const {return m_translate;}
+glm::vec3                       spotLight::getTranslate() const {return translation;}
 glm::vec4                       spotLight::getLightColor() const {return lightColor;}
 texture*                        spotLight::getTexture(){return tex;}
 

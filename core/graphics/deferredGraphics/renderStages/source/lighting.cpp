@@ -8,7 +8,9 @@
 
 void deferredGraphics::Lighting::Destroy(VkDevice* device)
 {
-    vkDestroyDescriptorSetLayout(*device, LightDescriptorSetLayout, nullptr);
+    for(auto& descriptorSetLayout: LightDescriptorSetLayout){
+        vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr);
+    }
     vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 
@@ -69,16 +71,26 @@ void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
     if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("failed to create LightingPass descriptor set layout!");
 
-    createSpotLightDescriptorSetLayout(device,&LightDescriptorSetLayout);
+    createSpotLightDescriptorSetLayout(device,&LightDescriptorSetLayout[0x0]);
 }
 
 void deferredGraphics::Lighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     createAmbientPipeline(device,pInfo,pRenderPass);
-    createSpotPipeline(device,pInfo,pRenderPass);
-    createShadowSpotPipeline(device,pInfo,pRenderPass);
-    createScatteringSpotPipeline(device,pInfo,pRenderPass);
-    createScatteringShadowSpotPipeline(device,pInfo,pRenderPass);
+
+    std::string spotVert = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\spotLightingVert.spv";
+    std::string spotFrag = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\spotLightingFrag.spv";
+    std::string shadowSpotFrag = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\shadowSpotLightingFrag.spv";
+    std::string scatteringSpotFrag = enableScattering ?
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\scatteringSpotLightingFrag.spv":
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\spotLightingFrag.spv";
+    std::string scatteringShadowSpotFrag = enableScattering ?
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\scatteringShadowSpotLightingFrag.spv":
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\shadowSpotLightingFrag.spv";
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,&PipelineLayoutDictionary[(false<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(false <<4)|(0x0)]);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,shadowSpotFrag,&PipelineLayoutDictionary[(false<<5)|(true <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(true <<4)|(0x0)]);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,scatteringSpotFrag,&PipelineLayoutDictionary[(true<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(true<<5)|(false <<4)|(0x0)]);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,scatteringShadowSpotFrag,&PipelineLayoutDictionary[(true<<5)|(true <<4)|(0x0)],&PipelinesDictionary[(true<<5)|(true <<4)|(0x0)]);
 }
 
 void deferredGraphics::createLightingDescriptorPool()

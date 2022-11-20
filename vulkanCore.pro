@@ -91,8 +91,7 @@ SOURCES += \
     core/graphicsManager.cpp\
     physicalobject.cpp \
     main.cpp \
-    scene.cpp \
-    scene2.cpp
+    scene.cpp
 
 HEADERS += \
     core/graphics/deferredGraphics/attachments.h \
@@ -121,7 +120,6 @@ HEADERS += \
     core/operations.h \
     core/texture.h \
     core/graphicsManager.h \
-    scene.h \
-    scene2.h
+    scene.h
 
 win32:RC_ICONS += texture/icon.ico

@@ -228,7 +228,7 @@ void scene::createObjects()
     graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
@@ -236,7 +236,7 @@ void scene::createObjects()
     graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->setConstantColor(glm::vec4(1.0,0.0,0.0,-0.5));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     object3D.at(index)->animationTimer = 1.0f;
     object3D.at(index)->animationIndex = 1;
@@ -244,7 +244,7 @@ void scene::createObjects()
 
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
     graphics->bindOutliningObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->animationTimer = 0.0f;
     object3D.at(index)->animationIndex = 0;
     object *Duck = object3D.at(index);
@@ -252,7 +252,7 @@ void scene::createObjects()
 
     object3D.push_back( new object(gltfModel.at(3).size(),gltfModel.at(3).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
     index++;
 
@@ -267,14 +267,14 @@ void scene::createObjects()
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     object3D.at(index)->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO1 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
@@ -282,14 +282,14 @@ void scene::createObjects()
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
     object3D.at(index)->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO3 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO4 = object3D.at(index);
     index++;
 
@@ -562,7 +562,7 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
         graphics->bindBaseObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslation());
-        object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+        object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
         graphics->resetCmdWorld();
         graphics->resetCmdLight();
         graphics->resetUboWorld();

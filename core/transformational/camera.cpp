@@ -32,6 +32,7 @@ void camera::translate(const glm::vec3 & translate)
 
 void camera::rotate(const float & ang ,const glm::vec3 & ax)
 {
+    glm::normalize(ax);
     rotation = convert(ang,ax)*rotation;
     updateViewMatrix();
 }
@@ -43,6 +44,7 @@ void camera::scale(const glm::vec3 &scale)
 
 void camera::rotateX(const float & ang ,const glm::vec3 & ax)
 {
+    glm::normalize(ax);
     rotationX = convert(ang,ax) * rotationX;
     rotation = rotationX * rotationY;
     updateViewMatrix();
@@ -50,6 +52,7 @@ void camera::rotateX(const float & ang ,const glm::vec3 & ax)
 
 void camera::rotateY(const float & ang ,const glm::vec3 & ax)
 {
+    glm::normalize(ax);
     rotationY = convert(ang,ax) * rotationY;
     rotation = rotationX * rotationY;
     updateViewMatrix();
@@ -63,6 +66,7 @@ void camera::setPosition(const glm::vec3 & translate)
 
 void camera::setRotation(const float & ang ,const glm::vec3 & ax)
 {
+    glm::normalize(ax);
     rotation = convert(ang,ax);
     updateViewMatrix();
 }

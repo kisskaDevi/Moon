@@ -18,6 +18,7 @@ void group::updateModelMatrix()
 
 void group::rotate(const float & ang ,const glm::vec3 & ax)
 {
+    glm::normalize(ax);
     rotation = convert(ang,ax)*rotation;
     updateModelMatrix();
 

@@ -3,6 +3,7 @@
 #include "core/operations.h"
 #include "core/graphics/deferredGraphics/renderStages/shadowGraphics.h"
 #include "core/texture.h"
+#include "libs/dualQuaternion.h"
 
 #include <iostream>
 
@@ -27,31 +28,29 @@ void spotLight::destroyUniformBuffers(VkDevice* device)
 {
     for(size_t i=0;i<uniformBuffers.size();i++)
     {
-        if (uniformBuffers[i] != VK_NULL_HANDLE)
-        {
-            vkDestroyBuffer(*device, uniformBuffers.at(i), nullptr);
-            vkFreeMemory(*device, uniformBuffersMemory.at(i), nullptr);
-            uniformBuffers[i] = VK_NULL_HANDLE;
-        }
+        if(uniformBuffers[i])       vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
+        if(uniformBuffersMemory[i]) vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
     }
     uniformBuffers.resize(0);
 }
 
 void spotLight::destroy(VkDevice* device)
 {
-    if (descriptorSetLayout != VK_NULL_HANDLE){
-        vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr);
-        descriptorSetLayout = VK_NULL_HANDLE;
-    }
-
-    if (descriptorPool != VK_NULL_HANDLE){
-        vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
-        descriptorPool = VK_NULL_HANDLE;
-    }
+    if(descriptorSetLayout) vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr);
+    if(descriptorPool)      vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
 
     if(shadow){
         shadow->destroy();
     }
+}
+
+void spotLight::updateModelMatrix()
+{
+    dualQuaternion<float> dQuat = convert(rotation,translation);
+    glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
+    glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
+
+    modelMatrix = globalTransformation * transformMatrix * scaleMatrix;
 }
 
 void spotLight::setGlobalTransform(const glm::mat4 & transform)
@@ -62,13 +61,14 @@ void spotLight::setGlobalTransform(const glm::mat4 & transform)
 
 void spotLight::translate(const glm::vec3 & translate)
 {
-    translation += translate;
+    translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
 }
 
 void spotLight::rotate(const float & ang ,const glm::vec3 & ax)
 {
-    rotation = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax))*rotation;
+    glm::normalize(ax);
+    rotation = convert(ang,ax)*rotation;
     updateModelMatrix();
 }
 
@@ -80,14 +80,14 @@ void spotLight::scale(const glm::vec3 & scale)
 
 void spotLight::setPosition(const glm::vec3& translate)
 {
-    translation = translate;
+    translation = quaternion<float>(0.0f,translate);
     updateModelMatrix();
 }
 
 void spotLight::rotateX(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotationX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * rotationX;
+    rotationX = convert(ang,ax) * rotationX;
     rotation = rotationX * rotationY;
     updateModelMatrix();
 }
@@ -95,21 +95,9 @@ void spotLight::rotateX(const float & ang ,const glm::vec3 & ax)
 void spotLight::rotateY(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotationY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * rotationY;
+    rotationY = convert(ang,ax) * rotationY;
     rotation = rotationX * rotationY;
     updateModelMatrix();
-}
-
-void spotLight::updateModelMatrix()
-{
-    glm::mat4x4 translateMatrix = glm::translate(glm::mat4x4(1.0f),translation);
-    glm::mat4x4 rotateMatrix = glm::mat4x4(1.0f);
-    if(!(rotation.x==0&&rotation.y==0&&rotation.z==0))
-    {
-        rotateMatrix = glm::rotate(glm::mat4x4(1.0f),2.0f*glm::acos(rotation.w),glm::vec3(rotation.x,rotation.y,rotation.z));
-    }
-    glm::mat4x4 scaleMatrix = glm::scale(glm::mat4x4(1.0f), scaling);
-    modelMatrix = globalTransformation * translateMatrix * rotateMatrix * scaleMatrix;
 }
 
 void                            spotLight::setLightColor(const glm::vec4 &color)                {lightColor = color;}
@@ -120,7 +108,7 @@ void                            spotLight::setTexture(texture* tex)             
 void                            spotLight::setProjectionMatrix(const glm::mat4x4 & projection)  {projectionMatrix = projection;}
 
 glm::mat4x4                     spotLight::getModelMatrix() const {return modelMatrix;}
-glm::vec3                       spotLight::getTranslate() const {return translation;}
+glm::vec3                       spotLight::getTranslate() const {return translation.vector();;}
 glm::vec4                       spotLight::getLightColor() const {return lightColor;}
 texture*                        spotLight::getTexture(){return tex;}
 
@@ -218,8 +206,7 @@ void spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate SpotLightingPass descriptor sets!");
+    vkAllocateDescriptorSets(*device, &allocInfo, descriptorSets.data());
 }
 
 void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture)
@@ -243,77 +230,66 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
 
         index = 0;
         std::array<VkWriteDescriptorSet,3> descriptorWrites{};
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = descriptorSets[i];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &lightBufferInfo;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = descriptorSets[i];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pBufferInfo = &lightBufferInfo;
         index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = descriptorSets[i];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pImageInfo = &shadowImageInfo;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = descriptorSets[i];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &shadowImageInfo;
         index++;
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = descriptorSets[i];
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pImageInfo = &lightTexture;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = descriptorSets[i];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &lightTexture;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-//======================================================================================================================//
-//============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
-//============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
-//============//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//============//
-//======================================================================================================================//
+//isotropicLight
 
 isotropicLight::isotropicLight(std::vector<spotLight *>& lightSource)
 {
-    m_scale = glm::vec3(1.0f,1.0f,1.0f);
-    m_globalTransform = glm::mat4x4(1.0f);
-    m_translate = glm::vec3(0.0f,0.0f,0.0f);
-    m_rotate = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateX = glm::quat(1.0f,0.0f,0.0f,0.0f);
-    m_rotateY = glm::quat(1.0f,0.0f,0.0f,0.0f);
-
     uint32_t number = lightSource.size();
     uint32_t index = number;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
+    lightSource[index]->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    lightSource[index]->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,1.0f,0.0f,1.0f));
+    lightSource[index]->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    lightSource[index]->setLightColor(glm::vec4(0.0f,1.0f,0.0f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource.at(index)->setLightColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
+    lightSource[index]->setLightColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource.at(index)->rotate(glm::radians(90.0f),glm::vec3(0.0f,1.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.3f,0.6f,0.9f,1.0f));
+    lightSource[index]->rotate(glm::radians(90.0f),glm::vec3(0.0f,1.0f,0.0f));
+    lightSource[index]->setLightColor(glm::vec4(0.3f,0.6f,0.9f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource.at(index)->rotate(glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.6f,0.9f,0.3f,1.0f));
+    lightSource[index]->rotate(glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
+    lightSource[index]->setLightColor(glm::vec4(0.6f,0.9f,0.3f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource.at(index)->rotate(glm::radians(180.0f),glm::vec3(1.0f,0.0f,0.0f));
-    lightSource.at(index)->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
+    lightSource[index]->rotate(glm::radians(180.0f),glm::vec3(1.0f,0.0f,0.0f));
+    lightSource[index]->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
 
     this->lightSource.resize(6);
     for(uint32_t i=0;i<6;i++){
@@ -324,7 +300,7 @@ isotropicLight::isotropicLight(std::vector<spotLight *>& lightSource)
 isotropicLight::~isotropicLight(){}
 
 glm::vec4       isotropicLight::getLightColor() const {return lightColor;}
-glm::vec3       isotropicLight::getTranslate() const {return m_translate;}
+glm::vec3       isotropicLight::getTranslate() const {return translation.vector();}
 
 void isotropicLight::setProjectionMatrix(const glm::mat4x4 & projection)
 {
@@ -340,64 +316,78 @@ void isotropicLight::setLightColor(const glm::vec4 &color)
         lightSource.at(i)->setLightColor(color);
 }
 
+void isotropicLight::updateModelMatrix()
+{
+    dualQuaternion<float> dQuat = convert(rotation,translation);
+    glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
+    glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
+
+    modelMatrix = globalTransformation * transformMatrix * scaleMatrix;
+}
+
 void isotropicLight::setGlobalTransform(const glm::mat4 & transform)
 {
-    m_globalTransform = transform;
-    updateViewMatrix();
+    globalTransformation = transform;
+    updateModelMatrix();
+
+    for(uint32_t i=0;i<6;i++)
+        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::translate(const glm::vec3 & translate)
 {
-    m_translate += translate;
-    updateViewMatrix();
+    translation += quaternion<float>(0.0f,-translate);
+    updateModelMatrix();
 }
 
 void isotropicLight::rotate(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    m_rotate = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax))*m_rotate;
-    updateViewMatrix();
+    rotation = convert(ang,ax)*rotation;
+    updateModelMatrix();
+
+    for(uint32_t i=0;i<6;i++)
+        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::scale(const glm::vec3 & scale)
 {
-    m_scale = scale;
-    updateViewMatrix();
-}
-
-void isotropicLight::setPosition(const glm::vec3& translate)
-{
-    m_translate = translate;
-    updateViewMatrix();
-}
-
-void isotropicLight::updateViewMatrix()
-{
-    glm::mat4x4 translateMatrix = glm::translate(glm::mat4x4(1.0f),-m_translate);
-    glm::mat4x4 rotateMatrix = glm::mat4x4(1.0f);
-    if(!(m_rotate.x==0&&m_rotate.y==0&&m_rotate.z==0))
-        rotateMatrix = glm::rotate(glm::mat4x4(1.0f),2.0f*glm::acos(m_rotate.w),glm::vec3(m_rotate.x,m_rotate.y,m_rotate.z));
-    glm::mat4x4 scaleMatrix = glm::scale(glm::mat4x4(1.0f),m_scale);
-    glm::mat4x4 localMatrix = m_globalTransform * translateMatrix * rotateMatrix * scaleMatrix;
+    scaling = scale;
+    updateModelMatrix();
 
     for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(localMatrix);
+        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::rotateX(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    m_rotateX = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateX;
-    m_rotate = m_rotateX * m_rotateY;
-    updateViewMatrix();
+    rotationX = convert(ang,ax) * rotationX;
+    rotation = rotationX * rotationY;
+    updateModelMatrix();
+
+    for(uint32_t i=0;i<6;i++)
+        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::rotateY(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    m_rotateY = glm::quat(glm::cos(ang/2.0f),glm::sin(ang/2.0f)*glm::vec3(ax)) * m_rotateY;
-    updateViewMatrix();
+    rotationY = convert(ang,ax) * rotationY;
+    rotation = rotationX * rotationY;
+    updateModelMatrix();
+
+    for(uint32_t i=0;i<6;i++)
+        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
+void isotropicLight::setPosition(const glm::vec3& translate)
+{
+    translation = quaternion<float>(0.0f,translate);
+    updateModelMatrix();
+
+    for(uint32_t i=0;i<6;i++)
+        lightSource.at(i)->setGlobalTransform(modelMatrix);
+}
 
 

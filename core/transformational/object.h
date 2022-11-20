@@ -3,9 +3,7 @@
 
 #include <libs/vulkan/vulkan.h>
 #include "transformational.h"
-
-#include <array>
-#include <vector>
+#include "libs/quaternion.h"
 
 struct UniformBuffer
 {
@@ -23,40 +21,39 @@ struct Material;
 class object : public transformational
 {
 private:
-    bool                            enable = true;
+    bool                            enable{true};
 
     gltfModel**                     pModel;
-    uint32_t                        modelCount;
+    uint32_t                        modelCount{0};
 
-    VkDescriptorSetLayout           descriptorSetLayout = VK_NULL_HANDLE;
-    VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptors;
 
     std::vector<VkBuffer>           uniformBuffers;
     std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
-    glm::mat4x4                     modelMatrix;
-    glm::vec3                       m_translate;
-    glm::quat                       m_rotate;
-    glm::vec3                       m_scale;
-    glm::mat4x4                     m_globalTransform;
+    quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
+    quaternion<float>               rotation{1.0f,0.0f,0.0f,0.0f};
+    glm::vec3                       scaling{1.0f,1.0f,1.0f};
+    glm::mat4x4                     globalTransformation{1.0f};
+    glm::mat4x4                     modelMatrix{1.0f};
 
-    glm::vec4                       colorFactor     = glm::vec4(1.0f,1.0f,1.0f,1.0f);
-    glm::vec4                       constantColor   = glm::vec4(0.0f,0.0f,0.0f,0.0f);
-    glm::vec4                       bloomFactor     = glm::vec4(1.0f,1.0f,1.0f,1.0f);
-    glm::vec4                       bloomColor      = glm::vec4(0.0f,0.0f,0.0f,0.0f);
+    glm::vec4                       colorFactor{1.0f};
+    glm::vec4                       constantColor{0.0f};
+    glm::vec4                       bloomFactor{1.0f};
+    glm::vec4                       bloomColor{0.0f};
 
     uint32_t                        firstPrimitive;
-    uint32_t                        primitiveCount = 0;
+    uint32_t                        primitiveCount{0};
 
     struct Outlining{
-        bool                        Enable = false;
-        float                       Width;
-        glm::vec4                   Color;
+        bool                        Enable{false};
+        float                       Width{0.0f};
+        glm::vec4                   Color{0.0f};
     }outlining;
 
     void updateModelMatrix();
-
 public:
     object();
     object(uint32_t modelCount, gltfModel** model);
@@ -79,10 +76,6 @@ public:
     void                setPosition(const glm::vec3& translate);
 
     glm::mat4x4&        ModelMatrix();
-    glm::mat4x4&        Transformation();
-    glm::vec3&          Translate();
-    glm::quat&          Rotate();
-    glm::vec3&          Scale();
 
     void                setModel(gltfModel** model3D);
     void                setConstantColor(const glm::vec4 & color);
@@ -117,10 +110,10 @@ public:
     void                createDescriptorPool(VkDevice* device, uint32_t imageCount);
     void                createDescriptorSet(VkDevice* device, uint32_t imageCount);
 
-    float animationTimer = 0.0f;
-    uint32_t animationIndex = 0;
+    float animationTimer{0.0f};
+    uint32_t animationIndex{0};
     uint32_t newAnimationIndex;
-    bool changeAnimationFlag = false;
+    bool changeAnimationFlag{false};
     float startTimer;
     float changeAnimationTime;
 };

@@ -3,6 +3,7 @@
 
 #include "transformational.h"
 #include "lightInterface.h"
+#include "libs/quaternion.h"
 
 class shadowGraphics;
 
@@ -36,16 +37,15 @@ private:
     float                               lightPowerFactor{1.0f};
     float                               lightDropFactor{0.1f};
     glm::vec4                           lightColor{0.0f};
-
     glm::mat4x4                         projectionMatrix{1.0f};
-    glm::mat4x4                         modelMatrix{1.0f};
 
+    quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
+    quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
+    quaternion<float>                   rotationX{1.0f,0.0f,0.0f,0.0f};
+    quaternion<float>                   rotationY{1.0f,0.0f,0.0f,0.0f};
+    glm::vec3                           scaling{1.0f,1.0f,1.0f};
     glm::mat4x4                         globalTransformation{1.0f};
-    glm::vec3                           translation{0.0f};
-    glm::vec3                           scaling{1.0f};
-    glm::quat                           rotation{1.0f,0.0f,0.0f,0.0f};
-    glm::quat                           rotationX{1.0f,0.0f,0.0f,0.0f};
-    glm::quat                           rotationY{1.0f,0.0f,0.0f,0.0f};
+    glm::mat4x4                         modelMatrix{1.0f};
 
     VkDescriptorSetLayout               descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                    descriptorPool{VK_NULL_HANDLE};
@@ -65,9 +65,9 @@ public:
     void                translate(const glm::vec3 & translate) override;
     void                rotate(const float & ang,const glm::vec3 & ax) override;
     void                scale(const glm::vec3 & scale) override;
-    void                setPosition(const glm::vec3& translate);
     void                rotateX(const float & ang ,const glm::vec3 & ax);
     void                rotateY(const float & ang ,const glm::vec3 & ax);
+    void                setPosition(const glm::vec3& translate);
 
     void                setLightColor(const glm::vec4 & color);
     void                setShadowExtent(const VkExtent2D & shadowExtent);
@@ -105,33 +105,32 @@ public:
 class isotropicLight: public transformational
 {
 private:
-    glm::mat4 projectionMatrix;
+    glm::vec4                           lightColor{0.0f};
+    glm::mat4x4                         projectionMatrix{1.0f};
 
-    glm::vec3 m_translate;
-    glm::quat m_rotate;
-    glm::vec3 m_scale;
-    glm::mat4x4 m_globalTransform;
-    glm::quat m_rotateX;
-    glm::quat m_rotateY;
-
-    glm::vec4 lightColor;
+    quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
+    quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
+    quaternion<float>                   rotationX{1.0f,0.0f,0.0f,0.0f};
+    quaternion<float>                   rotationY{1.0f,0.0f,0.0f,0.0f};
+    glm::vec3                           scaling{1.0f,1.0f,1.0f};
+    glm::mat4x4                         globalTransformation{1.0f};
+    glm::mat4x4                         modelMatrix{1.0f};
 
     std::vector<spotLight *> lightSource;
 
+    void updateModelMatrix();
 public:
     isotropicLight(std::vector<spotLight *>& lightSource);
     ~isotropicLight();
 
     void setLightColor(const glm::vec4 & color);
+    void setProjectionMatrix(const glm::mat4x4 & projection);
+    void setPosition(const glm::vec3& translate);
 
     void setGlobalTransform(const glm::mat4& transform);
     void translate(const glm::vec3& translate);
     void rotate(const float& ang,const glm::vec3& ax);
     void scale(const glm::vec3& scale);
-    void setPosition(const glm::vec3& translate);
-    void setProjectionMatrix(const glm::mat4x4 & projection);
-
-    void updateViewMatrix();
 
     void rotateX(const float& ang ,const glm::vec3& ax);
     void rotateY(const float& ang ,const glm::vec3& ax);

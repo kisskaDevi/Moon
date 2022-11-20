@@ -55,6 +55,8 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
     loadModels();
     createLight();
     createObjects();
+
+    graphics->updateDescriptorSets();
 }
 
 void scene::updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
@@ -92,8 +94,8 @@ void scene::destroyScene()
         for (size_t j =0 ;j<gltfModel.at(i).size();j++)
             graphics->destroyModel(gltfModel.at(i)[j]);
 
-    graphics->removeBinds();
     for (size_t i=0 ;i<object3D.size();i++){
+        graphics->removeObject(object3D[i]);
         delete object3D.at(i);
     }
 
@@ -141,7 +143,7 @@ void scene::loadModels()
     index++;
 
     index = 0;
-        gltfModel[4].push_back(new struct gltfModel(ExternalPath + "model\\gltf\\kerosene_lamp\\scene.gltf"));
+        gltfModel[4].push_back(new struct gltfModel(ExternalPath + "model\\glTF\\kerosene_lamp\\scene.gltf"));
         graphics->createModel(gltfModel[4].at(index));
     index++;
 
@@ -242,10 +244,7 @@ void scene::createObjects()
 
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
     graphics->bindOutliningObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
-    //graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->translate(glm::vec3(0.0f,0.0f,3.0f));
-    object3D.at(index)->scale(glm::vec3(1.0f,1.0f,1.0f));
     object3D.at(index)->animationTimer = 0.0f;
     object3D.at(index)->animationIndex = 0;
     object *Duck = object3D.at(index);
@@ -297,6 +296,7 @@ void scene::createObjects()
     groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
     groups.at(0)->addObject(Box0);
 
+    groups.at(1)->translate(glm::vec3(0.0f,0.0f,3.0f));
     groups.at(1)->addObject(Duck);
 
     groups.at(2)->translate(glm::vec3(5.0f,0.0f,5.0f));
@@ -561,7 +561,7 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         size_t index = object3D.size();
         object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
         graphics->bindBaseObject(object3D.at(index));
-        object3D.at(index)->translate(cameras->getTranslate());
+        object3D.at(index)->translate(cameras->getTranslation());
         object3D.at(index)->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
         graphics->resetCmdWorld();
         graphics->resetCmdLight();
@@ -574,7 +574,7 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         app->deviceWaitIdle();
         if(object3D.size()>0){
             size_t index = object3D.size()-1;
-            if(graphics->removeBaseObject(object3D[index]))
+            if(graphics->removeObject(object3D[index]))
             {
                 delete object3D[index];
                 object3D.erase(object3D.begin()+index);
@@ -639,15 +639,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
 void scene::updates(float frameTime)
 {
     globalTime += frameTime;
-    float w = 0.1f;
-        lightPoint.at(0)->setLightColor(
-                    glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
-                                sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
-                                sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
-        object3D.at(4)->setBloomColor(
-                    glm::vec4(  sin(w*globalTime)*sin(w*globalTime),
-                                sin(w*(globalTime+4.0f))*sin(w*(globalTime+4.0f)),
-                                sin(w*(globalTime+8.0f))*sin(w*(globalTime+8.0f)),1.0f));
 
     graphics->resetUboWorld();
     graphics->resetUboLight();

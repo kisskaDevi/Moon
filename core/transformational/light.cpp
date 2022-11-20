@@ -130,7 +130,7 @@ bool                            spotLight::isShadowEnable() const{return shadow 
 bool                            spotLight::isScatteringEnable() const{return enableScattering;}
 
 VkDescriptorSet*                spotLight::getDescriptorSets(){return descriptorSets.data();}
-VkCommandBuffer*                spotLight::getShadowCommandBuffer() {return shadow->getCommandBuffer().data();}
+VkCommandBuffer*                spotLight::getShadowCommandBuffer(uint32_t imageCount) {return shadow->getCommandBuffer(imageCount);}
 
 void spotLight::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
@@ -204,8 +204,7 @@ void spotLight::createDescriptorPool(VkDevice* device, uint32_t imageCount)
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create light descriptor pool!");
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool);
 }
 
 void spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
@@ -235,12 +234,12 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
             lightBufferInfo.range = sizeof(LightBufferObject);
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView       = isShadowEnable() ? shadow->getImageView() : emptyTexture->getTextureImageView();
-            shadowImageInfo.sampler         = isShadowEnable() ? shadow->getSampler() : emptyTexture->getTextureSampler();
+            shadowImageInfo.imageView       = isShadowEnable() ? shadow->getAttachment()->imageView : *emptyTexture->getTextureImageView();
+            shadowImageInfo.sampler         = isShadowEnable() ? shadow->getAttachment()->sampler : *emptyTexture->getTextureSampler();
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            lightTexture.imageView          = tex ? tex->getTextureImageView() : emptyTexture->getTextureImageView();
-            lightTexture.sampler            = tex ? tex->getTextureSampler() : emptyTexture->getTextureSampler();
+            lightTexture.imageView          = tex ? *tex->getTextureImageView() : *emptyTexture->getTextureImageView();
+            lightTexture.sampler            = tex ? *tex->getTextureSampler() : *emptyTexture->getTextureSampler();
 
         index = 0;
         std::array<VkWriteDescriptorSet,3> descriptorWrites{};

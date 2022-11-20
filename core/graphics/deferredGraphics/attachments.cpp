@@ -48,15 +48,15 @@ void attachments::deleteAttachment(VkDevice * device)
 {
     for(size_t i=0;i<size;i++)
     {
-        vkDestroyImage(*device, image.at(i), nullptr);
-        vkFreeMemory(*device, imageMemory.at(i), nullptr);
-        vkDestroyImageView(*device, imageView.at(i), nullptr);
+        if(image[i])        vkDestroyImage(*device, image[i], nullptr);
+        if(imageMemory[i])  vkFreeMemory(*device, imageMemory[i], nullptr);
+        if(imageView[i])    vkDestroyImageView(*device, imageView[i], nullptr);
     }
 }
 
 void attachments::deleteSampler(VkDevice *device)
 {
-    vkDestroySampler(*device,sampler,nullptr);
+    if(sampler) vkDestroySampler(*device,sampler,nullptr);
 }
 
 void attachments::setSize(size_t size)
@@ -109,3 +109,24 @@ DeferredAttachments& DeferredAttachments::operator=(const DeferredAttachments& o
     return *this;
 }
 
+void DeferredAttachments::deleteAttachment(VkDevice * device){
+    image.deleteAttachment(device);
+    blur.deleteAttachment(device);
+    bloom.deleteAttachment(device);
+    depth.deleteAttachment(device);
+    GBuffer.color.deleteAttachment(device);
+    GBuffer.emission.deleteAttachment(device);
+    GBuffer.normal.deleteAttachment(device);
+    GBuffer.position.deleteAttachment(device);
+}
+
+void DeferredAttachments::deleteSampler(VkDevice * device){
+    image.deleteSampler(device);
+    blur.deleteSampler(device);
+    bloom.deleteSampler(device);
+    depth.deleteSampler(device);
+    GBuffer.color.deleteSampler(device);
+    GBuffer.emission.deleteSampler(device);
+    GBuffer.normal.deleteSampler(device);
+    GBuffer.position.deleteSampler(device);
+}

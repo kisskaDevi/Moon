@@ -24,10 +24,10 @@ void customFilter::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* dev
 }
 void customFilter::setImageProp(imageInfo* pInfo)                           {this->image = *pInfo;}
 void customFilter::setSampleStep(float deltaX, float deltaY)                {xSampleStep = deltaX; ySampleStep = deltaY;}
-void customFilter::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
+void customFilter::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     this->attachmentsCount = attachmentsCount;
-    this->Attachments = Attachments;
+    this->pAttachments = pAttachments;
 }
 
 void customFilter::setSrcAttachment(attachments *srcAttachment)
@@ -75,29 +75,28 @@ void customFilter::createBufferAttachments()
     }
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-        SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+        SamplerInfo.magFilter = VK_FILTER_LINEAR;
+        SamplerInfo.minFilter = VK_FILTER_LINEAR;
+        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         SamplerInfo.anisotropyEnable = VK_TRUE;
-        SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-        SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-        SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        SamplerInfo.maxAnisotropy = 1.0f;
+        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        SamplerInfo.unnormalizedCoordinates = VK_FALSE;
+        SamplerInfo.compareEnable = VK_FALSE;
+        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
         SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         SamplerInfo.minLod = 0.0f;
         SamplerInfo.maxLod = 0.0f;
         SamplerInfo.mipLodBias = 0.0f;
-    if (vkCreateSampler(*device, &SamplerInfo, nullptr, &bufferAttachment.sampler) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing sampler!");
+    vkCreateSampler(*device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
-void customFilter::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
+void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     for(uint32_t i=0;i<attachmentsCount;i++){
-        Attachments[i].resize(image.Count);
+        pAttachments[i].resize(image.Count);
         for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
         {
             createImage(        physicalDevice,
@@ -110,57 +109,56 @@ void customFilter::createAttachments(uint32_t attachmentsCount, attachments* Att
                                 VK_IMAGE_TILING_OPTIMAL,
                                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                Attachments[i].image[imageNumber],
-                                Attachments[i].imageMemory[imageNumber]);
+                                pAttachments[i].image[imageNumber],
+                                pAttachments[i].imageMemory[imageNumber]);
 
-            Attachments[i].imageView[imageNumber] =
+            pAttachments[i].imageView[imageNumber] =
             createImageView(    device,
-                                Attachments[i].image[imageNumber],
+                                pAttachments[i].image[imageNumber],
                                 image.Format,
                                 VK_IMAGE_ASPECT_COLOR_BIT,
                                 1);
         }
         VkSamplerCreateInfo SamplerInfo{};
             SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-            SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-            SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-            SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-            SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-            SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+            SamplerInfo.magFilter = VK_FILTER_LINEAR;
+            SamplerInfo.minFilter = VK_FILTER_LINEAR;
+            SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             SamplerInfo.anisotropyEnable = VK_TRUE;
-            SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-            SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-            SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-            SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-            SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+            SamplerInfo.maxAnisotropy = 1.0f;
+            SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            SamplerInfo.unnormalizedCoordinates = VK_FALSE;
+            SamplerInfo.compareEnable = VK_FALSE;
+            SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
             SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
             SamplerInfo.minLod = 0.0f;
             SamplerInfo.maxLod = 0.0f;
             SamplerInfo.mipLodBias = 0.0f;
-        if (vkCreateSampler(*device, &SamplerInfo, nullptr, &Attachments[i].sampler) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing sampler!");
+        vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments[i].sampler);
     }
 }
 
 void customFilter::Filter::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(*device, Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
 void customFilter::destroy()
 {
-    bufferAttachment.deleteAttachment(&*device);
-    bufferAttachment.deleteSampler(&*device);
-
     filter.Destroy(device);
 
-    vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         for(size_t j = 0; j< framebuffers[i].size();j++)
-            vkDestroyFramebuffer(*device, framebuffers[i][j],nullptr);
+            if(framebuffers[i][j]) vkDestroyFramebuffer(*device, framebuffers[i][j],nullptr);
+
+    bufferAttachment.deleteAttachment(&*device);
+    bufferAttachment.deleteSampler(&*device);
 }
 
 void customFilter::createRenderPass()
@@ -204,9 +202,7 @@ void customFilter::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-
-    if (vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-        throw std::runtime_error("failed to create filter render pass!");
+    vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass);
 }
 
 void customFilter::createFramebuffers()
@@ -219,12 +215,11 @@ void customFilter::createFramebuffers()
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
-                framebufferInfo.pAttachments = &Attachments[i].imageView[j];
+                framebufferInfo.pAttachments = &pAttachments[i].imageView[j];
                 framebufferInfo.width = image.Extent.width;
                 framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
-            if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i][j]) != VK_SUCCESS)
-                throw std::runtime_error("failed to create framebuffer!");
+            vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i][j]);
         }
     }
 }
@@ -245,14 +240,11 @@ void customFilter::Filter::createDescriptorSetLayout(VkDevice* device)
         bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         bindings[index].pImmutableSamplers = nullptr;
         bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
         textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         textureLayoutInfo.pBindings = bindings.data();
-
-    if (vkCreateDescriptorSetLayout(*device, &textureLayoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing descriptor set layout 1!");
+    vkCreateDescriptorSetLayout(*device, &textureLayoutInfo, nullptr, &DescriptorSetLayout);
 }
 
 void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -369,8 +361,7 @@ void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, Vk
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing pipeline layout 1!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -387,10 +378,8 @@ void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, Vk
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing graphics pipeline 1!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
 
-    //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
@@ -400,16 +389,15 @@ void customFilter::createDescriptorPool()
     size_t index = 0;
     std::array<VkDescriptorPoolSize,1> poolSizes;
     for(uint32_t i=0;i<poolSizes.size();i++,index++){
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     }
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &filter.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &filter.DescriptorPool);
 }
 
 void customFilter::createDescriptorSets()
@@ -421,8 +409,7 @@ void customFilter::createDescriptorSets()
         allocInfo.descriptorPool = filter.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, filter.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
+    vkAllocateDescriptorSets(*device, &allocInfo, filter.DescriptorSets.data());
 }
 
 void customFilter::updateDescriptorSets()
@@ -493,7 +480,7 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
     std::vector<VkImage> blitImages(attachmentsCount);
     blitImages[0] = srcAttachment->image[frameNumber];
     for(size_t i=1;i<attachmentsCount;i++){
-        blitImages[i] = Attachments[i-1].image[frameNumber];
+        blitImages[i] = pAttachments[i-1].image[frameNumber];
     }
     VkImage blitBufferImage = bufferAttachment.image[frameNumber];
     uint32_t width = image.Extent.width;
@@ -507,6 +494,5 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
         render(frameNumber,commandBuffer,k);
     }
     for(uint32_t k=0;k<attachmentsCount;k++)
-        transitionImageLayout(&commandBuffer,Attachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
-
+        transitionImageLayout(&commandBuffer,pAttachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
 }

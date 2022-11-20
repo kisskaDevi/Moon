@@ -40,12 +40,11 @@ int main()
     app.createLogicalDevice();
     app.createCommandPool();
     app.setGraphics(&graphics);
+    app.createGraphics(window);
 
     scene testScene(&app,&graphics,ExternalPath);
     testScene.createScene(WIDTH,HEIGHT);
 
-    //сделать проверку в апдейте дескрипторсетов
-    app.createGraphics(window);
     app.createCommandBuffers();
     app.createSyncObjects();
 
@@ -113,6 +112,7 @@ void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics
 
     graphics->setExtent({static_cast<uint32_t>(width),static_cast<uint32_t>(height)});
     app->createGraphics(window);
+    graphics->updateDescriptorSets();
     graphics->updateAllCommandBuffers();
 
     graphics->resetUboWorld();

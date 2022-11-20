@@ -9,15 +9,15 @@
 
 void deferredGraphics::Skybox::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(*device, Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 
     for (size_t i = 0; i < uniformBuffers.size(); i++)
     {
-        vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
-        vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
+        if(uniformBuffers[i])       vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
+        if(uniformBuffersMemory[i]) vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
     }
 }
 
@@ -39,7 +39,6 @@ void deferredGraphics::Skybox::createUniformBuffers(VkPhysicalDevice* physicalDe
 void deferredGraphics::Skybox::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
-
     std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
         bindings[index].binding = 0;
         bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -56,8 +55,7 @@ void deferredGraphics::Skybox::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create Skybox descriptor set layout!");
+    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 }
 
 void deferredGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -158,8 +156,7 @@ void deferredGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create Skybox pipeline layout!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -189,8 +186,7 @@ void deferredGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo
         pipelineInfo[index].subpass = 0;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create Skybox graphics pipeline!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
 
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
@@ -199,21 +195,19 @@ void deferredGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo
 void deferredGraphics::createSkyboxDescriptorPool()
 {
     size_t index = 0;
-
     std::array<VkDescriptorPoolSize,2> poolSizes;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &skybox.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create Skybox descriptor pool!");
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &skybox.DescriptorPool);
 }
 
 void deferredGraphics::createSkyboxDescriptorSets()
@@ -225,8 +219,7 @@ void deferredGraphics::createSkyboxDescriptorSets()
         allocInfo.descriptorPool = skybox.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, skybox.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate Skybox descriptor sets!");
+    vkAllocateDescriptorSets(*device, &allocInfo, skybox.DescriptorSets.data());
 }
 
 void deferredGraphics::updateSkyboxDescriptorSets()
@@ -234,17 +227,17 @@ void deferredGraphics::updateSkyboxDescriptorSets()
     for (size_t i = 0; i < image.Count; i++)
     {
         size_t index = 0;
-
         std::array<VkDescriptorBufferInfo,1> bufferInfo{};
-            bufferInfo[0].buffer = skybox.uniformBuffers[i];
-            bufferInfo[0].offset = 0;
-            bufferInfo[0].range = sizeof(SkyboxUniformBufferObject);
-
+            bufferInfo[index].buffer = skybox.uniformBuffers[i];
+            bufferInfo[index].offset = 0;
+            bufferInfo[index].range = sizeof(SkyboxUniformBufferObject);
+        index = 0;
         std::array<VkDescriptorImageInfo,1> skyboxImageInfo{};
-            skyboxImageInfo[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo[0].imageView = skybox.texture ? skybox.texture->getTextureImageView() : emptyTexture->getTextureImageView();
-            skyboxImageInfo[0].sampler   = skybox.texture ? skybox.texture->getTextureSampler() : emptyTexture->getTextureSampler();
+            skyboxImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            skyboxImageInfo[index].imageView = skybox.texture ? *skybox.texture->getTextureImageView() : *emptyTexture->getTextureImageView();
+            skyboxImageInfo[index].sampler   = skybox.texture ? *skybox.texture->getTextureSampler() : *emptyTexture->getTextureSampler();
 
+        index = 0;
         std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = skybox.DescriptorSets[i];

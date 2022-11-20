@@ -9,26 +9,26 @@
 class SSLRGraphics
 {
 private:
-    VkPhysicalDevice*                   physicalDevice;
-    VkDevice*                           device;
-    VkQueue*                            graphicsQueue;
-    VkCommandPool*                      commandPool;
+    VkPhysicalDevice*                   physicalDevice{nullptr};
+    VkDevice*                           device{nullptr};
+    VkQueue*                            graphicsQueue{nullptr};
+    VkCommandPool*                      commandPool{nullptr};
 
     imageInfo                           image;
 
-    uint32_t                            attachmentsCount = 0;
-    attachments*                        Attachments = nullptr;
+    uint32_t                            attachmentsCount{0};
+    attachments*                        pAttachments{nullptr};
 
-    VkRenderPass                        renderPass;
+    VkRenderPass                        renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>          framebuffers;
 
     struct SSLR{
         std::string                     ExternalPath;
 
-        VkPipelineLayout                PipelineLayout;
-        VkPipeline                      Pipeline;
-        VkDescriptorSetLayout           DescriptorSetLayout;
-        VkDescriptorPool                DescriptorPool;
+        VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                      Pipeline{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>    DescriptorSets;
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
@@ -43,15 +43,15 @@ public:
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
 
-    void setAttachments(uint32_t attachmentsCount, attachments* Attachments);
-    void createAttachments(uint32_t attachmentsCount, attachments* Attachments);
+    void setAttachments(uint32_t attachmentsCount, attachments* pAttachments);
+    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers);
+    void updateDescriptorSets(DeferredAttachments deferredAttachments, VkBuffer* pUniformBuffers);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
 };

@@ -47,8 +47,8 @@ private:
     glm::quat                           rotationX{1.0f,0.0f,0.0f,0.0f};
     glm::quat                           rotationY{1.0f,0.0f,0.0f,0.0f};
 
-    VkDescriptorSetLayout               descriptorSetLayout = VK_NULL_HANDLE;
-    VkDescriptorPool                    descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSetLayout               descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorPool                    descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>        descriptorSets;
     std::vector<VkBuffer>               uniformBuffers;
     std::vector<VkDeviceMemory>         uniformBuffersMemory;
@@ -87,7 +87,7 @@ public:
     bool                isScatteringEnable() const;
 
     VkDescriptorSet*    getDescriptorSets() override;
-    VkCommandBuffer*    getShadowCommandBuffer() override;
+    VkCommandBuffer*    getShadowCommandBuffer(uint32_t imageCount) override;
 
     void                createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) override;
     void                updateUniformBuffer(VkDevice* device, uint32_t frameNumber) override;

@@ -27,10 +27,10 @@ void gaussianBlur::setImageProp(imageInfo* pInfo)
 {
     this->image = *pInfo;
 }
-void gaussianBlur::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
+void gaussianBlur::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     this->attachmentsCount = attachmentsCount;
-    this->Attachments = Attachments;
+    this->pAttachments = pAttachments;
 }
 
 void gaussianBlur::createBufferAttachments()
@@ -60,29 +60,28 @@ void gaussianBlur::createBufferAttachments()
     }
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-        SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+        SamplerInfo.magFilter = VK_FILTER_LINEAR;
+        SamplerInfo.minFilter = VK_FILTER_LINEAR;
+        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         SamplerInfo.anisotropyEnable = VK_TRUE;
-        SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-        SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-        SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        SamplerInfo.maxAnisotropy = 1.0f;
+        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        SamplerInfo.unnormalizedCoordinates = VK_FALSE;
+        SamplerInfo.compareEnable = VK_FALSE;
+        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
         SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         SamplerInfo.minLod = 0.0f;
         SamplerInfo.maxLod = 0.0f;
         SamplerInfo.mipLodBias = 0.0f;
-    if (vkCreateSampler(*device, &SamplerInfo, nullptr, &bufferAttachment.sampler) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing sampler!");
+    vkCreateSampler(*device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
-void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
+void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     static_cast<void>(attachmentsCount);
-    Attachments->resize(image.Count);
+    pAttachments->resize(image.Count);
     for(size_t Image=0; Image<image.Count; Image++)
     {
         createImage(        physicalDevice,
@@ -95,51 +94,50 @@ void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* Att
                             VK_IMAGE_TILING_OPTIMAL,
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            Attachments->image[Image],
-                            Attachments->imageMemory[Image]);
+                            pAttachments->image[Image],
+                            pAttachments->imageMemory[Image]);
 
         createImageView(    device,
-                            Attachments->image[Image],
+                            pAttachments->image[Image],
                             image.Format,
                             VK_IMAGE_ASPECT_COLOR_BIT,
                             1,
-                            &Attachments->imageView[Image]);
+                            &pAttachments->imageView[Image]);
     }
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        SamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-        SamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
+        SamplerInfo.magFilter = VK_FILTER_LINEAR;
+        SamplerInfo.minFilter = VK_FILTER_LINEAR;
+        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         SamplerInfo.anisotropyEnable = VK_TRUE;
-        SamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-        SamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-        SamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
+        SamplerInfo.maxAnisotropy = 1.0f;
+        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        SamplerInfo.unnormalizedCoordinates = VK_FALSE;
+        SamplerInfo.compareEnable = VK_FALSE;
+        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
         SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         SamplerInfo.minLod = 0.0f;
         SamplerInfo.maxLod = 0.0f;
         SamplerInfo.mipLodBias = 0.0f;
-    if (vkCreateSampler(*device, &SamplerInfo, nullptr, &Attachments->sampler) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics sampler!");
+    vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments->sampler);
 }
 
 void gaussianBlur::xBlur::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(*device, Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
 void gaussianBlur::yBlur::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(*device, Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
 void gaussianBlur::destroy()
@@ -147,9 +145,9 @@ void gaussianBlur::destroy()
     xblur.Destroy(device);
     yblur.Destroy(device);
 
-    vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
-        vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
 
     bufferAttachment.deleteAttachment(device);
     bufferAttachment.deleteSampler(device);
@@ -246,9 +244,7 @@ void gaussianBlur::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-
-    if (vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing render pass!");
+    vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass);
 }
 
 void gaussianBlur::createFramebuffers()
@@ -256,10 +252,9 @@ void gaussianBlur::createFramebuffers()
     framebuffers.resize(image.Count);
     for (size_t i = 0; i < framebuffers.size(); i++)
     {
-        std::vector<VkImageView> attachments(2);
-            attachments[0] = Attachments->imageView[i];
+        std::array<VkImageView,2> attachments;
+            attachments[0] = pAttachments->imageView[i];
             attachments[1] = bufferAttachment.imageView[i];
-
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -268,15 +263,13 @@ void gaussianBlur::createFramebuffers()
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing framebuffer!");
+        vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]);
     }
 }
 
 void gaussianBlur::xBlur::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
-
     std::array<VkDescriptorSetLayoutBinding,1> bindings;
         bindings[index].binding = 0;
         bindings[index].descriptorCount = 1;
@@ -287,14 +280,12 @@ void gaussianBlur::xBlur::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao descriptor set layout!");
+    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 }
 
 void gaussianBlur::yBlur::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
-
     std::array<VkDescriptorSetLayoutBinding,1> bindings;
         bindings[index].binding = 0;
         bindings[index].descriptorCount = 1;
@@ -305,8 +296,7 @@ void gaussianBlur::yBlur::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao descriptor set layout!");
+    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 }
 
 void gaussianBlur::createPipelines()
@@ -433,8 +423,7 @@ void gaussianBlur::xBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkR
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing pipeline layout 1!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -451,10 +440,8 @@ void gaussianBlur::xBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkR
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline 1!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
 
-    //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
@@ -566,8 +553,7 @@ void gaussianBlur::yBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkR
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout 2!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -585,10 +571,8 @@ void gaussianBlur::yBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkR
         pipelineInfo[index].subpass = 2;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing graphics pipeline 2!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
 
-    //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
@@ -597,27 +581,25 @@ void gaussianBlur::createDescriptorPool()
 {
     size_t index = 0;
     std::array<VkDescriptorPoolSize,1> xPoolSizes;
-        xPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        xPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        xPoolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        xPoolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     VkDescriptorPoolCreateInfo xPoolInfo{};
         xPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         xPoolInfo.poolSizeCount = static_cast<uint32_t>(xPoolSizes.size());
         xPoolInfo.pPoolSizes = xPoolSizes.data();
         xPoolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &xPoolInfo, nullptr, &xblur.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool 1!");
+    vkCreateDescriptorPool(*device, &xPoolInfo, nullptr, &xblur.DescriptorPool);
 
     index = 0;
     std::array<VkDescriptorPoolSize,1> yPoolSizes;
-        yPoolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        yPoolSizes.at(index).descriptorCount = static_cast<uint32_t>(image.Count);
+        yPoolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        yPoolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     VkDescriptorPoolCreateInfo yPoolInfo{};
         yPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         yPoolInfo.poolSizeCount = static_cast<uint32_t>(yPoolSizes.size());
         yPoolInfo.pPoolSizes = yPoolSizes.data();
         yPoolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &yPoolInfo, nullptr, &yblur.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool 2!");
+    vkCreateDescriptorPool(*device, &yPoolInfo, nullptr, &yblur.DescriptorPool);
 }
 
 void gaussianBlur::createDescriptorSets()
@@ -629,8 +611,7 @@ void gaussianBlur::createDescriptorSets()
         xAllocInfo.descriptorPool = xblur.DescriptorPool;
         xAllocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         xAllocInfo.pSetLayouts = xLayouts.data();
-    if (vkAllocateDescriptorSets(*device, &xAllocInfo, xblur.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets 1!");
+    vkAllocateDescriptorSets(*device, &xAllocInfo, xblur.DescriptorSets.data());
 
     yblur.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> yLayouts(image.Count, yblur.DescriptorSetLayout);
@@ -639,8 +620,7 @@ void gaussianBlur::createDescriptorSets()
         yAllocInfo.descriptorPool = yblur.DescriptorPool;
         yAllocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         yAllocInfo.pSetLayouts = yLayouts.data();
-    if (vkAllocateDescriptorSets(*device, &yAllocInfo, yblur.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets 2!");
+    vkAllocateDescriptorSets(*device, &yAllocInfo, yblur.DescriptorSets.data());
 }
 
 void gaussianBlur::updateDescriptorSets(attachments* blurAttachment)

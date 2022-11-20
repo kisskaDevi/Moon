@@ -20,6 +20,8 @@ glslc.exe sslr/SSLR.vert				    -o sslr/sslrVert.spv
 glslc.exe sslr/SSLR.frag				    -o sslr/sslrFrag.spv
 glslc.exe ssao/SSAO.vert				    -o ssao/ssaoVert.spv
 glslc.exe ssao/SSAO.frag				    -o ssao/ssaoFrag.spv
+glslc.exe layersCombiner/layersCombiner.vert                -o layersCombiner/layersCombinerVert.spv
+glslc.exe layersCombiner/layersCombiner.frag                -o layersCombiner/layersCombinerFrag.spv
 glslc.exe combiner/combiner.vert                            -o combiner/combinerVert.spv
 glslc.exe combiner/combiner.frag                            -o combiner/combinerFrag.spv
 glslc.exe gaussianBlur/xBlur.vert                           -o gaussianBlur/xBlurVert.spv

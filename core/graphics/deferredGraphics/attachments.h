@@ -13,20 +13,20 @@ struct imageInfo{
 
 struct attachment
 {
-    VkImage image;
-    VkDeviceMemory imageMemory;
-    VkImageView imageView;
-    VkSampler sampler;
+    VkImage image{VK_NULL_HANDLE};
+    VkDeviceMemory imageMemory{VK_NULL_HANDLE};
+    VkImageView imageView{VK_NULL_HANDLE};
+    VkSampler sampler{VK_NULL_HANDLE};
 
     void deleteAttachment(VkDevice* device)
     {
-        vkDestroyImage(*device, image, nullptr);
-        vkFreeMemory(*device, imageMemory, nullptr);
-        vkDestroyImageView(*device, imageView, nullptr);
+        if(image)       vkDestroyImage(*device, image, nullptr);
+        if(imageMemory) vkFreeMemory(*device, imageMemory, nullptr);
+        if(imageView)   vkDestroyImageView(*device, imageView, nullptr);
     }
     void deleteSampler(VkDevice *device)
     {
-        vkDestroySampler(*device,sampler,nullptr);
+        if(sampler) vkDestroySampler(*device,sampler,nullptr);
     }
 };
 
@@ -38,7 +38,7 @@ public:
     std::vector<VkImage> image;
     std::vector<VkDeviceMemory> imageMemory;
     std::vector<VkImageView> imageView;
-    VkSampler sampler;
+    VkSampler sampler{VK_NULL_HANDLE};
 
     attachments();
     ~attachments();
@@ -74,6 +74,9 @@ struct DeferredAttachments{
     DeferredAttachments();
     DeferredAttachments(const DeferredAttachments& other);
     DeferredAttachments& operator=(const DeferredAttachments& other);
+
+    void deleteAttachment(VkDevice * device);
+    void deleteSampler(VkDevice * device);
 };
 
 #endif // ATTACHMENTS_H

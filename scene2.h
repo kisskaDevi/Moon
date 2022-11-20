@@ -33,10 +33,6 @@ private:
     float cameraAnimationTime = 2.0f;
     uint32_t cameraPoint = 2.0f;
 
-    dualQuaternion<float>                           dQuat[2];
-    quaternion<float>                               quatX[2];
-    quaternion<float>                               quatY[2];
-
     std::string ZERO_TEXTURE;
     std::string ZERO_TEXTURE_WHITE;
 

@@ -23,16 +23,16 @@ void SSAOGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* dev
     this->commandPool = commandPool;
 }
 void SSAOGraphics::setImageProp(imageInfo* pInfo)                       {this->image = *pInfo;}
-void SSAOGraphics::setAttachments(uint32_t attachmentsCount, attachments* Attachments)
+void SSAOGraphics::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     this->attachmentsCount = attachmentsCount;
-    this->Attachments = Attachments;
+    this->pAttachments = pAttachments;
 }
 
-void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* Attachments)
+void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     static_cast<void>(attachmentsCount);
-    Attachments->resize(image.Count);
+    pAttachments->resize(image.Count);
     for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
     {
         createImage(            physicalDevice,
@@ -45,52 +45,51 @@ void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* Att
                                 VK_IMAGE_TILING_OPTIMAL,
                                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT ,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                Attachments->image[imageNumber],
-                                Attachments->imageMemory[imageNumber]);
+                                pAttachments->image[imageNumber],
+                                pAttachments->imageMemory[imageNumber]);
 
-        Attachments->imageView[imageNumber] =
+        pAttachments->imageView[imageNumber] =
         createImageView(        device,
-                                Attachments->image[imageNumber],
+                                pAttachments->image[imageNumber],
                                 image.Format,
                                 VK_IMAGE_ASPECT_COLOR_BIT,
                                 1);
     }
-    VkSamplerCreateInfo ssaoSamplerInfo{};
-        ssaoSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        ssaoSamplerInfo.magFilter = VK_FILTER_LINEAR;                           //поля определяют как интерполировать тексели, которые увеличенные
-        ssaoSamplerInfo.minFilter = VK_FILTER_LINEAR;                           //или минимизированы
-        ssaoSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Режим адресации
-        ssaoSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Обратите внимание, что оси называются U, V и W вместо X, Y и Z. Это соглашение для координат пространства текстуры.
-        ssaoSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;   //Повторение текстуры при выходе за пределы размеров изображения.
-        ssaoSamplerInfo.anisotropyEnable = VK_TRUE;
-        ssaoSamplerInfo.maxAnisotropy = 1.0f;                                   //Чтобы выяснить, какое значение мы можем использовать, нам нужно получить свойства физического устройства
-        ssaoSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;         //В этом borderColor поле указывается, какой цвет возвращается при выборке за пределами изображения в режиме адресации с ограничением по границе.
-        ssaoSamplerInfo.unnormalizedCoordinates = VK_FALSE;                     //поле определяет , какая система координат вы хотите использовать для адреса текселей в изображении
-        ssaoSamplerInfo.compareEnable = VK_FALSE;                               //Если функция сравнения включена, то тексели сначала будут сравниваться со значением,
-        ssaoSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;                       //и результат этого сравнения используется в операциях фильтрации
-        ssaoSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        ssaoSamplerInfo.minLod = 0.0f;
-        ssaoSamplerInfo.maxLod = 0.0f;
-        ssaoSamplerInfo.mipLodBias = 0.0f;
-    if (vkCreateSampler(*device, &ssaoSamplerInfo, nullptr, &Attachments->sampler) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing sampler!");
+    VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;
+        samplerInfo.minFilter = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.anisotropyEnable = VK_TRUE;
+        samplerInfo.maxAnisotropy = 1.0f;
+        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        samplerInfo.compareEnable = VK_FALSE;
+        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.minLod = 0.0f;
+        samplerInfo.maxLod = 0.0f;
+        samplerInfo.mipLodBias = 0.0f;
+    vkCreateSampler(*device, &samplerInfo, nullptr, &pAttachments->sampler);
 }
 
 void SSAOGraphics::SSAO::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(*device, Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 }
 
 void SSAOGraphics::destroy()
 {
     ssao.Destroy(device);
 
-    vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
-        vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
 }
 
 void SSAOGraphics::createRenderPass()
@@ -118,11 +117,11 @@ void SSAOGraphics::createRenderPass()
         subpass[index].pColorAttachments = attachmentRef.data();
 
     index = 0;
-    std::array<VkSubpassDependency,1> dependency{};                                                                                        //зависимости
-        dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;                                                                                //ссылка из исходного прохода (создавшего данные)
-        dependency[index].dstSubpass = 0;                                                                                                  //в целевой подпроход (поглощающий данные)
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                                                                 //задаёт как стадии конвейера в исходном проходе создают данные
-        dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;                                                                        //поля задают как каждый из исходных проходов обращается к данным
+    std::array<VkSubpassDependency,1> dependency{};
+        dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency[index].dstSubpass = 0;
+        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
@@ -134,9 +133,7 @@ void SSAOGraphics::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-
-    if (vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-        throw std::runtime_error("failed to create filter render pass!");
+    vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass);
 }
 
 void SSAOGraphics::createFramebuffers()
@@ -147,12 +144,11 @@ void SSAOGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &Attachments->imageView[i];
+            framebufferInfo.pAttachments = &pAttachments->imageView[i];
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        if (vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS)
-            throw std::runtime_error("failed to create postProcessing framebuffer!");
+        vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]);
     }
 }
 
@@ -194,8 +190,7 @@ void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao descriptor set layout!");
+    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 }
 
 void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -305,8 +300,7 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao pipeline layout!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -323,37 +317,33 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create ssao graphics pipeline!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
 
-    //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
 void SSAOGraphics::createDescriptorPool()
 {
-    uint32_t imageCount = image.Count;
     size_t index = 0;
     std::array<VkDescriptorPoolSize,4> poolSizes;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
-        poolSizes.at(index).type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.at(index).descriptorCount = static_cast<uint32_t>(imageCount);
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &ssao.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create postProcessing descriptor pool 1!");
+        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &ssao.DescriptorPool);
 }
 
 void SSAOGraphics::createDescriptorSets()
@@ -365,11 +355,10 @@ void SSAOGraphics::createDescriptorSets()
         allocInfo.descriptorPool = ssao.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, ssao.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate postProcessing descriptor sets 1!");
+    vkAllocateDescriptorSets(*device, &allocInfo, ssao.DescriptorSets.data());
 }
 
-void SSAOGraphics::updateDescriptorSets(DeferredAttachments Attachments, VkBuffer* pUniformBuffers)
+void SSAOGraphics::updateDescriptorSets(DeferredAttachments deferredAttachments, VkBuffer* pUniformBuffers)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -381,16 +370,16 @@ void SSAOGraphics::updateDescriptorSets(DeferredAttachments Attachments, VkBuffe
         uint32_t index = 0;
         std::array<VkDescriptorImageInfo, 3> imageInfo;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.position.imageView[i];
-            imageInfo[index].sampler = Attachments.GBuffer.position.sampler;
+            imageInfo[index].imageView = deferredAttachments.GBuffer.position.imageView[i];
+            imageInfo[index].sampler = deferredAttachments.GBuffer.position.sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.GBuffer.normal.imageView[i];
-            imageInfo[index].sampler = Attachments.GBuffer.normal.sampler;
+            imageInfo[index].imageView = deferredAttachments.GBuffer.normal.imageView[i];
+            imageInfo[index].sampler = deferredAttachments.GBuffer.normal.sampler;
         index++;
             imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = Attachments.image.imageView[i];
-            imageInfo[index].sampler = Attachments.image.sampler;
+            imageInfo[index].imageView = deferredAttachments.image.imageView[i];
+            imageInfo[index].sampler = deferredAttachments.image.sampler;
 
         index = 0;
         std::array<VkWriteDescriptorSet, 4> descriptorWrites{};

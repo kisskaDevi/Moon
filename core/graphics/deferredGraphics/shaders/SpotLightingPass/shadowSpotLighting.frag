@@ -58,15 +58,20 @@ void main()
     vec4 fragLightPosition = lightProjView * vec4(position.xyz,1.0f);
     vec4 textureLightColor = vec4(0.0f,0.0f,0.0f,1.0f);
 
-    float ShadowFactor = outsideSpotCondition(fragLightPosition.xyz/ fragLightPosition.w,type) ? pc.minAmbientFactor : shadowFactor(shadowMap, fragLightPosition);
+    float ShadowFactor = outsideSpotCondition(fragLightPosition.xyz/ fragLightPosition.w,type) ? 0.0f : shadowFactor(shadowMap, fragLightPosition);
     textureLightColor += texture(lightTexture, (fragLightPosition.xy / fragLightPosition.w) * 0.5f + 0.5f);
 
     vec4 sumLightColor = vec4(max(lightColor.x,textureLightColor.x),max(lightColor.y,textureLightColor.y),max(lightColor.z,textureLightColor.z),1.0f);
 
-    if(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f)          outColor += ShadowFactor * lightPower * SRGBtoLINEAR(baseColorTexture);
-    else                                                        outColor += ShadowFactor * lightPower * PBR(position,normal,baseColorTexture,eyePosition,sumLightColor,lightPosition);
+    vec4 baseColor;
+    if(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f){
+        baseColor = SRGBtoLINEAR(baseColorTexture);
+    }else{
+        baseColor = PBR(position,normal,baseColorTexture,eyePosition,sumLightColor,lightPosition);
+        outColor += vec4(ShadowFactor * lightPower * baseColor.xyz, baseColor.a);
+    }
 
-    if(outColor.x>0.95f&&outColor.y>0.95f&&outColor.y>0.95f)    outBloom += outColor;
+    if(outColor.x>0.95f&&outColor.y>0.95f&&outColor.z>0.95f)    outBloom += outColor;
     else                                                        outBloom += vec4(0.0f,0.0f,0.0f,1.0f);
 
     //color = mix(color, color * emissiveTexture.a, 1.0f);  ???

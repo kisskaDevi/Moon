@@ -61,21 +61,12 @@ vec4 PBR(vec4 outColor)
     float metallic = subpassLoad(inNormalTexture).a;
     float perceptualRoughness = subpassLoad(inPositionTexture).a;
     vec3 diffuseColor;
-    vec4 baseColor = baseColorTexture;
-    baseColor = SRGBtoLINEAR(baseColor);
+    vec4 baseColor = SRGBtoLINEAR(baseColorTexture);
 
-    vec3 f0 = vec3(0.04);
-
-    diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
-    //diffuseColor *= 1.0 - metallic;
+    diffuseColor = baseColor.rgb;
     diffuseColor *= pc.minAmbientFactor;
-    diffuseColor *= perceptualRoughness*perceptualRoughness;
 
     vec3 color = diffuseColor;
-
-    const float u_OcclusionStrength = 1.0f;
-    float ao = emissiveTexture.a;
-    color = mix(color, color * ao, u_OcclusionStrength);
 
     outColor += vec4(diffuseColor.xyz,baseColorTexture.a);
 
@@ -102,6 +93,5 @@ void main()
 
     if(outColor.x>0.95f&&outColor.y>0.95f&&outColor.y>0.95f)	outBloom += outColor;
     else							outBloom += vec4(0.0f,0.0f,0.0f,1.0f);
-
 }
 

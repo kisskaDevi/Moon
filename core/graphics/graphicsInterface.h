@@ -9,12 +9,12 @@ class GLFWwindow;
 
 struct deviceInfo
 {
-    VkPhysicalDevice*               physicalDevice;
-    std::optional<uint32_t>*        graphicsFamily;
-    std::optional<uint32_t>*        presentFamily;
-    VkDevice*                       device;
-    VkQueue*                        queue;
-    VkCommandPool*                  commandPool;
+    VkPhysicalDevice*               physicalDevice{VK_NULL_HANDLE};
+    std::optional<uint32_t>*        graphicsFamily{nullptr};
+    std::optional<uint32_t>*        presentFamily{nullptr};
+    VkDevice*                       device{VK_NULL_HANDLE};
+    VkQueue*                        queue{VK_NULL_HANDLE};
+    VkCommandPool*                  commandPool{VK_NULL_HANDLE};
 };
 
 class graphicsInterface{

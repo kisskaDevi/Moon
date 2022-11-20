@@ -25,7 +25,7 @@ public:
     virtual bool isShadowEnable() const = 0;
 
     virtual VkDescriptorSet* getDescriptorSets() = 0;
-    virtual VkCommandBuffer* getShadowCommandBuffer() = 0;
+    virtual VkCommandBuffer* getShadowCommandBuffer(uint32_t imageCount) = 0;
 
     virtual void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) = 0;
     virtual void updateUniformBuffer(VkDevice* device, uint32_t frameNumber) = 0;

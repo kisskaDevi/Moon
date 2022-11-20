@@ -9,18 +9,18 @@
 
 void deferredGraphics::Base::Destroy(VkDevice* device)
 {
-    vkDestroyPipeline(*device, Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    vkDestroyDescriptorSetLayout(*device, SceneDescriptorSetLayout,  nullptr);
-    vkDestroyDescriptorSetLayout(*device, ObjectDescriptorSetLayout,  nullptr);
-    vkDestroyDescriptorSetLayout(*device, PrimitiveDescriptorSetLayout,  nullptr);
-    vkDestroyDescriptorSetLayout(*device, MaterialDescriptorSetLayout,  nullptr);
-    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)                        vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)                  vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(SceneDescriptorSetLayout)        vkDestroyDescriptorSetLayout(*device, SceneDescriptorSetLayout,  nullptr);
+    if(ObjectDescriptorSetLayout)       vkDestroyDescriptorSetLayout(*device, ObjectDescriptorSetLayout,  nullptr);
+    if(PrimitiveDescriptorSetLayout)    vkDestroyDescriptorSetLayout(*device, PrimitiveDescriptorSetLayout,  nullptr);
+    if(MaterialDescriptorSetLayout)     vkDestroyDescriptorSetLayout(*device, MaterialDescriptorSetLayout,  nullptr);
+    if(DescriptorPool)                  vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 
     for (size_t i = 0; i < sceneUniformBuffers.size(); i++)
     {
-        vkDestroyBuffer(*device, sceneUniformBuffers[i], nullptr);
-        vkFreeMemory(*device, sceneUniformBuffersMemory[i], nullptr);
+        if(sceneUniformBuffers[i])          vkDestroyBuffer(*device, sceneUniformBuffers[i], nullptr);
+        if(sceneUniformBuffersMemory[i])    vkFreeMemory(*device, sceneUniformBuffersMemory[i], nullptr);
     }
 }
 
@@ -57,23 +57,22 @@ void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
         Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         Binding[index].pImmutableSamplers = nullptr;
     index++;
-        Binding.at(index).binding = index;
-        Binding.at(index).descriptorCount = 1;
-        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding.at(index).pImmutableSamplers = nullptr;
+        Binding[index].binding = index;
+        Binding[index].descriptorCount = 1;
+        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding[index].pImmutableSamplers = nullptr;
     index++;
-        Binding.at(index).binding = index;
-        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        Binding.at(index).descriptorCount = 1;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding.at(index).pImmutableSamplers = nullptr;
+        Binding[index].binding = index;
+        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        Binding[index].descriptorCount = 1;
+        Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        Binding[index].pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
         layoutInfo.pBindings = Binding.data();
-    if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &SceneDescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base uniform buffer descriptor set layout!");
+    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &SceneDescriptorSetLayout);
 
     createObjectDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
     createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
@@ -84,25 +83,20 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\base\\basevert.spv");   //считываем шейдеры
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\base\\basevert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\base\\basefrag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);                      //создаём шейдерные модули
+    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
-    std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};                           //задаём стадии шейдеров в конвейере
-        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;    //вершинный
-        shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;                             //ниформацию о всех битах смотри на странице 222
-        shaderStages[index].module = vertShaderModule;                                      //сюда передаём шейдерный модуль
-        shaderStages[index].pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
+    std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
+        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStages[index].module = vertShaderModule;
+        shaderStages[index].pName = "main";
     index++;
-        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;    //фрагментный
-        shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;                           //ниформацию о всех битах смотри на странице 222
-        shaderStages[index].module = fragShaderModule;                                      //сюда передаём шейдерный модуль
-        shaderStages[index].pName = "main";                                                 //указатель на строку UTF-8 с завершающим нулем, определяющую имя точки входа шейдера для этого этапа
-
-    /* Для рендеринга настоящей геометрии вам необходимо передавать данные в конвайер Vulkan.
-     * Вы можете использовать индексы вершин и экземпляров, доступные в SPIR-V, для автоматической
-     * генерации геометрии или же явно извлекать геометрические данные из буфера. Вместо этого вы можете
-     * описать размещение геометрических данных в памяти, и Vulkan может сам извлекать эти данные для вас, передавая их прямо в шейдер*/
+        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStages[index].module = fragShaderModule;
+        shaderStages[index].pName = "main";
 
     auto bindingDescription = gltfModel::Vertex::getBindingDescription();
     auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
@@ -113,19 +107,10 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    /* фаза входной сборки графического конвейера берёт данные в вершинах и группирует их в примитивы,
-     * готовые для обработки следубщими стадиями конвейера.*/
-
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-    /* здесь может быть добавлена тесселяция*/
-
-    /* Преобразование области вывода - это последнее преобразование координат в конвейере Vulkan до растретизации.
-     * Оно преобразует координаты вершины из нормализованных координат устройства в оконные координаты. Одновременно
-     * может использоваться несколько областей вывода.*/
 
     index = 0;
     std::array<VkViewport,1> viewport{};
@@ -140,28 +125,22 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
         scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;              //число областей вывода
-        viewportState.pViewports = viewport.data();                                         //размер каждой области вывода
-        viewportState.scissorCount = static_cast<uint32_t>(scissor.size());;                //число прямоугольников
-        viewportState.pScissors = scissor.data();                                           //эксцент
-
-    /* Растеризация - это процесс, в ходе которого примитивы, представленные вершинами, преобразуются в потоки фрагментов, которых к обработке
-     * фрагментным шейдером. Состояние растеризации управляется тем, как этот процесс происходит, и задаётся при помощи следующей структуры*/
+        viewportState.viewportCount = static_cast<uint32_t>(viewport.size());
+        viewportState.pViewports = viewport.data();
+        viewportState.scissorCount = static_cast<uint32_t>(scissor.size());
+        viewportState.pScissors = scissor.data();
 
     VkPipelineRasterizationStateCreateInfo rasterizer{};
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;                                      //используется для того чтобы полностью выключить растеризацию. Когда флаг установлен, растеризация не работает и не создаются фрагменты
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;                                      //используется для того чтобы Vulkan автоматически превращал треугольники в точки или отрезки
-        rasterizer.lineWidth = 1.0f;                                                        //толщина линии
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;                                        //параметр обрасывания
-        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;                             //параметр направления обхода (против часовой стрелки)
-        rasterizer.depthBiasEnable = VK_FALSE;                                              //используется для того чтобы включать отсечение глубины
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterizer.depthBiasEnable = VK_FALSE;
         rasterizer.depthBiasConstantFactor = 0.0f;
         rasterizer.depthBiasClamp = 0.0f;
         rasterizer.depthBiasSlopeFactor = 0.0f;
-
-    /* Мультсемплинг - это процесс создания нескольких образцов (sample) для каждого пиксела в изображении.
-     * Они используются для борьбы с алиансингом и может заметно улучшить общее качество изображения при эффективном использовании*/
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -171,12 +150,6 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
         multisampling.alphaToOneEnable = VK_FALSE;
-
-    /* Последней стадией в графическом конвейере является стадия смешивания цветов. Эта стадия отвечает за запись фрагментов
-     * в цветовые подключения. Во многих случаях это простая операция, которая просто записывает содержимое выходного значения
-     * фрагментного шейдера поверх старого значения. Однакоподдеживаются смешивание этих значнеий со значениями,
-     * уже находящимися во фрейм буфере, и выполнение простых логических операций между выходными значениями фрагментного
-     * шейдера и текущим содержанием фреймбуфера.*/
 
     std::array<VkPipelineColorBlendAttachmentState,4> colorBlendAttachment;
     for(index=0;index<colorBlendAttachment.size();index++)
@@ -192,18 +165,14 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
     }
     VkPipelineColorBlendStateCreateInfo colorBlending{};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;                                                 //задаёт, необходимо ли выполнить логические операции между выводом фрагментного шейдера и содержанием цветовых подключений
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;                                               //Optional
-        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());     //количество подключений
-        colorBlending.pAttachments = colorBlendAttachment.data();                               //массив подключений
-        colorBlending.blendConstants[0] = 0.0f; // Optional
-        colorBlending.blendConstants[1] = 0.0f; // Optional
-        colorBlending.blendConstants[2] = 0.0f; // Optional
-        colorBlending.blendConstants[3] = 0.0f; // Optional
-
-    /* Для того чтобы сделать небольште изменения состояния более удобными, Vulkan предоставляет возможность помечать
-     * определенные части графического конвейера как динамически, что значит что они могут быть изменены прямо на месте
-     * при помощи команд прямо внутри командного буфера*/
+        colorBlending.logicOpEnable = VK_FALSE;
+        colorBlending.logicOp = VK_LOGIC_OP_COPY;
+        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());
+        colorBlending.pAttachments = colorBlendAttachment.data();
+        colorBlending.blendConstants[0] = 0.0f;
+        colorBlending.blendConstants[1] = 0.0f;
+        colorBlending.blendConstants[2] = 0.0f;
+        colorBlending.blendConstants[3] = 0.0f;
 
     index=0;
     std::array<VkPushConstantRange,1> pushConstantRange{};
@@ -217,8 +186,7 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
         pipelineLayoutInfo.pSetLayouts = setLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base pipeline layout!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -235,33 +203,27 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
     index=0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
         pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());   //число структур в массиве структур
-        pipelineInfo[index].pStages = shaderStages.data();                             //указывает на массив структур VkPipelineShaderStageCreateInfo, каждая из которых описыват одну стадию
-        pipelineInfo[index].pVertexInputState = &vertexInputInfo;                      //вершинный ввод
-        pipelineInfo[index].pInputAssemblyState = &inputAssembly;                      //фаза входной сборки
-        pipelineInfo[index].pViewportState = &viewportState;                           //Преобразование области вывода
-        pipelineInfo[index].pRasterizationState = &rasterizer;                         //растеризация
-        pipelineInfo[index].pMultisampleState = &multisampling;                        //мультсемплинг
-        pipelineInfo[index].pColorBlendState = &colorBlending;                         //смешивание цветов
-        pipelineInfo[index].layout = PipelineLayout;                                   //
-        pipelineInfo[index].renderPass = *pRenderPass;                                 //проход рендеринга
-        pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
+        pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo[index].pStages = shaderStages.data();
+        pipelineInfo[index].pVertexInputState = &vertexInputInfo;
+        pipelineInfo[index].pInputAssemblyState = &inputAssembly;
+        pipelineInfo[index].pViewportState = &viewportState;
+        pipelineInfo[index].pRasterizationState = &rasterizer;
+        pipelineInfo[index].pMultisampleState = &multisampling;
+        pipelineInfo[index].pColorBlendState = &colorBlending;
+        pipelineInfo[index].layout = PipelineLayout;
+        pipelineInfo[index].renderPass = *pRenderPass;
+        pipelineInfo[index].subpass = 0;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base graphics pipeline!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
 
-    //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
 void deferredGraphics::createBaseDescriptorPool()
 {
-    /* Наборы дескрипторов нельзя создавать напрямую, они должны выделяться из пула, как буферы команд.
-     * Эквивалент для наборов дескрипторов неудивительно называется пулом дескрипторов . Мы напишем
-     * новую функцию createDescriptorPool для ее настройки.*/
-
     uint32_t index = 0;
 
     std::array<VkDescriptorPoolSize,4> poolSizes;
@@ -282,17 +244,11 @@ void deferredGraphics::createBaseDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &base.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base descriptor pool!");
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &base.DescriptorPool);
 }
 
 void deferredGraphics::createBaseDescriptorSets()
 {
-    //Теперь мы можем выделить сами наборы дескрипторов
-    /* В нашем случае мы создадим один набор дескрипторов для каждого изображения цепочки подкачки, все с одинаковым макетом.
-     * К сожалению, нам нужны все копии макета, потому что следующая функция ожидает массив, соответствующий количеству наборов.
-     * Добавьте член класса для хранения дескрипторов набора дескрипторов и назначьте их vkAllocateDescriptorSets */
-
     base.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, base.SceneDescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -300,8 +256,7 @@ void deferredGraphics::createBaseDescriptorSets()
         allocInfo.descriptorPool = base.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, base.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate base descriptor sets!");
+    vkAllocateDescriptorSets(*device, &allocInfo, base.DescriptorSets.data());
 }
 
 void deferredGraphics::updateBaseDescriptorSets(attachment* depthAttachment)
@@ -309,25 +264,25 @@ void deferredGraphics::updateBaseDescriptorSets(attachment* depthAttachment)
     for (size_t i = 0; i < image.Count; i++)
     {
         uint32_t index = 0;
-
         std::array<VkDescriptorBufferInfo,1> bufferInfo{};
-            bufferInfo[0].buffer = base.sceneUniformBuffers[i];
-            bufferInfo[0].offset = 0;
-            bufferInfo[0].range = sizeof(UniformBufferObject);
+            bufferInfo[index].buffer = base.sceneUniformBuffers[i];
+            bufferInfo[index].offset = 0;
+            bufferInfo[index].range = sizeof(UniformBufferObject);
+        index = 0;
         std::array<VkDescriptorImageInfo,1> skyboxImageInfo{};
-            skyboxImageInfo[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo[0].imageView = skybox.texture ? skybox.texture->getTextureImageView() : emptyTexture->getTextureImageView();
-            skyboxImageInfo[0].sampler   = skybox.texture ? skybox.texture->getTextureSampler() : emptyTexture->getTextureSampler();
+            skyboxImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            skyboxImageInfo[index].imageView = skybox.texture ? *skybox.texture->getTextureImageView() : *emptyTexture->getTextureImageView();
+            skyboxImageInfo[index].sampler   = skybox.texture ? *skybox.texture->getTextureSampler() : *emptyTexture->getTextureSampler();
         VkDescriptorBufferInfo StorageBufferInfo{};
             StorageBufferInfo.buffer = storageBuffers[i];
             StorageBufferInfo.offset = 0;
             StorageBufferInfo.range = sizeof(StorageBufferObject);
         VkDescriptorImageInfo depthImageInfo{};
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = depthAttachment ? depthAttachment->imageView : emptyTexture->getTextureImageView();
-            depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : emptyTexture->getTextureSampler();
+            depthImageInfo.imageView = depthAttachment ? depthAttachment->imageView : *emptyTexture->getTextureImageView();
+            depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : *emptyTexture->getTextureSampler();
 
-
+        index = 0;
         std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = base.DescriptorSets[i];

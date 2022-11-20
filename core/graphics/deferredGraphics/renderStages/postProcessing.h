@@ -14,37 +14,35 @@ class GLFWwindow;
 class postProcessingGraphics
 {
 private:
-    VkPhysicalDevice*                   physicalDevice;
-    VkDevice*                           device;
-    VkQueue*                            graphicsQueue;
-    VkCommandPool*                      commandPool;
+    VkPhysicalDevice*                   physicalDevice{nullptr};
+    VkDevice*                           device{nullptr};
+    VkQueue*                            graphicsQueue{nullptr};
+    VkCommandPool*                      commandPool{nullptr};
     QueueFamilyIndices                  queueFamilyIndices;
-    VkSurfaceKHR*                       surface;
 
     imageInfo                           image;
 
-    VkSwapchainKHR*                     swapChain;
-    uint32_t                            swapChainAttachmentCount = 1;
+    uint32_t                            swapChainAttachmentCount{1};
     std::vector<attachments>            swapChainAttachments;
 
-    attachments*                        blurAttachment;
-    attachments*                        blitAttachments;
-    attachments*                        sslrAttachment;
-    attachments*                        ssaoAttachment;
+    attachments*                        blurAttachment{nullptr};
+    attachments*                        blitAttachments{nullptr};
+    attachments*                        sslrAttachment{nullptr};
+    attachments*                        ssaoAttachment{nullptr};
+    attachments*                        layersAttachment{nullptr};
 
-    VkRenderPass                        renderPass;
+    VkRenderPass                        renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>          framebuffers;
 
     struct PostProcessing{
         std::string                         ExternalPath;
         float                               blitFactor;
         uint32_t                            blitAttachmentCount;
-        uint32_t                            transparentLayersCount;
 
-        VkPipelineLayout                    PipelineLayout;
-        VkPipeline                          Pipeline;
-        VkDescriptorSetLayout               DescriptorSetLayout;
-        VkDescriptorPool                    DescriptorPool;
+        VkPipelineLayout                    PipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                          Pipeline{VK_NULL_HANDLE};
+        VkDescriptorSetLayout               DescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorPool                    DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>        DescriptorSets;
 
         void Destroy(VkDevice* device);
@@ -52,36 +50,32 @@ private:
         void createDescriptorSetLayout(VkDevice* device);
     }postProcessing;
 
-    void createSwapChain(GLFWwindow* window, SwapChainSupportDetails swapChainSupport);
-    void createImageViews();
 public:
     postProcessingGraphics();
     void destroy();
+    void destroySwapChainAttachments();
 
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily);
     void setImageProp(imageInfo* pInfo);
 
-    void setSwapChain(VkSwapchainKHR* swapChain);
-    void setBlurAttachment(attachments* blurAttachment);
-    void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor);
-    void setSSLRAttachment(attachments* sslrAttachment);
-    void setSSAOAttachment(attachments* ssaoAttachment);
-    void setTransparentLayersCount(uint32_t TransparentLayersCount);
-
-    void createAttachments(GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface);
+    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface);
+    void createSwapChainAttachments(VkSwapchainKHR* swapChain);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(DeferredAttachments Attachments, std::vector<DeferredAttachments> transparentLayers);
+    void updateDescriptorSets();
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
-    VkFormat& SwapChainImageFormat();
-    uint32_t& SwapChainImageCount();
+    void setBlurAttachment(attachments* blurAttachment);
+    void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor);
+    void setSSLRAttachment(attachments* sslrAttachment);
+    void setSSAOAttachment(attachments* ssaoAttachment);
+    void setLayersAttachment(attachments* layersAttachment);
 };
 
 #endif // POSTPROCESSING_H

@@ -14,27 +14,26 @@ struct QueueFamilyIndices;
 class shadowGraphics
 {
 private:
-    VkPhysicalDevice*                   physicalDevice;
-    VkDevice*                           device;
-    QueueFamilyIndices*                 queueFamilyIndices;
+    VkPhysicalDevice*                   physicalDevice{nullptr};
+    VkDevice*                           device{nullptr};
+    QueueFamilyIndices*                 queueFamilyIndices{nullptr};
 
     imageInfo                           image;
 
     attachment                          depthAttachment;
-    VkSampler                           shadowSampler;
 
-    VkRenderPass                        RenderPass;
+    VkRenderPass                        RenderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>          shadowMapFramebuffer;
 
     struct Shadow{
         std::string                     ExternalPath;
 
-        VkPipelineLayout                PipelineLayout;
-        VkPipeline                      Pipeline;
-        VkDescriptorSetLayout           DescriptorSetLayout;
-        VkDescriptorSetLayout           uniformBufferSetLayout;
-        VkDescriptorSetLayout           uniformBlockSetLayout;
-        VkDescriptorPool                DescriptorPool;
+        VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                      Pipeline{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           uniformBufferSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           uniformBlockSetLayout{VK_NULL_HANDLE};
+        VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>    DescriptorSets;
 
         void Destroy(VkDevice* device);
@@ -42,7 +41,7 @@ private:
         void createDescriptorSetLayout(VkDevice* device);
     }shadow;
 
-    VkCommandPool                       shadowCommandPool;
+    VkCommandPool                       shadowCommandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer>        shadowCommandBuffer;
 
     void renderNode(VkCommandBuffer commandBuffer, Node* node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
@@ -53,9 +52,7 @@ public:
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices);
 
-    void createMap();
-    void createMapView();
-    void createSampler();
+    void createAttachments();
 
     void createCommandPool();
 
@@ -71,12 +68,8 @@ public:
 
     void createShadow();
 
-    VkImageView                     & getImageView();
-    VkSampler                       & getSampler();
-    std::vector<VkCommandBuffer>    & getCommandBuffer();
-
-    uint32_t                        getWidth() const;
-    uint32_t                        getHeight() const;
+    attachment*         getAttachment();
+    VkCommandBuffer*    getCommandBuffer(uint32_t i);
 };
 
 #endif // SHADOWGRAPHICS_H

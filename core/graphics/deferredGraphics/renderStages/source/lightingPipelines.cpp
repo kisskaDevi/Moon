@@ -121,8 +121,7 @@ void deferredGraphics::Lighting::createAmbientPipeline(VkDevice* device, imageIn
         ambientPipelineLayoutInfo.pSetLayouts = ambientSetLayouts.data();
         ambientPipelineLayoutInfo.pushConstantRangeCount = 1;
         ambientPipelineLayoutInfo.pPushConstantRanges = ambientPushConstantRange.data();
-    if (vkCreatePipelineLayout(*device, &ambientPipelineLayoutInfo, nullptr, &AmbientPipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SpotLightingPass pipeline layout!");
+    vkCreatePipelineLayout(*device, &ambientPipelineLayoutInfo, nullptr, &AmbientPipelineLayout);
 
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfoAmbient{};
@@ -140,8 +139,7 @@ void deferredGraphics::Lighting::createAmbientPipeline(VkDevice* device, imageIn
         pipelineInfoAmbient[index].subpass = 1;
         pipelineInfoAmbient[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfoAmbient[index].pDepthStencilState = &AmbientDepthStencil;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoAmbient.size()), pipelineInfoAmbient.data(), nullptr, &AmbientPipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SpotLightingPass graphics pipeline!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoAmbient.size()), pipelineInfoAmbient.data(), nullptr, &AmbientPipeline);
 
     vkDestroyShaderModule(*device, fragShaderModuleAmbient, nullptr);
     vkDestroyShaderModule(*device, vertShaderModuleAmbient, nullptr);
@@ -263,8 +261,7 @@ void deferredGraphics::Lighting::createSpotPipeline(VkDevice* device, imageInfo*
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, pipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SpotLightingPass pipeline layout!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, pipelineLayout);
 
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfoScattering{};
@@ -282,8 +279,7 @@ void deferredGraphics::Lighting::createSpotPipeline(VkDevice* device, imageInfo*
         pipelineInfoScattering[index].subpass = 1;
         pipelineInfoScattering[index].basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfoScattering[index].pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoScattering.size()), pipelineInfoScattering.data(), nullptr, pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SpotLightingPass graphics pipeline!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfoScattering.size()), pipelineInfoScattering.data(), nullptr, pipeline);
 
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);

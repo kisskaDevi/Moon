@@ -2,25 +2,21 @@
 #define CAMERA_H
 
 #include "transformational.h"
-#include "libs/dualQuaternion.h"
+#include "libs/quaternion.h"
 
 class camera : public transformational
 {
 private:
-    glm::mat4x4         projMatrix;
-    glm::mat4x4         viewMatrix;
-    glm::vec3           m_translate;
-    glm::quat           m_rotate;
-    glm::vec3           m_scale;
-    glm::mat4x4         m_globalTransform;
-    glm::quat           m_rotateX;
-    glm::quat           m_rotateY;
+    glm::mat4x4         projMatrix{1.0f};
+    glm::mat4x4         viewMatrix{1.0f};
+    glm::mat4x4         globalTransformation{1.0f};
 
-    quaternion<float>   quat;
-    quaternion<float>   quatX;
-    quaternion<float>   quatY;
-    dualQuaternion<float>   dQuat;
+    quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
+    quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
+    quaternion<float>       rotationX{1.0f,0.0f,0.0f,0.0f};
+    quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
 
+    void updateViewMatrix();
 public:
     camera();
     ~camera();
@@ -33,24 +29,18 @@ public:
     void rotateX(const float & ang ,const glm::vec3 & ax);
     void rotateY(const float & ang ,const glm::vec3 & ax);
 
-    void setPosition(const glm::vec3 & translate);
-    void setRotation(const float & ang ,const glm::vec3 & ax);
+    void                    setProjMatrix(const glm::mat4 & proj);
+    void                    setPosition(const glm::vec3 & translate);
+    void                    setRotation(const float & ang ,const glm::vec3 & ax);
+    void                    setRotation(const quaternion<float>& rotation);
+    void                    setRotations(const quaternion<float>& rotationX, const quaternion<float>& rotationY);
 
-    void setProjMatrix(const glm::mat4 & proj);
-    glm::mat4x4 getProjMatrix() const;
+    glm::vec3               getTranslation()const;
+    quaternion<float>       getRotationX()const;
+    quaternion<float>       getRotationY()const;
 
-    void updateViewMatrix();
-    glm::mat4x4 getViewMatrix() const;
-    glm::vec3 getTranslate() const;
-
-    void                    setDualQuaternion(const dualQuaternion<float>& dQuat);
-    dualQuaternion<float>   getDualQuaternion()const;
-
-    void                    setQuaternion(const quaternion<float>& quat);
-    void                    setQuaternions(const quaternion<float>& quatX, const quaternion<float>& quatY);
-    quaternion<float>       getquatX()const;
-    quaternion<float>       getquatY()const;
-
+    glm::mat4x4             getProjMatrix() const;
+    glm::mat4x4             getViewMatrix() const;
 };
 
 #endif // CAMERA_H

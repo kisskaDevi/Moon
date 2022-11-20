@@ -49,6 +49,8 @@ void scene2::createScene(uint32_t WIDTH, uint32_t HEIGHT)
     loadModels();
     createLight();
     createObjects();
+
+    graphics->updateDescriptorSets();
 }
 
 void scene2::updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
@@ -86,8 +88,8 @@ void scene2::destroyScene()
         for (size_t j =0 ;j<gltfModel.at(i).size();j++)
             graphics->destroyModel(gltfModel.at(i)[j]);
 
-    graphics->removeBinds();
     for (size_t i=0 ;i<object3D.size();i++){
+        graphics->removeObject(object3D[i]);
         delete object3D.at(i);
     }
 
@@ -355,25 +357,6 @@ void scene2::keyboardEvent(GLFWwindow* window, float frameTime)
         }
 
         for(uint32_t i=0;i<2;i++){
-            if(glfwGetKey(window,GLFW_KEY_LEFT_CONTROL) == 1 && backStage[i] == GLFW_PRESS && glfwGetKey(window,49+i) == 0){
-                dQuat[i] = cameras->getDualQuaternion();
-                quatX[i] = cameras->getquatX();
-                quatY[i] = cameras->getquatY();
-                std::cout<<dQuat[i]<<std::endl;
-            }
-        }
-
-        for(uint32_t i=0;i<2;i++){
-            if( glfwGetKey(window,GLFW_KEY_LEFT_CONTROL) == 0 && backStage[i] == GLFW_PRESS && glfwGetKey(window,49+i) == 0){
-                cameras->setDualQuaternion(dQuat[i]);
-                cameras->setQuaternions(quatX[i],quatY[i]);
-                cameraPoint = i+1;
-                graphics->resetUboWorld();
-                std::cout<<dQuat[i]<<std::endl;
-            }
-        }
-
-        for(uint32_t i=0;i<2;i++){
             backStage[i] = glfwGetKey(window,49+i);
         }
     }
@@ -393,42 +376,5 @@ void scene2::keyboardEvent(GLFWwindow* window, float frameTime)
 void scene2::updates(float frameTime)
 {
     globalTime += frameTime;
-
-    if(cameraAnimation){
-        cameraTimer += frameTime;
-        float t = cameraTimer/cameraAnimationTime;
-
-        for(uint32_t i=0;i<1;i++){
-            if(cameraPoint == i+1){
-                dualQuaternion<float> Quat = slerp(dQuat[i],dQuat[i+1],t);
-                cameras->setDualQuaternion(Quat);
-                //cameras->setQuaternion(slerp(quatX[i]*quatY[i],quatX[i+1]*quatY[i+1],t));
-            }
-        }
-        if(cameraPoint == 2){
-            dualQuaternion<float> Quat = slerp(dQuat[1],dQuat[0],t);
-            cameras->setDualQuaternion(Quat);
-            //cameras->setQuaternion(slerp(quatX[1]*quatY[1],quatX[0]*quatY[0],t));
-        }
-
-        graphics->resetUboWorld();
-
-        if(cameraTimer>cameraAnimationTime){
-            for(uint32_t i=0;i<1;i++){
-                if(cameraPoint == i+1){
-                    cameras->setDualQuaternion(dQuat[i+1]);
-                    cameras->setQuaternions(quatX[i+1],quatY[i+1]);
-                    cameraPoint++;
-                    break;
-                }else  if(cameraPoint == 2){
-                    cameras->setDualQuaternion(dQuat[0]);
-                    cameras->setQuaternions(quatX[0],quatY[0]);
-                    cameraPoint = 1;
-                }
-            }
-            cameraTimer = 0.0f;
-            cameraAnimation = false;
-        }
-    }
 }
 

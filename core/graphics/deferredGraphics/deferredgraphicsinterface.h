@@ -10,10 +10,11 @@
 #include "filters/sslr.h"
 #include "filters/ssao.h"
 #include "filters/combiner.h"
+#include "filters/layersCombiner.h"
 
 struct updateFlag{
-    bool                                        enable = false;
-    uint32_t                                    frames = 0;
+    bool                                        enable{false};
+    uint32_t                                    frames{0};
 };
 
 class deferredGraphicsInterface: public graphicsInterface
@@ -26,18 +27,19 @@ private:
 
     std::vector<deviceInfo>                     devicesInfo;
 
-    VkSwapchainKHR                              swapChain;
+    VkSwapchainKHR                              swapChain{VK_NULL_HANDLE};
 
     DeferredAttachments                         deferredAttachments;
     std::vector<DeferredAttachments>            transparentLayersAttachments;
 
     attachments                                 blurAttachment;
-    float                                       blitFactor = 1.5f;
-    uint32_t                                    blitAttachmentCount = 8;
+    float                                       blitFactor{1.5f};
+    uint32_t                                    blitAttachmentCount{8};
     std::vector<attachments>                    blitAttachments;
     attachments                                 combineBloomAttachment;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
+    attachments                                 layersCombinedAttachment;
 
     deferredGraphics                            DeferredGraphics;
     gaussianBlur                                Blur;
@@ -45,9 +47,10 @@ private:
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
     imagesCombiner                              Combiner;
+    layersCombiner                              LayersCombiner;
     postProcessingGraphics                      PostProcessing;
     std::vector<deferredGraphics>               TransparentLayers;
-    uint32_t                                    TransparentLayersCount = 3;
+    uint32_t                                    TransparentLayersCount{3};
 
     updateFlag                                  worldCmd;
     updateFlag                                  lightsCmd;
@@ -101,11 +104,8 @@ public:
     void        bindOutliningObject(object* newObject, float lineWidth, glm::vec4 lineColor);
     void        bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
 
-    bool        removeBaseObject(object* object);
-    bool        removeOutliningObject(object* object);
+    bool        removeObject(object* object);
     bool        removeSkyBoxObject(object* object);
-
-    void        removeBinds();
 
     void        setMinAmbientFactor(const float& minAmbientFactor);
 

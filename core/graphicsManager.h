@@ -31,22 +31,16 @@ public:
 
     void                                        deviceWaitIdle();
 
-//step 1
     void                                        createInstance();
     void                                        setupDebugMessenger();
     void                                        createSurface(GLFWwindow* window);
-//step 2
     void                                        pickPhysicalDevice();
     void                                        createLogicalDevice();
-//step 3
     void                                        createCommandPool();
-//step 4
     void                                        setGraphics(graphicsInterface* graphics);
     void                                        createGraphics(GLFWwindow* window);
-//step 5
     void                                        createCommandBuffers();
     void                                        createSyncObjects();
-//step 6
     VkResult                                    checkNextFrame();
     VkResult                                    drawFrame();
 
@@ -60,30 +54,30 @@ private:
     const std::vector<const char*>              validationLayers = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*>              deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-    VkInstance                                  instance;
-    VkSurfaceKHR                                surface;
-    VkDebugUtilsMessengerEXT                    debugMessenger;
+    VkInstance                                  instance{VK_NULL_HANDLE};
+    VkSurfaceKHR                                surface{VK_NULL_HANDLE};
+    VkDebugUtilsMessengerEXT                    debugMessenger{VK_NULL_HANDLE};
 
     std::vector<physicalDevice>                 physicalDevices;
     uint32_t                                    physicalDeviceNumber;
     uint32_t                                    indicesNumber;
 
-    VkDevice                                    device;
-    VkQueue                                     graphicsQueue;
-    VkQueue                                     presentQueue;
+    VkDevice                                    device{VK_NULL_HANDLE};
+    VkQueue                                     graphicsQueue{VK_NULL_HANDLE};
+    VkQueue                                     presentQueue{VK_NULL_HANDLE};
 
-    graphicsInterface*                          graphics;
+    graphicsInterface*                          graphics{nullptr};
 
-    VkCommandPool                               commandPool;
+    VkCommandPool                               commandPool{VK_NULL_HANDLE};
 
     std::vector<VkSemaphore>                    imageAvailableSemaphores;
     std::vector<VkSemaphore>                    renderFinishedSemaphores;
     std::vector<VkFence>                        inFlightFences;
     std::vector<VkFence>                        imagesInFlight;
 
-    uint32_t                                    imageIndex;
-    uint32_t                                    currentFrame = 0;
-    bool                                        framebufferResized = false;
+    uint32_t                                    imageIndex{0};
+    uint32_t                                    currentFrame{0};
+    bool                                        framebufferResized{false};
 
     std::vector<const char*>                    getRequiredExtensions();
     bool                                        checkValidationLayerSupport();

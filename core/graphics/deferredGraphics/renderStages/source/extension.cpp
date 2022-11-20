@@ -9,14 +9,14 @@
 
 void deferredGraphics::OutliningExtension::DestroyPipeline(VkDevice* device)
 {
-    vkDestroyPipeline(*device, Pipeline, nullptr);
-    vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(Pipeline)        vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)  vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
 }
 
 void deferredGraphics::OutliningExtension::DestroyOutliningPipeline(VkDevice* device)
 {
-    vkDestroyPipeline(*device, outliningPipeline, nullptr);
-    vkDestroyPipelineLayout(*device, outliningPipelineLayout,nullptr);
+    if(outliningPipeline)        vkDestroyPipeline(*device, outliningPipeline, nullptr);
+    if(outliningPipelineLayout)  vkDestroyPipelineLayout(*device, outliningPipelineLayout,nullptr);
 }
 
 void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -25,7 +25,7 @@ void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imag
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\base\\basevert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\base\\basefrag.spv");
-    //создаём шейдерные модули
+
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -145,8 +145,7 @@ void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imag
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create stencil extension pipeline layout!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     index=0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -164,10 +163,8 @@ void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imag
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create stencil extension graphics pipeline!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
 
-    //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
@@ -178,6 +175,7 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
 
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\stencil\\secondstencilvert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\stencil\\secondstencilfrag.spv");
+
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -298,8 +296,7 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    if (vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &outliningPipelineLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create second stencil extension pipeline layout!");
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &outliningPipelineLayout);
 
     index=0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -317,10 +314,8 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
         pipelineInfo[index].subpass = 0;                                               //подпроход рендеригка
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &outliningPipeline) != VK_SUCCESS)
-        throw std::runtime_error("failed to create second stencil extension graphics pipeline!");
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &outliningPipeline);
 
-    //можно удалить шейдерные модули после использования
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }

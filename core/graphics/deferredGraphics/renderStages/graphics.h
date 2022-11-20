@@ -21,23 +21,23 @@ struct                              gltfModel;
 class deferredGraphics
 {
 private:
-    VkPhysicalDevice*               physicalDevice;
-    VkDevice*                       device;
-    VkQueue*                        graphicsQueue;
-    VkCommandPool*                  commandPool;
+    VkPhysicalDevice*               physicalDevice{nullptr};
+    VkDevice*                       device{nullptr};
+    VkQueue*                        graphicsQueue{nullptr};
+    VkCommandPool*                  commandPool{nullptr};
 
-    texture*                        emptyTexture;
-    camera*                         cameraObject;
-    uint32_t                        primitiveCount = 0;
-    bool                            transparencyPass = false;
+    texture*                        emptyTexture{nullptr};
+    camera*                         cameraObject{nullptr};
+    uint32_t                        primitiveCount{0};
+    bool                            transparencyPass{false};
 
     imageInfo                       image;
 
     std::vector<attachment>         colorAttachments;
-    std::vector<attachments*>       Attachments;
-    attachment*                     depthAttachment;
+    std::vector<attachments*>       pAttachments;
+    attachment*                     depthAttachment{nullptr};
 
-    VkRenderPass                    renderPass;
+    VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
 
     std::vector<VkBuffer>           storageBuffers;
@@ -46,15 +46,15 @@ private:
     struct Base{
         std::string                     ExternalPath;
 
-        VkPipelineLayout                PipelineLayout;
-        VkPipeline                      Pipeline;
+        VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                      Pipeline{VK_NULL_HANDLE};
 
-        VkDescriptorSetLayout           SceneDescriptorSetLayout;
-        VkDescriptorSetLayout           ObjectDescriptorSetLayout;
-        VkDescriptorSetLayout           PrimitiveDescriptorSetLayout;
-        VkDescriptorSetLayout           MaterialDescriptorSetLayout;
+        VkDescriptorSetLayout           SceneDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           ObjectDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           MaterialDescriptorSetLayout{VK_NULL_HANDLE};
 
-        VkDescriptorPool                DescriptorPool;
+        VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>    DescriptorSets;
 
         std::vector<VkBuffer>           sceneUniformBuffers;
@@ -73,13 +73,13 @@ private:
     struct OutliningExtension{
         std::string                     ExternalPath;
 
-        Base*                           base;
+        Base*                           base{nullptr};
 
-        VkPipelineLayout                PipelineLayout;
-        VkPipeline                      Pipeline;
+        VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                      Pipeline{VK_NULL_HANDLE};
 
-        VkPipelineLayout                outliningPipelineLayout;
-        VkPipeline                      outliningPipeline;
+        VkPipelineLayout                outliningPipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                      outliningPipeline{VK_NULL_HANDLE};
 
         std::vector<object *>           objects;
 
@@ -95,13 +95,13 @@ private:
     struct Skybox
     {
         std::string                     ExternalPath;
-        cubeTexture*                    texture = nullptr;
+        cubeTexture*                    texture{nullptr};
 
-        VkPipelineLayout                PipelineLayout;
-        VkPipeline                      Pipeline;
+        VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                      Pipeline{VK_NULL_HANDLE};
 
-        VkDescriptorSetLayout           DescriptorSetLayout;
-        VkDescriptorPool                DescriptorPool;
+        VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>    DescriptorSets;
 
         std::vector<VkBuffer>           uniformBuffers;
@@ -119,23 +119,23 @@ private:
     struct Lighting{
         std::string                     ExternalPath;
 
-        std::unordered_map<uint8_t, VkPipelineLayout>  PipelineLayoutDictionary;
-        std::unordered_map<uint8_t, VkPipeline>        PipelinesDictionary;
+        VkPipelineLayout                                    AmbientPipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                                          AmbientPipeline{VK_NULL_HANDLE};
 
-        VkPipelineLayout                AmbientPipelineLayout;
-        VkPipeline                      AmbientPipeline;
+        std::unordered_map<uint8_t, VkPipelineLayout>       PipelineLayoutDictionary;
+        std::unordered_map<uint8_t, VkPipeline>             PipelinesDictionary;
 
-        VkDescriptorSetLayout           DescriptorSetLayout;
+        VkDescriptorSetLayout                               DescriptorSetLayout{VK_NULL_HANDLE};
         std::unordered_map<uint8_t, VkDescriptorSetLayout>  LightDescriptorSetLayout;
 
-        VkDescriptorPool                DescriptorPool;
+        VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>    DescriptorSets;
 
         std::vector<VkBuffer>           uniformBuffers;
         std::vector<VkDeviceMemory>     uniformBuffersMemory;
 
-        float                           minAmbientFactor = 0.05f;
-        bool                            enableScattering = true;
+        float                           minAmbientFactor{0.05f};
+        bool                            enableScattering{true};
 
         std::vector<light*>             lightSources;
 
@@ -148,16 +148,11 @@ private:
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }lighting;
 
-    void createColorAttachments();
-    void createDepthAttachment();
-    void createResolveAttachments();
-
     void oneSampleRenderPass();
     void multiSampleRenderPass();
     void oneSampleFrameBuffer();
     void multiSampleFrameBuffer();
 
-    void setAttachments(DeferredAttachments* Attachments);
 public:
     deferredGraphics();
     void destroy();
@@ -173,10 +168,13 @@ public:
     void setScattering(const bool& enableScattering);
     void setTransparencyPass(const bool& transparencyPass);
 
-    texture*                getEmptyTexture();
-    std::vector<VkBuffer>&  getSceneBuffer();
+    texture*  getEmptyTexture();
+    VkBuffer* getSceneBuffer();
 
-    void createAttachments(DeferredAttachments* Attachments);
+    void setAttachments(DeferredAttachments* pAttachments);
+    void createAttachments(DeferredAttachments* pAttachments);
+    void createBufferAttachments();
+
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -210,7 +208,6 @@ public:
     bool removeBaseObject(object* object);
     bool removeOutliningObject(object* object);
     bool removeSkyBoxObject(object* object);
-    void removeBinds();
 
     void addLightSource(light* lightSource);
     void removeLightSource(light* lightSource);

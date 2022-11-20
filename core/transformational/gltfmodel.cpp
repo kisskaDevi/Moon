@@ -1286,42 +1286,42 @@ void gltfModel::createMaterialDescriptorSet(VkDevice* device, Material* material
     baseColorTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     if (material->pbrWorkflows.metallicRoughness)
     {
-        baseColorTextureInfo.imageView   = material->baseColorTexture ? material->baseColorTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        baseColorTextureInfo.sampler     = material->baseColorTexture ? material->baseColorTexture->getTextureSampler()   : emptyTexture->getTextureSampler();
+        baseColorTextureInfo.imageView   = material->baseColorTexture ? *material->baseColorTexture->getTextureImageView() : *emptyTexture->getTextureImageView();
+        baseColorTextureInfo.sampler     = material->baseColorTexture ? *material->baseColorTexture->getTextureSampler()   : *emptyTexture->getTextureSampler();
     }
     if(material->pbrWorkflows.specularGlossiness)
     {
-        baseColorTextureInfo.imageView   = material->extension.diffuseTexture ? material->extension.diffuseTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        baseColorTextureInfo.sampler     = material->extension.diffuseTexture ? material->extension.diffuseTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+        baseColorTextureInfo.imageView   = material->extension.diffuseTexture ? *material->extension.diffuseTexture->getTextureImageView() : *emptyTexture->getTextureImageView();
+        baseColorTextureInfo.sampler     = material->extension.diffuseTexture ? *material->extension.diffuseTexture->getTextureSampler() : *emptyTexture->getTextureSampler();
     }
 
     VkDescriptorImageInfo metallicRoughnessTextureInfo;
     metallicRoughnessTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     if (material->pbrWorkflows.metallicRoughness)
     {
-        metallicRoughnessTextureInfo.imageView   = material->metallicRoughnessTexture ? material->metallicRoughnessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        metallicRoughnessTextureInfo.sampler     = material->metallicRoughnessTexture ? material->metallicRoughnessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+        metallicRoughnessTextureInfo.imageView   = material->metallicRoughnessTexture ? *material->metallicRoughnessTexture->getTextureImageView() : *emptyTexture->getTextureImageView();
+        metallicRoughnessTextureInfo.sampler     = material->metallicRoughnessTexture ? *material->metallicRoughnessTexture->getTextureSampler() : *emptyTexture->getTextureSampler();
     }
     if (material->pbrWorkflows.specularGlossiness)
     {
-        metallicRoughnessTextureInfo.imageView   = material->extension.specularGlossinessTexture ? material->extension.specularGlossinessTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-        metallicRoughnessTextureInfo.sampler     = material->extension.specularGlossinessTexture ? material->extension.specularGlossinessTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+        metallicRoughnessTextureInfo.imageView   = material->extension.specularGlossinessTexture ? *material->extension.specularGlossinessTexture->getTextureImageView() : *emptyTexture->getTextureImageView();
+        metallicRoughnessTextureInfo.sampler     = material->extension.specularGlossinessTexture ? *material->extension.specularGlossinessTexture->getTextureSampler() : *emptyTexture->getTextureSampler();
     }
 
     VkDescriptorImageInfo normalTextureInfo;
     normalTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    normalTextureInfo.imageView   = material->normalTexture ? material->normalTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-    normalTextureInfo.sampler     = material->normalTexture ? material->normalTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+    normalTextureInfo.imageView   = material->normalTexture ? *material->normalTexture->getTextureImageView() : *emptyTexture->getTextureImageView();
+    normalTextureInfo.sampler     = material->normalTexture ? *material->normalTexture->getTextureSampler() : *emptyTexture->getTextureSampler();
 
     VkDescriptorImageInfo occlusionTextureInfo;
     occlusionTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    occlusionTextureInfo.imageView   = material->occlusionTexture ? material->occlusionTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-    occlusionTextureInfo.sampler     = material->occlusionTexture ? material->occlusionTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+    occlusionTextureInfo.imageView   = material->occlusionTexture ? *material->occlusionTexture->getTextureImageView() : *emptyTexture->getTextureImageView();
+    occlusionTextureInfo.sampler     = material->occlusionTexture ? *material->occlusionTexture->getTextureSampler() : *emptyTexture->getTextureSampler();
 
     VkDescriptorImageInfo emissiveTextureInfo;
     emissiveTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    emissiveTextureInfo.imageView   = material->emissiveTexture ? material->emissiveTexture->getTextureImageView() : emptyTexture->getTextureImageView();
-    emissiveTextureInfo.sampler     = material->emissiveTexture ? material->emissiveTexture->getTextureSampler() : emptyTexture->getTextureSampler();
+    emissiveTextureInfo.imageView   = material->emissiveTexture ? *material->emissiveTexture->getTextureImageView() : *emptyTexture->getTextureImageView();
+    emissiveTextureInfo.sampler     = material->emissiveTexture ? *material->emissiveTexture->getTextureSampler() : *emptyTexture->getTextureSampler();
 
     std::array<VkDescriptorImageInfo, 5> descriptorImageInfos = {baseColorTextureInfo,metallicRoughnessTextureInfo,normalTextureInfo,occlusionTextureInfo,emissiveTextureInfo};
     std::array<VkWriteDescriptorSet, 5> descriptorWrites{};

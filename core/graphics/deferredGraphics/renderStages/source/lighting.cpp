@@ -9,26 +9,25 @@
 void deferredGraphics::Lighting::Destroy(VkDevice* device)
 {
     for(auto& descriptorSetLayout: LightDescriptorSetLayout){
-        vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr);
+        if(descriptorSetLayout.second) vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr);
     }
-    vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 
     for(auto& PipelineLayout: PipelineLayoutDictionary){
-        vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr);
+        if(PipelineLayout.second) vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr);
     }
-
     for(auto& Pipeline: PipelinesDictionary){
-        vkDestroyPipeline(*device, Pipeline.second, nullptr);
+        if(Pipeline.second) vkDestroyPipeline(*device, Pipeline.second, nullptr);
     }
 
-    vkDestroyPipeline(*device, AmbientPipeline, nullptr);
-    vkDestroyPipelineLayout(*device, AmbientPipelineLayout, nullptr);
+    if(AmbientPipeline)         vkDestroyPipeline(*device, AmbientPipeline, nullptr);
+    if(AmbientPipelineLayout)   vkDestroyPipelineLayout(*device, AmbientPipelineLayout, nullptr);
 
     for (size_t i = 0; i < uniformBuffers.size(); i++)
     {
-        vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
-        vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
+        if(uniformBuffers[i])           vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
+        if(uniformBuffersMemory[i])     vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
     }
 }
 
@@ -68,8 +67,7 @@ void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
         layoutInfo.pBindings = Binding.data();
-    if (vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create LightingPass descriptor set layout!");
+    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
     createSpotLightDescriptorSetLayout(device,&LightDescriptorSetLayout[0x0]);
 }
@@ -106,8 +104,7 @@ void deferredGraphics::createLightingDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    if (vkCreateDescriptorPool(*device, &poolInfo, nullptr, &lighting.DescriptorPool) != VK_SUCCESS)
-        throw std::runtime_error("failed to create LightingPass descriptor pool!");
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &lighting.DescriptorPool);
 }
 
 void deferredGraphics::createLightingDescriptorSets()
@@ -119,8 +116,7 @@ void deferredGraphics::createLightingDescriptorSets()
         allocInfo.descriptorPool = lighting.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    if (vkAllocateDescriptorSets(*device, &allocInfo, lighting.DescriptorSets.data()) != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate LightingPass descriptor sets!");
+    vkAllocateDescriptorSets(*device, &allocInfo, lighting.DescriptorSets.data());
 }
 
 void deferredGraphics::updateLightingDescriptorSets()
@@ -130,15 +126,15 @@ void deferredGraphics::updateLightingDescriptorSets()
         uint32_t index = 0;
 
         std::array<VkDescriptorImageInfo,5> imageInfo{};
-        for(index = 0; index<4;index++)
-        {
+            for(index = 0; index<4;index++)
+            {
+                imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo.at(index).imageView = pAttachments.at(3+index)->imageView.at(i);
+                imageInfo.at(index).sampler = VK_NULL_HANDLE;
+            }
             imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.at(index).imageView = Attachments.at(3+index)->imageView.at(i);
+            imageInfo.at(index).imageView = this->depthAttachment->imageView;
             imageInfo.at(index).sampler = VK_NULL_HANDLE;
-        }
-        imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.at(index).imageView = this->depthAttachment->imageView;
-        imageInfo.at(index).sampler = VK_NULL_HANDLE;
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = lighting.uniformBuffers[i];
             bufferInfo.offset = 0;
@@ -162,7 +158,6 @@ void deferredGraphics::updateLightingDescriptorSets()
             descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.at(index).descriptorCount = 1;
             descriptorWrites.at(index).pBufferInfo = &bufferInfo;
-
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -221,5 +216,5 @@ void deferredGraphics::getLightCommandbuffers(std::vector<VkCommandBuffer>& comm
 {
     for(auto lightSource: lighting.lightSources)
         if(lightSource->isShadowEnable())
-            commandbufferSet.push_back(lightSource->getShadowCommandBuffer()[imageIndex]);
+            commandbufferSet.push_back(*lightSource->getShadowCommandBuffer(imageIndex));
 }

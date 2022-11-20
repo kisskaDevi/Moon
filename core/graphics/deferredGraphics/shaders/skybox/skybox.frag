@@ -10,8 +10,6 @@ layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outBaseColor;
 layout(location = 3) out vec4 outEmissiveTexture;
 
-//===================================================main====================================================================//
-
 void main()
 {
     outPosition = vec4(inUVW,depth);

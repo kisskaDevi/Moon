@@ -72,10 +72,10 @@ void main()
     vec4 baseColor = SRGBtoLINEAR(baseColorTexture);
     if(!(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f)){
         baseColor = PBR(position,normal,baseColorTexture,eyePosition,sumLightColor,lightPosition);
+        float lightDrop = lightDropFactor * lightDrop(length(lightPosition - position.xyz));
+        float lightPower = lightPowerFactor / lightDrop;
+        outColor += vec4(ShadowFactor * lightPower * baseColor.xyz, baseColor.a);
     }
-    float lightDrop = lightDropFactor * lightDrop(length(lightPosition - position.xyz));
-    float lightPower = lightPowerFactor / lightDrop;
-    outColor += vec4(ShadowFactor * lightPower * baseColor.xyz, baseColor.a);
 
     if(outColor.x>0.95f&&outColor.y>0.95f&&outColor.z>0.95f)    outBloom += outColor;
     else                                                        outBloom += vec4(0.0f,0.0f,0.0f,1.0f);

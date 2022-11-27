@@ -26,7 +26,7 @@ mat4 projview = global.proj * global.view;
 float h = 0.1f;
 vec3 n = vec3(1.33f, 1.33f + 1.0f, 1.33f + 2.0f);
 
-vec3 getRefrCoords(const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n){
+vec3 findRefrCoords(const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n){
     vec3 beamDirection = normalize(layerPointPosition - global.eyePosition.xyz);
     float cosAlpha = - dot(layerPointNormal,beamDirection);
     float sinAlpha = sqrt(1.0f - cosAlpha * cosAlpha);
@@ -54,13 +54,13 @@ bool depthCond(float z, vec2 coords){
     return z < texture(depth,coords.xy).r;
 }
 
-vec4 getRefrColor(const int i, inout vec3 coords, const float n)
+vec4 findRefrColor(const int i, inout vec3 coords, const float n)
 {
     vec4 color = vec4(0.0f);
     if(outsideCond(coords.xy) && depthCond(texture(layersDepth[i],coords.xy).r,coords.xy))
     {
         color = layerColor(i,coords.xy);
-        coords  = getRefrCoords(layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy),n);
+        coords  = findRefrCoords(layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy),n);
     }
     return color;
 }
@@ -74,7 +74,8 @@ void main()
     vec4 refrColor = vec4(0.0f);
     for(int i=0;i<transparentLayersCount;i++)
     {
-        refrColor = max(refrColor,vec4(getRefrColor(i,coordsR,n.r).r, getRefrColor(i,coordsG,n.g).g, getRefrColor(i,coordsB,n.b).b, 0.0f));
+        if(dot(normalize(layerPointPosition(i,coordsR.xy)-global.eyePosition.xyz),layerPointNormal(i,coordsR.xy))>0.0f)
+            refrColor = max(refrColor,vec4(findRefrColor(i,coordsR,n.r).r, findRefrColor(i,coordsG,n.g).g, findRefrColor(i,coordsB,n.b).b, 0.0f));
     }
     outColor = vec4(    depthCond(coordsR.z,coordsR.xy) ? texture(Sampler,coordsR.xy).r : 0.0f,
                         depthCond(coordsG.z,coordsG.xy) ? texture(Sampler,coordsG.xy).g : 0.0f,

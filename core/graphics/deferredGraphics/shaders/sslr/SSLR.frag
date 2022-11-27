@@ -32,7 +32,7 @@ vec4 SSLR();
 
 void main()
 {
-    outColor = vec4(0.0f,0.0f,0.0f,0.0f);
+    outColor = vec4(0.0f);
 
     //outColor += SSLR();
 }

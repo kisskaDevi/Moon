@@ -23,7 +23,7 @@ layout(location = 0) out vec4 outColor;
 
 mat4 projview = global.proj * global.view;
 
-float h = 0.01f;
+float h = 0.1f;
 vec3 n = vec3(1.33f, 1.33f + 1.0f, 1.33f + 2.0f);
 
 vec3 getRefrCoords(const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n){
@@ -34,71 +34,50 @@ vec3 getRefrCoords(const in vec3 layerPointPosition, const in vec3 layerPointNor
     float deviation = h * sinAlpha * (1.0f - cosAlpha / sqrt(n*n - sinAlpha*sinAlpha));
 
     vec3 direction = layerPointNormal * dot(beamDirection,beamDirection) - beamDirection * dot(beamDirection,layerPointNormal);
+    vec4 dpos = projview * vec4(layerPointPosition + deviation.r * direction,1.0f);
 
-    vec4 dpos = vec4(layerPointPosition + deviation.r * direction,1.0f);
-
-    vec4 dposProj = projview * dpos;
-    return vec3(dposProj.xy/dposProj.w * 0.5f + 0.5f,dposProj.z/dposProj.w);
+    return vec3(dpos.xy/dpos.w * 0.5f + 0.5f,dpos.z/dpos.w);
 }
-
 vec3 layerPointPosition(const in int i, const in vec2 coord){
-    if(i<transparentLayersCount){
-        return texture(layersPosition[i], coord).xyz;
-    }else{
-        return texture(position, coord).xyz;
-    }
+    return texture(layersPosition[i], coord).xyz;
 }
-
 vec3 layerPointNormal(const in int i, const in vec2 coord){
-    if(i<transparentLayersCount){
-        return normalize(texture(layersNormal[i],coord).xyz);
-    }else{
-        return normalize(texture(normal,coord).xyz);
-    }
+    return normalize(texture(layersNormal[i],coord).xyz);
 }
-
 vec4 layerColor(const in int i, const in vec2 coord){
-    if(i<transparentLayersCount){
-        return texture(layersSampler[0],coord);
-    }else{
-        return texture(Sampler,coord);
-    }
+    return texture(layersSampler[i],coord);
 }
-
 bool outsideCond(const in vec2 coords){
     return coords.x<1.0f&&coords.y<1.0f&&coords.x>0.0f&&coords.y>0.0f;
 }
-
 bool depthCond(float z, vec2 coords){
     return z < texture(depth,coords.xy).r;
 }
 
 vec4 getRefrColor(const int i, inout vec3 coords, const float n)
 {
-    if(depthCond(texture(layersDepth[i],coords.xy).r,coords.xy))
+    vec4 color = vec4(0.0f);
+    if(outsideCond(coords.xy) && depthCond(texture(layersDepth[i],coords.xy).r,coords.xy))
     {
+        color = layerColor(i,coords.xy);
         coords  = getRefrCoords(layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy),n);
-        return outsideCond(coords.xy) && depthCond(coords.z,coords.xy) ? layerColor(transparentLayersCount,coords.xy) : vec4(0.0f);
-    }else{
-        return vec4(0.0f);
     }
+    return color;
 }
 
 void main()
 {
-    vec4 layerColor0 = depthCond(texture(layersDepth[0],fragTexCoord).r,fragTexCoord) ? layerColor(0,fragTexCoord) : vec4(0.0f);
-    outColor = (layerColor0.r+layerColor0.g+layerColor0.b>0.0f) ? layerColor0 : texture(Sampler,fragTexCoord);
-
     vec3 coordsR = vec3(fragTexCoord,0.0f);
     vec3 coordsG = vec3(fragTexCoord,0.0f);
     vec3 coordsB = vec3(fragTexCoord,0.0f);
 
-    vec4 refrColor;
+    vec4 refrColor = vec4(0.0f);
     for(int i=0;i<transparentLayersCount;i++)
     {
-        refrColor = vec4(getRefrColor(i,coordsR,n.r).r, getRefrColor(i,coordsG,n.g).g, getRefrColor(i,coordsB,n.b).b, 0.0f);
-
-        if(refrColor.r+refrColor.g+refrColor.b>0.0f)
-            outColor = layerColor(0,fragTexCoord) + refrColor;
+        refrColor = max(refrColor,vec4(getRefrColor(i,coordsR,n.r).r, getRefrColor(i,coordsG,n.g).g, getRefrColor(i,coordsB,n.b).b, 0.0f));
     }
+    outColor = vec4(    depthCond(coordsR.z,coordsR.xy) ? texture(Sampler,coordsR.xy).r : 0.0f,
+                        depthCond(coordsG.z,coordsG.xy) ? texture(Sampler,coordsG.xy).g : 0.0f,
+                        depthCond(coordsB.z,coordsB.xy) ? texture(Sampler,coordsB.xy).b : 0.0f, 0.0f);
+    outColor = max(refrColor,outColor);
 }

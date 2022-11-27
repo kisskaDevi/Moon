@@ -12,7 +12,7 @@ vec4 blur(sampler2D Sampler, vec2 TexCoord)
     float sigma = 1.0 * textureSize(Sampler, 0).y;
     vec2 textel = 1.0 / textureSize(Sampler, 0);
     vec4 Color = texture(Sampler, TexCoord) /sqrt(pi*sigma);
-    int h = 20;
+    int h = 5;
     float Norm = 1.0f/sqrt(pi*sigma);
     for(int i=-h;i<h+1;i+=2)
     {
@@ -29,5 +29,6 @@ vec4 blur(sampler2D Sampler, vec2 TexCoord)
 void main()
 {
     outColor = vec4(0.0f,0.0f,0.0f,0.0f);
-    outColor += blur(blurSampler,fragTexCoord);
+    //outColor += blur(blurSampler,fragTexCoord);
+    outColor += texture(blurSampler,fragTexCoord);
 }

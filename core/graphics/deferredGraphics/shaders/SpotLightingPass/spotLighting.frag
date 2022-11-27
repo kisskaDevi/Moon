@@ -7,6 +7,16 @@ layout (push_constant) uniform PC
     float minAmbientFactor;
 }pc;
 
+layout(set = 1, binding = 0) uniform LightBufferObject
+{
+    mat4 proj;
+    mat4 view;
+    mat4 projView;
+    vec4 position;
+    vec4 lightColor;
+    vec4 lightProp;
+}light;
+
 layout(location = 0)	in vec4 eyePosition;
 layout(location = 1)	in vec2 fragTexCoord;
 layout(location = 2)	in vec4 glPosition;
@@ -50,25 +60,20 @@ void main()
     float lightPowerFactor = lightProp.y;
     float lightDropFactor = lightProp.z;
 
-    float len = length(lightPosition - position.xyz);
-    float lightDrop = lightDropFactor * lightDrop(len);
-    float lightPower = lightPowerFactor / lightDrop;
-
     vec4 fragLightPosition = lightProjView * vec4(position.xyz,1.0f);
-    vec4 textureLightColor = vec4(0.0f,0.0f,0.0f,1.0f);
-
-    textureLightColor += texture(lightTexture, (fragLightPosition.xy / fragLightPosition.w) * 0.5f + 0.5f);
-
-    vec4 sumLightColor = vec4(max(lightColor.x,textureLightColor.x),max(lightColor.y,textureLightColor.y),max(lightColor.z,textureLightColor.z),1.0f);
-
     float outsideFactor = outsideSpotCondition(fragLightPosition.xyz/ fragLightPosition.w,type) ? 0.0f : 1.0f;
 
-    vec4 baseColor;
-    if(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f){
-        baseColor = SRGBtoLINEAR(baseColorTexture);
-    }else{
+    vec3 lightDirection =  - normalize(vec3(light.view[0][2],light.view[1][2],light.view[2][2]));
+    float distribusion = (type == 0.0) ? lightDistribusion(position.xyz,lightPosition.xyz,light.proj,lightDirection) : 1.0f;
+    vec4 textureLightColor = distribusion * texture(lightTexture, (fragLightPosition.xy / fragLightPosition.w) * 0.5f + 0.5f);
+    vec4 sumLightColor = vec4(max(lightColor.x,textureLightColor.x),max(lightColor.y,textureLightColor.y),max(lightColor.z,textureLightColor.z),1.0f);
+
+    vec4 baseColor = SRGBtoLINEAR(baseColorTexture);
+    if(!(normal.x==0.0f&&normal.y==0.0f&&normal.z==0.0f)){
         baseColor = PBR(position,normal,baseColorTexture,eyePosition,sumLightColor,lightPosition);
     }
+    float lightDrop = lightDropFactor * lightDrop(length(lightPosition - position.xyz));
+    float lightPower = lightPowerFactor / lightDrop;
     outColor += vec4(outsideFactor * lightPower * baseColor.xyz, baseColor.a);
 
     if(outColor.x>0.95f&&outColor.y>0.95f&&outColor.z>0.95f)    outBloom += outColor;

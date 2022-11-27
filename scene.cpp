@@ -143,7 +143,7 @@ void scene::loadModels()
     index++;
 
     index = 0;
-        gltfModel[4].push_back(new struct gltfModel(ExternalPath + "model\\glTF\\kerosene_lamp\\scene.gltf"));
+        gltfModel[4].push_back(new struct gltfModel(ExternalPath + "model\\glb\\Duck.glb"));
         graphics->createModel(gltfModel[4].at(index));
     index++;
 
@@ -245,6 +245,8 @@ void scene::createObjects()
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
     graphics->bindOutliningObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.at(index)->scale(glm::vec3(3.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,0.0f,-0.5f));
     object3D.at(index)->animationTimer = 0.0f;
     object3D.at(index)->animationIndex = 0;
     object *Duck = object3D.at(index);

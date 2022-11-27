@@ -203,13 +203,7 @@ void postProcessingGraphics::createPipelines()
     void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice* device)
     {
         uint32_t index = 0;
-        std::array<VkDescriptorSetLayoutBinding,4> bindings{};
-            bindings[index].binding = index;
-            bindings[index].descriptorCount = 1;
-            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            bindings[index].pImmutableSamplers = nullptr;
-            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        index++;
+        std::array<VkDescriptorSetLayoutBinding,5> bindings{};
             bindings[index].binding = index;
             bindings[index].descriptorCount = 1;
             bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -224,6 +218,18 @@ void postProcessingGraphics::createPipelines()
         index++;
             bindings[index].binding = index;
             bindings[index].descriptorCount = static_cast<uint32_t>(blitAttachmentCount);
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = 1;
+            bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindings[index].pImmutableSamplers = nullptr;
+            bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        index++;
+            bindings[index].binding = index;
+            bindings[index].descriptorCount = 1;
             bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             bindings[index].pImmutableSamplers = nullptr;
             bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -374,10 +380,7 @@ void postProcessingGraphics::createPipelines()
 void postProcessingGraphics::createDescriptorPool()
 {
     uint32_t index = 0;
-    std::array<VkDescriptorPoolSize,4> poolSizes;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
+    std::array<VkDescriptorPoolSize,5> poolSizes;
         poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
@@ -386,6 +389,12 @@ void postProcessingGraphics::createDescriptorPool()
     index++;
         poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes[index].descriptorCount = static_cast<uint32_t>(postProcessing.blitAttachmentCount*image.Count);
+    index++;
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
+    index++;
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -426,6 +435,11 @@ void postProcessingGraphics::updateDescriptorSets()
             sslrImageInfo.imageView = sslrAttachment->imageView[image];
             sslrImageInfo.sampler = sslrAttachment->sampler;
 
+        VkDescriptorImageInfo ssaoImageInfo;
+            ssaoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            ssaoImageInfo.imageView = ssaoAttachment->imageView[image];
+            ssaoImageInfo.sampler = ssaoAttachment->sampler;
+
         index = 0;
         std::vector<VkDescriptorImageInfo> blitImageInfo(postProcessing.blitAttachmentCount);
             for(uint32_t i=0;i<blitImageInfo.size();i++,index++){
@@ -435,7 +449,7 @@ void postProcessingGraphics::updateDescriptorSets()
             }
 
         index = 0;
-        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 5> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
             descriptorWrites[index].dstBinding = index;
@@ -457,6 +471,14 @@ void postProcessingGraphics::updateDescriptorSets()
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(blitImageInfo.size());
+            descriptorWrites[index].pImageInfo = blitImageInfo.data();
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = postProcessing.DescriptorSets[image];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = 1;
             descriptorWrites[index].pImageInfo = &sslrImageInfo;
         index++;
@@ -465,8 +487,8 @@ void postProcessingGraphics::updateDescriptorSets()
             descriptorWrites[index].dstBinding = index;
             descriptorWrites[index].dstArrayElement = 0;
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(blitImageInfo.size());
-            descriptorWrites[index].pImageInfo = blitImageInfo.data();
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &ssaoImageInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

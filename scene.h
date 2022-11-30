@@ -68,6 +68,7 @@ public:
     void updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
     void destroyScene();
 
+    bool framebufferResized = false;
 };
 
 #endif // SCENE_H

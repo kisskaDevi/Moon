@@ -36,8 +36,8 @@ struct postProcessingPushConst{
 };
 
 struct CustomFilterPushConst{
-    alignas (4) float deltax;
-    alignas (4) float deltay;
+    alignas (4)                     float deltax;
+    alignas (4)                     float deltay;
 };
 
 #endif // BUFFEROBJECTS_H

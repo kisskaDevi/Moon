@@ -75,8 +75,9 @@ int main()
             if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,&graphics,window);
             else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
 
-            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized || testScene.framebufferResized){
                 framebufferResized = false;
+                testScene.framebufferResized = false;
                 recreateSwapChain(&app,&graphics,window);
             }else if(result != VK_SUCCESS){
                 throw std::runtime_error("failed to present swap chain image!");

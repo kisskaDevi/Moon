@@ -171,6 +171,7 @@ void scene::createLight()
 
     for(int i=index;i<6;i++,index++){
         graphics->bindLightSource(lightSource.at(index));
+        lightSource.at(index)->setScattering(false);
     }
 
     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
@@ -208,7 +209,7 @@ void scene::createLight()
         lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
         lightSource.at(index)->setProjectionMatrix(Proj);
         lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
-        lightSource.at(index)->setScattering(true);
+        lightSource.at(index)->setScattering(false);
         index++;
     }
 
@@ -216,7 +217,7 @@ void scene::createLight()
         lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
         lightSource.at(index)->setProjectionMatrix(Proj);
         lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
-        lightSource.at(index)->setScattering(true);
+        lightSource.at(index)->setScattering(false);
         index++;
     }
 }
@@ -530,12 +531,17 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
     }
     if(backRStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_R) == 0)
     {
+        framebufferResized = true;
+    }
+    backRStage = glfwGetKey(window,GLFW_KEY_R);
+    if(backOStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_O) == 0)
+    {
         object3D[0]->setOutliningEnable(!object3D[0]->getOutliningEnable());
         object3D[1]->setOutliningEnable(!object3D[1]->getOutliningEnable());
         object3D[2]->setOutliningEnable(!object3D[2]->getOutliningEnable());
         graphics->resetCmdWorld();
     }
-    backRStage = glfwGetKey(window,GLFW_KEY_R);
+    backOStage = glfwGetKey(window,GLFW_KEY_O);
     if(backTStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_T) == 0)
     {
         object3D[0]->changeAnimationFlag = true;

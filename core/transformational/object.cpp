@@ -33,6 +33,11 @@ void object::destroy(VkDevice* device)
     if(descriptorSetLayout) vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr);
 }
 
+uint8_t object::getPipelineBitMask() const
+{
+    return (outlining.Enable<<0);
+}
+
 void object::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
@@ -168,6 +173,7 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
 }
 
 void                            object::setEnable(const bool& enable)                   {this->enable = enable;}
+void                            object::setEnableShadow(const bool& enable)             {this->enableShadow = enable;}
 void                            object::setModel(gltfModel** model3D)                   {this->pModel = model3D;}
 void                            object::setConstantColor(const glm::vec4 &color)        {this->constantColor = color;}
 void                            object::setColorFactor(const glm::vec4 & color)         {this->colorFactor = color;}
@@ -175,6 +181,7 @@ void                            object::setBloomColor(const glm::vec4 & color)  
 void                            object::setBloomFactor(const glm::vec4 &color)          {this->bloomFactor = color;}
 
 bool                            object::getEnable() const                               {return enable;}
+bool                            object::getEnableShadow() const                         {return enableShadow;}
 gltfModel*                      object::getModel(uint32_t index)                        {
     gltfModel* model;
     if(modelCount>1&&index>=modelCount){

@@ -2,11 +2,6 @@
 #define MANUAL_SRGB 1
 #define pi 3.141592653589793f
 
-layout (push_constant) uniform PC
-{
-    float minAmbientFactor;
-}pc;
-
 layout(set = 1, binding = 0) uniform LightBufferObject
 {
     mat4 proj;

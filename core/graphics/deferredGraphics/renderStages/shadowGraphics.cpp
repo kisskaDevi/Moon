@@ -424,7 +424,7 @@ void shadowGraphics::updateCommandBuffer(uint32_t frameNumber, std::vector<objec
         vkCmdBindPipeline(shadowCommandBuffer[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
         for(auto object: objects)
         {
-            if(object->getEnable()){
+            if(object->getEnable()&&object->getEnableShadow()){
                 VkDeviceSize offsets[1] = { 0 };
                 vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
                 if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)

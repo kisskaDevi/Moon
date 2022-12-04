@@ -226,7 +226,9 @@ void scene::createObjects()
 {
     uint32_t index=0;
     object3D.push_back( new object(gltfModel.at(0).size(),gltfModel.at(0).data()) );
-    graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    graphics->bindBaseObject(object3D.at(index));
+    object3D.at(index)->setOutliningColor(glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    object3D.at(index)->setOutliningWidth(0.05f);
     object3D.at(index)->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
     object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -234,8 +236,10 @@ void scene::createObjects()
     index++;
 
     object3D.push_back( new object(gltfModel.at(1).size(),gltfModel.at(1).data()) );
-    graphics->bindOutliningObject(object3D.at(index),0.05f,glm::vec4(1.0f,0.5f,0.8f,1.0f));
-    object3D.at(index)->setConstantColor(glm::vec4(1.0,0.0,0.0,-0.5));
+    graphics->bindBaseObject(object3D.at(index));
+    object3D.at(index)->setOutliningColor(glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    object3D.at(index)->setOutliningWidth(0.05f);
+    object3D.at(index)->setConstantColor(glm::vec4(1.0,0.0,0.0,-0.8));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -244,10 +248,12 @@ void scene::createObjects()
     index++;
 
     object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
-    graphics->bindOutliningObject(object3D.at(index),0.025f,glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    graphics->bindBaseObject(object3D.at(index));
+    object3D.at(index)->setOutliningColor(glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    object3D.at(index)->setOutliningWidth(0.025f);
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(3.0f));
-    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,0.0f,-0.5f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,0.0f,-0.8f));
     object3D.at(index)->animationTimer = 0.0f;
     object3D.at(index)->animationIndex = 0;
     object *Duck = object3D.at(index);
@@ -343,7 +349,7 @@ void scene::mouseEvent(GLFWwindow* window, float frameTime)
         graphics->resetUboWorld();
 
         for(uint32_t i=0;i<graphics->getImageCount();i++){
-            graphics->updateStorageBuffer(i,glm::vec4(-1.0f+2.0f*xMpos/(WIDTH),-1.0f+2.0f*yMpos/(HEIGHT),0.0f,0.0f));
+            graphics->updateStorageBuffer(i, -1.0f+2.0f*xMpos/(WIDTH), -1.0f+2.0f*yMpos/(HEIGHT));
         }
     }
     else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)

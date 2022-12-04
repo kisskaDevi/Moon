@@ -27,7 +27,7 @@ void layersCombiner::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* d
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
 }
-void layersCombiner::setImageProp(imageInfo* pInfo)                       {this->image = *pInfo;}
+void layersCombiner::setImageProp(imageInfo* pInfo){image = *pInfo;}
 void layersCombiner::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     this->attachmentsCount = attachmentsCount;
@@ -37,47 +37,49 @@ void layersCombiner::setAttachments(uint32_t attachmentsCount, attachments* pAtt
 void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     static_cast<void>(attachmentsCount);
-    pAttachments->resize(image.Count);
-    for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
-    {
-        createImage(            physicalDevice,
-                                device,
-                                image.Extent.width,
-                                image.Extent.height,
-                                1,
-                                VK_SAMPLE_COUNT_1_BIT,
-                                image.Format,
-                                VK_IMAGE_TILING_OPTIMAL,
-                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT ,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                pAttachments->image[imageNumber],
-                                pAttachments->imageMemory[imageNumber]);
+    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+        pAttachments[attachmentNumber].resize(image.Count);
+        for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
+        {
+            createImage(            physicalDevice,
+                                    device,
+                                    image.Extent.width,
+                                    image.Extent.height,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    image.Format,
+                                    VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (attachmentNumber==1?VK_IMAGE_USAGE_TRANSFER_SRC_BIT:0),
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    pAttachments[attachmentNumber].image[imageNumber],
+                                    pAttachments[attachmentNumber].imageMemory[imageNumber]);
 
-        pAttachments->imageView[imageNumber] =
-        createImageView(        device,
-                                pAttachments->image[imageNumber],
-                                image.Format,
-                                VK_IMAGE_ASPECT_COLOR_BIT,
-                                1);
+            pAttachments[attachmentNumber].imageView[imageNumber] =
+            createImageView(        device,
+                                    pAttachments[attachmentNumber].image[imageNumber],
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1);
+        }
+        VkSamplerCreateInfo samplerInfo{};
+            samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            samplerInfo.magFilter = VK_FILTER_LINEAR;
+            samplerInfo.minFilter = VK_FILTER_LINEAR;
+            samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.anisotropyEnable = VK_TRUE;
+            samplerInfo.maxAnisotropy = 1.0f;
+            samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            samplerInfo.unnormalizedCoordinates = VK_FALSE;
+            samplerInfo.compareEnable = VK_FALSE;
+            samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+            samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerInfo.minLod = 0.0f;
+            samplerInfo.maxLod = 0.0f;
+            samplerInfo.mipLodBias = 0.0f;
+        vkCreateSampler(*device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
     }
-    VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy = 1.0f;
-        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable = VK_FALSE;
-        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = 0.0f;
-        samplerInfo.mipLodBias = 0.0f;
-    vkCreateSampler(*device, &samplerInfo, nullptr, &pAttachments->sampler);
 }
 
 void layersCombiner::Combiner::Destroy(VkDevice* device)
@@ -100,7 +102,7 @@ void layersCombiner::destroy()
 void layersCombiner::createRenderPass()
 {
     uint32_t index = 0;
-    std::array<VkAttachmentDescription,1> attachments{};
+    std::array<VkAttachmentDescription,2> attachments{};
         attachments[index].format = image.Format;
         attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
         attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -109,10 +111,22 @@ void layersCombiner::createRenderPass()
         attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         attachments[index].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    index++;
+        attachments[index].format = image.Format;
+        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[index].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
     index = 0;
-    std::array<VkAttachmentReference,1> attachmentRef;
+    std::array<VkAttachmentReference,2> attachmentRef;
         attachmentRef[index].attachment = 0;
+        attachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    index++;
+        attachmentRef[index].attachment = 1;
         attachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     index = 0;
@@ -145,11 +159,15 @@ void layersCombiner::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
+        std::vector<VkImageView> attachments(attachmentsCount);
+        for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+            attachments[attachmentNumber] = pAttachments[attachmentNumber].imageView[i];
+        }
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
-            framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->imageView[i];
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            framebufferInfo.pAttachments = attachments.data();
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
@@ -167,7 +185,7 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice* device)
 {
     uint32_t index = 0;
 
-    std::array<VkDescriptorSetLayoutBinding,9> bindings{};
+    std::array<VkDescriptorSetLayoutBinding,11> bindings{};
         bindings[index].binding = index;
         bindings[index].descriptorCount = 1;
         bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -194,6 +212,18 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice* device)
     index++;
         bindings[index].binding = index;
         bindings[index].descriptorCount = 1;
+        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings[index].pImmutableSamplers = nullptr;
+        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    index++;
+        bindings[index].binding = index;
+        bindings[index].descriptorCount = 1;
+        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings[index].pImmutableSamplers = nullptr;
+        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    index++;
+        bindings[index].binding = index;
+        bindings[index].descriptorCount = transparentLayersCount;
         bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         bindings[index].pImmutableSamplers = nullptr;
         bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -299,7 +329,16 @@ void layersCombiner::Combiner::createPipeline(VkDevice* device, imageInfo* pInfo
         multisampling.alphaToOneEnable = VK_FALSE;
 
     index = 0;
-    std::array<VkPipelineColorBlendAttachmentState,1> colorBlendAttachment;
+    std::array<VkPipelineColorBlendAttachmentState,2> colorBlendAttachment;
+        colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachment[index].blendEnable = VK_FALSE;
+        colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
+        colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
+    index++;
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment[index].blendEnable = VK_FALSE;
         colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -361,7 +400,7 @@ void layersCombiner::Combiner::createPipeline(VkDevice* device, imageInfo* pInfo
 void layersCombiner::createDescriptorPool()
 {
     size_t index = 0;
-    std::array<VkDescriptorPoolSize,9> poolSizes;
+    std::array<VkDescriptorPoolSize,11> poolSizes;
         poolSizes[index].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
     index++;
@@ -376,6 +415,12 @@ void layersCombiner::createDescriptorPool()
     index++;
         poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
+    index++;
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
+    index++;
+        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[index].descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
     index++;
         poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes[index].descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
@@ -422,6 +467,11 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             colorImageInfo.imageView = deferredAttachments.image.imageView[i];
             colorImageInfo.sampler = deferredAttachments.image.sampler;
 
+        VkDescriptorImageInfo bloomImageInfo;
+            bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            bloomImageInfo.imageView = deferredAttachments.bloom.imageView[i];
+            bloomImageInfo.sampler = deferredAttachments.bloom.sampler;
+
         VkDescriptorImageInfo positionImageInfo;
             positionImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             positionImageInfo.imageView = deferredAttachments.GBuffer.position.imageView[i];
@@ -438,6 +488,7 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             depthImageInfo.sampler = deferredAttachments.depth.sampler;
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> positionLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> normalLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> depthLayersImageInfo(combiner.transparentLayersCount);
@@ -446,6 +497,10 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             colorLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             colorLayersImageInfo[index].imageView = transparencyLayers[index].image.imageView[i];
             colorLayersImageInfo[index].sampler = transparencyLayers[index].image.sampler;
+
+            bloomLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            bloomLayersImageInfo[index].imageView = transparencyLayers[index].bloom.imageView[i];
+            bloomLayersImageInfo[index].sampler = transparencyLayers[index].bloom.sampler;
 
             positionLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             positionLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.position.imageView[i];
@@ -465,7 +520,7 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
         }
 
         uint32_t index = 0;
-        std::array<VkWriteDescriptorSet, 9> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 11> descriptorWrites{};
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
             descriptorWrites[index].dstBinding = index;
@@ -481,6 +536,14 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = 1;
             descriptorWrites[index].pImageInfo = &colorImageInfo;
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = 1;
+            descriptorWrites[index].pImageInfo = &bloomImageInfo;
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
@@ -513,6 +576,14 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[index].descriptorCount = combiner.transparentLayersCount;
             descriptorWrites[index].pImageInfo = colorLayersImageInfo.data();
+        index++;
+            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
+            descriptorWrites[index].dstBinding = index;
+            descriptorWrites[index].dstArrayElement = 0;
+            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[index].descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites[index].pImageInfo = bloomLayersImageInfo.data();
         index++;
             descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[index].dstSet = combiner.DescriptorSets[i];

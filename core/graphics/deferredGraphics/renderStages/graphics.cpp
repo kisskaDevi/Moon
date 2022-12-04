@@ -10,7 +10,8 @@
 
 deferredGraphics::deferredGraphics(){
     pAttachments.resize(7);
-    outlining.base = &base;
+    outlining.Parent = &base;
+    ambientLighting.Parent = &lighting;
 }
 
 void deferredGraphics::setExternalPath(const std::string &path)
@@ -19,6 +20,7 @@ void deferredGraphics::setExternalPath(const std::string &path)
     outlining.ExternalPath = path;
     skybox.ExternalPath = path;
     lighting.ExternalPath = path;
+    ambientLighting.ExternalPath = path;
 }
 
 void                            deferredGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
@@ -37,7 +39,7 @@ void                            deferredGraphics::setEmptyTexture(std::string ZE
 void                            deferredGraphics::setCameraObject(camera* cameraObject)                 { this->cameraObject = cameraObject;}
 void                            deferredGraphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
 
-void                            deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { lighting.minAmbientFactor = minAmbientFactor;}
+void                            deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor;}
 void                            deferredGraphics::setScattering(const bool &enableScattering)           { lighting.enableScattering = enableScattering;}
 void                            deferredGraphics::setTransparencyPass(const bool& transparencyPass)     { this->transparencyPass = transparencyPass;}
 
@@ -54,16 +56,10 @@ void deferredGraphics::destroyEmptyTexture(){
 void deferredGraphics::destroy()
 {
     base.Destroy(device);
-    outlining.DestroyPipeline(device);
     outlining.DestroyOutliningPipeline(device);
     skybox.Destroy(device);
     lighting.Destroy(device);
-
-    for (size_t i = 0; i < storageBuffers.size(); i++)
-    {
-        if(storageBuffers[i])       vkDestroyBuffer(*device, storageBuffers[i], nullptr);
-        if(storageBuffersMemory[i]) vkFreeMemory(*device, storageBuffersMemory[i], nullptr);
-    }
+    ambientLighting.DestroyPipeline(device);
 
     if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
@@ -71,45 +67,6 @@ void deferredGraphics::destroy()
 
     for(size_t i=0;i<colorAttachments.size();i++)
         colorAttachments[i].deleteAttachment(device);
-}
-
-void deferredGraphics::createStorageBuffers(uint32_t imageCount)
-{
-    storageBuffers.resize(imageCount);
-    storageBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-        createBuffer(   physicalDevice,
-                        device,
-                        sizeof(StorageBufferObject),
-                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        storageBuffers[i],
-                        storageBuffersMemory[i]);
-}
-
-void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition)
-{
-    void* data;
-
-    StorageBufferObject StorageUBO{};
-        StorageUBO.mousePosition = mousePosition;
-        StorageUBO.number = INT_FAST32_MAX;
-        StorageUBO.depth = 1.0f;
-    vkMapMemory(*device, storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
-        memcpy(data, &StorageUBO, sizeof(StorageUBO));
-    vkUnmapMemory(*device, storageBuffersMemory[currentImage]);
-}
-
-uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage)
-{
-    void* data;
-
-    StorageBufferObject StorageUBO{};
-    vkMapMemory(*device, storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
-        memcpy(&StorageUBO, data, sizeof(StorageUBO));
-    vkUnmapMemory(*device, storageBuffersMemory[currentImage]);
-
-    return StorageUBO.number;
 }
 
 void                            deferredGraphics::setAttachments(DeferredAttachments* Attachments)
@@ -790,7 +747,6 @@ void deferredGraphics::createPipelines()
     base.createDescriptorSetLayout(device);
     base.createPipeline(device,&image,&renderPass);
     base.createUniformBuffers(physicalDevice,device,image.Count);
-    outlining.createPipeline(device,&image,&renderPass);
     outlining.createOutliningPipeline(device,&image,&renderPass);
     skybox.createDescriptorSetLayout(device);
     skybox.createPipeline(device,&image,&renderPass);
@@ -798,6 +754,7 @@ void deferredGraphics::createPipelines()
     lighting.createDescriptorSetLayout(device);
     lighting.createPipeline(device,&image,&renderPass);
     lighting.createUniformBuffers(physicalDevice,device,image.Count);
+    ambientLighting.createPipeline(device,&image,&renderPass);
 }
 
 void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
@@ -832,11 +789,12 @@ void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
 
         skybox.render(frameNumber,commandBuffers);
         base.render(frameNumber,commandBuffers, primitiveCount);
-        outlining.render(frameNumber,commandBuffers,primitiveCount);
+        outlining.render(frameNumber,commandBuffers);
 
     vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
 
         lighting.render(frameNumber,commandBuffers);
+        ambientLighting.render(frameNumber,commandBuffers);
 
     vkCmdEndRenderPass(commandBuffers);
 }
@@ -879,19 +837,11 @@ void deferredGraphics::updateObjectUniformBuffer(uint32_t currentImage)
 {
     for(size_t i=0;i<base.objects.size();i++)
         base.objects[i]->updateUniformBuffer(device,currentImage);
-    for(size_t i=0;i<outlining.objects.size();i++)
-        outlining.objects[i]->updateUniformBuffer(device,currentImage);
 }
 
 void deferredGraphics::bindBaseObject(object *newObject)
 {
     base.objects.push_back(newObject);
-}
-
-
-void deferredGraphics::bindOutliningObject(object *newObject)
-{
-    outlining.objects.push_back(newObject);
 }
 
 void deferredGraphics::bindSkyBoxObject(object *newObject, const std::vector<std::string>& TEXTURE_PATH)
@@ -910,18 +860,6 @@ bool deferredGraphics::removeBaseObject(object* object)
     for(uint32_t index = 0; index<base.objects.size(); index++){
         if(object==base.objects[index]){
             base.objects.erase(base.objects.begin()+index);
-            result = true;
-        }
-    }
-    return result;
-}
-
-bool deferredGraphics::removeOutliningObject(object* object)
-{
-    bool result = false;
-    for(uint32_t index = 0; index<outlining.objects.size(); index++){
-        if(object==outlining.objects[index]){
-            outlining.objects.erase(outlining.objects.begin()+index);
             result = true;
         }
     }

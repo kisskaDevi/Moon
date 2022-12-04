@@ -21,7 +21,7 @@ private:
     attachments*                        pAttachments{nullptr};
 
     attachments                         bufferAttachment;
-    attachments*                        srcAttachment;
+    attachments*                        srcAttachment{nullptr};
     float                               blitFactor{0.0f};
     float                               xSampleStep{1.5f};
     float                               ySampleStep{1.5f};

@@ -11,20 +11,18 @@ INCLUDEPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 DEPENDPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 
 DISTFILES += \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/lightDrop.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/outsideSpotCondition.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/pbr.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/scattering.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/metods/shadow.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/scatteringShadowSpotLighting.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/scatteringSpotLighting.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/shadowSpotLighting.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/spotLighting.frag \
-    core/graphics/deferredGraphics/shaders/SpotLightingPass/spotLighting.vert \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/metods/lightDrop.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/metods/outsideSpotCondition.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/metods/pbr.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/metods/scattering.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/metods/shadow.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/scatteringShadowSpotLighting.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/scatteringSpotLighting.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/shadowSpotLighting.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/spotLighting.frag \
+    core/graphics/deferredGraphics/shaders/spotLightingPass/spotLighting.vert \
     core/graphics/deferredGraphics/shaders/ambientLightingPass/ambientLighting.frag \
     core/graphics/deferredGraphics/shaders/ambientLightingPass/ambientLighting.vert \
-    core/graphics/deferredGraphics/shaders/combiner/combiner.frag \
-    core/graphics/deferredGraphics/shaders/combiner/combiner.vert \
     core/graphics/deferredGraphics/shaders/compile.bat \
     core/graphics/deferredGraphics/shaders/base/base.frag \
     core/graphics/deferredGraphics/shaders/base/base.vert \
@@ -46,8 +44,8 @@ DISTFILES += \
     core/graphics/deferredGraphics/shaders/ssao/SSAO.vert \
     core/graphics/deferredGraphics/shaders/sslr/SSLR.frag \
     core/graphics/deferredGraphics/shaders/sslr/SSLR.vert \
-    core/graphics/deferredGraphics/shaders/stencil/secondStencil.frag \
-    core/graphics/deferredGraphics/shaders/stencil/secondStencil.vert \
+    core/graphics/deferredGraphics/shaders/outlining/outlining.frag \
+    core/graphics/deferredGraphics/shaders/outlining/outlining.vert \
     model/glTF/Sponza/Sponza.gltf \
     model/glb/Bee.glb \
     model/glb/Box.glb \
@@ -69,6 +67,7 @@ SOURCES += \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
     core/graphics/deferredGraphics/filters/blur.cpp \
     core/graphics/deferredGraphics/filters/layersCombiner.cpp \
+    core/graphics/deferredGraphics/renderStages/source/ambientLighting.cpp \
     core/graphics/deferredGraphics/renderStages/source/lighting.cpp \
     core/graphics/deferredGraphics/renderStages/source/lightingPipelines.cpp \
     core/graphics/deferredGraphics/renderStages/source/base.cpp \
@@ -77,7 +76,6 @@ SOURCES += \
     core/graphics/deferredGraphics/renderStages/graphics.cpp \
     core/graphics/deferredGraphics/renderStages/postProcessing.cpp \
     core/graphics/deferredGraphics/renderStages/shadowGraphics.cpp \
-    core/graphics/deferredGraphics/filters/combiner.cpp \
     core/graphics/deferredGraphics/filters/customfilter.cpp \
     core/graphics/deferredGraphics/filters/ssao.cpp \
     core/graphics/deferredGraphics/filters/sslr.cpp \
@@ -102,7 +100,6 @@ HEADERS += \
     core/graphics/deferredGraphics/renderStages/graphics.h \
     core/graphics/deferredGraphics/renderStages/postProcessing.h \
     core/graphics/deferredGraphics/renderStages/shadowGraphics.h \
-    core/graphics/deferredGraphics/filters/combiner.h \
     core/graphics/deferredGraphics/filters/customfilter.h \
     core/graphics/deferredGraphics/filters/ssao.h \
     core/graphics/deferredGraphics/filters/sslr.h \

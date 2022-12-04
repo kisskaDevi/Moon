@@ -29,6 +29,5 @@ vec4 blur(sampler2D Sampler, vec2 TexCoord)
 void main()
 {
     outColor = vec4(0.0f,0.0f,0.0f,0.0f);
-    //outColor += blur(blurSampler,fragTexCoord);
     outColor += texture(blurSampler,fragTexCoord);
 }

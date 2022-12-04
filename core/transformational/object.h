@@ -22,6 +22,7 @@ class object : public transformational
 {
 private:
     bool                            enable{true};
+    bool                            enableShadow{true};
 
     gltfModel**                     pModel;
     uint32_t                        modelCount{0};
@@ -61,6 +62,8 @@ public:
     void destroyUniformBuffers(VkDevice* device);
     void destroy(VkDevice* device);
 
+    uint8_t                         getPipelineBitMask() const;
+
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet();
     std::vector<VkBuffer>&          getUniformBuffers();
@@ -88,7 +91,9 @@ public:
     glm::vec4           getColorFactor() const;
 
     void                setEnable(const bool& enable);
+    void                setEnableShadow(const bool& enable);
     bool                getEnable() const;
+    bool                getEnableShadow() const;
 
     void                setOutliningEnable(const bool& enable);
     void                setOutliningWidth(const float& width);

@@ -12,8 +12,6 @@ This application makes render of scene by Vulkan API and contains some modern gr
 * Two pass render - first pass draw and shade scene, second pass is post processing.
 * glTF models render based on [repository of Sascha Willems](https://github.com/SaschaWillems/Vulkan-glTF-PBR), redesigned for this implementation of the Vulkan application.
 * Animations and linear interpolation between Animations
-<img src="./screenshots/Vulkan.gif" width="1000px">
-
 * Groups of objects, light sources, camera and groups manipulations.
 * Using three frame buffers.
 * MSAA.

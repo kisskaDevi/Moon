@@ -9,7 +9,6 @@
 #include "filters/customfilter.h"
 #include "filters/sslr.h"
 #include "filters/ssao.h"
-#include "filters/combiner.h"
 #include "filters/layersCombiner.h"
 
 struct updateFlag{
@@ -36,21 +35,22 @@ private:
     float                                       blitFactor{1.5f};
     uint32_t                                    blitAttachmentCount{8};
     std::vector<attachments>                    blitAttachments;
-    attachments                                 combineBloomAttachment;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
-    attachments                                 layersCombinedAttachment;
+    std::vector<attachments>                    layersCombinedAttachment;
 
     deferredGraphics                            DeferredGraphics;
     gaussianBlur                                Blur;
     customFilter                                Filter;
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
-    imagesCombiner                              Combiner;
     layersCombiner                              LayersCombiner;
     postProcessingGraphics                      PostProcessing;
     std::vector<deferredGraphics>               TransparentLayers;
     uint32_t                                    TransparentLayersCount{3};
+
+    std::vector<VkBuffer>                       storageBuffers;
+    std::vector<VkDeviceMemory>                 storageBuffersMemory;
 
     updateFlag                                  worldCmd;
     updateFlag                                  lightsCmd;
@@ -59,6 +59,8 @@ private:
 
     std::vector<VkCommandBuffer>                commandBuffers;
     std::vector<VkCommandBuffer>                commandBufferSet;
+
+    void createStorageBuffers(uint32_t imageCount);
 
     void updateUniformBuffer(uint32_t imageIndex);
     void updateCommandBuffer(uint32_t imageIndex, VkCommandBuffer* commandBuffer);
@@ -101,7 +103,6 @@ public:
     void        removeLightSource(light* lightSource);
 
     void        bindBaseObject(object* newObject);
-    void        bindOutliningObject(object* newObject, float lineWidth, glm::vec4 lineColor);
     void        bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
 
     bool        removeObject(object* object);
@@ -109,7 +110,7 @@ public:
 
     void        setMinAmbientFactor(const float& minAmbientFactor);
 
-    void        updateStorageBuffer(uint32_t currentImage, const glm::vec4& mousePosition);
+    void        updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
     uint32_t    readStorageBuffer(uint32_t currentImage);
 };
 

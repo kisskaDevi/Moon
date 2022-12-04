@@ -8,7 +8,7 @@
 
 void deferredGraphics::Lighting::Destroy(VkDevice* device)
 {
-    for(auto& descriptorSetLayout: LightDescriptorSetLayout){
+    for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second) vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr);
     }
     if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
@@ -20,9 +20,6 @@ void deferredGraphics::Lighting::Destroy(VkDevice* device)
     for(auto& Pipeline: PipelinesDictionary){
         if(Pipeline.second) vkDestroyPipeline(*device, Pipeline.second, nullptr);
     }
-
-    if(AmbientPipeline)         vkDestroyPipeline(*device, AmbientPipeline, nullptr);
-    if(AmbientPipelineLayout)   vkDestroyPipelineLayout(*device, AmbientPipelineLayout, nullptr);
 
     for (size_t i = 0; i < uniformBuffers.size(); i++)
     {
@@ -69,22 +66,20 @@ void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.pBindings = Binding.data();
     vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    createSpotLightDescriptorSetLayout(device,&LightDescriptorSetLayout[0x0]);
+    createSpotLightDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
 }
 
 void deferredGraphics::Lighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
-    createAmbientPipeline(device,pInfo,pRenderPass);
-
-    std::string spotVert = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\spotLightingVert.spv";
-    std::string spotFrag = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\spotLightingFrag.spv";
-    std::string shadowSpotFrag = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\shadowSpotLightingFrag.spv";
+    std::string spotVert = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingVert.spv";
+    std::string spotFrag = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingFrag.spv";
+    std::string shadowSpotFrag = ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\spotLightingPass\\shadowSpotLightingFrag.spv";
     std::string scatteringSpotFrag = enableScattering ?
-                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\scatteringSpotLightingFrag.spv":
-                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\spotLightingFrag.spv";
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\spotLightingPass\\scatteringSpotLightingFrag.spv":
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingFrag.spv";
     std::string scatteringShadowSpotFrag = enableScattering ?
-                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\scatteringShadowSpotLightingFrag.spv":
-                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\SpotLightingPass\\shadowSpotLightingFrag.spv";
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\spotLightingPass\\scatteringShadowSpotLightingFrag.spv":
+                ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\spotLightingPass\\shadowSpotLightingFrag.spv";
     createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,&PipelineLayoutDictionary[(false<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(false <<4)|(0x0)]);
     createSpotPipeline(device,pInfo,pRenderPass,spotVert,shadowSpotFrag,&PipelineLayoutDictionary[(false<<5)|(true <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(true <<4)|(0x0)]);
     createSpotPipeline(device,pInfo,pRenderPass,spotVert,scatteringSpotFrag,&PipelineLayoutDictionary[(true<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(true<<5)|(false <<4)|(0x0)]);
@@ -168,23 +163,11 @@ void deferredGraphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer co
     {
         vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelinesDictionary[lightSource->getPipelineBitMask()]);
 
-        lightPassPushConst pushConst{};
-            pushConst.minAmbientFactor = minAmbientFactor;
-        vkCmdPushConstants(commandBuffers, PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(lightPassPushConst), &pushConst);
-
         std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],lightSource->getDescriptorSets()[frameNumber]};
         vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayoutDictionary[lightSource->getPipelineBitMask()], 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
         vkCmdDraw(commandBuffers, 18, 1, 0, 0);
     }
-
-    lightPassPushConst pushConst{};
-        pushConst.minAmbientFactor = minAmbientFactor;
-    vkCmdPushConstants(commandBuffers, AmbientPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(lightPassPushConst), &pushConst);
-
-    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, AmbientPipeline);
-    vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, AmbientPipelineLayout, 0, 1, &DescriptorSets[frameNumber], 0, nullptr);
-    vkCmdDraw(commandBuffers, 6, 1, 0, 0);
 }
 
 void deferredGraphics::updateLightUbo(uint32_t imageIndex)
@@ -195,14 +178,10 @@ void deferredGraphics::updateLightUbo(uint32_t imageIndex)
 
 void deferredGraphics::updateLightCmd(uint32_t imageIndex)
 {
-    std::vector<object*> objects(base.objects.size()+outlining.objects.size());
+    std::vector<object*> objects(base.objects.size());
 
     uint32_t counter = 0;
     for(auto object: base.objects){
-        objects[counter] = object;
-        counter++;
-    }
-    for(auto object: outlining.objects){
         objects[counter] = object;
         counter++;
     }

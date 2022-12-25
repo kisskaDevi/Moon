@@ -78,7 +78,7 @@ void main()
 
     //color = mix(color, color * emissiveTexture.a, 1.0f);  ???
 
-    outColor += LightScattering(50, light.view, light.proj, light.projView, light.position, lightColor, projview, eyePosition, glPosition, lightTexture, depthMap, type);
+    outBlur += LightScattering(50, light.view, light.proj, light.projView, light.position, lightColor, projview, eyePosition, glPosition, lightTexture, depthMap, type);
     outColor += SRGBtoLINEAR(emissiveTexture);
     outBloom += SRGBtoLINEAR(emissiveTexture);
 }

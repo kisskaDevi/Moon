@@ -95,8 +95,8 @@ void customFilter::createBufferAttachments()
 
 void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
-    for(uint32_t i=0;i<attachmentsCount;i++){
-        pAttachments[i].resize(image.Count);
+    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+        pAttachments[attachmentNumber].resize(image.Count);
         for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
         {
             createImage(        physicalDevice,
@@ -109,12 +109,12 @@ void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAt
                                 VK_IMAGE_TILING_OPTIMAL,
                                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                pAttachments[i].image[imageNumber],
-                                pAttachments[i].imageMemory[imageNumber]);
+                                pAttachments[attachmentNumber].image[imageNumber],
+                                pAttachments[attachmentNumber].imageMemory[imageNumber]);
 
-            pAttachments[i].imageView[imageNumber] =
+            pAttachments[attachmentNumber].imageView[imageNumber] =
             createImageView(    device,
-                                pAttachments[i].image[imageNumber],
+                                pAttachments[attachmentNumber].image[imageNumber],
                                 image.Format,
                                 VK_IMAGE_ASPECT_COLOR_BIT,
                                 1);
@@ -136,7 +136,7 @@ void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAt
             SamplerInfo.minLod = 0.0f;
             SamplerInfo.maxLod = 0.0f;
             SamplerInfo.mipLodBias = 0.0f;
-        vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments[i].sampler);
+        vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
     }
 }
 
@@ -154,8 +154,7 @@ void customFilter::destroy()
 
     if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
-        for(size_t j = 0; j< framebuffers[i].size();j++)
-            if(framebuffers[i][j]) vkDestroyFramebuffer(*device, framebuffers[i][j],nullptr);
+        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i], nullptr);
 
     bufferAttachment.deleteAttachment(&*device);
     bufferAttachment.deleteSampler(&*device);
@@ -207,10 +206,9 @@ void customFilter::createRenderPass()
 
 void customFilter::createFramebuffers()
 {
-    framebuffers.resize(attachmentsCount);
+    framebuffers.resize(image.Count*attachmentsCount);
     for(size_t i = 0; i < attachmentsCount; i++){
-        framebuffers[i].resize(image.Count);
-        for (size_t j = 0; j < framebuffers[i].size(); j++){
+        for (size_t j = 0; j < image.Count; j++){
             VkFramebufferCreateInfo framebufferInfo{};
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
@@ -219,7 +217,7 @@ void customFilter::createFramebuffers()
                 framebufferInfo.width = image.Extent.width;
                 framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
-            vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i][j]);
+            vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[image.Count * i + j]);
         }
     }
 }
@@ -443,7 +441,7 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, u
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[attachmentNumber][frameNumber];
+        renderPassInfo.framebuffer = framebuffers[attachmentNumber * image.Count + frameNumber];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());

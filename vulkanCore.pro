@@ -96,6 +96,7 @@ HEADERS += \
     core/graphics/deferredGraphics/bufferObjects.h \
     core/graphics/deferredGraphics/deferredgraphicsinterface.h \
     core/graphics/deferredGraphics/filters/blur.h \
+    core/graphics/deferredGraphics/filters/filtergraphics.h \
     core/graphics/deferredGraphics/filters/layersCombiner.h \
     core/graphics/deferredGraphics/renderStages/graphics.h \
     core/graphics/deferredGraphics/renderStages/postProcessing.h \

@@ -80,48 +80,49 @@ void gaussianBlur::createBufferAttachments()
 
 void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
-    static_cast<void>(attachmentsCount);
-    pAttachments->resize(image.Count);
-    for(size_t Image=0; Image<image.Count; Image++)
-    {
-        createImage(        physicalDevice,
-                            device,
-                            image.Extent.width,
-                            image.Extent.height,
-                            1,
-                            VK_SAMPLE_COUNT_1_BIT,
-                            image.Format,
-                            VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            pAttachments->image[Image],
-                            pAttachments->imageMemory[Image]);
+    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+        pAttachments[attachmentNumber].resize(image.Count);
+        for(size_t Image=0; Image<image.Count; Image++)
+        {
+            createImage(        physicalDevice,
+                                device,
+                                image.Extent.width,
+                                image.Extent.height,
+                                1,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                image.Format,
+                                VK_IMAGE_TILING_OPTIMAL,
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                pAttachments[attachmentNumber].image[Image],
+                                pAttachments[attachmentNumber].imageMemory[Image]);
 
-        createImageView(    device,
-                            pAttachments->image[Image],
-                            image.Format,
-                            VK_IMAGE_ASPECT_COLOR_BIT,
-                            1,
-                            &pAttachments->imageView[Image]);
+            createImageView(    device,
+                                pAttachments[attachmentNumber].image[Image],
+                                image.Format,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1,
+                                &pAttachments[attachmentNumber].imageView[Image]);
+        }
+        VkSamplerCreateInfo SamplerInfo{};
+            SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            SamplerInfo.magFilter = VK_FILTER_LINEAR;
+            SamplerInfo.minFilter = VK_FILTER_LINEAR;
+            SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            SamplerInfo.anisotropyEnable = VK_TRUE;
+            SamplerInfo.maxAnisotropy = 1.0f;
+            SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            SamplerInfo.unnormalizedCoordinates = VK_FALSE;
+            SamplerInfo.compareEnable = VK_FALSE;
+            SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+            SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            SamplerInfo.minLod = 0.0f;
+            SamplerInfo.maxLod = 0.0f;
+            SamplerInfo.mipLodBias = 0.0f;
+        vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
     }
-    VkSamplerCreateInfo SamplerInfo{};
-        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        SamplerInfo.magFilter = VK_FILTER_LINEAR;
-        SamplerInfo.minFilter = VK_FILTER_LINEAR;
-        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        SamplerInfo.anisotropyEnable = VK_TRUE;
-        SamplerInfo.maxAnisotropy = 1.0f;
-        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        SamplerInfo.unnormalizedCoordinates = VK_FALSE;
-        SamplerInfo.compareEnable = VK_FALSE;
-        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-        SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        SamplerInfo.minLod = 0.0f;
-        SamplerInfo.maxLod = 0.0f;
-        SamplerInfo.mipLodBias = 0.0f;
-    vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments->sampler);
 }
 
 void gaussianBlur::xBlur::Destroy(VkDevice* device)

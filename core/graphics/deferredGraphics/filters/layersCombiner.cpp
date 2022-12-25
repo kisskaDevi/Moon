@@ -36,7 +36,6 @@ void layersCombiner::setAttachments(uint32_t attachmentsCount, attachments* pAtt
 
 void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
-    static_cast<void>(attachmentsCount);
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
         pAttachments[attachmentNumber].resize(image.Count);
         for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
@@ -614,8 +613,9 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
 
 void layersCombiner::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
-    std::array<VkClearValue, 1> ClearValues{};
-        ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    std::array<VkClearValue, 2> ClearValues{};
+        ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+        ClearValues[1].color = {{0.0f, 0.0f, 0.0f, 0.0f}};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

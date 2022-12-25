@@ -87,16 +87,6 @@ void deferredGraphicsInterface::destroyGraphics()
     vkDestroySwapchainKHR(*devicesInfo[0].device, swapChain, nullptr);
 }
 
-uint32_t deferredGraphicsInterface::getImageCount()
-{
-    return imageCount;
-}
-
-VkSwapchainKHR& deferredGraphicsInterface::getSwapChain()
-{
-    return swapChain;
-}
-
 void deferredGraphicsInterface::setDevicesInfo(uint32_t devicesInfoCount, deviceInfo* devicesInfo)
 {
     this->devicesInfo.resize(devicesInfoCount);
@@ -122,6 +112,17 @@ void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
         imageCount = swapChainSupport.capabilities.maxImageCount;
+}
+
+void deferredGraphicsInterface::fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments)
+{
+    filter->setAttachments(attachmentsNumber,attachments);
+    filter->createAttachments(attachmentsNumber,attachments);
+    filter->createRenderPass();
+    filter->createFramebuffers();
+    filter->createPipelines();
+    filter->createDescriptorPool();
+    filter->createDescriptorSets();
 }
 
 void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
@@ -186,55 +187,25 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
         transparentLayers[i] = transparentLayersAttachments[i];
 
     Blur.createBufferAttachments();
-    Blur.setAttachments(1,&blurAttachment);
-    Blur.createAttachments(1,&blurAttachment);
-    Blur.createRenderPass();
-    Blur.createFramebuffers();
-    Blur.createPipelines();
-    Blur.createDescriptorPool();
-    Blur.createDescriptorSets();
+    fastCreateFilterGraphics(&Blur,1,&blurAttachment);
     Blur.updateDescriptorSets(&deferredAttachments.blur);
 
     layersCombinedAttachment.resize(2);
     LayersCombiner.setTransparentLayersCount(TransparentLayersCount);
-    LayersCombiner.setAttachments(static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
-    LayersCombiner.createAttachments(static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
-    LayersCombiner.createRenderPass();
-    LayersCombiner.createFramebuffers();
-    LayersCombiner.createPipelines();
-    LayersCombiner.createDescriptorPool();
-    LayersCombiner.createDescriptorSets();
+    fastCreateFilterGraphics(&LayersCombiner,static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
     LayersCombiner.updateDescriptorSets(DeferredGraphics.getSceneBuffer(),deferredAttachments,transparentLayers.data());
 
     blitAttachments.resize(blitAttachmentCount);
     Filter.createBufferAttachments();
     Filter.setBlitFactor(blitFactor);
     Filter.setSrcAttachment(&layersCombinedAttachment[1]);
-    Filter.setAttachments(blitAttachmentCount,blitAttachments.data());
-    Filter.createAttachments(blitAttachmentCount,blitAttachments.data());
-    Filter.createRenderPass();
-    Filter.createFramebuffers();
-    Filter.createPipelines();
-    Filter.createDescriptorPool();
-    Filter.createDescriptorSets();
+    fastCreateFilterGraphics(&Filter,blitAttachmentCount,blitAttachments.data());
     Filter.updateDescriptorSets();
 
-    SSAO.setAttachments(1,&ssaoAttachment);
-    SSAO.createAttachments(1,&ssaoAttachment);
-    SSAO.createRenderPass();
-    SSAO.createFramebuffers();
-    SSAO.createPipelines();
-    SSAO.createDescriptorPool();
-    SSAO.createDescriptorSets();
+    fastCreateFilterGraphics(&SSAO,1,&ssaoAttachment);
     SSAO.updateDescriptorSets(deferredAttachments,DeferredGraphics.getSceneBuffer());
 
-    SSLR.setAttachments(1,&sslrAttachment);
-    SSLR.createAttachments(1,&sslrAttachment);
-    SSLR.createRenderPass();
-    SSLR.createFramebuffers();
-    SSLR.createPipelines();
-    SSLR.createDescriptorPool();
-    SSLR.createDescriptorSets();
+    fastCreateFilterGraphics(&SSLR,1,&sslrAttachment);
     SSLR.updateDescriptorSets(deferredAttachments,DeferredGraphics.getSceneBuffer());
 
     PostProcessing.setBlurAttachment(&blurAttachment);
@@ -410,6 +381,9 @@ void deferredGraphicsInterface::updateUniformBuffer(uint32_t imageIndex)
         TransparentLayers[i].updateObjectUniformBuffer(imageIndex);
     }
 }
+
+uint32_t                            deferredGraphicsInterface::getImageCount(){   return imageCount;}
+VkSwapchainKHR&                     deferredGraphicsInterface::getSwapChain(){   return swapChain;}
 
 void                                deferredGraphicsInterface::resetCmdLight(){ lightsCmd.enable = true; lightsCmd.frames = 0;}
 void                                deferredGraphicsInterface::resetCmdWorld(){ worldCmd.enable = true;  worldCmd.frames = 0;}

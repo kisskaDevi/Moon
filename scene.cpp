@@ -171,7 +171,7 @@ void scene::createLight()
 
     for(int i=index;i<6;i++,index++){
         graphics->bindLightSource(lightSource.at(index));
-        lightSource.at(index)->setScattering(false);
+        lightSource.at(index)->setScattering(true);
     }
 
     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);

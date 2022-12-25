@@ -59,11 +59,6 @@ void attachments::deleteSampler(VkDevice *device)
     if(sampler) vkDestroySampler(*device,sampler,nullptr);
 }
 
-void attachments::setSize(size_t size)
-{
-    this->size = size;
-}
-
 size_t attachments::getSize()
 {
     return size;

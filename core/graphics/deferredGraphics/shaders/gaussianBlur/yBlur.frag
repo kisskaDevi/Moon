@@ -12,7 +12,7 @@ vec4 blur(sampler2D Sampler, vec2 TexCoord)
     float sigma = 1.0 * textureSize(Sampler, 0).y;
     vec2 textel = 1.0 / textureSize(Sampler, 0);
     vec4 Color = texture(Sampler, TexCoord) /sqrt(pi*sigma);
-    int h = 5;
+    int h = 10;
     float Norm = 1.0f/sqrt(pi*sigma);
     for(int i=-h;i<h+1;i+=2)
     {

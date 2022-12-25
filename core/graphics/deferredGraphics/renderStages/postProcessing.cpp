@@ -115,12 +115,11 @@ void postProcessingGraphics::createSwapChainAttachments(VkSwapchainKHR* swapChai
     {
         swapChainAttachments[i].image.resize(image.Count);
         swapChainAttachments[i].imageView.resize(image.Count);
-        swapChainAttachments[i].setSize(image.Count);
         vkGetSwapchainImagesKHR(*device, *swapChain, &image.Count, swapChainAttachments[i].image.data());
     }
 
     for(size_t i=0;i<swapChainAttachments.size();i++)
-        for (size_t size = 0; size < swapChainAttachments[i].getSize(); size++)
+        for (size_t size = 0; size < swapChainAttachments[i].imageView.size(); size++)
             swapChainAttachments[i].imageView[size] =
             createImageView(    device,
                                 swapChainAttachments[i].image[size],

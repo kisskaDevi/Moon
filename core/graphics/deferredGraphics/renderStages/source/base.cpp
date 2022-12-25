@@ -393,25 +393,21 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
         for (Primitive* primitive : node->mesh->primitives)
         {
             std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+2);
-            for(uint32_t i=0;i<descriptorSetsCount;i++)
-                nodeDescriptorSets[i] = descriptorSets[i];
-            nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
-            nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
-
+                for(uint32_t i=0;i<descriptorSetsCount;i++) nodeDescriptorSets[i] = descriptorSets[i];
+                nodeDescriptorSets[descriptorSetsCount+0] = node->mesh->uniformBuffer.descriptorSet;
+                nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
             MaterialBlock pushConstBlockMaterial{};
-
-            pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
-            // To save push constant space, availabilty and texture coordiante set are combined
-            // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
-            pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-            pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-            pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
-            pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-            pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
-            pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
-
+                pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
+                // To save push constant space, availabilty and texture coordiante set are combined
+                // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
+                pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+                pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
+                pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
+                pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
+                pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
+                pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
             if (primitive->material.pbrWorkflows.metallicRoughness) {
                 // Metallic roughness workflow
                 pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
@@ -421,7 +417,6 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
                 pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
                 pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
             }
-
             if (primitive->material.pbrWorkflows.specularGlossiness) {
                 // Specular glossiness workflow
                 pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
@@ -430,8 +425,10 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
                 pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
                 pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
-
-            primitiveCount ? pushConstBlockMaterial.primitive = *primitiveCount : 0;
+            if(primitiveCount){
+                pushConstBlockMaterial.primitive = *primitiveCount;
+                (*primitiveCount)++;
+            }
 
             vkCmdPushConstants(commandBuffer, *pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
 
@@ -439,10 +436,6 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
             }else{
                 vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-            }
-
-            if(primitiveCount){
-                (*primitiveCount)++;
             }
         }
     }

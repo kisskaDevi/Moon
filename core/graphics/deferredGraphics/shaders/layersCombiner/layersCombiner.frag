@@ -66,7 +66,7 @@ vec4 findRefrColor(const int i, inout vec3 coords, const float n, vec3 startPos)
         color = layerColor(i,coords.xy);
         coords  = findRefrCoords(layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy),n,startPos);
     }
-    return color;
+    return color.a * color;
 }
 
 void main()
@@ -87,11 +87,11 @@ void main()
     {
         vec4 newBloom = vec4(0.0f);
         if(insideCond(coordsR.xy) && depthCond(texture(layersDepth[i],coordsR.xy).r,coordsR.xy))
-            newBloom.r = texture(layersBloomSampler[i],coordsR.xy).r;
+            newBloom.r = texture(layersBloomSampler[i],coordsR.xy).a * texture(layersBloomSampler[i],coordsR.xy).r;
         if(insideCond(coordsG.xy) && depthCond(texture(layersDepth[i],coordsG.xy).r,coordsG.xy))
-            newBloom.g = texture(layersBloomSampler[i],coordsG.xy).g;
+            newBloom.g = texture(layersBloomSampler[i],coordsG.xy).a * texture(layersBloomSampler[i],coordsG.xy).g;
         if(insideCond(coordsB.xy) && depthCond(texture(layersDepth[i],coordsB.xy).r,coordsB.xy))
-            newBloom.b = texture(layersBloomSampler[i],coordsB.xy).b;
+            newBloom.b = texture(layersBloomSampler[i],coordsB.xy).a * texture(layersBloomSampler[i],coordsB.xy).b;
         refrBloom = max(refrBloom,newBloom);
 
         vec4 newColor = vec4(findRefrColor(i,coordsR,n.r,startPosR).r, findRefrColor(i,coordsG,n.g,startPosG).g, findRefrColor(i,coordsB,n.b,startPosB).b, 0.0f);
@@ -103,13 +103,13 @@ void main()
         oldCoordsG = coordsG.xy;
         oldCoordsB = coordsB.xy;
     }
-    outColor = vec4(    insideCond(coordsR.xy) && depthCond(coordsR.z,coordsR.xy) ? texture(Sampler,coordsR.xy).r : 0.0f,
-                        insideCond(coordsG.xy) && depthCond(coordsG.z,coordsG.xy) ? texture(Sampler,coordsG.xy).g : 0.0f,
-                        insideCond(coordsB.xy) && depthCond(coordsB.z,coordsB.xy) ? texture(Sampler,coordsB.xy).b : 0.0f, 0.0f);
+    outColor = vec4(    insideCond(coordsR.xy) && depthCond(coordsR.z,coordsR.xy) ? texture(Sampler,coordsR.xy).a * texture(Sampler,coordsR.xy).r : 0.0f,
+                        insideCond(coordsG.xy) && depthCond(coordsG.z,coordsG.xy) ? texture(Sampler,coordsR.xy).a * texture(Sampler,coordsG.xy).g : 0.0f,
+                        insideCond(coordsB.xy) && depthCond(coordsB.z,coordsB.xy) ? texture(Sampler,coordsR.xy).a * texture(Sampler,coordsB.xy).b : 0.0f, 0.0f);
     outColor = max(refrColor,outColor);
 
-    outBloom = vec4(    insideCond(coordsR.xy) && depthCond(coordsR.z,coordsR.xy) ? texture(bloomSampler,coordsR.xy).r : 0.0f,
-                        insideCond(coordsG.xy) && depthCond(coordsG.z,coordsG.xy) ? texture(bloomSampler,coordsG.xy).g : 0.0f,
-                        insideCond(coordsB.xy) && depthCond(coordsB.z,coordsB.xy) ? texture(bloomSampler,coordsB.xy).b : 0.0f, 0.0f);
+    outBloom = vec4(    insideCond(coordsR.xy) && depthCond(coordsR.z,coordsR.xy) ? texture(bloomSampler,coordsR.xy).a * texture(bloomSampler,coordsR.xy).r : 0.0f,
+                        insideCond(coordsG.xy) && depthCond(coordsG.z,coordsG.xy) ? texture(bloomSampler,coordsG.xy).a * texture(bloomSampler,coordsG.xy).g : 0.0f,
+                        insideCond(coordsB.xy) && depthCond(coordsB.z,coordsB.xy) ? texture(bloomSampler,coordsB.xy).a * texture(bloomSampler,coordsB.xy).b : 0.0f, 0.0f);
     outBloom = max(refrBloom,outBloom);
 }

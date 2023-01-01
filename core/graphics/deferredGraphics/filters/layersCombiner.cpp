@@ -509,10 +509,6 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             normalLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.normal.imageView[i];
             normalLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.normal.sampler;
 
-            normalLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.normal.imageView[i];
-            normalLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.normal.sampler;
-
             depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             depthLayersImageInfo[index].imageView = transparencyLayers[index].depth.imageView;
             depthLayersImageInfo[index].sampler = transparencyLayers[index].depth.sampler;

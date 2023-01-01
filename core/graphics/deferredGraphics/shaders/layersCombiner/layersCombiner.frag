@@ -25,91 +25,108 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outBloom;
 
 mat4 projview = global.proj * global.view;
+vec3 eyePosition = global.eyePosition.xyz;
 
 float h = 0.3f;
-vec3 n = vec3(1.33f, 1.33f + 1.0f, 1.33f + 2.0f);
+float nbegin = 1.33f;
+float nend = nbegin + 2.0f;
 
-vec3 findRefrCoords(const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n, vec3 startPos){
+vec3 findRefrCoords(const in vec3 startPos, const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n){
     vec3 beamDirection = normalize(layerPointPosition - startPos);
     float cosAlpha = - dot(layerPointNormal,beamDirection);
     float sinAlpha = sqrt(1.0f - cosAlpha * cosAlpha);
 
     float deviation = h * sinAlpha * (1.0f - cosAlpha / sqrt(n*n - sinAlpha*sinAlpha));
-    vec3 direction = layerPointNormal + beamDirection * cosAlpha;
-    direction = - normalize(direction);
+    vec3 direction = - normalize(layerPointNormal + beamDirection * cosAlpha);
+    vec4 position = projview * vec4(layerPointPosition + deviation * direction, 1.0f);
 
-    vec4 dpos = projview * vec4(layerPointPosition + deviation * direction,1.0f);
-
-    return vec3(dpos.xy/dpos.w * 0.5f + 0.5f,dpos.z/dpos.w);
+    return vec3(position.xy/position.w * 0.5f + 0.5f, position.z/position.w);
 }
+
 vec3 layerPointPosition(const in int i, const in vec2 coord){
     return texture(layersPosition[i], coord).xyz;
 }
+
 vec3 layerPointNormal(const in int i, const in vec2 coord){
     return normalize(texture(layersNormal[i],coord).xyz);
 }
+
 vec4 layerColor(const in int i, const in vec2 coord){
     return texture(layersSampler[i],coord);
 }
-bool insideCond(const in vec2 coords){
-    return coords.x<1.0f&&coords.y<1.0f&&coords.x>0.0f&&coords.y>0.0f;
-}
-bool depthCond(float z, vec2 coords){
-    return z < texture(depth,coords.xy).r;
+
+vec4 layerBloom(const in int i, const in vec2 coord){
+    return texture(layersBloomSampler[i],coord);
 }
 
-vec4 findRefrColor(const int i, inout vec3 coords, const float n, vec3 startPos)
+float layerDepth(const in int i, const in vec2 coord){
+    return texture(layersDepth[i],coord).r;
+}
+
+float layerDepth(sampler2D Sampler, const in vec2 coord){
+    return texture(Sampler,coord).r;
+}
+
+bool insideCond(const in vec2 coords){
+    return (coords.x <= 1.0f) && (coords.y <= 1.0f) && (coords.x >= 0.0f) && (coords.y >= 0.0f);
+}
+
+bool depthCond(float z, vec2 coords){
+    return z <= texture(depth,coords.xy).r;
+}
+
+void findRefr(const int i, const float n, inout vec3 startPos, inout vec3 coords)
 {
-    vec4 color = vec4(0.0f);
-    if(insideCond(coords.xy) && depthCond(texture(layersDepth[i],coords.xy).r,coords.xy))
+    if(insideCond(coords.xy) && depthCond(layerDepth(i,coords.xy),coords.xy))
     {
-        color = layerColor(i,coords.xy);
-        coords  = findRefrCoords(layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy),n,startPos);
+        vec3 start = startPos;
+        startPos = layerPointPosition(i,coords.xy);
+        coords  = findRefrCoords(start, layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy), n);
     }
-    return color.a * color;
+}
+
+vec4 findColor(const in vec3 coord, sampler2D Sampler){
+    return (insideCond(coord.xy) && depthCond(coord.z,coord.xy) ? texture(Sampler,coord.xy) : vec4(0.0f));
+}
+
+vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sampler, sampler2D Depth){
+    vec4 color = vec4(0.0f);
+    for(float t = 0.0f; t <= 1.0f; t += step){
+        vec3 coords = beginCoords + (endCoords - beginCoords) * t;
+        vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
+                           1.0f - abs(2.0f * t - 2.0f / 3.0f),
+                           1.0f - abs(2.0f * t - 4.0f / 3.0f), 1.0f);
+        if(insideCond(coords.xy) && depthCond(layerDepth(Depth,coords.xy),coords.xy))
+        {
+            color += (beginCoords != vec3(fragTexCoord,0.0f)) ? factor * findColor(coords, Sampler) : findColor(coords, Sampler);
+        }
+    }
+    return color;
 }
 
 void main()
 {
-    vec3 coordsR = vec3(fragTexCoord,0.0f);
-    vec3 coordsG = vec3(fragTexCoord,0.0f);
-    vec3 coordsB = vec3(fragTexCoord,0.0f);
+    float step = 0.02f;
 
-    vec4 refrColor = vec4(0.0f);
-    vec4 refrBloom = vec4(0.0f);
-    vec3 startPosR = global.eyePosition.xyz;
-    vec3 startPosG = global.eyePosition.xyz;
-    vec3 startPosB = global.eyePosition.xyz;
-    vec2 oldCoordsR = fragTexCoord;
-    vec2 oldCoordsG = fragTexCoord;
-    vec2 oldCoordsB = fragTexCoord;
-    for(int i=0;i<transparentLayersCount;i++)
+    vec3 beginCoords = vec3(fragTexCoord,0.0f), beginStartPos = eyePosition;
+    vec3 endCoords = vec3(fragTexCoord,0.0f), endStartPos = eyePosition;
+    vec4 layerColor = vec4(0.0f), layerBloom = vec4(0.0f);
+
+    for(int i = 0; i < transparentLayersCount; i++)
     {
-        vec4 newBloom = vec4(0.0f);
-        if(insideCond(coordsR.xy) && depthCond(texture(layersDepth[i],coordsR.xy).r,coordsR.xy))
-            newBloom.r = texture(layersBloomSampler[i],coordsR.xy).a * texture(layersBloomSampler[i],coordsR.xy).r;
-        if(insideCond(coordsG.xy) && depthCond(texture(layersDepth[i],coordsG.xy).r,coordsG.xy))
-            newBloom.g = texture(layersBloomSampler[i],coordsG.xy).a * texture(layersBloomSampler[i],coordsG.xy).g;
-        if(insideCond(coordsB.xy) && depthCond(texture(layersDepth[i],coordsB.xy).r,coordsB.xy))
-            newBloom.b = texture(layersBloomSampler[i],coordsB.xy).a * texture(layersBloomSampler[i],coordsB.xy).b;
-        refrBloom = max(refrBloom,newBloom);
+        vec4 color = accumulateColor(beginCoords,endCoords,step,layersSampler[i],layersDepth[i]);
+        layerColor = max(layerColor, 2.0f * step * color);
 
-        vec4 newColor = vec4(findRefrColor(i,coordsR,n.r,startPosR).r, findRefrColor(i,coordsG,n.g,startPosG).g, findRefrColor(i,coordsB,n.b,startPosB).b, 0.0f);
-        refrColor = max(refrColor,newColor);
-        startPosR = layerPointPosition(i,oldCoordsR.xy);
-        startPosG = layerPointPosition(i,oldCoordsG.xy);
-        startPosB = layerPointPosition(i,oldCoordsB.xy);
-        oldCoordsR = coordsR.xy;
-        oldCoordsG = coordsG.xy;
-        oldCoordsB = coordsB.xy;
+        vec4 bloom = accumulateColor(beginCoords,endCoords,step,layersBloomSampler[i],layersDepth[i]);
+        layerBloom = max(layerBloom, 2.0f * step * bloom);
+
+        findRefr(i,nbegin,beginStartPos,beginCoords);
+        findRefr(i,nend,endStartPos,endCoords);
     }
-    outColor = vec4(    insideCond(coordsR.xy) && depthCond(coordsR.z,coordsR.xy) ? texture(Sampler,coordsR.xy).a * texture(Sampler,coordsR.xy).r : 0.0f,
-                        insideCond(coordsG.xy) && depthCond(coordsG.z,coordsG.xy) ? texture(Sampler,coordsR.xy).a * texture(Sampler,coordsG.xy).g : 0.0f,
-                        insideCond(coordsB.xy) && depthCond(coordsB.z,coordsB.xy) ? texture(Sampler,coordsR.xy).a * texture(Sampler,coordsB.xy).b : 0.0f, 0.0f);
-    outColor = max(refrColor,outColor);
 
-    outBloom = vec4(    insideCond(coordsR.xy) && depthCond(coordsR.z,coordsR.xy) ? texture(bloomSampler,coordsR.xy).a * texture(bloomSampler,coordsR.xy).r : 0.0f,
-                        insideCond(coordsG.xy) && depthCond(coordsG.z,coordsG.xy) ? texture(bloomSampler,coordsG.xy).a * texture(bloomSampler,coordsG.xy).g : 0.0f,
-                        insideCond(coordsB.xy) && depthCond(coordsB.z,coordsB.xy) ? texture(bloomSampler,coordsB.xy).a * texture(bloomSampler,coordsB.xy).b : 0.0f, 0.0f);
-    outBloom = max(refrBloom,outBloom);
+    outColor = accumulateColor(beginCoords,endCoords,step,Sampler,depth);
+    outColor = max(layerColor, step * outColor);
+
+    outBloom = accumulateColor(beginCoords,endCoords,step,bloomSampler,depth);
+    outBloom = max(layerBloom, step * outBloom);
 }

@@ -79,7 +79,7 @@ void main()
     }else{
         if(outBaseColor.a>=1.0f||outBaseColor.a<=0.1f){
             discard;
-        }else if(glPosition.z - 0.000005 < texture(depthMap , glPosition.xy * 0.5f + 0.5f).r){
+        }else if(glPosition.z / texture(depthMap , glPosition.xy * 0.5f + 0.5f).r < 1.001){
             discard;
         }
     }

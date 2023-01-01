@@ -171,7 +171,7 @@ void scene::createLight()
 
     for(int i=index;i<6;i++,index++){
         graphics->bindLightSource(lightSource.at(index));
-        lightSource.at(index)->setScattering(true);
+        //lightSource.at(index)->setScattering(true);
     }
 
     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
@@ -274,7 +274,7 @@ void scene::createObjects()
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,-0.8f));
     object3D.at(index)->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO1 = object3D.at(index);
@@ -282,14 +282,14 @@ void scene::createObjects()
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,-0.8f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,0.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,-0.8f));
     object3D.at(index)->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO3 = object3D.at(index);
@@ -297,7 +297,7 @@ void scene::createObjects()
 
     object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
     graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,0.0f));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,-0.8f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO4 = object3D.at(index);
     index++;

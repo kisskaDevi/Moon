@@ -26,15 +26,12 @@ private:
     VkCommandPool*                  commandPool{nullptr};
 
     texture*                        emptyTexture{nullptr};
-    camera*                         cameraObject{nullptr};
     uint32_t                        primitiveCount{0};
     bool                            transparencyPass{false};
 
     imageInfo                       image;
 
-    std::vector<attachment>         colorAttachments;
     std::vector<attachments*>       pAttachments;
-    attachment*                     depthAttachment{nullptr};
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
@@ -143,11 +140,6 @@ private:
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }skybox;
 
-    void oneSampleRenderPass();
-    void multiSampleRenderPass();
-    void oneSampleFrameBuffer();
-    void multiSampleFrameBuffer();
-
 public:
     deferredGraphics();
     void destroy();
@@ -157,7 +149,6 @@ public:
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
     void setEmptyTexture(std::string ZERO_TEXTURE);
-    void setCameraObject(camera* cameraObject);
 
     void setMinAmbientFactor(const float& minAmbientFactor);
     void setScattering(const bool& enableScattering);
@@ -168,7 +159,6 @@ public:
 
     void setAttachments(DeferredAttachments* pAttachments);
     void createAttachments(DeferredAttachments* pAttachments);
-    void createBufferAttachments();
 
     void createRenderPass();
     void createFramebuffers();
@@ -176,7 +166,7 @@ public:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-    void updateBaseDescriptorSets(attachment* depthAttachment, VkBuffer* storageBuffers);
+    void updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers);
 
     void createLightingDescriptorPool();
     void createLightingDescriptorSets();
@@ -188,8 +178,8 @@ public:
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
-    void updateUniformBuffer(uint32_t currentImage);
-    void updateSkyboxUniformBuffer(uint32_t currentImage);
+    void updateUniformBuffer(uint32_t currentImage, const camera& cameraObject);
+    void updateSkyboxUniformBuffer(uint32_t currentImage, const camera& cameraObject);
     void updateObjectUniformBuffer(uint32_t currentImage);
 
     void bindBaseObject(object* newObject);

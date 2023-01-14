@@ -48,7 +48,7 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(DeferredAttachments deferredAttachments, VkBuffer* pUniformBuffers);
+    void updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAttachments deferredAttachments, DeferredAttachments firstLayer);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 };

@@ -1,4 +1,5 @@
 #include "attachments.h"
+#include "core/operations.h"
 
 attachments::attachments()
 {}
@@ -18,6 +19,8 @@ attachments::attachments(const attachments &other)
     }
     sampler = other.sampler;
     size = other.size;
+
+    format = other.format;
 }
 
 attachments& attachments::operator=(const attachments &other)
@@ -33,6 +36,8 @@ attachments& attachments::operator=(const attachments &other)
     sampler = other.sampler;
     size = other.size;
 
+    format = other.format;
+
     return *this;
 }
 
@@ -42,6 +47,64 @@ void attachments::resize(size_t size)
     image.resize(size);
     imageMemory.resize(size);
     imageView.resize(size);
+}
+
+void attachments::create(VkPhysicalDevice* physicalDevice, VkDevice* device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
+{
+    resize(count);
+    this->format = format;
+    clearValue.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    for(size_t Image=0; Image<count; Image++)
+    {
+        createImage(        physicalDevice,
+                            device,
+                            extent.width,
+                            extent.height,
+                            1,
+                            VK_SAMPLE_COUNT_1_BIT,
+                            format,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            usage,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            image[Image],
+                            imageMemory[Image]);
+
+        createImageView(    device,
+                            image[Image],
+                            format,
+                            VK_IMAGE_ASPECT_COLOR_BIT,
+                            1,
+                            &imageView[Image]);
+    }
+}
+
+void attachments::createDepth(VkPhysicalDevice* physicalDevice, VkDevice* device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
+{
+    resize(count);
+    this->format = format;
+    clearValue.depthStencil = {1.0f, 0};
+    for(size_t Image=0; Image<count; Image++)
+    {
+        createImage(        physicalDevice,
+                            device,
+                            extent.width,
+                            extent.height,
+                            1,
+                            VK_SAMPLE_COUNT_1_BIT,
+                            format,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            usage,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            image[Image],
+                            imageMemory[Image]);
+
+        createImageView(    device,
+                            image[Image],
+                            format,
+                            VK_IMAGE_ASPECT_DEPTH_BIT,
+                            1,
+                            &imageView[Image]);
+    }
 }
 
 void attachments::deleteAttachment(VkDevice * device)
@@ -62,6 +125,62 @@ void attachments::deleteSampler(VkDevice *device)
 size_t attachments::getSize()
 {
     return size;
+}
+
+VkAttachmentDescription attachments::imageDescription(VkFormat format)
+{
+    VkAttachmentDescription description{};
+    description.format = format;
+    description.samples = VK_SAMPLE_COUNT_1_BIT;
+    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    return description;
+}
+
+VkAttachmentDescription attachments::imageDescription(VkFormat format, VkImageLayout layout)
+{
+    VkAttachmentDescription description{};
+    description.format = format;
+    description.samples = VK_SAMPLE_COUNT_1_BIT;
+    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    description.finalLayout = layout;
+    return description;
+}
+
+VkAttachmentDescription attachments::depthDescription(VkFormat format)
+{
+    VkAttachmentDescription description{};
+    description.format = format;
+    description.samples = VK_SAMPLE_COUNT_1_BIT;
+    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    return description;
+}
+
+VkAttachmentDescription attachments::depthStencilDescription(VkFormat format)
+{
+    VkAttachmentDescription description{};
+    description.format = format;
+    description.samples = VK_SAMPLE_COUNT_1_BIT;
+    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    return description;
 }
 
 GBufferAttachments::GBufferAttachments()

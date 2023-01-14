@@ -36,12 +36,11 @@ void shadowGraphics::createAttachments()
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     depthAttachment.image,
                     depthAttachment.imageMemory);
-    depthAttachment.imageView =
-            createImageView(    device,
-                                depthAttachment.image,
-                                image.Format,
-                                VK_IMAGE_ASPECT_DEPTH_BIT,
-                                1.0f);
+    depthAttachment.imageView = createImageView(    device,
+                                                    depthAttachment.image,
+                                                    image.Format,
+                                                    VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                    1.0f);
     VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -94,32 +93,15 @@ void shadowGraphics::setExternalPath(const std::string &path)
 
 void shadowGraphics::createRenderPass()
 {
-    VkAttachmentDescription attachments{};
-        attachments.format =  findDepthFormat(physicalDevice);
-        attachments.samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachments.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        attachments.flags = 0;
+    VkAttachmentDescription attachments = attachments::depthDescription(findDepthFormat(physicalDevice));
 
     VkAttachmentReference depthRef{};
         depthRef.attachment = 0;
         depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    VkSubpassDescription subpass;
+    VkSubpassDescription subpass{};
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.flags = 0;
-        subpass.inputAttachmentCount = 0;
-        subpass.pInputAttachments = NULL;
-        subpass.colorAttachmentCount = 0;
-        subpass.pColorAttachments = NULL;
-        subpass.pResolveAttachments = NULL;
         subpass.pDepthStencilAttachment = &depthRef;
-        subpass.preserveAttachmentCount = 0;
-        subpass.pPreserveAttachments = NULL;
 
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -237,10 +219,10 @@ void shadowGraphics::Shadow::createPipeline(VkDevice* device, imageInfo* pInfo, 
 
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlending.logicOpEnable = VK_FALSE;                                         //задаёт, необходимо ли выполнить логические операции между выводом фрагментного шейдера и содержанием цветовых подключений
-    colorBlending.logicOp = VK_LOGIC_OP_COPY;                                       //Optional
-    colorBlending.attachmentCount = 1;                                              //количество подключений
-    colorBlending.pAttachments = &colorBlendAttachment;                             //массив подключений
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.logicOp = VK_LOGIC_OP_COPY;
+    colorBlending.attachmentCount = 1;
+    colorBlending.pAttachments = &colorBlendAttachment;
 
     std::array<VkDescriptorSetLayout,3> SetLayouts = {DescriptorSetLayout,uniformBufferSetLayout,uniformBlockSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};

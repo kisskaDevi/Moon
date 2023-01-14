@@ -797,7 +797,7 @@ bool hasStencilComponent(VkFormat format)
 
 VkFormat findSupportedFormat(VkPhysicalDevice* physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
-    VkFormat supportedFormat = candidates[0];   //VkFormat supportedFormat;
+    VkFormat supportedFormat = candidates[0];
     for (VkFormat format : candidates)
     {
         VkFormatProperties props;
@@ -827,7 +827,7 @@ VkFormat findDepthFormat(VkPhysicalDevice* physicalDevice)
 {
     return findSupportedFormat(
         physicalDevice,
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT},
+        {VK_FORMAT_D32_SFLOAT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
@@ -837,7 +837,7 @@ VkFormat findDepthStencilFormat(VkPhysicalDevice* physicalDevice)
 {
     return findSupportedFormat(
         physicalDevice,
-        {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT},
+        {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
@@ -986,12 +986,12 @@ SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurface
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
     for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)   //ожидаем получить нелинейные sRGB - данные
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return availableFormat;
         }
     }
-    return availableFormats[0];     //в противном случае возвращаем первое что есть
+    return availableFormats[0];
 }
 
 //Режим презентации

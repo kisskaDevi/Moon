@@ -3,6 +3,7 @@
 #include "core/transformational/gltfmodel.h"
 #include "core/transformational/lightInterface.h"
 #include "core/transformational/object.h"
+#include "core/transformational/camera.h"
 #include "bufferObjects.h"
 
 #include <iostream>
@@ -150,10 +151,12 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     SSLR.setImageProp(&info);
     SSAO.setImageProp(&info);
     PostProcessing.setImageProp(&info);
+    for(uint32_t i=0;i<TransparentLayersCount;i++){
+        TransparentLayers[i].setImageProp(&info);
+    }
 
     DeferredGraphics.setAttachments(&deferredAttachments);
     DeferredGraphics.createAttachments(&deferredAttachments);
-    DeferredGraphics.createBufferAttachments();
     DeferredGraphics.createRenderPass();
     DeferredGraphics.createFramebuffers();
     DeferredGraphics.createPipelines();
@@ -166,7 +169,6 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
 
     transparentLayersAttachments.resize(TransparentLayersCount);
     for(uint32_t i=0;i<TransparentLayersCount;i++){
-        TransparentLayers[i].setImageProp(&info);
         TransparentLayers[i].setTransparencyPass(true);
         TransparentLayers[i].setScattering(false);
         TransparentLayers[i].setAttachments(&transparentLayersAttachments[i]);
@@ -206,7 +208,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     SSAO.updateDescriptorSets(deferredAttachments,DeferredGraphics.getSceneBuffer());
 
     fastCreateFilterGraphics(&SSLR,1,&sslrAttachment);
-    SSLR.updateDescriptorSets(deferredAttachments,DeferredGraphics.getSceneBuffer());
+    SSLR.updateDescriptorSets(DeferredGraphics.getSceneBuffer(),deferredAttachments,transparentLayersAttachments[0]);
 
     PostProcessing.setBlurAttachment(&blurAttachment);
     PostProcessing.setBlitAttachments(blitAttachmentCount,blitAttachments.data(),blitFactor);
@@ -372,12 +374,12 @@ uint32_t                            deferredGraphicsInterface::readStorageBuffer
 
 void deferredGraphicsInterface::updateUniformBuffer(uint32_t imageIndex)
 {
-    DeferredGraphics.updateUniformBuffer(imageIndex);
-    DeferredGraphics.updateSkyboxUniformBuffer(imageIndex);
+    DeferredGraphics.updateUniformBuffer(imageIndex, *cameraObject);
+    DeferredGraphics.updateSkyboxUniformBuffer(imageIndex, *cameraObject);
     DeferredGraphics.updateObjectUniformBuffer(imageIndex);
 
     for(uint32_t i=0;i<TransparentLayersCount;i++){
-        TransparentLayers[i].updateUniformBuffer(imageIndex);
+        TransparentLayers[i].updateUniformBuffer(imageIndex, *cameraObject);
         TransparentLayers[i].updateObjectUniformBuffer(imageIndex);
     }
 }
@@ -400,10 +402,7 @@ void                                deferredGraphicsInterface::setEmptyTexture(s
 }
 
 void                                deferredGraphicsInterface::setCameraObject(camera* cameraObject){
-    DeferredGraphics.setCameraObject(cameraObject);
-
-    for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].setCameraObject(cameraObject);
+    this->cameraObject = cameraObject;
 }
 
 void                                deferredGraphicsInterface::createModel(gltfModel *pModel){

@@ -3,6 +3,7 @@
 layout(set = 0, binding = 1) uniform sampler2D position;
 layout(set = 0, binding = 2) uniform sampler2D normal;
 layout(set = 0, binding = 3) uniform sampler2D Sampler;
+layout(set = 0, binding = 4) uniform sampler2D depth;
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
     mat4 view;

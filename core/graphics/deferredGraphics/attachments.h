@@ -33,12 +33,14 @@ struct attachment
 class attachments
 {
 private:
-    size_t size;
+    size_t size{0};
 public:
     std::vector<VkImage> image;
     std::vector<VkDeviceMemory> imageMemory;
     std::vector<VkImageView> imageView;
     VkSampler sampler{VK_NULL_HANDLE};
+    VkFormat format{VK_FORMAT_UNDEFINED};
+    VkClearValue clearValue{};
 
     attachments();
     ~attachments();
@@ -47,9 +49,16 @@ public:
     attachments& operator=(const attachments& other);
 
     void resize(size_t size);
-    void deleteAttachment(VkDevice * device);
-    void deleteSampler(VkDevice * device);
+    void create(VkPhysicalDevice* physicalDevice, VkDevice* device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
+    void createDepth(VkPhysicalDevice* physicalDevice, VkDevice* device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
+    void deleteAttachment(VkDevice* device);
+    void deleteSampler(VkDevice* device);
     size_t getSize();
+
+    static VkAttachmentDescription imageDescription(VkFormat format);
+    static VkAttachmentDescription imageDescription(VkFormat format, VkImageLayout layout);
+    static VkAttachmentDescription depthStencilDescription(VkFormat format);
+    static VkAttachmentDescription depthDescription(VkFormat format);
 };
 
 struct GBufferAttachments{
@@ -67,7 +76,7 @@ struct DeferredAttachments{
     attachments         image;
     attachments         blur;
     attachments         bloom;
-    attachment          depth;
+    attachments         depth;
     GBufferAttachments  GBuffer;
 
     DeferredAttachments();
@@ -76,6 +85,8 @@ struct DeferredAttachments{
 
     void deleteAttachment(VkDevice * device);
     void deleteSampler(VkDevice * device);
+
+    static size_t getGBufferOffset() {return 4;};\
 };
 
 #endif // ATTACHMENTS_H

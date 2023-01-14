@@ -1,5 +1,7 @@
 #version 450
 
+#define MANUAL_SRGB
+
 const float pi = 3.141592653589793f;
 const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;
 const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;
@@ -61,9 +63,9 @@ layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outBaseColor;
 layout(location = 3) out vec4 outEmissiveTexture;
 
-vec3		getNormal();
-vec4		SRGBtoLINEAR(vec4 srgbIn);
-float		convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
+vec3 getNormal();
+vec4 SRGBtoLINEAR(vec4 srgbIn);
+float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
 
 void main()
 {

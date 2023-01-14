@@ -1,127 +1,88 @@
 #version 450
+#define pi 3.141592653589793f
 
-layout(set = 0, binding = 1) uniform sampler2D position;
-layout(set = 0, binding = 2) uniform sampler2D normal;
-layout(set = 0, binding = 3) uniform sampler2D Sampler;
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
     mat4 view;
     mat4 proj;
     vec4 eyePosition;
 } global;
+layout(set = 0, binding = 1) uniform sampler2D position;
+layout(set = 0, binding = 2) uniform sampler2D normal;
+layout(set = 0, binding = 3) uniform sampler2D Sampler;
+layout(set = 0, binding = 4) uniform sampler2D depth;
+layout(set = 0, binding = 5) uniform sampler2D layerPosition;
+layout(set = 0, binding = 6) uniform sampler2D layerNormal;
+layout(set = 0, binding = 7) uniform sampler2D layerSampler;
+layout(set = 0, binding = 8) uniform sampler2D layerDepth;
 
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 
-vec3 pointPosition	= texture(position, fragTexCoord).xyz;
-vec3 pointNormal	= texture(normal,   fragTexCoord).xyz;
-vec3 pointOfView	= global.eyePosition.xyz;
+vec4 pointOfView = vec4(global.eyePosition.xyz,1.0f);
+mat4 projview = global.proj * global.view;
 
-mat4 proj = global.proj;
-mat4 view = global.view;
-mat4 projview = proj * view;
+vec4 findPositionInPlane(const in mat4 projview, const in vec4 position){
+    vec4 positionProj = projview * position;
+    return positionProj/positionProj.w;
+}
 
-const float stepScale = 1.0;
-const float maxSteps = 40;
-const int numBinarySearchSteps = 20;
+vec2 findIncrement(const in mat4 projview, const in vec4 position, const in vec4 direction){
+    vec4 start = findPositionInPlane(projview,position);
+    vec4 end = findPositionInPlane(projview,position + direction);
+    vec2 planeDir = (end.xy - start.xy);
+    return planeDir;
+}
 
-vec4 BinarySearch(vec3 reflectDir, vec3 hitCoord, mat4 view, mat4 proj);
-vec4 RayMarch(vec3 rayStep, vec3 hitCoord, mat4 view, mat4 proj);
-vec3 fresnelSchlick(float cosTheta, vec3 F0);
-vec4 SSLR();
+bool insideCondition(const in vec2 coords){
+    return coords.x > 0.0f && coords.y > 0.0f && coords.x < 1.0f && coords.y < 1.0f;
+}
+
+vec4 findSampler(const in vec2 coords){
+    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? texture(Sampler, coords) : texture(layerSampler, coords);
+}
+
+vec4 findPosition(const in vec2 coords){
+    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? vec4(texture(position, coords).xyz,1.0f) : vec4(texture(layerPosition, coords).xyz,1.0f);
+}
+
+vec4 findNormal(const in vec2 coords){
+    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? vec4(texture(normal, coords).xyz,0.0f) : vec4(texture(layerNormal, coords).xyz,0.0f);
+}
+
+float findDepth(const in vec2 coords){
+    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? texture(depth, coords).r : texture(layerDepth, coords).r;
+}
+
+vec4 SSLR(int steps, float incrementFactor, float resolution)
+{
+    vec4 SSLR = vec4(0.0f);
+
+    vec4 pointPosition = findPosition(fragTexCoord);
+    vec4 pointNormal = findNormal(fragTexCoord);
+    float pointDepth = findDepth(fragTexCoord);
+
+    vec4 reflectDirection = normalize(reflect(pointPosition - pointOfView, pointNormal));
+    vec2 increment = incrementFactor * findIncrement(projview,pointPosition,reflectDirection);
+    vec2 planeCoords = findPositionInPlane(projview,pointPosition).xy * vec2(0.5) + vec2(0.5);
+
+    for(int i = 0; i < steps; i++, planeCoords += increment){
+        vec4 direction = normalize(findPosition(planeCoords) - pointPosition);
+
+        float cosTheta = dot(reflectDirection, direction);
+        float cosPhi = dot(direction,findNormal(planeCoords));
+        if((1.0f - cosTheta <= resolution) && (cosPhi<0.0f)){
+            SSLR += findSampler(planeCoords);
+            break;
+        }
+    }
+
+    return SSLR;
+}
 
 void main()
 {
     outColor = vec4(0.0f);
 
-    //outColor += SSLR();
-}
-
-vec4 SSLR()
-{
-    vec4 returnColor = vec4(0.0f);
-    vec3 reflectDir	= normalize(reflect(pointPosition-pointOfView,pointNormal));
-    mat4 view		= global.view;
-    mat4 proj		= global.proj;
-
-    float metallic = texture(normal,fragTexCoord).a;
-    vec3 F0 = vec3(0.004);
-    F0      = mix(F0, texture(Sampler, fragTexCoord).xyz, metallic);
-    vec3 Fresnel = fresnelSchlick(max(dot(normalize(pointNormal), normalize(pointPosition-pointOfView)), 0.0), F0);
-
-    if(!(pointNormal.x==0.0f&&pointNormal.y==0.0f&&pointNormal.z==0.0f)){
-	vec4 result = RayMarch(reflectDir,pointPosition,view,proj);
-	if(result.w==1.0f){
-	    if(result.x<1.0f&&result.x>0.0f&&result.y<1.0f&&result.y>0.0f)
-		returnColor += vec4(Fresnel,1.0f)*texture(Sampler,result.xy);
-	}
-    }
-    return returnColor;
-}
-
-vec4 RayMarch(vec3 reflectDir, vec3 hitCoord, mat4 view, mat4 proj)
-{
-    vec3 rayStep = reflectDir;
-    rayStep *= stepScale;
-
-    vec4 depthProjectedCoord;
-    vec4 rayProjectedCoord;
-    float deltaz;
-
-    for(int i = 0; i < maxSteps; i++)
-    {
-	hitCoord += rayStep;
-
-	rayProjectedCoord = projview * vec4(hitCoord, 1.0f);
-	deltaz = rayProjectedCoord.z;
-	rayProjectedCoord /= rayProjectedCoord.w;
-	rayProjectedCoord.xy = rayProjectedCoord.xy * 0.5f + 0.5f;
-	deltaz -= texture(position, rayProjectedCoord.xy).a;
-
-        if(abs(deltaz)<1.0f){
-	    if(deltaz >= 0.0){
-		vec4 result;
-		if(dot(reflectDir, texture(normal,rayProjectedCoord.xy).xyz)>=-0.3f)
-		    result = vec4(rayProjectedCoord.xy, 0.0f, 0.0);
-		else
-		    result = BinarySearch(rayStep, hitCoord, view, proj);
-
-		return result;
-	    }
-	}
-
-    }
-
-    return vec4(rayProjectedCoord.xy, 0.0f, 0.0f);
-}
-
-vec4 BinarySearch(vec3 rayStep, vec3 hitCoord, mat4 view, mat4 proj)
-{
-    vec4 depthProjectedCoord;
-    vec4 rayProjectedCoord;
-    vec3 dir = rayStep;
-    float deltaz;
-
-    for(int i = 0; i < numBinarySearchSteps; i++)
-    {
-	rayProjectedCoord = projview * vec4(hitCoord, 1.0f);
-	deltaz = rayProjectedCoord.z - texture(position, rayProjectedCoord.xy).a;
-	rayProjectedCoord /= rayProjectedCoord.w;
-	rayProjectedCoord.xy = rayProjectedCoord.xy * 0.5f + 0.5f;
-	deltaz -= texture(position, rayProjectedCoord.xy).a;
-
-	dir *= 0.5f;
-	if(-deltaz > 0.0f)  hitCoord += dir;
-	else		    hitCoord -= dir;
-    }
-
-    if(deltaz>0.05f)
-        rayProjectedCoord.w=0.0f;
-
-    return rayProjectedCoord;
-}
-
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    outColor += SSLR(100,0.05f,0.0001);
 }

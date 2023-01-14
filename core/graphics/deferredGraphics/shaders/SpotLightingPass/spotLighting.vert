@@ -44,7 +44,7 @@ void main()
     vec3 u =    normalize(vec3(light.view[0][0],light.view[1][0],light.view[2][0]));
     vec3 v =    normalize(vec3(light.view[0][1],light.view[1][1],light.view[2][1]));
 
-    float far  = -light.proj[3][2]/(-light.proj[2][2]-1.0f);
+    float far = light.proj[3][2]/(light.proj[2][2] + 1.0f);
     float h = far/light.proj[1][1];
     float w = light.proj[1][1]/light.proj[0][0]*h;
 

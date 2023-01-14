@@ -60,6 +60,8 @@ private:
     std::vector<VkCommandBuffer>                commandBuffers;
     std::vector<VkCommandBuffer>                commandBufferSet;
 
+    camera*                                     cameraObject{nullptr};
+
     void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments);
     void createStorageBuffers(uint32_t imageCount);
     void updateUniformBuffer(uint32_t imageIndex);

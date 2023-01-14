@@ -36,30 +36,8 @@ void layersCombiner::setAttachments(uint32_t attachmentsCount, attachments* pAtt
 
 void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
-    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
-        pAttachments[attachmentNumber].resize(image.Count);
-        for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
-        {
-            createImage(            physicalDevice,
-                                    device,
-                                    image.Extent.width,
-                                    image.Extent.height,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    image.Format,
-                                    VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (attachmentNumber==1?VK_IMAGE_USAGE_TRANSFER_SRC_BIT:0),
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    pAttachments[attachmentNumber].image[imageNumber],
-                                    pAttachments[attachmentNumber].imageMemory[imageNumber]);
-
-            pAttachments[attachmentNumber].imageView[imageNumber] =
-            createImageView(        device,
-                                    pAttachments[attachmentNumber].image[imageNumber],
-                                    image.Format,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1);
-        }
+    for(size_t index=0; index<attachmentsCount; index++){
+        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (index==1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),image.Extent,image.Count);
         VkSamplerCreateInfo samplerInfo{};
             samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
             samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -77,7 +55,7 @@ void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* p
             samplerInfo.minLod = 0.0f;
             samplerInfo.maxLod = 0.0f;
             samplerInfo.mipLodBias = 0.0f;
-        vkCreateSampler(*device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        vkCreateSampler(*device, &samplerInfo, nullptr, &pAttachments[index].sampler);
     }
 }
 
@@ -94,33 +72,17 @@ void layersCombiner::destroy()
     combiner.Destroy(device);
 
     if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
-    for(size_t i = 0; i< framebuffers.size();i++)
-        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+    for(size_t index = 0; index< framebuffers.size(); index++)
+        if(framebuffers[index]) vkDestroyFramebuffer(*device, framebuffers[index],nullptr);
 }
 
 void layersCombiner::createRenderPass()
 {
-    uint32_t index = 0;
     std::array<VkAttachmentDescription,2> attachments{};
-        attachments[index].format = image.Format;
-        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[index].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    index++;
-        attachments[index].format = image.Format;
-        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[index].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    for(uint32_t index = 0; index < attachments.size(); index++)
+        attachments[index] = attachments::imageDescription(image.Format, (index==1 ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
-    index = 0;
+    uint32_t index = 0;
     std::array<VkAttachmentReference,2> attachmentRef;
         attachmentRef[index].attachment = 0;
         attachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -182,74 +144,74 @@ void layersCombiner::createPipelines()
 
 void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice* device)
 {
-    uint32_t index = 0;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = transparentLayersCount;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = transparentLayersCount;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = transparentLayersCount;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = transparentLayersCount;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = transparentLayersCount;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding,11> bindings{};
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = transparentLayersCount;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = transparentLayersCount;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = transparentLayersCount;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = transparentLayersCount;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-        bindings[index].binding = index;
-        bindings[index].descriptorCount = transparentLayersCount;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -398,40 +360,41 @@ void layersCombiner::Combiner::createPipeline(VkDevice* device, imageInfo* pInfo
 
 void layersCombiner::createDescriptorPool()
 {
-    size_t index = 0;
-    std::array<VkDescriptorPoolSize,11> poolSizes;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
+
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -483,7 +446,7 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
 
         VkDescriptorImageInfo depthImageInfo;
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = deferredAttachments.depth.imageView;
+            depthImageInfo.imageView = deferredAttachments.depth.imageView[i];
             depthImageInfo.sampler = deferredAttachments.depth.sampler;
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
@@ -510,99 +473,99 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             normalLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.normal.sampler;
 
             depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthLayersImageInfo[index].imageView = transparencyLayers[index].depth.imageView;
+            depthLayersImageInfo[index].imageView = transparencyLayers[index].depth.imageView[i];
             depthLayersImageInfo[index].sampler = transparencyLayers[index].depth.sampler;
         }
 
-        uint32_t index = 0;
-        std::array<VkWriteDescriptorSet, 11> descriptorWrites{};
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pBufferInfo = &bufferInfo;
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &colorImageInfo;
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &bloomImageInfo;
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &positionImageInfo;
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &normalImageInfo;
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &depthImageInfo;
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = combiner.transparentLayersCount;
-            descriptorWrites[index].pImageInfo = colorLayersImageInfo.data();
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = combiner.transparentLayersCount;
-            descriptorWrites[index].pImageInfo = bloomLayersImageInfo.data();
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = combiner.transparentLayersCount;
-            descriptorWrites[index].pImageInfo = positionLayersImageInfo.data();
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = combiner.transparentLayersCount;
-            descriptorWrites[index].pImageInfo = normalLayersImageInfo.data();
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = combiner.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = combiner.transparentLayersCount;
-            descriptorWrites[index].pImageInfo = depthLayersImageInfo.data();
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pBufferInfo = &bufferInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &colorImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &bloomImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &positionImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &normalImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &depthImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().pImageInfo = colorLayersImageInfo.data();
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().pImageInfo = bloomLayersImageInfo.data();
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().pImageInfo = positionLayersImageInfo.data();
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().pImageInfo = normalLayersImageInfo.data();
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().pImageInfo = depthLayersImageInfo.data();
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -610,8 +573,8 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
 void layersCombiner::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     std::array<VkClearValue, 2> ClearValues{};
-        ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 0.0f}};
-        ClearValues[1].color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    for(uint32_t index = 0; index < ClearValues.size(); index++)
+        ClearValues[index].color = pAttachments->clearValue.color;
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

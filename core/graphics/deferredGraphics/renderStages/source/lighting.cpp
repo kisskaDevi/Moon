@@ -44,26 +44,27 @@ void deferredGraphics::Lighting::createUniformBuffers(VkPhysicalDevice* physical
 
 void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
 {
-    uint32_t index = 0;
-
-    std::array<VkDescriptorSetLayoutBinding,6> Binding{};
-    for(index = 0; index<5;index++)
+    std::vector<VkDescriptorSetLayoutBinding> binding;
+    for(uint32_t index = 0; index<5;index++)
     {
-        Binding.at(index).binding = index;
-        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-        Binding.at(index).descriptorCount = 1;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding.at(index).pImmutableSamplers = nullptr;
+        binding.push_back(VkDescriptorSetLayoutBinding{});
+            binding.back().binding = binding.size() - 1;
+            binding.back().descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            binding.back().descriptorCount = 1;
+            binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            binding.back().pImmutableSamplers = nullptr;
     }
-        Binding.at(index).binding = index;
-        Binding.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        Binding.at(index).descriptorCount = 1;
-        Binding.at(index).stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        Binding.at(index).pImmutableSamplers = nullptr;
+        binding.push_back(VkDescriptorSetLayoutBinding{});
+            binding.back().binding = binding.size() - 1;
+            binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            binding.back().descriptorCount = 1;
+            binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            binding.back().pImmutableSamplers = nullptr;
+
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
-        layoutInfo.pBindings = Binding.data();
+        layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
+        layoutInfo.pBindings = binding.data();
     vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
     createSpotLightDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
@@ -88,12 +89,14 @@ void deferredGraphics::Lighting::createPipeline(VkDevice* device, imageInfo* pIn
 
 void deferredGraphics::createLightingDescriptorPool()
 {
-    uint32_t index = 0;
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    for(uint32_t i = 0; i < 5 ;i++){
+        poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back() = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
+    }
+        poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back() = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
 
-    std::array<VkDescriptorPoolSize,6> poolSizes{};
-        for(uint32_t i = 0;i<5;i++,index++)
-            poolSizes[index] = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
-        poolSizes[index] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -118,41 +121,44 @@ void deferredGraphics::updateLightingDescriptorSets()
 {
     for (size_t i = 0; i < image.Count; i++)
     {
-        uint32_t index = 0;
+        std::vector<VkDescriptorImageInfo> imageInfo;
+        for(uint32_t index = 0; index < 4;index++)
+        {
+            imageInfo.push_back(VkDescriptorImageInfo{});
+            imageInfo.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.back().imageView = pAttachments[DeferredAttachments::getGBufferOffset() + index]->imageView[i];
+            imageInfo.back().sampler = VK_NULL_HANDLE;
+        }
+            imageInfo.push_back(VkDescriptorImageInfo{});
+            imageInfo.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.back().imageView = this->pAttachments[DeferredAttachments::getGBufferOffset() - 1]->imageView[i];
+            imageInfo.back().sampler = VK_NULL_HANDLE;
 
-        std::array<VkDescriptorImageInfo,5> imageInfo{};
-            for(index = 0; index<4;index++)
-            {
-                imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.at(index).imageView = pAttachments.at(3+index)->imageView.at(i);
-                imageInfo.at(index).sampler = VK_NULL_HANDLE;
-            }
-            imageInfo.at(index).imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.at(index).imageView = this->depthAttachment->imageView;
-            imageInfo.at(index).sampler = VK_NULL_HANDLE;
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = lighting.uniformBuffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
-        std::array<VkWriteDescriptorSet,6> descriptorWrites{};
-        for(index = 0; index<5;index++)
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        for(uint32_t index = 0; index<5;index++)
         {
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = lighting.DescriptorSets.at(i);
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pImageInfo = &imageInfo.at(index);
+            descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = lighting.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &imageInfo[index];
         }
-            descriptorWrites.at(index).sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.at(index).dstSet = lighting.DescriptorSets.at(i);
-            descriptorWrites.at(index).dstBinding = index;
-            descriptorWrites.at(index).dstArrayElement = 0;
-            descriptorWrites.at(index).descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.at(index).descriptorCount = 1;
-            descriptorWrites.at(index).pBufferInfo = &bufferInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = lighting.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pBufferInfo = &bufferInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

@@ -95,30 +95,9 @@ void customFilter::createBufferAttachments()
 
 void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
-    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
-        pAttachments[attachmentNumber].resize(image.Count);
-        for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
-        {
-            createImage(        physicalDevice,
-                                device,
-                                image.Extent.width,
-                                image.Extent.height,
-                                1,
-                                VK_SAMPLE_COUNT_1_BIT,
-                                image.Format,
-                                VK_IMAGE_TILING_OPTIMAL,
-                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                pAttachments[attachmentNumber].image[imageNumber],
-                                pAttachments[attachmentNumber].imageMemory[imageNumber]);
+    for(size_t index=0; index<attachmentsCount; index++){
 
-            pAttachments[attachmentNumber].imageView[imageNumber] =
-            createImageView(    device,
-                                pAttachments[attachmentNumber].image[imageNumber],
-                                image.Format,
-                                VK_IMAGE_ASPECT_COLOR_BIT,
-                                1);
-        }
+        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
         VkSamplerCreateInfo SamplerInfo{};
             SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
             SamplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -136,7 +115,7 @@ void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAt
             SamplerInfo.minLod = 0.0f;
             SamplerInfo.maxLod = 0.0f;
             SamplerInfo.mipLodBias = 0.0f;
-        vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
     }
 }
 
@@ -164,14 +143,7 @@ void customFilter::createRenderPass()
 {
     uint32_t index = 0;
     std::array<VkAttachmentDescription,1> attachments{};
-        attachments[index].format = image.Format;
-        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[index].finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    attachments[index] = attachments::imageDescription(image.Format,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     index = 0;
     std::array<VkAttachmentReference,1> attachmentRef;
@@ -185,7 +157,7 @@ void customFilter::createRenderPass()
         subpass[index].pColorAttachments = attachmentRef.data();
 
     index = 0;
-    std::array<VkSubpassDependency,1> dependency{};                                                                                        
+    std::array<VkSubpassDependency,1> dependency{};
         dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency[index].dstSubpass = 0;
         dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -230,14 +202,13 @@ void customFilter::createPipelines()
 
 void customFilter::Filter::createDescriptorSetLayout(VkDevice* device)
 {
-    uint32_t index = 0;
-
-    std::array<VkDescriptorSetLayoutBinding,1> bindings{};
-        bindings[index].binding = 0;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
         textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -384,12 +355,11 @@ void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, Vk
 
 void customFilter::createDescriptorPool()
 {
-    size_t index = 0;
-    std::array<VkDescriptorPoolSize,1> poolSizes;
-    for(uint32_t i=0;i<poolSizes.size();i++,index++){
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    }
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -414,21 +384,20 @@ void customFilter::updateDescriptorSets()
 {
     for (size_t i = 0; i < image.Count; i++)
     {
-        uint32_t index = 0;
-        std::array<VkDescriptorImageInfo, 1> imageInfo;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = bufferAttachment.imageView[i];
-            imageInfo[index].sampler = bufferAttachment.sampler;
+        VkDescriptorImageInfo imageInfo;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = bufferAttachment.imageView[i];
+            imageInfo.sampler = bufferAttachment.sampler;
 
-        index = 0;
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = filter.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(imageInfo.size());
-            descriptorWrites[index].pImageInfo = imageInfo.data();
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = filter.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &imageInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -436,7 +405,8 @@ void customFilter::updateDescriptorSets()
 void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber)
 {
     std::array<VkClearValue, 1> ClearValues{};
-        ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    for(uint32_t index = 0; index < ClearValues.size(); index++)
+        ClearValues[index].color = pAttachments->clearValue.color;
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

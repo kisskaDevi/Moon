@@ -51,14 +51,6 @@ vec3 layerPointNormal(const in int i, const in vec2 coord){
     return normalize(texture(layersNormal[i],coord).xyz);
 }
 
-vec4 layerColor(const in int i, const in vec2 coord){
-    return texture(layersSampler[i],coord);
-}
-
-vec4 layerBloom(const in int i, const in vec2 coord){
-    return texture(layersBloomSampler[i],coord);
-}
-
 float layerDepth(const in int i, const in vec2 coord){
     return texture(layersDepth[i],coord).r;
 }
@@ -96,7 +88,7 @@ vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sam
         vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
                            1.0f - abs(2.0f * t - 2.0f / 3.0f),
                            1.0f - abs(2.0f * t - 4.0f / 3.0f), 1.0f);
-        if(insideCond(coords.xy) && depthCond(layerDepth(Depth,coords.xy),coords.xy))
+        if(depthCond(layerDepth(Depth,coords.xy),coords.xy))
         {
             color += (beginCoords != vec3(fragTexCoord,0.0f)) ? factor * findColor(coords, Sampler) : findColor(coords, Sampler);
         }

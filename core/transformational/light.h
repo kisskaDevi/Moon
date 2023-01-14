@@ -34,8 +34,8 @@ private:
     bool                                enableScattering{false};
 
     uint32_t                            type{spotType::circle};
-    float                               lightPowerFactor{1.0f};
-    float                               lightDropFactor{0.1f};
+    float                               lightPowerFactor{10.0f};
+    float                               lightDropFactor{1.0f};
     glm::vec4                           lightColor{0.0f};
     glm::mat4x4                         projectionMatrix{1.0f};
 

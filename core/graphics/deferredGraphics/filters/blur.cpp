@@ -35,29 +35,7 @@ void gaussianBlur::setAttachments(uint32_t attachmentsCount, attachments* pAttac
 
 void gaussianBlur::createBufferAttachments()
 {
-    bufferAttachment.resize(image.Count);
-    for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
-    {
-        createImage(            physicalDevice,
-                                device,
-                                image.Extent.width,
-                                image.Extent.height,
-                                1,
-                                VK_SAMPLE_COUNT_1_BIT,
-                                image.Format,
-                                VK_IMAGE_TILING_OPTIMAL,
-                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                bufferAttachment.image[imageNumber],
-                                bufferAttachment.imageMemory[imageNumber]);
-
-        bufferAttachment.imageView[imageNumber] =
-        createImageView(        device,
-                                bufferAttachment.image[imageNumber],
-                                image.Format,
-                                VK_IMAGE_ASPECT_COLOR_BIT,
-                                1);
-    }
+    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         SamplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -81,29 +59,7 @@ void gaussianBlur::createBufferAttachments()
 void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
-        pAttachments[attachmentNumber].resize(image.Count);
-        for(size_t Image=0; Image<image.Count; Image++)
-        {
-            createImage(        physicalDevice,
-                                device,
-                                image.Extent.width,
-                                image.Extent.height,
-                                1,
-                                VK_SAMPLE_COUNT_1_BIT,
-                                image.Format,
-                                VK_IMAGE_TILING_OPTIMAL,
-                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                pAttachments[attachmentNumber].image[Image],
-                                pAttachments[attachmentNumber].imageMemory[Image]);
-
-            createImageView(    device,
-                                pAttachments[attachmentNumber].image[Image],
-                                image.Format,
-                                VK_IMAGE_ASPECT_COLOR_BIT,
-                                1,
-                                &pAttachments[attachmentNumber].imageView[Image]);
-        }
+        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
         VkSamplerCreateInfo SamplerInfo{};
             SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
             SamplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -156,28 +112,11 @@ void gaussianBlur::destroy()
 
 void gaussianBlur::createRenderPass()
 {
-    uint32_t index = 0;
-
     std::array<VkAttachmentDescription,2> attachments{};
-        attachments[index].format = image.Format;
-        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[index].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    index++;
-        attachments[index].format = image.Format;
-        attachments[index].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[index].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[index].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[index].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[index].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[index].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    for(uint32_t index = 0; index < attachments.size(); index++)
+        attachments[index] = attachments::imageDescription(image.Format);
 
-    index = 0;
+    uint32_t index = 0;
     std::array<VkAttachmentReference,2> firstAttachmentRef;
         firstAttachmentRef[index].attachment = 0;
         firstAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -270,13 +209,13 @@ void gaussianBlur::createFramebuffers()
 
 void gaussianBlur::xBlur::createDescriptorSetLayout(VkDevice* device)
 {
-    uint32_t index = 0;
-    std::array<VkDescriptorSetLayoutBinding,1> bindings;
-        bindings[index].binding = 0;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -286,13 +225,13 @@ void gaussianBlur::xBlur::createDescriptorSetLayout(VkDevice* device)
 
 void gaussianBlur::yBlur::createDescriptorSetLayout(VkDevice* device)
 {
-    uint32_t index = 0;
-    std::array<VkDescriptorSetLayoutBinding,1> bindings;
-        bindings[index].binding = 0;
-        bindings[index].descriptorCount = 1;
-        bindings[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[index].pImmutableSamplers = nullptr;
-        bindings[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -580,10 +519,10 @@ void gaussianBlur::yBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkR
 
 void gaussianBlur::createDescriptorPool()
 {
-    size_t index = 0;
-    std::array<VkDescriptorPoolSize,1> xPoolSizes;
-        xPoolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        xPoolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
+    std::vector<VkDescriptorPoolSize> xPoolSizes;
+    xPoolSizes.push_back(VkDescriptorPoolSize{});
+        xPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        xPoolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
     VkDescriptorPoolCreateInfo xPoolInfo{};
         xPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         xPoolInfo.poolSizeCount = static_cast<uint32_t>(xPoolSizes.size());
@@ -591,10 +530,10 @@ void gaussianBlur::createDescriptorPool()
         xPoolInfo.maxSets = static_cast<uint32_t>(image.Count);
     vkCreateDescriptorPool(*device, &xPoolInfo, nullptr, &xblur.DescriptorPool);
 
-    index = 0;
-    std::array<VkDescriptorPoolSize,1> yPoolSizes;
-        yPoolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        yPoolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
+    std::vector<VkDescriptorPoolSize> yPoolSizes;
+    yPoolSizes.push_back(VkDescriptorPoolSize{});
+        yPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        yPoolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
     VkDescriptorPoolCreateInfo yPoolInfo{};
         yPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         yPoolInfo.poolSizeCount = static_cast<uint32_t>(yPoolSizes.size());
@@ -628,41 +567,39 @@ void gaussianBlur::updateDescriptorSets(attachments* blurAttachment)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
-        uint32_t index = 0;
-        std::array<VkDescriptorImageInfo, 1> imageInfo;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = blurAttachment->imageView[i];
-            imageInfo[index].sampler = blurAttachment->sampler;
+        VkDescriptorImageInfo imageInfo;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = blurAttachment->imageView[i];
+            imageInfo.sampler = blurAttachment->sampler;
 
-        index = 0;
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = xblur.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(imageInfo.size());
-            descriptorWrites[index].pImageInfo = imageInfo.data();
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = xblur.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &imageInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
     for (size_t i = 0; i < image.Count; i++)
     {
-        uint32_t index = 0;
-        std::array<VkDescriptorImageInfo, 1> imageInfo;
-            imageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[index].imageView = bufferAttachment.imageView[i];
-            imageInfo[index].sampler = bufferAttachment.sampler;
+        VkDescriptorImageInfo imageInfo;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = bufferAttachment.imageView[i];
+            imageInfo.sampler = bufferAttachment.sampler;
 
-        index = 0;
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = yblur.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(imageInfo.size());
-            descriptorWrites[index].pImageInfo = imageInfo.data();
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = yblur.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &imageInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -670,8 +607,8 @@ void gaussianBlur::updateDescriptorSets(attachments* blurAttachment)
 void gaussianBlur::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     std::array<VkClearValue, 2> ClearValues{};
-        ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        ClearValues[1].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    for(uint32_t index = 0; index < ClearValues.size(); index++)
+        ClearValues[index].color = pAttachments->clearValue.color;
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

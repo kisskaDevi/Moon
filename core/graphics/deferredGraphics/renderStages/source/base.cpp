@@ -46,36 +46,40 @@ void deferredGraphics::Base::createUniformBuffers(VkPhysicalDevice* physicalDevi
 
 void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
 {
-    uint32_t index = 0;
+    std::vector<VkDescriptorSetLayoutBinding> binding;
 
-    std::array<VkDescriptorSetLayoutBinding, 4> Binding{};
-        Binding[index].binding = index;
-        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        Binding[index].descriptorCount = 1;
-        Binding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        Binding[index].pImmutableSamplers = nullptr;
-    index++;
-        Binding[index].binding = index;
-        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        Binding[index].descriptorCount = 1;
-        Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding[index].pImmutableSamplers = nullptr;
-    index++;
-        Binding[index].binding = index;
-        Binding[index].descriptorCount = 1;
-        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding[index].pImmutableSamplers = nullptr;
-    index++;
-        Binding[index].binding = index;
-        Binding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        Binding[index].descriptorCount = 1;
-        Binding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        Binding[index].pImmutableSamplers = nullptr;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+       binding.back().binding = binding.size() - 1;
+       binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+       binding.back().descriptorCount = 1;
+       binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+       binding.back().pImmutableSamplers = nullptr;
+
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+       binding.back().binding = binding.size() - 1;
+       binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+       binding.back().descriptorCount = 1;
+       binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+       binding.back().pImmutableSamplers = nullptr;
+
+   binding.push_back(VkDescriptorSetLayoutBinding{});
+       binding.back().binding = binding.size() - 1;
+       binding.back().descriptorCount = 1;
+       binding.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+       binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+       binding.back().pImmutableSamplers = nullptr;
+
+   binding.push_back(VkDescriptorSetLayoutBinding{});
+       binding.back().binding = binding.size() - 1;
+       binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+       binding.back().descriptorCount = 1;
+       binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+       binding.back().pImmutableSamplers = nullptr;
+
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(Binding.size());
-        layoutInfo.pBindings = Binding.data();
+        layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
+        layoutInfo.pBindings = binding.data();
     vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &SceneDescriptorSetLayout);
 
     createObjectDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
@@ -269,20 +273,23 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
 
 void deferredGraphics::createBaseDescriptorPool()
 {
-    uint32_t index = 0;
+    std::vector<VkDescriptorPoolSize> poolSizes;
 
-    std::array<VkDescriptorPoolSize,4> poolSizes;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
-    index++;
-        poolSizes[index].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[index].descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -304,62 +311,63 @@ void deferredGraphics::createBaseDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, base.DescriptorSets.data());
 }
 
-void deferredGraphics::updateBaseDescriptorSets(attachment* depthAttachment, VkBuffer* storageBuffers)
+void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
-        uint32_t index = 0;
-        std::array<VkDescriptorBufferInfo,1> bufferInfo{};
-            bufferInfo[index].buffer = base.sceneUniformBuffers[i];
-            bufferInfo[index].offset = 0;
-            bufferInfo[index].range = sizeof(UniformBufferObject);
-        index = 0;
-        std::array<VkDescriptorImageInfo,1> skyboxImageInfo{};
-            skyboxImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo[index].imageView = skybox.texture ? *skybox.texture->getTextureImageView() : *emptyTexture->getTextureImageView();
-            skyboxImageInfo[index].sampler   = skybox.texture ? *skybox.texture->getTextureSampler() : *emptyTexture->getTextureSampler();
+        VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = base.sceneUniformBuffers[i];
+            bufferInfo.offset = 0;
+            bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkDescriptorImageInfo skyboxImageInfo{};
+            skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            skyboxImageInfo.imageView = skybox.texture ? *skybox.texture->getTextureImageView() : *emptyTexture->getTextureImageView();
+            skyboxImageInfo.sampler   = skybox.texture ? *skybox.texture->getTextureSampler() : *emptyTexture->getTextureSampler();
+
         VkDescriptorBufferInfo StorageBufferInfo{};
             StorageBufferInfo.buffer = storageBuffers[i];
             StorageBufferInfo.offset = 0;
             StorageBufferInfo.range = sizeof(StorageBufferObject);
+
         VkDescriptorImageInfo depthImageInfo{};
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = depthAttachment ? depthAttachment->imageView : *emptyTexture->getTextureImageView();
+            depthImageInfo.imageView = depthAttachment ? depthAttachment->imageView[i] : *emptyTexture->getTextureImageView();
             depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : *emptyTexture->getTextureSampler();
 
-        index = 0;
-        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = base.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(bufferInfo.size());
-            descriptorWrites[index].pBufferInfo = bufferInfo.data();
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = base.DescriptorSets[i];
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = static_cast<uint32_t>(skyboxImageInfo.size());
-            descriptorWrites[index].pImageInfo = skyboxImageInfo.data();
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = base.DescriptorSets.at(i);
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pBufferInfo = &StorageBufferInfo;
-        index++;
-            descriptorWrites[index].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[index].dstSet = base.DescriptorSets.at(i);
-            descriptorWrites[index].dstBinding = index;
-            descriptorWrites[index].dstArrayElement = 0;
-            descriptorWrites[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[index].descriptorCount = 1;
-            descriptorWrites[index].pImageInfo = &depthImageInfo;
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = base.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pBufferInfo = &bufferInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = base.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &skyboxImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = base.DescriptorSets.at(i);
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pBufferInfo = &StorageBufferInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = base.DescriptorSets.at(i);
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &depthImageInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

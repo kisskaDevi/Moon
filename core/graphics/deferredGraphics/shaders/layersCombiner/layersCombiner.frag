@@ -19,6 +19,7 @@ layout(set = 0, binding = 7) uniform sampler2D layersBloomSampler[transparentLay
 layout(set = 0, binding = 8) uniform sampler2D layersPosition[transparentLayersCount];
 layout(set = 0, binding = 9) uniform sampler2D layersNormal[transparentLayersCount];
 layout(set = 0, binding = 10) uniform sampler2D layersDepth[transparentLayersCount];
+layout(set = 0, binding = 11) uniform sampler2D skybox;
 
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
@@ -73,12 +74,13 @@ void findRefr(const int i, const float n, inout vec3 startPos, inout vec3 coords
     {
         vec3 start = startPos;
         startPos = layerPointPosition(i,coords.xy);
-        coords  = findRefrCoords(start, layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy), n);
+        if(layerDepth(i,coords.xy)!=1.0f)
+            coords  = findRefrCoords(start, layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy), n);
     }
 }
 
 vec4 findColor(const in vec3 coord, sampler2D Sampler){
-    return (insideCond(coord.xy) && depthCond(coord.z,coord.xy) ? texture(Sampler,coord.xy) : vec4(0.0f));
+    return (insideCond(coord.xy) ? texture(Sampler,coord.xy) : vec4(0.0f));
 }
 
 vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sampler, sampler2D Depth){
@@ -90,8 +92,43 @@ vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sam
                            1.0f - abs(2.0f * t - 4.0f / 3.0f), 1.0f);
         if(depthCond(layerDepth(Depth,coords.xy),coords.xy))
         {
-            color += (beginCoords != vec3(fragTexCoord,0.0f)) ? factor * findColor(coords, Sampler) : findColor(coords, Sampler);
+            color += (beginCoords != vec3(fragTexCoord,0.0f) ? factor : vec4(1.0f)) * findColor(coords, Sampler);
         }
+    }
+    return color;
+}
+
+vec4 findColor(const in vec3 coord){
+    vec4 skyboxColor = texture(depth,coord.xy).r == 1.0f ? texture(skybox,coord.xy) : vec4(0.0f);
+    return insideCond(coord.xy) ? texture(Sampler,coord.xy) + skyboxColor : vec4(0.0f);
+}
+
+vec4 accumulateBaseColor(vec3 beginCoords, vec3 endCoords, float step){
+    vec4 color = vec4(0.0f);
+    for(float t = 0.0f; t <= 1.0f; t += step){
+        vec3 coords = beginCoords + (endCoords - beginCoords) * t;
+        vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
+                           1.0f - abs(2.0f * t - 2.0f / 3.0f),
+                           1.0f - abs(2.0f * t - 4.0f / 3.0f), 1.0f);
+        color += (beginCoords != vec3(fragTexCoord,0.0f) ? factor : vec4(1.0f)) * findColor(coords);
+    }
+    return color;
+}
+
+vec4 findBloom(const in vec3 coord){
+    vec4 skyboxColor = texture(skybox,coord.xy);
+    skyboxColor = (skyboxColor.x>0.95f&&skyboxColor.y>0.95f&&skyboxColor.z>0.95f) && (texture(depth,coord.xy).r == 1.0f) ? skyboxColor : vec4(0.0f);
+    return insideCond(coord.xy) ? texture(bloomSampler,coord.xy) + skyboxColor : vec4(0.0f);
+}
+
+vec4 accumulateBaseBloom(vec3 beginCoords, vec3 endCoords, float step){
+    vec4 color = vec4(0.0f);
+    for(float t = 0.0f; t <= 1.0f; t += step){
+        vec3 coords = beginCoords + (endCoords - beginCoords) * t;
+        vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
+                           1.0f - abs(2.0f * t - 2.0f / 3.0f),
+                           1.0f - abs(2.0f * t - 4.0f / 3.0f), 1.0f);
+        color += (beginCoords != vec3(fragTexCoord,0.0f) ? factor : vec4(1.0f)) * findBloom(coords);
     }
     return color;
 }
@@ -116,9 +153,9 @@ void main()
         findRefr(i,nend,endStartPos,endCoords);
     }
 
-    outColor = accumulateColor(beginCoords,endCoords,step,Sampler,depth);
+    outColor = accumulateBaseColor(beginCoords,endCoords,step);
     outColor = max(layerColor, step * outColor);
 
-    outBloom = accumulateColor(beginCoords,endCoords,step,bloomSampler,depth);
+    outBloom = accumulateBaseBloom(beginCoords,endCoords,step);
     outBloom = max(layerBloom, step * outBloom);
 }

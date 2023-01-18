@@ -1,9 +1,12 @@
-#ifndef LAYERSCOMBINER_H
-#define LAYERSCOMBINER_H
+#ifndef SKYBOX_H
+#define SKYBOX_H
 
 #include "filtergraphics.h"
 
-class layersCombiner : public filterGraphics
+class skyboxObject;
+class camera;
+
+class skyboxGraphics : public filterGraphics
 {
 private:
     VkPhysicalDevice*                   physicalDevice{nullptr};
@@ -19,22 +22,29 @@ private:
     VkRenderPass                        renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>          framebuffers;
 
-    struct Combiner : public filter{
+    struct Skybox : public filter{
         std::string                     ExternalPath;
-        uint32_t                        transparentLayersCount{0};
 
         VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
         VkPipeline                      Pipeline{VK_NULL_HANDLE};
         VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           ObjectDescriptorSetLayout{VK_NULL_HANDLE};
         VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>    DescriptorSets;
+
+        std::vector<VkBuffer>           uniformBuffers;
+        std::vector<VkDeviceMemory>     uniformBuffersMemory;
+
+        std::vector<skyboxObject*>      objects;
+
         void Destroy(VkDevice* device) override;
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass) override;
         void createDescriptorSetLayout(VkDevice* device) override;
-    }combiner;
+        void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
+    }skybox;
 
 public:
-    layersCombiner();
+    skyboxGraphics();
     void destroy() override;
 
     void setExternalPath(const std::string& path) override;
@@ -49,11 +59,15 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox);
+    void updateDescriptorSets();
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 
-    void setTransparentLayersCount(uint32_t transparentLayersCount);
+    void bindObject(skyboxObject* newObject);
+    bool removeObject(skyboxObject* object);
+
+    void updateUniformBuffer(uint32_t currentImage, camera* cameraObject);
+    void updateObjectUniformBuffer(uint32_t currentImage);
 };
 
-#endif // LAYERSCOMBINER_H
+#endif // SKYBOX_H

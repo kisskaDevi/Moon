@@ -4,6 +4,9 @@
 #include <libs/vulkan/vulkan.h>
 #include "transformational.h"
 #include "libs/quaternion.h"
+#include "core/texture.h"
+
+#include <string>
 
 struct UniformBuffer
 {
@@ -27,13 +30,6 @@ private:
     gltfModel**                     pModel;
     uint32_t                        modelCount{0};
 
-    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>    descriptors;
-
-    std::vector<VkBuffer>           uniformBuffers;
-    std::vector<VkDeviceMemory>     uniformBuffersMemory;
-
     quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>               rotation{1.0f,0.0f,0.0f,0.0f};
     glm::vec3                       scaling{1.0f,1.0f,1.0f};
@@ -55,6 +51,15 @@ private:
     }outlining;
 
     void updateModelMatrix();
+
+protected:
+    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
+    std::vector<VkDescriptorSet>    descriptors;
+
+    std::vector<VkBuffer>           uniformBuffers;
+    std::vector<VkDeviceMemory>     uniformBuffersMemory;
+
 public:
     object();
     object(uint32_t modelCount, gltfModel** model);
@@ -78,14 +83,13 @@ public:
     void                scale(const glm::vec3& scale);
     void                setPosition(const glm::vec3& translate);
 
-    glm::mat4x4&        ModelMatrix();
-
     void                setModel(gltfModel** model3D);
     void                setConstantColor(const glm::vec4 & color);
     void                setColorFactor(const glm::vec4 & color);
     void                setBloomColor(const glm::vec4 & color);
     void                setBloomFactor(const glm::vec4 & color);
 
+    glm::mat4x4         getModelMatrix() const;
     gltfModel*          getModel(uint32_t index);
     glm::vec4           getConstantColor() const;
     glm::vec4           getColorFactor() const;
@@ -121,6 +125,22 @@ public:
     bool changeAnimationFlag{false};
     float startTimer;
     float changeAnimationTime;
+};
+
+class skyboxObject : public object{
+private:
+    cubeTexture* texture{nullptr};
+public:
+    skyboxObject(const std::vector<std::string>& TEXTURE_PATH);
+    ~skyboxObject();
+
+    void translate(const glm::vec3& translate);
+
+    void createTexture(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* queue, VkCommandPool* commandPool);
+    void destroyTexture(VkDevice* device);
+
+    void createDescriptorPool(VkDevice* device, uint32_t imageCount);
+    void createDescriptorSet(VkDevice* device, uint32_t imageCount);
 };
 
 #endif // OBJECT_H

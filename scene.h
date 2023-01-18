@@ -44,7 +44,8 @@ private:
     std::string ZERO_TEXTURE_WHITE;
 
     camera*                                         cameras;
-    object*                                         skyboxObject;
+    skyboxObject*                                   skyboxObject1;
+    skyboxObject*                                   skyboxObject2;
 
     std::vector<std::vector<gltfModel   *>>         gltfModel;
     std::vector<object                  *>          object3D;

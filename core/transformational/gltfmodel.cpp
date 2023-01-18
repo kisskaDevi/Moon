@@ -510,7 +510,7 @@ VkFilter gltfModel::getVkFilterMode(int32_t filterMode)
 
 void gltfModel::loadTextureSamplers(tinygltf::Model &gltfModel)
 {
-    for (tinygltf::Sampler smpl : gltfModel.samplers) {
+    for (const tinygltf::Sampler& smpl : gltfModel.samplers) {
         textureSampler sampler{};
         sampler.minFilter = getVkFilterMode(smpl.minFilter);
         sampler.magFilter = getVkFilterMode(smpl.magFilter);
@@ -668,24 +668,24 @@ void gltfModel::loadAnimations(tinygltf::Model &gltfModel)
                 const void *dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
 
                 switch (accessor.type) {
-                case TINYGLTF_TYPE_VEC3: {
-                    const glm::vec3 *buf = static_cast<const glm::vec3*>(dataPtr);
-                    for (size_t index = 0; index < accessor.count; index++) {
-                        sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+                    case TINYGLTF_TYPE_VEC3: {
+                        const glm::vec3 *buf = static_cast<const glm::vec3*>(dataPtr);
+                        for (size_t index = 0; index < accessor.count; index++) {
+                            sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+                        }
+                        break;
                     }
-                    break;
-                }
-                case TINYGLTF_TYPE_VEC4: {
-                    const glm::vec4 *buf = static_cast<const glm::vec4*>(dataPtr);
-                    for (size_t index = 0; index < accessor.count; index++) {
-                        sampler.outputsVec4.push_back(buf[index]);
+                    case TINYGLTF_TYPE_VEC4: {
+                        const glm::vec4 *buf = static_cast<const glm::vec4*>(dataPtr);
+                        for (size_t index = 0; index < accessor.count; index++) {
+                            sampler.outputsVec4.push_back(buf[index]);
+                        }
+                        break;
                     }
-                    break;
-                }
-                default: {
-                    std::cout << "unknown type" << std::endl;
-                    break;
-                }
+                    default: {
+                        std::cout << "unknown type" << std::endl;
+                        break;
+                    }
                 }
             }
 
@@ -951,30 +951,30 @@ void gltfModel::changeAnimation(uint32_t oldIndex, uint32_t newIndex, float star
                 float u = std::max(0.0f, time - startTime) / changeAnimationTime;
                 if (u <= 1.0f) {
                     switch (channel.path) {
-                    case AnimationChannel::PathType::TRANSLATION: {
-                        glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
-                        channel.node->translation = glm::vec3(trans);
-                        break;
-                    }
-                    case AnimationChannel::PathType::SCALE: {
-                        glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
-                        channel.node->scale = glm::vec3(trans);
-                        break;
-                    }
-                    case AnimationChannel::PathType::ROTATION: {
-                        glm::quat q1;
-                        q1.x = samplerOld.outputsVec4[i].x;
-                        q1.y = samplerOld.outputsVec4[i].y;
-                        q1.z = samplerOld.outputsVec4[i].z;
-                        q1.w = samplerOld.outputsVec4[i].w;
-                        glm::quat q2;
-                        q2.x = samplerNew.outputsVec4[0].x;
-                        q2.y = samplerNew.outputsVec4[0].y;
-                        q2.z = samplerNew.outputsVec4[0].z;
-                        q2.w = samplerNew.outputsVec4[0].w;
-                        channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
-                        break;
-                    }
+                        case AnimationChannel::PathType::TRANSLATION: {
+                            glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                            channel.node->translation = glm::vec3(trans);
+                            break;
+                        }
+                        case AnimationChannel::PathType::SCALE: {
+                            glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                            channel.node->scale = glm::vec3(trans);
+                            break;
+                        }
+                        case AnimationChannel::PathType::ROTATION: {
+                            glm::quat q1;
+                            q1.x = samplerOld.outputsVec4[i].x;
+                            q1.y = samplerOld.outputsVec4[i].y;
+                            q1.z = samplerOld.outputsVec4[i].z;
+                            q1.w = samplerOld.outputsVec4[i].w;
+                            glm::quat q2;
+                            q2.x = samplerNew.outputsVec4[0].x;
+                            q2.y = samplerNew.outputsVec4[0].y;
+                            q2.z = samplerNew.outputsVec4[0].z;
+                            q2.w = samplerNew.outputsVec4[0].w;
+                            channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+                            break;
+                        }
                     }
                     updated = true;
                 }

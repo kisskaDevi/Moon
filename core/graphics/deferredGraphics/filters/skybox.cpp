@@ -1,35 +1,36 @@
-#include "ssao.h"
+#include "skybox.h"
 #include "core/operations.h"
+#include "core/transformational/object.h"
+#include "core/transformational/camera.h"
 #include "../bufferObjects.h"
 
-#include <array>
 #include <iostream>
 
-SSAOGraphics::SSAOGraphics()
+skyboxGraphics::skyboxGraphics()
 {
 
 }
 
-void SSAOGraphics::setExternalPath(const std::string &path)
+void skyboxGraphics::setExternalPath(const std::string &path)
 {
-    ssao.ExternalPath = path;
+    skybox.ExternalPath = path;
 }
 
-void SSAOGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void skyboxGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
 }
-void SSAOGraphics::setImageProp(imageInfo* pInfo) {this->image = *pInfo;}
-void SSAOGraphics::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
+void skyboxGraphics::setImageProp(imageInfo* pInfo) {this->image = *pInfo;}
+void skyboxGraphics::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     this->attachmentsCount = attachmentsCount;
     this->pAttachments = pAttachments;
 }
 
-void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
+void skyboxGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
     {
@@ -55,28 +56,49 @@ void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAt
     }
 }
 
-void SSAOGraphics::SSAO::Destroy(VkDevice* device)
+void skyboxGraphics::Skybox::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
-    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    uniformBuffers.resize(imageCount);
+    uniformBuffersMemory.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++){
+        createBuffer(   physicalDevice,
+                        device,
+                        sizeof(SkyboxUniformBufferObject),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        uniformBuffers[i],
+                        uniformBuffersMemory[i]);
+    }
 }
 
-void SSAOGraphics::destroy()
+void skyboxGraphics::Skybox::Destroy(VkDevice* device)
 {
-    ssao.Destroy(device);
+    if(Pipeline)                    vkDestroyPipeline(*device, Pipeline, nullptr);
+    if(PipelineLayout)              vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
+    if(DescriptorSetLayout)         vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
+    if(ObjectDescriptorSetLayout)   vkDestroyDescriptorSetLayout(*device, ObjectDescriptorSetLayout, nullptr);
+    if(DescriptorPool)              vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+
+    for (size_t i = 0; i < uniformBuffers.size(); i++){
+        if(uniformBuffers[i])       vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
+        if(uniformBuffersMemory[i]) vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
+    }
+}
+
+void skyboxGraphics::destroy()
+{
+    skybox.Destroy(device);
 
     if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
     for(size_t i = 0; i< framebuffers.size();i++)
         if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
 }
 
-void SSAOGraphics::createRenderPass()
+void skyboxGraphics::createRenderPass()
 {
     uint32_t index = 0;
     std::array<VkAttachmentDescription,1> attachments{};
-    attachments[index] = attachments::imageDescription(image.Format);
+        attachments[index] = attachments::imageDescription(image.Format);
 
     index = 0;
     std::array<VkAttachmentReference,1> attachmentRef;
@@ -109,7 +131,7 @@ void SSAOGraphics::createRenderPass()
     vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass);
 }
 
-void SSAOGraphics::createFramebuffers()
+void skyboxGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
@@ -125,64 +147,38 @@ void SSAOGraphics::createFramebuffers()
     }
 }
 
-void SSAOGraphics::createPipelines()
+void skyboxGraphics::createPipelines()
 {
-    ssao.createDescriptorSetLayout(device);
-    ssao.createPipeline(device,&image,&renderPass);
+    skybox.createDescriptorSetLayout(device);
+    skybox.createPipeline(device,&image,&renderPass);
+    skybox.createUniformBuffers(physicalDevice,device,image.Count);
 }
 
-void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice* device)
+void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice* device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-
     bindings.push_back(VkDescriptorSetLayoutBinding{});
-        bindings.back().binding = bindings.size()-1;
-        bindings.back().descriptorCount = 1;
+        bindings.back().binding = 0;
         bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        bindings.back().pImmutableSamplers = nullptr;
-        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-        bindings.back().binding = bindings.size()-1;
         bindings.back().descriptorCount = 1;
-        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         bindings.back().pImmutableSamplers = nullptr;
-        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-        bindings.back().binding = bindings.size()-1;
-        bindings.back().descriptorCount = 1;
-        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings.back().pImmutableSamplers = nullptr;
-        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-        bindings.back().binding = bindings.size()-1;
-        bindings.back().descriptorCount = 1;
-        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings.back().pImmutableSamplers = nullptr;
-        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-        bindings.back().binding = bindings.size()-1;
-        bindings.back().descriptorCount = 1;
-        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings.back().pImmutableSamplers = nullptr;
-        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
+
+    createSkyboxObjectDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
 }
 
-void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void skyboxGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoVert.spv");
-    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoFrag.spv");
+    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\skybox\\skyboxVert.spv");
+    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\skybox\\skyboxFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
@@ -199,10 +195,9 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr;
         vertexInputInfo.vertexAttributeDescriptionCount = 0;
+        vertexInputInfo.pVertexBindingDescriptions = nullptr;
         vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -212,7 +207,7 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
     std::array<VkViewport,1> viewport{};
         viewport[index].x = 0.0f;
         viewport[index].y = 0.0f;
-        viewport[index].width  = (float) pInfo->Extent.width;
+        viewport[index].width = (float) pInfo->Extent.width;
         viewport[index].height = (float) pInfo->Extent.height;
         viewport[index].minDepth = 0.0f;
         viewport[index].maxDepth = 1.0f;
@@ -221,9 +216,9 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         scissor[index].extent = pInfo->Extent;
     VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
+        viewportState.viewportCount = static_cast<uint32_t>(viewport.size());
         viewportState.pViewports = viewport.data();
-        viewportState.scissorCount = static_cast<uint32_t>(scissor.size());;
+        viewportState.scissorCount = static_cast<uint32_t>(scissor.size());
         viewportState.pScissors = scissor.data();
 
     VkPipelineRasterizationStateCreateInfo rasterizer{};
@@ -241,22 +236,25 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        multisampling.rasterizationSamples = pInfo->Samples;
         multisampling.minSampleShading = 1.0f;
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
         multisampling.alphaToOneEnable = VK_FALSE;
 
-    index = 0;
-    std::array<VkPipelineColorBlendAttachmentState,1> colorBlendAttachment;
+
+    std::array<VkPipelineColorBlendAttachmentState,1> colorBlendAttachment{};
+    for(uint32_t index=0;index<colorBlendAttachment.size();index++)
+    {
         colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[index].blendEnable = VK_FALSE;
-        colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].blendEnable = VK_TRUE;
+        colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
-        colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
+    }
     VkPipelineColorBlendStateCreateInfo colorBlending{};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlending.logicOpEnable = VK_FALSE;
@@ -267,6 +265,13 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         colorBlending.blendConstants[1] = 0.0f;
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
+
+    std::array<VkDescriptorSetLayout,2> SetLayouts = {DescriptorSetLayout, ObjectDescriptorSetLayout};
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -280,55 +285,33 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
         depthStencil.front = {};
         depthStencil.back = {};
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
-
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineInfo.pStages = shaderStages.data();
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssembly;
-        pipelineInfo.pViewportState = &viewportState;
-        pipelineInfo.pRasterizationState = &rasterizer;
-        pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = PipelineLayout;
-        pipelineInfo.renderPass = *pRenderPass;
-        pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    index = 0;
+    std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
+        pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo[index].pStages = shaderStages.data();
+        pipelineInfo[index].pVertexInputState = &vertexInputInfo;
+        pipelineInfo[index].pInputAssemblyState = &inputAssembly;
+        pipelineInfo[index].pViewportState = &viewportState;
+        pipelineInfo[index].pRasterizationState = &rasterizer;
+        pipelineInfo[index].pMultisampleState = &multisampling;
+        pipelineInfo[index].pColorBlendState = &colorBlending;
+        pipelineInfo[index].layout = PipelineLayout;
+        pipelineInfo[index].renderPass = *pRenderPass;
+        pipelineInfo[index].subpass = 0;
+        pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo[index].pDepthStencilState = &depthStencil;
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
 
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void SSAOGraphics::createDescriptorPool()
+void skyboxGraphics::createDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
-
     poolSizes.push_back(VkDescriptorPoolSize{});
         poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
 
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -336,96 +319,44 @@ void SSAOGraphics::createDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &ssao.DescriptorPool);
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &skybox.DescriptorPool);
 }
 
-void SSAOGraphics::createDescriptorSets()
+void skyboxGraphics::createDescriptorSets()
 {
-    ssao.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, ssao.DescriptorSetLayout);
+    skybox.DescriptorSets.resize(image.Count);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, skybox.DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = ssao.DescriptorPool;
+        allocInfo.descriptorPool = skybox.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(*device, &allocInfo, ssao.DescriptorSets.data());
+    vkAllocateDescriptorSets(*device, &allocInfo, skybox.DescriptorSets.data());
 }
 
-void SSAOGraphics::updateDescriptorSets(DeferredAttachments deferredAttachments, VkBuffer* pUniformBuffers)
+void skyboxGraphics::updateDescriptorSets()
 {
     for (size_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = pUniformBuffers[i];
+            bufferInfo.buffer = skybox.uniformBuffers[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
-
-        VkDescriptorImageInfo positionInfo{};
-            positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionInfo.imageView = deferredAttachments.GBuffer.position.imageView[i];
-            positionInfo.sampler = deferredAttachments.GBuffer.position.sampler;
-
-        VkDescriptorImageInfo normalInfo{};
-            normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalInfo.imageView = deferredAttachments.GBuffer.normal.imageView[i];
-            normalInfo.sampler = deferredAttachments.GBuffer.normal.sampler;
-
-        VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = deferredAttachments.image.imageView[i];
-            imageInfo.sampler = deferredAttachments.image.sampler;
-
-        VkDescriptorImageInfo depthInfo{};
-            depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = deferredAttachments.depth.imageView[i];
-            depthInfo.sampler = deferredAttachments.depth.sampler;
+            bufferInfo.range = sizeof(SkyboxUniformBufferObject);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
+            descriptorWrites.back().dstSet = skybox.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = 0;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pBufferInfo = &bufferInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &positionInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &normalInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &imageInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &depthInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-void SSAOGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void skyboxGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     std::array<VkClearValue, 1> ClearValues{};
     for(uint32_t index = 0; index < ClearValues.size(); index++)
@@ -442,9 +373,51 @@ void SSAOGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.PipelineLayout, 0, 1, &ssao.DescriptorSets[frameNumber], 0, nullptr);
-        vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
+    for(auto object: skybox.objects)
+    {
+        if(object->getEnable()){
+            std::vector<VkDescriptorSet> descriptorSets = {skybox.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
+            vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+        }
+    }
 
     vkCmdEndRenderPass(commandBuffer);
+}
+
+void skyboxGraphics::bindObject(skyboxObject* newObject)
+{
+    skybox.objects.push_back(newObject);
+}
+
+bool skyboxGraphics::removeObject(skyboxObject* object)
+{
+    bool result = false;
+    for(uint32_t index = 0; index<skybox.objects.size(); index++){
+        if(object==skybox.objects[index]){
+            skybox.objects.erase(skybox.objects.begin()+index);
+            result = true;
+        }
+    }
+    return result;
+}
+
+void skyboxGraphics::updateUniformBuffer(uint32_t currentImage, camera* cameraObject)
+{
+    void* data;
+
+    SkyboxUniformBufferObject skyboxUBO{};
+        skyboxUBO.view = cameraObject->getViewMatrix();
+        skyboxUBO.proj = cameraObject->getProjMatrix();
+        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cameraObject->getTranslation());
+    vkMapMemory(*device, this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
+        memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
+    vkUnmapMemory(*device, this->skybox.uniformBuffersMemory[currentImage]);
+}
+
+void skyboxGraphics::updateObjectUniformBuffer(uint32_t currentImage)
+{
+    for(size_t i=0;i<skybox.objects.size();i++)
+        skybox.objects[i]->updateUniformBuffer(device,currentImage);
 }

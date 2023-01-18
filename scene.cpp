@@ -39,6 +39,15 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
         ExternalPath+"texture\\skybox\\bottom.jpg"
     };
 
+    std::vector<std::string> SKYBOX1 = {
+        ExternalPath+"texture\\skybox1\\left.png",
+        ExternalPath+"texture\\skybox1\\right.png",
+        ExternalPath+"texture\\skybox1\\front.png",
+        ExternalPath+"texture\\skybox1\\back.png",
+        ExternalPath+"texture\\skybox1\\top.png",
+        ExternalPath+"texture\\skybox1\\bottom.png"
+    };
+
     graphics->setEmptyTexture(ZERO_TEXTURE);
 
     cameras = new camera;
@@ -48,9 +57,14 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
         cameras->setProjMatrix(proj);
     graphics->setCameraObject(cameras);
 
-    skyboxObject = new object(1,nullptr);
-        skyboxObject->scale(glm::vec3(200.0f,200.0f,200.0f));
-    graphics->bindSkyBoxObject(skyboxObject, SKYBOX);
+    skyboxObject1 = new skyboxObject(SKYBOX);
+        skyboxObject1->scale(glm::vec3(200.0f,200.0f,200.0f));
+    graphics->bindSkyBoxObject(skyboxObject1);
+    skyboxObject1->setColorFactor(glm::vec4(0.5));
+
+    skyboxObject2 = new skyboxObject(SKYBOX1);
+        skyboxObject2->scale(glm::vec3(200.0f,200.0f,200.0f));
+    graphics->bindSkyBoxObject(skyboxObject2);
 
     loadModels();
     createLight();
@@ -87,8 +101,11 @@ void scene::destroyScene()
     for(size_t i=0;i<lightPoint.size();i++)
         delete lightPoint.at(i);
 
-    graphics->removeSkyBoxObject(skyboxObject);
-    delete skyboxObject;
+    graphics->removeSkyBoxObject(skyboxObject1);
+    delete skyboxObject1;
+
+    graphics->removeSkyBoxObject(skyboxObject2);
+    delete skyboxObject2;
 
     for (size_t i =0 ;i<gltfModel.size();i++)
         for (size_t j =0 ;j<gltfModel.at(i).size();j++)
@@ -653,6 +670,8 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
 void scene::updates(float frameTime)
 {
     globalTime += frameTime;
+
+    skyboxObject2->rotate(0.1f*frameTime,glm::normalize(glm::vec3(1.0f,1.0f,1.0f)));
 
     graphics->resetUboWorld();
     graphics->resetUboLight();

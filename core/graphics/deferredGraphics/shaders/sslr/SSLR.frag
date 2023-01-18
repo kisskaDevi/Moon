@@ -38,51 +38,50 @@ bool insideCondition(const in vec2 coords){
     return coords.x > 0.0f && coords.y > 0.0f && coords.x < 1.0f && coords.y < 1.0f;
 }
 
-vec4 findSampler(const in vec2 coords){
-    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? texture(Sampler, coords) : texture(layerSampler, coords);
+vec4 findSampler(const in vec2 coords, bool depthCondition){
+    return depthCondition ? texture(Sampler, coords) : texture(layerSampler, coords);
 }
 
-vec4 findPosition(const in vec2 coords){
-    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? vec4(texture(position, coords).xyz,1.0f) : vec4(texture(layerPosition, coords).xyz,1.0f);
+vec4 findPosition(const in vec2 coords, bool depthCondition){
+    return depthCondition ? vec4(texture(position, coords).xyz,1.0f) : vec4(texture(layerPosition, coords).xyz,1.0f);
 }
 
-vec4 findNormal(const in vec2 coords){
-    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? vec4(texture(normal, coords).xyz,0.0f) : vec4(texture(layerNormal, coords).xyz,0.0f);
-}
-
-float findDepth(const in vec2 coords){
-    return texture(depth, coords).r - texture(layerDepth, coords).r < 0.0 ? texture(depth, coords).r : texture(layerDepth, coords).r;
+vec4 findNormal(const in vec2 coords, bool depthCondition){
+    return depthCondition ? vec4(texture(normal, coords).xyz,0.0f) : vec4(texture(layerNormal, coords).xyz,0.0f);
 }
 
 vec4 SSLR(int steps, float incrementFactor, float resolution)
 {
     vec4 SSLR = vec4(0.0f);
 
-    vec4 pointPosition = findPosition(fragTexCoord);
-    vec4 pointNormal = findNormal(fragTexCoord);
-    float pointDepth = findDepth(fragTexCoord);
+    bool depthCond = texture(depth, fragTexCoord).r - texture(layerDepth, fragTexCoord).r < 0.0;
+    vec4 pointPosition = findPosition(fragTexCoord, depthCond);
+    vec4 pointNormal = findNormal(fragTexCoord, depthCond);
 
     vec4 reflectDirection = normalize(reflect(pointPosition - pointOfView, pointNormal));
     vec2 increment = incrementFactor * findIncrement(projview,pointPosition,reflectDirection);
     vec2 planeCoords = findPositionInPlane(projview,pointPosition).xy * vec2(0.5) + vec2(0.5);
 
+    int inCounter = 1;
     for(int i = 0; i < steps; i++, planeCoords += increment){
-        vec4 direction = normalize(findPosition(planeCoords) - pointPosition);
+        bool depthCond = texture(depth, planeCoords).r - texture(layerDepth, planeCoords).r < 0.0;
+        vec4 direction = normalize(findPosition(planeCoords, depthCond) - pointPosition);
 
         float cosTheta = dot(reflectDirection, direction);
-        float cosPhi = dot(direction,findNormal(planeCoords));
+        float cosPhi = dot(direction,findNormal(planeCoords, depthCond));
         if((1.0f - cosTheta <= resolution) && (cosPhi<0.0f)){
-            SSLR += findSampler(planeCoords);
-            break;
+            SSLR += findSampler(planeCoords, depthCond);
+            inCounter++;
+            //break;
         }
     }
 
-    return SSLR;
+    return SSLR/inCounter;
 }
 
 void main()
 {
     outColor = vec4(0.0f);
 
-    outColor += SSLR(100,0.05f,0.0001);
+    outColor += SSLR(20,0.25f,0.01);
 }

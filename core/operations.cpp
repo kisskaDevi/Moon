@@ -1042,6 +1042,30 @@ void createObjectDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* de
         throw std::runtime_error("failed to create base object uniform buffer descriptor set layout!");
 }
 
+void createSkyboxObjectDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    std::vector<VkDescriptorSetLayoutBinding> uniformBufferLayoutBinding;
+    uniformBufferLayoutBinding.push_back(VkDescriptorSetLayoutBinding{});
+        uniformBufferLayoutBinding.back().binding = uniformBufferLayoutBinding.size() - 1;
+        uniformBufferLayoutBinding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayoutBinding.back().descriptorCount = 1;
+        uniformBufferLayoutBinding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayoutBinding.back().pImmutableSamplers = nullptr;
+    uniformBufferLayoutBinding.push_back(VkDescriptorSetLayoutBinding{});
+        uniformBufferLayoutBinding.back().binding = uniformBufferLayoutBinding.size() - 1;
+        uniformBufferLayoutBinding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        uniformBufferLayoutBinding.back().descriptorCount = 1;
+        uniformBufferLayoutBinding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        uniformBufferLayoutBinding.back().pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
+        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferLayoutBinding.size());
+        uniformBufferLayoutInfo.pBindings = uniformBufferLayoutBinding.data();
+    if (vkCreateDescriptorSetLayout(*device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
+        throw std::runtime_error("failed to create base object uniform buffer descriptor set layout!");
+}
+
 void createNodeDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
 {
     uint32_t index = 0;

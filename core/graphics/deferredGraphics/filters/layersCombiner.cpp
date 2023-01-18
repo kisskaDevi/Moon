@@ -211,6 +211,12 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice* device)
         bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         bindings.back().pImmutableSamplers = nullptr;
         bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = bindings.size() - 1;
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -394,6 +400,9 @@ void layersCombiner::createDescriptorPool()
     poolSizes.push_back(VkDescriptorPoolSize{});
         poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes.back().descriptorCount = static_cast<uint32_t>(combiner.transparentLayersCount*image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -415,7 +424,7 @@ void layersCombiner::createDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, combiner.DescriptorSets.data());
 }
 
-void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers)
+void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -448,6 +457,11 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             depthImageInfo.imageView = deferredAttachments.depth.imageView[i];
             depthImageInfo.sampler = deferredAttachments.depth.sampler;
+
+        VkDescriptorImageInfo skyboxImageInfo;
+            skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            skyboxImageInfo.imageView = skybox->imageView[i];
+            skyboxImageInfo.sampler = skybox->sampler;
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);
@@ -566,6 +580,14 @@ void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAtt
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
             descriptorWrites.back().pImageInfo = depthLayersImageInfo.data();
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &skyboxImageInfo;
         vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

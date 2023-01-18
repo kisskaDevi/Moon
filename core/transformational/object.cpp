@@ -129,15 +129,15 @@ void object::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
 
 void object::createDescriptorPool(VkDevice* device, uint32_t imageCount)
 {
-    size_t index = 0;
-    std::vector<VkDescriptorPoolSize> DescriptorPoolSizes(1);
-        DescriptorPoolSizes[index].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        DescriptorPoolSizes[index].descriptorCount = static_cast<uint32_t>(imageCount);
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(imageCount);
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(DescriptorPoolSizes.size());
-        poolInfo.pPoolSizes = DescriptorPoolSizes.data();
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
     vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool);
 }
@@ -161,14 +161,16 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
             bufferInfo.buffer = uniformBuffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBuffer);
-        VkWriteDescriptorSet writeDescriptorSet{};
-            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.dstSet = descriptors[i];
-            writeDescriptorSet.dstBinding = 0;
-            writeDescriptorSet.pBufferInfo = &bufferInfo;
-        vkUpdateDescriptorSets(*device, 1, &writeDescriptorSet, 0, nullptr);
+
+        std::vector<VkWriteDescriptorSet> descriptorWrites{};
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstSet = descriptors[i];
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pBufferInfo = &bufferInfo;
+        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -196,7 +198,7 @@ gltfModel*                      object::getModel(uint32_t index)                
 glm::vec4                       object::getConstantColor() const                        {return constantColor;}
 glm::vec4                       object::getColorFactor()   const                        {return colorFactor;}
 
-glm::mat4x4&                    object::ModelMatrix()                                   {return modelMatrix;}
+glm::mat4x4                     object::getModelMatrix()   const                        {return modelMatrix;}
 
 VkDescriptorPool                &object::getDescriptorPool()                            {return descriptorPool;}
 std::vector<VkDescriptorSet>    &object::getDescriptorSet()                             {return descriptors;}
@@ -218,3 +220,86 @@ void                            object::increasePrimitiveCount()                
 bool                            object::comparePrimitive(uint32_t primitive)            {return primitive>=firstPrimitive&&primitive<firstPrimitive+primitiveCount;}
 uint32_t                        object::getFirstPrimitive() const                       {return firstPrimitive;}
 uint32_t                        object::getPrimitiveCount() const                       {return primitiveCount;}
+
+skyboxObject::skyboxObject(const std::vector<std::string> &TEXTURE_PATH) : object(), texture(new cubeTexture(TEXTURE_PATH)){}
+
+skyboxObject::~skyboxObject(){
+    delete texture;
+}
+
+void skyboxObject::translate(const glm::vec3 &translate)
+{
+    static_cast<void>(translate);
+}
+
+void skyboxObject::createTexture(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* queue, VkCommandPool* commandPool){
+    texture->createTextureImage(physicalDevice, device, queue, commandPool);
+    texture->createTextureImageView(device);
+    texture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+}
+
+void skyboxObject::destroyTexture(VkDevice* device){
+    texture->destroy(device);
+}
+
+void skyboxObject::createDescriptorPool(VkDevice* device, uint32_t imageCount){
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(imageCount);
+    poolSizes.push_back(VkDescriptorPoolSize{});
+        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(imageCount);
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
+        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
+    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool);
+}
+
+void skyboxObject::createDescriptorSet(VkDevice* device, uint32_t imageCount){
+    createSkyboxObjectDescriptorSetLayout(device,&descriptorSetLayout);
+
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
+        allocInfo.pSetLayouts = layouts.data();
+    descriptors.resize(imageCount);
+    vkAllocateDescriptorSets(*device, &allocInfo, descriptors.data());
+
+    for (size_t i = 0; i < imageCount; i++)
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = uniformBuffers[i];
+            bufferInfo.offset = 0;
+            bufferInfo.range = sizeof(UniformBuffer);
+
+        VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = *texture->getTextureImageView();
+            imageInfo.sampler   = *texture->getTextureSampler();
+
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = descriptors[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pBufferInfo = &bufferInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = descriptors[i];
+            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &imageInfo;
+        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+}

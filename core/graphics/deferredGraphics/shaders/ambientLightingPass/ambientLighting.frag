@@ -79,7 +79,7 @@ void main()
     normal = subpassLoad(inNormalTexture);
     baseColorTexture = subpassLoad(inBaseColorTexture);
     emissiveTexture = subpassLoad(inEmissiveTexture);
-    float depth = subpassLoad(inPositionTexture).a;
+    float depth = subpassLoad(inDepthTexture).r;
 
     outColor = vec4(0.0f,0.0f,0.0f,0.0f);
     outBlur = vec4(0.0f,0.0f,0.0f,0.0f);

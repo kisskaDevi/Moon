@@ -10,6 +10,7 @@
 #include "filters/sslr.h"
 #include "filters/ssao.h"
 #include "filters/layersCombiner.h"
+#include "filters/skybox.h"
 
 struct updateFlag{
     bool                                        enable{false};
@@ -37,6 +38,7 @@ private:
     std::vector<attachments>                    blitAttachments;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
+    attachments                                 skyboxAttachment;
     std::vector<attachments>                    layersCombinedAttachment;
 
     deferredGraphics                            DeferredGraphics;
@@ -44,6 +46,7 @@ private:
     customFilter                                Filter;
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
+    skyboxGraphics                              Skybox;
     layersCombiner                              LayersCombiner;
     postProcessingGraphics                      PostProcessing;
     std::vector<deferredGraphics>               TransparentLayers;
@@ -63,6 +66,7 @@ private:
     camera*                                     cameraObject{nullptr};
 
     void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments);
+    void fastCreateGraphics(deferredGraphics* graphics, DeferredAttachments* attachments);
     void createStorageBuffers(uint32_t imageCount);
     void updateUniformBuffer(uint32_t imageIndex);
     void updateCommandBuffer(uint32_t imageIndex, VkCommandBuffer* commandBuffer);
@@ -105,10 +109,10 @@ public:
     void        removeLightSource(light* lightSource);
 
     void        bindBaseObject(object* newObject);
-    void        bindSkyBoxObject(object* newObject, const std::vector<std::string>& TEXTURE_PATH);
-
     bool        removeObject(object* object);
-    bool        removeSkyBoxObject(object* object);
+
+    void        bindSkyBoxObject(skyboxObject* newObject);
+    bool        removeSkyBoxObject(skyboxObject* object);
 
     void        setMinAmbientFactor(const float& minAmbientFactor);
 

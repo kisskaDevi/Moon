@@ -1,5 +1,6 @@
 #include "../graphics.h"
 #include "core/operations.h"
+#include "core/texture.h"
 #include "core/transformational/lightInterface.h"
 #include "../../bufferObjects.h"
 
@@ -92,10 +93,10 @@ void deferredGraphics::createLightingDescriptorPool()
     std::vector<VkDescriptorPoolSize> poolSizes;
     for(uint32_t i = 0; i < 5 ;i++){
         poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back() = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
+            poolSizes.back() = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
     }
         poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back() = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
+            poolSizes.back() = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -143,13 +144,13 @@ void deferredGraphics::updateLightingDescriptorSets()
         for(uint32_t index = 0; index<5;index++)
         {
             descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = lighting.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &imageInfo[index];
+                descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites.back().dstSet = lighting.DescriptorSets[i];
+                descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+                descriptorWrites.back().dstArrayElement = 0;
+                descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+                descriptorWrites.back().descriptorCount = 1;
+                descriptorWrites.back().pImageInfo = &imageInfo[index];
         }
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

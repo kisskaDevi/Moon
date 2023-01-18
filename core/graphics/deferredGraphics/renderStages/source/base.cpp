@@ -21,8 +21,7 @@ void deferredGraphics::Base::Destroy(VkDevice* device)
     if(MaterialDescriptorSetLayout)     vkDestroyDescriptorSetLayout(*device, MaterialDescriptorSetLayout,  nullptr);
     if(DescriptorPool)                  vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
 
-    for (size_t i = 0; i < sceneUniformBuffers.size(); i++)
-    {
+    for (size_t i = 0; i < sceneUniformBuffers.size(); i++){
         if(sceneUniformBuffers[i])          vkDestroyBuffer(*device, sceneUniformBuffers[i], nullptr);
         if(sceneUniformBuffersMemory[i])    vkFreeMemory(*device, sceneUniformBuffersMemory[i], nullptr);
     }
@@ -32,8 +31,7 @@ void deferredGraphics::Base::createUniformBuffers(VkPhysicalDevice* physicalDevi
 {
     sceneUniformBuffers.resize(imageCount);
     sceneUniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-    {
+    for (size_t i = 0; i < imageCount; i++){
         createBuffer(   physicalDevice,
                         device,
                         sizeof(UniformBufferObject),
@@ -322,8 +320,8 @@ void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, Vk
 
         VkDescriptorImageInfo skyboxImageInfo{};
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = skybox.texture ? *skybox.texture->getTextureImageView() : *emptyTexture->getTextureImageView();
-            skyboxImageInfo.sampler   = skybox.texture ? *skybox.texture->getTextureSampler() : *emptyTexture->getTextureSampler();
+            skyboxImageInfo.imageView = *emptyTexture->getTextureImageView();
+            skyboxImageInfo.sampler   = *emptyTexture->getTextureSampler();
 
         VkDescriptorBufferInfo StorageBufferInfo{};
             StorageBufferInfo.buffer = storageBuffers[i];

@@ -288,6 +288,10 @@ void createObjectDescriptorSetLayout(
         VkDevice*                       device,
         VkDescriptorSetLayout*          descriptorSetLayout);
 
+void createSkyboxObjectDescriptorSetLayout(
+        VkDevice*                       device,
+        VkDescriptorSetLayout*          descriptorSetLayout);
+
 void createNodeDescriptorSetLayout(
         VkDevice*                       device,
         VkDescriptorSetLayout*          descriptorSetLayout);

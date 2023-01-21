@@ -12,11 +12,6 @@
 #include "filters/layersCombiner.h"
 #include "filters/skybox.h"
 
-struct updateFlag{
-    bool                                        enable{false};
-    uint32_t                                    frames{0};
-};
-
 class deferredGraphicsInterface: public graphicsInterface
 {
 private:
@@ -55,12 +50,10 @@ private:
     std::vector<VkBuffer>                       storageBuffers;
     std::vector<VkDeviceMemory>                 storageBuffersMemory;
 
-    updateFlag                                  worldCmd;
-    updateFlag                                  lightsCmd;
-    updateFlag                                  worldUbo;
-    updateFlag                                  lightsUbo;
-
     std::vector<VkCommandBuffer>                commandBuffers;
+    std::vector<bool>                           updateCommandBufferFlags;
+    std::vector<bool>                           updateShadowCommandBufferFlags;
+
     std::vector<VkCommandBuffer>                commandBufferSet;
 
     camera*                                     cameraObject{nullptr};
@@ -68,7 +61,6 @@ private:
     void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments);
     void fastCreateGraphics(deferredGraphics* graphics, DeferredAttachments* attachments);
     void createStorageBuffers(uint32_t imageCount);
-    void updateUniformBuffer(uint32_t imageIndex);
     void updateCommandBuffer(uint32_t imageIndex, VkCommandBuffer* commandBuffer);
 public:
     deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
@@ -83,8 +75,8 @@ public:
     void updateDescriptorSets() override;
 
     void createCommandBuffers() override;
-    void updateAllCommandBuffers() override;
-    void updateCommandBuffers(uint32_t imageIndex) override;
+    void updateCommandBuffers() override;
+    void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
     void freeCommandBuffers() override;
 
@@ -92,29 +84,27 @@ public:
     uint32_t            getImageCount() override;
     VkSwapchainKHR&     getSwapChain() override;
 
-    void        resetCmdLight();
-    void        resetCmdWorld();
-    void        resetUboLight();
-    void        resetUboWorld();
+    void        updateCmdFlags();
 
     void        setExtent(VkExtent2D extent);
     void        setExternalPath(const std::string& ExternalPath);
     void        setEmptyTexture(std::string ZERO_TEXTURE);
-    void        setCameraObject(camera* cameraObject);
+    void        setMinAmbientFactor(const float& minAmbientFactor);
 
     void        createModel(gltfModel* pModel);
     void        destroyModel(gltfModel* pModel);
 
-    void        bindLightSource(light* lightSource);
-    void        removeLightSource(light* lightSource);
+    void        bindCameraObject(camera* cameraObject);
+    void        removeCameraObject(camera* cameraObject);
 
-    void        bindBaseObject(object* newObject);
-    bool        removeObject(object* object);
-
-    void        bindSkyBoxObject(skyboxObject* newObject);
+    void        bindSkyBoxObject(skyboxObject* object);
     bool        removeSkyBoxObject(skyboxObject* object);
 
-    void        setMinAmbientFactor(const float& minAmbientFactor);
+    void        bindBaseObject(object* object);
+    bool        removeObject(object* object);
+
+    void        bindLightSource(light* lightSource);
+    void        removeLightSource(light* lightSource);
 
     void        updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
     uint32_t    readStorageBuffer(uint32_t currentImage);

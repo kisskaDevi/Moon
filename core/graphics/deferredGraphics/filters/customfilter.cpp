@@ -121,19 +121,20 @@ void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAt
 
 void customFilter::Filter::Destroy(VkDevice* device)
 {
-    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)      {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
+    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void customFilter::destroy()
 {
     filter.Destroy(device);
 
-    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) {vkDestroyRenderPass(*device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(size_t i = 0; i< framebuffers.size();i++)
-        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i], nullptr);
+        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+    framebuffers.resize(0);
 
     bufferAttachment.deleteAttachment(&*device);
     bufferAttachment.deleteSampler(&*device);

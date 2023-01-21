@@ -14,16 +14,13 @@ object::object(uint32_t modelCount, gltfModel** model) :
 {}
 
 object::~object()
-{
-
-}
+{}
 
 void object::destroyUniformBuffers(VkDevice* device)
 {
-    for(size_t i=0;i<uniformBuffers.size();i++)
-    {
-        if(uniformBuffers[i])       vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
-        if(uniformBuffersMemory[i]) vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
+    for(auto& buffer: uniformBuffers){
+        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
+        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
     }
 }
 
@@ -45,6 +42,10 @@ void object::updateModelMatrix()
     glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
 
     modelMatrix = globalTransformation * transformMatrix * scaleMatrix;
+
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
 }
 
 void object::setGlobalTransform(const glm::mat4x4 & transform)
@@ -101,30 +102,32 @@ void object::updateAnimation(uint32_t imageNumber)
 void object::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     uniformBuffers.resize(imageCount);
-    uniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++){
+    for (auto& buffer: uniformBuffers){
         createBuffer(   physicalDevice,
                         device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        uniformBuffers[i],
-                        uniformBuffersMemory[i]);
+                        buffer.instance,
+                        buffer.memory);
     }
 }
 
 void object::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
 {
-    void* data;
-    UniformBuffer ubo{};
-        ubo.modelMatrix = modelMatrix;
-        ubo.constantColor = constantColor;
-        ubo.colorFactor = colorFactor;
-        ubo.bloomColor = bloomColor;
-        ubo.bloomFactor = bloomFactor;
-    vkMapMemory(*device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
-        memcpy(data, &ubo, sizeof(ubo));
-    vkUnmapMemory(*device, uniformBuffersMemory[currentImage]);
+    if(void* data; uniformBuffers[currentImage].updateFlag){
+        UniformBuffer ubo{};
+            ubo.modelMatrix = modelMatrix;
+            ubo.constantColor = constantColor;
+            ubo.colorFactor = colorFactor;
+            ubo.bloomColor = bloomColor;
+            ubo.bloomFactor = bloomFactor;
+        vkMapMemory(*device, uniformBuffers[currentImage].memory, 0, sizeof(ubo), 0, &data);
+            memcpy(data, &ubo, sizeof(ubo));
+        vkUnmapMemory(*device, uniformBuffers[currentImage].memory);
+
+        uniformBuffers[currentImage].updateFlag = false;
+    }
 }
 
 void object::createDescriptorPool(VkDevice* device, uint32_t imageCount)
@@ -155,10 +158,9 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
     descriptors.resize(imageCount);
     vkAllocateDescriptorSets(*device, &allocInfo, descriptors.data());
 
-    for (size_t i = 0; i < imageCount; i++)
-    {
+    for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i];
+            bufferInfo.buffer = uniformBuffers[i].instance;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBuffer);
 
@@ -177,10 +179,27 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
 void                            object::setEnable(const bool& enable)                   {this->enable = enable;}
 void                            object::setEnableShadow(const bool& enable)             {this->enableShadow = enable;}
 void                            object::setModel(gltfModel** model3D)                   {this->pModel = model3D;}
-void                            object::setConstantColor(const glm::vec4 &color)        {this->constantColor = color;}
-void                            object::setColorFactor(const glm::vec4 & color)         {this->colorFactor = color;}
-void                            object::setBloomColor(const glm::vec4 & color)          {this->bloomColor = color;}
-void                            object::setBloomFactor(const glm::vec4 &color)          {this->bloomFactor = color;}
+
+void                            object::setConstantColor(const glm::vec4 &color){
+    this->constantColor = color;
+    for (auto& buffer: uniformBuffers)
+        buffer.updateFlag = true;
+}
+void                            object::setColorFactor(const glm::vec4 & color){
+    this->colorFactor = color;
+    for (auto& buffer: uniformBuffers)
+        buffer.updateFlag = true;
+}
+void                            object::setBloomColor(const glm::vec4 & color){
+    this->bloomColor = color;
+    for (auto& buffer: uniformBuffers)
+        buffer.updateFlag = true;
+}
+void                            object::setBloomFactor(const glm::vec4 &color){
+    this->bloomFactor = color;
+    for (auto& buffer: uniformBuffers)
+        buffer.updateFlag = true;
+}
 
 bool                            object::getEnable() const                               {return enable;}
 bool                            object::getEnableShadow() const                         {return enableShadow;}
@@ -202,7 +221,6 @@ glm::mat4x4                     object::getModelMatrix()   const                
 
 VkDescriptorPool                &object::getDescriptorPool()                            {return descriptorPool;}
 std::vector<VkDescriptorSet>    &object::getDescriptorSet()                             {return descriptors;}
-std::vector<VkBuffer>           &object::getUniformBuffers()                            {return uniformBuffers;}
 
 void                            object::setOutliningEnable(const bool& enable)          {outlining.Enable = enable;}
 void                            object::setOutliningWidth(const float& width)           {outlining.Width = width;}
@@ -271,10 +289,9 @@ void skyboxObject::createDescriptorSet(VkDevice* device, uint32_t imageCount){
     descriptors.resize(imageCount);
     vkAllocateDescriptorSets(*device, &allocInfo, descriptors.data());
 
-    for (size_t i = 0; i < imageCount; i++)
-    {
+    for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i];
+            bufferInfo.buffer = uniformBuffers[i].instance;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBuffer);
 

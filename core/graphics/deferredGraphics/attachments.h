@@ -20,13 +20,13 @@ struct attachment
 
     void deleteAttachment(VkDevice* device)
     {
-        if(image)       vkDestroyImage(*device, image, nullptr);
-        if(imageMemory) vkFreeMemory(*device, imageMemory, nullptr);
-        if(imageView)   vkDestroyImageView(*device, imageView, nullptr);
+        if(image)       {vkDestroyImage(*device, image, nullptr); image = VK_NULL_HANDLE;}
+        if(imageMemory) {vkFreeMemory(*device, imageMemory, nullptr); imageMemory = VK_NULL_HANDLE;}
+        if(imageView)   {vkDestroyImageView(*device, imageView, nullptr);  imageView = VK_NULL_HANDLE;}
     }
     void deleteSampler(VkDevice *device)
     {
-        if(sampler) vkDestroySampler(*device,sampler,nullptr);
+        if(sampler) {vkDestroySampler(*device,sampler,nullptr); sampler = VK_NULL_HANDLE;}
     }
 };
 

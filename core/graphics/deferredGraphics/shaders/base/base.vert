@@ -6,7 +6,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
     mat4 view;
     mat4 proj;
     vec4 eyePosition;
-    float transparencyPass;
 } global;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
@@ -47,7 +46,6 @@ layout(location = 9)	out vec4 outBloomFactor;
 layout(location = 10)	out vec4 outEyePosition;
 layout(location = 11)	out float depth;
 layout(location = 12)	out vec4 glPosition;
-layout(location = 13)	out float transparencyPass;
 
 void main()
 {
@@ -58,7 +56,6 @@ void main()
     outBloomColor = local.bloomColor;
     outBloomFactor = local.bloomFactor;
     outEyePosition = global.eyePosition;
-    transparencyPass = global.transparencyPass;
 
     mat4x4 model = local.matrix*node.matrix;
     if (node.jointCount > 0.0)

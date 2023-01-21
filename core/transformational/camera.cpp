@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "core/operations.h"
 #include "libs/dualQuaternion.h"
 
 camera::camera(){}
@@ -11,11 +12,19 @@ void camera::updateViewMatrix()
     glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
 
     viewMatrix = glm::inverse(globalTransformation) * glm::inverse(transformMatrix);
+
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
 }
 
 void camera::setProjMatrix(const glm::mat4 & proj)
 {
     projMatrix = proj;
+
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
 }
 
 void camera::setGlobalTransform(const glm::mat4 & transform)
@@ -96,3 +105,45 @@ glm::mat4x4 camera::getViewMatrix() const
 glm::vec3           camera::getTranslation() const  {   return translation.vector();}
 quaternion<float>   camera::getRotationX()const     {   return rotationX;}
 quaternion<float>   camera::getRotationY()const     {   return rotationY;}
+
+void camera::destroyUniformBuffers(VkDevice* device)
+{
+    for(auto& buffer: uniformBuffers){
+        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
+        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
+    }
+}
+
+void camera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+{
+    uniformBuffers.resize(imageCount);
+    for (auto& buffer: uniformBuffers){
+        createBuffer(   physicalDevice,
+                        device,
+                        sizeof(UniformBufferObject),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        buffer.instance,
+                        buffer.memory);
+    }
+}
+
+void camera::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
+{
+    if(void* data; uniformBuffers[currentImage].updateFlag){
+        UniformBufferObject baseUBO{};
+            baseUBO.view = viewMatrix;
+            baseUBO.proj = projMatrix;
+            baseUBO.eyePosition = glm::vec4(translation.vector(), 1.0);
+        vkMapMemory(*device, uniformBuffers[currentImage].memory, 0, sizeof(baseUBO), 0, &data);
+            memcpy(data, &baseUBO, sizeof(baseUBO));
+        vkUnmapMemory(*device, uniformBuffers[currentImage].memory);
+
+        uniformBuffers[currentImage].updateFlag = false;
+    }
+}
+
+VkBuffer camera::getBuffer(uint32_t index)const
+{
+    return uniformBuffers[index].instance;
+}

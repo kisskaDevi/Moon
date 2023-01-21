@@ -63,24 +63,24 @@ void shadowGraphics::createAttachments()
 
 void shadowGraphics::Shadow::Destroy(VkDevice* device)
 {
-    if(Pipeline)                vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)          vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    if(DescriptorSetLayout)     vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(uniformBlockSetLayout)   vkDestroyDescriptorSetLayout(*device, uniformBlockSetLayout, nullptr);
-    if(uniformBufferSetLayout)  vkDestroyDescriptorSetLayout(*device, uniformBufferSetLayout, nullptr);
-    if(DescriptorPool)          vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)                {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)          {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
+    if(DescriptorSetLayout)     {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(uniformBlockSetLayout)   {vkDestroyDescriptorSetLayout(*device, uniformBlockSetLayout, nullptr); uniformBlockSetLayout = VK_NULL_HANDLE;}
+    if(uniformBufferSetLayout)  {vkDestroyDescriptorSetLayout(*device, uniformBufferSetLayout, nullptr); uniformBufferSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)          {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void shadowGraphics::destroy()
 {
     shadow.Destroy(device);
 
-    if(RenderPass) vkDestroyRenderPass(*device, RenderPass, nullptr);
+    if(RenderPass){ vkDestroyRenderPass(*device, RenderPass, nullptr); RenderPass = VK_NULL_HANDLE;}
     for(uint32_t i=0;i<shadowMapFramebuffer.size();i++)
-        if(shadowMapFramebuffer[i]) vkDestroyFramebuffer(*device, shadowMapFramebuffer[i],nullptr);
+        if(shadowMapFramebuffer[i]){ vkDestroyFramebuffer(*device, shadowMapFramebuffer[i],nullptr); shadowMapFramebuffer[i] = VK_NULL_HANDLE;}
 
-    if(shadowCommandBuffer.data())  vkFreeCommandBuffers(*device, shadowCommandPool, static_cast<uint32_t>(shadowCommandBuffer.size()), shadowCommandBuffer.data());
-    if(shadowCommandPool)           vkDestroyCommandPool(*device, shadowCommandPool, nullptr);
+    if(shadowCommandBuffer.size())  {vkFreeCommandBuffers(*device, shadowCommandPool, static_cast<uint32_t>(shadowCommandBuffer.size()), shadowCommandBuffer.data()); shadowCommandBuffer.resize(0);}
+    if(shadowCommandPool)           {vkDestroyCommandPool(*device, shadowCommandPool, nullptr); shadowCommandPool = VK_NULL_HANDLE;}
 
     depthAttachment.deleteAttachment(device);
     depthAttachment.deleteSampler(device);
@@ -363,65 +363,65 @@ void shadowGraphics::createCommandBuffers()
 
 void shadowGraphics::updateCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects)
 {
-    VkClearValue clearValues{};
-        clearValues.depthStencil.depth = 1.0f;
-        clearValues.depthStencil.stencil = 0;
+        VkClearValue clearValues{};
+            clearValues.depthStencil.depth = 1.0f;
+            clearValues.depthStencil.stencil = 0;
 
-    VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
-        beginInfo.pInheritanceInfo = nullptr;
-    vkBeginCommandBuffer(shadowCommandBuffer[frameNumber], &beginInfo);
+        VkCommandBufferBeginInfo beginInfo{};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            beginInfo.flags = 0;
+            beginInfo.pInheritanceInfo = nullptr;
+        vkBeginCommandBuffer(shadowCommandBuffer[frameNumber], &beginInfo);
 
-    VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.pNext = NULL;
-        renderPassInfo.renderPass = RenderPass;
-        renderPassInfo.framebuffer = shadowMapFramebuffer[frameNumber];
-        renderPassInfo.renderArea.offset.x = 0;
-        renderPassInfo.renderArea.offset.y = 0;
-        renderPassInfo.renderArea.extent.width = image.Extent.width;
-        renderPassInfo.renderArea.extent.height = image.Extent.height;
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearValues;
+        VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.pNext = NULL;
+            renderPassInfo.renderPass = RenderPass;
+            renderPassInfo.framebuffer = shadowMapFramebuffer[frameNumber];
+            renderPassInfo.renderArea.offset.x = 0;
+            renderPassInfo.renderArea.offset.y = 0;
+            renderPassInfo.renderArea.extent.width = image.Extent.width;
+            renderPassInfo.renderArea.extent.height = image.Extent.height;
+            renderPassInfo.clearValueCount = 1;
+            renderPassInfo.pClearValues = &clearValues;
 
-    vkCmdBeginRenderPass(shadowCommandBuffer[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(shadowCommandBuffer[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        VkViewport viewport;
-            viewport.width = image.Extent.width;
-            viewport.height = image.Extent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            viewport.x = 0;
-            viewport.y = 0;
-        vkCmdSetViewport(shadowCommandBuffer[frameNumber], 0, 1, &viewport);
+            VkViewport viewport;
+                viewport.width = image.Extent.width;
+                viewport.height = image.Extent.height;
+                viewport.minDepth = 0.0f;
+                viewport.maxDepth = 1.0f;
+                viewport.x = 0;
+                viewport.y = 0;
+            vkCmdSetViewport(shadowCommandBuffer[frameNumber], 0, 1, &viewport);
 
-        VkRect2D scissor;
-            scissor.extent.width = image.Extent.width;
-            scissor.extent.height = image.Extent.height;
-            scissor.offset.x = 0;
-            scissor.offset.y = 0;
-        vkCmdSetScissor(shadowCommandBuffer[frameNumber], 0, 1, &scissor);
+            VkRect2D scissor;
+                scissor.extent.width = image.Extent.width;
+                scissor.extent.height = image.Extent.height;
+                scissor.offset.x = 0;
+                scissor.offset.y = 0;
+            vkCmdSetScissor(shadowCommandBuffer[frameNumber], 0, 1, &scissor);
 
-        vkCmdBindPipeline(shadowCommandBuffer[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
-        for(auto object: objects)
-        {
-            if(object->getEnable()&&object->getEnableShadow()){
-                VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
-                if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindPipeline(shadowCommandBuffer[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
+            for(auto object: objects)
+            {
+                if(object->getEnable()&&object->getEnableShadow()){
+                    VkDeviceSize offsets[1] = { 0 };
+                    vkCmdBindVertexBuffers(shadowCommandBuffer[frameNumber], 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
+                    if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
+                        vkCmdBindIndexBuffer(shadowCommandBuffer[frameNumber],  object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-                for (auto node : object->getModel(frameNumber)->nodes){
-                    std::vector<VkDescriptorSet> descriptorSets = {shadow.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-                    renderNode(shadowCommandBuffer[frameNumber],node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+                    for (auto node : object->getModel(frameNumber)->nodes){
+                        std::vector<VkDescriptorSet> descriptorSets = {shadow.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
+                        renderNode(shadowCommandBuffer[frameNumber],node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+                    }
                 }
             }
-        }
 
-    vkCmdEndRenderPass(shadowCommandBuffer[frameNumber]);
+        vkCmdEndRenderPass(shadowCommandBuffer[frameNumber]);
 
-    vkEndCommandBuffer(shadowCommandBuffer[frameNumber]);
+        vkEndCommandBuffer(shadowCommandBuffer[frameNumber]);
 }
 
 void shadowGraphics::renderNode(VkCommandBuffer commandBuffer, Node *node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
@@ -455,5 +455,5 @@ void shadowGraphics::createShadow()
     createDescriptorSets();
 }
 
-attachment*                     shadowGraphics::getAttachment(){return &depthAttachment;}
-VkCommandBuffer*                shadowGraphics::getCommandBuffer(uint32_t i){return &shadowCommandBuffer[i];}
+attachment*      shadowGraphics::getAttachment(){return &depthAttachment;}
+VkCommandBuffer* shadowGraphics::getCommandBuffer(uint32_t i){return &shadowCommandBuffer[i];}

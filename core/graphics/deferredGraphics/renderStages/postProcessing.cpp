@@ -1,5 +1,4 @@
 #include "postProcessing.h"
-#include "../bufferObjects.h"
 
 #include <iostream>
 #include <cstdint>          // UINT32_MAX
@@ -46,27 +45,28 @@ void postProcessingGraphics::setLayersAttachment(attachments* layersAttachment)
 
 void postProcessingGraphics::PostProcessing::Destroy(VkDevice* device)
 {
-    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)      {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
+    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void postProcessingGraphics::destroy()
 {
     postProcessing.Destroy(device);
 
-    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) {vkDestroyRenderPass(*device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(size_t i = 0; i< framebuffers.size();i++)
         if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+    framebuffers.resize(0);
 }
 
 void postProcessingGraphics::destroySwapChainAttachments()
 {
-
     for(size_t i=0; i<swapChainAttachments.size(); i++)
         for(size_t j=0; j <image.Count;j++)
             if(swapChainAttachments[i].imageView[j]) vkDestroyImageView(*device,swapChainAttachments[i].imageView[j],nullptr);
+    swapChainAttachments.resize(0);
 }
 
 void postProcessingGraphics::setExternalPath(const std::string &path)

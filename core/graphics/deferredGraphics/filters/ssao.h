@@ -3,6 +3,8 @@
 
 #include "filtergraphics.h"
 
+class camera;
+
 class SSAOGraphics : public filterGraphics
 {
 private:
@@ -48,7 +50,7 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(DeferredAttachments deferredAttachments, VkBuffer* pUniformBuffers);
+    void updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 };

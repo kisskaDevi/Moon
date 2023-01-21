@@ -1,6 +1,6 @@
 #include "ssao.h"
 #include "core/operations.h"
-#include "../bufferObjects.h"
+#include "core/transformational/camera.h"
 
 #include <array>
 #include <iostream>
@@ -57,19 +57,20 @@ void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAt
 
 void SSAOGraphics::SSAO::Destroy(VkDevice* device)
 {
-    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)      {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
+    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void SSAOGraphics::destroy()
 {
     ssao.Destroy(device);
 
-    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) {vkDestroyRenderPass(*device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(size_t i = 0; i< framebuffers.size();i++)
         if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+    framebuffers.resize(0);
 }
 
 void SSAOGraphics::createRenderPass()
@@ -351,12 +352,12 @@ void SSAOGraphics::createDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, ssao.DescriptorSets.data());
 }
 
-void SSAOGraphics::updateDescriptorSets(DeferredAttachments deferredAttachments, VkBuffer* pUniformBuffers)
+void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = pUniformBuffers[i];
+            bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 

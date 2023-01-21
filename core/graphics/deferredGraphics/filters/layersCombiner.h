@@ -3,6 +3,8 @@
 
 #include "filtergraphics.h"
 
+class camera;
+
 class layersCombiner : public filterGraphics
 {
 private:
@@ -49,7 +51,7 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox);
+    void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, camera* cameraObject);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 

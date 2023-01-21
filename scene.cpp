@@ -18,7 +18,7 @@ scene::scene(graphicsManager *app, deferredGraphicsInterface* graphics, std::str
     ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
 }
 
-void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
+void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject)
 {
     this->WIDTH = WIDTH;
     this->HEIGHT = HEIGHT;
@@ -48,14 +48,7 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
         ExternalPath+"texture\\skybox1\\bottom.png"
     };
 
-    graphics->setEmptyTexture(ZERO_TEXTURE);
-
-    cameras = new camera;
-        cameras->translate(glm::vec3(0.0f,0.0f,10.0f));
-        glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-        proj[1][1] *= -1.0f;
-        cameras->setProjMatrix(proj);
-    graphics->setCameraObject(cameras);
+    cameras = cameraObject;
 
     skyboxObject1 = new skyboxObject(SKYBOX);
         skyboxObject1->scale(glm::vec3(200.0f,200.0f,200.0f));
@@ -69,8 +62,6 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT)
     loadModels();
     createLight();
     createObjects();
-
-    graphics->updateDescriptorSets();
 }
 
 void scene::updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
@@ -117,8 +108,6 @@ void scene::destroyScene()
     }
 
     graphics->destroyEmptyTextures();
-
-    delete cameras;
 }
 
 void scene::loadModels()
@@ -363,7 +352,6 @@ void scene::mouseEvent(GLFWwindow* window, float frameTime)
         yMpos = y;
         cameras->rotateX(angy,glm::vec3(1.0f,0.0f,0.0f));
         cameras->rotateY(angx,glm::vec3(0.0f,0.0f,1.0f));
-        graphics->resetUboWorld();
 
         for(uint32_t i=0;i<graphics->getImageCount();i++){
             graphics->updateStorageBuffer(i, -1.0f+2.0f*xMpos/(WIDTH), -1.0f+2.0f*yMpos/(HEIGHT));
@@ -394,7 +382,6 @@ void scene::mouseEvent(GLFWwindow* window, float frameTime)
                 lightSource.at(index)->setProjectionMatrix(Proj);
             }
         }
-        graphics->resetUboLight();
         updateLightCone = false;
     }
 
@@ -404,7 +391,6 @@ void scene::mouseEvent(GLFWwindow* window, float frameTime)
             proj[1][1] *= -1.0f;
             cameras->setProjMatrix(proj);
         }
-        graphics->resetUboWorld();
         updateCamera = false;
     }
 }
@@ -418,7 +404,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         float y = -sensitivity*cameras->getViewMatrix()[1][2];
         float z = -sensitivity*cameras->getViewMatrix()[2][2];
         cameras->translate(glm::vec3(x,y,z));
-        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
     {
@@ -426,7 +411,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         float y = sensitivity*cameras->getViewMatrix()[1][2];
         float z = sensitivity*cameras->getViewMatrix()[2][2];
         cameras->translate(glm::vec3(x,y,z));
-        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
     {
@@ -434,7 +418,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         float y = -sensitivity*cameras->getViewMatrix()[1][0];
         float z = -sensitivity*cameras->getViewMatrix()[2][0];
         cameras->translate(glm::vec3(x,y,z));
-        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
     {
@@ -442,7 +425,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         float y = sensitivity*cameras->getViewMatrix()[1][0];
         float z = sensitivity*cameras->getViewMatrix()[2][0];
         cameras->translate(glm::vec3(x,y,z));
-        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_Z) == GLFW_PRESS)
     {
@@ -450,7 +432,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         float y = sensitivity*cameras->getViewMatrix()[1][1];
         float z = sensitivity*cameras->getViewMatrix()[2][1];
         cameras->translate(glm::vec3(x,y,z));
-        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_X) == GLFW_PRESS)
     {
@@ -458,79 +439,54 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         float y = -sensitivity*cameras->getViewMatrix()[1][1];
         float z = -sensitivity*cameras->getViewMatrix()[2][1];
         cameras->translate(glm::vec3(x,y,z));
-        graphics->resetUboWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_4) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(0.0f,0.0f,1.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_6) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(0.0f,0.0f,1.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_8) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(1.0f,0.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_5) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(1.0f,0.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_7) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(0.0f,1.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_9) == GLFW_PRESS)
     {
         groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(0.0f,1.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(-1.0f,0.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(1.0f,0.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,1.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,-1.0f,0.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_ADD) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,0.0f,1.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
     {
         groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,0.0f,-1.0f));
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     if(glfwGetKey(window,GLFW_KEY_1) == GLFW_PRESS)
     {
@@ -562,7 +518,7 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         object3D[0]->setOutliningEnable(!object3D[0]->getOutliningEnable());
         object3D[1]->setOutliningEnable(!object3D[1]->getOutliningEnable());
         object3D[2]->setOutliningEnable(!object3D[2]->getOutliningEnable());
-        graphics->resetCmdWorld();
+        graphics->updateCmdFlags();
     }
     backOStage = glfwGetKey(window,GLFW_KEY_O);
     if(backTStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_T) == 0)
@@ -594,10 +550,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
         graphics->bindBaseObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslation());
         object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-        graphics->resetCmdWorld();
-        graphics->resetCmdLight();
-        graphics->resetUboWorld();
-        graphics->resetUboLight();
     }
     backNStage = glfwGetKey(window,GLFW_KEY_N);
     if(backBStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_B) == 0)
@@ -609,9 +561,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
             {
                 delete object3D[index];
                 object3D.erase(object3D.begin()+index);
-                graphics->resetCmdWorld();
-                graphics->resetCmdLight();
-                graphics->resetUboWorld();
             }
         }
     }
@@ -622,9 +571,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
             graphics->bindLightSource(lightSource.at(lightPointer));
             lightPointer++;
         }
-        graphics->resetCmdWorld();
-        graphics->resetCmdLight();
-        graphics->resetUboLight();
     }
     backGStage = glfwGetKey(window,GLFW_KEY_G);
     if(backHStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_H) == 0)
@@ -634,10 +580,6 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
             lightPointer--;
             graphics->removeLightSource(lightSource.at(lightPointer));
         }
-        graphics->resetCmdWorld();
-        graphics->resetCmdLight();
-        graphics->resetUboLight();
-
     }
     backHStage = glfwGetKey(window,GLFW_KEY_H);
 
@@ -645,13 +587,11 @@ void scene::keyboardEvent(GLFWwindow* window, float frameTime)
     {
         minAmbientFactor -= 0.1f*sensitivity;
         graphics->setMinAmbientFactor(minAmbientFactor);
-        graphics->resetCmdWorld();
     }
     if(glfwGetKey(window,GLFW_KEY_KP_2) == GLFW_PRESS)
     {
         minAmbientFactor += 0.1f*sensitivity;
         graphics->setMinAmbientFactor(minAmbientFactor);
-        graphics->resetCmdWorld();
     }
 
     if(glfwGetKey(window,GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS)
@@ -672,9 +612,6 @@ void scene::updates(float frameTime)
     globalTime += frameTime;
 
     skyboxObject2->rotate(0.1f*frameTime,glm::normalize(glm::vec3(1.0f,1.0f,1.0f)));
-
-    graphics->resetUboWorld();
-    graphics->resetUboLight();
 }
 
 void scrol(GLFWwindow *window, double xoffset, double yoffset)

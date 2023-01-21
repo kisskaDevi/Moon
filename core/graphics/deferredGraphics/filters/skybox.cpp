@@ -2,7 +2,6 @@
 #include "core/operations.h"
 #include "core/transformational/object.h"
 #include "core/transformational/camera.h"
-#include "../bufferObjects.h"
 
 #include <iostream>
 
@@ -56,42 +55,23 @@ void skyboxGraphics::createAttachments(uint32_t attachmentsCount, attachments* p
     }
 }
 
-void skyboxGraphics::Skybox::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
-{
-    uniformBuffers.resize(imageCount);
-    uniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++){
-        createBuffer(   physicalDevice,
-                        device,
-                        sizeof(SkyboxUniformBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        uniformBuffers[i],
-                        uniformBuffersMemory[i]);
-    }
-}
-
 void skyboxGraphics::Skybox::Destroy(VkDevice* device)
 {
-    if(Pipeline)                    vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)              vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    if(DescriptorSetLayout)         vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(ObjectDescriptorSetLayout)   vkDestroyDescriptorSetLayout(*device, ObjectDescriptorSetLayout, nullptr);
-    if(DescriptorPool)              vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
-
-    for (size_t i = 0; i < uniformBuffers.size(); i++){
-        if(uniformBuffers[i])       vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
-        if(uniformBuffersMemory[i]) vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
-    }
+    if(Pipeline)                    {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)              {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
+    if(DescriptorSetLayout)         {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(ObjectDescriptorSetLayout)   {vkDestroyDescriptorSetLayout(*device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)              {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void skyboxGraphics::destroy()
 {
     skybox.Destroy(device);
 
-    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) {vkDestroyRenderPass(*device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(size_t i = 0; i< framebuffers.size();i++)
         if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+    framebuffers.resize(0);
 }
 
 void skyboxGraphics::createRenderPass()
@@ -151,7 +131,6 @@ void skyboxGraphics::createPipelines()
 {
     skybox.createDescriptorSetLayout(device);
     skybox.createPipeline(device,&image,&renderPass);
-    skybox.createUniformBuffers(physicalDevice,device,image.Count);
 }
 
 void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice* device)
@@ -334,14 +313,14 @@ void skyboxGraphics::createDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, skybox.DescriptorSets.data());
 }
 
-void skyboxGraphics::updateDescriptorSets()
+void skyboxGraphics::updateDescriptorSets(camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = skybox.uniformBuffers[i];
+            bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(SkyboxUniformBufferObject);
+            bufferInfo.range = sizeof(UniformBufferObject);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -401,19 +380,6 @@ bool skyboxGraphics::removeObject(skyboxObject* object)
         }
     }
     return result;
-}
-
-void skyboxGraphics::updateUniformBuffer(uint32_t currentImage, camera* cameraObject)
-{
-    void* data;
-
-    SkyboxUniformBufferObject skyboxUBO{};
-        skyboxUBO.view = cameraObject->getViewMatrix();
-        skyboxUBO.proj = cameraObject->getProjMatrix();
-        skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cameraObject->getTranslation());
-    vkMapMemory(*device, this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
-        memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
-    vkUnmapMemory(*device, this->skybox.uniformBuffersMemory[currentImage]);
 }
 
 void skyboxGraphics::updateObjectUniformBuffer(uint32_t currentImage)

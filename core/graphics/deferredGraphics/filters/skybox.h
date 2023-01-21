@@ -32,15 +32,11 @@ private:
         VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>    DescriptorSets;
 
-        std::vector<VkBuffer>           uniformBuffers;
-        std::vector<VkDeviceMemory>     uniformBuffersMemory;
-
         std::vector<skyboxObject*>      objects;
 
         void Destroy(VkDevice* device) override;
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass) override;
         void createDescriptorSetLayout(VkDevice* device) override;
-        void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
     }skybox;
 
 public:
@@ -59,14 +55,13 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets();
+    void updateDescriptorSets(camera* cameraObject);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 
     void bindObject(skyboxObject* newObject);
     bool removeObject(skyboxObject* object);
 
-    void updateUniformBuffer(uint32_t currentImage, camera* cameraObject);
     void updateObjectUniformBuffer(uint32_t currentImage);
 };
 

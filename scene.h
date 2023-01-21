@@ -65,7 +65,7 @@ private:
     void createObjects();
 public:
     scene(graphicsManager *app, deferredGraphicsInterface* graphics, std::string ExternalPath);
-    void createScene(uint32_t WIDTH, uint32_t HEIGHT);
+    void createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject);
     void updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
     void destroyScene();
 

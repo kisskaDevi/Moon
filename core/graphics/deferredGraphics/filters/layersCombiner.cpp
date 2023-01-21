@@ -1,6 +1,6 @@
 #include "layersCombiner.h"
 #include "core/operations.h"
-#include "../bufferObjects.h"
+#include "core/transformational/camera.h"
 
 #include <array>
 #include <iostream>
@@ -61,19 +61,20 @@ void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* p
 
 void layersCombiner::Combiner::Destroy(VkDevice* device)
 {
-    if(Pipeline)            vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)      vkDestroyPipelineLayout(*device, PipelineLayout,nullptr);
-    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(Pipeline)            {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)      {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
+    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void layersCombiner::destroy()
 {
     combiner.Destroy(device);
 
-    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
-    for(size_t index = 0; index< framebuffers.size(); index++)
-        if(framebuffers[index]) vkDestroyFramebuffer(*device, framebuffers[index],nullptr);
+    if(renderPass) {vkDestroyRenderPass(*device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
+    for(size_t i = 0; i< framebuffers.size();i++)
+        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+    framebuffers.resize(0);
 }
 
 void layersCombiner::createRenderPass()
@@ -424,12 +425,12 @@ void layersCombiner::createDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, combiner.DescriptorSets.data());
 }
 
-void layersCombiner::updateDescriptorSets(VkBuffer* pUniformBuffers, DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox)
+void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo;
-            bufferInfo.buffer = pUniformBuffers[i];
+            bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 

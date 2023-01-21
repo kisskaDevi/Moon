@@ -26,18 +26,17 @@ spotLight::~spotLight(){
 
 void spotLight::destroyUniformBuffers(VkDevice* device)
 {
-    for(size_t i=0;i<uniformBuffers.size();i++)
-    {
-        if(uniformBuffers[i])       vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
-        if(uniformBuffersMemory[i]) vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
+    for(auto& buffer: uniformBuffers){
+        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
+        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
     }
     uniformBuffers.resize(0);
 }
 
 void spotLight::destroy(VkDevice* device)
 {
-    if(descriptorSetLayout) vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr);
-    if(descriptorPool)      vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
+    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
+    if(descriptorPool)      {vkDestroyDescriptorPool(*device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
     if(shadow){
         shadow->destroy();
@@ -51,6 +50,10 @@ void spotLight::updateModelMatrix()
     glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
 
     modelMatrix = globalTransformation * transformMatrix * scaleMatrix;
+
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
 }
 
 void spotLight::setGlobalTransform(const glm::mat4 & transform)
@@ -100,12 +103,22 @@ void spotLight::rotateY(const float & ang ,const glm::vec3 & ax)
     updateModelMatrix();
 }
 
-void                            spotLight::setLightColor(const glm::vec4 &color)                {lightColor = color;}
 void                            spotLight::setShadowExtent(const VkExtent2D & shadowExtent)     {this->shadowExtent = shadowExtent;}
 void                            spotLight::setShadow(bool enable)                               {enableShadow = enable;}
 void                            spotLight::setScattering(bool enable)                           {enableScattering = enable;}
 void                            spotLight::setTexture(texture* tex)                             {this->tex = tex;}
-void                            spotLight::setProjectionMatrix(const glm::mat4x4 & projection)  {projectionMatrix = projection;}
+void                            spotLight::setProjectionMatrix(const glm::mat4x4 & projection)  {
+    projectionMatrix = projection;
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
+}
+void                            spotLight::setLightColor(const glm::vec4 &color){
+    lightColor = color;
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
+}
 
 glm::mat4x4                     spotLight::getModelMatrix() const {return modelMatrix;}
 glm::vec3                       spotLight::getTranslate() const {return translation.vector();;}
@@ -123,31 +136,33 @@ VkCommandBuffer*                spotLight::getShadowCommandBuffer(uint32_t image
 void spotLight::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     uniformBuffers.resize(imageCount);
-    uniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++){
+    for (auto& buffer: uniformBuffers){
         createBuffer(   physicalDevice,
                         device,
                         sizeof(LightBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        uniformBuffers[i],
-                        uniformBuffersMemory[i]);
+                        buffer.instance,
+                        buffer.memory);
     }
 }
 
 void spotLight::updateUniformBuffer(VkDevice* device, uint32_t frameNumber)
 {
-    LightBufferObject buffer{};
-        buffer.proj = projectionMatrix;
-        buffer.view = glm::inverse(modelMatrix);
-        buffer.projView = projectionMatrix * buffer.view;
-        buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-        buffer.lightColor = lightColor;
-        buffer.lightProp = glm::vec4(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
-    void* data;
-    vkMapMemory(*device, uniformBuffersMemory[frameNumber], 0, sizeof(buffer), 0, &data);
-        memcpy(data, &buffer, sizeof(buffer));
-    vkUnmapMemory(*device, uniformBuffersMemory[frameNumber]);
+    if(void* data; uniformBuffers[frameNumber].updateFlag){
+        LightBufferObject buffer{};
+            buffer.proj = projectionMatrix;
+            buffer.view = glm::inverse(modelMatrix);
+            buffer.projView = projectionMatrix * buffer.view;
+            buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
+            buffer.lightColor = lightColor;
+            buffer.lightProp = glm::vec4(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
+        vkMapMemory(*device, uniformBuffers[frameNumber].memory, 0, sizeof(buffer), 0, &data);
+            memcpy(data, &buffer, sizeof(buffer));
+        vkUnmapMemory(*device, uniformBuffers[frameNumber].memory);
+
+        uniformBuffers[frameNumber].updateFlag = false;
+    }
 }
 
 void spotLight::createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath)
@@ -161,8 +176,12 @@ void spotLight::createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device,
 }
 void spotLight::updateShadowDescriptorSets()
 {
+    std::vector<VkBuffer> buffers;
+    for(auto& buffer: uniformBuffers)
+        buffers.push_back(buffer.instance);
+
     if(shadow){
-        shadow->updateDescriptorSets(uniformBuffers.size(),uniformBuffers.data(),sizeof(LightBufferObject));
+        shadow->updateDescriptorSets(buffers.size(),buffers.data(),sizeof(LightBufferObject));
     }
 }
 void spotLight::createShadowCommandBuffers()
@@ -216,7 +235,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
         uint32_t index = 0;
 
         VkDescriptorBufferInfo lightBufferInfo{};
-            lightBufferInfo.buffer = uniformBuffers[i];
+            lightBufferInfo.buffer = uniformBuffers[i].instance;
             lightBufferInfo.offset = 0;
             lightBufferInfo.range = sizeof(LightBufferObject);
         VkDescriptorImageInfo shadowImageInfo{};

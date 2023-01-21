@@ -27,7 +27,6 @@ private:
 
     texture*                        emptyTexture{nullptr};
     uint32_t                        primitiveCount{0};
-    bool                            transparencyPass{false};
 
     imageInfo                       image;
 
@@ -38,6 +37,7 @@ private:
 
     struct Base{
         std::string                                     ExternalPath;
+        bool                                            transparencyPass{false};
 
         std::unordered_map<uint8_t, VkPipelineLayout>   PipelineLayoutDictionary;
         std::unordered_map<uint8_t, VkPipeline>         PipelineDictionary;
@@ -50,15 +50,11 @@ private:
         VkDescriptorPool                                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>                    DescriptorSets;
 
-        std::vector<VkBuffer>                           sceneUniformBuffers;
-        std::vector<VkDeviceMemory>                     sceneUniformBuffersMemory;
-
         std::vector<object *>                           objects;
 
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void createDescriptorSetLayout(VkDevice* device);
-        void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount);
     }base;
@@ -89,16 +85,12 @@ private:
         VkDescriptorPool                                    DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>                        DescriptorSets;
 
-        std::vector<VkBuffer>                               uniformBuffers;
-        std::vector<VkDeviceMemory>                         uniformBuffersMemory;
-
         std::vector<light*>                                 lightSources;
 
         void Destroy(VkDevice* device);
         void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
             void createSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout,VkPipeline* pipeline);
         void createDescriptorSetLayout(VkDevice* device);
-        void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }lighting;
 
@@ -118,11 +110,11 @@ private:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-    void updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers);
+    void updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject);
 
     void createLightingDescriptorPool();
     void createLightingDescriptorSets();
-    void updateLightingDescriptorSets();
+    void updateLightingDescriptorSets(camera* cameraObject);
 public:
     deferredGraphics();
     void destroy();
@@ -139,12 +131,12 @@ public:
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers);
+    void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject);
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
-    void updateUniformBuffer(uint32_t currentImage, const camera& cameraObject);
     void updateObjectUniformBuffer(uint32_t currentImage);
+    void updateLightSourcesUniformBuffer(uint32_t imageIndex);
 
     void bindBaseObject(object* newObject);
     bool removeBaseObject(object* object);
@@ -152,7 +144,6 @@ public:
     void addLightSource(light* lightSource);
     void removeLightSource(light* lightSource);
 
-    void updateLightUbo(uint32_t imageIndex);
     void updateLightCmd(uint32_t imageIndex);
     void getLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex);
 
@@ -164,7 +155,6 @@ public:
     void setTransparencyPass(const bool& transparencyPass);
 
     texture*  getEmptyTexture();
-    VkBuffer* getSceneBuffer();
 };
 
 #endif // GRAPHICS_H

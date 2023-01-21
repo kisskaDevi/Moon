@@ -27,8 +27,6 @@ public:
     void cleanup();
 
     uint32_t                                    getImageIndex();
-    uint32_t                                    getCurrentFrame();
-
     void                                        deviceWaitIdle();
 
     void                                        createInstance();
@@ -50,7 +48,6 @@ private:
     #else
         const bool                              enableValidationLayers = true;
     #endif
-    const size_t                                MAX_FRAMES_IN_FLIGHT = 3;
     const std::vector<const char*>              validationLayers = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*>              deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
@@ -70,13 +67,11 @@ private:
 
     VkCommandPool                               commandPool{VK_NULL_HANDLE};
 
-    std::vector<VkSemaphore>                    imageAvailableSemaphores;
-    std::vector<VkSemaphore>                    renderFinishedSemaphores;
-    std::vector<VkFence>                        inFlightFences;
-    std::vector<VkFence>                        imagesInFlight;
+    VkSemaphore                                 availableSemaphores;
+    std::vector<VkSemaphore>                    signalSemaphores;
+    std::vector<VkFence>                        fences;
 
     uint32_t                                    imageIndex{0};
-    uint32_t                                    currentFrame{0};
     bool                                        framebufferResized{false};
 
     std::vector<const char*>                    getRequiredExtensions();

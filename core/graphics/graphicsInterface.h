@@ -28,8 +28,8 @@ public:
     virtual void updateDescriptorSets() = 0;
 
     virtual void createCommandBuffers() = 0;
-    virtual void updateAllCommandBuffers() = 0;
-    virtual void updateCommandBuffers(uint32_t imageIndex) = 0;
+    virtual void updateCommandBuffers() = 0;
+    virtual void updateCommandBuffer(uint32_t imageIndex) = 0;
     virtual void freeCommandBuffers() = 0;
 
     virtual void updateBuffers(uint32_t imageIndex) = 0;

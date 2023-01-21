@@ -1,5 +1,6 @@
 #include "../graphics.h"
 #include "core/operations.h"
+#include "core/transformational/camera.h"
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 #include "../../bufferObjects.h"
@@ -10,36 +11,16 @@
 void deferredGraphics::Base::Destroy(VkDevice* device)
 {
     for(auto& PipelineLayout: PipelineLayoutDictionary){
-        if(PipelineLayout.second) vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr);
+        if(PipelineLayout.second) {vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
     }
     for(auto& Pipeline: PipelineDictionary){
-        if(Pipeline.second) vkDestroyPipeline(*device, Pipeline.second, nullptr);
+        if(Pipeline.second) {vkDestroyPipeline(*device, Pipeline.second, nullptr); Pipeline.second = VK_NULL_HANDLE;}
     }
-    if(SceneDescriptorSetLayout)        vkDestroyDescriptorSetLayout(*device, SceneDescriptorSetLayout,  nullptr);
-    if(ObjectDescriptorSetLayout)       vkDestroyDescriptorSetLayout(*device, ObjectDescriptorSetLayout,  nullptr);
-    if(PrimitiveDescriptorSetLayout)    vkDestroyDescriptorSetLayout(*device, PrimitiveDescriptorSetLayout,  nullptr);
-    if(MaterialDescriptorSetLayout)     vkDestroyDescriptorSetLayout(*device, MaterialDescriptorSetLayout,  nullptr);
-    if(DescriptorPool)                  vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
-
-    for (size_t i = 0; i < sceneUniformBuffers.size(); i++){
-        if(sceneUniformBuffers[i])          vkDestroyBuffer(*device, sceneUniformBuffers[i], nullptr);
-        if(sceneUniformBuffersMemory[i])    vkFreeMemory(*device, sceneUniformBuffersMemory[i], nullptr);
-    }
-}
-
-void deferredGraphics::Base::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
-{
-    sceneUniformBuffers.resize(imageCount);
-    sceneUniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++){
-        createBuffer(   physicalDevice,
-                        device,
-                        sizeof(UniformBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        sceneUniformBuffers[i],
-                        sceneUniformBuffersMemory[i]);
-    }
+    if(SceneDescriptorSetLayout)        {vkDestroyDescriptorSetLayout(*device, SceneDescriptorSetLayout,  nullptr); SceneDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(ObjectDescriptorSetLayout)       {vkDestroyDescriptorSetLayout(*device, ObjectDescriptorSetLayout,  nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(PrimitiveDescriptorSetLayout)    {vkDestroyDescriptorSetLayout(*device, PrimitiveDescriptorSetLayout,  nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(*device, MaterialDescriptorSetLayout,  nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)                  {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
@@ -181,10 +162,11 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
         colorBlending.blendConstants[3] = 0.0f;
 
     index=0;
+    struct PushConstBlock {float transparencyPass; MaterialBlock material;};
     std::array<VkPushConstantRange,1> pushConstantRange{};
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
-        pushConstantRange[index].size = sizeof(MaterialBlock);
+        pushConstantRange[index].size = sizeof(PushConstBlock);
     std::array<VkDescriptorSetLayout,4> setLayouts = {SceneDescriptorSetLayout,ObjectDescriptorSetLayout,PrimitiveDescriptorSetLayout,MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -309,12 +291,12 @@ void deferredGraphics::createBaseDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, base.DescriptorSets.data());
 }
 
-void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers)
+void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = base.sceneUniformBuffers[i];
+            bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -404,39 +386,39 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
                 nodeDescriptorSets[descriptorSetsCount+1] = primitive->material.descriptorSet;
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
-            MaterialBlock pushConstBlockMaterial{};
-                pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
+            struct PushConstBlock{ float transparencyPass; MaterialBlock material;} pushConstBlock;
+                pushConstBlock.material.emissiveFactor = primitive->material.emissiveFactor;
                 // To save push constant space, availabilty and texture coordiante set are combined
                 // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
-                pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
-                pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-                pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
-                pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
+                pushConstBlock.material.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+                pushConstBlock.material.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
+                pushConstBlock.material.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
+                pushConstBlock.material.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
+                pushConstBlock.material.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
+                pushConstBlock.material.alphaMaskCutoff = primitive->material.alphaCutoff;
             if (primitive->material.pbrWorkflows.metallicRoughness) {
                 // Metallic roughness workflow
-                pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
-                pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
-                pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
-                pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
-                pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
-                pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+                pushConstBlock.material.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
+                pushConstBlock.material.baseColorFactor = primitive->material.baseColorFactor;
+                pushConstBlock.material.metallicFactor = primitive->material.metallicFactor;
+                pushConstBlock.material.roughnessFactor = primitive->material.roughnessFactor;
+                pushConstBlock.material.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
+                pushConstBlock.material.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
             }
             if (primitive->material.pbrWorkflows.specularGlossiness) {
                 // Specular glossiness workflow
-                pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
-                pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
-                pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
-                pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
+                pushConstBlock.material.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
+                pushConstBlock.material.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
+                pushConstBlock.material.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+                pushConstBlock.material.diffuseFactor = primitive->material.extension.diffuseFactor;
+                pushConstBlock.material.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
             }
             if(primitiveCount){
-                pushConstBlockMaterial.primitive = *primitiveCount;
-                (*primitiveCount)++;
+                pushConstBlock.material.primitive = (*primitiveCount)++;
             }
+                pushConstBlock.transparencyPass = transparencyPass ? 1.0 : 0.0;
 
-            vkCmdPushConstants(commandBuffer, *pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(MaterialBlock), &pushConstBlockMaterial);
+            vkCmdPushConstants(commandBuffer, *pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(pushConstBlock), &pushConstBlock);
 
             if (primitive->hasIndices){
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);

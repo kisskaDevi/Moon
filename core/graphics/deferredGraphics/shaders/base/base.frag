@@ -18,7 +18,7 @@ layout(set = 0, binding = 2) buffer StorageBuffer
 
 layout(set = 0, binding = 3) uniform sampler2D depthMap;
 
-layout (push_constant) uniform MaterialPC
+struct Material
 {
     vec4 baseColorFactor;
     vec4 emissiveFactor;
@@ -35,7 +35,12 @@ layout (push_constant) uniform MaterialPC
     float alphaMask;
     float alphaMaskCutoff;
     int number;
-} materialPC;
+};
+
+layout (push_constant) uniform PushConstants{
+    float enableTransparencyPass;
+    Material material;
+}pushConstants;
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D metallicRoughnessTexture;
@@ -56,7 +61,6 @@ layout(location = 9)	in vec4 bloomFactor;
 layout(location = 10)	in vec4 eyePosition;
 layout(location = 11)	in float depth;
 layout(location = 12)	in vec4 glPosition;
-layout(location = 13)	in float transparencyPass;
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -70,11 +74,11 @@ float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
 void main()
 {
     outPosition         = position;
-    outNormal           = vec4(materialPC.normalTextureSet > -1 ? getNormal() : normal, 0.0f);
+    outNormal           = vec4(pushConstants.material.normalTextureSet > -1 ? getNormal() : normal, 0.0f);
     outBaseColor        = vec4(colorFactor.x,colorFactor.y,colorFactor.z,1.0f) * texture(baseColorTexture, UV0) + constColor;
     outEmissiveTexture  = vec4(bloomFactor.x,bloomFactor.y,bloomFactor.z,1.0f) * texture(emissiveTexture,  UV0) + bloomColor;
 
-    if(transparencyPass==0.0){
+    if(pushConstants.enableTransparencyPass == 0.0){
         if(outBaseColor.a<1.0f){
             discard;
         }
@@ -95,16 +99,16 @@ void main()
     float metallic;
     vec4 baseColor;
 
-    int number = materialPC.number;
+    int number = pushConstants.material.number;
 
-    if (materialPC.workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS)
+    if (pushConstants.material.workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS)
     {
 	// Metallic and Roughness material properties are packed together
 	// In glTF, these factors can be specified by fixed scalar values
 	// or from a metallic-roughness map
-	perceptualRoughness = materialPC.roughnessFactor;
-	metallic	    = materialPC.metallicFactor;
-	if (materialPC.physicalDescriptorTextureSet > -1) {
+        perceptualRoughness = pushConstants.material.roughnessFactor;
+        metallic	    = pushConstants.material.metallicFactor;
+        if (pushConstants.material.physicalDescriptorTextureSet > -1) {
 	        // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
 	        // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
 	        vec4 mrSample = texture(metallicRoughnessTexture,UV0);
@@ -116,17 +120,17 @@ void main()
 	}
 
 	// The albedo may be defined from a base texture or a flat color
-	if (materialPC.baseColorTextureSet > -1) {
-	        baseColor = SRGBtoLINEAR(outBaseColor) * materialPC.baseColorFactor;
+        if (pushConstants.material.baseColorTextureSet > -1) {
+                baseColor = SRGBtoLINEAR(outBaseColor) * pushConstants.material.baseColorFactor;
 	} else {
-	        baseColor = materialPC.baseColorFactor;
+                baseColor = pushConstants.material.baseColorFactor;
 	}
     }
 
-    if (materialPC.workflow == PBR_WORKFLOW_SPECULAR_GLOSINESS)
+    if (pushConstants.material.workflow == PBR_WORKFLOW_SPECULAR_GLOSINESS)
     {
 	// Values from specular glossiness workflow are converted to metallic roughness
-	if (materialPC.physicalDescriptorTextureSet > -1) {
+        if (pushConstants.material.physicalDescriptorTextureSet > -1) {
 	        perceptualRoughness = 1.0 - texture(metallicRoughnessTexture,UV0).a;
 	} else {
 	        perceptualRoughness = 0.0;
@@ -141,15 +145,15 @@ void main()
 
 	const float epsilon = 1e-6;
 
-	vec3 baseColorDiffusePart = diffuse.rgb * ((1.0 - maxSpecular) / (1 - c_MinRoughness) / max(1 - metallic, epsilon)) * materialPC.diffuseFactor.rgb;
-	vec3 baseColorSpecularPart = specular - (vec3(c_MinRoughness) * (1 - metallic) * (1 / max(metallic, epsilon))) * materialPC.specularFactor.rgb;
+        vec3 baseColorDiffusePart = diffuse.rgb * ((1.0 - maxSpecular) / (1 - c_MinRoughness) / max(1 - metallic, epsilon)) * pushConstants.material.diffuseFactor.rgb;
+        vec3 baseColorSpecularPart = specular - (vec3(c_MinRoughness) * (1 - metallic) * (1 / max(metallic, epsilon))) * pushConstants.material.specularFactor.rgb;
 	baseColor = vec4(mix(baseColorDiffusePart, baseColorSpecularPart, metallic * metallic), diffuse.a);
     }
 
     outPosition.a = perceptualRoughness;
     outBaseColor = baseColor;
     outNormal.a = metallic;
-    if (materialPC.occlusionTextureSet > -1) {
+    if (pushConstants.material.occlusionTextureSet > -1) {
 	    float ao = texture(occlusionTexture,UV0).r;
 	    outEmissiveTexture.a = ao;
     }else{
@@ -167,7 +171,7 @@ void main()
 
 vec3 getNormal()
 {
-    vec3 tangentNormal = normalize(texture(normalTexture, materialPC.normalTextureSet == 0 ? UV0 : UV1).xyz * 2.0f - 1.0f);
+    vec3 tangentNormal = normalize(texture(normalTexture, pushConstants.material.normalTextureSet == 0 ? UV0 : UV1).xyz * 2.0f - 1.0f);
 
     mat3 TBN = mat3(tangent, bitangent, normal);
 

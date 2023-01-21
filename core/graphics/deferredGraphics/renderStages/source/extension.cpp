@@ -2,15 +2,19 @@
 #include "core/operations.h"
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
-#include "../../bufferObjects.h"
 
 #include <array>
 #include <iostream>
 
+struct OutliningPushConst{
+    alignas(16) glm::vec4           stencilColor;
+    alignas(4)  float               width;
+};
+
 void deferredGraphics::OutliningExtension::DestroyOutliningPipeline(VkDevice* device)
 {
-    if(outliningPipeline)        vkDestroyPipeline(*device, outliningPipeline, nullptr);
-    if(outliningPipelineLayout)  vkDestroyPipelineLayout(*device, outliningPipelineLayout,nullptr);
+    if(outliningPipeline)         {vkDestroyPipeline(*device, outliningPipeline, nullptr); outliningPipeline = VK_NULL_HANDLE;}
+    if(outliningPipelineLayout)   {vkDestroyPipelineLayout(*device, outliningPipelineLayout, nullptr); outliningPipelineLayout = VK_NULL_HANDLE;}
 }
 
 void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -132,7 +136,7 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
     std::array<VkPushConstantRange,1> pushConstantRange;
         pushConstantRange[index].stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange[index].offset = 0;
-        pushConstantRange[index].size = sizeof(StencilPushConst);
+        pushConstantRange[index].size = sizeof(OutliningPushConst);
     std::array<VkDescriptorSetLayout,4> SetLayouts = {Parent->SceneDescriptorSetLayout,Parent->ObjectDescriptorSetLayout,Parent->PrimitiveDescriptorSetLayout,Parent->MaterialDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -175,10 +179,10 @@ void deferredGraphics::OutliningExtension::render(uint32_t frameNumber, VkComman
             if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
                 vkCmdBindIndexBuffer(commandBuffers, object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            StencilPushConst pushConst{};
+            OutliningPushConst pushConst{};
                 pushConst.stencilColor = object->getOutliningColor();
                 pushConst.width = object->getOutliningWidth();
-            vkCmdPushConstants(commandBuffers, outliningPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(StencilPushConst), &pushConst);
+            vkCmdPushConstants(commandBuffers, outliningPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(OutliningPushConst), &pushConst);
 
             for (auto node : object->getModel(frameNumber)->nodes){
                 std::vector<VkDescriptorSet> descriptorSets = {Parent->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};

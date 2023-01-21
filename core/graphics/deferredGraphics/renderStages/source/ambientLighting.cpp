@@ -1,13 +1,16 @@
 #include "../graphics.h"
 #include "core/operations.h"
-#include "../../bufferObjects.h"
 
 #include <array>
 #include <iostream>
 
+struct lightPassPushConst{
+    alignas(4) float                minAmbientFactor;
+};
+
 void deferredGraphics::AmbientLighting::DestroyPipeline(VkDevice* device){
-    if(Pipeline)         vkDestroyPipeline(*device, Pipeline, nullptr);
-    if(PipelineLayout)   vkDestroyPipelineLayout(*device, PipelineLayout, nullptr);
+    if(Pipeline)         {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)   {vkDestroyPipelineLayout(*device, PipelineLayout, nullptr); PipelineLayout = VK_NULL_HANDLE;}
 }
 
 void deferredGraphics::AmbientLighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass){

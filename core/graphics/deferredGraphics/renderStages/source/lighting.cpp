@@ -1,46 +1,29 @@
 #include "../graphics.h"
 #include "core/operations.h"
-#include "core/texture.h"
+#include "core/transformational/camera.h"
 #include "core/transformational/lightInterface.h"
-#include "../../bufferObjects.h"
 
 #include <array>
 #include <iostream>
 
+struct lightPassPushConst{
+    alignas(4) float                minAmbientFactor;
+};
+
 void deferredGraphics::Lighting::Destroy(VkDevice* device)
 {
     for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
-        if(descriptorSetLayout.second) vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr);
+        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
     }
-    if(DescriptorSetLayout) vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr);
-    if(DescriptorPool)      vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
+    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 
     for(auto& PipelineLayout: PipelineLayoutDictionary){
-        if(PipelineLayout.second) vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr);
+        if(PipelineLayout.second) {vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
     }
     for(auto& Pipeline: PipelinesDictionary){
-        if(Pipeline.second) vkDestroyPipeline(*device, Pipeline.second, nullptr);
+        if(Pipeline.second) {vkDestroyPipeline(*device, Pipeline.second, nullptr);  Pipeline.second = VK_NULL_HANDLE;}
     }
-
-    for (size_t i = 0; i < uniformBuffers.size(); i++)
-    {
-        if(uniformBuffers[i])           vkDestroyBuffer(*device, uniformBuffers[i], nullptr);
-        if(uniformBuffersMemory[i])     vkFreeMemory(*device, uniformBuffersMemory[i], nullptr);
-    }
-}
-
-void deferredGraphics::Lighting::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
-{
-    uniformBuffers.resize(imageCount);
-    uniformBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-        createBuffer(   physicalDevice,
-                        device,
-                        sizeof(UniformBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        uniformBuffers[i],
-                        uniformBuffersMemory[i]);
 }
 
 void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
@@ -118,7 +101,7 @@ void deferredGraphics::createLightingDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, lighting.DescriptorSets.data());
 }
 
-void deferredGraphics::updateLightingDescriptorSets()
+void deferredGraphics::updateLightingDescriptorSets(camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -136,7 +119,7 @@ void deferredGraphics::updateLightingDescriptorSets()
             imageInfo.back().sampler = VK_NULL_HANDLE;
 
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = lighting.uniformBuffers[i];
+            bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -177,7 +160,7 @@ void deferredGraphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer co
     }
 }
 
-void deferredGraphics::updateLightUbo(uint32_t imageIndex)
+void deferredGraphics::updateLightSourcesUniformBuffer(uint32_t imageIndex)
 {
     for(auto lightSource: lighting.lightSources)
         lightSource->updateUniformBuffer(device,imageIndex);
@@ -185,17 +168,9 @@ void deferredGraphics::updateLightUbo(uint32_t imageIndex)
 
 void deferredGraphics::updateLightCmd(uint32_t imageIndex)
 {
-    std::vector<object*> objects(base.objects.size());
-
-    uint32_t counter = 0;
-    for(auto object: base.objects){
-        objects[counter] = object;
-        counter++;
-    }
-
     for(auto lightSource: lighting.lightSources)
         if(lightSource->isShadowEnable())
-            lightSource->updateShadowCommandBuffer(imageIndex,objects);
+            lightSource->updateShadowCommandBuffer(imageIndex,base.objects);
 }
 
 void deferredGraphics::getLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex)

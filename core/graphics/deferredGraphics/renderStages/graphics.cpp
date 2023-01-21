@@ -3,7 +3,6 @@
 #include "core/transformational/camera.h"
 #include "core/texture.h"
 #include "core/operations.h"
-#include "../bufferObjects.h"
 
 #include <array>
 #include <vector>
@@ -16,7 +15,6 @@ deferredGraphics::deferredGraphics(){
 void deferredGraphics::setExternalPath(const std::string &path){
     base.ExternalPath = path;
     outlining.ExternalPath = path;
-    //skybox.ExternalPath = path;
     lighting.ExternalPath = path;
     ambientLighting.ExternalPath = path;
 }
@@ -38,10 +36,9 @@ void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
 void deferredGraphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
 void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor;}
 void deferredGraphics::setScattering(const bool &enableScattering)           { lighting.enableScattering = enableScattering;}
-void deferredGraphics::setTransparencyPass(const bool& transparencyPass)     { this->transparencyPass = transparencyPass;}
+void deferredGraphics::setTransparencyPass(const bool& transparencyPass)     { base.transparencyPass = transparencyPass;}
 
-texture*  deferredGraphics::getEmptyTexture()                                { return emptyTexture;}
-VkBuffer* deferredGraphics::getSceneBuffer()                                 { return base.sceneUniformBuffers.data();}
+texture*  deferredGraphics::getEmptyTexture() { return emptyTexture;}
 
 void deferredGraphics::destroyEmptyTexture(){
     if(emptyTexture){
@@ -54,13 +51,13 @@ void deferredGraphics::destroy()
 {
     base.Destroy(device);
     outlining.DestroyOutliningPipeline(device);
-    //skybox.Destroy(device);
     lighting.Destroy(device);
     ambientLighting.DestroyPipeline(device);
 
-    if(renderPass) vkDestroyRenderPass(*device, renderPass, nullptr);
+    if(renderPass) {vkDestroyRenderPass(*device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(size_t i = 0; i< framebuffers.size();i++)
         if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+    framebuffers.resize(0);
 }
 
 void deferredGraphics::setAttachments(DeferredAttachments* Attachments)
@@ -200,14 +197,9 @@ void deferredGraphics::createPipelines()
 {
     base.createDescriptorSetLayout(device);
     base.createPipeline(device,&image,&renderPass);
-    base.createUniformBuffers(physicalDevice,device,image.Count);
     outlining.createOutliningPipeline(device,&image,&renderPass);
-    //skybox.createDescriptorSetLayout(device);
-    //skybox.createPipeline(device,&image,&renderPass);
-    //skybox.createUniformBuffers(physicalDevice,device,image.Count);
     lighting.createDescriptorSetLayout(device);
     lighting.createPipeline(device,&image,&renderPass);
-    lighting.createUniformBuffers(physicalDevice,device,image.Count);
     ambientLighting.createPipeline(device,&image,&renderPass);
 }
 
@@ -215,21 +207,18 @@ void deferredGraphics::createDescriptorPool()
 {
     createBaseDescriptorPool();
     createLightingDescriptorPool();
-    //createSkyboxDescriptorPool();
 }
 
 void deferredGraphics::createDescriptorSets()
 {
     createBaseDescriptorSets();
     createLightingDescriptorSets();
-    //createSkyboxDescriptorSets();
 }
 
-void deferredGraphics::updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers)
+void deferredGraphics::updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject)
 {
-    updateBaseDescriptorSets(depthAttachment, storageBuffers);
-    updateLightingDescriptorSets();
-    //updateSkyboxDescriptorSets();
+    updateBaseDescriptorSets(depthAttachment, storageBuffers, cameraObject);
+    updateLightingDescriptorSets(cameraObject);
 }
 
 void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
@@ -251,7 +240,6 @@ void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
 
         primitiveCount = 0;
 
-        //skybox.render(frameNumber,commandBuffers);
         base.render(frameNumber,commandBuffers, primitiveCount);
         outlining.render(frameNumber,commandBuffers);
 
@@ -260,42 +248,8 @@ void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
         lighting.render(frameNumber,commandBuffers);
         ambientLighting.render(frameNumber,commandBuffers);
 
-    vkCmdEndRenderPass(commandBuffers);
+        vkCmdEndRenderPass(commandBuffers);
 }
-
-void deferredGraphics::updateUniformBuffer(uint32_t currentImage, const camera& cameraObject)
-{
-    void* data;
-
-    UniformBufferObject baseUBO{};
-        baseUBO.view = cameraObject.getViewMatrix();
-        baseUBO.proj = cameraObject.getProjMatrix();
-        baseUBO.eyePosition = glm::vec4(cameraObject.getTranslation(), 1.0);
-        baseUBO.enableTransparency = transparencyPass ? 1.0 : 0.0;
-    vkMapMemory(*device, base.sceneUniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
-        memcpy(data, &baseUBO, sizeof(baseUBO));
-    vkUnmapMemory(*device, base.sceneUniformBuffersMemory[currentImage]);
-
-    vkMapMemory(*device, lighting.uniformBuffersMemory[currentImage], 0, sizeof(baseUBO), 0, &data);
-        memcpy(data, &baseUBO, sizeof(baseUBO));
-    vkUnmapMemory(*device, lighting.uniformBuffersMemory[currentImage]);
-}
-
-//void deferredGraphics::updateSkyboxUniformBuffer(uint32_t currentImage, const camera& cameraObject)
-//{
-//    if(skybox.objects.size()!=0)
-//    {
-//        void* data;
-
-//        SkyboxUniformBufferObject skyboxUBO{};
-//            skyboxUBO.view = cameraObject.getViewMatrix();
-//            skyboxUBO.proj = cameraObject.getProjMatrix();
-//            skyboxUBO.model = glm::translate(glm::mat4x4(1.0f),cameraObject.getTranslation())*skybox.objects[0]->getModelMatrix();
-//        vkMapMemory(*device, this->skybox.uniformBuffersMemory[currentImage], 0, sizeof(skyboxUBO), 0, &data);
-//            memcpy(data, &skyboxUBO, sizeof(skyboxUBO));
-//        vkUnmapMemory(*device, this->skybox.uniformBuffersMemory[currentImage]);
-//    }
-//}
 
 void deferredGraphics::updateObjectUniformBuffer(uint32_t currentImage)
 {
@@ -308,16 +262,6 @@ void deferredGraphics::bindBaseObject(object *newObject)
     base.objects.push_back(newObject);
 }
 
-//void deferredGraphics::bindSkyBoxObject(object *newObject, const std::vector<std::string>& TEXTURE_PATH)
-//{
-//    skybox.texture = new cubeTexture(TEXTURE_PATH);
-//    skybox.texture->setMipLevel(0.0f);
-//    skybox.texture->createTextureImage(physicalDevice,device,graphicsQueue,commandPool);
-//    skybox.texture->createTextureImageView(device);
-//    skybox.texture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-//    skybox.objects.push_back(newObject);
-//}
-
 bool deferredGraphics::removeBaseObject(object* object)
 {
     bool result = false;
@@ -329,20 +273,6 @@ bool deferredGraphics::removeBaseObject(object* object)
     }
     return result;
 }
-
-//bool deferredGraphics::removeSkyBoxObject(object* object)
-//{
-//    bool result = false;
-//    for(uint32_t index = 0; index<skybox.objects.size(); index++){
-//        if(object==skybox.objects[index]){
-//            skybox.texture->destroy(device);
-//            delete skybox.texture;
-//            skybox.objects.erase(skybox.objects.begin()+index);
-//            result = true;
-//        }
-//    }
-//    return result;
-//}
 
 void deferredGraphics::addLightSource(light* lightSource)
 {

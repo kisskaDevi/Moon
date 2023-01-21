@@ -1,20 +1,35 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <libs/vulkan/vulkan.h>
 #include "transformational.h"
 #include "libs/quaternion.h"
+
+struct UniformBufferObject{
+    alignas(16) glm::mat4           view;
+    alignas(16) glm::mat4           proj;
+    alignas(16) glm::vec4           eyePosition;
+};
 
 class camera : public transformational
 {
 private:
-    glm::mat4x4         projMatrix{1.0f};
-    glm::mat4x4         viewMatrix{1.0f};
-    glm::mat4x4         globalTransformation{1.0f};
+    glm::mat4x4             projMatrix{1.0f};
+    glm::mat4x4             viewMatrix{1.0f};
+    glm::mat4x4             globalTransformation{1.0f};
 
     quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
     quaternion<float>       rotationX{1.0f,0.0f,0.0f,0.0f};
     quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
+
+protected:
+    struct buffer{
+        VkBuffer       instance{VK_NULL_HANDLE};
+        VkDeviceMemory memory{VK_NULL_HANDLE};
+        bool           updateFlag{true};
+    };
+    std::vector<buffer>     uniformBuffers;
 
     void updateViewMatrix();
 public:
@@ -35,6 +50,11 @@ public:
     void                    setRotation(const quaternion<float>& rotation);
     void                    setRotations(const quaternion<float>& rotationX, const quaternion<float>& rotationY);
 
+    void destroyUniformBuffers(VkDevice* device);
+    void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
+    void updateUniformBuffer(VkDevice* device, uint32_t currentImage);
+
+    VkBuffer                getBuffer(uint32_t index)const;
     glm::vec3               getTranslation()const;
     quaternion<float>       getRotationX()const;
     quaternion<float>       getRotationY()const;

@@ -43,6 +43,7 @@ private:
 
     VkCommandPool                       shadowCommandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer>        shadowCommandBuffer;
+    std::vector<bool>                   updateCommandBufferFlag;
 
     void renderNode(VkCommandBuffer commandBuffer, Node* node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
 public:

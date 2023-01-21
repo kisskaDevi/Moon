@@ -50,8 +50,13 @@ private:
     VkDescriptorSetLayout               descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                    descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>        descriptorSets;
-    std::vector<VkBuffer>               uniformBuffers;
-    std::vector<VkDeviceMemory>         uniformBuffersMemory;
+
+    struct buffer{
+        VkBuffer       instance{VK_NULL_HANDLE};
+        VkDeviceMemory memory{VK_NULL_HANDLE};
+        bool           updateFlag{true};
+    };
+    std::vector<buffer> uniformBuffers;
 
     void updateModelMatrix();
 public:

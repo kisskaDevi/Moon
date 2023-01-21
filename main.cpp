@@ -20,9 +20,12 @@ GLFWwindow* window;
 const std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
 //const std::string ExternalPath = "C:\\Qt\\repositories\\build-vulkanCore-Desktop_Qt_6_4_0_MinGW_64_bit-Debug\\debug\\";
 
+const std::string ZERO_TEXTURE        = ExternalPath + "texture\\0.png";
+const std::string ZERO_TEXTURE_WHITE  = ExternalPath + "texture\\1.png";
+
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
-void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window);
+void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window, camera* cameraObject);
 
 #include "scene.h"
 
@@ -40,16 +43,24 @@ int main()
     app.createLogicalDevice();
     app.createCommandPool();
     app.setGraphics(&graphics);
+
+    camera cameraObject;
+        cameraObject.translate(glm::vec3(0.0f,0.0f,10.0f));
+        glm::mat4x4 proj = glm::perspective(glm::radians(90.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
+        proj[1][1] *= -1.0f;
+        cameraObject.setProjMatrix(proj);
+    graphics.bindCameraObject(&cameraObject);
+
+    graphics.setEmptyTexture(ZERO_TEXTURE);
+
     app.createGraphics(window);
+    graphics.updateDescriptorSets();
 
     scene testScene(&app,&graphics,ExternalPath);
-    testScene.createScene(WIDTH,HEIGHT);
+    testScene.createScene(WIDTH,HEIGHT,&cameraObject);
 
     app.createCommandBuffers();
     app.createSyncObjects();
-
-    graphics.resetUboWorld();
-    graphics.resetUboLight();
 
     static auto pastTime = std::chrono::high_resolution_clock::now();
 
@@ -72,13 +83,13 @@ int main()
 
             VkResult result = app.drawFrame();
 
-            if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,&graphics,window);
+            if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,&graphics,window,&cameraObject);
             else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
 
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized || testScene.framebufferResized){
                 framebufferResized = false;
                 testScene.framebufferResized = false;
-                recreateSwapChain(&app,&graphics,window);
+                recreateSwapChain(&app,&graphics,window,&cameraObject);
             }else if(result != VK_SUCCESS){
                 throw std::runtime_error("failed to present swap chain image!");
             }
@@ -87,6 +98,7 @@ int main()
 
     app.deviceWaitIdle();
 
+    graphics.removeCameraObject(&cameraObject);
     testScene.destroyScene();
     graphics.destroyGraphics();
     app.cleanup();
@@ -97,7 +109,7 @@ int main()
     return 0;
 }
 
-void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window)
+void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window, camera* cameraObject)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
@@ -111,13 +123,14 @@ void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics
     app->deviceWaitIdle();
     graphics->destroyGraphics();
 
+    glm::mat4x4 proj = glm::perspective(glm::radians(90.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
+    proj[1][1] *= -1.0f;
+    cameraObject->setProjMatrix(proj);
+
     graphics->setExtent({static_cast<uint32_t>(width),static_cast<uint32_t>(height)});
     app->createGraphics(window);
     graphics->updateDescriptorSets();
-    graphics->updateAllCommandBuffers();
-
-    graphics->resetUboWorld();
-    graphics->resetUboLight();
+    graphics->updateCommandBuffers();
 }
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height)

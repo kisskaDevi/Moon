@@ -11,6 +11,10 @@ struct SwapChainSupportDetails;
 struct QueueFamilyIndices;
 class GLFWwindow;
 
+struct postProcessingPushConst{
+    alignas(4) float                blitFactor;
+};
+
 class postProcessingGraphics
 {
 private:

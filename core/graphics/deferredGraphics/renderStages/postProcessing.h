@@ -10,6 +10,7 @@
 struct SwapChainSupportDetails;
 struct QueueFamilyIndices;
 class GLFWwindow;
+class texture;
 
 struct postProcessingPushConst{
     alignas(4) float                blitFactor;
@@ -23,6 +24,7 @@ private:
     VkQueue*                            graphicsQueue{nullptr};
     VkCommandPool*                      commandPool{nullptr};
     QueueFamilyIndices                  queueFamilyIndices;
+    texture*                            emptyTexture{nullptr};
 
     imageInfo                           image;
 
@@ -59,6 +61,7 @@ public:
     void destroy();
     void destroySwapChainAttachments();
 
+    void setEmptyTexture(texture* emptyTexture);
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily);
     void setImageProp(imageInfo* pInfo);

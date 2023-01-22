@@ -1,5 +1,6 @@
 #include "layersCombiner.h"
 #include "core/operations.h"
+#include "core/texture.h"
 #include "core/transformational/camera.h"
 
 #include <array>
@@ -8,6 +9,11 @@
 layersCombiner::layersCombiner()
 {
 
+}
+
+void layersCombiner::setEmptyTexture(texture* emptyTexture)
+{
+    this->emptyTexture = emptyTexture;
 }
 
 void layersCombiner::setExternalPath(const std::string &path)
@@ -228,8 +234,18 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice* device)
 
 void layersCombiner::Combiner::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
-    uint32_t index = 0;
+    uint32_t specializationData = transparentLayersCount;
+    VkSpecializationMapEntry specializationMapEntry{};
+        specializationMapEntry.constantID = 0;
+        specializationMapEntry.offset = 0;
+        specializationMapEntry.size = sizeof(uint32_t);
+    VkSpecializationInfo specializationInfo;
+        specializationInfo.mapEntryCount = 1;
+        specializationInfo.pMapEntries = &specializationMapEntry;
+        specializationInfo.dataSize = sizeof(specializationData);
+        specializationInfo.pData = &specializationData;
 
+    uint32_t index = 0;
     auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\layersCombiner\\layersCombinerVert.spv");
     auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\layersCombiner\\layersCombinerFrag.spv");
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
@@ -244,6 +260,7 @@ void layersCombiner::Combiner::createPipeline(VkDevice* device, imageInfo* pInfo
         shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         shaderStages[index].module = fragShaderModule;
         shaderStages[index].pName = "main";
+        shaderStages[index].pSpecializationInfo = &specializationInfo;
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -461,8 +478,8 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
 
         VkDescriptorImageInfo skyboxImageInfo;
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = skybox->imageView[i];
-            skyboxImageInfo.sampler = skybox->sampler;
+            skyboxImageInfo.imageView = skybox->imageView.size() ? skybox->imageView[i] : *emptyTexture->getTextureImageView();
+            skyboxImageInfo.sampler = skybox->sampler ? skybox->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);

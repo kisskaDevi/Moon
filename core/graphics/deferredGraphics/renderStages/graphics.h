@@ -24,8 +24,8 @@ private:
     VkDevice*                       device{nullptr};
     VkQueue*                        graphicsQueue{nullptr};
     VkCommandPool*                  commandPool{nullptr};
-
     texture*                        emptyTexture{nullptr};
+
     uint32_t                        primitiveCount{0};
 
     imageInfo                       image;
@@ -119,6 +119,7 @@ public:
     deferredGraphics();
     void destroy();
 
+    void setEmptyTexture(texture* emptyTexture);
     void setExternalPath(const std::string& path);
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
     void setImageProp(imageInfo* pInfo);
@@ -147,14 +148,9 @@ public:
     void updateLightCmd(uint32_t imageIndex);
     void getLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex);
 
-    void setEmptyTexture(std::string ZERO_TEXTURE);
-    void destroyEmptyTexture();
-
     void setMinAmbientFactor(const float& minAmbientFactor);
     void setScattering(const bool& enableScattering);
     void setTransparencyPass(const bool& transparencyPass);
-
-    texture*  getEmptyTexture();
 };
 
 #endif // GRAPHICS_H

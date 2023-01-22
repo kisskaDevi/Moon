@@ -1,5 +1,6 @@
 #version 450
-#define bloomCount 8
+
+layout (constant_id = 0) const int bloomCount = 1;
 
 layout(set = 0, binding = 0) uniform sampler2D Sampler;
 layout(set = 0, binding = 1) uniform sampler2D blurSampler;
@@ -7,16 +8,16 @@ layout(set = 0, binding = 2) uniform sampler2D bloomSampler[bloomCount];
 layout(set = 0, binding = 3) uniform sampler2D sslrSampler;
 layout(set = 0, binding = 4) uniform sampler2D ssaoSampler;
 
-vec4 colorBloomFactor[bloomCount] = vec4[](
-    vec4(1.0f,0.0f,0.0f,1.0f),
-    vec4(0.0f,0.0f,1.0f,1.0f),
-    vec4(0.0f,1.0f,0.0f,1.0f),
-    vec4(1.0f,0.0f,0.0f,1.0f),
-    vec4(0.0f,0.0f,1.0f,1.0f),
-    vec4(0.0f,1.0f,0.0f,1.0f),
-    vec4(1.0f,0.0f,0.0f,1.0f),
-    vec4(1.0f,1.0f,1.0f,1.0f)
-);
+//vec4 colorBloomFactor[bloomCount] = vec4[](
+//    vec4(1.0f,0.0f,0.0f,1.0f),
+//    vec4(0.0f,0.0f,1.0f,1.0f),
+//    vec4(0.0f,1.0f,0.0f,1.0f),
+//    vec4(1.0f,0.0f,0.0f,1.0f),
+//    vec4(0.0f,0.0f,1.0f,1.0f),
+//    vec4(0.0f,1.0f,0.0f,1.0f),
+//    vec4(1.0f,0.0f,0.0f,1.0f),
+//    vec4(1.0f,1.0f,1.0f,1.0f)
+//);
 
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
@@ -53,7 +54,7 @@ vec4 bloom()
     float invBlitFactor = 1.0f/blitFactor;
     for(int i=0;i<bloomCount;i++){
 	vec2 coord = fragTexCoord*invBlitFactor;
-	bloomColor += colorBloomFactor[i]*texture(bloomSampler[i],coord)*exp(0.01*i*i);
+        bloomColor += /*colorBloomFactor[i] * exp(0.01*i*i) **/ texture(bloomSampler[i],coord);
 	invBlitFactor/=blitFactor;
     }
 

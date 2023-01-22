@@ -1,6 +1,5 @@
 #include "customfilter.h"
 #include "core/operations.h"
-#include "../bufferObjects.h"
 
 #include <iostream>
 #include <array>
@@ -8,6 +7,11 @@
 customFilter::customFilter()
 {
 
+}
+
+void customFilter::setEmptyTexture(texture* emptyTexture)
+{
+    this->emptyTexture = emptyTexture;
 }
 
 void customFilter::setExternalPath(const std::string& path)

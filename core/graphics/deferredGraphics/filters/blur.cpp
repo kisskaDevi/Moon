@@ -10,6 +10,11 @@ gaussianBlur::gaussianBlur()
 
 }
 
+void gaussianBlur::setEmptyTexture(texture* emptyTexture)
+{
+    this->emptyTexture = emptyTexture;
+}
+
 void gaussianBlur::setExternalPath(const std::string &path)
 {
     xblur.ExternalPath = path;

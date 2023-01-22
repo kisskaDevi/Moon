@@ -1,7 +1,8 @@
 #version 450
-#define transparentLayersCount 3
 
 const float pi = 3.141592653589793f;
+
+layout (constant_id = 0) const int transparentLayersCount = 1;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {

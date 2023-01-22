@@ -10,6 +10,11 @@ skyboxGraphics::skyboxGraphics()
 
 }
 
+void skyboxGraphics::setEmptyTexture(texture* emptyTexture)
+{
+    this->emptyTexture = emptyTexture;
+}
+
 void skyboxGraphics::setExternalPath(const std::string &path)
 {
     skybox.ExternalPath = path;

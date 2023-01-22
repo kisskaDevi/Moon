@@ -1,4 +1,5 @@
 #include "postProcessing.h"
+#include "core/texture.h"
 
 #include <iostream>
 #include <cstdint>          // UINT32_MAX
@@ -67,6 +68,10 @@ void postProcessingGraphics::destroySwapChainAttachments()
         for(size_t j=0; j <image.Count;j++)
             if(swapChainAttachments[i].imageView[j]) vkDestroyImageView(*device,swapChainAttachments[i].imageView[j],nullptr);
     swapChainAttachments.resize(0);
+}
+
+void postProcessingGraphics::setEmptyTexture(texture* emptyTexture){
+    this->emptyTexture = emptyTexture;
 }
 
 void postProcessingGraphics::setExternalPath(const std::string &path)
@@ -234,8 +239,18 @@ void postProcessingGraphics::createPipelines()
     }
     void postProcessingGraphics::PostProcessing::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
     {
-        uint32_t index = 0;
+        uint32_t specializationData = blitAttachmentCount;
+        VkSpecializationMapEntry specializationMapEntry{};
+            specializationMapEntry.constantID = 0;
+            specializationMapEntry.offset = 0;
+            specializationMapEntry.size = sizeof(uint32_t);
+        VkSpecializationInfo specializationInfo;
+            specializationInfo.mapEntryCount = 1;
+            specializationInfo.pMapEntries = &specializationMapEntry;
+            specializationInfo.dataSize = sizeof(specializationData);
+            specializationInfo.pData = &specializationData;
 
+        uint32_t index = 0;
         auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingVert.spv");
         auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingFrag.spv");
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
@@ -250,6 +265,7 @@ void postProcessingGraphics::createPipelines()
             shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
             shaderStages[index].module = fragShaderModule;
             shaderStages[index].pName = "main";
+            shaderStages[index].pSpecializationInfo = &specializationInfo;
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
             vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -419,24 +435,24 @@ void postProcessingGraphics::updateDescriptorSets()
 
         VkDescriptorImageInfo blurImageInfo;
             blurImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blurImageInfo.imageView = blurAttachment->imageView[image];
-            blurImageInfo.sampler = blurAttachment->sampler;
+            blurImageInfo.imageView = blurAttachment ? blurAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            blurImageInfo.sampler = blurAttachment ? blurAttachment->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo sslrImageInfo;
             sslrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            sslrImageInfo.imageView = sslrAttachment->imageView[image];
-            sslrImageInfo.sampler = sslrAttachment->sampler;
+            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            sslrImageInfo.sampler = sslrAttachment ? sslrAttachment->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo ssaoImageInfo;
             ssaoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            ssaoImageInfo.imageView = ssaoAttachment->imageView[image];
-            ssaoImageInfo.sampler = ssaoAttachment->sampler;
+            ssaoImageInfo.imageView = ssaoAttachment ? ssaoAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            ssaoImageInfo.sampler = ssaoAttachment ? ssaoAttachment->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> blitImageInfo(postProcessing.blitAttachmentCount);
         for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
             blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blitImageInfo[index].imageView = blitAttachments[i].imageView[image];
-            blitImageInfo[index].sampler = blitAttachments[i].sampler;
+            blitImageInfo[index].imageView = blitAttachments ? blitAttachments[i].imageView[image] : *emptyTexture->getTextureImageView();
+            blitImageInfo[index].sampler = blitAttachments ? blitAttachments[i].sampler : *emptyTexture->getTextureSampler();
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

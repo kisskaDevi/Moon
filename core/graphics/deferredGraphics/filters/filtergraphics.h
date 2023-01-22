@@ -6,6 +6,8 @@
 
 #include <string>
 
+class texture;
+
 class filter{
     virtual void Destroy(VkDevice* device) = 0;
     virtual void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass) = 0;
@@ -18,6 +20,7 @@ public:
     virtual ~filterGraphics(){};
     virtual void destroy() = 0;
 
+    virtual void setEmptyTexture(texture* emptyTexture) = 0;
     virtual void setExternalPath(const std::string& path) = 0;
     virtual void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool) = 0;
     virtual void setImageProp(imageInfo* pInfo) = 0;

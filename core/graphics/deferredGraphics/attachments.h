@@ -18,14 +18,12 @@ struct attachment
     VkImageView imageView{VK_NULL_HANDLE};
     VkSampler sampler{VK_NULL_HANDLE};
 
-    void deleteAttachment(VkDevice* device)
-    {
+    void deleteAttachment(VkDevice* device){
         if(image)       {vkDestroyImage(*device, image, nullptr); image = VK_NULL_HANDLE;}
         if(imageMemory) {vkFreeMemory(*device, imageMemory, nullptr); imageMemory = VK_NULL_HANDLE;}
         if(imageView)   {vkDestroyImageView(*device, imageView, nullptr);  imageView = VK_NULL_HANDLE;}
     }
-    void deleteSampler(VkDevice *device)
-    {
+    void deleteSampler(VkDevice *device){
         if(sampler) {vkDestroySampler(*device,sampler,nullptr); sampler = VK_NULL_HANDLE;}
     }
 };

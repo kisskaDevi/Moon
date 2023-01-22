@@ -26,26 +26,14 @@ void deferredGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice*
     this->commandPool = commandPool;
 }
 
-void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
-    this->emptyTexture = new texture(ZERO_TEXTURE);
-    emptyTexture->createTextureImage(physicalDevice,device,graphicsQueue,commandPool);
-    emptyTexture->createTextureImageView(device);
-    emptyTexture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+void deferredGraphics::setEmptyTexture(texture* emptyTexture){
+    this->emptyTexture = emptyTexture;
 }
 
 void deferredGraphics::setImageProp(imageInfo* pInfo)                        { this->image = *pInfo;}
 void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor;}
 void deferredGraphics::setScattering(const bool &enableScattering)           { lighting.enableScattering = enableScattering;}
 void deferredGraphics::setTransparencyPass(const bool& transparencyPass)     { base.transparencyPass = transparencyPass;}
-
-texture*  deferredGraphics::getEmptyTexture() { return emptyTexture;}
-
-void deferredGraphics::destroyEmptyTexture(){
-    if(emptyTexture){
-        emptyTexture->destroy(device);
-        delete emptyTexture;
-    }
-}
 
 void deferredGraphics::destroy()
 {
@@ -78,7 +66,7 @@ void deferredGraphics::createAttachments(DeferredAttachments* pAttachments)
     VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     pAttachments->image.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
     pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
-    pAttachments->bloom.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
+    pAttachments->bloom.create(physicalDevice, device, image.Format, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, image.Extent, image.Count);
     pAttachments->depth.createDepth(physicalDevice, device, findDepthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.Extent, image.Count);
     pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
     pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);

@@ -10,6 +10,11 @@ SSAOGraphics::SSAOGraphics()
 
 }
 
+void SSAOGraphics::setEmptyTexture(texture* emptyTexture)
+{
+    this->emptyTexture = emptyTexture;
+}
+
 void SSAOGraphics::setExternalPath(const std::string &path)
 {
     ssao.ExternalPath = path;

@@ -12,6 +12,7 @@ private:
     VkDevice*                           device{nullptr};
     VkQueue*                            graphicsQueue{nullptr};
     VkCommandPool*                      commandPool{nullptr};
+    texture*                            emptyTexture{nullptr};
 
     imageInfo                           image;
 
@@ -38,6 +39,7 @@ public:
     SSAOGraphics();
     void destroy() override;
 
+    void setEmptyTexture(texture* emptyTexture) override;
     void setExternalPath(const std::string& path) override;
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool) override;
     void setImageProp(imageInfo* pInfo) override;

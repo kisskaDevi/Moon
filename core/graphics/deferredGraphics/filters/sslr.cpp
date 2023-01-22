@@ -10,6 +10,11 @@ SSLRGraphics::SSLRGraphics()
 
 }
 
+void SSLRGraphics::setEmptyTexture(texture* emptyTexture)
+{
+    this->emptyTexture = emptyTexture;
+}
+
 void SSLRGraphics::setExternalPath(const std::string &path)
 {
     sslr.ExternalPath = path;

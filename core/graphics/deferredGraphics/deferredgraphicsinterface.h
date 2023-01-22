@@ -47,6 +47,13 @@ private:
     std::vector<deferredGraphics>               TransparentLayers;
     uint32_t                                    TransparentLayersCount{3};
 
+    bool                                        enableTransparentLayers{true};
+    bool                                        enableSkybox{true};
+    bool                                        enableBlur{true};
+    bool                                        enableBloom{true};
+    bool                                        enableSSLR{true};
+    bool                                        enableSSAO{true};
+
     std::vector<VkBuffer>                       storageBuffers;
     std::vector<VkDeviceMemory>                 storageBuffersMemory;
 
@@ -57,6 +64,7 @@ private:
     std::vector<VkCommandBuffer>                commandBufferSet;
 
     camera*                                     cameraObject{nullptr};
+    texture*                                    emptyTexture{nullptr};
 
     void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments);
     void fastCreateGraphics(deferredGraphics* graphics, DeferredAttachments* attachments);
@@ -85,6 +93,7 @@ public:
     VkSwapchainKHR&     getSwapChain() override;
 
     void        updateCmdFlags();
+    void        updateShadowCmdFlags();
 
     void        setExtent(VkExtent2D extent);
     void        setExternalPath(const std::string& ExternalPath);

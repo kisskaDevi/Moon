@@ -116,7 +116,7 @@ void deferredGraphicsInterface::setDevicesInfo(uint32_t devicesInfoCount, device
 
 void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
 {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,*surface);
+    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(*devicesInfo[0].physicalDevice,*surface);
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
         imageCount = swapChainSupport.capabilities.maxImageCount;
@@ -149,15 +149,15 @@ void deferredGraphicsInterface::fastCreateGraphics(deferredGraphics* graphics, D
 
 void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
 {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(*devicesInfo[0].physicalDevice,*surface);
-    VkSurfaceFormatKHR      surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(*devicesInfo[0].physicalDevice,*surface);
+    VkSurfaceFormatKHR      surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
 
     if(extent.height==0&&extent.width==0){
-        extent = chooseSwapExtent(window, swapChainSupport.capabilities);
+        extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
     }
 
     if(MSAASamples != VK_SAMPLE_COUNT_1_BIT){
-        VkSampleCountFlagBits maxMSAASamples = getMaxUsableSampleCount(*devicesInfo[0].physicalDevice);
+        VkSampleCountFlagBits maxMSAASamples = PhysicalDevice::queryingSampleCount(*devicesInfo[0].physicalDevice);
         if(MSAASamples>maxMSAASamples)  MSAASamples = maxMSAASamples;
     }
 
@@ -290,9 +290,15 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex, VkComma
         if(enableBlur)              Blur.render(imageIndex,*commandBuffer);
         if(enableSSLR)              SSLR.render(imageIndex,*commandBuffer);
         if(enableSSAO)              SSAO.render(imageIndex,*commandBuffer);
-        if(enableTransparentLayers) LayersCombiner.render(imageIndex,*commandBuffer);
-        else{
-            transitionImageLayout(commandBuffer,deferredAttachments.bloom.image[imageIndex],VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+        if(enableTransparentLayers){
+                                    LayersCombiner.render(imageIndex,*commandBuffer);
+        } else {
+                                    Texture::transitionLayout( *commandBuffer,deferredAttachments.bloom.image[imageIndex],
+                                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                                               VK_REMAINING_MIP_LEVELS,
+                                                               0,
+                                                               1);
         }
         if(enableBloom)             Filter.render(imageIndex,*commandBuffer);
 
@@ -326,24 +332,27 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex)
 
 void deferredGraphicsInterface::updateBuffers(uint32_t imageIndex)
 {
-    cameraObject->updateUniformBuffer(devicesInfo[0].device,imageIndex);
-    Skybox.updateObjectUniformBuffer(imageIndex);
-    DeferredGraphics.updateObjectUniformBuffer(imageIndex);
-    DeferredGraphics.updateLightSourcesUniformBuffer(imageIndex);
+    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*devicesInfo[0].device,*devicesInfo[0].commandPool);
+    cameraObject->updateUniformBuffer(*devicesInfo[0].device, commandBuffer, imageIndex);
+    Skybox.updateObjectUniformBuffer(commandBuffer, imageIndex);
+    DeferredGraphics.updateObjectUniformBuffer(commandBuffer, imageIndex);
+    DeferredGraphics.updateLightSourcesUniformBuffer(commandBuffer, imageIndex);
+    SingleCommandBuffer::submit(*devicesInfo[0].device,*devicesInfo[0].queue,*devicesInfo[0].commandPool,&commandBuffer);
 }
 
 void deferredGraphicsInterface::createStorageBuffers(uint32_t imageCount)
 {
     storageBuffers.resize(imageCount);
     storageBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++)
-        createBuffer(   devicesInfo[0].physicalDevice,
-                        devicesInfo[0].device,
+    for (size_t i = 0; i < imageCount; i++){
+        Buffer::create( *devicesInfo[0].physicalDevice,
+                        *devicesInfo[0].device,
                         sizeof(StorageBufferObject),
                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        storageBuffers[i],
-                        storageBuffersMemory[i]);
+                        &storageBuffers[i],
+                        &storageBuffersMemory[i]);
+    }
 }
 
 void deferredGraphicsInterface::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
@@ -376,7 +385,11 @@ void deferredGraphicsInterface::setExtent(VkExtent2D extent)             {   thi
 void deferredGraphicsInterface::setExternalPath(const std::string &path) {   ExternalPath = path;}
 void deferredGraphicsInterface::setEmptyTexture(std::string ZERO_TEXTURE){
     this->emptyTexture = new texture(ZERO_TEXTURE);
-    emptyTexture->createTextureImage(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
+    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*devicesInfo[0].device,*devicesInfo[0].commandPool);
+    emptyTexture->createTextureImage(*devicesInfo[0].physicalDevice, *devicesInfo[0].device, commandBuffer);
+    SingleCommandBuffer::submit(*devicesInfo[0].device,*devicesInfo[0].queue,*devicesInfo[0].commandPool,&commandBuffer);
+    emptyTexture->destroyStagingBuffer(devicesInfo[0].device);
+
     emptyTexture->createTextureImageView(devicesInfo[0].device);
     emptyTexture->createTextureSampler(devicesInfo[0].device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
 
@@ -394,7 +407,10 @@ void deferredGraphicsInterface::setEmptyTexture(std::string ZERO_TEXTURE){
 }
 
 void deferredGraphicsInterface::createModel(gltfModel *pModel){
-    pModel->loadFromFile(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool,1.0f);
+    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*devicesInfo[0].device,*devicesInfo[0].commandPool);
+    pModel->loadFromFile(*devicesInfo[0].physicalDevice, *devicesInfo[0].device, commandBuffer);
+    SingleCommandBuffer::submit(*devicesInfo[0].device, *devicesInfo[0].queue, *devicesInfo[0].commandPool, &commandBuffer);
+    pModel->destroyStagingBuffer(*devicesInfo[0].device);
     pModel->createDescriptorPool(devicesInfo[0].device);
     pModel->createDescriptorSet(devicesInfo[0].device, emptyTexture);
 }
@@ -418,7 +434,9 @@ void deferredGraphicsInterface::removeCameraObject(camera* cameraObject){
 void deferredGraphicsInterface::bindLightSource(light* lightSource){
     QueueFamilyIndices indices{*devicesInfo[0].graphicsFamily,*devicesInfo[0].presentFamily};
     if(lightSource->getTexture()){
-        lightSource->getTexture()->createTextureImage(devicesInfo[0].physicalDevice,devicesInfo[0].device,devicesInfo[0].queue,devicesInfo[0].commandPool);
+        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*devicesInfo[0].device,*devicesInfo[0].commandPool);
+        lightSource->getTexture()->createTextureImage(*devicesInfo[0].physicalDevice, *devicesInfo[0].device, commandBuffer);
+        SingleCommandBuffer::submit(*devicesInfo[0].device,*devicesInfo[0].queue,*devicesInfo[0].commandPool,&commandBuffer);
         lightSource->getTexture()->createTextureImageView(devicesInfo[0].deviceInfo::device);
         lightSource->getTexture()->createTextureSampler(devicesInfo[0].device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
     }

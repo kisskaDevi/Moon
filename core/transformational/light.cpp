@@ -31,6 +31,11 @@ void spotLight::destroyUniformBuffers(VkDevice* device)
         if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
     }
     uniformBuffers.resize(0);
+    for(auto& buffer: uniformBuffersDevice){
+        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
+        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
+    }
+    uniformBuffersDevice.resize(0);
 }
 
 void spotLight::destroy(VkDevice* device)
@@ -137,17 +142,27 @@ void spotLight::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice*
 {
     uniformBuffers.resize(imageCount);
     for (auto& buffer: uniformBuffers){
-        createBuffer(   physicalDevice,
-                        device,
+       Buffer::create(  *physicalDevice,
+                        *device,
                         sizeof(LightBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        buffer.instance,
-                        buffer.memory);
+                        &buffer.instance,
+                        &buffer.memory);
+    }
+    uniformBuffersDevice.resize(imageCount);
+    for (auto& buffer: uniformBuffersDevice){
+       Buffer::create(  *physicalDevice,
+                        *device,
+                        sizeof(LightBufferObject),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        &buffer.instance,
+                        &buffer.memory);
     }
 }
 
-void spotLight::updateUniformBuffer(VkDevice* device, uint32_t frameNumber)
+void spotLight::updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber)
 {
     if(void* data; uniformBuffers[frameNumber].updateFlag){
         LightBufferObject buffer{};
@@ -157,11 +172,13 @@ void spotLight::updateUniformBuffer(VkDevice* device, uint32_t frameNumber)
             buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
             buffer.lightColor = lightColor;
             buffer.lightProp = glm::vec4(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
-        vkMapMemory(*device, uniformBuffers[frameNumber].memory, 0, sizeof(buffer), 0, &data);
+        vkMapMemory(device, uniformBuffers[frameNumber].memory, 0, sizeof(buffer), 0, &data);
             memcpy(data, &buffer, sizeof(buffer));
-        vkUnmapMemory(*device, uniformBuffers[frameNumber].memory);
+        vkUnmapMemory(device, uniformBuffers[frameNumber].memory);
 
         uniformBuffers[frameNumber].updateFlag = false;
+
+        Buffer::copy(commandBuffer, sizeof(LightBufferObject), uniformBuffers[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
     }
 }
 
@@ -235,7 +252,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
         uint32_t index = 0;
 
         VkDescriptorBufferInfo lightBufferInfo{};
-            lightBufferInfo.buffer = uniformBuffers[i].instance;
+            lightBufferInfo.buffer = uniformBuffersDevice[i].instance;
             lightBufferInfo.offset = 0;
             lightBufferInfo.range = sizeof(LightBufferObject);
         VkDescriptorImageInfo shadowImageInfo{};

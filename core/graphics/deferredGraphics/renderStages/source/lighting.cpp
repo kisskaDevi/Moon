@@ -160,10 +160,10 @@ void deferredGraphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer co
     }
 }
 
-void deferredGraphics::updateLightSourcesUniformBuffer(uint32_t imageIndex)
+void deferredGraphics::updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     for(auto lightSource: lighting.lightSources)
-        lightSource->updateUniformBuffer(device,imageIndex);
+        lightSource->updateUniformBuffer(*device, commandBuffer,imageIndex);
 }
 
 void deferredGraphics::updateLightCmd(uint32_t imageIndex)

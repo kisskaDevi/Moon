@@ -136,8 +136,8 @@ public:
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
 
-    void updateObjectUniformBuffer(uint32_t currentImage);
-    void updateLightSourcesUniformBuffer(uint32_t imageIndex);
+    void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
+    void updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     void bindBaseObject(object* newObject);
     bool removeBaseObject(object* object);

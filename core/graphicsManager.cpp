@@ -125,8 +125,8 @@ void graphicsManager::graphicsManager::pickPhysicalDevice()
 
     for (const auto& device : devices)
     {
-        std::vector<QueueFamilyIndices> indices = findQueueFamilies(device, surface);
-        if (indices.size()!=0 && isDeviceSuitable(device,surface,deviceExtensions))
+        std::vector<QueueFamilyIndices> indices = PhysicalDevice::findQueueFamilies(device, surface);
+        if (indices.size()!=0 && PhysicalDevice::isSuitable(device,surface,deviceExtensions))
         {
             physicalDevice currentDevice = {device,indices};
             physicalDevices.push_back(currentDevice);

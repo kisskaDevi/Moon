@@ -21,11 +21,11 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\outlining\\outliningVert.spv");
-    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\outlining\\outliningFrag.spv");
+    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\outlining\\outliningVert.spv");
+    auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\outlining\\outliningFrag.spv");
 
-    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+    VkShaderModule vertShaderModule = ShaderModule::create(device, vertShaderCode);
+    VkShaderModule fragShaderModule = ShaderModule::create(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;

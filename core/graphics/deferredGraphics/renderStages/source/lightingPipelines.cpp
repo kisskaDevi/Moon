@@ -8,10 +8,10 @@ void deferredGraphics::Lighting::createSpotPipeline(VkDevice* device, imageInfo*
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(vertShaderPath);
-    auto fragShaderCode = readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
+    auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
+    VkShaderModule vertShaderModule = ShaderModule::create(device, vertShaderCode);
+    VkShaderModule fragShaderModule = ShaderModule::create(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].pName = "main";
         shaderStages[index].module = fragShaderModule;

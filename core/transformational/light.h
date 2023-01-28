@@ -57,6 +57,7 @@ private:
         bool           updateFlag{true};
     };
     std::vector<buffer> uniformBuffers;
+    std::vector<buffer> uniformBuffersDevice;
 
     void updateModelMatrix();
 public:
@@ -95,7 +96,7 @@ public:
     VkCommandBuffer*    getShadowCommandBuffer(uint32_t imageCount) override;
 
     void                createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) override;
-    void                updateUniformBuffer(VkDevice* device, uint32_t frameNumber) override;
+    void                updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 
     void                createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath) override;
     void                updateShadowDescriptorSets() override;

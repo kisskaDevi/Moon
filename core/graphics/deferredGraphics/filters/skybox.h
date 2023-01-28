@@ -64,7 +64,7 @@ public:
     void bindObject(skyboxObject* newObject);
     bool removeObject(skyboxObject* object);
 
-    void updateObjectUniformBuffer(uint32_t currentImage);
+    void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
 };
 
 #endif // SKYBOX_H

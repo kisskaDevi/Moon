@@ -64,6 +64,7 @@ protected:
         bool updateFlag{true};
     };
     std::vector<buffer> uniformBuffers;
+    std::vector<buffer> uniformBuffersDevice;
 
 public:
     object();
@@ -78,7 +79,7 @@ public:
     std::vector<VkDescriptorSet>&   getDescriptorSet();
 
     void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
-    void updateUniformBuffer(VkDevice* device, uint32_t currentImage);
+    void updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber);
     void updateAnimation(uint32_t imageNumber);
 
     void                setGlobalTransform(const glm::mat4& transform);

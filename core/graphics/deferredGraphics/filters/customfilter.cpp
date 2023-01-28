@@ -49,33 +49,37 @@ void customFilter::createBufferAttachments()
     bufferAttachment.resize(image.Count);
     for(size_t imageNumber=0; imageNumber<image.Count; imageNumber++)
     {
-        createImage(            physicalDevice,
-                                device,
-                                image.Extent.width,
-                                image.Extent.height,
-                                1,
-                                VK_SAMPLE_COUNT_1_BIT,
-                                image.Format,
-                                VK_IMAGE_TILING_OPTIMAL,
-                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT ,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                bufferAttachment.image[imageNumber],
-                                bufferAttachment.imageMemory[imageNumber]);
+        Texture::create(    *physicalDevice,
+                            *device,
+                            0,
+                            {image.Extent.width,image.Extent.height,1},
+                            1,
+                            1,
+                            VK_SAMPLE_COUNT_1_BIT,
+                            image.Format,
+                            VK_IMAGE_LAYOUT_UNDEFINED,
+                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                            &bufferAttachment.image[imageNumber],
+                            &bufferAttachment.imageMemory[imageNumber]);
 
-        bufferAttachment.imageView[imageNumber] =
-        createImageView(        device,
-                                bufferAttachment.image[imageNumber],
+        Texture::createView(    *device,
+                                VK_IMAGE_VIEW_TYPE_2D,
                                 image.Format,
                                 VK_IMAGE_ASPECT_COLOR_BIT,
-                                1);
-
-        transitionImageLayout(  device,
-                                graphicsQueue,
-                                commandPool,
+                                1,
+                                0,
+                                1,
                                 bufferAttachment.image[imageNumber],
-                                VK_IMAGE_LAYOUT_UNDEFINED,
-                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                VK_REMAINING_MIP_LEVELS);
+                                &bufferAttachment.imageView[imageNumber]);
+
+        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*device, *commandPool);
+        Texture::transitionLayout( commandBuffer,
+                                   bufferAttachment.image[imageNumber],
+                                   VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                   VK_REMAINING_MIP_LEVELS, 0, 1);
+        SingleCommandBuffer::submit(*device, *graphicsQueue, *commandPool, &commandBuffer);
     }
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -225,10 +229,10 @@ void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, Vk
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\customFilter\\customFilterVert.spv");
-    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\customFilter\\customFilterFrag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\customFilter\\customFilterVert.spv");
+    auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\customFilter\\customFilterFrag.spv");
+    VkShaderModule vertShaderModule = ShaderModule::create(device, vertShaderCode);
+    VkShaderModule fragShaderModule = ShaderModule::create(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -460,12 +464,12 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
     uint32_t height = image.Extent.height;
 
     for(uint32_t k=0;k<attachmentsCount;k++){
-        transitionImageLayout(&commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+        Texture::transitionLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
         vkCmdClearColorImage(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
-        blitDown(&commandBuffer,blitImages[k],blitBufferImage,width,height,blitFactor);
-        transitionImageLayout(&commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+        Texture::blitDown(commandBuffer,blitImages[k],0,blitBufferImage,0,width,height,0,1,blitFactor);
+        Texture::transitionLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
         render(frameNumber,commandBuffer,k);
     }
     for(uint32_t k=0;k<attachmentsCount;k++)
-        transitionImageLayout(&commandBuffer,pAttachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS);
+        Texture::transitionLayout(commandBuffer,pAttachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
 }

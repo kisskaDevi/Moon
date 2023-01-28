@@ -79,11 +79,11 @@ void postProcessingGraphics::setExternalPath(const std::string &path)
     postProcessing.ExternalPath = path;
 }
 
-void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface)
+void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface)
 {
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkExtent2D extent = chooseSwapExtent(window, swapChainSupport.capabilities);
+    VkPresentModeKHR presentMode = SwapChain::queryingPresentMode(swapChainSupport.presentModes);
+    VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
+    VkExtent2D extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
 
     QueueFamilyIndices indices = queueFamilyIndices;
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -125,12 +125,15 @@ void postProcessingGraphics::createSwapChainAttachments(VkSwapchainKHR* swapChai
 
     for(size_t i=0;i<swapChainAttachments.size();i++)
         for (size_t size = 0; size < swapChainAttachments[i].imageView.size(); size++)
-            swapChainAttachments[i].imageView[size] =
-            createImageView(    device,
-                                swapChainAttachments[i].image[size],
-                                image.Format,
-                                VK_IMAGE_ASPECT_COLOR_BIT,
-                                1);
+            Texture::createView(    *device,
+                                    VK_IMAGE_VIEW_TYPE_2D,
+                                    image.Format,
+                                    VK_IMAGE_ASPECT_COLOR_BIT,
+                                    1,
+                                    0,
+                                    1,
+                                    swapChainAttachments[i].image[size],
+                                    &swapChainAttachments[i].imageView[size]);
 }
 
 void postProcessingGraphics::createRenderPass()
@@ -251,10 +254,10 @@ void postProcessingGraphics::createPipelines()
             specializationInfo.pData = &specializationData;
 
         uint32_t index = 0;
-        auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingVert.spv");
-        auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingFrag.spv");
-        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+        auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingVert.spv");
+        auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\postProcessing\\postProcessingFrag.spv");
+        VkShaderModule vertShaderModule = ShaderModule::create(device, vertShaderCode);
+        VkShaderModule fragShaderModule = ShaderModule::create(device, fragShaderCode);
         std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
             shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;

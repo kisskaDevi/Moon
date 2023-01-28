@@ -255,6 +255,11 @@ struct gltfModel
         VkDeviceMemory memory;
     } indices;
 
+    struct StagingBuffer {
+        VkBuffer buffer;
+        VkDeviceMemory memory;
+    } vertexStaging, indexStaging;
+
     VkDescriptorSetLayout           nodeDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSetLayout           materialDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool                DescriptorPool = VK_NULL_HANDLE;
@@ -280,15 +285,16 @@ struct gltfModel
     gltfModel(std::string filename);
 
     void destroy(VkDevice* device);
+    void destroyStagingBuffer(VkDevice device);
     void loadNode(VkPhysicalDevice* physicalDevice, VkDevice* device, Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale);
     void loadSkins(tinygltf::Model& gltfModel);
-    void loadTextures(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, tinygltf::Model& gltfModel);
+    void loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel);
     VkSamplerAddressMode getVkWrapMode(int32_t wrapMode);
     VkFilter getVkFilterMode(int32_t filterMode);
     void loadTextureSamplers(tinygltf::Model& gltfModel);
     void loadMaterials(tinygltf::Model& gltfModel);
     void loadAnimations(tinygltf::Model& gltfModel);
-    void loadFromFile(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, float scale = 1.0f);
+    void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
     void calculateBoundingBox(Node* node, Node* parent);
     void getSceneDimensions();
     void updateAnimation(uint32_t index, float time);

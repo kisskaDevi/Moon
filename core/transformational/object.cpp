@@ -22,6 +22,10 @@ void object::destroyUniformBuffers(VkDevice* device)
         if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
         if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
     }
+    for(auto& buffer: uniformBuffersDevice){
+        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
+        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
+    }
 }
 
 void object::destroy(VkDevice* device)
@@ -103,30 +107,42 @@ void object::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* de
 {
     uniformBuffers.resize(imageCount);
     for (auto& buffer: uniformBuffers){
-        createBuffer(   physicalDevice,
-                        device,
+      Buffer::create(   *physicalDevice,
+                        *device,
                         sizeof(UniformBuffer),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        buffer.instance,
-                        buffer.memory);
+                        &buffer.instance,
+                        &buffer.memory);
+    }
+    uniformBuffersDevice.resize(imageCount);
+    for (auto& buffer: uniformBuffersDevice){
+      Buffer::create(   *physicalDevice,
+                        *device,
+                        sizeof(UniformBuffer),
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        &buffer.instance,
+                        &buffer.memory);
     }
 }
 
-void object::updateUniformBuffer(VkDevice* device, uint32_t currentImage)
+void object::updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber)
 {
-    if(void* data; uniformBuffers[currentImage].updateFlag){
+    if(void* data; uniformBuffers[frameNumber].updateFlag){
         UniformBuffer ubo{};
             ubo.modelMatrix = modelMatrix;
             ubo.constantColor = constantColor;
             ubo.colorFactor = colorFactor;
             ubo.bloomColor = bloomColor;
             ubo.bloomFactor = bloomFactor;
-        vkMapMemory(*device, uniformBuffers[currentImage].memory, 0, sizeof(ubo), 0, &data);
+        vkMapMemory(device, uniformBuffers[frameNumber].memory, 0, sizeof(ubo), 0, &data);
             memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(*device, uniformBuffers[currentImage].memory);
+        vkUnmapMemory(device, uniformBuffers[frameNumber].memory);
 
-        uniformBuffers[currentImage].updateFlag = false;
+        uniformBuffers[frameNumber].updateFlag = false;
+
+        Buffer::copy(commandBuffer, sizeof(UniformBuffer), uniformBuffers[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
     }
 }
 
@@ -160,7 +176,7 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i].instance;
+            bufferInfo.buffer = uniformBuffersDevice[i].instance;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBuffer);
 
@@ -251,9 +267,12 @@ void skyboxObject::translate(const glm::vec3 &translate)
 }
 
 void skyboxObject::createTexture(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* queue, VkCommandPool* commandPool){
-    texture->createTextureImage(physicalDevice, device, queue, commandPool);
+    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*device,*commandPool);
+    texture->createTextureImage(*physicalDevice, *device, commandBuffer);
+    SingleCommandBuffer::submit(*device, *queue, *commandPool, &commandBuffer);
     texture->createTextureImageView(device);
     texture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+    texture->destroyStagingBuffer(device);
 }
 
 void skyboxObject::destroyTexture(VkDevice* device){

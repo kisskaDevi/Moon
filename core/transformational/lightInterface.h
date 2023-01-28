@@ -28,7 +28,7 @@ public:
     virtual VkCommandBuffer* getShadowCommandBuffer(uint32_t imageCount) = 0;
 
     virtual void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) = 0;
-    virtual void updateUniformBuffer(VkDevice* device, uint32_t frameNumber) = 0;
+    virtual void updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
 
     virtual void createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath) = 0;
     virtual void updateShadowDescriptorSets() = 0;

@@ -13,7 +13,7 @@ class GLFWwindow;
 class texture;
 
 struct postProcessingPushConst{
-    alignas(4) float                blitFactor;
+    alignas(4) float                    blitFactor;
 };
 
 class postProcessingGraphics
@@ -66,7 +66,7 @@ public:
     void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily);
     void setImageProp(imageInfo* pInfo);
 
-    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChainSupportDetails swapChainSupport, VkSurfaceKHR* surface);
+    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface);
     void createSwapChainAttachments(VkSwapchainKHR* swapChain);
     void createRenderPass();
     void createFramebuffers();

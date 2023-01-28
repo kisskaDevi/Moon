@@ -83,5 +83,5 @@ void main()
 {
     outColor = vec4(0.0f);
 
-    outColor += SSLR(20,0.25f,0.01);
+    outColor += SSLR(20,0.15f,0.01);
 }

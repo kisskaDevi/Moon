@@ -5,284 +5,202 @@
 
 #include <vector>
 #include <string>
-#include <optional> // нужна для вызова std::optional<uint32_t>
+#include <optional>
 
 class GLFWwindow;
 
-struct SwapChainSupportDetails{
-    VkSurfaceCapabilitiesKHR        capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>   presentModes;
-};
-
 struct QueueFamilyIndices
 {
-    std::optional<uint32_t>         graphicsFamily;                     //графикческое семейство очередей
-    std::optional<uint32_t>         presentFamily;                      //семейство очередей показа
-    bool isComplete()                                                   //если оба значения не пусты, а были записаны, выводит true
-    {return graphicsFamily.has_value() && presentFamily.has_value();}
-    //std::optional это оболочка, которая не содержит значения, пока вы ей что-то не присвоите.
-    //В любой момент вы можете запросить, содержит ли он значение или нет, вызвав его has_value()функцию-член.
+    std::optional<uint32_t>         graphicsFamily;
+    std::optional<uint32_t>         presentFamily;
+    bool isComplete(){return graphicsFamily.has_value() && presentFamily.has_value();}
 };
 
-//bufferOperations
+namespace PhysicalDevice {
 
-uint32_t findMemoryType(
-        VkPhysicalDevice                physicalDevice,
-        uint32_t                        typeFilter,
-        VkMemoryPropertyFlags           properties);
+    void printMemoryProperties(
+            VkPhysicalDeviceMemoryProperties memoryProperties);
 
-void createBuffer(
-        VkPhysicalDevice*               physicalDevice,
-        VkDevice*                       device,
-        VkDeviceSize                    size,
-        VkBufferUsageFlags              usage,
-        VkMemoryPropertyFlags           properties,
-        VkBuffer&                       buffer,
-        VkDeviceMemory&                 bufferMemory);
+    uint32_t findMemoryTypeIndex(
+            VkPhysicalDevice                physicalDevice,
+            uint32_t                        memoryTypeBits,
+            VkMemoryPropertyFlags           properties);
 
-VkCommandBuffer beginSingleTimeCommands(
-        VkDevice*                       device,
-        VkCommandPool*                  commandPool);
+    std::vector<QueueFamilyIndices> findQueueFamilies(
+            VkPhysicalDevice                device,
+            VkSurfaceKHR                    surface);
 
-void endSingleTimeCommands(
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkCommandBuffer*                commandBuffer);
+    VkSampleCountFlagBits queryingSampleCount(
+            VkPhysicalDevice                device);
 
-void copyBuffer(
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkBuffer                        srcBuffer,
-        VkBuffer                        dstBuffer,
-        VkDeviceSize                    size);
+    bool isSuitable(
+            VkPhysicalDevice                device,
+            VkSurfaceKHR                    surface,
+            const std::vector<const char*>& deviceExtensions);
 
-//textureOperations
+    bool isExtensionsSupport(
+            VkPhysicalDevice                device,
+            const std::vector<const char*>& deviceExtensions);
+}
 
-void createImage(
-        VkPhysicalDevice*               physicalDevice,
-        VkDevice*                       device,
-        uint32_t                        width,
-        uint32_t                        height,
-        uint32_t                        mipLevels,
-        VkSampleCountFlagBits           numSamples,
-        VkFormat                        format,
-        VkImageTiling                   tiling,
-        VkImageUsageFlags               usage,
-        VkMemoryPropertyFlags           properties,
-        VkImage&                        image,
-        VkDeviceMemory&                 imageMemory);
+namespace Buffer{
 
-void createImage(
-        VkPhysicalDevice*               physicalDevice,
-        VkDevice*                       device,
-        uint32_t                        width,
-        uint32_t                        height,
-        uint32_t                        mipLevels,
-        VkSampleCountFlagBits           numSamples,
-        VkFormat                        format,
-        VkImageTiling                   tiling,
-        VkImageUsageFlags               usage,
-        VkMemoryPropertyFlags           properties,
-        VkImageLayout                   layout,
-        VkImage&                        image,
-        VkDeviceMemory&                 imageMemory);
+    VkResult create(
+            VkPhysicalDevice                physicalDevice,
+            VkDevice                        device,
+            VkDeviceSize                    size,
+            VkBufferUsageFlags              usage,
+            VkMemoryPropertyFlags           properties,
+            VkBuffer*                       buffer,
+            VkDeviceMemory*                 bufferMemory);
 
-void generateMipmaps(
-        VkPhysicalDevice*               physicalDevice,
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkImage                         image,
-        VkFormat                        imageFormat,
-        int32_t                         texWidth,
-        int32_t                         texHeight,
-        uint32_t                        mipLevels);
+    void copy(
+            VkCommandBuffer                 commandBuffer,
+            VkDeviceSize                    size,
+            VkBuffer                        srcBuffer,
+            VkBuffer                        dstBuffer);
+}
 
-void generateMipmaps(
-        VkCommandBuffer*                commandBuffer,
-        VkImage                         image,
-        int32_t                         texWidth,
-        int32_t                         texHeight,
-        uint32_t                        mipLevels);
+namespace Texture {
 
-void transitionImageLayout(
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkImage                         image,
-        VkImageLayout                   oldLayout,
-        VkImageLayout                   newLayout,
-        uint32_t                        mipLevels);
+    void transitionLayout(
+            VkCommandBuffer                 commandBuffer,
+            VkImage                         image,
+            VkImageLayout                   oldLayout,
+            VkImageLayout                   newLayout,
+            uint32_t                        mipLevels,
+            uint32_t                        baseArrayLayer,
+            uint32_t                        arrayLayers);
 
+    void copyFromBuffer(
+            VkCommandBuffer                 commandBuffer,
+            VkBuffer                        buffer,
+            VkImage                         image,
+            VkExtent3D                      extent,
+            uint32_t                        layerCount);
 
-void transitionImageLayout(
-        VkCommandBuffer*                commandBuffer,
-        VkImage                         image,
-        VkImageLayout                   oldLayout,
-        VkImageLayout                   newLayout,
-        uint32_t                        mipLevels);
+    VkResult create(
+            VkPhysicalDevice                physicalDevice,
+            VkDevice                        device,
+            VkImageCreateFlags              flags,
+            VkExtent3D                      extent,
+            uint32_t                        arrayLayers,
+            uint32_t                        mipLevels,
+            VkSampleCountFlagBits           numSamples,
+            VkFormat                        format,
+            VkImageLayout                   layout,
+            VkImageUsageFlags               usage,
+            VkMemoryPropertyFlags           properties,
+            VkImage*                        image,
+            VkDeviceMemory*                 imageMemory);
 
-void blitDown(
-        VkCommandBuffer*                commandBuffer,
-        VkImage                         srcImage,
-        VkImage                         dstImage,
-        uint32_t                        width,
-        uint32_t                        height,
-        float                           blitFactor);
+    VkResult createView(
+            VkDevice                        device,
+            VkImageViewType                 type,
+            VkFormat                        format,
+            VkImageAspectFlags              aspectFlags,
+            uint32_t                        mipLevels,
+            uint32_t                        baseArrayLayer,
+            uint32_t                        layerCount,
+            VkImage                         image,
+            VkImageView*                    imageView);
 
-void blitUp(
-        VkCommandBuffer*                commandBuffer,
-        VkImage                         srcImage,
-        VkImage                         dstImage,
-        uint32_t                        width,
-        uint32_t                        height,
-        float                           blitFactor);
+    void generateMipmaps(
+            VkPhysicalDevice                physicalDevice,
+            VkCommandBuffer                 commandBuffer,
+            VkImage                         image,
+            VkFormat                        imageFormat,
+            int32_t                         texWidth,
+            int32_t                         texHeight,
+            uint32_t                        mipLevels,
+            uint32_t                        baseArrayLayer,
+            uint32_t                        layerCount);
 
-void copyBufferToImage(
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkBuffer                        buffer,
-        VkImage                         image,
-        uint32_t                        width,
-        uint32_t                        height);
+    void blitDown(
+            VkCommandBuffer                 commandBuffer,
+            VkImage                         srcImage,
+            uint32_t                        srcMipLevel,
+            VkImage                         dstImage,
+            uint32_t                        dstMipLevel,
+            uint32_t                        width,
+            uint32_t                        height,
+            uint32_t                        baseArrayLayer,
+            uint32_t                        layerCount,
+            float                           blitFactor);
 
-VkImageView createImageView(
-        VkDevice*                       device,
-        VkImage                         image,
-        VkFormat                        format,
-        VkImageAspectFlags              aspectFlags,
-        uint32_t                        mipLevels);
+    void blitUp(
+            VkCommandBuffer                 commandBuffer,
+            VkImage                         srcImage,
+            uint32_t                        srcMipLevel,
+            VkImage                         dstImage,
+            uint32_t                        dstMipLevel,
+            uint32_t                        width,
+            uint32_t                        height,
+            uint32_t                        baseArrayLayer,
+            uint32_t                        layerCount,
+            float                           blitFactor);
+}
 
-void createImageView(
-        VkDevice*                       device,
-        VkImage                         image,
-        VkFormat                        format,
-        VkImageAspectFlags              aspectFlags,
-        uint32_t                        mipLevels,
-        VkImageView*                    imageView);
+namespace SingleCommandBuffer {
 
+    VkCommandBuffer create(
+            VkDevice                        device,
+            VkCommandPool                   commandPool);
 
-//cubeTextureOperations
+    VkResult submit(
+            VkDevice                        device,
+            VkQueue                         queue,
+            VkCommandPool                   commandPool,
+            VkCommandBuffer*                commandBuffer);
+}
 
-void createCubeImage(
-        VkPhysicalDevice*               physicalDevice,
-        VkDevice*                       device,
-        uint32_t                        width,
-        uint32_t                        height,
-        uint32_t                        mipLevels,
-        VkSampleCountFlagBits           numSamples,
-        VkFormat                        format,
-        VkImageTiling                   tiling,
-        VkImageUsageFlags               usage,
-        VkMemoryPropertyFlags           properties,
-        VkImage&                        image,
-        VkDeviceMemory&                 imageMemory);
+namespace SwapChain {
 
-VkImageView createCubeImageView(
-        VkDevice*                       device,
-        VkImage                         image,
-        VkFormat                        format,
-        VkImageAspectFlags              aspectFlags,
-        uint32_t                        mipLevels);
+    struct SupportDetails{
+        VkSurfaceCapabilitiesKHR        capabilities{};
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR>   presentModes;
+        bool isNotEmpty(){return !formats.empty() && !presentModes.empty();}
+    };
 
-void transitionImageLayout(
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkImage                         image,
-        VkFormat                        format,
-        VkImageLayout                   oldLayout,
-        VkImageLayout                   newLayout,
-        uint32_t                        mipLevels,
-        uint32_t                        baseArrayLayer);
+    SupportDetails queryingSupport(
+        VkPhysicalDevice                            device,
+        VkSurfaceKHR                                surface);
 
-void copyBufferToImage(
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkBuffer                        buffer,
-        VkImage                         image,
-        uint32_t                        width,
-        uint32_t                        height,
-        uint32_t                        baseArrayLayer);
+    VkSurfaceFormatKHR queryingSurfaceFormat(
+            const std::vector<VkSurfaceFormatKHR>&  availableFormats);
 
-void generateMipmaps(
-        VkPhysicalDevice*               physicalDevice,
-        VkDevice*                       device,
-        VkQueue*                        queue,
-        VkCommandPool*                  commandPool,
-        VkImage                         image,
-        VkFormat                        imageFormat,
-        int32_t                         texWidth,
-        int32_t                         texHeight,
-        uint32_t                        mipLevels,
-        uint32_t                        baseArrayLayer);
+    VkPresentModeKHR queryingPresentMode(
+            const std::vector<VkPresentModeKHR>&    availablePresentModes);
 
-//depthAttachmentsOperations
+    VkExtent2D queryingExtent(
+            GLFWwindow* window,
+            const VkSurfaceCapabilitiesKHR&         capabilities);
+}
 
-bool hasStencilComponent(
-        VkFormat                        format);
+namespace Image{
 
-VkFormat findDepthFormat(
-        VkPhysicalDevice*               physicalDevice);
+    VkFormat supportedFormat(
+            VkPhysicalDevice                physicalDevice,
+            const std::vector<VkFormat>&    candidates,
+            VkImageTiling                   tiling,
+            VkFormatFeatureFlags            features);
 
-VkFormat findDepthStencilFormat(
-        VkPhysicalDevice*               physicalDevice);
+    VkFormat depthStencilFormat(
+            VkPhysicalDevice                physicalDevice);
+}
 
-VkFormat findSupportedFormat(
-        VkPhysicalDevice*               physicalDevice,
-        const std::vector<VkFormat>&    candidates,
-        VkImageTiling                   tiling,
-        VkFormatFeatureFlags            features);
+namespace ShaderModule {
 
-//shadersOperations
+    std::vector<char> readFile(
+            const std::string&              filename);
 
-std::vector<char> readFile(
-        const std::string&              filename);
+    VkShaderModule create(
+            VkDevice*                       device,
+            const std::vector<char>&        code);
+}
 
-VkShaderModule createShaderModule(
-        VkDevice*                       device,
-        const std::vector<char>&        code);
-
-//deviceOperations
-
-std::vector<QueueFamilyIndices> findQueueFamilies(
-        VkPhysicalDevice                device,
-        VkSurfaceKHR                    surface);
-
-VkSampleCountFlagBits getMaxUsableSampleCount(
-        VkPhysicalDevice                device);
-
-bool isDeviceSuitable(
-        VkPhysicalDevice                device,
-        VkSurfaceKHR                    surface,
-        const std::vector<const char*>& deviceExtensions);
-
-bool checkDeviceExtensionSupport(
-        VkPhysicalDevice                device,
-        const std::vector<const char*>& deviceExtensions);
-
-SwapChainSupportDetails querySwapChainSupport(
-        VkPhysicalDevice                device,
-        VkSurfaceKHR                    surface);
-
-//imageProp
-
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-        const std::vector<VkSurfaceFormatKHR>&  availableFormats);
-
-VkPresentModeKHR chooseSwapPresentMode(
-        const std::vector<VkPresentModeKHR>&    availablePresentModes);
-
-VkExtent2D chooseSwapExtent(
-        GLFWwindow* window,
-        const VkSurfaceCapabilitiesKHR&         capabilities);
-
-//decriptorSetLayout
+//  decriptorSetLayout
 
 void createObjectDescriptorSetLayout(
         VkDevice*                       device,

@@ -30,6 +30,7 @@ protected:
         bool           updateFlag{true};
     };
     std::vector<buffer>     uniformBuffers;
+    std::vector<buffer>     uniformBuffersDevice;
 
     void updateViewMatrix();
 public:
@@ -52,7 +53,7 @@ public:
 
     void destroyUniformBuffers(VkDevice* device);
     void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
-    void updateUniformBuffer(VkDevice* device, uint32_t currentImage);
+    void updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber);
 
     VkBuffer                getBuffer(uint32_t index)const;
     glm::vec3               getTranslation()const;

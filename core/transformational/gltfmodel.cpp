@@ -58,13 +58,13 @@ void Primitive::setBoundingBox(glm::vec3 min, glm::vec3 max)
 Mesh::Mesh(VkPhysicalDevice* physicalDevice, VkDevice* device, glm::mat4 matrix)
 {
     this->uniformBlock.matrix = matrix;
-    createBuffer(   physicalDevice,
-                    device,
+    Buffer::create( *physicalDevice,
+                    *device,
                     sizeof(uniformBlock),
                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                    uniformBuffer.buffer,
-                    uniformBuffer.memory);
+                    &uniformBuffer.buffer,
+                    &uniformBuffer.memory);
     vkMapMemory(*device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.mapped);
     uniformBuffer.descriptor = { uniformBuffer.buffer, 0, sizeof(uniformBlock) };
 };
@@ -154,6 +154,8 @@ gltfModel::gltfModel(std::string filename)
 
 void gltfModel::destroy(VkDevice* device)
 {
+    destroyStagingBuffer(*device);
+
     if(DescriptorPool != VK_NULL_HANDLE){
         vkDestroyDescriptorPool(*device, DescriptorPool, nullptr);
         DescriptorPool = VK_NULL_HANDLE;
@@ -201,6 +203,20 @@ void gltfModel::destroy(VkDevice* device)
     }
     skins.resize(0);
 };
+
+void gltfModel::destroyStagingBuffer(VkDevice device)
+{
+    for(auto& texture: textures){
+        texture.destroyStagingBuffer(&device);
+    }
+
+    if(vertexStaging.buffer) {vkDestroyBuffer(device, vertexStaging.buffer, nullptr); vertexStaging.buffer = VK_NULL_HANDLE;}
+    if(vertexStaging.memory) {vkFreeMemory(device, vertexStaging.memory, nullptr); vertexStaging.memory = VK_NULL_HANDLE;}
+    if (indices.count > 0) {
+        if(indexStaging.buffer) {vkDestroyBuffer(device, indexStaging.buffer, nullptr); indexStaging.buffer = VK_NULL_HANDLE;}
+        if(indexStaging.memory) {vkFreeMemory(device, indexStaging.memory, nullptr); indexStaging.memory = VK_NULL_HANDLE;}
+    }
+}
 
 void gltfModel::loadNode(VkPhysicalDevice* physicalDevice, VkDevice* device, Node *parent, const tinygltf::Node &node, uint32_t nodeIndex, const tinygltf::Model &model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale)
 {
@@ -449,7 +465,7 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel)
     }
 }
 
-void gltfModel::loadTextures(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, tinygltf::Model& gltfModel)
+void gltfModel::loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel)
 {
     for(tinygltf::Texture &tex : gltfModel.textures)
     {
@@ -468,11 +484,10 @@ void gltfModel::loadTextures(VkPhysicalDevice* physicalDevice, VkDevice* device,
         {
             TextureSampler = textureSamplers[tex.sampler];
         }
-        texture Texture;
-        Texture.createTextureImage(physicalDevice,device,graphicsQueue,commandPool,image);
-        Texture.createTextureImageView(device);
-        Texture.createTextureSampler(device,TextureSampler);
-        textures.push_back(Texture);
+        textures.emplace_back(texture{});
+        textures.back().createTextureImage(physicalDevice,device,commandBuffer,image);
+        textures.back().createTextureImageView(&device);
+        textures.back().createTextureSampler(&device,TextureSampler);
     }
 }
 
@@ -723,7 +738,7 @@ void gltfModel::loadAnimations(tinygltf::Model &gltfModel)
     }
 }
 
-void gltfModel::loadFromFile(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, float scale)
+void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
 {
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
@@ -744,14 +759,14 @@ void gltfModel::loadFromFile(VkPhysicalDevice* physicalDevice, VkDevice* device,
     if (fileLoaded)
     {
         loadTextureSamplers(gltfModel);
-        loadTextures(physicalDevice,device,graphicsQueue,commandPool,gltfModel);
+        loadTextures(physicalDevice,device,commandBuffer,gltfModel);
         loadMaterials(gltfModel);
 
         // TODO: scene handling with no default scene
         const tinygltf::Scene &scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
         for (size_t i = 0; i < scene.nodes.size(); i++) {
             const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
-            loadNode(physicalDevice, device, nullptr, node, scene.nodes[i], gltfModel, indexBuffer, vertexBuffer, scale);
+            loadNode(&physicalDevice, &device, nullptr, node, scene.nodes[i], gltfModel, indexBuffer, vertexBuffer, 1.0f);
         }
         if (gltfModel.animations.size() > 0) {
             loadAnimations(gltfModel);
@@ -785,43 +800,24 @@ void gltfModel::loadFromFile(VkPhysicalDevice* physicalDevice, VkDevice* device,
 
     assert(vertexBufferSize > 0);
 
-    struct StagingBuffer {
-        VkBuffer buffer;
-        VkDeviceMemory memory;
-    } vertexStaging, indexStaging;
-
-    // Create staging buffers
-    // Vertex data
-    createBuffer(physicalDevice,device,vertexBufferSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,vertexStaging.buffer,vertexStaging.memory);
-    // Index data
-    createBuffer(physicalDevice,device,indexBufferSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,indexStaging.buffer,indexStaging.memory);
+    Buffer::create(physicalDevice, device,vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &vertexStaging.buffer, &vertexStaging.memory);
+    Buffer::create(physicalDevice, device,indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &indexStaging.buffer, &indexStaging.memory);
 
     void* data;
-    vkMapMemory(*device, vertexStaging.memory, 0, vertexBufferSize, 0, &data);
+    vkMapMemory(device, vertexStaging.memory, 0, vertexBufferSize, 0, &data);
         memcpy(data, vertexBuffer.data(), (size_t) vertexBufferSize);
-    vkUnmapMemory(*device, vertexStaging.memory);
+    vkUnmapMemory(device, vertexStaging.memory);
 
     void* indexdata;
-    vkMapMemory(*device, indexStaging.memory, 0, indexBufferSize, 0, &indexdata);
+    vkMapMemory(device, indexStaging.memory, 0, indexBufferSize, 0, &indexdata);
         memcpy(indexdata, indexBuffer.data(), (size_t) indexBufferSize);
-    vkUnmapMemory(*device, indexStaging.memory);
+    vkUnmapMemory(device, indexStaging.memory);
 
-    // Create device local buffers
-    // Vertex buffer
-    createBuffer(physicalDevice,device,vertexBufferSize,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,vertices.buffer,vertices.memory);
-    // Index buffer
-    createBuffer(physicalDevice,device,indexBufferSize,VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,indices.buffer,indices.memory);
+    Buffer::create(physicalDevice, device,vertexBufferSize,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &vertices.buffer, &vertices.memory);
+    Buffer::create(physicalDevice, device,indexBufferSize,VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &indices.buffer, &indices.memory);
 
-    // Copy from staging buffers
-    copyBuffer(device, graphicsQueue, commandPool, vertexStaging.buffer, vertices.buffer, vertexBufferSize);
-    copyBuffer(device, graphicsQueue, commandPool, indexStaging.buffer, indices.buffer, indexBufferSize);
-
-    vkDestroyBuffer(*device, vertexStaging.buffer, nullptr);
-    vkFreeMemory(*device, vertexStaging.memory, nullptr);
-    if (indexBufferSize > 0) {
-        vkDestroyBuffer(*device, indexStaging.buffer, nullptr);
-        vkFreeMemory(*device, indexStaging.memory, nullptr);
-    }
+    Buffer::copy(commandBuffer, vertexBufferSize, vertexStaging.buffer, vertices.buffer);
+    Buffer::copy(commandBuffer, indexBufferSize, indexStaging.buffer, indices.buffer);
 
     getSceneDimensions();
 }

@@ -56,25 +56,29 @@ void attachments::create(VkPhysicalDevice* physicalDevice, VkDevice* device, VkF
     clearValue.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
     for(size_t Image=0; Image<count; Image++)
     {
-        createImage(        physicalDevice,
-                            device,
-                            extent.width,
-                            extent.height,
+        Texture::create(    *physicalDevice,
+                            *device,
+                            0,
+                            {extent.width,extent.height,1},
+                            1,
                             1,
                             VK_SAMPLE_COUNT_1_BIT,
                             format,
-                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_LAYOUT_UNDEFINED,
                             usage,
                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            image[Image],
-                            imageMemory[Image]);
+                            &image[Image],
+                            &imageMemory[Image]);
 
-        createImageView(    device,
-                            image[Image],
-                            format,
-                            VK_IMAGE_ASPECT_COLOR_BIT,
-                            1,
-                            &imageView[Image]);
+        Texture::createView(    *device,
+                                VK_IMAGE_VIEW_TYPE_2D,
+                                format,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                1,
+                                0,
+                                1,
+                                image[Image],
+                                &imageView[Image]);
     }
 }
 
@@ -85,25 +89,29 @@ void attachments::createDepth(VkPhysicalDevice* physicalDevice, VkDevice* device
     clearValue.depthStencil = {1.0f, 0};
     for(size_t Image=0; Image<count; Image++)
     {
-        createImage(        physicalDevice,
-                            device,
-                            extent.width,
-                            extent.height,
+        Texture::create(    *physicalDevice,
+                            *device,
+                            0,
+                            {extent.width,extent.height,1},
+                            1,
                             1,
                             VK_SAMPLE_COUNT_1_BIT,
                             format,
-                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_LAYOUT_UNDEFINED,
                             usage,
                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            image[Image],
-                            imageMemory[Image]);
+                            &image[Image],
+                            &imageMemory[Image]);
 
-        createImageView(    device,
-                            image[Image],
-                            format,
-                            VK_IMAGE_ASPECT_DEPTH_BIT,
-                            1,
-                            &imageView[Image]);
+        Texture::createView(    *device,
+                                VK_IMAGE_VIEW_TYPE_2D,
+                                format,
+                                VK_IMAGE_ASPECT_DEPTH_BIT,
+                                1,
+                                0,
+                                1,
+                                image[Image],
+                                &imageView[Image]);
     }
 }
 

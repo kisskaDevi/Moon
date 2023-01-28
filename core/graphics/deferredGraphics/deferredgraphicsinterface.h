@@ -45,14 +45,14 @@ private:
     layersCombiner                              LayersCombiner;
     postProcessingGraphics                      PostProcessing;
     std::vector<deferredGraphics>               TransparentLayers;
-    uint32_t                                    TransparentLayersCount{3};
+    uint32_t                                    TransparentLayersCount{2};
 
     bool                                        enableTransparentLayers{true};
     bool                                        enableSkybox{true};
     bool                                        enableBlur{true};
     bool                                        enableBloom{true};
-    bool                                        enableSSLR{true};
-    bool                                        enableSSAO{true};
+    bool                                        enableSSLR{false};
+    bool                                        enableSSAO{false};
 
     std::vector<VkBuffer>                       storageBuffers;
     std::vector<VkDeviceMemory>                 storageBuffersMemory;

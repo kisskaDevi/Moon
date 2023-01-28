@@ -187,10 +187,10 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
 {
     uint32_t index = 0;
 
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoVert.spv");
-    auto fragShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoFrag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoVert.spv");
+    auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\ssao\\ssaoFrag.spv");
+    VkShaderModule vertShaderModule = ShaderModule::create(device, vertShaderCode);
+    VkShaderModule fragShaderModule = ShaderModule::create(device, fragShaderCode);
     std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
         shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;

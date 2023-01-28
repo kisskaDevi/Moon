@@ -19,28 +19,35 @@ void shadowGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* d
     this->physicalDevice = physicalDevice;
     this->device = device;
     this->queueFamilyIndices = queueFamilyIndices;
-    image.Format = findDepthFormat(this->physicalDevice);
+    image.Format = VK_FORMAT_D32_SFLOAT;
 }
 
 void shadowGraphics::createAttachments()
 {
-    createImage(    physicalDevice,
-                    device,
-                    image.Extent.width,
-                    image.Extent.height,
-                    1.0f,
-                    VK_SAMPLE_COUNT_1_BIT,
-                    image.Format,
-                    VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                    depthAttachment.image,
-                    depthAttachment.imageMemory);
-    depthAttachment.imageView = createImageView(    device,
-                                                    depthAttachment.image,
-                                                    image.Format,
-                                                    VK_IMAGE_ASPECT_DEPTH_BIT,
-                                                    1.0f);
+    Texture::create(    *physicalDevice,
+                        *device,
+                        0,
+                        {image.Extent.width,image.Extent.height,1},
+                        1,
+                        1,
+                        VK_SAMPLE_COUNT_1_BIT,
+                        image.Format,
+                        VK_IMAGE_LAYOUT_UNDEFINED,
+                        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        &depthAttachment.image,
+                        &depthAttachment.imageMemory);
+
+    Texture::createView(    *device,
+                            VK_IMAGE_VIEW_TYPE_2D,
+                            image.Format,
+                            VK_IMAGE_ASPECT_DEPTH_BIT,
+                            1,
+                            0,
+                            1,
+                            depthAttachment.image,
+                            &depthAttachment.imageView);
+
     VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -93,7 +100,7 @@ void shadowGraphics::setExternalPath(const std::string &path)
 
 void shadowGraphics::createRenderPass()
 {
-    VkAttachmentDescription attachments = attachments::depthDescription(findDepthFormat(physicalDevice));
+    VkAttachmentDescription attachments = attachments::depthDescription(VK_FORMAT_D32_SFLOAT);
 
     VkAttachmentReference depthRef{};
         depthRef.attachment = 0;
@@ -146,8 +153,8 @@ void shadowGraphics::createCommandPool()
 
 void shadowGraphics::Shadow::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
-    auto vertShaderCode = readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\shadow\\shad.spv");
-    VkShaderModule vertShaderModule = createShaderModule(device,vertShaderCode);
+    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\shadow\\shad.spv");
+    VkShaderModule vertShaderModule = ShaderModule::create(device,vertShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

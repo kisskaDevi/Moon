@@ -115,6 +115,7 @@ private:
 
         void destroy(VkDevice* device)
         {
+            destroyStagingBuffer(device);
             if(textureImage)        {vkDestroyImage(*device, textureImage, nullptr); textureImage = VK_NULL_HANDLE;}
             if(textureImageMemory)  {vkFreeMemory(*device, textureImageMemory, nullptr); textureImageMemory = VK_NULL_HANDLE;}
             if(textureImageView)    {vkDestroyImageView(*device, textureImageView, nullptr); textureImageView = VK_NULL_HANDLE;}

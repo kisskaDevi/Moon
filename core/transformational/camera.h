@@ -28,14 +28,18 @@ protected:
         VkBuffer       instance{VK_NULL_HANDLE};
         VkDeviceMemory memory{VK_NULL_HANDLE};
         bool           updateFlag{true};
+        void*          map{nullptr};
     };
-    std::vector<buffer>     uniformBuffers;
+    std::vector<buffer>     uniformBuffersHost;
     std::vector<buffer>     uniformBuffersDevice;
 
+    void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
+    void destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers);
     void updateViewMatrix();
 public:
     camera();
     ~camera();
+    void destroy(VkDevice* device);
 
     void setGlobalTransform(const glm::mat4 & transform);
     void translate(const glm::vec3 & translate);
@@ -51,9 +55,8 @@ public:
     void                    setRotation(const quaternion<float>& rotation);
     void                    setRotations(const quaternion<float>& rotationX, const quaternion<float>& rotationY);
 
-    void destroyUniformBuffers(VkDevice* device);
     void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
-    void updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber);
+    void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber);
 
     VkBuffer                getBuffer(uint32_t index)const;
     glm::vec3               getTranslation()const;

@@ -29,7 +29,7 @@ layout(location = 1) out vec4 outBloom;
 mat4 projview = global.proj * global.view;
 vec3 eyePosition = global.eyePosition.xyz;
 
-float h = 0.3f;
+float h = 0.6f;
 float nbegin = 1.33f;
 float nend = nbegin + 2.0f;
 

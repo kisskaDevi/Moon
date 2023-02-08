@@ -37,7 +37,6 @@ int main()
 
     graphicsManager app;
     app.createInstance();
-    app.setupDebugMessenger();
     app.createSurface(window);
     app.pickPhysicalDevice();
     app.createLogicalDevice();
@@ -101,7 +100,7 @@ int main()
     graphics.removeCameraObject(&cameraObject);
     testScene.destroyScene();
     graphics.destroyGraphics();
-    app.cleanup();
+    app.destroy();
 
     glfwDestroyWindow(window);
     glfwTerminate();

@@ -1228,8 +1228,8 @@ void gltfModel::createDescriptorPool(VkDevice* device)
 
 void gltfModel::createDescriptorSet(VkDevice* device, texture* emptyTexture)
 {
-    createMaterialDescriptorSetLayout(device,&materialDescriptorSetLayout);
-    createNodeDescriptorSetLayout(device,&nodeDescriptorSetLayout);
+    gltfModel::createMaterialDescriptorSetLayout(*device,&materialDescriptorSetLayout);
+    gltfModel::createNodeDescriptorSetLayout(*device,&nodeDescriptorSetLayout);
 
     for (auto node : linearNodes){
         if(node->mesh){
@@ -1333,5 +1333,66 @@ void gltfModel::createMaterialDescriptorSet(VkDevice* device, Material* material
         descriptorWrites[i].pImageInfo = &descriptorImageInfos[i];
     }
     vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
 }
+
+void gltfModel::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    std::vector<VkDescriptorSetLayoutBinding> binding;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.back().descriptorCount = 1;
+        binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        binding.back().pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutCreateInfo uniformBlockLayoutInfo{};
+        uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
+        uniformBlockLayoutInfo.pBindings = binding.data();
+    vkCreateDescriptorSetLayout(device, &uniformBlockLayoutInfo, nullptr, descriptorSetLayout);
+}
+
+void gltfModel::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    std::vector<VkDescriptorSetLayoutBinding> binding;
+    //baseColorTexture;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorCount = 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.back().pImmutableSamplers = nullptr;
+        binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    //metallicRoughnessTexture;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorCount = 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.back().pImmutableSamplers = nullptr;
+        binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    //normalTexture;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorCount = 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.back().pImmutableSamplers = nullptr;
+        binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    //occlusionTexture;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorCount = 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.back().pImmutableSamplers = nullptr;
+        binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    //emissiveTexture;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorCount = 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.back().pImmutableSamplers = nullptr;
+        binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutCreateInfo materialLayoutInfo{};
+        materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        materialLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
+        materialLayoutInfo.pBindings = binding.data();
+    vkCreateDescriptorSetLayout(device, &materialLayoutInfo, nullptr, descriptorSetLayout);
+}
+

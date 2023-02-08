@@ -119,9 +119,9 @@ void attachments::deleteAttachment(VkDevice * device)
 {
     for(size_t i=0;i<size;i++)
     {
-        if(image[i])        vkDestroyImage(*device, image[i], nullptr);
-        if(imageMemory[i])  vkFreeMemory(*device, imageMemory[i], nullptr);
-        if(imageView[i])    vkDestroyImageView(*device, imageView[i], nullptr);
+        if(image[i])        {vkDestroyImage(*device, image[i], nullptr); image[i] = VK_NULL_HANDLE;}
+        if(imageMemory[i])  {vkFreeMemory(*device, imageMemory[i], nullptr); imageMemory[i] = VK_NULL_HANDLE;}
+        if(imageView[i])    {vkDestroyImageView(*device, imageView[i], nullptr); imageView[i] = VK_NULL_HANDLE;}
     }
     image.resize(0);
     imageMemory.resize(0);
@@ -131,7 +131,7 @@ void attachments::deleteAttachment(VkDevice * device)
 
 void attachments::deleteSampler(VkDevice *device)
 {
-    if(sampler) vkDestroySampler(*device,sampler,nullptr);
+    if(sampler){ vkDestroySampler(*device,sampler,nullptr); sampler = VK_NULL_HANDLE;}
 }
 
 size_t attachments::getSize()

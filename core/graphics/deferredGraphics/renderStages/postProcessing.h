@@ -8,7 +8,6 @@
 #include <string>
 
 struct SwapChainSupportDetails;
-struct QueueFamilyIndices;
 class GLFWwindow;
 class texture;
 
@@ -23,7 +22,8 @@ private:
     VkDevice*                           device{nullptr};
     VkQueue*                            graphicsQueue{nullptr};
     VkCommandPool*                      commandPool{nullptr};
-    QueueFamilyIndices                  queueFamilyIndices;
+    uint32_t                            queueGraphicsFamilyIndices;
+    uint32_t                            queuePresentFamilyIndices;
     texture*                            emptyTexture{nullptr};
 
     imageInfo                           image;

@@ -15,7 +15,8 @@ void postProcessingGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkD
     this->device = device;
     this->graphicsQueue = graphicsQueue;
     this->commandPool = commandPool;
-    this->queueFamilyIndices = {graphicsFamily,presentFamily};
+    this->queueGraphicsFamilyIndices = graphicsFamily;
+    this->queuePresentFamilyIndices = presentFamily;
 }
 void postProcessingGraphics::setImageProp(imageInfo* pInfo)
 {
@@ -85,8 +86,7 @@ void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwind
     VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
     VkExtent2D extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
 
-    QueueFamilyIndices indices = queueFamilyIndices;
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    uint32_t queueFamilyIndices[] = {queueGraphicsFamilyIndices, queuePresentFamilyIndices};
 
     VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -97,7 +97,7 @@ void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwind
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ;
-        if(indices.graphicsFamily != indices.presentFamily)
+        if(queueGraphicsFamilyIndices != queuePresentFamilyIndices)
         {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;

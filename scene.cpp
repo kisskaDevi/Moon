@@ -78,10 +78,10 @@ void scene::updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTim
     keyboardEvent(window,frameTime);
     updates(frameTime);
 
-    for(size_t j=0;j<object3D.size();j++){
-        object3D[j]->animationTimer += timeScale*frameTime;
-        object3D[j]->updateAnimation(frameNumber);
-    }
+    //for(size_t j=0;j<object3D.size();j++){
+    //    object3D[j]->animationTimer += timeScale*frameTime;
+    //    object3D[j]->updateAnimation(frameNumber);
+    //}
 }
 
 void scene::destroyScene()
@@ -180,52 +180,52 @@ void scene::createLight()
         //lightSource.at(index)->setScattering(true);
     }
 
-//    Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
-//    Proj[1][1] *= -1;
+    Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
+    Proj[1][1] *= -1;
 
-//    lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
-//    lightSource.at(index)->setProjectionMatrix(Proj);
-//    lightSource.at(index)->setScattering(true);
-//    groups.at(2)->addObject(lightSource.at(index));
-//    index++;
-//    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
+    lightSource.at(index)->setProjectionMatrix(Proj);
+    lightSource.at(index)->setScattering(true);
+    groups.at(2)->addObject(lightSource.at(index));
+    index++;
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
-//    lightSource.push_back(new spotLight(LIGHT_TEXTURE1));
-//    lightSource.at(index)->setProjectionMatrix(Proj);
-//    lightSource.at(index)->setScattering(true);
-//    groups.at(3)->addObject(lightSource.at(index));
-//    index++;
-//    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE1));
+    lightSource.at(index)->setProjectionMatrix(Proj);
+    lightSource.at(index)->setScattering(true);
+    groups.at(3)->addObject(lightSource.at(index));
+    index++;
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
-//    lightSource.push_back(new spotLight(LIGHT_TEXTURE2));
-//    lightSource.at(index)->setProjectionMatrix(Proj);
-//    lightSource.at(index)->setScattering(true);
-//    groups.at(4)->addObject(lightSource.at(index));
-//    index++;
-//    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE2));
+    lightSource.at(index)->setProjectionMatrix(Proj);
+    lightSource.at(index)->setScattering(true);
+    groups.at(4)->addObject(lightSource.at(index));
+    index++;
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
-//    lightSource.push_back(new spotLight(LIGHT_TEXTURE3));
-//    lightSource.at(index)->setProjectionMatrix(Proj);
-//    lightSource.at(index)->setScattering(true);
-//    groups.at(5)->addObject(lightSource.at(index));
-//    index++;
-//    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    lightSource.push_back(new spotLight(LIGHT_TEXTURE3));
+    lightSource.at(index)->setProjectionMatrix(Proj);
+    lightSource.at(index)->setScattering(true);
+    groups.at(5)->addObject(lightSource.at(index));
+    index++;
+    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
 
-//    for(int i=0;i<5;i++){
-//        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
-//        lightSource.at(index)->setProjectionMatrix(Proj);
-//        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
-//        lightSource.at(index)->setScattering(false);
-//        index++;
-//    }
+    for(int i=0;i<5;i++){
+        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
+        lightSource.at(index)->setProjectionMatrix(Proj);
+        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
+        lightSource.at(index)->setScattering(false);
+        index++;
+    }
 
-//    for(int i=0;i<5;i++){
-//        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
-//        lightSource.at(index)->setProjectionMatrix(Proj);
-//        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
-//        lightSource.at(index)->setScattering(false);
-//        index++;
-//    }
+    for(int i=0;i<5;i++){
+        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
+        lightSource.at(index)->setProjectionMatrix(Proj);
+        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
+        lightSource.at(index)->setScattering(false);
+        index++;
+    }
 }
 
 void scene::createObjects()

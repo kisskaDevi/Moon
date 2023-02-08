@@ -8,7 +8,7 @@
 graphicsManager::graphicsManager()
 {}
 
-void graphicsManager::graphicsManager::createInstance()
+void graphicsManager::createInstance()
 {
     VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -18,104 +18,41 @@ void graphicsManager::graphicsManager::createInstance()
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
-    auto extensions = getRequiredExtensions();
+    enableValidationLayers &= ValidationLayer::checkSupport(validationLayers);
 
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    if(enableValidationLayers){
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+        debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        debugCreateInfo.pfnUserCallback = ValidationLayer::debugCallback;
     VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
-        if (enableValidationLayers)
-        {
-            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-            populateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
-            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
-        } else {
-            createInfo.enabledLayerCount = 0;
-            createInfo.pNext = nullptr;
-        }
+        createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
+        createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
+        createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo : nullptr;
     vkCreateInstance(&createInfo, nullptr, &instance);
+
+    if (enableValidationLayers){
+        ValidationLayer::setupDebugMessenger(instance, &debugMessenger);
+    }
 }
-    std::vector<const char*> graphicsManager::getRequiredExtensions()
-    {
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-        if(enableValidationLayers)
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-        return extensions;
-    }
-    bool graphicsManager::checkValidationLayerSupport()
-    {
-        uint32_t layerCount;
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-        std::vector<VkLayerProperties> availableLayers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-        for (const char* layerName : validationLayers){
-            bool layerFound = false;
-            for(const auto& layerProperties: availableLayers){
-                if(strcmp(layerName, layerProperties.layerName)==0){
-                    layerFound = true;  break;
-                }
-            }
-            if(!layerFound)
-                return false;
-        }
-
-        return true;
-    }
-
-void graphicsManager::graphicsManager::setupDebugMessenger()
-{
-    if (!enableValidationLayers) return;
-
-    VkDebugUtilsMessengerCreateInfoEXT createInfo;
-    populateDebugMessengerCreateInfo(createInfo);
-
-    CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger);
-}
-    void graphicsManager::graphicsManager::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-    {
-        createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
-    }
-        VKAPI_ATTR VkBool32 VKAPI_CALL graphicsManager::debugCallback(
-         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-         VkDebugUtilsMessageTypeFlagsEXT messageType,
-         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-         void* pUserData)
-        {
-            static_cast<void>(messageSeverity);
-            static_cast<void>(messageType);
-            static_cast<void>(pUserData);
-            std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-            return VK_FALSE;
-        }
-    VkResult graphicsManager::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
-    {
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-        if (func != nullptr)    return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-        else                    return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
 
 void graphicsManager::createSurface(GLFWwindow* window)
 {
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 }
 
-void graphicsManager::graphicsManager::pickPhysicalDevice()
+void graphicsManager::pickPhysicalDevice()
 {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -125,10 +62,12 @@ void graphicsManager::graphicsManager::pickPhysicalDevice()
 
     for (const auto& device : devices)
     {
-        std::vector<QueueFamilyIndices> indices = PhysicalDevice::findQueueFamilies(device, surface);
-        if (indices.size()!=0 && PhysicalDevice::isSuitable(device,surface,deviceExtensions))
+        PhysicalDevice::printQueueIndices(device, surface);
+
+        std::vector<uint32_t> indices = PhysicalDevice::findQueueFamilies(device, VK_QUEUE_GRAPHICS_BIT, surface);
+        if (indices.size()!= 0 && PhysicalDevice::isSuitable(device,surface,deviceExtensions))
         {
-            physicalDevice currentDevice = {device,indices};
+            physicalDevice currentDevice = {device, indices};
             physicalDevices.push_back(currentDevice);
         }
     }
@@ -142,19 +81,15 @@ void graphicsManager::graphicsManager::pickPhysicalDevice()
 
 void graphicsManager::createLogicalDevice()
 {
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value(), physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber), physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber)};
 
-    float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies)
-    {
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = queueFamily;
-        queueCreateInfo.queueCount = 1;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
-        queueCreateInfos.push_back(queueCreateInfo);
-    }
+    float queuePriority[2] = {1.0f, 0.5f};
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    queueCreateInfos.push_back(VkDeviceQueueCreateInfo{});
+        queueCreateInfos.back().sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfos.back().queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber);
+        queueCreateInfos.back().queueCount = 2;
+        queueCreateInfos.back().pQueuePriorities = queuePriority;
 
     VkPhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
@@ -170,23 +105,19 @@ void graphicsManager::createLogicalDevice()
         createInfo.pEnabledFeatures = &deviceFeatures;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-        if (enableValidationLayers)
-        {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
-        } else
-            createInfo.enabledLayerCount = 0;
+        createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
+        createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
     vkCreateDevice(physicalDevices.at(physicalDeviceNumber).device, &createInfo, nullptr, &device);
 
-    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).presentFamily.value(), 0, &presentQueue);
+    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber), 1, &presentQueue);
 }
 
 void graphicsManager::createCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily.value();
+        poolInfo.queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber);
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
 }
@@ -197,8 +128,8 @@ void graphicsManager::setGraphics(graphicsInterface* graphics)
 
     std::vector<deviceInfo> info;
     info.push_back(deviceInfo{ &physicalDevices.at(physicalDeviceNumber).device,
-                               &physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).graphicsFamily,
-                               &physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber).presentFamily,
+                               &physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),
+                               &physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),
                                &device,
                                &graphicsQueue,
                                &commandPool});
@@ -251,15 +182,14 @@ VkResult graphicsManager::checkNextFrame()
 
 VkResult graphicsManager::drawFrame()
 {
-    graphics->updateCommandBuffer(imageIndex);
-    graphics->updateBuffers(imageIndex);
-
     VkSemaphore                         waitSemaphores[] = {availableSemaphores};
     VkPipelineStageFlags                waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore                         signalSemaphores[] = {this->signalSemaphores[imageIndex]};
 
-    uint32_t commandBufferCount;
-    VkCommandBuffer* commandBufferSet = graphics->getCommandBuffers(commandBufferCount,imageIndex);
+    graphics->updateBuffers(imageIndex);
+    graphics->updateCommandBuffer(imageIndex);
+
+    VkCommandBuffer& commandBuffer = graphics->getCommandBuffer(imageIndex);
 
     vkResetFences(device, 1, &fences[imageIndex]);
     VkSubmitInfo submitInfo{};
@@ -267,8 +197,8 @@ VkResult graphicsManager::drawFrame()
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = commandBufferCount;
-        submitInfo.pCommandBuffers = commandBufferSet;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
     vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[imageIndex]);
@@ -283,7 +213,7 @@ VkResult graphicsManager::drawFrame()
     return vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
-void graphicsManager::graphicsManager::cleanup()
+void graphicsManager::graphicsManager::destroy()
 {
     graphics->freeCommandBuffers();
 
@@ -300,16 +230,11 @@ void graphicsManager::graphicsManager::cleanup()
     if(device) {vkDestroyDevice(device, nullptr); device = VK_NULL_HANDLE;}
 
     if (enableValidationLayers)
-        if(debugMessenger) {DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
+        if(debugMessenger) { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
 
     if(surface) {vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
     if(instance) {vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
 }
-    void graphicsManager::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
-    {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-        if(func != nullptr)    func(instance, debugMessenger, pAllocator);
-    }
 
 uint32_t graphicsManager::getImageIndex(){return imageIndex;}
 void     graphicsManager::deviceWaitIdle(){vkDeviceWaitIdle(device);}

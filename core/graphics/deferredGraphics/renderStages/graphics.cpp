@@ -242,7 +242,7 @@ void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffe
 void deferredGraphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)
 {
     for(size_t i=0;i<base.objects.size();i++)
-        base.objects[i]->updateUniformBuffer(*device, commandBuffer, currentImage);
+        base.objects[i]->updateUniformBuffer(commandBuffer, currentImage);
 }
 
 void deferredGraphics::bindBaseObject(object *newObject)

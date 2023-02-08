@@ -145,9 +145,6 @@ public:
     void addLightSource(light* lightSource);
     void removeLightSource(light* lightSource);
 
-    void updateLightCmd(uint32_t imageIndex);
-    void getLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex);
-
     void setMinAmbientFactor(const float& minAmbientFactor);
     void setScattering(const bool& enableScattering);
     void setTransparencyPass(const bool& transparencyPass);

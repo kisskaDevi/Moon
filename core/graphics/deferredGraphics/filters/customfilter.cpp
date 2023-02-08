@@ -72,14 +72,6 @@ void customFilter::createBufferAttachments()
                                 1,
                                 bufferAttachment.image[imageNumber],
                                 &bufferAttachment.imageView[imageNumber]);
-
-        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*device, *commandPool);
-        Texture::transitionLayout( commandBuffer,
-                                   bufferAttachment.image[imageNumber],
-                                   VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                   VK_REMAINING_MIP_LEVELS, 0, 1);
-        SingleCommandBuffer::submit(*device, *graphicsQueue, *commandPool, &commandBuffer);
     }
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -464,7 +456,7 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
     uint32_t height = image.Extent.height;
 
     for(uint32_t k=0;k<attachmentsCount;k++){
-        Texture::transitionLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
+        Texture::transitionLayout(commandBuffer,blitBufferImage, k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
         vkCmdClearColorImage(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
         Texture::blitDown(commandBuffer,blitImages[k],0,blitBufferImage,0,width,height,0,1,blitFactor);
         Texture::transitionLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);

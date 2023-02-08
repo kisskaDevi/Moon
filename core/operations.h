@@ -9,12 +9,26 @@
 
 class GLFWwindow;
 
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t>         graphicsFamily;
-    std::optional<uint32_t>         presentFamily;
-    bool isComplete(){return graphicsFamily.has_value() && presentFamily.has_value();}
-};
+namespace ValidationLayer{
+
+    bool checkSupport(
+            const std::vector<const char*>              validationLayers);
+
+    void setupDebugMessenger (
+            VkInstance                                  instance,
+            VkDebugUtilsMessengerEXT*                   debugMessenger);
+
+    VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT             messageType,
+            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+            void*                                       pUserData);
+
+    void DestroyDebugUtilsMessengerEXT(
+            VkInstance                                  instance,
+            VkDebugUtilsMessengerEXT                    debugMessenger,
+            const VkAllocationCallbacks*                pAllocator);
+}
 
 namespace PhysicalDevice {
 
@@ -26,9 +40,18 @@ namespace PhysicalDevice {
             uint32_t                        memoryTypeBits,
             VkMemoryPropertyFlags           properties);
 
-    std::vector<QueueFamilyIndices> findQueueFamilies(
+    void printQueueIndices(
             VkPhysicalDevice                device,
             VkSurfaceKHR                    surface);
+
+    std::vector<uint32_t> findQueueFamilies(
+            VkPhysicalDevice                device,
+            VkSurfaceKHR                    surface = VK_NULL_HANDLE);
+
+    std::vector<uint32_t> findQueueFamilies(
+            VkPhysicalDevice                device,
+            VkQueueFlagBits                 queueFlags,
+            VkSurfaceKHR                    surface = VK_NULL_HANDLE);
 
     VkSampleCountFlagBits queryingSampleCount(
             VkPhysicalDevice                device);
@@ -199,27 +222,5 @@ namespace ShaderModule {
             VkDevice*                       device,
             const std::vector<char>&        code);
 }
-
-//  decriptorSetLayout
-
-void createObjectDescriptorSetLayout(
-        VkDevice*                       device,
-        VkDescriptorSetLayout*          descriptorSetLayout);
-
-void createSkyboxObjectDescriptorSetLayout(
-        VkDevice*                       device,
-        VkDescriptorSetLayout*          descriptorSetLayout);
-
-void createNodeDescriptorSetLayout(
-        VkDevice*                       device,
-        VkDescriptorSetLayout*          descriptorSetLayout);
-
-void createMaterialDescriptorSetLayout(
-        VkDevice*                       device,
-        VkDescriptorSetLayout*          descriptorSetLayout);
-
-void createSpotLightDescriptorSetLayout(
-    VkDevice*                       device,
-    VkDescriptorSetLayout*          descriptorSetLayout);
 
 #endif

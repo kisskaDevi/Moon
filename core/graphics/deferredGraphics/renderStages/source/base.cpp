@@ -61,9 +61,9 @@ void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.pBindings = binding.data();
     vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &SceneDescriptorSetLayout);
 
-    createObjectDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
-    createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
-    createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
+    object::createDescriptorSetLayout(*device,&ObjectDescriptorSetLayout);
+    gltfModel::createNodeDescriptorSetLayout(*device,&PrimitiveDescriptorSetLayout);
+    gltfModel::createMaterialDescriptorSetLayout(*device,&MaterialDescriptorSetLayout);
 }
 
 void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)

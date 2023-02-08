@@ -7,6 +7,56 @@
 #include <fstream>
 #include <algorithm>
 #include <iostream>
+#include <string.h>
+
+#define ONLYDEVICELOCALHEAP
+
+bool ValidationLayer::checkSupport(const std::vector<const char*> validationLayers)
+{
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    bool res = true;
+    for (const char* layerName : validationLayers){
+        bool layerFound = false;
+        for(const auto& layerProperties: availableLayers){
+            layerFound |= (strcmp(layerName, layerProperties.layerName) == 0);
+        }
+        res &= layerFound;
+    }
+    return res;
+}
+
+void ValidationLayer::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+{
+auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+if(func != nullptr) func(instance, debugMessenger, pAllocator);
+}
+
+void ValidationLayer::setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* debugMessenger)
+{
+auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+
+VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+if(func != nullptr) func(instance, &createInfo, nullptr, debugMessenger);
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL ValidationLayer::debugCallback( VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+{
+    static_cast<void>(messageSeverity);
+    static_cast<void>(messageType);
+    static_cast<void>(pUserData);
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+    return VK_FALSE;
+}
 
 void PhysicalDevice::printMemoryProperties(VkPhysicalDeviceMemoryProperties memoryProperties){
     std::cout << "memoryHeapCount = " << memoryProperties.memoryHeapCount << std::endl;
@@ -27,19 +77,30 @@ uint32_t PhysicalDevice::findMemoryTypeIndex(VkPhysicalDevice physicalDevice, ui
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
-    uint32_t memoryTypeIndex = UINT32_MAX;
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++){
-        if ((memoryTypeBits & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties){
-            memoryTypeIndex = i; break;
+#ifdef ONLYDEVICELOCALHEAP
+    uint32_t deviceLocalHeapIndex = UINT32_MAX;
+    for (uint32_t i = 0; i < memoryProperties.memoryHeapCount; i++){
+        if(memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT){
+            deviceLocalHeapIndex = i;
+            break;
         }
     }
-    return memoryTypeIndex;
+#endif
+
+    std::vector<uint32_t> memoryTypeIndex;
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++){
+        if ((memoryTypeBits & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties){
+#ifdef ONLYDEVICELOCALHEAP
+            if(memoryProperties.memoryTypes[i].heapIndex == deviceLocalHeapIndex)
+#endif
+                memoryTypeIndex.push_back(i);
+        }
+    }
+    return memoryTypeIndex.size() != 0 ? memoryTypeIndex[0] : UINT32_MAX;
 }
 
-std::vector<QueueFamilyIndices> PhysicalDevice::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+void PhysicalDevice::printQueueIndices(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
-    std::vector<QueueFamilyIndices> indices;
-
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
@@ -48,10 +109,72 @@ std::vector<QueueFamilyIndices> PhysicalDevice::findQueueFamilies(VkPhysicalDevi
 
     for (uint32_t index = 0; index < queueFamilyCount; index++){
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+        if(surface){
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+        }
 
-        if ((queueFamilies[index].queueFlags & VK_QUEUE_GRAPHICS_BIT) && presentSupport){
-            indices.push_back({index,index});
+        if(queueFamilies[index].queueFlags & VK_QUEUE_GRAPHICS_BIT){
+            std::cout << "index\t" << index << "\t:\t" << "VK_QUEUE_GRAPHICS_BIT" << std::endl;
+        }
+        if(queueFamilies[index].queueFlags & VK_QUEUE_COMPUTE_BIT){
+            std::cout << "index\t" << index << "\t:\t" << "VK_QUEUE_COMPUTE_BIT" << std::endl;
+        }
+        if(queueFamilies[index].queueFlags & VK_QUEUE_TRANSFER_BIT){
+            std::cout << "index\t" << index << "\t:\t" << "VK_QUEUE_TRANSFER_BIT" << std::endl;
+        }
+        if(queueFamilies[index].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT){
+            std::cout << "index\t" << index << "\t:\t" << "VK_QUEUE_SPARSE_BINDING_BIT" << std::endl;
+        }
+        if(queueFamilies[index].queueFlags & VK_QUEUE_PROTECTED_BIT){
+            std::cout << "index\t" << index << "\t:\t" << "VK_QUEUE_PROTECTED_BIT" << std::endl;
+        }
+        if(presentSupport){
+            std::cout << "index\t" << index << "\t:\t" << "Present Support" << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+
+std::vector<uint32_t> PhysicalDevice::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+{
+    std::vector<uint32_t> indices;
+
+    uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, queueFamilies.data());
+
+    for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
+        VkBool32 presentSupport = surface ? false : true;
+        if(surface){
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+        }
+        if (presentSupport){
+            indices.push_back(index);
+        }
+    }
+
+    return indices;
+}
+
+std::vector<uint32_t> PhysicalDevice::findQueueFamilies(VkPhysicalDevice device, VkQueueFlagBits queueFlags, VkSurfaceKHR surface)
+{
+    std::vector<uint32_t> indices;
+
+    uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, queueFamilies.data());
+
+    for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
+        VkBool32 presentSupport = surface ? false : true;
+        if(surface){
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+        }
+        if ((queueFamilies[index].queueFlags & queueFlags) == queueFlags && presentSupport){
+            indices.push_back(index);
         }
     }
 
@@ -317,8 +440,7 @@ void Texture::generateMipmaps(VkPhysicalDevice physicalDevice, VkCommandBuffer c
         barrier.subresourceRange.layerCount = layerCount;
         barrier.subresourceRange.levelCount = 1;
 
-    for (uint32_t i = 1, mipWidth = texWidth, mipHeight = texHeight; i < mipLevels;
-         i++, mipWidth /= (mipWidth > 1) ? 2 : 1, mipHeight /= (mipHeight > 1) ? 2 : 1) {
+    for (uint32_t i = 1, mipWidth = texWidth, mipHeight = texHeight; i < mipLevels; i++, mipWidth /= 2, mipHeight /= 2) {
             barrier.subresourceRange.baseMipLevel = i - 1;
             barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -326,7 +448,7 @@ void Texture::generateMipmaps(VkPhysicalDevice physicalDevice, VkCommandBuffer c
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-        blitDown(commandBuffer,image,i - 1,image,i,mipWidth,mipHeight,baseArrayLayer,layerCount,2);
+        blitDown(commandBuffer,image,i - 1,image,i,(mipWidth > 1 ? mipWidth : 1),(mipHeight > 1 ? mipHeight : 1),baseArrayLayer,layerCount,2);
 
             barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
             barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -352,7 +474,7 @@ void Texture::blitDown(VkCommandBuffer commandBuffer, VkImage srcImage, uint32_t
         blit.srcSubresource.baseArrayLayer = baseArrayLayer;
         blit.srcSubresource.layerCount = layerCount;
         blit.dstOffsets[0] = {0, 0, 0};
-        blit.dstOffsets[1] = {static_cast<int32_t>(width/blitFactor),static_cast<int32_t>(height/blitFactor),1};
+        blit.dstOffsets[1] = {static_cast<int32_t>((width/blitFactor > 1) ? (width/blitFactor) : 1),static_cast<int32_t>((height/blitFactor > 1) ? (height/blitFactor) : 1), 1};
         blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         blit.dstSubresource.mipLevel = dstMipLevel;
         blit.dstSubresource.baseArrayLayer = baseArrayLayer;
@@ -488,139 +610,4 @@ VkShaderModule ShaderModule::create(VkDevice* device, const std::vector<char>& c
     }
 
     return shaderModule;
-}
-
-//  decriptorSetLayout
-
-void createObjectDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
-{
-    uint32_t index = 0;
-    std::array<VkDescriptorSetLayoutBinding, 1> uniformBufferLayoutBinding{};
-        uniformBufferLayoutBinding[index].binding = 0;
-        uniformBufferLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayoutBinding[index].descriptorCount = 1;
-        uniformBufferLayoutBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayoutBinding[index].pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
-        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferLayoutBinding.size());
-        uniformBufferLayoutInfo.pBindings = uniformBufferLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base object uniform buffer descriptor set layout!");
-}
-
-void createSkyboxObjectDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
-{
-    std::vector<VkDescriptorSetLayoutBinding> uniformBufferLayoutBinding;
-    uniformBufferLayoutBinding.push_back(VkDescriptorSetLayoutBinding{});
-        uniformBufferLayoutBinding.back().binding = uniformBufferLayoutBinding.size() - 1;
-        uniformBufferLayoutBinding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayoutBinding.back().descriptorCount = 1;
-        uniformBufferLayoutBinding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayoutBinding.back().pImmutableSamplers = nullptr;
-    uniformBufferLayoutBinding.push_back(VkDescriptorSetLayoutBinding{});
-        uniformBufferLayoutBinding.back().binding = uniformBufferLayoutBinding.size() - 1;
-        uniformBufferLayoutBinding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        uniformBufferLayoutBinding.back().descriptorCount = 1;
-        uniformBufferLayoutBinding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        uniformBufferLayoutBinding.back().pImmutableSamplers = nullptr;
-
-    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
-        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferLayoutBinding.size());
-        uniformBufferLayoutInfo.pBindings = uniformBufferLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base object uniform buffer descriptor set layout!");
-}
-
-void createNodeDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
-{
-    uint32_t index = 0;
-    std::array<VkDescriptorSetLayoutBinding, 1> uniformBlockLayoutBinding{};
-        uniformBlockLayoutBinding[index].binding = 0;
-        uniformBlockLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBlockLayoutBinding[index].descriptorCount = 1;
-        uniformBlockLayoutBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBlockLayoutBinding[index].pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutCreateInfo uniformBlockLayoutInfo{};
-        uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBlockLayoutBinding.size());
-        uniformBlockLayoutInfo.pBindings = uniformBlockLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &uniformBlockLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base uniform block descriptor set layout!");
-}
-
-void createMaterialDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
-{
-    uint32_t index = 0;
-    std::array<VkDescriptorSetLayoutBinding, 5> materialLayoutBinding{};
-    //baseColorTexture;
-        materialLayoutBinding[index].binding = 0;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //metallicRoughnessTexture;
-        materialLayoutBinding[index].binding = 1;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //normalTexture;
-        materialLayoutBinding[index].binding = 2;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //occlusionTexture;
-        materialLayoutBinding[index].binding = 3;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    index++;
-    //emissiveTexture;
-        materialLayoutBinding[index].binding = 4;
-        materialLayoutBinding[index].descriptorCount = 1;
-        materialLayoutBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        materialLayoutBinding[index].pImmutableSamplers = nullptr;
-        materialLayoutBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    VkDescriptorSetLayoutCreateInfo materialLayoutInfo{};
-        materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        materialLayoutInfo.bindingCount = static_cast<uint32_t>(materialLayoutBinding.size());
-        materialLayoutInfo.pBindings = materialLayoutBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &materialLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create base material descriptor set layout!");
-}
-
-void createSpotLightDescriptorSetLayout(VkDevice* device, VkDescriptorSetLayout* descriptorSetLayout)
-{
-    uint32_t index = 0;
-    std::array<VkDescriptorSetLayoutBinding,3> lihgtBinding{};
-        lihgtBinding[index].binding = index;
-        lihgtBinding[index].descriptorCount = 1;
-        lihgtBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        lihgtBinding[index].stageFlags = VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT;
-        lihgtBinding[index].pImmutableSamplers = nullptr;
-    index++;
-        lihgtBinding[index].binding = index;
-        lihgtBinding[index].descriptorCount = 1;
-        lihgtBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        lihgtBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        lihgtBinding[index].pImmutableSamplers = nullptr;
-    index++;
-        lihgtBinding[index].binding = index;
-        lihgtBinding[index].descriptorCount = 1;
-        lihgtBinding[index].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        lihgtBinding[index].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        lihgtBinding[index].pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutCreateInfo lihgtLayoutInfo{};
-        lihgtLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        lihgtLayoutInfo.bindingCount = static_cast<uint32_t>(lihgtBinding.size());
-        lihgtLayoutInfo.pBindings = lihgtBinding.data();
-    if (vkCreateDescriptorSetLayout(*device, &lihgtLayoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("failed to create SpotLightingPass descriptor set layout!");
 }

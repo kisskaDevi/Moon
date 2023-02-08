@@ -26,7 +26,7 @@ enum spotType
 class spotLight : public transformational, public light
 {
 private:
-    shadowGraphics*                     shadow{nullptr};
+    attachments*                        shadow{nullptr};
     texture*                            tex{nullptr};
     VkExtent2D                          shadowExtent{1024,1024};
 
@@ -48,23 +48,27 @@ private:
     glm::mat4x4                         modelMatrix{1.0f};
 
     VkDescriptorSetLayout               descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorSetLayout               shadowDescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                    descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>        descriptorSets;
+    std::vector<VkDescriptorSet>        shadowDescriptorSets;
 
     struct buffer{
         VkBuffer       instance{VK_NULL_HANDLE};
         VkDeviceMemory memory{VK_NULL_HANDLE};
         bool           updateFlag{true};
+        void*          map{nullptr};
     };
-    std::vector<buffer> uniformBuffers;
+    std::vector<buffer> uniformBuffersHost;
     std::vector<buffer> uniformBuffersDevice;
 
+    void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
+    void destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
     spotLight(bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     spotLight(const std::string & TEXTURE_PATH, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     ~spotLight();
-    void destroyUniformBuffers(VkDevice* device) override;
     void destroy(VkDevice* device) override;
 
     void                setGlobalTransform(const glm::mat4 & transform) override;
@@ -85,23 +89,19 @@ public:
     glm::mat4x4         getModelMatrix() const;
     glm::vec3           getTranslate() const;
     glm::vec4           getLightColor() const;
-    texture*            getTexture() override;
 
+    texture*            getTexture() override;
+    attachments*        getAttachments() override;
     uint8_t             getPipelineBitMask() override;
 
     bool                isShadowEnable() const override;
     bool                isScatteringEnable() const;
 
     VkDescriptorSet*    getDescriptorSets() override;
-    VkCommandBuffer*    getShadowCommandBuffer(uint32_t imageCount) override;
+    VkDescriptorSet*    getShadowDescriptorSets() override;
 
     void                createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) override;
-    void                updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
-
-    void                createShadow(VkPhysicalDevice* physicalDevice, VkDevice* device, QueueFamilyIndices* queueFamilyIndices, uint32_t imageCount, const std::string& ExternalPath) override;
-    void                updateShadowDescriptorSets() override;
-    void                createShadowCommandBuffers() override;
-    void                updateShadowCommandBuffer(uint32_t frameNumber, std::vector<object*>& objects) override;
+    void                updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 
     void                createDescriptorPool(VkDevice* device, uint32_t imageCount) override;
     void                createDescriptorSets(VkDevice* device, uint32_t imageCount) override;

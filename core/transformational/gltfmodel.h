@@ -180,14 +180,9 @@ struct gltfModel
         static VkVertexInputBindingDescription getBindingDescription()
         {
             VkVertexInputBindingDescription bindingDescription{};
-            bindingDescription.binding = 0;                                 //является индексом привязки, оптсываемым данной структурой
-                                                                            //каждый конверей может обратиться к определённому числу привлязок вершинных буферов,
-                                                                            //и их индексы не обязательно должы быть непрерывными. Также необязательно описывать
-                                                                            //каждую привязку в заданном кнвейере до тех пор, пока каждая используемая привязка описана
-            bindingDescription.stride = sizeof(Vertex);                     //Каждая привязка может рассматриваться как массив структур, размещенных в буфере. Шаг массива stride - рассторяние между началами струкур,
-                                                                            //измеряемое в байтах. Если вершинные данные задаются как массив структур, то, по сути, параметр stride содержит размер стуктуры, жаде если шейдер не будет использовать каждого члена этой стуктуры
-            bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;     //Vulkan может обращаться в этот массив либо по индексу вершин, либо по индексу экземпляра в режиме дублирования геометрии.
-                                                                            //Это задаётся в данном поле либо как VK_VERTEX_INPUT_RATE_VERTEX, либо как VK_VERTEX_INPUT_RATE_INSTANCE
+            bindingDescription.binding = 0;
+            bindingDescription.stride = sizeof(Vertex);
+            bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
             return bindingDescription;
         }
@@ -196,10 +191,10 @@ struct gltfModel
         {
             std::array<VkVertexInputAttributeDescription, 8> attributeDescriptions{};
 
-            attributeDescriptions[0].binding = 0;                           //привязка к которой буфер привязан и из которого этот атрибут берёт данные
-            attributeDescriptions[0].location = 0;                          //положение которое используется для обращения к атрибуту из вершинного шейдера
-            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;   //формат вершинных данных
-            attributeDescriptions[0].offset = offsetof(Vertex, pos);        //смещение внутри каждой структуры
+            attributeDescriptions[0].binding = 0;
+            attributeDescriptions[0].location = 0;
+            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
             attributeDescriptions[1].binding = 0;
             attributeDescriptions[1].location = 1;
@@ -308,6 +303,15 @@ struct gltfModel
     void createDescriptorSet(VkDevice* device, texture* emptyTexture);
         void createNodeDescriptorSet(VkDevice* device, Node* node);
         void createMaterialDescriptorSet(VkDevice* device, Material* material, texture* emptyTexture);
+
+
+    static void createNodeDescriptorSetLayout(
+            VkDevice                        device,
+            VkDescriptorSetLayout*          descriptorSetLayout);
+
+    static void createMaterialDescriptorSetLayout(
+            VkDevice                        device,
+            VkDescriptorSetLayout*          descriptorSetLayout);
 };
 
 struct MaterialBlock

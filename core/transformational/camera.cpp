@@ -6,6 +6,29 @@ camera::camera(){}
 
 camera::~camera(){}
 
+void camera::destroy(VkDevice* device)
+{
+    destroyUniformBuffers(device, uniformBuffersHost);
+    destroyUniformBuffers(device, uniformBuffersDevice);
+}
+
+void camera::destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers)
+{
+    for(auto& buffer: uniformBuffers){
+        if(buffer.map){      vkUnmapMemory(*device, buffer.memory); buffer.map = nullptr;}
+        if(buffer.instance){ vkDestroyBuffer(*device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
+        if(buffer.memory){   vkFreeMemory(*device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
+    }
+    uniformBuffers.resize(0);
+}
+
+void camera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
+{
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
+}
+
 void camera::updateViewMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
@@ -13,18 +36,14 @@ void camera::updateViewMatrix()
 
     viewMatrix = glm::inverse(globalTransformation) * glm::inverse(transformMatrix);
 
-    for (auto& buffer: uniformBuffers){
-        buffer.updateFlag = true;
-    }
+    updateUniformBuffersFlags(uniformBuffersHost);
 }
 
 void camera::setProjMatrix(const glm::mat4 & proj)
 {
     projMatrix = proj;
 
-    for (auto& buffer: uniformBuffers){
-        buffer.updateFlag = true;
-    }
+    updateUniformBuffersFlags(uniformBuffersHost);
 }
 
 void camera::setGlobalTransform(const glm::mat4 & transform)
@@ -106,22 +125,10 @@ glm::vec3           camera::getTranslation() const  {   return translation.vecto
 quaternion<float>   camera::getRotationX()const     {   return rotationX;}
 quaternion<float>   camera::getRotationY()const     {   return rotationY;}
 
-void camera::destroyUniformBuffers(VkDevice* device)
-{
-    for(auto& buffer: uniformBuffers){
-        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
-        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
-    }
-    for(auto& buffer: uniformBuffersDevice){
-        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
-        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
-    }
-}
-
 void camera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
-    uniformBuffers.resize(imageCount);
-    for (auto& buffer: uniformBuffers){
+    uniformBuffersHost.resize(imageCount);
+    for (auto& buffer: uniformBuffersHost){
       Buffer::create( *physicalDevice,
                         *device,
                         sizeof(UniformBufferObject),
@@ -129,6 +136,7 @@ void camera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* de
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
+      vkMapMemory(*device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map);
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
@@ -142,20 +150,18 @@ void camera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* de
     }
 }
 
-void camera::updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber)
+void camera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
 {
-    if(void* data; uniformBuffers[frameNumber].updateFlag){
+    if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBufferObject baseUBO{};
             baseUBO.view = viewMatrix;
             baseUBO.proj = projMatrix;
             baseUBO.eyePosition = glm::vec4(translation.vector(), 1.0);
-        vkMapMemory(device, uniformBuffers[frameNumber].memory, 0, sizeof(baseUBO), 0, &data);
-            memcpy(data, &baseUBO, sizeof(baseUBO));
-        vkUnmapMemory(device, uniformBuffers[frameNumber].memory);
+        memcpy(uniformBuffersHost[frameNumber].map, &baseUBO, sizeof(baseUBO));
 
-        uniformBuffers[frameNumber].updateFlag = false;
+        uniformBuffersHost[frameNumber].updateFlag = false;
 
-        Buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffers[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+        Buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
     }
 }
 

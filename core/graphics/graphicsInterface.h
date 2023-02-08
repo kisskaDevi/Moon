@@ -3,15 +3,14 @@
 
 #include "libs/vulkan/vulkan.h"
 #include <vector>
-#include <optional>
 
 class GLFWwindow;
 
 struct deviceInfo
 {
     VkPhysicalDevice*               physicalDevice{VK_NULL_HANDLE};
-    std::optional<uint32_t>*        graphicsFamily{nullptr};
-    std::optional<uint32_t>*        presentFamily{nullptr};
+    uint32_t*                       graphicsFamily{nullptr};
+    uint32_t*                       presentFamily{nullptr};
     VkDevice*                       device{VK_NULL_HANDLE};
     VkQueue*                        queue{VK_NULL_HANDLE};
     VkCommandPool*                  commandPool{VK_NULL_HANDLE};
@@ -34,7 +33,7 @@ public:
 
     virtual void updateBuffers(uint32_t imageIndex) = 0;
 
-    virtual VkCommandBuffer*    getCommandBuffers(uint32_t& commandBuffersCount, uint32_t imageIndex) = 0;
+    virtual VkCommandBuffer&    getCommandBuffer(uint32_t imageIndex) = 0;
     virtual uint32_t            getImageCount() = 0;
     virtual VkSwapchainKHR&     getSwapChain() = 0;
 };

@@ -11,6 +11,7 @@
 #include "filters/ssao.h"
 #include "filters/layersCombiner.h"
 #include "filters/skybox.h"
+#include "filters/shadow.h"
 
 class deferredGraphicsInterface: public graphicsInterface
 {
@@ -42,6 +43,7 @@ private:
     SSLRGraphics                                SSLR;
     SSAOGraphics                                SSAO;
     skyboxGraphics                              Skybox;
+    shadowGraphics                              Shadow;
     layersCombiner                              LayersCombiner;
     postProcessingGraphics                      PostProcessing;
     std::vector<deferredGraphics>               TransparentLayers;
@@ -51,7 +53,7 @@ private:
     bool                                        enableSkybox{true};
     bool                                        enableBlur{true};
     bool                                        enableBloom{true};
-    bool                                        enableSSLR{false};
+    bool                                        enableSSLR{true};
     bool                                        enableSSAO{false};
 
     std::vector<VkBuffer>                       storageBuffers;
@@ -59,9 +61,6 @@ private:
 
     std::vector<VkCommandBuffer>                commandBuffers;
     std::vector<bool>                           updateCommandBufferFlags;
-    std::vector<bool>                           updateShadowCommandBufferFlags;
-
-    std::vector<VkCommandBuffer>                commandBufferSet;
 
     camera*                                     cameraObject{nullptr};
     texture*                                    emptyTexture{nullptr};
@@ -88,12 +87,11 @@ public:
     void updateBuffers(uint32_t imageIndex) override;
     void freeCommandBuffers() override;
 
-    VkCommandBuffer*    getCommandBuffers(uint32_t& commandBuffersCount, uint32_t imageIndex) override;
+    VkCommandBuffer&    getCommandBuffer(uint32_t imageIndex) override;
     uint32_t            getImageCount() override;
     VkSwapchainKHR&     getSwapChain() override;
 
     void        updateCmdFlags();
-    void        updateShadowCmdFlags();
 
     void        setExtent(VkExtent2D extent);
     void        setExternalPath(const std::string& ExternalPath);

@@ -154,7 +154,7 @@ void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    createSkyboxObjectDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
+    skyboxObject::createDescriptorSetLayout(*device,&ObjectDescriptorSetLayout);
 }
 
 void skyboxGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -390,5 +390,5 @@ bool skyboxGraphics::removeObject(skyboxObject* object)
 void skyboxGraphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)
 {
     for(size_t i=0;i<skybox.objects.size();i++)
-        skybox.objects[i]->updateUniformBuffer(*device, commandBuffer, currentImage);
+        skybox.objects[i]->updateUniformBuffer(commandBuffer, currentImage);
 }

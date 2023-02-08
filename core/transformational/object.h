@@ -50,8 +50,6 @@ private:
         glm::vec4                   Color{0.0f};
     }outlining;
 
-    void updateModelMatrix();
-
 protected:
     VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
@@ -59,27 +57,32 @@ protected:
 
     struct buffer
     {
-        VkBuffer instance{VK_NULL_HANDLE};
+        VkBuffer       instance{VK_NULL_HANDLE};
         VkDeviceMemory memory{VK_NULL_HANDLE};
-        bool updateFlag{true};
+        bool           updateFlag{true};
+        void*          map{nullptr};
     };
-    std::vector<buffer> uniformBuffers;
+    std::vector<buffer> uniformBuffersHost;
     std::vector<buffer> uniformBuffersDevice;
 
+private:
+    void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
+    void destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers);
+    void updateModelMatrix();
 public:
     object();
     object(uint32_t modelCount, gltfModel** model);
     ~object();
-    void destroyUniformBuffers(VkDevice* device);
-    void destroy(VkDevice* device);
+    void destroyUniformBuffers(VkDevice device);
+    void destroy(VkDevice device);
 
     uint8_t                         getPipelineBitMask() const;
 
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet();
 
-    void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
-    void updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber);
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
+    void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber);
     void updateAnimation(uint32_t imageNumber);
 
     void                setGlobalTransform(const glm::mat4& transform);
@@ -121,8 +124,9 @@ public:
     uint32_t            getFirstPrimitive() const;
     uint32_t            getPrimitiveCount() const;
 
-    void                createDescriptorPool(VkDevice* device, uint32_t imageCount);
-    void                createDescriptorSet(VkDevice* device, uint32_t imageCount);
+    static void         createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
+    void                createDescriptorPool(VkDevice device, uint32_t imageCount);
+    void                createDescriptorSet(VkDevice device, uint32_t imageCount);
 
     float animationTimer{0.0f};
     uint32_t animationIndex{0};
@@ -141,11 +145,11 @@ public:
 
     void translate(const glm::vec3& translate);
 
-    void createTexture(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* queue, VkCommandPool* commandPool);
-    void destroyTexture(VkDevice* device);
+    cubeTexture* getTexture();
 
-    void createDescriptorPool(VkDevice* device, uint32_t imageCount);
-    void createDescriptorSet(VkDevice* device, uint32_t imageCount);
+    static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
+    void createDescriptorPool(VkDevice device, uint32_t imageCount);
+    void createDescriptorSet(VkDevice device, uint32_t imageCount);
 };
 
 #endif // OBJECT_H

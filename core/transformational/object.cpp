@@ -16,22 +16,30 @@ object::object(uint32_t modelCount, gltfModel** model) :
 object::~object()
 {}
 
-void object::destroyUniformBuffers(VkDevice* device)
+void object::destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
-        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
-        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
+        if(buffer.map){      vkUnmapMemory(*device, buffer.memory); buffer.map = nullptr;}
+        if(buffer.instance){ vkDestroyBuffer(*device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
+        if(buffer.memory){   vkFreeMemory(*device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
     }
-    for(auto& buffer: uniformBuffersDevice){
-        if(buffer.instance) vkDestroyBuffer(*device, buffer.instance, nullptr);
-        if(buffer.memory)   vkFreeMemory(*device, buffer.memory, nullptr);
-    }
+    uniformBuffers.resize(0);
 }
 
-void object::destroy(VkDevice* device)
+void object::destroy(VkDevice device)
 {
-    if(descriptorPool )     vkDestroyDescriptorPool(*device, descriptorPool, nullptr);
-    if(descriptorSetLayout) vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr);
+    destroyUniformBuffers(&device, uniformBuffersHost);
+    destroyUniformBuffers(&device, uniformBuffersDevice);
+
+    if(descriptorPool )     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    if(descriptorSetLayout) vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr);
+}
+
+void object::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
+{
+    for (auto& buffer: uniformBuffers){
+        buffer.updateFlag = true;
+    }
 }
 
 uint8_t object::getPipelineBitMask() const
@@ -47,9 +55,7 @@ void object::updateModelMatrix()
 
     modelMatrix = globalTransformation * transformMatrix * scaleMatrix;
 
-    for (auto& buffer: uniformBuffers){
-        buffer.updateFlag = true;
-    }
+    updateUniformBuffersFlags(uniformBuffersHost);
 }
 
 void object::setGlobalTransform(const glm::mat4x4 & transform)
@@ -103,22 +109,23 @@ void object::updateAnimation(uint32_t imageNumber)
     }
 }
 
-void object::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+void object::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
-    uniformBuffers.resize(imageCount);
-    for (auto& buffer: uniformBuffers){
-      Buffer::create(   *physicalDevice,
-                        *device,
+    uniformBuffersHost.resize(imageCount);
+    for (auto& buffer: uniformBuffersHost){
+      Buffer::create(   physicalDevice,
+                        device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
+      vkMapMemory(device, buffer.memory, 0, sizeof(UniformBuffer), 0, &buffer.map);
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-      Buffer::create(   *physicalDevice,
-                        *device,
+      Buffer::create(   physicalDevice,
+                        device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -127,26 +134,40 @@ void object::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* de
     }
 }
 
-void object::updateUniformBuffer(VkDevice device, VkCommandBuffer commandBuffer, uint32_t frameNumber)
+void object::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
 {
-    if(void* data; uniformBuffers[frameNumber].updateFlag){
+    if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBuffer ubo{};
             ubo.modelMatrix = modelMatrix;
             ubo.constantColor = constantColor;
             ubo.colorFactor = colorFactor;
             ubo.bloomColor = bloomColor;
             ubo.bloomFactor = bloomFactor;
-        vkMapMemory(device, uniformBuffers[frameNumber].memory, 0, sizeof(ubo), 0, &data);
-            memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(device, uniformBuffers[frameNumber].memory);
+        memcpy(uniformBuffersHost[frameNumber].map, &ubo, sizeof(ubo));
 
-        uniformBuffers[frameNumber].updateFlag = false;
+        uniformBuffersHost[frameNumber].updateFlag = false;
 
-        Buffer::copy(commandBuffer, sizeof(UniformBuffer), uniformBuffers[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+        Buffer::copy(commandBuffer, sizeof(UniformBuffer), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
     }
 }
 
-void object::createDescriptorPool(VkDevice* device, uint32_t imageCount)
+
+void object::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
+    std::vector<VkDescriptorSetLayoutBinding> binding;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.back().descriptorCount = 1;
+        binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        binding.back().pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
+        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
+        uniformBufferLayoutInfo.pBindings = binding.data();
+    vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout);
+}
+
+void object::createDescriptorPool(VkDevice device, uint32_t imageCount)
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{});
@@ -158,12 +179,12 @@ void object::createDescriptorPool(VkDevice* device, uint32_t imageCount)
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool);
+    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
 }
 
-void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
+void object::createDescriptorSet(VkDevice device, uint32_t imageCount)
 {
-    createObjectDescriptorSetLayout(device,&descriptorSetLayout);
+    object::createDescriptorSetLayout(device,&descriptorSetLayout);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -172,7 +193,7 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
     descriptors.resize(imageCount);
-    vkAllocateDescriptorSets(*device, &allocInfo, descriptors.data());
+    vkAllocateDescriptorSets(device, &allocInfo, descriptors.data());
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
@@ -188,7 +209,7 @@ void object::createDescriptorSet(VkDevice* device, uint32_t imageCount)
             descriptorWrites.back().dstSet = descriptors[i];
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pBufferInfo = &bufferInfo;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -198,23 +219,19 @@ void                            object::setModel(gltfModel** model3D)           
 
 void                            object::setConstantColor(const glm::vec4 &color){
     this->constantColor = color;
-    for (auto& buffer: uniformBuffers)
-        buffer.updateFlag = true;
+    updateUniformBuffersFlags(uniformBuffersHost);
 }
 void                            object::setColorFactor(const glm::vec4 & color){
     this->colorFactor = color;
-    for (auto& buffer: uniformBuffers)
-        buffer.updateFlag = true;
+    updateUniformBuffersFlags(uniformBuffersHost);
 }
 void                            object::setBloomColor(const glm::vec4 & color){
     this->bloomColor = color;
-    for (auto& buffer: uniformBuffers)
-        buffer.updateFlag = true;
+    updateUniformBuffersFlags(uniformBuffersHost);
 }
 void                            object::setBloomFactor(const glm::vec4 &color){
     this->bloomFactor = color;
-    for (auto& buffer: uniformBuffers)
-        buffer.updateFlag = true;
+    updateUniformBuffersFlags(uniformBuffersHost);
 }
 
 bool                            object::getEnable() const                               {return enable;}
@@ -266,20 +283,34 @@ void skyboxObject::translate(const glm::vec3 &translate)
     static_cast<void>(translate);
 }
 
-void skyboxObject::createTexture(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* queue, VkCommandPool* commandPool){
-    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(*device,*commandPool);
-    texture->createTextureImage(*physicalDevice, *device, commandBuffer);
-    SingleCommandBuffer::submit(*device, *queue, *commandPool, &commandBuffer);
-    texture->createTextureImageView(device);
-    texture->createTextureSampler(device,{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    texture->destroyStagingBuffer(device);
+cubeTexture *skyboxObject::getTexture(){
+    return texture;
 }
 
-void skyboxObject::destroyTexture(VkDevice* device){
-    texture->destroy(device);
+void skyboxObject::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
+{
+    std::vector<VkDescriptorSetLayoutBinding> binding;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.back().descriptorCount = 1;
+        binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        binding.back().pImmutableSamplers = nullptr;
+    binding.push_back(VkDescriptorSetLayoutBinding{});
+        binding.back().binding = binding.size() - 1;
+        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.back().descriptorCount = 1;
+        binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        binding.back().pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
+        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
+        uniformBufferLayoutInfo.pBindings = binding.data();
+    vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout);
 }
 
-void skyboxObject::createDescriptorPool(VkDevice* device, uint32_t imageCount){
+void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{});
         poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -293,11 +324,11 @@ void skyboxObject::createDescriptorPool(VkDevice* device, uint32_t imageCount){
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool);
+    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
 }
 
-void skyboxObject::createDescriptorSet(VkDevice* device, uint32_t imageCount){
-    createSkyboxObjectDescriptorSetLayout(device,&descriptorSetLayout);
+void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
+    skyboxObject::createDescriptorSetLayout(device,&descriptorSetLayout);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -306,11 +337,11 @@ void skyboxObject::createDescriptorSet(VkDevice* device, uint32_t imageCount){
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
     descriptors.resize(imageCount);
-    vkAllocateDescriptorSets(*device, &allocInfo, descriptors.data());
+    vkAllocateDescriptorSets(device, &allocInfo, descriptors.data());
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i].instance;
+            bufferInfo.buffer = uniformBuffersDevice[i].instance;
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBuffer);
 
@@ -336,6 +367,6 @@ void skyboxObject::createDescriptorSet(VkDevice* device, uint32_t imageCount){
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &imageInfo;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

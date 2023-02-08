@@ -63,10 +63,12 @@ DISTFILES += \
     texture/skybox/top.jpg
 
 SOURCES += \
+    core/device.cpp \
     core/graphics/deferredGraphics/attachments.cpp \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
     core/graphics/deferredGraphics/filters/blur.cpp \
     core/graphics/deferredGraphics/filters/layersCombiner.cpp \
+    core/graphics/deferredGraphics/filters/shadow.cpp \
     core/graphics/deferredGraphics/filters/skybox.cpp \
     core/graphics/deferredGraphics/renderStages/source/ambientLighting.cpp \
     core/graphics/deferredGraphics/renderStages/source/lighting.cpp \
@@ -75,7 +77,6 @@ SOURCES += \
     core/graphics/deferredGraphics/renderStages/source/extension.cpp \
     core/graphics/deferredGraphics/renderStages/graphics.cpp \
     core/graphics/deferredGraphics/renderStages/postProcessing.cpp \
-    core/graphics/deferredGraphics/renderStages/shadowGraphics.cpp \
     core/graphics/deferredGraphics/filters/customfilter.cpp \
     core/graphics/deferredGraphics/filters/ssao.cpp \
     core/graphics/deferredGraphics/filters/sslr.cpp \
@@ -92,16 +93,17 @@ SOURCES += \
     scene.cpp
 
 HEADERS += \
+    core/device.h \
     core/graphics/deferredGraphics/attachments.h \
     core/graphics/deferredGraphics/bufferObjects.h \
     core/graphics/deferredGraphics/deferredgraphicsinterface.h \
     core/graphics/deferredGraphics/filters/blur.h \
     core/graphics/deferredGraphics/filters/filtergraphics.h \
     core/graphics/deferredGraphics/filters/layersCombiner.h \
+    core/graphics/deferredGraphics/filters/shadow.h \
     core/graphics/deferredGraphics/filters/skybox.h \
     core/graphics/deferredGraphics/renderStages/graphics.h \
     core/graphics/deferredGraphics/renderStages/postProcessing.h \
-    core/graphics/deferredGraphics/renderStages/shadowGraphics.h \
     core/graphics/deferredGraphics/filters/customfilter.h \
     core/graphics/deferredGraphics/filters/ssao.h \
     core/graphics/deferredGraphics/filters/sslr.h \

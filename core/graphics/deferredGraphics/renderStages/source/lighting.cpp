@@ -1,5 +1,4 @@
 #include "../graphics.h"
-#include "core/operations.h"
 #include "core/transformational/camera.h"
 #include "core/transformational/lightInterface.h"
 
@@ -51,7 +50,7 @@ void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
         layoutInfo.pBindings = binding.data();
     vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    createSpotLightDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
+    SpotLight::createDescriptorSetLayout(*device,&DescriptorSetLayoutDictionary[0x0]);
 }
 
 void deferredGraphics::Lighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
@@ -163,19 +162,6 @@ void deferredGraphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer co
 void deferredGraphics::updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     for(auto lightSource: lighting.lightSources)
-        lightSource->updateUniformBuffer(*device, commandBuffer,imageIndex);
+        lightSource->updateUniformBuffer(commandBuffer,imageIndex);
 }
 
-void deferredGraphics::updateLightCmd(uint32_t imageIndex)
-{
-    for(auto lightSource: lighting.lightSources)
-        if(lightSource->isShadowEnable())
-            lightSource->updateShadowCommandBuffer(imageIndex,base.objects);
-}
-
-void deferredGraphics::getLightCommandbuffers(std::vector<VkCommandBuffer>& commandbufferSet, uint32_t imageIndex)
-{
-    for(auto lightSource: lighting.lightSources)
-        if(lightSource->isShadowEnable())
-            commandbufferSet.push_back(*lightSource->getShadowCommandBuffer(imageIndex));
-}

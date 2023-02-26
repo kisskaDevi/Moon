@@ -26,12 +26,10 @@ void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount)
     combiner.transparentLayersCount = transparentLayersCount;
 }
 
-void layersCombiner::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void layersCombiner::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
-    this->graphicsQueue = graphicsQueue;
-    this->commandPool = commandPool;
 }
 void layersCombiner::setImageProp(imageInfo* pInfo){image = *pInfo;}
 void layersCombiner::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
@@ -363,6 +361,7 @@ void layersCombiner::Combiner::createPipeline(VkDevice* device, imageInfo* pInfo
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.pNext = nullptr;
         pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -610,26 +609,53 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
     }
 }
 
-void layersCombiner::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void layersCombiner::createCommandBuffers(VkCommandPool commandPool)
 {
-    std::array<VkClearValue, 2> ClearValues{};
-    for(uint32_t index = 0; index < ClearValues.size(); index++)
-        ClearValues[index].color = pAttachments->clearValue.color;
+    commandBuffers.resize(image.Count);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
+}
 
-    VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = image.Extent;
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-        renderPassInfo.pClearValues = ClearValues.data();
+void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
+{
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.PipelineLayout, 0, 1, &combiner.DescriptorSets[frameNumber], 0, nullptr);
-        vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
 
-    vkCmdEndRenderPass(commandBuffer);
+        std::array<VkClearValue, 2> ClearValues{};
+        for(uint32_t index = 0; index < ClearValues.size(); index++)
+            ClearValues[index].color = pAttachments->clearValue.color;
+
+        VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = framebuffers[frameNumber];
+            renderPassInfo.renderArea.offset = {0, 0};
+            renderPassInfo.renderArea.extent = image.Extent;
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+            renderPassInfo.pClearValues = ClearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.Pipeline);
+            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.PipelineLayout, 0, 1, &combiner.DescriptorSets[frameNumber], 0, nullptr);
+            vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffers[frameNumber]);
+
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+VkCommandBuffer& layersCombiner::getCommandBuffer(uint32_t frameNumber)
+{
+    return commandBuffers[frameNumber];
 }

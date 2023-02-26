@@ -10,8 +10,7 @@ class SSLRGraphics : public filterGraphics
 private:
     VkPhysicalDevice*                   physicalDevice{nullptr};
     VkDevice*                           device{nullptr};
-    VkQueue*                            graphicsQueue{nullptr};
-    VkCommandPool*                      commandPool{nullptr};
+
     texture*                            emptyTexture{nullptr};
 
     imageInfo                           image;
@@ -21,6 +20,8 @@ private:
 
     VkRenderPass                        renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>          framebuffers;
+
+    std::vector<VkCommandBuffer>          commandBuffers;
 
     struct SSLR : public filter{
         std::string                     ExternalPath;
@@ -38,10 +39,16 @@ private:
 public:
     SSLRGraphics();
     void destroy() override;
+    void freeCommandBuffer(VkCommandPool commandPool){
+        if(commandBuffers.data()){
+            vkFreeCommandBuffers(*device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        }
+        commandBuffers.resize(0);
+    }
 
     void setEmptyTexture(texture* emptyTexture) override;
     void setExternalPath(const std::string& path) override;
-    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool) override;
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device) override;
     void setImageProp(imageInfo* pInfo) override;
 
     void setAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
@@ -54,7 +61,9 @@ public:
     void createDescriptorSets() override;
     void updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments, DeferredAttachments firstLayer);
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
+    void createCommandBuffers(VkCommandPool commandPool) override;
+    void updateCommandBuffer(uint32_t frameNumber) override;
+    VkCommandBuffer& getCommandBuffer(uint32_t frameNumber) override;
 };
 
 #endif // SSLR_H

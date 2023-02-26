@@ -113,6 +113,7 @@ void PhysicalDevice::printQueueIndices(VkPhysicalDevice device, VkSurfaceKHR sur
             vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
         }
 
+        std::cout << "index\t" << index << "\tqueue count\t" << queueFamilies[index].queueCount << std::endl;
         if(queueFamilies[index].queueFlags & VK_QUEUE_GRAPHICS_BIT){
             std::cout << "index\t" << index << "\t:\t" << "VK_QUEUE_GRAPHICS_BIT" << std::endl;
         }
@@ -179,6 +180,29 @@ std::vector<uint32_t> PhysicalDevice::findQueueFamilies(VkPhysicalDevice device,
     }
 
     return indices;
+}
+
+std::vector<VkQueueFamilyProperties> PhysicalDevice::findQueueFamiliesProperties(VkPhysicalDevice device, VkQueueFlagBits queueFlags, VkSurfaceKHR surface)
+{
+    std::vector<VkQueueFamilyProperties> result;
+
+    uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, queueFamilies.data());
+
+    for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
+        VkBool32 presentSupport = surface ? false : true;
+        if(surface){
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+        }
+        if ((queueFamilies[index].queueFlags & queueFlags) == queueFlags && presentSupport){
+            result.push_back(queueFamilies[index]);
+        }
+    }
+
+    return result;
 }
 
 VkSampleCountFlagBits PhysicalDevice::queryingSampleCount(VkPhysicalDevice device)

@@ -12,6 +12,44 @@
 #include "filters/layersCombiner.h"
 #include "filters/skybox.h"
 #include "filters/shadow.h"
+#include "core/device.h"
+
+struct stage
+{
+    std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<VkPipelineStageFlags> waitStages;
+    std::vector<VkSemaphore> waitSemaphores;
+    std::vector<VkSemaphore> signalSemaphores;
+    VkQueue queue;
+    VkFence fence;
+
+    stage(  std::vector<VkCommandBuffer> commandBuffers,
+            std::vector<VkPipelineStageFlags> waitStages,
+            std::vector<VkSemaphore> waitSemaphores,
+            std::vector<VkSemaphore> signalSemaphores,
+            VkQueue queue,
+            VkFence fence) :
+        commandBuffers(commandBuffers),
+        waitStages(waitStages),
+        waitSemaphores(waitSemaphores),
+        signalSemaphores(signalSemaphores),
+        queue(queue),
+        fence(fence)
+    {}
+
+    VkResult submit(){
+        VkSubmitInfo submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.waitSemaphoreCount = waitSemaphores.size();
+            submitInfo.pWaitSemaphores = waitSemaphores.data();
+            submitInfo.pWaitDstStageMask = waitStages.data();
+            submitInfo.commandBufferCount = commandBuffers.size();
+            submitInfo.pCommandBuffers = commandBuffers.data();
+            submitInfo.signalSemaphoreCount = signalSemaphores.size();
+            submitInfo.pSignalSemaphores = signalSemaphores.data();
+        return vkQueueSubmit(queue, 1, &submitInfo, fence);
+    }
+};
 
 class deferredGraphicsInterface: public graphicsInterface
 {
@@ -21,7 +59,8 @@ private:
     VkExtent2D                                  extent;
     VkSampleCountFlagBits                       MSAASamples;
 
-    std::vector<deviceInfo>                     devicesInfo;
+    std::vector<physicalDevice>                 devices;
+    physicalDevice                              device;
 
     VkSwapchainKHR                              swapChain{VK_NULL_HANDLE};
 
@@ -54,12 +93,15 @@ private:
     bool                                        enableBlur{true};
     bool                                        enableBloom{true};
     bool                                        enableSSLR{true};
-    bool                                        enableSSAO{false};
+    bool                                        enableSSAO{true};
 
     std::vector<VkBuffer>                       storageBuffers;
     std::vector<VkDeviceMemory>                 storageBuffersMemory;
 
+    VkCommandPool                               commandPool;
     std::vector<VkCommandBuffer>                commandBuffers;
+    std::vector<std::vector<VkSemaphore>>       semaphores;
+
     std::vector<bool>                           updateCommandBufferFlags;
 
     camera*                                     cameraObject{nullptr};
@@ -68,16 +110,17 @@ private:
     void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments);
     void fastCreateGraphics(deferredGraphics* graphics, DeferredAttachments* attachments);
     void createStorageBuffers(uint32_t imageCount);
-    void updateCommandBuffer(uint32_t imageIndex, VkCommandBuffer* commandBuffer);
 public:
     deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
     void destroyEmptyTextures();
 
     ~deferredGraphicsInterface();
     void destroyGraphics() override;
+    void destroyCommandPool() override;
 
-    void setDevicesInfo(uint32_t devicesInfoCount, deviceInfo* devicesInfo) override;
+    void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
     void setSupportImageCount(VkSurfaceKHR* surface) override;
+    void createCommandPool() override;
     void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) override;
     void updateDescriptorSets() override;
 
@@ -87,9 +130,10 @@ public:
     void updateBuffers(uint32_t imageIndex) override;
     void freeCommandBuffers() override;
 
-    VkCommandBuffer&    getCommandBuffer(uint32_t imageIndex) override;
     uint32_t            getImageCount() override;
     VkSwapchainKHR&     getSwapChain() override;
+
+    VkSemaphore sibmit(VkSemaphore externalSemaphore, VkFence& externalFence, uint32_t imageIndex) override;
 
     void        updateCmdFlags();
 

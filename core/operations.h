@@ -53,6 +53,11 @@ namespace PhysicalDevice {
             VkQueueFlagBits                 queueFlags,
             VkSurfaceKHR                    surface = VK_NULL_HANDLE);
 
+    std::vector<VkQueueFamilyProperties> findQueueFamiliesProperties(
+            VkPhysicalDevice                device,
+            VkQueueFlagBits                 queueFlags,
+            VkSurfaceKHR                    surface = VK_NULL_HANDLE);
+
     VkSampleCountFlagBits queryingSampleCount(
             VkPhysicalDevice                device);
 

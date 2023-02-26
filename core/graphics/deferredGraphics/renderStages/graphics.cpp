@@ -19,11 +19,9 @@ void deferredGraphics::setExternalPath(const std::string &path){
     ambientLighting.ExternalPath = path;
 }
 
-void deferredGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool){
+void deferredGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device){
     this->physicalDevice = physicalDevice;
     this->device = device;
-    this->graphicsQueue = graphicsQueue;
-    this->commandPool = commandPool;
 }
 
 void deferredGraphics::setEmptyTexture(texture* emptyTexture){
@@ -137,17 +135,32 @@ void deferredGraphics::createRenderPass()
     std::array<VkSubpassDependency, 2> dependency{};
         dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency[index].dstSubpass = 0;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        dependency[index].srcStageMask =    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT|
+                                            VK_PIPELINE_STAGE_HOST_BIT;
+        dependency[index].srcAccessMask =   VK_ACCESS_HOST_READ_BIT;
+        dependency[index].dstStageMask =    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT|
+                                            VK_PIPELINE_STAGE_VERTEX_SHADER_BIT|
+                                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT|
+                                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT|
+                                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT|
+                                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency[index].dstAccessMask =   VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT|
+                                            VK_ACCESS_UNIFORM_READ_BIT|
+                                            VK_ACCESS_INDEX_READ_BIT|
+                                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
+                                            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     index++;
         dependency[index].srcSubpass = 0;
         dependency[index].dstSubpass = 1;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        dependency[index].srcStageMask =    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dependency[index].srcAccessMask =   VK_ACCESS_MEMORY_READ_BIT;
+        dependency[index].dstStageMask =    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|
+                                            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT|
+                                            VK_PIPELINE_STAGE_VERTEX_SHADER_BIT|
+                                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dependency[index].dstAccessMask =   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
+                                            VK_ACCESS_INPUT_ATTACHMENT_READ_BIT|
+                                            VK_ACCESS_UNIFORM_READ_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -209,34 +222,59 @@ void deferredGraphics::updateDescriptorSets(attachments* depthAttachment, VkBuff
     updateLightingDescriptorSets(cameraObject);
 }
 
-void deferredGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void deferredGraphics::createCommandBuffers(VkCommandPool commandPool)
 {
-    std::vector<VkClearValue> clearValues(pAttachments.size());
-    for(size_t i=0;i<clearValues.size();i++)
-        clearValues[i] = pAttachments[i]->clearValue;
+    commandBuffers.resize(image.Count);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
+}
 
-    VkRenderPassBeginInfo drawRenderPassInfo{};
-        drawRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        drawRenderPassInfo.renderPass = renderPass;
-        drawRenderPassInfo.framebuffer = framebuffers[frameNumber];
-        drawRenderPassInfo.renderArea.offset = {0, 0};
-        drawRenderPassInfo.renderArea.extent = image.Extent;
-        drawRenderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        drawRenderPassInfo.pClearValues = clearValues.data();
+void deferredGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
-    vkCmdBeginRenderPass(commandBuffers, &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+     VkCommandBufferBeginInfo beginInfo{};
+         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+         beginInfo.flags = 0;
+         beginInfo.pInheritanceInfo = nullptr;
 
-        primitiveCount = 0;
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+        std::vector<VkClearValue> clearValues(pAttachments.size());
+        for(size_t i=0;i<clearValues.size();i++)
+            clearValues[i] = pAttachments[i]->clearValue;
 
-        base.render(frameNumber,commandBuffers, primitiveCount);
-        outlining.render(frameNumber,commandBuffers);
+        VkRenderPassBeginInfo drawRenderPassInfo{};
+            drawRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            drawRenderPassInfo.renderPass = renderPass;
+            drawRenderPassInfo.framebuffer = framebuffers[frameNumber];
+            drawRenderPassInfo.renderArea.offset = {0, 0};
+            drawRenderPassInfo.renderArea.extent = image.Extent;
+            drawRenderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            drawRenderPassInfo.pClearValues = clearValues.data();
 
-    vkCmdNextSubpass(commandBuffers, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(commandBuffers[frameNumber], &drawRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        lighting.render(frameNumber,commandBuffers);
-        ambientLighting.render(frameNumber,commandBuffers);
+            primitiveCount = 0;
 
-        vkCmdEndRenderPass(commandBuffers);
+            base.render(frameNumber,commandBuffers[frameNumber], primitiveCount);
+            outlining.render(frameNumber,commandBuffers[frameNumber]);
+
+        vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
+
+            lighting.render(frameNumber,commandBuffers[frameNumber]);
+            ambientLighting.render(frameNumber,commandBuffers[frameNumber]);
+
+        vkCmdEndRenderPass(commandBuffers[frameNumber]);
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+VkCommandBuffer& deferredGraphics::getCommandBuffer(uint32_t frameNumber)
+{
+    return commandBuffers[frameNumber];
 }
 
 void deferredGraphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)

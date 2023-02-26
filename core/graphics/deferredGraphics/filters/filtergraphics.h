@@ -22,7 +22,7 @@ public:
 
     virtual void setEmptyTexture(texture* emptyTexture) = 0;
     virtual void setExternalPath(const std::string& path) = 0;
-    virtual void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool) = 0;
+    virtual void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device) = 0;
     virtual void setImageProp(imageInfo* pInfo) = 0;
 
     virtual void setAttachments(uint32_t attachmentsCount, attachments* pAttachments) = 0;
@@ -34,7 +34,9 @@ public:
     virtual void createDescriptorPool() = 0;
     virtual void createDescriptorSets() = 0;
 
-    virtual void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
+    virtual void createCommandBuffers(VkCommandPool commandPool) = 0;
+    virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
+    virtual VkCommandBuffer& getCommandBuffer(uint32_t frameNumber) = 0;
 };
 
 #endif // FILTERGRAPHICS_H

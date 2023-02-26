@@ -1,6 +1,8 @@
 #version 450
 #define pi 3.141592653589793f
 
+#include "../spotLightingPass/metods/pbr.frag"
+
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
     mat4 view;
@@ -54,7 +56,7 @@ vec4 SSLR(int steps, float incrementFactor, float resolution)
 {
     vec4 SSLR = vec4(0.0f);
 
-    bool depthCond = texture(depth, fragTexCoord).r - texture(layerDepth, fragTexCoord).r < 0.0;
+    bool depthCond = texture(depth, fragTexCoord).r < texture(layerDepth, fragTexCoord).r;
     vec4 pointPosition = findPosition(fragTexCoord, depthCond);
     vec4 pointNormal = findNormal(fragTexCoord, depthCond);
 
@@ -62,26 +64,31 @@ vec4 SSLR(int steps, float incrementFactor, float resolution)
     vec2 increment = incrementFactor * findIncrement(projview,pointPosition,reflectDirection);
     vec2 planeCoords = findPositionInPlane(projview,pointPosition).xy * vec2(0.5) + vec2(0.5);
 
-    int inCounter = 1;
-    for(int i = 0; i < steps; i++, planeCoords += increment){
+    for(int i = 0; i < steps && insideCondition(planeCoords); i++, planeCoords += increment){
         bool depthCond = texture(depth, planeCoords).r - texture(layerDepth, planeCoords).r < 0.0;
         vec4 direction = normalize(findPosition(planeCoords, depthCond) - pointPosition);
 
         float cosTheta = dot(reflectDirection, direction);
-        float cosPhi = dot(direction,findNormal(planeCoords, depthCond));
-        if((1.0f - cosTheta <= resolution) && (cosPhi<0.0f)){
-            SSLR += findSampler(planeCoords, depthCond);
-            inCounter++;
-            //break;
+        float cosPhi = dot(findNormal(planeCoords, depthCond), direction);
+        if((cosTheta >= resolution) && (cosPhi <= 0.0f)){
+            vec4 color = 50.0f * PBR(
+                        pointPosition,
+                        pointNormal,
+                        findSampler(fragTexCoord, depthCond),
+                        pointOfView,
+                        findSampler(planeCoords, depthCond),
+                        findPosition(planeCoords, depthCond).xyz);
+            SSLR = max(SSLR,color);
+            break;
         }
     }
 
-    return SSLR/inCounter;
+    return SSLR;
 }
 
 void main()
 {
     outColor = vec4(0.0f);
 
-    outColor += SSLR(20,0.15f,0.01);
+    outColor += SSLR(20, 0.2f, 0.9995);
 }

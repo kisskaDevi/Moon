@@ -83,9 +83,7 @@ void main()
             discard;
         }
     }else{
-        if(outBaseColor.a>=1.0f||outBaseColor.a<=0.1f){
-            discard;
-        }else if(glPosition.z / texture(depthMap , glPosition.xy * 0.5f + 0.5f).r < 1.001){
+        if(outBaseColor.a>=1.0f || outBaseColor.a<=0.1f || glPosition.z / texture(depthMap , glPosition.xy * 0.5f + 0.5f).r < 1.001){
             discard;
         }
     }
@@ -99,72 +97,70 @@ void main()
     float metallic;
     vec4 baseColor;
 
-    int number = pushConstants.material.number;
-
     if (pushConstants.material.workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS)
     {
-	// Metallic and Roughness material properties are packed together
-	// In glTF, these factors can be specified by fixed scalar values
-	// or from a metallic-roughness map
+        // Metallic and Roughness material properties are packed together
+        // In glTF, these factors can be specified by fixed scalar values
+        // or from a metallic-roughness map
         perceptualRoughness = pushConstants.material.roughnessFactor;
         metallic	    = pushConstants.material.metallicFactor;
         if (pushConstants.material.physicalDescriptorTextureSet > -1) {
-	        // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
-	        // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-	        vec4 mrSample = texture(metallicRoughnessTexture,UV0);
-		perceptualRoughness = mrSample.g * perceptualRoughness;
-		metallic = mrSample.b * metallic;
-	} else {
-	        perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);
-		metallic = clamp(metallic, 0.0, 1.0);
-	}
+                // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
+                // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
+                vec4 mrSample = texture(metallicRoughnessTexture,UV0);
+                perceptualRoughness = mrSample.g * perceptualRoughness;
+                metallic = mrSample.b * metallic;
+        } else {
+                perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);
+                metallic = clamp(metallic, 0.0, 1.0);
+        }
 
-	// The albedo may be defined from a base texture or a flat color
+        // The albedo may be defined from a base texture or a flat color
         if (pushConstants.material.baseColorTextureSet > -1) {
                 baseColor = SRGBtoLINEAR(outBaseColor) * pushConstants.material.baseColorFactor;
-	} else {
+        } else {
                 baseColor = pushConstants.material.baseColorFactor;
-	}
+        }
     }
 
     if (pushConstants.material.workflow == PBR_WORKFLOW_SPECULAR_GLOSINESS)
     {
-	// Values from specular glossiness workflow are converted to metallic roughness
+        // Values from specular glossiness workflow are converted to metallic roughness
         if (pushConstants.material.physicalDescriptorTextureSet > -1) {
-	        perceptualRoughness = 1.0 - texture(metallicRoughnessTexture,UV0).a;
-	} else {
-	        perceptualRoughness = 0.0;
-	}
+                perceptualRoughness = 1.0 - texture(metallicRoughnessTexture,UV0).a;
+        } else {
+                perceptualRoughness = 0.0;
+        }
 
-	vec4 diffuse = SRGBtoLINEAR(outBaseColor);
-	vec3 specular = SRGBtoLINEAR(texture(metallicRoughnessTexture,UV0)).rgb;
-	float maxSpecular = max(max(specular.r, specular.g), specular.b);
+        vec4 diffuse = SRGBtoLINEAR(outBaseColor);
+        vec3 specular = SRGBtoLINEAR(texture(metallicRoughnessTexture,UV0)).rgb;
+        float maxSpecular = max(max(specular.r, specular.g), specular.b);
 
-	// Convert metallic value from specular glossiness inputs
-	metallic = convertMetallic(diffuse.rgb, specular, maxSpecular);
+        // Convert metallic value from specular glossiness inputs
+        metallic = convertMetallic(diffuse.rgb, specular, maxSpecular);
 
-	const float epsilon = 1e-6;
+        const float epsilon = 1e-6;
 
         vec3 baseColorDiffusePart = diffuse.rgb * ((1.0 - maxSpecular) / (1 - c_MinRoughness) / max(1 - metallic, epsilon)) * pushConstants.material.diffuseFactor.rgb;
         vec3 baseColorSpecularPart = specular - (vec3(c_MinRoughness) * (1 - metallic) * (1 / max(metallic, epsilon))) * pushConstants.material.specularFactor.rgb;
-	baseColor = vec4(mix(baseColorDiffusePart, baseColorSpecularPart, metallic * metallic), diffuse.a);
+        baseColor = vec4(mix(baseColorDiffusePart, baseColorSpecularPart, metallic * metallic), diffuse.a);
     }
 
     outPosition.a = perceptualRoughness;
     outBaseColor = baseColor;
     outNormal.a = metallic;
     if (pushConstants.material.occlusionTextureSet > -1) {
-	    float ao = texture(occlusionTexture,UV0).r;
-	    outEmissiveTexture.a = ao;
+            float ao = texture(occlusionTexture,UV0).r;
+            outEmissiveTexture.a = ao;
     }else{
-	outEmissiveTexture.a = 1.0f;
+        outEmissiveTexture.a = 1.0f;
     }
 
     if(storage.depth>glPosition.z/glPosition.w){
-	if(abs(glPosition.x-storage.mousePosition.x)<0.002&&abs(glPosition.y-storage.mousePosition.y)<0.002){
-	    storage.number = number;
-	    storage.depth = glPosition.z/glPosition.w;
-	}
+        if(abs(glPosition.x-storage.mousePosition.x)<0.002&&abs(glPosition.y-storage.mousePosition.y)<0.002){
+            storage.number = pushConstants.material.number;
+            storage.depth = glPosition.z/glPosition.w;
+        }
     }
 }
 
@@ -172,9 +168,7 @@ void main()
 vec3 getNormal()
 {
     vec3 tangentNormal = normalize(texture(normalTexture, pushConstants.material.normalTextureSet == 0 ? UV0 : UV1).xyz * 2.0f - 1.0f);
-
     mat3 TBN = mat3(tangent, bitangent, normal);
-
     return normalize(TBN * tangentNormal);
 }
 
@@ -198,7 +192,7 @@ float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular)
         float perceivedDiffuse = sqrt(0.299 * diffuse.r * diffuse.r + 0.587 * diffuse.g * diffuse.g + 0.114 * diffuse.b * diffuse.b);
 	float perceivedSpecular = sqrt(0.299 * specular.r * specular.r + 0.587 * specular.g * specular.g + 0.114 * specular.b * specular.b);
 	if (perceivedSpecular < c_MinRoughness) {
-	        return 0.0;
+            return 0.0;
 	}
 	float a = c_MinRoughness;
 	float b = perceivedDiffuse * (1.0 - maxSpecular) / (1.0 - c_MinRoughness) + perceivedSpecular - 2.0 * c_MinRoughness;

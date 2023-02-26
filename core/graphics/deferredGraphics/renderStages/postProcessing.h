@@ -20,10 +20,7 @@ class postProcessingGraphics
 private:
     VkPhysicalDevice*                   physicalDevice{nullptr};
     VkDevice*                           device{nullptr};
-    VkQueue*                            graphicsQueue{nullptr};
-    VkCommandPool*                      commandPool{nullptr};
-    uint32_t                            queueGraphicsFamilyIndices;
-    uint32_t                            queuePresentFamilyIndices;
+
     texture*                            emptyTexture{nullptr};
 
     imageInfo                           image;
@@ -39,6 +36,8 @@ private:
 
     VkRenderPass                        renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>          framebuffers;
+
+    std::vector<VkCommandBuffer>          commandBuffers;
 
     struct PostProcessing{
         std::string                         ExternalPath;
@@ -59,14 +58,20 @@ private:
 public:
     postProcessingGraphics();
     void destroy();
+    void freeCommandBuffer(VkCommandPool commandPool){
+        if(commandBuffers.data()){
+            vkFreeCommandBuffers(*device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        }
+        commandBuffers.resize(0);
+    }
     void destroySwapChainAttachments();
 
     void setEmptyTexture(texture* emptyTexture);
     void setExternalPath(const std::string& path);
-    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily);
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device);
     void setImageProp(imageInfo* pInfo);
 
-    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface);
+    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices);
     void createSwapChainAttachments(VkSwapchainKHR* swapChain);
     void createRenderPass();
     void createFramebuffers();
@@ -76,7 +81,9 @@ public:
     void createDescriptorSets();
     void updateDescriptorSets();
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
+    void createCommandBuffers(VkCommandPool commandPool);
+    void updateCommandBuffer(uint32_t frameNumber);
+    VkCommandBuffer& getCommandBuffer(uint32_t frameNumber);
 
     void setBlurAttachment(attachments* blurAttachment);
     void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor);

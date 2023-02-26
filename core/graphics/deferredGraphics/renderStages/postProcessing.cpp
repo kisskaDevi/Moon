@@ -9,14 +9,10 @@
 postProcessingGraphics::postProcessingGraphics()
 {}
 
-void postProcessingGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool, uint32_t graphicsFamily, uint32_t presentFamily)
+void postProcessingGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
-    this->graphicsQueue = graphicsQueue;
-    this->commandPool = commandPool;
-    this->queueGraphicsFamilyIndices = graphicsFamily;
-    this->queuePresentFamilyIndices = presentFamily;
 }
 void postProcessingGraphics::setImageProp(imageInfo* pInfo)
 {
@@ -80,13 +76,11 @@ void postProcessingGraphics::setExternalPath(const std::string &path)
     postProcessing.ExternalPath = path;
 }
 
-void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface)
+void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices)
 {
     VkPresentModeKHR presentMode = SwapChain::queryingPresentMode(swapChainSupport.presentModes);
     VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
     VkExtent2D extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
-
-    uint32_t queueFamilyIndices[] = {queueGraphicsFamilyIndices, queuePresentFamilyIndices};
 
     VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -97,14 +91,9 @@ void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwind
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ;
-        if(queueGraphicsFamilyIndices != queuePresentFamilyIndices)
-        {
-            createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            createInfo.pQueueFamilyIndices = queueFamilyIndices;
-            createInfo.queueFamilyIndexCount = 2;
-        }else{
-            createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        }
+        createInfo.imageSharingMode = queueFamilyIndexCount > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.pQueueFamilyIndices = pQueueFamilyIndices;
+        createInfo.queueFamilyIndexCount = queueFamilyIndexCount;
         createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = presentMode;
@@ -370,6 +359,7 @@ void postProcessingGraphics::createPipelines()
         index = 0;
         std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
             pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipelineInfo[index].pNext = nullptr;
             pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
             pipelineInfo[index].pStages = shaderStages.data();
             pipelineInfo[index].pVertexInputState = &vertexInputInfo;
@@ -503,29 +493,56 @@ void postProcessingGraphics::updateDescriptorSets()
     }
 }
 
-void postProcessingGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void postProcessingGraphics::createCommandBuffers(VkCommandPool commandPool)
 {
-    std::array<VkClearValue, 1> ClearValues{};
-        ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    commandBuffers.resize(image.Count);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
+}
 
-    VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = image.Extent;
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-        renderPassInfo.pClearValues = ClearValues.data();
+void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
-    vkCmdBeginRenderPass(commandBuffers, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+     VkCommandBufferBeginInfo beginInfo{};
+         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+         beginInfo.flags = 0;
+         beginInfo.pInheritanceInfo = nullptr;
 
-        postProcessingPushConst pushConst{};
-            pushConst.blitFactor = postProcessing.blitFactor;
-        vkCmdPushConstants(commandBuffers, postProcessing.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(postProcessingPushConst), &pushConst);
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
 
-        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.PipelineLayout, 0, 1, &postProcessing.DescriptorSets[frameNumber], 0, nullptr);
-        vkCmdDraw(commandBuffers, 6, 1, 0, 0);
+        std::array<VkClearValue, 1> ClearValues{};
+            ClearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
-    vkCmdEndRenderPass(commandBuffers);
+        VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = framebuffers[frameNumber];
+            renderPassInfo.renderArea.offset = {0, 0};
+            renderPassInfo.renderArea.extent = image.Extent;
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+            renderPassInfo.pClearValues = ClearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            postProcessingPushConst pushConst{};
+                pushConst.blitFactor = postProcessing.blitFactor;
+            vkCmdPushConstants(commandBuffers[frameNumber], postProcessing.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(postProcessingPushConst), &pushConst);
+
+            vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.Pipeline);
+            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.PipelineLayout, 0, 1, &postProcessing.DescriptorSets[frameNumber], 0, nullptr);
+            vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffers[frameNumber]);
+
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+VkCommandBuffer& postProcessingGraphics::getCommandBuffer(uint32_t frameNumber)
+{
+    return commandBuffers[frameNumber];
 }

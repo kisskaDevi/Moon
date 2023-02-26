@@ -52,44 +52,17 @@ void graphicsManager::createSurface(GLFWwindow* window)
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 }
 
-void graphicsManager::pickPhysicalDevice()
+void graphicsManager::createDevice()
 {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+    std::vector<VkPhysicalDevice> phDevices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, phDevices.data());
 
-    for (const auto& device : devices)
-    {
-        PhysicalDevice::printQueueIndices(device, surface);
-
-        std::vector<uint32_t> indices = PhysicalDevice::findQueueFamilies(device, VK_QUEUE_GRAPHICS_BIT, surface);
-        if (indices.size()!= 0 && PhysicalDevice::isSuitable(device,surface,deviceExtensions))
-        {
-            physicalDevice currentDevice = {device, indices};
-            physicalDevices.push_back(currentDevice);
-        }
+    for (const auto device : phDevices){
+        devices.emplace_back(physicalDevice(device,surface,deviceExtensions));
     }
-
-    if(physicalDevices.size()!=0)
-    {
-        physicalDeviceNumber = 1;
-        indicesNumber = 0;
-    }
-}
-
-void graphicsManager::createLogicalDevice()
-{
-    std::set<uint32_t> uniqueQueueFamilies = {physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber), physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber)};
-
-    float queuePriority[2] = {1.0f, 0.5f};
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    queueCreateInfos.push_back(VkDeviceQueueCreateInfo{});
-        queueCreateInfos.back().sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfos.back().queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber);
-        queueCreateInfos.back().queueCount = 2;
-        queueCreateInfos.back().pQueuePriorities = queuePriority;
 
     VkPhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
@@ -98,43 +71,15 @@ void graphicsManager::createLogicalDevice()
         deviceFeatures.imageCubeArray = VK_TRUE;
         deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 
-    VkDeviceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-        createInfo.pQueueCreateInfos = queueCreateInfos.data();
-        createInfo.pEnabledFeatures = &deviceFeatures;
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-        createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-        createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
-        createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
-    vkCreateDevice(physicalDevices.at(physicalDeviceNumber).device, &createInfo, nullptr, &device);
-
-    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber), 1, &presentQueue);
-}
-
-void graphicsManager::createCommandPool()
-{
-    VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber);
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
+    device logical(deviceFeatures);
+    devices[0].createDevice(logical,{{0,16},{1,1},{2,1}});
 }
 
 void graphicsManager::setGraphics(graphicsInterface* graphics)
 {
     this->graphics = graphics;
 
-    std::vector<deviceInfo> info;
-    info.push_back(deviceInfo{ &physicalDevices.at(physicalDeviceNumber).device,
-                               &physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),
-                               &physicalDevices.at(physicalDeviceNumber).indices.at(indicesNumber),
-                               &device,
-                               &graphicsQueue,
-                               &commandPool});
-
-    this->graphics->setDevicesInfo(static_cast<uint32_t>(info.size()),info.data());
+    this->graphics->setDevices(static_cast<uint32_t>(devices.size()), devices.data());
     this->graphics->setSupportImageCount(&surface);
 }
 
@@ -151,83 +96,68 @@ void graphicsManager::createCommandBuffers()
 
 void graphicsManager::createSyncObjects()
 {
-    VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    vkCreateSemaphore(device, &semaphoreInfo, nullptr, &availableSemaphores);
-
+    availableSemaphores.resize(graphics->getImageCount());
     signalSemaphores.resize(graphics->getImageCount());
     fences.resize(graphics->getImageCount());
 
     for (size_t imageIndex = 0; imageIndex < graphics->getImageCount(); imageIndex++){
         VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &signalSemaphores[imageIndex]);
+        vkCreateSemaphore(devices[0].getLogical(), &semaphoreInfo, nullptr, &signalSemaphores[imageIndex]);
+        vkCreateSemaphore(devices[0].getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
 
         VkFenceCreateInfo fenceInfo{};
             fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        vkCreateFence(device, &fenceInfo, nullptr, &fences[imageIndex]);
+        vkCreateFence(devices[0].getLogical(), &fenceInfo, nullptr, &fences[imageIndex]);
     }
 }
 
 VkResult graphicsManager::checkNextFrame()
 {
-    VkResult result = vkAcquireNextImageKHR(device, graphics->getSwapChain(), UINT64_MAX, availableSemaphores, VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(devices[0].getLogical(), graphics->getSwapChain(), UINT64_MAX, availableSemaphores[semaphorIndex], VK_NULL_HANDLE, &imageIndex);
 
     if (result != VK_ERROR_OUT_OF_DATE_KHR)
-        vkWaitForFences(device, 1, &fences[imageIndex], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(devices[0].getLogical(), 1, &fences[imageIndex], VK_TRUE, UINT64_MAX);
 
     return result;
 }
 
 VkResult graphicsManager::drawFrame()
 {
-    VkSemaphore                         waitSemaphores[] = {availableSemaphores};
-    VkPipelineStageFlags                waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore                         signalSemaphores[] = {this->signalSemaphores[imageIndex]};
-
     graphics->updateBuffers(imageIndex);
     graphics->updateCommandBuffer(imageIndex);
 
-    VkCommandBuffer& commandBuffer = graphics->getCommandBuffer(imageIndex);
+    vkResetFences(devices[0].getLogical(), 1, &fences[imageIndex]);
 
-    vkResetFences(device, 1, &fences[imageIndex]);
-    VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[imageIndex]);
+    VkSemaphore signalSemaphores = graphics->sibmit(availableSemaphores[semaphorIndex],fences[imageIndex],imageIndex);
+
+    semaphorIndex = ((semaphorIndex + 1) % graphics->getImageCount());
 
     VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
+        presentInfo.pWaitSemaphores = &signalSemaphores;
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &graphics->getSwapChain();
         presentInfo.pImageIndices = &imageIndex;
-    return vkQueuePresentKHR(presentQueue, &presentInfo);
+    return vkQueuePresentKHR(devices[0].getQueue(0,0), &presentInfo);
 }
 
 void graphicsManager::graphicsManager::destroy()
 {
-    graphics->freeCommandBuffers();
+    graphics->destroyCommandPool();
 
-    if(availableSemaphores) {vkDestroySemaphore(device, availableSemaphores, nullptr); availableSemaphores = VK_NULL_HANDLE;}
     for (size_t imageIndex = 0; imageIndex < graphics->getImageCount(); imageIndex++){
-        vkDestroySemaphore(device, signalSemaphores[imageIndex], nullptr);
-        vkDestroyFence(device, fences[imageIndex], nullptr);
+        vkDestroySemaphore(devices[0].getLogical(), availableSemaphores[imageIndex], nullptr);
+        vkDestroySemaphore(devices[0].getLogical(), signalSemaphores[imageIndex], nullptr);
+        vkDestroyFence(devices[0].getLogical(), fences[imageIndex], nullptr);
     }
+    availableSemaphores.resize(0);
     signalSemaphores.resize(0);
     fences.resize(0);
 
-    if(commandPool) {vkDestroyCommandPool(device, commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
-
-    if(device) {vkDestroyDevice(device, nullptr); device = VK_NULL_HANDLE;}
+    if(devices[0].getLogical()) {vkDestroyDevice(devices[0].getLogical(), nullptr); devices[0].getLogical() = VK_NULL_HANDLE;}
 
     if (enableValidationLayers)
         if(debugMessenger) { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
@@ -237,4 +167,4 @@ void graphicsManager::graphicsManager::destroy()
 }
 
 uint32_t graphicsManager::getImageIndex(){return imageIndex;}
-void     graphicsManager::deviceWaitIdle(){vkDeviceWaitIdle(device);}
+void     graphicsManager::deviceWaitIdle(){vkDeviceWaitIdle(devices[0].getLogical());}

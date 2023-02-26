@@ -22,8 +22,7 @@ class deferredGraphics
 private:
     VkPhysicalDevice*               physicalDevice{nullptr};
     VkDevice*                       device{nullptr};
-    VkQueue*                        graphicsQueue{nullptr};
-    VkCommandPool*                  commandPool{nullptr};
+
     texture*                        emptyTexture{nullptr};
 
     uint32_t                        primitiveCount{0};
@@ -34,6 +33,8 @@ private:
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
+
+    std::vector<VkCommandBuffer>          commandBuffers;
 
     struct Base{
         std::string                                     ExternalPath;
@@ -118,10 +119,16 @@ private:
 public:
     deferredGraphics();
     void destroy();
+    void freeCommandBuffer(VkCommandPool commandPool){
+        if(commandBuffers.data()){
+            vkFreeCommandBuffers(*device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        }
+        commandBuffers.resize(0);
+    }
 
     void setEmptyTexture(texture* emptyTexture);
     void setExternalPath(const std::string& path);
-    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool);
+    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device);
     void setImageProp(imageInfo* pInfo);
 
     void setAttachments(DeferredAttachments* pAttachments);
@@ -134,7 +141,9 @@ public:
     void createDescriptorSets();
     void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject);
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
+    void createCommandBuffers(VkCommandPool commandPool);
+    void updateCommandBuffer(uint32_t frameNumber);
+    VkCommandBuffer& getCommandBuffer(uint32_t frameNumber);
 
     void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
     void updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);

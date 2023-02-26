@@ -118,6 +118,7 @@ void deferredGraphics::Lighting::createSpotPipeline(VkDevice* device, imageInfo*
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfoScattering{};
         pipelineInfoScattering[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfoScattering[index].pNext = nullptr;
         pipelineInfoScattering[index].stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfoScattering[index].pStages = shaderStages.data();
         pipelineInfoScattering[index].pVertexInputState = &vertexInputInfo;

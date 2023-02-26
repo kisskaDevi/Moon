@@ -19,11 +19,9 @@ void shadowGraphics::setImageProp(imageInfo* pInfo){
     this->image = *pInfo;
 }
 
-void shadowGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool){
+void shadowGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device){
     this->physicalDevice = physicalDevice;
     this->device = device;
-    this->graphicsQueue = graphicsQueue;
-    this->commandPool = commandPool;
 }
 
 void shadowGraphics::setAttachments(uint32_t attachmentsCount, attachments* pAttachments){
@@ -210,6 +208,7 @@ void shadowGraphics::Shadow::createPipeline(VkDevice* device, imageInfo* pInfo, 
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.pNext = nullptr;
         pipelineInfo.stageCount = 1;
         pipelineInfo.pStages = shaderStages;
         pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -284,12 +283,38 @@ void shadowGraphics::removeLightSource(light* lightSource)
     }
 }
 
-void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void shadowGraphics::createCommandBuffers(VkCommandPool commandPool)
 {
-    for(uint32_t attachmentNumber = 0; attachmentNumber < shadow.lightSources.size(); attachmentNumber++){
-        render(frameNumber,commandBuffer,attachmentNumber);
-    }
+    commandBuffers.resize(image.Count);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
 }
+
+void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
+
+     VkCommandBufferBeginInfo beginInfo{};
+         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+         beginInfo.flags = 0;
+         beginInfo.pInheritanceInfo = nullptr;
+
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+        for(uint32_t attachmentNumber = 0; attachmentNumber < shadow.lightSources.size(); attachmentNumber++){
+            render(frameNumber,commandBuffers[frameNumber],attachmentNumber);
+        }
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+VkCommandBuffer& shadowGraphics::getCommandBuffer(uint32_t frameNumber)
+{
+    return commandBuffers[frameNumber];
+}
+
 void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber)
 {
     std::array<VkClearValue, 1> ClearValues{};

@@ -5,24 +5,17 @@
 #include <vector>
 
 class GLFWwindow;
-
-struct deviceInfo
-{
-    VkPhysicalDevice*               physicalDevice{VK_NULL_HANDLE};
-    uint32_t*                       graphicsFamily{nullptr};
-    uint32_t*                       presentFamily{nullptr};
-    VkDevice*                       device{VK_NULL_HANDLE};
-    VkQueue*                        queue{VK_NULL_HANDLE};
-    VkCommandPool*                  commandPool{VK_NULL_HANDLE};
-};
+class physicalDevice;
 
 class graphicsInterface{
 public:
     virtual ~graphicsInterface(){};
     virtual void destroyGraphics() = 0;
+    virtual void destroyCommandPool() = 0;
 
-    virtual void setDevicesInfo(uint32_t devicesInfoCount, deviceInfo* devicesInfo) = 0;
+    virtual void setDevices(uint32_t devicesCount, physicalDevice* devices) = 0;
     virtual void setSupportImageCount(VkSurfaceKHR* surface) = 0;
+    virtual void createCommandPool() = 0;
     virtual void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) = 0;
     virtual void updateDescriptorSets() = 0;
 
@@ -33,7 +26,8 @@ public:
 
     virtual void updateBuffers(uint32_t imageIndex) = 0;
 
-    virtual VkCommandBuffer&    getCommandBuffer(uint32_t imageIndex) = 0;
+    virtual VkSemaphore sibmit(VkSemaphore externalSemaphore, VkFence& externalFence, uint32_t imageIndex) = 0;
+
     virtual uint32_t            getImageCount() = 0;
     virtual VkSwapchainKHR&     getSwapChain() = 0;
 };

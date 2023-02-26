@@ -133,6 +133,7 @@ void deferredGraphics::AmbientLighting::createPipeline(VkDevice* device, imageIn
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfoAmbient{};
         pipelineInfoAmbient[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfoAmbient[index].pNext = nullptr;
         pipelineInfoAmbient[index].stageCount = static_cast<uint32_t>(shaderStagesAmbient.size());
         pipelineInfoAmbient[index].pStages = shaderStagesAmbient.data();
         pipelineInfoAmbient[index].pVertexInputState = &vertexInputInfo;

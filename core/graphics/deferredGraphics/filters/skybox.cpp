@@ -20,12 +20,10 @@ void skyboxGraphics::setExternalPath(const std::string &path)
     skybox.ExternalPath = path;
 }
 
-void skyboxGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void skyboxGraphics::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
-    this->graphicsQueue = graphicsQueue;
-    this->commandPool = commandPool;
 }
 void skyboxGraphics::setImageProp(imageInfo* pInfo) {this->image = *pInfo;}
 void skyboxGraphics::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
@@ -272,6 +270,7 @@ void skyboxGraphics::Skybox::createPipeline(VkDevice* device, imageInfo* pInfo, 
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
         pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo[index].pNext = nullptr;
         pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo[index].pStages = shaderStages.data();
         pipelineInfo[index].pVertexInputState = &vertexInputInfo;
@@ -340,34 +339,61 @@ void skyboxGraphics::updateDescriptorSets(camera* cameraObject)
     }
 }
 
-void skyboxGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void skyboxGraphics::createCommandBuffers(VkCommandPool commandPool)
 {
-    std::array<VkClearValue, 1> ClearValues{};
-    for(uint32_t index = 0; index < ClearValues.size(); index++)
-        ClearValues[index].color = pAttachments->clearValue.color;
+    commandBuffers.resize(image.Count);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
+}
 
-    VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = image.Extent;
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-        renderPassInfo.pClearValues = ClearValues.data();
+void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
-    for(auto object: skybox.objects)
-    {
-        if(object->getEnable()){
-            std::vector<VkDescriptorSet> descriptorSets = {skybox.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
-            vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+
+        std::array<VkClearValue, 1> ClearValues{};
+        for(uint32_t index = 0; index < ClearValues.size(); index++)
+            ClearValues[index].color = pAttachments->clearValue.color;
+
+        VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = framebuffers[frameNumber];
+            renderPassInfo.renderArea.offset = {0, 0};
+            renderPassInfo.renderArea.extent = image.Extent;
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+            renderPassInfo.pClearValues = ClearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
+        for(auto object: skybox.objects)
+        {
+            if(object->getEnable()){
+                std::vector<VkDescriptorSet> descriptorSets = {skybox.DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
+                vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
+                vkCmdDraw(commandBuffers[frameNumber], 36, 1, 0, 0);
+            }
         }
-    }
 
-    vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffers[frameNumber]);
+
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+VkCommandBuffer& skyboxGraphics::getCommandBuffer(uint32_t frameNumber)
+{
+    return commandBuffers[frameNumber];
 }
 
 void skyboxGraphics::bindObject(skyboxObject* newObject)

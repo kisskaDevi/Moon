@@ -38,10 +38,9 @@ int main()
     graphicsManager app;
     app.createInstance();
     app.createSurface(window);
-    app.pickPhysicalDevice();
-    app.createLogicalDevice();
-    app.createCommandPool();
+    app.createDevice();
     app.setGraphics(&graphics);
+    graphics.createCommandPool();
 
     camera cameraObject;
         cameraObject.translate(glm::vec3(0.0f,0.0f,10.0f));
@@ -129,7 +128,7 @@ void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics
     graphics->setExtent({static_cast<uint32_t>(width),static_cast<uint32_t>(height)});
     app->createGraphics(window);
     graphics->updateDescriptorSets();
-    graphics->updateCommandBuffers();
+    app->createCommandBuffers();
 }
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height)

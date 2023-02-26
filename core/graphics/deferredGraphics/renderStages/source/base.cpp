@@ -191,6 +191,7 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
     index=0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
         pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo[index].pNext = nullptr;
         pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo[index].pStages = shaderStages.data();
         pipelineInfo[index].pVertexInputState = &vertexInputInfo;
@@ -232,6 +233,7 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
 
     index=0;
         pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo[index].pNext = nullptr;
         pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo[index].pStages = shaderStages.data();
         pipelineInfo[index].pVertexInputState = &vertexInputInfo;

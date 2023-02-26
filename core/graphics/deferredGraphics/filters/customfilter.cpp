@@ -19,12 +19,10 @@ void customFilter::setExternalPath(const std::string& path)
     filter.ExternalPath = path;
 }
 
-void customFilter::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void customFilter::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
-    this->graphicsQueue = graphicsQueue;
-    this->commandPool = commandPool;
 }
 void customFilter::setImageProp(imageInfo* pInfo)                           {this->image = *pInfo;}
 void customFilter::setSampleStep(float deltaX, float deltaY)                {xSampleStep = deltaX; ySampleStep = deltaY;}
@@ -335,6 +333,7 @@ void customFilter::Filter::createPipeline(VkDevice* device, imageInfo* pInfo, Vk
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.pNext = nullptr;
         pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -403,6 +402,67 @@ void customFilter::updateDescriptorSets()
     }
 }
 
+void customFilter::createCommandBuffers(VkCommandPool commandPool)
+{
+    commandBuffers.resize(image.Count);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
+}
+
+void customFilter::updateCommandBuffer(uint32_t frameNumber)
+{
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
+
+     VkCommandBufferBeginInfo beginInfo{};
+         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+         beginInfo.flags = 0;
+         beginInfo.pInheritanceInfo = nullptr;
+
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+
+    VkImageSubresourceRange ImageSubresourceRange{};
+            ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            ImageSubresourceRange.baseMipLevel = 0;
+            ImageSubresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+            ImageSubresourceRange.baseArrayLayer = 0;
+            ImageSubresourceRange.layerCount = 1;
+        VkClearColorValue clearColorValue{};
+            clearColorValue.uint32[0] = 0;
+            clearColorValue.uint32[1] = 0;
+            clearColorValue.uint32[2] = 0;
+            clearColorValue.uint32[3] = 0;
+
+        std::vector<VkImage> blitImages(attachmentsCount);
+        blitImages[0] = srcAttachment->image[frameNumber];
+        for(size_t i=1;i<attachmentsCount;i++){
+            blitImages[i] = pAttachments[i-1].image[frameNumber];
+        }
+        VkImage blitBufferImage = bufferAttachment.image[frameNumber];
+        uint32_t width = image.Extent.width;
+        uint32_t height = image.Extent.height;
+
+        for(uint32_t k=0;k<attachmentsCount;k++){
+            Texture::transitionLayout(commandBuffers[frameNumber],blitBufferImage, k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
+            vkCmdClearColorImage(commandBuffers[frameNumber],blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
+            Texture::blitDown(commandBuffers[frameNumber],blitImages[k],0,blitBufferImage,0,width,height,0,1,blitFactor);
+            Texture::transitionLayout(commandBuffers[frameNumber],blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
+            render(frameNumber,commandBuffers[frameNumber],k);
+        }
+        for(uint32_t k=0;k<attachmentsCount;k++)
+            Texture::transitionLayout(commandBuffers[frameNumber],pAttachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
+
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+VkCommandBuffer& customFilter::getCommandBuffer(uint32_t frameNumber)
+{
+    return commandBuffers[frameNumber];
+}
+
 void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber)
 {
     std::array<VkClearValue, 1> ClearValues{};
@@ -430,38 +490,4 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, u
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
-}
-
-void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
-{
-    VkImageSubresourceRange ImageSubresourceRange{};
-        ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        ImageSubresourceRange.baseMipLevel = 0;
-        ImageSubresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-        ImageSubresourceRange.baseArrayLayer = 0;
-        ImageSubresourceRange.layerCount = 1;
-    VkClearColorValue clearColorValue{};
-        clearColorValue.uint32[0] = 0;
-        clearColorValue.uint32[1] = 0;
-        clearColorValue.uint32[2] = 0;
-        clearColorValue.uint32[3] = 0;
-
-    std::vector<VkImage> blitImages(attachmentsCount);
-    blitImages[0] = srcAttachment->image[frameNumber];
-    for(size_t i=1;i<attachmentsCount;i++){
-        blitImages[i] = pAttachments[i-1].image[frameNumber];
-    }
-    VkImage blitBufferImage = bufferAttachment.image[frameNumber];
-    uint32_t width = image.Extent.width;
-    uint32_t height = image.Extent.height;
-
-    for(uint32_t k=0;k<attachmentsCount;k++){
-        Texture::transitionLayout(commandBuffer,blitBufferImage, k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
-        vkCmdClearColorImage(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
-        Texture::blitDown(commandBuffer,blitImages[k],0,blitBufferImage,0,width,height,0,1,blitFactor);
-        Texture::transitionLayout(commandBuffer,blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
-        render(frameNumber,commandBuffer,k);
-    }
-    for(uint32_t k=0;k<attachmentsCount;k++)
-        Texture::transitionLayout(commandBuffer,pAttachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
 }

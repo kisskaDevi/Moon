@@ -86,7 +86,7 @@ vec4 findColor(const in vec3 coord, sampler2D Sampler){
 
 vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sampler, sampler2D Depth){
     vec4 color = vec4(0.0f);
-    for(float t = 0.0f; t <= 1.0f; t += step){
+    for(float t = 0.0f; t < 1.0f; t += step){
         vec3 coords = beginCoords + (endCoords - beginCoords) * t;
         vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
                            1.0f - abs(2.0f * t - 2.0f / 3.0f),
@@ -106,7 +106,7 @@ vec4 findColor(const in vec3 coord){
 
 vec4 accumulateBaseColor(vec3 beginCoords, vec3 endCoords, float step){
     vec4 color = vec4(0.0f);
-    for(float t = 0.0f; t <= 1.0f; t += step){
+    for(float t = 0.0f; t < 1.0f; t += step){
         vec3 coords = beginCoords + (endCoords - beginCoords) * t;
         vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
                            1.0f - abs(2.0f * t - 2.0f / 3.0f),
@@ -136,19 +136,23 @@ vec4 accumulateBaseBloom(vec3 beginCoords, vec3 endCoords, float step){
 
 void main()
 {
-    float step = 0.02f;
+    bool check = (texture(layersSampler[0],fragTexCoord.xy).a == 0.0f);
+
+    float step = check ? 1.0f : 0.02f ;
+    float incrementStep = 2.0f;
 
     vec3 beginCoords = vec3(fragTexCoord,0.0f), beginStartPos = eyePosition;
     vec3 endCoords = vec3(fragTexCoord,0.0f), endStartPos = eyePosition;
     vec4 layerColor = vec4(0.0f), layerBloom = vec4(0.0f);
 
-    for(int i = 0; i < transparentLayersCount; i++)
+    for(int i = 0; i < (check ? 0 : transparentLayersCount); i++)
     {
-        vec4 color = accumulateColor(beginCoords,endCoords,step,layersSampler[i],layersDepth[i]);
-        layerColor = max(layerColor, 2.0f * step * color);
+        float layerStep = step * (pow(incrementStep,i));
+        vec4 color = accumulateColor(beginCoords,endCoords,layerStep,layersSampler[i],layersDepth[i]);
+        layerColor = max(layerColor, 2.0f * layerStep * color);
 
-        vec4 bloom = accumulateColor(beginCoords,endCoords,step,layersBloomSampler[i],layersDepth[i]);
-        layerBloom = max(layerBloom, 2.0f * step * bloom);
+        vec4 bloom = accumulateColor(beginCoords,endCoords,layerStep,layersBloomSampler[i],layersDepth[i]);
+        layerBloom = max(layerBloom, 2.0f * layerStep * bloom);
 
         findRefr(i,nbegin,beginStartPos,beginCoords);
         findRefr(i,nend,endStartPos,endCoords);

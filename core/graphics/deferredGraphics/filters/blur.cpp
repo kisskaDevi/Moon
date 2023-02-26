@@ -21,12 +21,10 @@ void gaussianBlur::setExternalPath(const std::string &path)
     yblur.ExternalPath = path;
 }
 
-void gaussianBlur::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device, VkQueue* graphicsQueue, VkCommandPool* commandPool)
+void gaussianBlur::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device)
 {
     this->physicalDevice = physicalDevice;
     this->device = device;
-    this->graphicsQueue = graphicsQueue;
-    this->commandPool = commandPool;
 }
 void gaussianBlur::setImageProp(imageInfo* pInfo)
 {
@@ -373,6 +371,7 @@ void gaussianBlur::xBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkR
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.pNext = nullptr;
         pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -504,6 +503,7 @@ void gaussianBlur::yBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkR
     index = 0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
         pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo[index].pNext = nullptr;
         pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo[index].pStages = shaderStages.data();
         pipelineInfo[index].pVertexInputState = &vertexInputInfo;
@@ -610,33 +610,57 @@ void gaussianBlur::updateDescriptorSets(attachments* blurAttachment)
     }
 }
 
-void gaussianBlur::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void gaussianBlur::createCommandBuffers(VkCommandPool commandPool)
 {
-    std::array<VkClearValue, 2> ClearValues{};
-    for(uint32_t index = 0; index < ClearValues.size(); index++)
-        ClearValues[index].color = pAttachments->clearValue.color;
+    commandBuffers.resize(image.Count);
+    VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
+}
+void gaussianBlur::updateCommandBuffer(uint32_t frameNumber)
+{
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
-    VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = image.Extent;
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-        renderPassInfo.pClearValues = ClearValues.data();
+     VkCommandBufferBeginInfo beginInfo{};
+         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+         beginInfo.flags = 0;
+         beginInfo.pInheritanceInfo = nullptr;
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+        std::array<VkClearValue, 2> ClearValues{};
+        for(uint32_t index = 0; index < ClearValues.size(); index++)
+            ClearValues[index].color = pAttachments->clearValue.color;
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.PipelineLayout, 0, 1, &xblur.DescriptorSets[frameNumber], 0, nullptr);
-        vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+        VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = framebuffers[frameNumber];
+            renderPassInfo.renderArea.offset = {0, 0};
+            renderPassInfo.renderArea.extent = image.Extent;
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+            renderPassInfo.pClearValues = ClearValues.data();
 
-    vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.PipelineLayout, 0, 1, &yblur.DescriptorSets[frameNumber], 0, nullptr);
-        vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+            vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.Pipeline);
+            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.PipelineLayout, 0, 1, &xblur.DescriptorSets[frameNumber], 0, nullptr);
+            vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
-    vkCmdEndRenderPass(commandBuffer);
+        vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
+
+            vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.Pipeline);
+            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.PipelineLayout, 0, 1, &yblur.DescriptorSets[frameNumber], 0, nullptr);
+            vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffers[frameNumber]);
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+VkCommandBuffer& gaussianBlur::getCommandBuffer(uint32_t frameNumber)
+{
+    return commandBuffers[frameNumber];
 }

@@ -4,7 +4,6 @@
 #include "core/transformational/lightInterface.h"
 #include "core/transformational/object.h"
 #include "core/transformational/camera.h"
-#include "bufferObjects.h"
 
 #include <iostream>
 
@@ -316,12 +315,12 @@ void deferredGraphicsInterface::createCommandBuffers()
 
 void deferredGraphicsInterface::updateDescriptorSets()
 {
-    DeferredGraphics.updateDescriptorSets(nullptr, storageBuffers.data(), cameraObject);
+    DeferredGraphics.updateDescriptorSets(nullptr, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
 
     if(enableTransparentLayers){
-        TransparentLayers[0].updateDescriptorSets(nullptr, storageBuffers.data(), cameraObject);
+        TransparentLayers[0].updateDescriptorSets(nullptr, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
         for(uint32_t i=1;i<TransparentLayers.size();i++){
-            TransparentLayers[i].updateDescriptorSets(&transparentLayersAttachments[i-1].depth, storageBuffers.data(), cameraObject);
+            TransparentLayers[i].updateDescriptorSets(&transparentLayersAttachments[i-1].depth, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
         }
     }
 }

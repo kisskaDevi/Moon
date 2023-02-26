@@ -15,9 +15,8 @@ float shadowFactor(sampler2D Sampler, vec4 coordinates)
                 result += lightSpaceNDC.z-texture(Sampler, coord.xy + dx).x > 0.001f ? 1.0f : 0.0f;
             }
         }
-        return 1.0f - result/(2*n);
+        return 1.0f - result/(maxNoise*n);
 
-        return result;
 //    int n = 16;
 //    vec2 dx = vec2(0.001f);
 //    vec2 direction = normalize(coord - vec2(0.5f));

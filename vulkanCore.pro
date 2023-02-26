@@ -95,7 +95,6 @@ SOURCES += \
 HEADERS += \
     core/device.h \
     core/graphics/deferredGraphics/attachments.h \
-    core/graphics/deferredGraphics/bufferObjects.h \
     core/graphics/deferredGraphics/deferredgraphicsinterface.h \
     core/graphics/deferredGraphics/filters/blur.h \
     core/graphics/deferredGraphics/filters/filtergraphics.h \

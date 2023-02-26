@@ -3,7 +3,6 @@
 #include "core/transformational/camera.h"
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
-#include "../../bufferObjects.h"
 
 #include <array>
 #include <iostream>
@@ -293,7 +292,7 @@ void deferredGraphics::createBaseDescriptorSets()
     vkAllocateDescriptorSets(*device, &allocInfo, base.DescriptorSets.data());
 }
 
-void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject)
+void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -310,7 +309,7 @@ void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, Vk
         VkDescriptorBufferInfo StorageBufferInfo{};
             StorageBufferInfo.buffer = storageBuffers[i];
             StorageBufferInfo.offset = 0;
-            StorageBufferInfo.range = sizeof(StorageBufferObject);
+            StorageBufferInfo.range = sizeOfStorageBuffers;
 
         VkDescriptorImageInfo depthImageInfo{};
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

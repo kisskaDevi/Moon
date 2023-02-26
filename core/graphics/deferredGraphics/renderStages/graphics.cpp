@@ -216,9 +216,9 @@ void deferredGraphics::createDescriptorSets()
     createLightingDescriptorSets();
 }
 
-void deferredGraphics::updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject)
+void deferredGraphics::updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject)
 {
-    updateBaseDescriptorSets(depthAttachment, storageBuffers, cameraObject);
+    updateBaseDescriptorSets(depthAttachment, storageBuffers, sizeOfStorageBuffer, cameraObject);
     updateLightingDescriptorSets(cameraObject);
 }
 

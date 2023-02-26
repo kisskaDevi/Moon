@@ -111,7 +111,7 @@ private:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-    void updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject);
+    void updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject);
 
     void createLightingDescriptorPool();
     void createLightingDescriptorSets();
@@ -139,7 +139,7 @@ public:
 
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, camera* cameraObject);
+    void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject);
 
     void createCommandBuffers(VkCommandPool commandPool);
     void updateCommandBuffer(uint32_t frameNumber);

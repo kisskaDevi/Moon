@@ -402,6 +402,21 @@ void customFilter::updateDescriptorSets()
     }
 }
 
+void customFilter::beginCommandBuffer(uint32_t frameNumber){
+    vkResetCommandBuffer(commandBuffers[frameNumber],0);
+
+    VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
+
+    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+}
+
+void customFilter::endCommandBuffer(uint32_t frameNumber){
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
 void customFilter::createCommandBuffers(VkCommandPool commandPool)
 {
     commandBuffers.resize(image.Count);
@@ -415,15 +430,6 @@ void customFilter::createCommandBuffers(VkCommandPool commandPool)
 
 void customFilter::updateCommandBuffer(uint32_t frameNumber)
 {
-    vkResetCommandBuffer(commandBuffers[frameNumber],0);
-
-     VkCommandBufferBeginInfo beginInfo{};
-         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-         beginInfo.flags = 0;
-         beginInfo.pInheritanceInfo = nullptr;
-
-    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
-
     VkImageSubresourceRange ImageSubresourceRange{};
             ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             ImageSubresourceRange.baseMipLevel = 0;
@@ -454,8 +460,6 @@ void customFilter::updateCommandBuffer(uint32_t frameNumber)
         }
         for(uint32_t k=0;k<attachmentsCount;k++)
             Texture::transitionLayout(commandBuffers[frameNumber],pAttachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
-
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
 VkCommandBuffer& customFilter::getCommandBuffer(uint32_t frameNumber)

@@ -73,6 +73,9 @@ public:
     void createDescriptorSets() override;
     void updateDescriptorSets(attachments* blurAttachment);
 
+    void beginCommandBuffer(uint32_t frameNumber);
+    void endCommandBuffer(uint32_t frameNumber);
+
     void createCommandBuffers(VkCommandPool commandPool) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
     VkCommandBuffer& getCommandBuffer(uint32_t frameNumber) override;

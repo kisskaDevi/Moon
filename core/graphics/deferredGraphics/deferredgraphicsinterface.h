@@ -16,47 +16,12 @@
 
 #include <libs/glm/glm.hpp>
 
+class node;
+
 struct StorageBufferObject{
     alignas(16) glm::vec4           mousePosition;
     alignas(4)  int                 number;
     alignas(4)  float               depth;
-};
-
-struct stage
-{
-    std::vector<VkCommandBuffer> commandBuffers;
-    std::vector<VkPipelineStageFlags> waitStages;
-    std::vector<VkSemaphore> waitSemaphores;
-    std::vector<VkSemaphore> signalSemaphores;
-    VkQueue queue;
-    VkFence fence;
-
-    stage(  std::vector<VkCommandBuffer> commandBuffers,
-            std::vector<VkPipelineStageFlags> waitStages,
-            std::vector<VkSemaphore> waitSemaphores,
-            std::vector<VkSemaphore> signalSemaphores,
-            VkQueue queue,
-            VkFence fence) :
-        commandBuffers(commandBuffers),
-        waitStages(waitStages),
-        waitSemaphores(waitSemaphores),
-        signalSemaphores(signalSemaphores),
-        queue(queue),
-        fence(fence)
-    {}
-
-    VkResult submit(){
-        VkSubmitInfo submitInfo{};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.waitSemaphoreCount = waitSemaphores.size();
-            submitInfo.pWaitSemaphores = waitSemaphores.data();
-            submitInfo.pWaitDstStageMask = waitStages.data();
-            submitInfo.commandBufferCount = commandBuffers.size();
-            submitInfo.pCommandBuffers = commandBuffers.data();
-            submitInfo.signalSemaphoreCount = signalSemaphores.size();
-            submitInfo.pSignalSemaphores = signalSemaphores.data();
-        return vkQueueSubmit(queue, 1, &submitInfo, fence);
-    }
 };
 
 class deferredGraphicsInterface: public graphicsInterface
@@ -103,12 +68,17 @@ private:
     bool                                        enableSSLR{true};
     bool                                        enableSSAO{true};
 
-    std::vector<VkBuffer>                       storageBuffers;
-    std::vector<VkDeviceMemory>                 storageBuffersMemory;
+    struct buffer{
+        VkBuffer       instance{VK_NULL_HANDLE};
+        VkDeviceMemory memory{VK_NULL_HANDLE};
+        bool           updateFlag{true};
+        void*          map{nullptr};
+    };
+    std::vector<buffer>     storageBuffersHost;
 
-    VkCommandPool                               commandPool;
-    std::vector<VkCommandBuffer>                commandBuffers;
-    std::vector<std::vector<VkSemaphore>>       semaphores;
+    VkCommandPool                               commandPool{VK_NULL_HANDLE};
+    std::vector<VkCommandBuffer>                copyCommandBuffers;
+    std::vector<node*>                          nodes;
 
     std::vector<bool>                           updateCommandBufferFlags;
 
@@ -120,11 +90,12 @@ private:
     void createStorageBuffers(uint32_t imageCount);
 public:
     deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
-    void destroyEmptyTextures();
 
     ~deferredGraphicsInterface();
     void destroyGraphics() override;
     void destroyCommandPool() override;
+    void freeCommandBuffers() override;
+    void destroyEmptyTextures();
 
     void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
     void setSupportImageCount(VkSurfaceKHR* surface) override;
@@ -136,12 +107,11 @@ public:
     void updateCommandBuffers() override;
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
-    void freeCommandBuffers() override;
 
-    uint32_t            getImageCount() override;
-    VkSwapchainKHR&     getSwapChain() override;
+    uint32_t getImageCount() override;
+    VkSwapchainKHR& getSwapChain() override;
 
-    VkSemaphore sibmit(VkSemaphore externalSemaphore, VkFence& externalFence, uint32_t imageIndex) override;
+    std::vector<std::vector<VkSemaphore>> sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 
     void        updateCmdFlags();
 

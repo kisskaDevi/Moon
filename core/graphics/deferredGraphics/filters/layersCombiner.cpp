@@ -620,8 +620,7 @@ void layersCombiner::createCommandBuffers(VkCommandPool commandPool)
     vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
 }
 
-void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
-{
+void layersCombiner::beginCommandBuffer(uint32_t frameNumber){
     vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -630,7 +629,14 @@ void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
         beginInfo.pInheritanceInfo = nullptr;
 
     vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+}
 
+void layersCombiner::endCommandBuffer(uint32_t frameNumber){
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
+{
         std::array<VkClearValue, 2> ClearValues{};
         for(uint32_t index = 0; index < ClearValues.size(); index++)
             ClearValues[index].color = pAttachments->clearValue.color;
@@ -651,8 +657,6 @@ void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
             vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[frameNumber]);
-
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
 VkCommandBuffer& layersCombiner::getCommandBuffer(uint32_t frameNumber)

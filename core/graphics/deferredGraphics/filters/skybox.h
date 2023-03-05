@@ -70,6 +70,9 @@ public:
     void updateCommandBuffer(uint32_t frameNumber) override;
     VkCommandBuffer& getCommandBuffer(uint32_t frameNumber) override;
 
+    void beginCommandBuffer(uint32_t frameNumber);
+    void endCommandBuffer(uint32_t frameNumber);
+
     void bindObject(skyboxObject* newObject);
     bool removeObject(skyboxObject* object);
 

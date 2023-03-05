@@ -141,6 +141,9 @@ public:
     void createDescriptorSets();
     void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject);
 
+    void beginCommandBuffer(uint32_t frameNumber);
+    void endCommandBuffer(uint32_t frameNumber);
+
     void createCommandBuffers(VkCommandPool commandPool);
     void updateCommandBuffer(uint32_t frameNumber);
     VkCommandBuffer& getCommandBuffer(uint32_t frameNumber);

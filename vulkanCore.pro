@@ -70,6 +70,7 @@ SOURCES += \
     core/graphics/deferredGraphics/filters/layersCombiner.cpp \
     core/graphics/deferredGraphics/filters/shadow.cpp \
     core/graphics/deferredGraphics/filters/skybox.cpp \
+    core/graphics/deferredGraphics/node.cpp \
     core/graphics/deferredGraphics/renderStages/source/ambientLighting.cpp \
     core/graphics/deferredGraphics/renderStages/source/lighting.cpp \
     core/graphics/deferredGraphics/renderStages/source/lightingPipelines.cpp \
@@ -101,6 +102,7 @@ HEADERS += \
     core/graphics/deferredGraphics/filters/layersCombiner.h \
     core/graphics/deferredGraphics/filters/shadow.h \
     core/graphics/deferredGraphics/filters/skybox.h \
+    core/graphics/deferredGraphics/node.h \
     core/graphics/deferredGraphics/renderStages/graphics.h \
     core/graphics/deferredGraphics/renderStages/postProcessing.h \
     core/graphics/deferredGraphics/filters/customfilter.h \

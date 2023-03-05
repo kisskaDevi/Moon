@@ -26,7 +26,7 @@ public:
 
     virtual void updateBuffers(uint32_t imageIndex) = 0;
 
-    virtual VkSemaphore sibmit(VkSemaphore externalSemaphore, VkFence& externalFence, uint32_t imageIndex) = 0;
+    virtual std::vector<std::vector<VkSemaphore>> sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex) = 0;
 
     virtual uint32_t            getImageCount() = 0;
     virtual VkSwapchainKHR&     getSwapChain() = 0;

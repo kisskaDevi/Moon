@@ -350,8 +350,7 @@ void skyboxGraphics::createCommandBuffers(VkCommandPool commandPool)
     vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
 }
 
-void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
-{
+void skyboxGraphics::beginCommandBuffer(uint32_t frameNumber){
     vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -360,7 +359,14 @@ void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
         beginInfo.pInheritanceInfo = nullptr;
 
     vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+}
 
+void skyboxGraphics::endCommandBuffer(uint32_t frameNumber){
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
         std::array<VkClearValue, 1> ClearValues{};
         for(uint32_t index = 0; index < ClearValues.size(); index++)
             ClearValues[index].color = pAttachments->clearValue.color;
@@ -387,8 +393,6 @@ void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
         }
 
         vkCmdEndRenderPass(commandBuffers[frameNumber]);
-
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
 VkCommandBuffer& skyboxGraphics::getCommandBuffer(uint32_t frameNumber)

@@ -13,21 +13,15 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)
         #endif //MANUAL_SRGB
 }
 
-float geometricOcclusion(float NdotL, float NdotV, float k)
-{
+float geometricOcclusion(float NdotL, float NdotV, float k){
     float attenuationL = NdotL / (k + (1.0 - k) * (NdotL));
     float attenuationV = NdotV / (k + (1.0 - k) * (NdotV));
     return attenuationL * attenuationV;
 }
-
-// The following equation(s) model the distribution of microfacet normals across the area being drawn (aka D())
-// Implementation from "Average Irregularity Representation of a Roughened Surface for Ray Reflection" by T. S. Trowbridge, and K. P. Reitz
-// Follows the distribution function recommended in the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
-float microfacetDistribution(float NdotH, float alphaRoughness)
-{
-        float roughnessSq = alphaRoughness * alphaRoughness;
-        float f = (NdotH * roughnessSq - NdotH) * NdotH + 1.0;
-        return roughnessSq / (pi * f * f);
+float microfacetDistribution(float NdotH, float alphaRoughness){
+    float roughnessSq = alphaRoughness * alphaRoughness;
+    float f = (NdotH * roughnessSq - NdotH) * NdotH + 1.0;
+    return roughnessSq / (pi * f * f);
 }
 
 vec3 diffuse(const in vec4 BaseColor, const in float metallic, const in vec3 f0){

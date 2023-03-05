@@ -62,6 +62,9 @@ public:
     void createDescriptorSets() override;
     void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, camera* cameraObject);
 
+    void beginCommandBuffer(uint32_t frameNumber);
+    void endCommandBuffer(uint32_t frameNumber);
+
     void createCommandBuffers(VkCommandPool commandPool) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
     VkCommandBuffer& getCommandBuffer(uint32_t frameNumber) override;

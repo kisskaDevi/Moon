@@ -4,6 +4,7 @@
 #include "core/transformational/lightInterface.h"
 #include "core/transformational/object.h"
 #include "core/transformational/camera.h"
+#include "node.h"
 
 #include <iostream>
 
@@ -21,12 +22,19 @@ deferredGraphicsInterface::deferredGraphicsInterface(const std::string& External
     Blur.setExternalPath(ExternalPath);
 
     TransparentLayers.resize(TransparentLayersCount);
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].setExternalPath(ExternalPath);
+    for(auto& layer: TransparentLayers){
+        layer.setExternalPath(ExternalPath);
+    }
 }
 
 deferredGraphicsInterface::~deferredGraphicsInterface()
 {}
+
+void deferredGraphicsInterface::destroyEmptyTextures()
+{
+    emptyTexture->destroy(&device.getLogical());
+    emptyTexture = nullptr;
+}
 
 void deferredGraphicsInterface::freeCommandBuffers()
 {
@@ -38,22 +46,15 @@ void deferredGraphicsInterface::freeCommandBuffers()
     SSAO.freeCommandBuffer(commandPool);
     SSLR.freeCommandBuffer(commandPool);
     DeferredGraphics.freeCommandBuffer(commandPool);
-    for(auto& layer: TransparentLayers)
+    for(auto& layer: TransparentLayers){
         layer.freeCommandBuffer(commandPool);
-
-    for(auto& semaphore: semaphores){
-        for(auto& semaphoresPerFrame: semaphore){
-            vkDestroySemaphore(devices[0].getLogical(), semaphoresPerFrame, nullptr);
-        }
-        semaphore.resize(0);
     }
-    semaphores.resize(0);
-}
 
-void deferredGraphicsInterface::destroyEmptyTextures()
-{
-    emptyTexture->destroy(&device.getLogical());
-    emptyTexture = nullptr;
+    for(auto& node: nodes){
+        node->destroy(device.getLogical());
+        delete node;
+    }
+    nodes.clear();
 }
 
 void deferredGraphicsInterface::destroyGraphics()
@@ -70,8 +71,9 @@ void deferredGraphicsInterface::destroyGraphics()
     PostProcessing.destroySwapChainAttachments();
     LayersCombiner.destroy();
     Blur.destroy();
-    for(uint32_t i=0;i<TransparentLayersCount;i++)
-        TransparentLayers[i].destroy();
+    for(auto& layer: TransparentLayers){
+        layer.destroy();
+    }
 
     blurAttachment.deleteAttachment(&device.getLogical());
     blurAttachment.deleteSampler(&device.getLogical());
@@ -102,11 +104,11 @@ void deferredGraphicsInterface::destroyGraphics()
         attachment.deleteSampler(&device.getLogical());
     }
 
-    for (size_t i = 0; i < storageBuffers.size(); i++){
-        if(storageBuffers[i])       vkDestroyBuffer(device.getLogical(), storageBuffers[i], nullptr);
-        if(storageBuffersMemory[i]) vkFreeMemory(device.getLogical(), storageBuffersMemory[i], nullptr);
+    for (auto& buffer: storageBuffersHost){
+        if(buffer.instance) vkDestroyBuffer(device.getLogical(), buffer.instance, nullptr);
+        if(buffer.memory)   vkFreeMemory(device.getLogical(), buffer.memory, nullptr);
     }
-    storageBuffers.resize(0);
+    storageBuffersHost.clear();
 
     if(swapChain) {vkDestroySwapchainKHR(device.getLogical(), swapChain, nullptr); swapChain = VK_NULL_HANDLE;}
 }
@@ -118,11 +120,9 @@ void deferredGraphicsInterface::destroyCommandPool()
 
 void deferredGraphicsInterface::setDevices(uint32_t devicesCount, physicalDevice* devices)
 {
-    this->devices.resize(devicesCount);
     for(uint32_t i=0;i<devicesCount;i++){
-        this->devices[i] = devices[i];
+        this->devices.push_back(devices[i]);
     }
-
     device = this->devices[0];
 
     DeferredGraphics.setDeviceProp(&device.instance, &device.getLogical());
@@ -134,17 +134,18 @@ void deferredGraphicsInterface::setDevices(uint32_t devicesCount, physicalDevice
     Shadow.setDeviceProp(&device.instance, &device.getLogical());
     LayersCombiner.setDeviceProp(&device.instance, &device.getLogical());
     Blur.setDeviceProp(&device.instance, &device.getLogical());
-
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].setDeviceProp(&device.instance, &device.getLogical());
+    for(auto& layer: TransparentLayers){
+        layer.setDeviceProp(&device.instance, &device.getLogical());
+    }
 }
 
 void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
 {
     SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance, *surface);
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount){
         imageCount = swapChainSupport.capabilities.maxImageCount;
+    }
 
     updateCommandBufferFlags.resize(imageCount,true);
 }
@@ -206,8 +207,8 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     SSAO.setImageProp(&info);
     Skybox.setImageProp(&info);
     PostProcessing.setImageProp(&info);
-    for(uint32_t i=0;i<TransparentLayersCount;i++){
-        TransparentLayers[i].setImageProp(&info);
+    for(auto& layer: TransparentLayers){
+        layer.setImageProp(&info);
     }
 
     if(enableSkybox){
@@ -291,32 +292,72 @@ void deferredGraphicsInterface::createCommandBuffers()
     Filter.createCommandBuffers(commandPool);
     PostProcessing.createCommandBuffers(commandPool);
 
-    commandBuffers.resize(imageCount);
+    copyCommandBuffers.resize(imageCount);
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = static_cast<uint32_t>(imageCount);
-    vkAllocateCommandBuffers(devices[0].getLogical(), &allocInfo, commandBuffers.data());
+    vkAllocateCommandBuffers(device.getLogical(), &allocInfo, copyCommandBuffers.data());
 
     updateCmdFlags();
 
-    semaphores.resize(1);
+    nodes.resize(imageCount);
+    for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
+        nodes[imageIndex]
+         = new node({
+            stage(  {copyCommandBuffers[imageIndex]},
+                    {VK_PIPELINE_STAGE_TRANSFER_BIT},
+                    device.getQueue(0,0))
+        }, new node({
+            stage(  {Shadow.getCommandBuffer(imageIndex)},
+                    {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
+                    device.getQueue(0,0)),
+            stage(  {Skybox.getCommandBuffer(imageIndex)},
+                    {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
+                    device.getQueue(0,0))
+        }, new node({
+            stage(  {DeferredGraphics.getCommandBuffer(imageIndex)},
+                    {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    device.getQueue(0,0)),
+            stage(  {TransparentLayers[0].getCommandBuffer(imageIndex), TransparentLayers[1].getCommandBuffer(imageIndex)},
+                    {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    device.getQueue(0,0))
+        }, new node({
+            stage(  {LayersCombiner.getCommandBuffer(imageIndex)},
+                    {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    device.getQueue(0,0))
+        }, new node({
+            stage(  {   SSLR.getCommandBuffer(imageIndex), SSAO.getCommandBuffer(imageIndex),
+                        Filter.getCommandBuffer(imageIndex), Blur.getCommandBuffer(imageIndex),
+                        PostProcessing.getCommandBuffer(imageIndex)
+                    },
+                    {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+                    device.getQueue(0,0))
+        }, nullptr)))));
 
-    for (auto& semaphore: semaphores){
-        semaphore.resize(imageCount);
-        for (size_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
-            VkSemaphoreCreateInfo semaphoreInfo{};
-                semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-            vkCreateSemaphore(devices[0].getLogical(), &semaphoreInfo, nullptr, &semaphore[imageIndex]);
-        }
+        nodes[imageIndex]->createSemaphores(device.getLogical());
     }
+}
+
+std::vector<std::vector<VkSemaphore>> deferredGraphicsInterface::sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex)
+{
+    nodes[imageIndex]->setExternalSemaphore(externalSemaphore);
+    nodes[imageIndex]->back()->setExternalFence(externalFence);
+
+    nodes[imageIndex]->submit();
+
+    return nodes[imageIndex]->back()->getBackSemaphores();
 }
 
 void deferredGraphicsInterface::updateDescriptorSets()
 {
-    DeferredGraphics.updateDescriptorSets(nullptr, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
+    std::vector<VkBuffer> storageBuffers;
+    for(const auto& buffer: storageBuffersHost){
+        storageBuffers.push_back(buffer.instance);
+    }
 
+    DeferredGraphics.updateDescriptorSets(nullptr, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
     if(enableTransparentLayers){
         TransparentLayers[0].updateDescriptorSets(nullptr, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
         for(uint32_t i=1;i<TransparentLayers.size();i++){
@@ -327,61 +368,60 @@ void deferredGraphicsInterface::updateDescriptorSets()
 
 void deferredGraphicsInterface::updateCommandBuffers()
 {
-    for(size_t imageIndex=0;imageIndex<imageCount;imageIndex++)
+    for(size_t imageIndex=0; imageIndex<imageCount; imageIndex++){
         updateCommandBuffer(imageIndex);
-}
-
-VkSemaphore deferredGraphicsInterface::sibmit(VkSemaphore externalSemaphore, VkFence& externalFence, uint32_t imageIndex)
-{
-    std::vector<stage> stages;
-    stages.push_back(stage( {commandBuffers[imageIndex],
-                            Shadow.getCommandBuffer(imageIndex), Skybox.getCommandBuffer(imageIndex),
-                            DeferredGraphics.getCommandBuffer(imageIndex),
-                            TransparentLayers[0].getCommandBuffer(imageIndex), TransparentLayers[1].getCommandBuffer(imageIndex),
-                            LayersCombiner.getCommandBuffer(imageIndex),
-                            Filter.getCommandBuffer(imageIndex),
-                            Blur.getCommandBuffer(imageIndex),
-                            SSLR.getCommandBuffer(imageIndex),
-                            SSAO.getCommandBuffer(imageIndex),
-                            PostProcessing.getCommandBuffer(imageIndex)},
-                            {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
-                            {externalSemaphore},
-                            {semaphores[0][imageIndex]},
-                            devices[0].getQueue(0,0),
-                            externalFence));
-
-    for(auto& stage: stages){
-        stage.submit();
     }
-
-    return semaphores[0][imageIndex];
 }
 
 void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex)
 {
     if(updateCommandBufferFlags[imageIndex]){
-
         Shadow.updateCommandBuffer(imageIndex);
-        Skybox.updateCommandBuffer(imageIndex);
+
+        Skybox.beginCommandBuffer(imageIndex);
+            if(enableSkybox){ Skybox.updateCommandBuffer(imageIndex);}
+        Skybox.endCommandBuffer(imageIndex);
+
+        DeferredGraphics.beginCommandBuffer(imageIndex);
         DeferredGraphics.updateCommandBuffer(imageIndex);
-        if(enableTransparentLayers)
-            for(auto& layer: TransparentLayers)
-               layer.updateCommandBuffer(imageIndex);
-        Blur.updateCommandBuffer(imageIndex);
-        SSLR.updateCommandBuffer(imageIndex);
-        SSAO.updateCommandBuffer(imageIndex);
-        if(enableTransparentLayers){
-            LayersCombiner.updateCommandBuffer(imageIndex);
-        } else {
-            Texture::transitionLayout( LayersCombiner.getCommandBuffer(imageIndex),
-                                       deferredAttachments.bloom.image[imageIndex],
-                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                       VK_REMAINING_MIP_LEVELS,
-                                       0,
-                                       1);
+        DeferredGraphics.endCommandBuffer(imageIndex);
+
+        for(auto& layer: TransparentLayers){
+            layer.beginCommandBuffer(imageIndex);
+                if(enableTransparentLayers){ layer.updateCommandBuffer(imageIndex);}
+            layer.endCommandBuffer(imageIndex);
         }
-        Filter.updateCommandBuffer(imageIndex);
+
+        Blur.beginCommandBuffer(imageIndex);
+            if(enableBlur){ Blur.updateCommandBuffer(imageIndex);}
+        Blur.endCommandBuffer(imageIndex);
+
+        SSLR.beginCommandBuffer(imageIndex);
+            if(enableSSLR){ SSLR.updateCommandBuffer(imageIndex);}
+        SSLR.endCommandBuffer(imageIndex);
+
+        SSAO.beginCommandBuffer(imageIndex);
+            if(enableSSAO){ SSAO.updateCommandBuffer(imageIndex);}
+        SSAO.endCommandBuffer(imageIndex);
+
+        LayersCombiner.beginCommandBuffer(imageIndex);
+            if(enableTransparentLayers){
+                LayersCombiner.updateCommandBuffer(imageIndex);
+            } else {
+                Texture::transitionLayout( LayersCombiner.getCommandBuffer(imageIndex),
+                                           deferredAttachments.bloom.image[imageIndex],
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                           VK_REMAINING_MIP_LEVELS,
+                                           0,
+                                           1);
+            }
+        LayersCombiner.endCommandBuffer(imageIndex);
+
+        Filter.beginCommandBuffer(imageIndex);
+            if(enableBloom){ Filter.updateCommandBuffer(imageIndex);}
+        Filter.endCommandBuffer(imageIndex);
+
         PostProcessing.updateCommandBuffer(imageIndex);
 
         updateCommandBufferFlags[imageIndex] = false;
@@ -390,59 +430,50 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex)
 
 void deferredGraphicsInterface::updateBuffers(uint32_t imageIndex)
 {
-    vkResetCommandBuffer(commandBuffers[imageIndex],0);
+    vkResetCommandBuffer(copyCommandBuffers[imageIndex],0);
 
      VkCommandBufferBeginInfo beginInfo{};
          beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
          beginInfo.flags = 0;
          beginInfo.pInheritanceInfo = nullptr;
 
-    vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo);
+    vkBeginCommandBuffer(copyCommandBuffers[imageIndex], &beginInfo);
 
-    cameraObject->updateUniformBuffer(commandBuffers[imageIndex], imageIndex);
-    Skybox.updateObjectUniformBuffer(commandBuffers[imageIndex], imageIndex);
-    DeferredGraphics.updateObjectUniformBuffer(commandBuffers[imageIndex], imageIndex);
-    DeferredGraphics.updateLightSourcesUniformBuffer(commandBuffers[imageIndex], imageIndex);
+    cameraObject->updateUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
+    Skybox.updateObjectUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
+    DeferredGraphics.updateObjectUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
+    DeferredGraphics.updateLightSourcesUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
 
-    vkEndCommandBuffer(commandBuffers[imageIndex]);
+    vkEndCommandBuffer(copyCommandBuffers[imageIndex]);
 }
 
 void deferredGraphicsInterface::createStorageBuffers(uint32_t imageCount)
 {
-    storageBuffers.resize(imageCount);
-    storageBuffersMemory.resize(imageCount);
-    for (size_t i = 0; i < imageCount; i++){
+    storageBuffersHost.resize(imageCount);
+    for (auto& buffer: storageBuffersHost){
         Buffer::create( device.instance,
                         device.getLogical(),
                         sizeof(StorageBufferObject),
                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        &storageBuffers[i],
-                        &storageBuffersMemory[i]);
+                        &buffer.instance,
+                        &buffer.memory);
+        vkMapMemory(device.getLogical(), buffer.memory, 0, sizeof(StorageBufferObject), 0, &buffer.map);
     }
 }
 
 void deferredGraphicsInterface::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
-    void* data;
-
     StorageBufferObject StorageUBO{};
         StorageUBO.mousePosition = glm::vec4(mousex,mousey,0.0f,0.0f);
         StorageUBO.number = INT_FAST32_MAX;
         StorageUBO.depth = 1.0f;
-    vkMapMemory(device.getLogical(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
-        memcpy(data, &StorageUBO, sizeof(StorageUBO));
-    vkUnmapMemory(device.getLogical(), storageBuffersMemory[currentImage]);
+    memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
 }
 
 uint32_t deferredGraphicsInterface::readStorageBuffer(uint32_t currentImage){
-    void* data;
-
-    StorageBufferObject StorageUBO{};
-    vkMapMemory(device.getLogical(), storageBuffersMemory[currentImage], 0, sizeof(StorageUBO), 0, &data);
-        memcpy(&StorageUBO, data, sizeof(StorageUBO));
-    vkUnmapMemory(device.getLogical(), storageBuffersMemory[currentImage]);
-
-    return StorageUBO.number;
+    StorageBufferObject storageBuffer{};
+    memcpy(&storageBuffer, storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
+    return storageBuffer.number;
 }
 
 uint32_t deferredGraphicsInterface::getImageCount()       {   return imageCount;}
@@ -554,8 +585,9 @@ void deferredGraphicsInterface::bindBaseObject(object* object){
     object->createDescriptorSet(device.getLogical(),imageCount);
 
     DeferredGraphics.bindBaseObject(object);
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].bindBaseObject(object);
+    for(auto& layer: TransparentLayers){
+        layer.bindBaseObject(object);
+    }
 
     Shadow.bindBaseObject(object);
 
@@ -604,8 +636,9 @@ bool deferredGraphicsInterface::removeSkyBoxObject(skyboxObject* object){
 
 void deferredGraphicsInterface::setMinAmbientFactor(const float& minAmbientFactor){
     DeferredGraphics.setMinAmbientFactor(minAmbientFactor);
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].setMinAmbientFactor(minAmbientFactor);
+    for(auto& layer: TransparentLayers){
+        layer.setMinAmbientFactor(minAmbientFactor);
+    }
 
     updateCmdFlags();
 }

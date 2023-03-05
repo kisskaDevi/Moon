@@ -346,7 +346,7 @@ void SSLRGraphics::createDescriptorPool()
 
     poolSizes.push_back(VkDescriptorPoolSize{});
         poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(2*image.Count);
+        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
 
     poolSizes.push_back(VkDescriptorPoolSize{});
         poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -521,8 +521,7 @@ void SSLRGraphics::createCommandBuffers(VkCommandPool commandPool)
     vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
 }
 
-void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber)
-{
+void SSLRGraphics::beginCommandBuffer(uint32_t frameNumber){
     vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -531,7 +530,14 @@ void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber)
         beginInfo.pInheritanceInfo = nullptr;
 
     vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+}
 
+void SSLRGraphics::endCommandBuffer(uint32_t frameNumber){
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
         std::array<VkClearValue, 1> ClearValues{};
         for(uint32_t index = 0; index < ClearValues.size(); index++)
             ClearValues[index].color = pAttachments->clearValue.color;
@@ -552,8 +558,6 @@ void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber)
             vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[frameNumber]);
-
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
 VkCommandBuffer& SSLRGraphics::getCommandBuffer(uint32_t frameNumber)

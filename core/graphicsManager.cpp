@@ -130,14 +130,16 @@ VkResult graphicsManager::drawFrame()
 
     vkResetFences(devices[0].getLogical(), 1, &fences[imageIndex]);
 
-    VkSemaphore signalSemaphores = graphics->sibmit(availableSemaphores[semaphorIndex],fences[imageIndex],imageIndex);
+    std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[semaphorIndex]}};
+    std::vector<VkFence> signalFences = {fences[imageIndex]};
+    std::vector<std::vector<VkSemaphore>> signalSemaphores = graphics->sibmit(waitSemaphores,signalFences,imageIndex);
 
     semaphorIndex = ((semaphorIndex + 1) % graphics->getImageCount());
 
     VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &signalSemaphores;
+        presentInfo.waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.back().size());
+        presentInfo.pWaitSemaphores = signalSemaphores.back().data();
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &graphics->getSwapChain();
         presentInfo.pImageIndices = &imageIndex;

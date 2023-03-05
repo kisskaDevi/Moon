@@ -441,8 +441,7 @@ void SSAOGraphics::createCommandBuffers(VkCommandPool commandPool)
     vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
 }
 
-void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber)
-{
+void SSAOGraphics::beginCommandBuffer(uint32_t frameNumber){
     vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -451,7 +450,14 @@ void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber)
         beginInfo.pInheritanceInfo = nullptr;
 
     vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+}
 
+void SSAOGraphics::endCommandBuffer(uint32_t frameNumber){
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
         std::array<VkClearValue, 1> ClearValues{};
         for(uint32_t index = 0; index < ClearValues.size(); index++)
             ClearValues[index].color = pAttachments->clearValue.color;
@@ -472,8 +478,6 @@ void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber)
             vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[frameNumber]);
-
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
 VkCommandBuffer& SSAOGraphics::getCommandBuffer(uint32_t frameNumber)

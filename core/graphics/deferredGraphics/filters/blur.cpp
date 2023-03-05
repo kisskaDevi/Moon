@@ -620,16 +620,24 @@ void gaussianBlur::createCommandBuffers(VkCommandPool commandPool)
         allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
     vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
 }
-void gaussianBlur::updateCommandBuffer(uint32_t frameNumber)
-{
+
+void gaussianBlur::beginCommandBuffer(uint32_t frameNumber){
     vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
-     VkCommandBufferBeginInfo beginInfo{};
-         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-         beginInfo.flags = 0;
-         beginInfo.pInheritanceInfo = nullptr;
+    VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
 
     vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+}
+
+void gaussianBlur::endCommandBuffer(uint32_t frameNumber){
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+void gaussianBlur::updateCommandBuffer(uint32_t frameNumber)
+{
         std::array<VkClearValue, 2> ClearValues{};
         for(uint32_t index = 0; index < ClearValues.size(); index++)
             ClearValues[index].color = pAttachments->clearValue.color;
@@ -657,7 +665,6 @@ void gaussianBlur::updateCommandBuffer(uint32_t frameNumber)
             vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[frameNumber]);
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
 VkCommandBuffer& gaussianBlur::getCommandBuffer(uint32_t frameNumber)

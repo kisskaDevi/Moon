@@ -233,16 +233,23 @@ void deferredGraphics::createCommandBuffers(VkCommandPool commandPool)
     vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
 }
 
-void deferredGraphics::updateCommandBuffer(uint32_t frameNumber)
-{
+void deferredGraphics::beginCommandBuffer(uint32_t frameNumber){
     vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
-     VkCommandBufferBeginInfo beginInfo{};
-         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-         beginInfo.flags = 0;
-         beginInfo.pInheritanceInfo = nullptr;
+    VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
 
     vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+}
+
+void deferredGraphics::endCommandBuffer(uint32_t frameNumber){
+    vkEndCommandBuffer(commandBuffers[frameNumber]);
+}
+
+void deferredGraphics::updateCommandBuffer(uint32_t frameNumber)
+{
         std::vector<VkClearValue> clearValues(pAttachments.size());
         for(size_t i=0;i<clearValues.size();i++)
             clearValues[i] = pAttachments[i]->clearValue;
@@ -269,7 +276,6 @@ void deferredGraphics::updateCommandBuffer(uint32_t frameNumber)
             ambientLighting.render(frameNumber,commandBuffers[frameNumber]);
 
         vkCmdEndRenderPass(commandBuffers[frameNumber]);
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
 VkCommandBuffer& deferredGraphics::getCommandBuffer(uint32_t frameNumber)

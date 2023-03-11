@@ -17,13 +17,7 @@ private:
     float                               xSampleStep{1.5f};
     float                               ySampleStep{1.5f};
 
-    VkRenderPass                        renderPass{VK_NULL_HANDLE};
-    std::vector<VkFramebuffer>          framebuffers;
-
     struct Filter : public filter{
-        std::string                     vertShaderPath;
-        std::string                     fragShaderPath;
-
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }filter;
@@ -31,7 +25,7 @@ private:
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 public:
     customFilter();
-    void destroy() override;
+    void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
     void createRenderPass() override;

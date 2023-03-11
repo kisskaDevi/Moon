@@ -389,8 +389,6 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
 
             struct PushConstBlock{ float transparencyPass; MaterialBlock material;} pushConstBlock;
                 pushConstBlock.material.emissiveFactor = primitive->material.emissiveFactor;
-                // To save push constant space, availabilty and texture coordiante set are combined
-                // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
                 pushConstBlock.material.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
                 pushConstBlock.material.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
                 pushConstBlock.material.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
@@ -398,7 +396,6 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
                 pushConstBlock.material.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
                 pushConstBlock.material.alphaMaskCutoff = primitive->material.alphaCutoff;
             if (primitive->material.pbrWorkflows.metallicRoughness) {
-                // Metallic roughness workflow
                 pushConstBlock.material.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
                 pushConstBlock.material.baseColorFactor = primitive->material.baseColorFactor;
                 pushConstBlock.material.metallicFactor = primitive->material.metallicFactor;
@@ -407,7 +404,6 @@ void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *nod
                 pushConstBlock.material.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
             }
             if (primitive->material.pbrWorkflows.specularGlossiness) {
-                // Specular glossiness workflow
                 pushConstBlock.material.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
                 pushConstBlock.material.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
                 pushConstBlock.material.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;

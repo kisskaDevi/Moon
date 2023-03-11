@@ -11,11 +11,12 @@ class light;
 class shadowGraphics : public filterGraphics
 {
 private:
-    VkRenderPass                        renderPass{VK_NULL_HANDLE};
-    std::unordered_map<light*,std::vector<VkFramebuffer>> framebuffers;
+    std::unordered_map<light*,std::vector<VkFramebuffer>>   framebuffers;
 
     struct Shadow : public filter{
-        std::string                     vertShaderPath;
+        void destroy(VkDevice device);
+        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout(VkDevice device) override;
 
         VkDescriptorSetLayout           lightUniformBufferSetLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout           uniformBufferSetLayout{VK_NULL_HANDLE};
@@ -23,17 +24,13 @@ private:
 
         std::vector<object*>            objects;
         std::vector<light*>             lightSources;
-
-        void destroy(VkDevice device);
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device) override;
     }shadow;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
     void renderNode(VkCommandBuffer commandBuffer, Node* node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
 public:
     shadowGraphics();
-    void destroy() override;
+    void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
     void createRenderPass() override;

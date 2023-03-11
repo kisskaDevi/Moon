@@ -10,6 +10,9 @@ class texture;
 
 class filter{
 public:
+    std::string                     vertShaderPath;
+    std::string                     fragShaderPath;
+
     VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
     VkPipeline                      Pipeline{VK_NULL_HANDLE};
     VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
@@ -39,10 +42,18 @@ protected:
     uint32_t            attachmentsCount{0};
     attachments*        pAttachments{nullptr};
 
+    VkRenderPass                        renderPass{VK_NULL_HANDLE};
+    std::vector<VkFramebuffer>          framebuffers;
+
     std::vector<VkCommandBuffer> commandBuffers;
 public:
     virtual ~filterGraphics(){};
-    virtual void destroy() = 0;
+    void destroy(){
+        if(renderPass) {vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
+        for(size_t i = 0; i< framebuffers.size();i++)
+            if(framebuffers[i]) vkDestroyFramebuffer(device, framebuffers[i],nullptr);
+        framebuffers.resize(0);
+    }
 
     void setEmptyTexture(texture* emptyTexture){
         this->emptyTexture = emptyTexture;

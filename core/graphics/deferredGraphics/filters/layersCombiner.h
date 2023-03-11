@@ -8,21 +8,16 @@ class camera;
 class layersCombiner : public filterGraphics
 {
 private:
-    VkRenderPass                        renderPass{VK_NULL_HANDLE};
-    std::vector<VkFramebuffer>          framebuffers;
-
     struct Combiner : public filter{
-        std::string                     vertShaderPath;
-        std::string                     fragShaderPath;
-        uint32_t                        transparentLayersCount{0};
-
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
+
+        uint32_t                        transparentLayersCount{0};
     }combiner;
 
 public:
     layersCombiner();
-    void destroy() override;
+    void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
     void createRenderPass() override;

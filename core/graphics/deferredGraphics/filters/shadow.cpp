@@ -29,7 +29,7 @@ void shadowGraphics::destroy()
 {
     shadow.destroy(device);
 
-    if(renderPass){ vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
+    filterGraphics::destroy();
 }
 
 void shadowGraphics::createRenderPass()

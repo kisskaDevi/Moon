@@ -9,9 +9,6 @@ class camera;
 class skyboxGraphics : public filterGraphics
 {
 private:
-    VkRenderPass                        renderPass{VK_NULL_HANDLE};
-    std::vector<VkFramebuffer>          framebuffers;
-
     struct Skybox : public filter{
         std::string                     vertShaderPath;
         std::string                     fragShaderPath;
@@ -27,7 +24,7 @@ private:
 
 public:
     skyboxGraphics();
-    void destroy() override;
+    void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
     void createRenderPass() override;

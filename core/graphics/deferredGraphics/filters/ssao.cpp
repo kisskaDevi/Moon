@@ -20,10 +20,7 @@ void SSAOGraphics::destroy()
 {
     ssao.destroy(device);
 
-    if(renderPass) {vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
-    for(size_t i = 0; i< framebuffers.size();i++)
-        if(framebuffers[i]) vkDestroyFramebuffer(device, framebuffers[i],nullptr);
-    framebuffers.resize(0);
+    filterGraphics::destroy();
 }
 
 void SSAOGraphics::createRenderPass()

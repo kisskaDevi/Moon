@@ -8,20 +8,14 @@ class camera;
 class SSLRGraphics : public filterGraphics
 {
 private:
-    VkRenderPass                        renderPass{VK_NULL_HANDLE};
-    std::vector<VkFramebuffer>          framebuffers;
-
     struct SSLR : public filter{
-        std::string                     vertShaderPath;
-        std::string                     fragShaderPath;
-
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }sslr;
 
 public:
     SSLRGraphics();
-    void destroy() override;
+    void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
     void createRenderPass() override;

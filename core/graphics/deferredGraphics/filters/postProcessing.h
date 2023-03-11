@@ -18,8 +18,6 @@ struct postProcessingPushConst{
 class postProcessingGraphics : public filterGraphics
 {
 private:
-    texture*                            emptyTexture{nullptr};
-
     uint32_t                            swapChainAttachmentCount{1};
     std::vector<attachments>            swapChainAttachments;
 
@@ -29,22 +27,17 @@ private:
     attachments*                        ssaoAttachment{nullptr};
     attachments*                        layersAttachment{nullptr};
 
-    VkRenderPass                        renderPass{VK_NULL_HANDLE};
-    std::vector<VkFramebuffer>          framebuffers;
-
     struct PostProcessing : public filter{
-        std::string                     vertShaderPath;
-        std::string                     fragShaderPath;
-        float                           blitFactor;
-        uint32_t                        blitAttachmentCount;
-
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
+
+        float                           blitFactor;
+        uint32_t                        blitAttachmentCount;
     }postProcessing;
 
 public:
     postProcessingGraphics();
-    void destroy()override;
+    void destroy();
     void destroySwapChainAttachments();
 
     void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices);

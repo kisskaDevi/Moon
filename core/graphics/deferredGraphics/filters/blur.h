@@ -8,23 +8,18 @@ class gaussianBlur : public filterGraphics
 private:
     attachments                         bufferAttachment;
 
-    VkRenderPass                        renderPass{VK_NULL_HANDLE};
-    std::vector<VkFramebuffer>          framebuffers;
-
     struct blur : public filter{
-        std::string                     vertShaderPath;
-        std::string                     fragShaderPath;
-        uint32_t                        subpassNumber;
-
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
+
+        uint32_t                        subpassNumber{0};
     };
     blur xblur;
     blur yblur;
 
 public:
     gaussianBlur();
-    void destroy() override;
+    void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
     void createRenderPass() override;

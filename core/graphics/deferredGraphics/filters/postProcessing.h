@@ -36,7 +36,7 @@ private:
     }postProcessing;
 
 public:
-    postProcessingGraphics();
+    postProcessingGraphics() = default;
     void destroy();
     void destroySwapChainAttachments();
 

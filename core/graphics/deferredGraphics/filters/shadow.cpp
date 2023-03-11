@@ -5,9 +5,6 @@
 #include "core/transformational/object.h"
 #include "core/transformational/gltfmodel.h"
 
-shadowGraphics::shadowGraphics()
-{}
-
 void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     static_cast<void>(attachmentsCount);

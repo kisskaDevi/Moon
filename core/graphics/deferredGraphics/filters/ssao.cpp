@@ -3,9 +3,6 @@
 #include "../vkdefault.h"
 #include "core/transformational/camera.h"
 
-SSAOGraphics::SSAOGraphics()
-{}
-
 void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)

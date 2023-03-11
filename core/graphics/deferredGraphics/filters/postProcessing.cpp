@@ -2,9 +2,6 @@
 #include "core/texture.h"
 #include "../vkdefault.h"
 
-postProcessingGraphics::postProcessingGraphics()
-{}
-
 void postProcessingGraphics::setBlurAttachment(attachments *blurAttachment)
 {
     this->blurAttachment = blurAttachment;

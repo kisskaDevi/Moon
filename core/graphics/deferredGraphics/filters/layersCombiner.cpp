@@ -4,9 +4,6 @@
 #include "core/transformational/camera.h"
 #include "../vkdefault.h"
 
-layersCombiner::layersCombiner()
-{}
-
 void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
     combiner.transparentLayersCount = transparentLayersCount;
 }

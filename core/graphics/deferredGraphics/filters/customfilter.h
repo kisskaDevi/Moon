@@ -24,7 +24,7 @@ private:
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 public:
-    customFilter();
+    customFilter() = default;
     void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;

@@ -29,7 +29,7 @@ private:
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
     void renderNode(VkCommandBuffer commandBuffer, Node* node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
 public:
-    shadowGraphics();
+    shadowGraphics() = default;
     void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;

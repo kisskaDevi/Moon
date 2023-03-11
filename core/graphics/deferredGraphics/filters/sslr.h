@@ -14,7 +14,7 @@ private:
     }sslr;
 
 public:
-    SSLRGraphics();
+    SSLRGraphics() = default;
     void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;

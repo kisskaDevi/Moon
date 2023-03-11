@@ -2,10 +2,6 @@
 #include "core/operations.h"
 #include "../vkdefault.h"
 
-
-gaussianBlur::gaussianBlur()
-{}
-
 void gaussianBlur::createBufferAttachments(){
     bufferAttachment.create(&physicalDevice,&device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
     VkSamplerCreateInfo samplerInfo = vkDefault::samler();

@@ -3,11 +3,6 @@
 #include "../vkdefault.h"
 #include "core/transformational/camera.h"
 
-SSLRGraphics::SSLRGraphics()
-{
-
-}
-
 void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)

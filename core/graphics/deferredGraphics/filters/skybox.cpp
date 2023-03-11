@@ -4,9 +4,6 @@
 #include "core/transformational/object.h"
 #include "core/transformational/camera.h"
 
-skyboxGraphics::skyboxGraphics()
-{}
-
 void skyboxGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)

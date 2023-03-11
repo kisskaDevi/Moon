@@ -2,9 +2,6 @@
 #include "core/operations.h"
 #include "../vkdefault.h"
 
-customFilter::customFilter()
-{}
-
 void customFilter::setSampleStep(const float& deltaX, const float& deltaY){
     xSampleStep = deltaX; ySampleStep = deltaY;
 }

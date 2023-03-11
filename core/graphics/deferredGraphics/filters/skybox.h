@@ -23,7 +23,7 @@ private:
     }skybox;
 
 public:
-    skyboxGraphics();
+    skyboxGraphics() = default;
     void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;

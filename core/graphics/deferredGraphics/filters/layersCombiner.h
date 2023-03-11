@@ -16,7 +16,7 @@ private:
     }combiner;
 
 public:
-    layersCombiner();
+    layersCombiner() = default;
     void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;

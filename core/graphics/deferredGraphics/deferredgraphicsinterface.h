@@ -4,7 +4,7 @@
 #include "../graphicsInterface.h"
 
 #include "renderStages/graphics.h"
-#include "renderStages/postProcessing.h"
+#include "filters/postProcessing.h"
 #include "filters/blur.h"
 #include "filters/customfilter.h"
 #include "filters/sslr.h"

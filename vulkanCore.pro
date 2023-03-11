@@ -68,6 +68,7 @@ SOURCES += \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
     core/graphics/deferredGraphics/filters/blur.cpp \
     core/graphics/deferredGraphics/filters/layersCombiner.cpp \
+    core/graphics/deferredGraphics/filters/postProcessing.cpp \
     core/graphics/deferredGraphics/filters/shadow.cpp \
     core/graphics/deferredGraphics/filters/skybox.cpp \
     core/graphics/deferredGraphics/node.cpp \
@@ -77,10 +78,10 @@ SOURCES += \
     core/graphics/deferredGraphics/renderStages/source/base.cpp \
     core/graphics/deferredGraphics/renderStages/source/extension.cpp \
     core/graphics/deferredGraphics/renderStages/graphics.cpp \
-    core/graphics/deferredGraphics/renderStages/postProcessing.cpp \
     core/graphics/deferredGraphics/filters/customfilter.cpp \
     core/graphics/deferredGraphics/filters/ssao.cpp \
     core/graphics/deferredGraphics/filters/sslr.cpp \
+    core/graphics/deferredGraphics/vkdefault.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/light.cpp \
@@ -100,14 +101,15 @@ HEADERS += \
     core/graphics/deferredGraphics/filters/blur.h \
     core/graphics/deferredGraphics/filters/filtergraphics.h \
     core/graphics/deferredGraphics/filters/layersCombiner.h \
+    core/graphics/deferredGraphics/filters/postProcessing.h \
     core/graphics/deferredGraphics/filters/shadow.h \
     core/graphics/deferredGraphics/filters/skybox.h \
     core/graphics/deferredGraphics/node.h \
     core/graphics/deferredGraphics/renderStages/graphics.h \
-    core/graphics/deferredGraphics/renderStages/postProcessing.h \
     core/graphics/deferredGraphics/filters/customfilter.h \
     core/graphics/deferredGraphics/filters/ssao.h \
     core/graphics/deferredGraphics/filters/sslr.h \
+    core/graphics/deferredGraphics/vkdefault.h \
     core/graphics/graphicsInterface.h \
     core/transformational/lightInterface.h \
     core/transformational/transformational.h \

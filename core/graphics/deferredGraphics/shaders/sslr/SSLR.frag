@@ -71,13 +71,7 @@ vec4 SSLR(int steps, float incrementFactor, float resolution)
         float cosTheta = dot(reflectDirection, direction);
         float cosPhi = dot(findNormal(planeCoords, depthCond), direction);
         if((cosTheta >= resolution) && (cosPhi <= 0.0f)){
-            vec4 color = 50.0f * PBR(
-                        pointPosition,
-                        pointNormal,
-                        findSampler(fragTexCoord, depthCond),
-                        pointOfView,
-                        findSampler(planeCoords, depthCond),
-                        findPosition(planeCoords, depthCond).xyz);
+            vec4 color = findSampler(planeCoords, depthCond);
             SSLR = max(SSLR,color);
             break;
         }

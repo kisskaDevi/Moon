@@ -176,11 +176,11 @@ void deferredGraphics::createRenderPass()
 void deferredGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
-    for (size_t Image = 0; Image < image.Count; Image++)
-    {
+    for (size_t Image = 0; Image < image.Count; Image++){
         std::vector<VkImageView> attachments;
-        for(size_t i=0;i<pAttachments.size();i++)
+        for(size_t i=0;i<pAttachments.size();i++){
             attachments.push_back(pAttachments[i]->imageView[Image]);
+        }
 
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -251,8 +251,9 @@ void deferredGraphics::endCommandBuffer(uint32_t frameNumber){
 void deferredGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
         std::vector<VkClearValue> clearValues(pAttachments.size());
-        for(size_t i=0;i<clearValues.size();i++)
+        for(size_t i=0;i<clearValues.size();i++){
             clearValues[i] = pAttachments[i]->clearValue;
+        }
 
         VkRenderPassBeginInfo drawRenderPassInfo{};
             drawRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -285,8 +286,9 @@ VkCommandBuffer& deferredGraphics::getCommandBuffer(uint32_t frameNumber)
 
 void deferredGraphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)
 {
-    for(size_t i=0;i<base.objects.size();i++)
-        base.objects[i]->updateUniformBuffer(commandBuffer, currentImage);
+    for(auto& object: base.objects){
+        object->updateUniformBuffer(commandBuffer, currentImage);
+    }
 }
 
 void deferredGraphics::bindBaseObject(object *newObject)

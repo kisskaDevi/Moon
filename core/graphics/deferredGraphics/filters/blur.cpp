@@ -1,184 +1,88 @@
 #include "blur.h"
-
 #include "core/operations.h"
+#include "../vkdefault.h"
 
-#include <array>
-#include <iostream>
 
 gaussianBlur::gaussianBlur()
-{
+{}
 
-}
-
-void gaussianBlur::setEmptyTexture(texture* emptyTexture)
-{
-    this->emptyTexture = emptyTexture;
-}
-
-void gaussianBlur::setExternalPath(const std::string &path)
-{
-    xblur.ExternalPath = path;
-    yblur.ExternalPath = path;
+void gaussianBlur::createBufferAttachments(){
+    bufferAttachment.create(&physicalDevice,&device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
+    VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+    vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
-void gaussianBlur::setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device)
-{
-    this->physicalDevice = physicalDevice;
-    this->device = device;
-}
-void gaussianBlur::setImageProp(imageInfo* pInfo)
-{
-    this->image = *pInfo;
-}
-void gaussianBlur::setAttachments(uint32_t attachmentsCount, attachments* pAttachments)
-{
-    this->attachmentsCount = attachmentsCount;
-    this->pAttachments = pAttachments;
-}
-
-void gaussianBlur::createBufferAttachments()
-{
-    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
-    VkSamplerCreateInfo SamplerInfo{};
-        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        SamplerInfo.magFilter = VK_FILTER_LINEAR;
-        SamplerInfo.minFilter = VK_FILTER_LINEAR;
-        SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        SamplerInfo.anisotropyEnable = VK_TRUE;
-        SamplerInfo.maxAnisotropy = 1.0f;
-        SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        SamplerInfo.unnormalizedCoordinates = VK_FALSE;
-        SamplerInfo.compareEnable = VK_FALSE;
-        SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-        SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        SamplerInfo.minLod = 0.0f;
-        SamplerInfo.maxLod = 0.0f;
-        SamplerInfo.mipLodBias = 0.0f;
-    vkCreateSampler(*device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
-}
-
-void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
-{
-    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
-        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
-        VkSamplerCreateInfo SamplerInfo{};
-            SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-            SamplerInfo.magFilter = VK_FILTER_LINEAR;
-            SamplerInfo.minFilter = VK_FILTER_LINEAR;
-            SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            SamplerInfo.anisotropyEnable = VK_TRUE;
-            SamplerInfo.maxAnisotropy = 1.0f;
-            SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-            SamplerInfo.unnormalizedCoordinates = VK_FALSE;
-            SamplerInfo.compareEnable = VK_FALSE;
-            SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-            SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            SamplerInfo.minLod = 0.0f;
-            SamplerInfo.maxLod = 0.0f;
-            SamplerInfo.mipLodBias = 0.0f;
-        vkCreateSampler(*device, &SamplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
+    for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
+        pAttachments[attachmentsCount - 1].create(&physicalDevice,&device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
+        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
     }
 }
 
-void gaussianBlur::xBlur::Destroy(VkDevice* device)
-{
-    if(Pipeline)            {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
-    if(PipelineLayout)      {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
-    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
-    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
-}
+void gaussianBlur::destroy(){
+    xblur.destroy(device);
+    yblur.destroy(device);
 
-void gaussianBlur::yBlur::Destroy(VkDevice* device)
-{
-    if(Pipeline)            {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
-    if(PipelineLayout)      {vkDestroyPipelineLayout(*device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
-    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
-    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
-}
-
-void gaussianBlur::destroy()
-{
-    xblur.Destroy(device);
-    yblur.Destroy(device);
-
-    if(renderPass) {vkDestroyRenderPass(*device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
+    if(renderPass) {vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(size_t i = 0; i< framebuffers.size();i++)
-        if(framebuffers[i]) vkDestroyFramebuffer(*device, framebuffers[i],nullptr);
+        if(framebuffers[i]) vkDestroyFramebuffer(device, framebuffers[i],nullptr);
     framebuffers.resize(0);
 
-    bufferAttachment.deleteAttachment(device);
-    bufferAttachment.deleteSampler(device);
+    bufferAttachment.deleteAttachment(&device);
+    bufferAttachment.deleteSampler(&device);
 }
 
-void gaussianBlur::createRenderPass()
-{
-    std::array<VkAttachmentDescription,2> attachments{};
-    for(uint32_t index = 0; index < attachments.size(); index++)
-        attachments[index] = attachments::imageDescription(image.Format);
+void gaussianBlur::createRenderPass(){
+    std::vector<VkAttachmentDescription> attachments(2, attachments::imageDescription(image.Format));
 
-    uint32_t index = 0;
-    std::array<VkAttachmentReference,2> firstAttachmentRef;
-        firstAttachmentRef[index].attachment = 0;
-        firstAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    index++;
-        firstAttachmentRef[index].attachment = 1;
-        firstAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    std::vector<std::vector<VkAttachmentReference>> attachmentRef;
+    attachmentRef.push_back(std::vector<VkAttachmentReference>());
+        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    attachmentRef.push_back(std::vector<VkAttachmentReference>());
+        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    attachmentRef.push_back(std::vector<VkAttachmentReference>());
+        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
 
-    index = 0;
-    std::array<VkAttachmentReference,1> secondAttachmentRef;
-        secondAttachmentRef[index].attachment = 0;
-        secondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    index = 0;
-    std::array<VkAttachmentReference,1> inSecondAttachmentRef;
-        inSecondAttachmentRef[index].attachment = 1;
-        inSecondAttachmentRef[index].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    index = 0;
-    std::array<VkAttachmentReference,1> thirdAttachmentRef;
-        thirdAttachmentRef[index].attachment = 0;
-        thirdAttachmentRef[index].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    std::vector<std::vector<VkAttachmentReference>> inAttachmentRef;
+    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
+    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
+        inAttachmentRef.back().push_back(VkAttachmentReference{1,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
 
-    index = 0;
-    std::array<VkSubpassDescription,3> subpass{};
-        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass[index].colorAttachmentCount = static_cast<uint32_t>(firstAttachmentRef.size());
-        subpass[index].pColorAttachments = firstAttachmentRef.data();
-    index++;
-        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass[index].colorAttachmentCount = static_cast<uint32_t>(secondAttachmentRef.size());
-        subpass[index].pColorAttachments = secondAttachmentRef.data();
-        subpass[index].inputAttachmentCount = static_cast<uint32_t>(inSecondAttachmentRef.size());
-        subpass[index].pInputAttachments = inSecondAttachmentRef.data();
-    index++;
-        subpass[index].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass[index].colorAttachmentCount = static_cast<uint32_t>(thirdAttachmentRef.size());
-        subpass[index].pColorAttachments = thirdAttachmentRef.data();
+    std::vector<VkSubpassDescription> subpass;
+    for(auto refIt = attachmentRef.begin(), inRefIt = inAttachmentRef.begin();
+        refIt != attachmentRef.end() && inRefIt != inAttachmentRef.end(); refIt++, inRefIt++){
+        subpass.push_back(VkSubpassDescription{});
+            subpass.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
+            subpass.back().pColorAttachments = refIt->data();
+            subpass.back().inputAttachmentCount = static_cast<uint32_t>(inRefIt->size());
+            subpass.back().pInputAttachments = inRefIt->data();
+    }
 
-    index = 0;
-    std::array<VkSubpassDependency,3> dependency{};
-        dependency[index].srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency[index].dstSubpass = 0;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency[index].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    index++;
-        dependency[index].srcSubpass = 0;
-        dependency[index].dstSubpass = 1;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency[index].srcAccessMask = 0;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency[index].dstAccessMask = 0;
-    index++;
-        dependency[index].srcSubpass = 1;
-        dependency[index].dstSubpass = 2;
-        dependency[index].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].srcAccessMask = 0;
-        dependency[index].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency[index].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    std::vector<VkSubpassDependency> dependency;
+    dependency.push_back(VkSubpassDependency{});
+        dependency.back().srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency.back().dstSubpass = 0;
+        dependency.back().srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dependency.back().srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependency.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.push_back(VkSubpassDependency{});
+        dependency.back().srcSubpass = 0;
+        dependency.back().dstSubpass = 1;
+        dependency.back().srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dependency.back().srcAccessMask = 0;
+        dependency.back().dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dependency.back().dstAccessMask = 0;
+    dependency.push_back(VkSubpassDependency{});
+        dependency.back().srcSubpass = 1;
+        dependency.back().dstSubpass = 2;
+        dependency.back().srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.back().srcAccessMask = 0;
+        dependency.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -188,17 +92,13 @@ void gaussianBlur::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(*device, &renderPassInfo, nullptr, &renderPass);
+    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
 }
 
-void gaussianBlur::createFramebuffers()
-{
-    framebuffers.resize(image.Count);
-    for (size_t i = 0; i < framebuffers.size(); i++)
-    {
-        std::array<VkImageView,2> attachments;
-            attachments[0] = pAttachments->imageView[i];
-            attachments[1] = bufferAttachment.imageView[i];
+void gaussianBlur::createFramebuffers(){
+    for (auto attIt = pAttachments->imageView.begin(), buffIt = bufferAttachment.imageView.begin();
+         attIt != pAttachments->imageView.end() && buffIt != bufferAttachment.imageView.end(); attIt++, buffIt++){
+        std::vector<VkImageView> attachments = {*attIt, *buffIt};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -207,467 +107,148 @@ void gaussianBlur::createFramebuffers()
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(*device, &framebufferInfo, nullptr, &framebuffers[i]);
+        framebuffers.push_back(VkFramebuffer{});
+        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers.back());
     }
 }
 
-void gaussianBlur::xBlur::createDescriptorSetLayout(VkDevice* device)
-{
+void gaussianBlur::blur::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-        bindings.back().binding = bindings.size() - 1;
-        bindings.back().descriptorCount = 1;
-        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings.back().pImmutableSamplers = nullptr;
-        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
+    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 }
 
-void gaussianBlur::yBlur::createDescriptorSetLayout(VkDevice* device)
-{
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-        bindings.back().binding = bindings.size() - 1;
-        bindings.back().descriptorCount = 1;
-        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings.back().pImmutableSamplers = nullptr;
-        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
-}
-
-void gaussianBlur::createPipelines()
-{
+void gaussianBlur::createPipelines(){
+    xblur.subpassNumber = 0;
+    xblur.vertShaderPath = externalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\xBlurVert.spv";
+    xblur.fragShaderPath = externalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\xBlurFrag.spv";
     xblur.createDescriptorSetLayout(device);
-    xblur.createPipeline(device,&image,&renderPass);
+    xblur.createPipeline(device,&image,renderPass);
+
+    yblur.subpassNumber = 2;
+    yblur.vertShaderPath = externalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\yBlurVert.spv";
+    yblur.fragShaderPath = externalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\yBlurFrag.spv";
     yblur.createDescriptorSetLayout(device);
-    yblur.createPipeline(device,&image,&renderPass);
+    yblur.createPipeline(device,&image,renderPass);
 }
 
-void gaussianBlur::xBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
-{
-    uint32_t index = 0;
+void gaussianBlur::blur::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass){
+    VkShaderModule vertShaderModule = ShaderModule::create(&device, ShaderModule::readFile(vertShaderPath));
+    VkShaderModule fragShaderModule = ShaderModule::create(&device, ShaderModule::readFile(fragShaderPath));
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
+        vkDefault::vertrxShaderStage(vertShaderModule),
+        vkDefault::fragmentShaderStage(fragShaderModule)
+    };
 
-    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\xBlurVert.spv");
-    auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\xBlurFrag.spv");
-    VkShaderModule vertShaderModule = ShaderModule::create(device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(device, fragShaderCode);
-    std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
-        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[index].module = vertShaderModule;
-        shaderStages[index].pName = "main";
-    index++;
-        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[index].module = fragShaderModule;
-        shaderStages[index].pName = "main";
+    VkViewport viewport = vkDefault::viewport(pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor(pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr;
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-    index = 0;
-    std::array<VkViewport,1> viewport{};
-        viewport[index].x = 0.0f;
-        viewport[index].y = 0.0f;
-        viewport[index].width  = (float) pInfo->Extent.width;
-        viewport[index].height= (float) pInfo->Extent.height;
-        viewport[index].minDepth = 0.0f;
-        viewport[index].maxDepth = 1.0f;
-    std::array<VkRect2D,1> scissor{};
-        scissor[index].offset = {0, 0};
-        scissor[index].extent = pInfo->Extent;
-    VkPipelineViewportStateCreateInfo viewportState{};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
-        viewportState.pViewports = viewport.data();
-        viewportState.scissorCount = static_cast<uint32_t>(scissor.size());;
-        viewportState.pScissors = scissor.data();
-
-    VkPipelineRasterizationStateCreateInfo rasterizer{};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-        rasterizer.depthBiasEnable = VK_FALSE;
-        rasterizer.depthBiasConstantFactor = 0.0f;
-        rasterizer.depthBiasClamp = 0.0f;
-        rasterizer.depthBiasSlopeFactor = 0.0f;
-
-    VkPipelineMultisampleStateCreateInfo multisampling{};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-        multisampling.minSampleShading = 1.0f;
-        multisampling.pSampleMask = nullptr;
-        multisampling.alphaToCoverageEnable = VK_FALSE;
-        multisampling.alphaToOneEnable = VK_FALSE;
-
-    index = 0;
-    std::array<VkPipelineColorBlendAttachmentState,2> colorBlendAttachment;
-        colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[index].blendEnable = VK_FALSE;
-        colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
-        colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
-    index++;
-        colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[index].blendEnable = VK_FALSE;
-        colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
-        colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
-    VkPipelineColorBlendStateCreateInfo colorBlending{};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());
-        colorBlending.pAttachments = colorBlendAttachment.data();
-        colorBlending.blendConstants[0] = 0.0f;
-        colorBlending.blendConstants[1] = 0.0f;
-        colorBlending.blendConstants[2] = 0.0f;
-        colorBlending.blendConstants[3] = 0.0f;
-
-    VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_FALSE;
-        depthStencil.depthWriteEnable = VK_FALSE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.minDepthBounds = 0.0f;
-        depthStencil.maxDepthBounds = 1.0f;
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {};
-        depthStencil.back = {};
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
+    if(subpassNumber == 0){
+        colorBlendAttachment.push_back(vkDefault::colorBlendAttachmentState(VK_FALSE));
+    }
+    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.pNext = nullptr;
-        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineInfo.pStages = shaderStages.data();
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssembly;
-        pipelineInfo.pViewportState = &viewportState;
-        pipelineInfo.pRasterizationState = &rasterizer;
-        pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = PipelineLayout;
-        pipelineInfo.renderPass = *pRenderPass;
-        pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
+    pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
+        pipelineInfo.back().sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.back().pNext = nullptr;
+        pipelineInfo.back().stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.back().pStages = shaderStages.data();
+        pipelineInfo.back().pVertexInputState = &vertexInputInfo;
+        pipelineInfo.back().pInputAssemblyState = &inputAssembly;
+        pipelineInfo.back().pViewportState = &viewportState;
+        pipelineInfo.back().pRasterizationState = &rasterizer;
+        pipelineInfo.back().pMultisampleState = &multisampling;
+        pipelineInfo.back().pColorBlendState = &colorBlending;
+        pipelineInfo.back().layout = PipelineLayout;
+        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().subpass = subpassNumber;
+        pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.back().pDepthStencilState = &depthStencil;
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
 
-    vkDestroyShaderModule(*device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(*device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void gaussianBlur::yBlur::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
-{
-    uint32_t index = 0;
-
-    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\yBlurVert.spv");
-    auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\graphics\\deferredGraphics\\shaders\\gaussianBlur\\yBlurFrag.spv");
-    VkShaderModule vertShaderModule = ShaderModule::create(device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(device, fragShaderCode);
-    std::array<VkPipelineShaderStageCreateInfo,2> shaderStages{};
-        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[index].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[index].module = vertShaderModule;
-        shaderStages[index].pName = "main";
-    index++;
-        shaderStages[index].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[index].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[index].module = fragShaderModule;
-        shaderStages[index].pName = "main";
-
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr;
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-    index = 0;
-    std::array<VkViewport,1> viewport{};
-        viewport[index].x = 0.0f;
-        viewport[index].y = 0.0f;
-        viewport[index].width  = (float) pInfo->Extent.width;
-        viewport[index].height= (float) pInfo->Extent.height;
-        viewport[index].minDepth = 0.0f;
-        viewport[index].maxDepth = 1.0f;
-    std::array<VkRect2D,1> scissor{};
-        scissor[index].offset = {0, 0};
-        scissor[index].extent = pInfo->Extent;
-    VkPipelineViewportStateCreateInfo viewportState{};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = static_cast<uint32_t>(viewport.size());;
-        viewportState.pViewports = viewport.data();
-        viewportState.scissorCount = static_cast<uint32_t>(scissor.size());;
-        viewportState.pScissors = scissor.data();
-
-    VkPipelineRasterizationStateCreateInfo rasterizer{};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-        rasterizer.depthBiasEnable = VK_FALSE;
-        rasterizer.depthBiasConstantFactor = 0.0f;
-        rasterizer.depthBiasClamp = 0.0f;
-        rasterizer.depthBiasSlopeFactor = 0.0f;
-
-    VkPipelineMultisampleStateCreateInfo multisampling{};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-        multisampling.minSampleShading = 1.0f;
-        multisampling.pSampleMask = nullptr;
-        multisampling.alphaToCoverageEnable = VK_FALSE;
-        multisampling.alphaToOneEnable = VK_FALSE;
-
-    index = 0;
-    std::array<VkPipelineColorBlendAttachmentState,1> colorBlendAttachment;
-        colorBlendAttachment[index].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment[index].blendEnable = VK_FALSE;
-        colorBlendAttachment[index].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].colorBlendOp = VK_BLEND_OP_MAX;
-        colorBlendAttachment[index].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        colorBlendAttachment[index].alphaBlendOp = VK_BLEND_OP_MAX;
-    VkPipelineColorBlendStateCreateInfo colorBlending{};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachment.size());
-        colorBlending.pAttachments = colorBlendAttachment.data();
-        colorBlending.blendConstants[0] = 0.0f;
-        colorBlending.blendConstants[1] = 0.0f;
-        colorBlending.blendConstants[2] = 0.0f;
-        colorBlending.blendConstants[3] = 0.0f;
-
-    VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_FALSE;
-        depthStencil.depthWriteEnable = VK_FALSE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.minDepthBounds = 0.0f;
-        depthStencil.maxDepthBounds = 1.0f;
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {};
-        depthStencil.back = {};
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
-
-    index = 0;
-    std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
-        pipelineInfo[index].sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo[index].pNext = nullptr;
-        pipelineInfo[index].stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineInfo[index].pStages = shaderStages.data();
-        pipelineInfo[index].pVertexInputState = &vertexInputInfo;
-        pipelineInfo[index].pInputAssemblyState = &inputAssembly;
-        pipelineInfo[index].pViewportState = &viewportState;
-        pipelineInfo[index].pRasterizationState = &rasterizer;
-        pipelineInfo[index].pMultisampleState = &multisampling;
-        pipelineInfo[index].pColorBlendState = &colorBlending;
-        pipelineInfo[index].layout = PipelineLayout;
-        pipelineInfo[index].renderPass = *pRenderPass;
-        pipelineInfo[index].subpass = 2;
-        pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo[index].pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
-
-    vkDestroyShaderModule(*device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(*device, vertShaderModule, nullptr);
+void gaussianBlur::createDescriptorPool(){
+    filterGraphics::createDescriptorPool(device, &xblur, 0, image.Count, image.Count);
+    filterGraphics::createDescriptorPool(device, &yblur, 0, image.Count, image.Count);
 }
 
-void gaussianBlur::createDescriptorPool()
-{
-    std::vector<VkDescriptorPoolSize> xPoolSizes;
-    xPoolSizes.push_back(VkDescriptorPoolSize{});
-        xPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        xPoolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-    VkDescriptorPoolCreateInfo xPoolInfo{};
-        xPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        xPoolInfo.poolSizeCount = static_cast<uint32_t>(xPoolSizes.size());
-        xPoolInfo.pPoolSizes = xPoolSizes.data();
-        xPoolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(*device, &xPoolInfo, nullptr, &xblur.DescriptorPool);
-
-    std::vector<VkDescriptorPoolSize> yPoolSizes;
-    yPoolSizes.push_back(VkDescriptorPoolSize{});
-        yPoolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        yPoolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-    VkDescriptorPoolCreateInfo yPoolInfo{};
-        yPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        yPoolInfo.poolSizeCount = static_cast<uint32_t>(yPoolSizes.size());
-        yPoolInfo.pPoolSizes = yPoolSizes.data();
-        yPoolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(*device, &yPoolInfo, nullptr, &yblur.DescriptorPool);
+void gaussianBlur::createDescriptorSets(){
+    filterGraphics::createDescriptorSets(device, &xblur, image.Count);
+    filterGraphics::createDescriptorSets(device, &yblur, image.Count);
 }
 
-void gaussianBlur::createDescriptorSets()
-{
-    xblur.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> xLayouts(image.Count, xblur.DescriptorSetLayout);
-    VkDescriptorSetAllocateInfo xAllocInfo{};
-        xAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        xAllocInfo.descriptorPool = xblur.DescriptorPool;
-        xAllocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
-        xAllocInfo.pSetLayouts = xLayouts.data();
-    vkAllocateDescriptorSets(*device, &xAllocInfo, xblur.DescriptorSets.data());
+void gaussianBlur::updateDescriptorSets(attachments* blurAttachment){
+    auto updateDescriptorSets = [](VkDevice device, const std::vector<VkImageView>& imageViews, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
+        auto imageIt = imageViews.begin();
+        auto setIt = descriptorSets.begin();
+        for (;imageIt != imageViews.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
+            VkDescriptorImageInfo imageInfo{};
+                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo.imageView = *imageIt;
+                imageInfo.sampler = sampler;
 
-    yblur.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> yLayouts(image.Count, yblur.DescriptorSetLayout);
-    VkDescriptorSetAllocateInfo yAllocInfo{};
-        yAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        yAllocInfo.descriptorPool = yblur.DescriptorPool;
-        yAllocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
-        yAllocInfo.pSetLayouts = yLayouts.data();
-    vkAllocateDescriptorSets(*device, &yAllocInfo, yblur.DescriptorSets.data());
+            std::vector<VkWriteDescriptorSet> descriptorWrites;
+            descriptorWrites.push_back(VkWriteDescriptorSet{});
+                descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites.back().dstSet = *setIt;
+                descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+                descriptorWrites.back().dstArrayElement = 0;
+                descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descriptorWrites.back().descriptorCount = 1;
+                descriptorWrites.back().pImageInfo = &imageInfo;
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+    };
+
+    updateDescriptorSets(device, blurAttachment->imageView, blurAttachment->sampler, xblur.DescriptorSets);
+    updateDescriptorSets(device, bufferAttachment.imageView, bufferAttachment.sampler, yblur.DescriptorSets);
 }
 
-void gaussianBlur::updateDescriptorSets(attachments* blurAttachment)
-{
-    for (size_t i = 0; i < image.Count; i++)
-    {
-        VkDescriptorImageInfo imageInfo;
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = blurAttachment->imageView[i];
-            imageInfo.sampler = blurAttachment->sampler;
+void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
+    std::vector<VkClearValue> clearValues(2, VkClearValue{pAttachments->clearValue.color});
 
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = xblur.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &imageInfo;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
+    VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = framebuffers[frameNumber];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
 
-    for (size_t i = 0; i < image.Count; i++)
-    {
-        VkDescriptorImageInfo imageInfo;
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = bufferAttachment.imageView[i];
-            imageInfo.sampler = bufferAttachment.sampler;
+    vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = yblur.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &imageInfo;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-}
+        vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.PipelineLayout, 0, 1, &xblur.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
-void gaussianBlur::createCommandBuffers(VkCommandPool commandPool)
-{
-    commandBuffers.resize(image.Count);
-    VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
-    vkAllocateCommandBuffers(*device, &allocInfo, commandBuffers.data());
-}
+    vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
 
-void gaussianBlur::beginCommandBuffer(uint32_t frameNumber){
-    vkResetCommandBuffer(commandBuffers[frameNumber],0);
+        vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.PipelineLayout, 0, 1, &yblur.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
-    VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
-        beginInfo.pInheritanceInfo = nullptr;
-
-    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
-}
-
-void gaussianBlur::endCommandBuffer(uint32_t frameNumber){
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
-}
-
-void gaussianBlur::updateCommandBuffer(uint32_t frameNumber)
-{
-        std::array<VkClearValue, 2> ClearValues{};
-        for(uint32_t index = 0; index < ClearValues.size(); index++)
-            ClearValues[index].color = pAttachments->clearValue.color;
-
-        VkRenderPassBeginInfo renderPassInfo{};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = renderPass;
-            renderPassInfo.framebuffer = framebuffers[frameNumber];
-            renderPassInfo.renderArea.offset = {0, 0};
-            renderPassInfo.renderArea.extent = image.Extent;
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-            renderPassInfo.pClearValues = ClearValues.data();
-
-        vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.Pipeline);
-            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.PipelineLayout, 0, 1, &xblur.DescriptorSets[frameNumber], 0, nullptr);
-            vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
-
-        vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.Pipeline);
-            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.PipelineLayout, 0, 1, &yblur.DescriptorSets[frameNumber], 0, nullptr);
-            vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
-
-        vkCmdEndRenderPass(commandBuffers[frameNumber]);
-}
-
-VkCommandBuffer& gaussianBlur::getCommandBuffer(uint32_t frameNumber)
-{
-    return commandBuffers[frameNumber];
+    vkCmdEndRenderPass(commandBuffers[frameNumber]);
 }

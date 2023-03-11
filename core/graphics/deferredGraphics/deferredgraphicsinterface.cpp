@@ -126,14 +126,14 @@ void deferredGraphicsInterface::setDevices(uint32_t devicesCount, physicalDevice
     device = this->devices[0];
 
     DeferredGraphics.setDeviceProp(&device.instance, &device.getLogical());
-    PostProcessing.setDeviceProp(&device.instance, &device.getLogical());
-    Filter.setDeviceProp(&device.instance, &device.getLogical());
-    SSLR.setDeviceProp(&device.instance, &device.getLogical());
-    SSAO.setDeviceProp(&device.instance, &device.getLogical());
-    Skybox.setDeviceProp(&device.instance, &device.getLogical());
-    Shadow.setDeviceProp(&device.instance, &device.getLogical());
-    LayersCombiner.setDeviceProp(&device.instance, &device.getLogical());
-    Blur.setDeviceProp(&device.instance, &device.getLogical());
+    PostProcessing.setDeviceProp(device.instance, device.getLogical());
+    Filter.setDeviceProp(device.instance, device.getLogical());
+    SSLR.setDeviceProp(device.instance, device.getLogical());
+    SSAO.setDeviceProp(device.instance, device.getLogical());
+    Skybox.setDeviceProp(device.instance, device.getLogical());
+    Shadow.setDeviceProp(device.instance, device.getLogical());
+    LayersCombiner.setDeviceProp(device.instance, device.getLogical());
+    Blur.setDeviceProp(device.instance, device.getLogical());
     for(auto& layer: TransparentLayers){
         layer.setDeviceProp(&device.instance, &device.getLogical());
     }
@@ -376,14 +376,16 @@ void deferredGraphicsInterface::updateCommandBuffers()
 void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex)
 {
     if(updateCommandBufferFlags[imageIndex]){
-        Shadow.updateCommandBuffer(imageIndex);
+        Shadow.beginCommandBuffer(imageIndex);
+            Shadow.updateCommandBuffer(imageIndex);
+        Shadow.endCommandBuffer(imageIndex);
 
         Skybox.beginCommandBuffer(imageIndex);
             if(enableSkybox){ Skybox.updateCommandBuffer(imageIndex);}
         Skybox.endCommandBuffer(imageIndex);
 
         DeferredGraphics.beginCommandBuffer(imageIndex);
-        DeferredGraphics.updateCommandBuffer(imageIndex);
+            DeferredGraphics.updateCommandBuffer(imageIndex);
         DeferredGraphics.endCommandBuffer(imageIndex);
 
         for(auto& layer: TransparentLayers){
@@ -422,7 +424,9 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex)
             if(enableBloom){ Filter.updateCommandBuffer(imageIndex);}
         Filter.endCommandBuffer(imageIndex);
 
-        PostProcessing.updateCommandBuffer(imageIndex);
+        PostProcessing.beginCommandBuffer(imageIndex);
+            PostProcessing.updateCommandBuffer(imageIndex);
+        PostProcessing.endCommandBuffer(imageIndex);
 
         updateCommandBufferFlags[imageIndex] = false;
     }

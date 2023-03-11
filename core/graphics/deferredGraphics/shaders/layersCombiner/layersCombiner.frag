@@ -91,7 +91,8 @@ vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sam
         vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
                            1.0f - abs(2.0f * t - 2.0f / 3.0f),
                            1.0f - abs(2.0f * t - 4.0f / 3.0f), 1.0f);
-        if(depthCond(layerDepth(Depth,coords.xy),coords.xy))
+        float layDepth = layerDepth(Depth,coords.xy);
+        if(depthCond(layDepth,coords.xy) && coords.z < layDepth)
         {
             color += (beginCoords != vec3(fragTexCoord,0.0f) ? factor : vec4(1.0f)) * findColor(coords, Sampler);
         }

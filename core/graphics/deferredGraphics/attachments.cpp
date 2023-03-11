@@ -23,7 +23,7 @@ attachments::attachments(const attachments &other)
     format = other.format;
 }
 
-attachments& attachments::operator=(const attachments &other)
+attachments& attachments::operator=(const attachments& other)
 {
     image.resize(other.size);
     imageMemory.resize(other.size);

@@ -8,8 +8,8 @@ float lightDrop(float distance)
 }
 
 float lightDistribusion(const in vec3 position, const in vec3 lightPosition, const in mat4 lightProjMatrix, const in vec3 lightDirection){
-    float fov = asin(1.0f/sqrt(1.0f + lightProjMatrix[1][1] * lightProjMatrix[1][1]));
+    float fov = 2*atan(1.0f/lightProjMatrix[1][1]);
     float theta = acos(dot(normalize(position.xyz - lightPosition),lightDirection));
-    float arg = 3.1415f/2.0f * theta/fov;
-    return pow(cos(theta),16);
+    float arg = 3.141592653589793f * theta/fov;
+    return pow(cos(arg),4);
 }

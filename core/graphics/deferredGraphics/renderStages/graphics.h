@@ -1,8 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#include <libs/vulkan/vulkan.h>
-#include "../attachments.h"
+#include "../filters/filtergraphics.h"
 
 #include <string>
 #include <unordered_map>
@@ -17,24 +16,12 @@ struct                              Material;
 struct                              MaterialBlock;
 struct                              gltfModel;
 
-class deferredGraphics
+class deferredGraphics : public filterGraphics
 {
 private:
-    VkPhysicalDevice*               physicalDevice{nullptr};
-    VkDevice*                       device{nullptr};
-
-    texture*                        emptyTexture{nullptr};
-
     uint32_t                        primitiveCount{0};
 
-    imageInfo                       image;
-
     std::vector<attachments*>       pAttachments;
-
-    VkRenderPass                    renderPass{VK_NULL_HANDLE};
-    std::vector<VkFramebuffer>      framebuffers;
-
-    std::vector<VkCommandBuffer>          commandBuffers;
 
     struct Base{
         std::string                                     ExternalPath;
@@ -65,11 +52,11 @@ private:
 
         Base*                           Parent{nullptr};
 
-        VkPipelineLayout                outliningPipelineLayout{VK_NULL_HANDLE};
-        VkPipeline                      outliningPipeline{VK_NULL_HANDLE};
+        VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
+        VkPipeline                      Pipeline{VK_NULL_HANDLE};
 
-        void DestroyOutliningPipeline(VkDevice* device);
-        void createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void DestroyPipeline(VkDevice* device);
+        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
             void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount);
     }outlining;
@@ -119,34 +106,21 @@ private:
 public:
     deferredGraphics();
     void destroy();
-    void freeCommandBuffer(VkCommandPool commandPool){
-        if(commandBuffers.data()){
-            vkFreeCommandBuffers(*device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-        }
-        commandBuffers.resize(0);
-    }
-
-    void setEmptyTexture(texture* emptyTexture);
-    void setExternalPath(const std::string& path);
-    void setDeviceProp(VkPhysicalDevice* physicalDevice, VkDevice* device);
-    void setImageProp(imageInfo* pInfo);
 
     void setAttachments(DeferredAttachments* pAttachments);
     void createAttachments(DeferredAttachments* pAttachments);
-    void createRenderPass();
-    void createFramebuffers();
-    void createPipelines();
+    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override {
+        static_cast<void>(attachmentsCount); static_cast<void>(pAttachments);
+    }
+    void createRenderPass()override;
+    void createFramebuffers()override;
+    void createPipelines()override;
 
-    void createDescriptorPool();
-    void createDescriptorSets();
+    void createDescriptorPool()override;
+    void createDescriptorSets()override;
     void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject);
 
-    void beginCommandBuffer(uint32_t frameNumber);
-    void endCommandBuffer(uint32_t frameNumber);
-
-    void createCommandBuffers(VkCommandPool commandPool);
-    void updateCommandBuffer(uint32_t frameNumber);
-    VkCommandBuffer& getCommandBuffer(uint32_t frameNumber);
+    void updateCommandBuffer(uint32_t frameNumber) override;
 
     void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
     void updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);

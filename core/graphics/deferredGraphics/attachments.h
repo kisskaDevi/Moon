@@ -81,10 +81,10 @@ struct DeferredAttachments{
     DeferredAttachments(const DeferredAttachments& other);
     DeferredAttachments& operator=(const DeferredAttachments& other);
 
-    void deleteAttachment(VkDevice * device);
-    void deleteSampler(VkDevice * device);
+    void deleteAttachment(VkDevice* device);
+    void deleteSampler(VkDevice* device);
 
-    static size_t getGBufferOffset() {return 4;};\
+    static size_t getGBufferOffset() {return 4;}
 };
 
 #endif // ATTACHMENTS_H

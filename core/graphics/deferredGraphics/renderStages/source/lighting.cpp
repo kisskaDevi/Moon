@@ -85,7 +85,7 @@ void deferredGraphics::createLightingDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &lighting.DescriptorPool);
+    vkCreateDescriptorPool(device, &poolInfo, nullptr, &lighting.DescriptorPool);
 }
 
 void deferredGraphics::createLightingDescriptorSets()
@@ -97,7 +97,7 @@ void deferredGraphics::createLightingDescriptorSets()
         allocInfo.descriptorPool = lighting.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(*device, &allocInfo, lighting.DescriptorSets.data());
+    vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data());
 }
 
 void deferredGraphics::updateLightingDescriptorSets(camera* cameraObject)
@@ -142,7 +142,7 @@ void deferredGraphics::updateLightingDescriptorSets(camera* cameraObject)
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pBufferInfo = &bufferInfo;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 

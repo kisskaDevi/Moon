@@ -11,13 +11,13 @@ struct OutliningPushConst{
     alignas(4)  float               width;
 };
 
-void deferredGraphics::OutliningExtension::DestroyOutliningPipeline(VkDevice* device)
+void deferredGraphics::OutliningExtension::DestroyPipeline(VkDevice* device)
 {
-    if(outliningPipeline)         {vkDestroyPipeline(*device, outliningPipeline, nullptr); outliningPipeline = VK_NULL_HANDLE;}
-    if(outliningPipelineLayout)   {vkDestroyPipelineLayout(*device, outliningPipelineLayout, nullptr); outliningPipelineLayout = VK_NULL_HANDLE;}
+    if(Pipeline)         {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
+    if(PipelineLayout)   {vkDestroyPipelineLayout(*device, PipelineLayout, nullptr); PipelineLayout = VK_NULL_HANDLE;}
 }
 
-void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -144,7 +144,7 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &outliningPipelineLayout);
+    vkCreatePipelineLayout(*device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     index=0;
     std::array<VkGraphicsPipelineCreateInfo,1> pipelineInfo{};
@@ -158,12 +158,12 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
         pipelineInfo[index].pRasterizationState = &rasterizer;
         pipelineInfo[index].pMultisampleState = &multisampling;
         pipelineInfo[index].pColorBlendState = &colorBlending;
-        pipelineInfo[index].layout = outliningPipelineLayout;
+        pipelineInfo[index].layout = PipelineLayout;
         pipelineInfo[index].renderPass = *pRenderPass;
         pipelineInfo[index].subpass = 0;
         pipelineInfo[index].pDepthStencilState = &depthStencil;
         pipelineInfo[index].basePipelineHandle = VK_NULL_HANDLE;
-    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &outliningPipeline);
+    vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
 
     vkDestroyShaderModule(*device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
@@ -171,7 +171,7 @@ void deferredGraphics::OutliningExtension::createOutliningPipeline(VkDevice* dev
 
 void deferredGraphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
-    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, outliningPipeline);
+    vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: Parent->objects)
     {
         if(object->getEnable()&&object->getOutliningEnable()){
@@ -183,11 +183,11 @@ void deferredGraphics::OutliningExtension::render(uint32_t frameNumber, VkComman
             OutliningPushConst pushConst{};
                 pushConst.stencilColor = object->getOutliningColor();
                 pushConst.width = object->getOutliningWidth();
-            vkCmdPushConstants(commandBuffers, outliningPipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(OutliningPushConst), &pushConst);
+            vkCmdPushConstants(commandBuffers, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(OutliningPushConst), &pushConst);
 
             for (auto node : object->getModel(frameNumber)->nodes){
                 std::vector<VkDescriptorSet> descriptorSets = {Parent->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-                renderNode(commandBuffers,node,&outliningPipelineLayout,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(),nullptr);
+                renderNode(commandBuffers,node,&PipelineLayout,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(),nullptr);
             }
         }
     }

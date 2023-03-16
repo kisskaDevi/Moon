@@ -1,4 +1,5 @@
 #include "postProcessing.h"
+#include "core/operations.h"
 #include "core/texture.h"
 #include "../vkdefault.h"
 
@@ -40,11 +41,11 @@ void postProcessingGraphics::destroySwapChainAttachments()
     swapChainAttachments.resize(0);
 }
 
-void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices)
+void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails* swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices)
 {
-    VkPresentModeKHR presentMode = SwapChain::queryingPresentMode(swapChainSupport.presentModes);
-    VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
-    VkExtent2D extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
+    VkPresentModeKHR presentMode = SwapChain::queryingPresentMode(swapChainSupport->presentModes);
+    VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport->formats);
+    VkExtent2D extent = SwapChain::queryingExtent(window, swapChainSupport->capabilities);
 
     VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -58,7 +59,7 @@ void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwind
         createInfo.imageSharingMode = queueFamilyIndexCount > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
         createInfo.pQueueFamilyIndices = pQueueFamilyIndices;
         createInfo.queueFamilyIndexCount = queueFamilyIndexCount;
-        createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+        createInfo.preTransform = swapChainSupport->capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;

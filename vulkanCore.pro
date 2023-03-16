@@ -1,14 +1,18 @@
 CONFIG += c++17 console
 
-win32: LIBS += -L$$PWD/libs/vulkan/x64/ -lvulkan-1
+win32: LIBS += \
+    -L$$PWD/libs/vulkan/x64 \
+    -L$$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt \
+    -lvulkan-1 \
+    -lglfw3dll
 
-INCLUDEPATH += $$PWD/libs/vulkan/x64
-DEPENDPATH += $$PWD/libs/vulkan/x64
+INCLUDEPATH += \
+    $$PWD/libs/vulkan/x64 \
+    $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 
-win32: LIBS += -L$$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt/ -lglfw3dll
-
-INCLUDEPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
-DEPENDPATH += $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
+DEPENDPATH += \
+    $$PWD/libs/vulkan/x64
+    $$PWD/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt
 
 DISTFILES += \
     core/graphics/deferredGraphics/shaders/spotLightingPass/metods/lightDrop.frag \
@@ -67,6 +71,7 @@ SOURCES += \
     core/graphics/deferredGraphics/attachments.cpp \
     core/graphics/deferredGraphics/deferredgraphicsinterface.cpp \
     core/graphics/deferredGraphics/filters/blur.cpp \
+    core/graphics/deferredGraphics/filters/filtergraphics.cpp \
     core/graphics/deferredGraphics/filters/layersCombiner.cpp \
     core/graphics/deferredGraphics/filters/postProcessing.cpp \
     core/graphics/deferredGraphics/filters/shadow.cpp \

@@ -3,11 +3,10 @@
 
 #include<libs/vulkan/vulkan.h>
 #include "filtergraphics.h"
-#include "core/operations.h"
 
-#include <string>
-
-struct SwapChainSupportDetails;
+namespace SwapChain{
+    struct SupportDetails;
+}
 class GLFWwindow;
 class texture;
 
@@ -40,7 +39,7 @@ public:
     void destroy();
     void destroySwapChainAttachments();
 
-    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices);
+    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails* swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices);
     void createSwapChainAttachments(VkSwapchainKHR* swapChain);
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override{
         static_cast<void>(attachmentsCount);

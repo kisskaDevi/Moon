@@ -9,28 +9,23 @@ layout(location = 1) out vec4 outBlur;
 
 const float pi = 3.141592653589793f;
 
+float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+
 vec4 blur(sampler2D blurSampler, vec2 TexCoord)
 {
-    float sigma = 1.0 * textureSize(blurSampler, 0).x;
-    vec2 textel = 1.0 / textureSize(blurSampler, 0);
-    vec4 Color = texture(blurSampler, TexCoord) /sqrt(pi*sigma);
-    int h = 10;
-    float Norm = 1.0f/sqrt(pi*sigma);
-    for(int i=1;i<h+1;i+=2)
-    {
-	float I1 = Norm * exp( -(i*textel.x*i*textel.x)/sigma);
-	float I2 = Norm * exp( -((i+1)*textel.x*(i+1)*textel.x)/sigma);
-	float x = (I1*i+I2*(i+1))*textel.x/(I1+I2);
-	float I = Norm * exp(-(x*x)/sigma);
-	Color += texture(blurSampler, TexCoord + vec2(x,0.0f) ) * I;
-	Color += texture(blurSampler, TexCoord - vec2(x,0.0f) ) * I;
+    vec2 texOffset = 1.0 / textureSize(blurSampler, 0);
+    vec3 result = texture(blurSampler, TexCoord).rgb * weight[0];
+
+    for(int i = 1; i < 5; ++i){
+        result += texture(blurSampler, TexCoord + vec2(texOffset.x * i, 0.0)).rgb * weight[i];
+        result += texture(blurSampler, TexCoord - vec2(texOffset.x * i, 0.0)).rgb * weight[i];
     }
-    return Color;
+
+    return vec4(result, 1.0);
 }
 
 void main()
 {
     outColor = vec4(0.0f);
-    outBlur = vec4(0.0f);
-    outBlur += texture(blurSampler,fragTexCoord);
+    outBlur = blur(blurSampler,fragTexCoord);
 }

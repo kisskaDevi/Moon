@@ -26,21 +26,20 @@ void gaussianBlur::destroy(){
 }
 
 void gaussianBlur::createRenderPass(){
-    std::vector<VkAttachmentDescription> attachments(2, attachments::imageDescription(image.Format));
+    std::vector<VkAttachmentDescription> attachments = {
+        attachments::imageDescription(image.Format),
+        attachments::imageDescription(image.Format)
+    };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
-    attachmentRef.push_back(std::vector<VkAttachmentReference>());
-        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-        attachmentRef.back().push_back(VkAttachmentReference{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    attachmentRef.push_back(std::vector<VkAttachmentReference>());
-        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    attachmentRef.push_back(std::vector<VkAttachmentReference>());
-        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    attachmentRef.push_back({   VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+                                VkAttachmentReference{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}});
+    attachmentRef.push_back({   VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}});
+    attachmentRef.push_back({   VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}});
 
     std::vector<std::vector<VkAttachmentReference>> inAttachmentRef;
     inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-        inAttachmentRef.back().push_back(VkAttachmentReference{1,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+    inAttachmentRef.push_back({ VkAttachmentReference{1,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}});
     inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
 
     std::vector<VkSubpassDescription> subpass;

@@ -277,7 +277,7 @@ void deferredGraphics::createBaseDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &base.DescriptorPool);
+    vkCreateDescriptorPool(device, &poolInfo, nullptr, &base.DescriptorPool);
 }
 
 void deferredGraphics::createBaseDescriptorSets()
@@ -289,7 +289,7 @@ void deferredGraphics::createBaseDescriptorSets()
         allocInfo.descriptorPool = base.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(*device, &allocInfo, base.DescriptorSets.data());
+    vkAllocateDescriptorSets(device, &allocInfo, base.DescriptorSets.data());
 }
 
 void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject)
@@ -349,7 +349,7 @@ void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, Vk
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &depthImageInfo;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 

@@ -125,7 +125,7 @@ void deferredGraphicsInterface::setDevices(uint32_t devicesCount, physicalDevice
     }
     device = this->devices[0];
 
-    DeferredGraphics.setDeviceProp(&device.instance, &device.getLogical());
+    DeferredGraphics.setDeviceProp(device.instance, device.getLogical());
     PostProcessing.setDeviceProp(device.instance, device.getLogical());
     Filter.setDeviceProp(device.instance, device.getLogical());
     SSLR.setDeviceProp(device.instance, device.getLogical());
@@ -135,7 +135,7 @@ void deferredGraphicsInterface::setDevices(uint32_t devicesCount, physicalDevice
     LayersCombiner.setDeviceProp(device.instance, device.getLogical());
     Blur.setDeviceProp(device.instance, device.getLogical());
     for(auto& layer: TransparentLayers){
-        layer.setDeviceProp(&device.instance, &device.getLogical());
+        layer.setDeviceProp(device.instance, device.getLogical());
     }
 }
 
@@ -147,7 +147,7 @@ void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
-    updateCommandBufferFlags.resize(imageCount,true);
+    updateCommandBufferFlags.resize(imageCount, true);
 }
 
 void deferredGraphicsInterface::createCommandPool()
@@ -183,8 +183,8 @@ void deferredGraphicsInterface::fastCreateGraphics(deferredGraphics* graphics, D
 
 void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
 {
-    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance,*surface);
-    VkSurfaceFormatKHR      surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
+    SwapChain::SupportDetails   swapChainSupport = SwapChain::queryingSupport(device.instance,*surface);
+    VkSurfaceFormatKHR          surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
 
     if(extent.height==0&&extent.width==0){
         extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
@@ -265,7 +265,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
 
     std::vector<uint32_t> queueIndices = {0};
     PostProcessing.setLayersAttachment(enableTransparentLayers ? &layersCombinedAttachment[0] : &deferredAttachments.image);
-    PostProcessing.createSwapChain(&swapChain, window, swapChainSupport, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data());
+    PostProcessing.createSwapChain(&swapChain, window, &swapChainSupport, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data());
     PostProcessing.createSwapChainAttachments(&swapChain);
     PostProcessing.createRenderPass();
     PostProcessing.createFramebuffers();

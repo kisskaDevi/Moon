@@ -16,7 +16,7 @@ struct                              Material;
 struct                              MaterialBlock;
 struct                              gltfModel;
 
-class deferredGraphics : public filterGraphics
+class graphics : public filterGraphics
 {
 private:
     uint32_t                        primitiveCount{0};
@@ -104,7 +104,7 @@ private:
     void createLightingDescriptorSets();
     void updateLightingDescriptorSets(camera* cameraObject);
 public:
-    deferredGraphics();
+    graphics();
     void destroy();
 
     void setAttachments(DeferredAttachments* pAttachments);

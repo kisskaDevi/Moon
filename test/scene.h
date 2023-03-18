@@ -9,7 +9,7 @@
 #include "core/transformational/camera.h"
 #include "stb_image.h"
 
-class deferredGraphicsInterface;
+class deferredGraphics;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
 
@@ -54,7 +54,7 @@ private:
     std::vector<group                   *>          groups;
 
     graphicsManager*            app;
-    deferredGraphicsInterface*  graphics;
+    deferredGraphics*  graphics;
 
     void mouseEvent(GLFWwindow* window, float frameTime);
     void keyboardEvent(GLFWwindow* window, float frameTime);
@@ -64,7 +64,7 @@ private:
     void createLight();
     void createObjects();
 public:
-    scene(graphicsManager *app, deferredGraphicsInterface* graphics, std::string ExternalPath);
+    scene(graphicsManager *app, deferredGraphics* graphics, std::string ExternalPath);
     void createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject);
     void updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
     void destroyScene();

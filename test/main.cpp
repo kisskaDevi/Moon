@@ -1,5 +1,5 @@
 #include "core/graphicsManager.h"
-#include "core/deferredGraphics/deferredgraphicsinterface.h"
+#include "core/deferredGraphics/deferredGraphics.h"
 #include <glfw3.h>
 
 #include <chrono>
@@ -24,7 +24,7 @@ const std::string ZERO_TEXTURE_WHITE  = ExternalPath + "dependences\\texture\\1.
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
-void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window, camera* cameraObject);
+void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, camera* cameraObject);
 
 #include "scene.h"
 
@@ -32,7 +32,7 @@ int main()
 {
     initializeWindow(window);
 
-    deferredGraphicsInterface graphics(ExternalPath);
+    deferredGraphics graphics(ExternalPath);
 
     graphicsManager app;
     app.createInstance();
@@ -106,7 +106,7 @@ int main()
     return 0;
 }
 
-void recreateSwapChain(graphicsManager* app, deferredGraphicsInterface* graphics, GLFWwindow* window, camera* cameraObject)
+void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, camera* cameraObject)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);

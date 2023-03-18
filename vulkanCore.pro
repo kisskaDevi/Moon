@@ -55,6 +55,7 @@ DISTFILES += \
     core/deferredGraphics/shaders/outlining/outlining.vert
 
 SOURCES += \
+    core/deferredGraphics/deferredGraphics.cpp \
     core/deferredGraphics/filters/blur.cpp \
     core/deferredGraphics/filters/filtergraphics.cpp \
     core/deferredGraphics/filters/layersCombiner.cpp \
@@ -73,7 +74,6 @@ SOURCES += \
     core/deferredGraphics/utils/attachments.cpp \
     core/deferredGraphics/utils/node.cpp \
     core/deferredGraphics/utils/vkdefault.cpp \
-    core/deferredGraphics/deferredgraphicsinterface.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/light.cpp \
@@ -88,6 +88,7 @@ SOURCES += \
     test/main.cpp
 
 HEADERS += \
+    core/deferredGraphics/deferredGraphics.h \
     core/deferredGraphics/filters/blur.h \
     core/deferredGraphics/filters/filtergraphics.h \
     core/deferredGraphics/filters/layersCombiner.h \
@@ -101,7 +102,6 @@ HEADERS += \
     core/deferredGraphics/utils/attachments.h \
     core/deferredGraphics/utils/node.h \
     core/deferredGraphics/utils/vkdefault.h \
-    core/deferredGraphics/deferredgraphicsinterface.h \
     core/transformational/lightInterface.h \
     core/transformational/transformational.h \
     core/transformational/camera.h \

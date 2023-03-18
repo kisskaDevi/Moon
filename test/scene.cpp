@@ -1,6 +1,6 @@
 #include "scene.h"
 #include <glfw3.h>
-#include "core/deferredGraphics/deferredgraphicsinterface.h"
+#include "core/deferredGraphics/deferredGraphics.h"
 
 bool updateLightCone = false;
 float spotAngle = 90.0f;
@@ -8,7 +8,7 @@ float spotAngle = 90.0f;
 bool updateCamera = false;
 float cameraAngle = 45.0f;
 
-scene::scene(graphicsManager *app, deferredGraphicsInterface* graphics, std::string ExternalPath)
+scene::scene(graphicsManager *app, deferredGraphics* graphics, std::string ExternalPath)
 {
     this->app = app;
     this->graphics = graphics;
@@ -78,10 +78,10 @@ void scene::updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTim
     keyboardEvent(window,frameTime);
     updates(frameTime);
 
-    //for(size_t j=0;j<object3D.size();j++){
-    //    object3D[j]->animationTimer += timeScale*frameTime;
-    //    object3D[j]->updateAnimation(frameNumber);
-    //}
+    for(auto& object: object3D){
+        object->animationTimer += timeScale*frameTime;
+        object->updateAnimation(frameNumber);
+    }
 }
 
 void scene::destroyScene()

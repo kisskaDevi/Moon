@@ -1,5 +1,5 @@
-#ifndef DEFERREDGRAPHICSINTERFACE_H
-#define DEFERREDGRAPHICSINTERFACE_H
+#ifndef DEFERREDGRAPHICS_H
+#define DEFERREDGRAPHICS_H
 
 #include "../graphicsInterface.h"
 
@@ -24,7 +24,7 @@ struct StorageBufferObject{
     alignas(4)  float               depth;
 };
 
-class deferredGraphicsInterface: public graphicsInterface
+class deferredGraphics: public graphicsInterface
 {
 private:
     std::string                                 ExternalPath;
@@ -49,7 +49,7 @@ private:
     attachments                                 skyboxAttachment;
     std::vector<attachments>                    layersCombinedAttachment;
 
-    deferredGraphics                            DeferredGraphics;
+    graphics                                    DeferredGraphics;
     gaussianBlur                                Blur;
     customFilter                                Filter;
     SSLRGraphics                                SSLR;
@@ -58,7 +58,7 @@ private:
     shadowGraphics                              Shadow;
     layersCombiner                              LayersCombiner;
     postProcessingGraphics                      PostProcessing;
-    std::vector<deferredGraphics>               TransparentLayers;
+    std::vector<graphics>               TransparentLayers;
     uint32_t                                    TransparentLayersCount{2};
 
     bool                                        enableTransparentLayers{true};
@@ -86,12 +86,12 @@ private:
     texture*                                    emptyTexture{nullptr};
 
     void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments);
-    void fastCreateGraphics(deferredGraphics* graphics, DeferredAttachments* attachments);
+    void fastCreateGraphics(graphics* graphics, DeferredAttachments* attachments);
     void createStorageBuffers(uint32_t imageCount);
 public:
-    deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    deferredGraphics(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
 
-    ~deferredGraphicsInterface();
+    ~deferredGraphics();
     void destroyGraphics() override;
     void destroyCommandPool() override;
     void freeCommandBuffers() override;
@@ -139,4 +139,4 @@ public:
     uint32_t    readStorageBuffer(uint32_t currentImage);
 };
 
-#endif // DEFERREDGRAPHICSINTERFACE_H
+#endif // DEFERREDGRAPHICS_H

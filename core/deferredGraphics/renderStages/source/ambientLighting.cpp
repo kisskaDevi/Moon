@@ -8,12 +8,12 @@ struct lightPassPushConst{
     alignas(4) float                minAmbientFactor;
 };
 
-void deferredGraphics::AmbientLighting::DestroyPipeline(VkDevice* device){
+void graphics::AmbientLighting::DestroyPipeline(VkDevice* device){
     if(Pipeline)         {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
     if(PipelineLayout)   {vkDestroyPipelineLayout(*device, PipelineLayout, nullptr); PipelineLayout = VK_NULL_HANDLE;}
 }
 
-void deferredGraphics::AmbientLighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass){
+void graphics::AmbientLighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass){
     uint32_t index = 0;
 
     auto vertShaderCodeAmbient = ShaderModule::readFile(ExternalPath + "core\\deferredGraphics\\shaders\\ambientLightingPass\\ambientLightingVert.spv");
@@ -153,7 +153,7 @@ void deferredGraphics::AmbientLighting::createPipeline(VkDevice* device, imageIn
     vkDestroyShaderModule(*device, vertShaderModuleAmbient, nullptr);
 }
 
-void deferredGraphics::AmbientLighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers){
+void graphics::AmbientLighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers){
     lightPassPushConst pushConst{};
         pushConst.minAmbientFactor = minAmbientFactor;
     vkCmdPushConstants(commandBuffers, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(lightPassPushConst), &pushConst);

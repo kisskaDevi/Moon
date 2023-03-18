@@ -11,13 +11,13 @@ struct OutliningPushConst{
     alignas(4)  float               width;
 };
 
-void deferredGraphics::OutliningExtension::DestroyPipeline(VkDevice* device)
+void graphics::OutliningExtension::DestroyPipeline(VkDevice* device)
 {
     if(Pipeline)         {vkDestroyPipeline(*device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
     if(PipelineLayout)   {vkDestroyPipelineLayout(*device, PipelineLayout, nullptr); PipelineLayout = VK_NULL_HANDLE;}
 }
 
-void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::OutliningExtension::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -169,7 +169,7 @@ void deferredGraphics::OutliningExtension::createPipeline(VkDevice* device, imag
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void deferredGraphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: Parent->objects)
@@ -193,7 +193,7 @@ void deferredGraphics::OutliningExtension::render(uint32_t frameNumber, VkComman
     }
 }
 
-void deferredGraphics::OutliningExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount)
+void graphics::OutliningExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount)
 {
     if (node->mesh)
     {

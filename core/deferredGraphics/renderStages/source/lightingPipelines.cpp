@@ -4,7 +4,7 @@
 #include <array>
 #include <iostream>
 
-void deferredGraphics::Lighting::createSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout,VkPipeline* pipeline)
+void graphics::Lighting::createSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout,VkPipeline* pipeline)
 {
     uint32_t index = 0;
 

@@ -9,7 +9,7 @@ struct lightPassPushConst{
     alignas(4) float                minAmbientFactor;
 };
 
-void deferredGraphics::Lighting::Destroy(VkDevice* device)
+void graphics::Lighting::Destroy(VkDevice* device)
 {
     for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
@@ -25,7 +25,7 @@ void deferredGraphics::Lighting::Destroy(VkDevice* device)
     }
 }
 
-void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
+void graphics::Lighting::createDescriptorSetLayout(VkDevice* device)
 {
     std::vector<VkDescriptorSetLayoutBinding> binding;
     for(uint32_t index = 0; index<5;index++)
@@ -53,7 +53,7 @@ void deferredGraphics::Lighting::createDescriptorSetLayout(VkDevice* device)
     SpotLight::createDescriptorSetLayout(*device,&DescriptorSetLayoutDictionary[0x0]);
 }
 
-void deferredGraphics::Lighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::Lighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     std::string spotVert = ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingVert.spv";
     std::string spotFrag = ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingFrag.spv";
@@ -70,7 +70,7 @@ void deferredGraphics::Lighting::createPipeline(VkDevice* device, imageInfo* pIn
     createSpotPipeline(device,pInfo,pRenderPass,spotVert,scatteringShadowSpotFrag,&PipelineLayoutDictionary[(true<<5)|(true <<4)|(0x0)],&PipelinesDictionary[(true<<5)|(true <<4)|(0x0)]);
 }
 
-void deferredGraphics::createLightingDescriptorPool()
+void graphics::createLightingDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
     for(uint32_t i = 0; i < 5 ;i++){
@@ -88,7 +88,7 @@ void deferredGraphics::createLightingDescriptorPool()
     vkCreateDescriptorPool(device, &poolInfo, nullptr, &lighting.DescriptorPool);
 }
 
-void deferredGraphics::createLightingDescriptorSets()
+void graphics::createLightingDescriptorSets()
 {
     lighting.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, lighting.DescriptorSetLayout);
@@ -100,7 +100,7 @@ void deferredGraphics::createLightingDescriptorSets()
     vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data());
 }
 
-void deferredGraphics::updateLightingDescriptorSets(camera* cameraObject)
+void graphics::updateLightingDescriptorSets(camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -146,7 +146,7 @@ void deferredGraphics::updateLightingDescriptorSets(camera* cameraObject)
     }
 }
 
-void deferredGraphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     for(auto& lightSource: lightSources)
     {
@@ -159,7 +159,7 @@ void deferredGraphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer co
     }
 }
 
-void deferredGraphics::updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void graphics::updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     for(auto lightSource: lighting.lightSources)
         lightSource->updateUniformBuffer(commandBuffer,imageIndex);

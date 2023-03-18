@@ -5,16 +5,16 @@
 
 #include <memory>
 
-deferredGraphics::deferredGraphics(){
+graphics::graphics(){
     outlining.Parent = &base;
     ambientLighting.Parent = &lighting;
 }
 
-void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor;}
-void deferredGraphics::setScattering(const bool &enableScattering)           { lighting.enableScattering = enableScattering;}
-void deferredGraphics::setTransparencyPass(const bool& transparencyPass)     { base.transparencyPass = transparencyPass;}
+void graphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor;}
+void graphics::setScattering(const bool &enableScattering)           { lighting.enableScattering = enableScattering;}
+void graphics::setTransparencyPass(const bool& transparencyPass)     { base.transparencyPass = transparencyPass;}
 
-void deferredGraphics::destroy()
+void graphics::destroy()
 {
     base.Destroy(&device);
     outlining.DestroyPipeline(&device);
@@ -25,7 +25,7 @@ void deferredGraphics::destroy()
     filterGraphics::destroy();
 }
 
-void deferredGraphics::setAttachments(DeferredAttachments* attachments)
+void graphics::setAttachments(DeferredAttachments* attachments)
 {
     pAttachments.push_back(&attachments->image);
     pAttachments.push_back(&attachments->blur);
@@ -37,7 +37,7 @@ void deferredGraphics::setAttachments(DeferredAttachments* attachments)
     pAttachments.push_back(&attachments->GBuffer.emission);
 }
 
-void deferredGraphics::createAttachments(DeferredAttachments* pAttachments)
+void graphics::createAttachments(DeferredAttachments* pAttachments)
 {
     VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     pAttachments->image.create(&physicalDevice, &device, image.Format, usage, image.Extent, image.Count);
@@ -61,7 +61,7 @@ void deferredGraphics::createAttachments(DeferredAttachments* pAttachments)
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.emission.sampler);
 }
 
-void deferredGraphics::createRenderPass()
+void graphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments;
     attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
@@ -151,7 +151,7 @@ void deferredGraphics::createRenderPass()
     vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
 }
 
-void deferredGraphics::createFramebuffers()
+void graphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for (size_t Image = 0; Image < image.Count; Image++){
@@ -172,7 +172,7 @@ void deferredGraphics::createFramebuffers()
     }
 }
 
-void deferredGraphics::createPipelines()
+void graphics::createPipelines()
 {
     base.ExternalPath = externalPath;
     outlining.ExternalPath = externalPath;
@@ -187,25 +187,25 @@ void deferredGraphics::createPipelines()
     ambientLighting.createPipeline(&device,&image,&renderPass);
 }
 
-void deferredGraphics::createDescriptorPool()
+void graphics::createDescriptorPool()
 {
     createBaseDescriptorPool();
     createLightingDescriptorPool();
 }
 
-void deferredGraphics::createDescriptorSets()
+void graphics::createDescriptorSets()
 {
     createBaseDescriptorSets();
     createLightingDescriptorSets();
 }
 
-void deferredGraphics::updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject)
+void graphics::updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject)
 {
     updateBaseDescriptorSets(depthAttachment, storageBuffers, sizeOfStorageBuffer, cameraObject);
     updateLightingDescriptorSets(cameraObject);
 }
 
-void deferredGraphics::updateCommandBuffer(uint32_t frameNumber)
+void graphics::updateCommandBuffer(uint32_t frameNumber)
 {
     std::vector<VkClearValue> clearValues;
     for(auto& attachments: pAttachments){
@@ -236,19 +236,19 @@ void deferredGraphics::updateCommandBuffer(uint32_t frameNumber)
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
 }
 
-void deferredGraphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)
+void graphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)
 {
     for(auto& object: base.objects){
         object->updateUniformBuffer(commandBuffer, currentImage);
     }
 }
 
-void deferredGraphics::bindBaseObject(object *newObject)
+void graphics::bindBaseObject(object *newObject)
 {
     base.objects.push_back(newObject);
 }
 
-bool deferredGraphics::removeBaseObject(object* object)
+bool graphics::removeBaseObject(object* object)
 {
     bool result = false;
     for(uint32_t index = 0; index<base.objects.size(); index++){
@@ -260,12 +260,12 @@ bool deferredGraphics::removeBaseObject(object* object)
     return result;
 }
 
-void deferredGraphics::addLightSource(light* lightSource)
+void graphics::addLightSource(light* lightSource)
 {
     lighting.lightSources.push_back(lightSource);
 }
 
-void deferredGraphics::removeLightSource(light* lightSource)
+void graphics::removeLightSource(light* lightSource)
 {
     for(uint32_t index = 0; index<lighting.lightSources.size(); index++){
         if(lightSource==lighting.lightSources[index]){

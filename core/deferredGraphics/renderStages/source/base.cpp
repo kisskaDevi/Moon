@@ -7,7 +7,7 @@
 #include <array>
 #include <iostream>
 
-void deferredGraphics::Base::Destroy(VkDevice* device)
+void graphics::Base::Destroy(VkDevice* device)
 {
     for(auto& PipelineLayout: PipelineLayoutDictionary){
         if(PipelineLayout.second) {vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
@@ -22,7 +22,7 @@ void deferredGraphics::Base::Destroy(VkDevice* device)
     if(DescriptorPool)                  {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
-void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
+void graphics::Base::createDescriptorSetLayout(VkDevice* device)
 {
     std::vector<VkDescriptorSetLayoutBinding> binding;
 
@@ -65,7 +65,7 @@ void deferredGraphics::Base::createDescriptorSetLayout(VkDevice* device)
     gltfModel::createMaterialDescriptorSetLayout(*device,&MaterialDescriptorSetLayout);
 }
 
-void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
 {
     uint32_t index = 0;
 
@@ -252,7 +252,7 @@ void deferredGraphics::Base::createPipeline(VkDevice* device, imageInfo* pInfo, 
     vkDestroyShaderModule(*device, vertShaderModule, nullptr);
 }
 
-void deferredGraphics::createBaseDescriptorPool()
+void graphics::createBaseDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
 
@@ -280,7 +280,7 @@ void deferredGraphics::createBaseDescriptorPool()
     vkCreateDescriptorPool(device, &poolInfo, nullptr, &base.DescriptorPool);
 }
 
-void deferredGraphics::createBaseDescriptorSets()
+void graphics::createBaseDescriptorSets()
 {
     base.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, base.SceneDescriptorSetLayout);
@@ -292,7 +292,7 @@ void deferredGraphics::createBaseDescriptorSets()
     vkAllocateDescriptorSets(device, &allocInfo, base.DescriptorSets.data());
 }
 
-void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject)
+void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
@@ -353,7 +353,7 @@ void deferredGraphics::updateBaseDescriptorSets(attachments* depthAttachment, Vk
     }
 }
 
-void deferredGraphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     for(auto object: objects)
     {
@@ -375,7 +375,7 @@ void deferredGraphics::Base::render(uint32_t frameNumber, VkCommandBuffer comman
     }
 }
 
-void deferredGraphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount)
+void graphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount)
 {
     if (node->mesh)
     {

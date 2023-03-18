@@ -1,4 +1,4 @@
-#include "deferredgraphicsinterface.h"
+#include "deferredGraphics.h"
 #include "../utils/operations.h"
 #include "../transformational/gltfmodel.h"
 #include "../transformational/lightInterface.h"
@@ -6,7 +6,7 @@
 #include "../transformational/camera.h"
 #include "utils/node.h"
 
-deferredGraphicsInterface::deferredGraphicsInterface(const std::string& ExternalPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
+deferredGraphics::deferredGraphics(const std::string& ExternalPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
     ExternalPath(ExternalPath), extent(extent), MSAASamples(MSAASamples)
 {
     DeferredGraphics.setExternalPath(ExternalPath);
@@ -25,16 +25,16 @@ deferredGraphicsInterface::deferredGraphicsInterface(const std::string& External
     }
 }
 
-deferredGraphicsInterface::~deferredGraphicsInterface()
+deferredGraphics::~deferredGraphics()
 {}
 
-void deferredGraphicsInterface::destroyEmptyTextures()
+void deferredGraphics::destroyEmptyTextures()
 {
     emptyTexture->destroy(&device.getLogical());
     emptyTexture = nullptr;
 }
 
-void deferredGraphicsInterface::freeCommandBuffers()
+void deferredGraphics::freeCommandBuffers()
 {
     Blur.freeCommandBuffer(commandPool);
     Filter.freeCommandBuffer(commandPool);
@@ -55,7 +55,7 @@ void deferredGraphicsInterface::freeCommandBuffers()
     nodes.clear();
 }
 
-void deferredGraphicsInterface::destroyGraphics()
+void deferredGraphics::destroyGraphics()
 {
     freeCommandBuffers();
 
@@ -111,12 +111,12 @@ void deferredGraphicsInterface::destroyGraphics()
     if(swapChain) {vkDestroySwapchainKHR(device.getLogical(), swapChain, nullptr); swapChain = VK_NULL_HANDLE;}
 }
 
-void deferredGraphicsInterface::destroyCommandPool()
+void deferredGraphics::destroyCommandPool()
 {
     if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
 }
 
-void deferredGraphicsInterface::setDevices(uint32_t devicesCount, physicalDevice* devices)
+void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices)
 {
     for(uint32_t i=0;i<devicesCount;i++){
         this->devices.push_back(devices[i]);
@@ -137,7 +137,7 @@ void deferredGraphicsInterface::setDevices(uint32_t devicesCount, physicalDevice
     }
 }
 
-void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
+void deferredGraphics::setSupportImageCount(VkSurfaceKHR* surface)
 {
     SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance, *surface);
     imageCount = swapChainSupport.capabilities.minImageCount + 1;
@@ -148,7 +148,7 @@ void deferredGraphicsInterface::setSupportImageCount(VkSurfaceKHR* surface)
     updateCommandBufferFlags.resize(imageCount, true);
 }
 
-void deferredGraphicsInterface::createCommandPool()
+void deferredGraphics::createCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -157,7 +157,7 @@ void deferredGraphicsInterface::createCommandPool()
     vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
 }
 
-void deferredGraphicsInterface::fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments)
+void deferredGraphics::fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments)
 {
     filter->setAttachments(attachmentsNumber,attachments);
     filter->createAttachments(attachmentsNumber,attachments);
@@ -168,7 +168,7 @@ void deferredGraphicsInterface::fastCreateFilterGraphics(filterGraphics* filter,
     filter->createDescriptorSets();
 }
 
-void deferredGraphicsInterface::fastCreateGraphics(deferredGraphics* graphics, DeferredAttachments* attachments)
+void deferredGraphics::fastCreateGraphics(graphics* graphics, DeferredAttachments* attachments)
 {
     graphics->setAttachments(attachments);
     graphics->createAttachments(attachments);
@@ -179,7 +179,7 @@ void deferredGraphicsInterface::fastCreateGraphics(deferredGraphics* graphics, D
     graphics->createDescriptorSets();
 }
 
-void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
+void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
 {
     SwapChain::SupportDetails   swapChainSupport = SwapChain::queryingSupport(device.instance,*surface);
     VkSurfaceFormatKHR          surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
@@ -275,7 +275,7 @@ void deferredGraphicsInterface::createGraphics(GLFWwindow* window, VkSurfaceKHR*
     createStorageBuffers(imageCount);
 }
 
-void deferredGraphicsInterface::createCommandBuffers()
+void deferredGraphics::createCommandBuffers()
 {
     Shadow.createCommandBuffers(commandPool);
     Skybox.createCommandBuffers(commandPool);
@@ -338,7 +338,7 @@ void deferredGraphicsInterface::createCommandBuffers()
     }
 }
 
-std::vector<std::vector<VkSemaphore>> deferredGraphicsInterface::sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex)
+std::vector<std::vector<VkSemaphore>> deferredGraphics::sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex)
 {
     nodes[imageIndex]->setExternalSemaphore(externalSemaphore);
     nodes[imageIndex]->back()->setExternalFence(externalFence);
@@ -348,7 +348,7 @@ std::vector<std::vector<VkSemaphore>> deferredGraphicsInterface::sibmit(std::vec
     return nodes[imageIndex]->back()->getBackSemaphores();
 }
 
-void deferredGraphicsInterface::updateDescriptorSets()
+void deferredGraphics::updateDescriptorSets()
 {
     std::vector<VkBuffer> storageBuffers;
     for(const auto& buffer: storageBuffersHost){
@@ -364,14 +364,14 @@ void deferredGraphicsInterface::updateDescriptorSets()
     }
 }
 
-void deferredGraphicsInterface::updateCommandBuffers()
+void deferredGraphics::updateCommandBuffers()
 {
     for(size_t imageIndex=0; imageIndex<imageCount; imageIndex++){
         updateCommandBuffer(imageIndex);
     }
 }
 
-void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex)
+void deferredGraphics::updateCommandBuffer(uint32_t imageIndex)
 {
     if(updateCommandBufferFlags[imageIndex]){
         Shadow.beginCommandBuffer(imageIndex);
@@ -430,7 +430,7 @@ void deferredGraphicsInterface::updateCommandBuffer(uint32_t imageIndex)
     }
 }
 
-void deferredGraphicsInterface::updateBuffers(uint32_t imageIndex)
+void deferredGraphics::updateBuffers(uint32_t imageIndex)
 {
     vkResetCommandBuffer(copyCommandBuffers[imageIndex],0);
 
@@ -449,7 +449,7 @@ void deferredGraphicsInterface::updateBuffers(uint32_t imageIndex)
     vkEndCommandBuffer(copyCommandBuffers[imageIndex]);
 }
 
-void deferredGraphicsInterface::createStorageBuffers(uint32_t imageCount)
+void deferredGraphics::createStorageBuffers(uint32_t imageCount)
 {
     storageBuffersHost.resize(imageCount);
     for (auto& buffer: storageBuffersHost){
@@ -464,7 +464,7 @@ void deferredGraphicsInterface::createStorageBuffers(uint32_t imageCount)
     }
 }
 
-void deferredGraphicsInterface::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
+void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
     StorageBufferObject StorageUBO{};
         StorageUBO.mousePosition = glm::vec4(mousex,mousey,0.0f,0.0f);
         StorageUBO.number = INT_FAST32_MAX;
@@ -472,18 +472,18 @@ void deferredGraphicsInterface::updateStorageBuffer(uint32_t currentImage, const
     memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
 }
 
-uint32_t deferredGraphicsInterface::readStorageBuffer(uint32_t currentImage){
+uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage){
     StorageBufferObject storageBuffer{};
     memcpy(&storageBuffer, storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
     return storageBuffer.number;
 }
 
-uint32_t deferredGraphicsInterface::getImageCount()       {   return imageCount;}
-VkSwapchainKHR& deferredGraphicsInterface::getSwapChain() {   return swapChain;}
+uint32_t deferredGraphics::getImageCount()       {   return imageCount;}
+VkSwapchainKHR& deferredGraphics::getSwapChain() {   return swapChain;}
 
-void deferredGraphicsInterface::setExtent(VkExtent2D extent)             {   this->extent = extent;}
-void deferredGraphicsInterface::setExternalPath(const std::string &path) {   ExternalPath = path;}
-void deferredGraphicsInterface::setEmptyTexture(std::string ZERO_TEXTURE){
+void deferredGraphics::setExtent(VkExtent2D extent)             {   this->extent = extent;}
+void deferredGraphics::setExternalPath(const std::string &path) {   ExternalPath = path;}
+void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
     this->emptyTexture = new texture(ZERO_TEXTURE);
 
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
@@ -508,7 +508,7 @@ void deferredGraphicsInterface::setEmptyTexture(std::string ZERO_TEXTURE){
     PostProcessing.setEmptyTexture(emptyTexture);
 }
 
-void deferredGraphicsInterface::createModel(gltfModel *pModel){
+void deferredGraphics::createModel(gltfModel *pModel){
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
     pModel->loadFromFile(device.instance, device.getLogical(), commandBuffer);
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
@@ -517,23 +517,23 @@ void deferredGraphicsInterface::createModel(gltfModel *pModel){
     pModel->createDescriptorSet(&device.getLogical(), emptyTexture);
 }
 
-void deferredGraphicsInterface::destroyModel(gltfModel* pModel){
+void deferredGraphics::destroyModel(gltfModel* pModel){
     pModel->destroy(&device.getLogical());
 }
 
-void deferredGraphicsInterface::bindCameraObject(camera* cameraObject){
+void deferredGraphics::bindCameraObject(camera* cameraObject){
     this->cameraObject = cameraObject;
     cameraObject->createUniformBuffers(&device.instance,&device.getLogical(),imageCount);
 }
 
-void deferredGraphicsInterface::removeCameraObject(camera* cameraObject){
+void deferredGraphics::removeCameraObject(camera* cameraObject){
     if(this->cameraObject == cameraObject){
         this->cameraObject->destroy(&device.getLogical());
         this->cameraObject = nullptr;
     }
 }
 
-void deferredGraphicsInterface::bindLightSource(light* lightSource){
+void deferredGraphics::bindLightSource(light* lightSource){
     if(lightSource->getTexture()){
         VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
         lightSource->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
@@ -562,7 +562,7 @@ void deferredGraphicsInterface::bindLightSource(light* lightSource){
     updateCmdFlags();
 }
 
-void deferredGraphicsInterface::removeLightSource(light* lightSource){
+void deferredGraphics::removeLightSource(light* lightSource){
     if(lightSource->getAttachments()){
         lightSource->getAttachments()->deleteAttachment(&device.getLogical());
         lightSource->getAttachments()->deleteSampler(&device.getLogical());
@@ -581,7 +581,7 @@ void deferredGraphicsInterface::removeLightSource(light* lightSource){
     updateCmdFlags();
 }
 
-void deferredGraphicsInterface::bindBaseObject(object* object){
+void deferredGraphics::bindBaseObject(object* object){
     object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
     object->createDescriptorPool(device.getLogical(),imageCount);
     object->createDescriptorSet(device.getLogical(),imageCount);
@@ -596,7 +596,7 @@ void deferredGraphicsInterface::bindBaseObject(object* object){
     updateCmdFlags();
 }
 
-bool deferredGraphicsInterface::removeObject(object* object){
+bool deferredGraphics::removeObject(object* object){
     object->destroy(device.getLogical());
 
     bool res = true;
@@ -610,7 +610,7 @@ bool deferredGraphicsInterface::removeObject(object* object){
     return res&&(DeferredGraphics.removeBaseObject(object));
 }
 
-void deferredGraphicsInterface::bindSkyBoxObject(skyboxObject* object){
+void deferredGraphics::bindSkyBoxObject(skyboxObject* object){
     object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
     if(object->getTexture()){
         VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
@@ -627,7 +627,7 @@ void deferredGraphicsInterface::bindSkyBoxObject(skyboxObject* object){
     Skybox.bindObject(object);
 }
 
-bool deferredGraphicsInterface::removeSkyBoxObject(skyboxObject* object){
+bool deferredGraphics::removeSkyBoxObject(skyboxObject* object){
     object->destroy(device.getLogical());
     if(object->getTexture()){
         object->getTexture()->destroy(&device.getLogical());
@@ -636,7 +636,7 @@ bool deferredGraphicsInterface::removeSkyBoxObject(skyboxObject* object){
     return Skybox.removeObject(object);
 }
 
-void deferredGraphicsInterface::setMinAmbientFactor(const float& minAmbientFactor){
+void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
     DeferredGraphics.setMinAmbientFactor(minAmbientFactor);
     for(auto& layer: TransparentLayers){
         layer.setMinAmbientFactor(minAmbientFactor);
@@ -645,7 +645,7 @@ void deferredGraphicsInterface::setMinAmbientFactor(const float& minAmbientFacto
     updateCmdFlags();
 }
 
-void deferredGraphicsInterface::updateCmdFlags(){
+void deferredGraphics::updateCmdFlags(){
     for(uint32_t index = 0; index < imageCount; index++){
         updateCommandBufferFlags[index] = true;
     }

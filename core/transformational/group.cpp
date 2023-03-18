@@ -1,5 +1,5 @@
 #include "group.h"
-#include "libs/dualQuaternion.h"
+#include "dualQuaternion.h"
 
 group::group()
 {}

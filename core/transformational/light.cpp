@@ -1,7 +1,7 @@
 #include "light.h"
-#include "core/operations.h"
-#include "core/texture.h"
-#include "libs/dualQuaternion.h"
+#include "../utils/operations.h"
+#include "../utils/texture.h"
+#include "dualQuaternion.h"
 
 #include <iostream>
 

@@ -1,6 +1,6 @@
 #include "camera.h"
-#include "core/operations.h"
-#include "libs/dualQuaternion.h"
+#include "../utils/operations.h"
+#include "dualQuaternion.h"
 
 camera::camera(){}
 

@@ -1,8 +1,8 @@
 #ifndef LIGHTINTERFACE_H
 #define LIGHTINTERFACE_H
 
-#include "libs/vulkan/vulkan.h"
-#include "core/graphics/deferredGraphics/attachments.h"
+#include <vulkan.h>
+#include "../deferredGraphics/utils/attachments.h"
 
 #include <vector>
 #include <string>

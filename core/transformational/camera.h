@@ -1,9 +1,9 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <libs/vulkan/vulkan.h>
+#include <vulkan.h>
 #include "transformational.h"
-#include "libs/quaternion.h"
+#include "quaternion.h"
 
 struct UniformBufferObject{
     alignas(16) glm::mat4           view;

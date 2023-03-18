@@ -3,7 +3,7 @@
 
 #include "transformational.h"
 #include "lightInterface.h"
-#include "libs/quaternion.h"
+#include "quaternion.h"
 
 class shadowGraphics;
 

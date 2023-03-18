@@ -3,7 +3,7 @@
 #define STBI_MSC_SECURE_CRT
 
 #include "gltfmodel.h"
-#include "core/operations.h"
+#include "../utils/operations.h"
 
 #include <iostream>
 #include <fstream>

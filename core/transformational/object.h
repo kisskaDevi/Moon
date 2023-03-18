@@ -1,10 +1,10 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <libs/vulkan/vulkan.h>
+#include <vulkan.h>
 #include "transformational.h"
-#include "libs/quaternion.h"
-#include "core/texture.h"
+#include "quaternion.h"
+#include "../utils/texture.h"
 
 #include <string>
 

@@ -2,7 +2,7 @@
 #define GROUP_H
 
 #include "transformational.h"
-#include "libs/quaternion.h"
+#include "quaternion.h"
 
 class group : public transformational
 {

@@ -2,11 +2,11 @@
 #define GRAPHICSMANAGER_H
 
 #define VK_USE_PLATFORM_WIN32_KHR
-#include <libs/vulkan/vulkan.h>
-#include "core/operations.h"
-#include "device.h"
+#include <vulkan.h>
+#include "utils/operations.h"
+#include "utils/device.h"
 
-#include "graphics/graphicsInterface.h"
+#include "graphicsInterface.h"
 
 //#define NDEBUG
 

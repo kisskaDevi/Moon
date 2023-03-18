@@ -1,16 +1,16 @@
 #ifndef GLTFMODEL_H
 #define GLTFMODEL_H
 
-#include <libs/vulkan/vulkan.h>
+#include <vulkan.h>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <libs/glm/glm.hpp>
-#include <libs/glm/gtc/matrix_transform.hpp>
-#include <libs/glm/gtc/type_ptr.hpp>
-#include <libs/glm/gtx/string_cast.hpp>
-#include "libs/tinygltf-master/tiny_gltf.h"
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+#include <gtx/string_cast.hpp>
+#include "tiny_gltf.h"
 
-#include "core/texture.h"
+#include "../utils/texture.h"
 
 #include <string>
 #include <vector>

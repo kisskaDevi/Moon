@@ -1,6 +1,6 @@
 #include "graphicsManager.h"
 
-#include <libs/glfw-3.3.4.bin.WIN64/include/GLFW/glfw3.h>
+#include <glfw3.h>
 
 #include <iostream>
 #include <set>

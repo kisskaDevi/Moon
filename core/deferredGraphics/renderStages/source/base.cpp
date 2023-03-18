@@ -2,7 +2,7 @@
 #include "../../../utils/operations.h"
 #include "../../../transformational/camera.h"
 #include "../../../transformational/object.h"
-#include "../../../transformational/gltfmodel.h"
+#include "../../../models/gltfmodel.h"
 
 #include <array>
 #include <iostream>

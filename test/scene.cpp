@@ -1,6 +1,11 @@
 #include "scene.h"
-#include <glfw3.h>
 #include "core/deferredGraphics/deferredGraphics.h"
+#include "core/graphicsManager.h"
+#include "core/models/gltfmodel.h"
+#include "core/transformational/light.h"
+#include "core/transformational/object.h"
+#include "core/transformational/group.h"
+#include "core/transformational/camera.h"
 
 bool updateLightCone = false;
 float spotAngle = 90.0f;

@@ -1,11 +1,16 @@
 #include "core/graphicsManager.h"
 #include "core/deferredGraphics/deferredGraphics.h"
+#include "core/transformational/camera.h"
 #include <glfw3.h>
+#include <glm.hpp>
 
 #include <chrono>
-#include <stdexcept>        // предотвращения ошибок
-#include <cstdlib>          // заголовок для использования макросов EXIT_SUCCESS и EXIT_FAILURE
+#include <stdexcept>
+#include <cstdlib>
 #include <sstream>
+
+#include "scene.h"
+#include "stb_image.h"
 
 uint32_t WIDTH = 800;
 uint32_t HEIGHT = 800;
@@ -25,8 +30,6 @@ const std::string ZERO_TEXTURE_WHITE  = ExternalPath + "dependences\\texture\\1.
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
 void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, camera* cameraObject);
-
-#include "scene.h"
 
 int main()
 {

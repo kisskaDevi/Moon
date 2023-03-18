@@ -1,15 +1,19 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "core/graphicsManager.h"
-#include "core/transformational/gltfmodel.h"
-#include "core/transformational/light.h"
-#include "core/transformational/object.h"
-#include "core/transformational/group.h"
-#include "core/transformational/camera.h"
-#include "stb_image.h"
+#include <glfw3.h>
+#include <string>
+#include <vector>
 
 class deferredGraphics;
+struct gltfModel;
+class graphicsManager;
+class spotLight;
+class isotropicLight;
+class object;
+class group;
+class camera;
+class skyboxObject;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
 

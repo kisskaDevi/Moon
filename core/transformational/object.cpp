@@ -1,7 +1,7 @@
 #include "object.h"
 #include "../utils/operations.h"
 #include "dualQuaternion.h"
-#include "gltfmodel.h"
+#include "../models/gltfmodel.h"
 
 object::object()
 {}

@@ -3,7 +3,7 @@
 #include "../utils/vkdefault.h"
 #include "../../transformational/lightInterface.h"
 #include "../../transformational/object.h"
-#include "../../transformational/gltfmodel.h"
+#include "../../models/gltfmodel.h"
 
 void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {

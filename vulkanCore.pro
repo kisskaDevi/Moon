@@ -78,7 +78,7 @@ SOURCES += \
     core/transformational/group.cpp \
     core/transformational/light.cpp \
     core/transformational/object.cpp \
-    core/transformational/gltfmodel.cpp \
+    core/models/gltfmodel.cpp \
     core/utils/operations.cpp \
     core/utils/texture.cpp \
     core/utils/device.cpp \
@@ -108,7 +108,7 @@ HEADERS += \
     core/transformational/group.h \
     core/transformational/light.h \
     core/transformational/object.h \
-    core/transformational/gltfmodel.h \
+    core/models/gltfmodel.h \
     core/utils/operations.h \
     core/utils/texture.h \
     core/utils/device.h \

@@ -1,7 +1,7 @@
 #include "../graphics.h"
 #include "../../../utils/operations.h"
 #include "../../../transformational/object.h"
-#include "../../../transformational/gltfmodel.h"
+#include "../../../models/gltfmodel.h"
 
 #include <array>
 #include <iostream>
@@ -37,8 +37,8 @@ void graphics::OutliningExtension::createPipeline(VkDevice* device, imageInfo* p
         shaderStages[index].module = fragShaderModule;
         shaderStages[index].pName = "main";
 
-    auto bindingDescription = gltfModel::Vertex::getStencilBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getStencilAttributeDescriptions();
+    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
+    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

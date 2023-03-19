@@ -40,10 +40,6 @@ public:
 
     void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails* swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices);
     void createSwapChainAttachments(VkSwapchainKHR* swapChain);
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override{
-        static_cast<void>(attachmentsCount);
-        static_cast<void>(pAttachments);
-    };
     void createRenderPass()override;
     void createFramebuffers()override;
     void createPipelines()override;

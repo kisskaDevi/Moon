@@ -222,14 +222,10 @@ void skyboxGraphics::bindObject(skyboxObject* newObject)
 
 bool skyboxGraphics::removeObject(skyboxObject* object)
 {
-    bool result = false;
-    for(uint32_t index = 0; index<skybox.objects.size(); index++){
-        if(object==skybox.objects[index]){
-            skybox.objects.erase(skybox.objects.begin()+index);
-            result = true;
-        }
-    }
-    return result;
+    auto& objects = skybox.objects;
+    size_t size = objects.size();
+    objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
+    return size - objects.size() > 0;
 }
 
 void skyboxGraphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)

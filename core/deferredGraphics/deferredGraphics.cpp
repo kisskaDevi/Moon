@@ -32,8 +32,10 @@ deferredGraphics::~deferredGraphics()
 
 void deferredGraphics::destroyEmptyTextures()
 {
-    emptyTexture->destroy(&device.getLogical());
-    emptyTexture = nullptr;
+    if(emptyTexture){
+        emptyTexture->destroy(&device.getLogical());
+        emptyTexture = nullptr;
+    }
 }
 
 void deferredGraphics::freeCommandBuffers()
@@ -141,10 +143,10 @@ void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices
 
 void deferredGraphics::setSupportImageCount(VkSurfaceKHR* surface)
 {
-    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance, *surface);
-    imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount){
-        imageCount = swapChainSupport.capabilities.maxImageCount;
+    auto capabilities = SwapChain::queryingSupport(device.instance, *surface).capabilities;
+    imageCount = capabilities.minImageCount + 1;
+    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount){
+        imageCount = capabilities.maxImageCount;
     }
 
     updateCommandBufferFlags.resize(imageCount, true);
@@ -159,46 +161,41 @@ void deferredGraphics::createCommandPool()
     vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
 }
 
-void deferredGraphics::fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments)
-{
-    filter->setAttachments(attachmentsNumber,attachments);
-    filter->createAttachments(attachmentsNumber,attachments);
-    filter->createRenderPass();
-    filter->createFramebuffers();
-    filter->createPipelines();
-    filter->createDescriptorPool();
-    filter->createDescriptorSets();
-}
+namespace {
+    void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments)
+    {
+        filter->setAttachments(attachmentsNumber,attachments);
+        filter->createRenderPass();
+        filter->createFramebuffers();
+        filter->createPipelines();
+        filter->createDescriptorPool();
+        filter->createDescriptorSets();
+    }
 
-void deferredGraphics::fastCreateGraphics(graphics* graphics, DeferredAttachments* attachments)
-{
-    graphics->setAttachments(attachments);
-    graphics->createAttachments(attachments);
-    graphics->createRenderPass();
-    graphics->createFramebuffers();
-    graphics->createPipelines();
-    graphics->createDescriptorPool();
-    graphics->createDescriptorSets();
+    void fastCreateGraphics(graphics* graphics, DeferredAttachments* attachments)
+    {
+        graphics->setAttachments(attachments);
+        graphics->createAttachments(attachments);
+        graphics->createRenderPass();
+        graphics->createFramebuffers();
+        graphics->createPipelines();
+        graphics->createDescriptorPool();
+        graphics->createDescriptorSets();
+    }
 }
 
 void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
 {
-    SwapChain::SupportDetails   swapChainSupport = SwapChain::queryingSupport(device.instance,*surface);
-    VkSurfaceFormatKHR          surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
+    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance,*surface);
 
     if(extent.height==0&&extent.width==0){
         extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
     }
 
-    if(MSAASamples != VK_SAMPLE_COUNT_1_BIT){
-        VkSampleCountFlagBits maxMSAASamples = PhysicalDevice::queryingSampleCount(device.instance);
-        if(MSAASamples>maxMSAASamples)  MSAASamples = maxMSAASamples;
-    }
-
     imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples};
     Shadow.setImageProp(&shadowsInfo);
 
-    imageInfo info{imageCount, surfaceFormat.format, extent, MSAASamples};
+    imageInfo info{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, extent, MSAASamples};
     DeferredGraphics.setImageProp(&info);
     Blur.setImageProp(&info);
     LayersCombiner.setImageProp(&info);
@@ -212,6 +209,7 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     }
 
     if(enableSkybox){
+        Skybox.createAttachments(1,&skyboxAttachment);
         fastCreateFilterGraphics(&Skybox,1,&skyboxAttachment);
         Skybox.updateDescriptorSets(cameraObject);
     }
@@ -228,6 +226,7 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
 
         layersCombinedAttachment.resize(2);
         LayersCombiner.setTransparentLayersCount(TransparentLayersCount);
+        LayersCombiner.createAttachments(static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
         fastCreateFilterGraphics(&LayersCombiner,static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
         LayersCombiner.updateDescriptorSets(deferredAttachments,transparentLayersAttachments.data(),&skyboxAttachment,cameraObject);
     }
@@ -237,6 +236,7 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
         Filter.createBufferAttachments();
         Filter.setBlitFactor(blitFactor);
         Filter.setSrcAttachment(enableTransparentLayers ? &layersCombinedAttachment[1] : &deferredAttachments.bloom);
+        Filter.createAttachments(blitAttachmentCount,blitAttachments.data());
         fastCreateFilterGraphics(&Filter,blitAttachmentCount,blitAttachments.data());
         Filter.updateDescriptorSets();
         PostProcessing.setBlitAttachments(blitAttachmentCount,blitAttachments.data(),blitFactor);
@@ -245,16 +245,19 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     }
     if(enableBlur){
         Blur.createBufferAttachments();
+        Blur.createAttachments(1,&blurAttachment);
         fastCreateFilterGraphics(&Blur,1,&blurAttachment);
         Blur.updateDescriptorSets(&deferredAttachments.blur);
         PostProcessing.setBlurAttachment(&blurAttachment);
     }
     if(enableSSAO){
+        SSAO.createAttachments(1,&ssaoAttachment);
         fastCreateFilterGraphics(&SSAO,1,&ssaoAttachment);
         SSAO.updateDescriptorSets(cameraObject, deferredAttachments);
         PostProcessing.setSSAOAttachment(&ssaoAttachment);
     }
     if(enableSSLR){
+        SSLR.createAttachments(1,&sslrAttachment);
         fastCreateFilterGraphics(&SSLR,1,&sslrAttachment);
         SSLR.updateDescriptorSets(cameraObject,deferredAttachments, enableTransparentLayers ? transparentLayersAttachments[0] : deferredAttachments);
         PostProcessing.setSSLRAttachment(&sslrAttachment);
@@ -557,9 +560,9 @@ void deferredGraphics::bindLightSource(light* lightSource){
     lightSource->createDescriptorSets(&device.getLogical(), imageCount);
     lightSource->updateDescriptorSets(&device.getLogical(), imageCount, emptyTexture);
 
-    DeferredGraphics.addLightSource(lightSource);
+    DeferredGraphics.bindLightSource(lightSource);
     for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].addLightSource(lightSource);
+        TransparentLayers[i].bindLightSource(lightSource);
 
     updateCmdFlags();
 }

@@ -4,6 +4,7 @@
 #include "../../transformational/camera.h"
 
 #include <memory>
+#include <algorithm>
 
 graphics::graphics(){
     outlining.Parent = &base;
@@ -16,10 +17,10 @@ void graphics::setTransparencyPass(const bool& transparencyPass)     { base.tran
 
 void graphics::destroy()
 {
-    base.Destroy(&device);
-    outlining.DestroyPipeline(&device);
-    lighting.Destroy(&device);
-    ambientLighting.DestroyPipeline(&device);
+    base.Destroy(device);
+    outlining.DestroyPipeline(device);
+    lighting.Destroy(device);
+    ambientLighting.DestroyPipeline(device);
     pAttachments.clear();
 
     filterGraphics::destroy();
@@ -179,12 +180,12 @@ void graphics::createPipelines()
     lighting.ExternalPath = externalPath;
     ambientLighting.ExternalPath = externalPath;
 
-    base.createDescriptorSetLayout(&device);
-    base.createPipeline(&device,&image,&renderPass);
-    outlining.createPipeline(&device,&image,&renderPass);
-    lighting.createDescriptorSetLayout(&device);
-    lighting.createPipeline(&device,&image,&renderPass);
-    ambientLighting.createPipeline(&device,&image,&renderPass);
+    base.createDescriptorSetLayout(device);
+    base.createPipeline(device,&image,renderPass);
+    outlining.createPipeline(device,&image,renderPass);
+    lighting.createDescriptorSetLayout(device);
+    lighting.createPipeline(device,&image,renderPass);
+    ambientLighting.createPipeline(device,&image,renderPass);
 }
 
 void graphics::createDescriptorPool()
@@ -250,26 +251,21 @@ void graphics::bindBaseObject(object *newObject)
 
 bool graphics::removeBaseObject(object* object)
 {
-    bool result = false;
-    for(uint32_t index = 0; index<base.objects.size(); index++){
-        if(object==base.objects[index]){
-            base.objects.erase(base.objects.begin()+index);
-            result = true;
-        }
-    }
-    return result;
+    auto& objects = base.objects;
+    size_t size = objects.size();
+    objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
+    return size - objects.size() > 0;
 }
 
-void graphics::addLightSource(light* lightSource)
+void graphics::bindLightSource(light* lightSource)
 {
     lighting.lightSources.push_back(lightSource);
 }
 
-void graphics::removeLightSource(light* lightSource)
+bool graphics::removeLightSource(light* lightSource)
 {
-    for(uint32_t index = 0; index<lighting.lightSources.size(); index++){
-        if(lightSource==lighting.lightSources[index]){
-            lighting.lightSources.erase(lighting.lightSources.begin()+index);
-        }
-    }
+    auto& objects = lighting.lightSources;
+    size_t size = objects.size();
+    objects.erase(std::remove(objects.begin(), objects.end(), lightSource), objects.end());
+    return size - objects.size() > 0;
 }

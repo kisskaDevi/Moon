@@ -17,7 +17,7 @@ public:
     SSLRGraphics() = default;
     void destroy();
 
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override;
+    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
     void createRenderPass() override;
     void createFramebuffers() override;
     void createPipelines() override;

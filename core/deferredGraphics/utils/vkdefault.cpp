@@ -90,6 +90,21 @@ VkPipelineRasterizationStateCreateInfo vkDefault::rasterizationState(){
     return rasterizer;
 }
 
+VkPipelineRasterizationStateCreateInfo vkDefault::rasterizationState(VkFrontFace frontFace){
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.frontFace = frontFace;
+        rasterizer.depthBiasEnable = VK_FALSE;
+        rasterizer.depthBiasConstantFactor = 0.0f;
+        rasterizer.depthBiasClamp = 0.0f;
+        rasterizer.depthBiasSlopeFactor = 0.0f;
+    return rasterizer;
+}
+
 VkPipelineMultisampleStateCreateInfo vkDefault::multisampleState(){
     VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -193,6 +208,16 @@ VkDescriptorSetLayoutBinding vkDefault::imageFragmentLayoutBinding(const uint32_
     VkDescriptorSetLayoutBinding layoutBinding{};
         layoutBinding.binding = binding;
         layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        layoutBinding.descriptorCount = count;
+        layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBinding.pImmutableSamplers = VK_NULL_HANDLE;
+    return layoutBinding;
+}
+
+VkDescriptorSetLayoutBinding vkDefault::inAttachmentFragmentLayoutBinding(const uint32_t& binding, const uint32_t& count){
+    VkDescriptorSetLayoutBinding layoutBinding{};
+        layoutBinding.binding = binding;
+        layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         layoutBinding.descriptorCount = count;
         layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         layoutBinding.pImmutableSamplers = VK_NULL_HANDLE;

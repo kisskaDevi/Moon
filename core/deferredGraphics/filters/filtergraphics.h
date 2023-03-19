@@ -49,7 +49,6 @@ public:
     void setImageProp(imageInfo* pInfo);
     void setAttachments(uint32_t attachmentsCount, attachments* pAttachments);
 
-    virtual void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) = 0;
     virtual void createRenderPass() = 0;
     virtual void createFramebuffers() = 0;
     virtual void createPipelines() = 0;

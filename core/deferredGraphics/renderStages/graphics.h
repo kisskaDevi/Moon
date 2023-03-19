@@ -20,7 +20,6 @@ class graphics : public filterGraphics
 {
 private:
     uint32_t                        primitiveCount{0};
-
     std::vector<attachments*>       pAttachments;
 
     struct Base{
@@ -40,11 +39,11 @@ private:
 
         std::vector<object *>                           objects;
 
-        void Destroy(VkDevice* device);
-        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-        void createDescriptorSetLayout(VkDevice* device);
+        void Destroy(VkDevice device);
+        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
+        void createDescriptorSetLayout(VkDevice device);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
-            void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount);
+            void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }base;
 
     struct OutliningExtension{
@@ -55,10 +54,10 @@ private:
         VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
         VkPipeline                      Pipeline{VK_NULL_HANDLE};
 
-        void DestroyPipeline(VkDevice* device);
-        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void DestroyPipeline(VkDevice device);
+        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
-            void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout* pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t* primitiveCount);
+            void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }outlining;
 
     struct Lighting{
@@ -75,10 +74,10 @@ private:
 
         std::vector<light*>                                 lightSources;
 
-        void Destroy(VkDevice* device);
-        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
-            void createSpotPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout,VkPipeline* pipeline);
-        void createDescriptorSetLayout(VkDevice* device);
+        void Destroy(VkDevice device);
+        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
+            void createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout, VkPipeline* pipeline);
+        void createDescriptorSetLayout(VkDevice device);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }lighting;
 
@@ -91,8 +90,8 @@ private:
         VkPipelineLayout                                    PipelineLayout{VK_NULL_HANDLE};
         VkPipeline                                          Pipeline{VK_NULL_HANDLE};
 
-        void DestroyPipeline(VkDevice* device);
-        void createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass);
+        void DestroyPipeline(VkDevice device);
+        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }ambientLighting;
 
@@ -109,9 +108,6 @@ public:
 
     void setAttachments(DeferredAttachments* pAttachments);
     void createAttachments(DeferredAttachments* pAttachments);
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments) override {
-        static_cast<void>(attachmentsCount); static_cast<void>(pAttachments);
-    }
     void createRenderPass()override;
     void createFramebuffers()override;
     void createPipelines()override;
@@ -128,8 +124,8 @@ public:
     void bindBaseObject(object* newObject);
     bool removeBaseObject(object* object);
 
-    void addLightSource(light* lightSource);
-    void removeLightSource(light* lightSource);
+    void bindLightSource(light* lightSource);
+    bool removeLightSource(light* lightSource);
 
     void setMinAmbientFactor(const float& minAmbientFactor);
     void setScattering(const bool& enableScattering);

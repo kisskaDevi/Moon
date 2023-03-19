@@ -1,4 +1,5 @@
 #include "../graphics.h"
+#include "../../utils/vkdefault.h"
 #include "../../../transformational/camera.h"
 #include "../../../transformational/lightInterface.h"
 
@@ -6,54 +7,45 @@
 #include <iostream>
 
 struct lightPassPushConst{
-    alignas(4) float                minAmbientFactor;
+    alignas(4) float minAmbientFactor;
 };
 
-void graphics::Lighting::Destroy(VkDevice* device)
+void graphics::Lighting::Destroy(VkDevice device)
 {
     for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
-        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(*device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
+        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
     }
-    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
-    if(DescriptorPool)      {vkDestroyDescriptorPool(*device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
+    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
+    if(DescriptorPool)      {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 
     for(auto& PipelineLayout: PipelineLayoutDictionary){
-        if(PipelineLayout.second) {vkDestroyPipelineLayout(*device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
+        if(PipelineLayout.second) {vkDestroyPipelineLayout(device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
     }
     for(auto& Pipeline: PipelinesDictionary){
-        if(Pipeline.second) {vkDestroyPipeline(*device, Pipeline.second, nullptr);  Pipeline.second = VK_NULL_HANDLE;}
+        if(Pipeline.second) {vkDestroyPipeline(device, Pipeline.second, nullptr);  Pipeline.second = VK_NULL_HANDLE;}
     }
 }
 
-void graphics::Lighting::createDescriptorSetLayout(VkDevice* device)
+void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 {
-    std::vector<VkDescriptorSetLayoutBinding> binding;
-    for(uint32_t index = 0; index<5;index++)
-    {
-        binding.push_back(VkDescriptorSetLayoutBinding{});
-            binding.back().binding = binding.size() - 1;
-            binding.back().descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-            binding.back().descriptorCount = 1;
-            binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-            binding.back().pImmutableSamplers = nullptr;
-    }
-        binding.push_back(VkDescriptorSetLayoutBinding{});
-            binding.back().binding = binding.size() - 1;
-            binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            binding.back().descriptorCount = 1;
-            binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-            binding.back().pImmutableSamplers = nullptr;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
-        layoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(*device, &layoutInfo, nullptr, &DescriptorSetLayout);
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    SpotLight::createDescriptorSetLayout(*device,&DescriptorSetLayoutDictionary[0x0]);
+    SpotLight::createDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
 }
 
-void graphics::Lighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRenderPass* pRenderPass)
+void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
     std::string spotVert = ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingVert.spv";
     std::string spotFrag = ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingFrag.spv";
@@ -73,12 +65,8 @@ void graphics::Lighting::createPipeline(VkDevice* device, imageInfo* pInfo, VkRe
 void graphics::createLightingDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
-    for(uint32_t i = 0; i < 5 ;i++){
-        poolSizes.push_back(VkDescriptorPoolSize{});
-            poolSizes.back() = {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(image.Count)};
-    }
-        poolSizes.push_back(VkDescriptorPoolSize{});
-            poolSizes.back() = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)};
+    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(5 * image.Count)});
+    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(image.Count)});
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -104,18 +92,18 @@ void graphics::updateLightingDescriptorSets(camera* cameraObject)
 {
     for (size_t i = 0; i < image.Count; i++)
     {
-        std::vector<VkDescriptorImageInfo> imageInfo;
+        std::vector<VkDescriptorImageInfo> imageInfos;
         for(uint32_t index = 0; index < 4;index++)
         {
-            imageInfo.push_back(VkDescriptorImageInfo{});
-            imageInfo.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.back().imageView = pAttachments[DeferredAttachments::getGBufferOffset() + index]->imageView[i];
-            imageInfo.back().sampler = VK_NULL_HANDLE;
+            imageInfos.push_back(VkDescriptorImageInfo{});
+            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::getGBufferOffset() + index]->imageView[i];
+            imageInfos.back().sampler = VK_NULL_HANDLE;
         }
-            imageInfo.push_back(VkDescriptorImageInfo{});
-            imageInfo.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.back().imageView = this->pAttachments[DeferredAttachments::getGBufferOffset() - 1]->imageView[i];
-            imageInfo.back().sampler = VK_NULL_HANDLE;
+            imageInfos.push_back(VkDescriptorImageInfo{});
+            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfos.back().imageView = this->pAttachments[DeferredAttachments::getGBufferOffset() - 1]->imageView[i];
+            imageInfos.back().sampler = VK_NULL_HANDLE;
 
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
@@ -123,8 +111,7 @@ void graphics::updateLightingDescriptorSets(camera* cameraObject)
             bufferInfo.range = sizeof(UniformBufferObject);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
-        for(uint32_t index = 0; index<5;index++)
-        {
+        for(auto& imageInfo: imageInfos){
             descriptorWrites.push_back(VkWriteDescriptorSet{});
                 descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 descriptorWrites.back().dstSet = lighting.DescriptorSets[i];
@@ -132,7 +119,7 @@ void graphics::updateLightingDescriptorSets(camera* cameraObject)
                 descriptorWrites.back().dstArrayElement = 0;
                 descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
                 descriptorWrites.back().descriptorCount = 1;
-                descriptorWrites.back().pImageInfo = &imageInfo[index];
+                descriptorWrites.back().pImageInfo = &imageInfo;
         }
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

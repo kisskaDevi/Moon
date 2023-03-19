@@ -4,6 +4,7 @@
 #include "dualQuaternion.h"
 
 #include <iostream>
+#include <cstring>
 
 spotLight::spotLight(bool enableShadow, bool enableScattering, uint32_t type):
     enableShadow(enableShadow),
@@ -184,7 +185,7 @@ void spotLight::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t fram
             buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
             buffer.lightColor = lightColor;
             buffer.lightProp = glm::vec4(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
-        memcpy(uniformBuffersHost[frameNumber].map, &buffer, sizeof(buffer));
+        std::memcpy(uniformBuffersHost[frameNumber].map, &buffer, sizeof(buffer));
 
         uniformBuffersHost[frameNumber].updateFlag = false;
 
@@ -299,7 +300,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = descriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
@@ -307,7 +308,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = descriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -315,7 +316,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = descriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -326,7 +327,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
         shadowDescriptorWrites.push_back(VkWriteDescriptorSet{});
             shadowDescriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             shadowDescriptorWrites.back().dstSet = shadowDescriptorSets[i];
-            shadowDescriptorWrites.back().dstBinding = shadowDescriptorWrites.size() - 1;
+            shadowDescriptorWrites.back().dstBinding = static_cast<uint32_t>(shadowDescriptorWrites.size() - 1);
             shadowDescriptorWrites.back().dstArrayElement = 0;
             shadowDescriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             shadowDescriptorWrites.back().descriptorCount = 1;

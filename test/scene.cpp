@@ -1,11 +1,13 @@
 #include "scene.h"
-#include "core/deferredGraphics/deferredGraphics.h"
-#include "core/graphicsManager.h"
-#include "core/models/gltfmodel.h"
-#include "core/transformational/light.h"
-#include "core/transformational/object.h"
-#include "core/transformational/group.h"
-#include "core/transformational/camera.h"
+#include "../core/deferredGraphics/deferredGraphics.h"
+#include "../core/graphicsManager.h"
+#include "../core/models/gltfmodel.h"
+#include "../core/transformational/light.h"
+#include "../core/transformational/object.h"
+#include "../core/transformational/group.h"
+#include "../core/transformational/camera.h"
+
+#include <glfw3.h>
 
 bool updateLightCone = false;
 float spotAngle = 90.0f;
@@ -13,15 +15,14 @@ float spotAngle = 90.0f;
 bool updateCamera = false;
 float cameraAngle = 45.0f;
 
-scene::scene(graphicsManager *app, deferredGraphics* graphics, std::string ExternalPath)
-{
-    this->app = app;
-    this->graphics = graphics;
-    this->ExternalPath = ExternalPath;
-
-    ZERO_TEXTURE        = ExternalPath + "dependences\\texture\\0.png";
-    ZERO_TEXTURE_WHITE  = ExternalPath + "dependences\\texture\\1.png";
-}
+scene::scene(graphicsManager *app, deferredGraphics* graphics, GLFWwindow* window, std::string ExternalPath):
+    app(app),
+    graphics(graphics),
+    window(window),
+    ExternalPath(ExternalPath),
+    ZERO_TEXTURE(ExternalPath + "dependences\\texture\\0.png"),
+    ZERO_TEXTURE_WHITE(ExternalPath + "dependences\\texture\\1.png")
+{}
 
 void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject)
 {
@@ -69,18 +70,18 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject)
     createObjects();
 }
 
-void scene::updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
+void scene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
 {
     this->WIDTH = WIDTH;
     this->HEIGHT = HEIGHT;
 
-    glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
+    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
     proj[1][1] *= -1.0f;
     cameras->setProjMatrix(proj);
 
     glfwPollEvents();
-    mouseEvent(window,frameTime);
-    keyboardEvent(window,frameTime);
+    mouseEvent(frameTime);
+    keyboardEvent(frameTime);
     updates(frameTime);
 
     for(auto& object: object3D){
@@ -332,7 +333,7 @@ void scene::createObjects()
     groups.at(5)->addObject(UFO4);
 }
 
-void scene::mouseEvent(GLFWwindow* window, float frameTime)
+void scene::mouseEvent(float frameTime)
 {
     static_cast<void>(frameTime);
 
@@ -400,7 +401,7 @@ void scene::mouseEvent(GLFWwindow* window, float frameTime)
     }
 }
 
-void scene::keyboardEvent(GLFWwindow* window, float frameTime)
+void scene::keyboardEvent(float frameTime)
 {
     float sensitivity = 5.0f*frameTime;
     if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)

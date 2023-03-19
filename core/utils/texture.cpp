@@ -6,6 +6,7 @@
 #include "tiny_gltf.h"
 
 #include <iostream>
+#include <cstring>
 
 texture::texture(){}
 
@@ -41,7 +42,7 @@ void texture::iamge::create(
     Buffer::create(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
     void* data;
     vkMapMemory(device, stagingBuffer.memory, 0, imageSize, 0, &data);
-        memcpy(data, pixels, static_cast<size_t>(imageSize));
+        std::memcpy(data, pixels, static_cast<size_t>(imageSize));
     vkUnmapMemory(device, stagingBuffer.memory);
 
     Texture::create(    physicalDevice,
@@ -198,7 +199,7 @@ void cubeTexture::iamge::create(
     {
         void* data;
         vkMapMemory(device, stagingBuffer.memory, static_cast<uint32_t>(i*imageSize/6), static_cast<uint32_t>(imageSize/6), 0, &data);
-            memcpy(data, pixels[i], static_cast<uint32_t>(imageSize/6));
+            std::memcpy(data, pixels[i], static_cast<uint32_t>(imageSize/6));
         vkUnmapMemory(device, stagingBuffer.memory);
         stbi_image_free(pixels[i]);
     }

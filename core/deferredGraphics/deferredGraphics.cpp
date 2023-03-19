@@ -1,10 +1,12 @@
 #include "deferredGraphics.h"
 #include "../utils/operations.h"
-#include "../transformational/gltfmodel.h"
+#include "../models/gltfmodel.h"
 #include "../transformational/lightInterface.h"
 #include "../transformational/object.h"
 #include "../transformational/camera.h"
 #include "utils/node.h"
+
+#include <cstring>
 
 deferredGraphics::deferredGraphics(const std::string& ExternalPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
     ExternalPath(ExternalPath), extent(extent), MSAASamples(MSAASamples)
@@ -469,12 +471,12 @@ void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& m
         StorageUBO.mousePosition = glm::vec4(mousex,mousey,0.0f,0.0f);
         StorageUBO.number = INT_FAST32_MAX;
         StorageUBO.depth = 1.0f;
-    memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
+    std::memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
 }
 
 uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage){
     StorageBufferObject storageBuffer{};
-    memcpy(&storageBuffer, storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
+    std::memcpy(&storageBuffer, storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
     return storageBuffer.number;
 }
 

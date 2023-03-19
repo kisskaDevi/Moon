@@ -11,8 +11,8 @@ INCLUDEPATH += \
     $$PWD/dependences/libs/vulkan \
     $$PWD/dependences/libs/glfw-3.3.4.bin.WIN64/include/GLFW \
     $$PWD/dependences/libs/glm \
-    $$PWD/dependences/libs/stb-master \
-    $$PWD/dependences/libs/tinygltf-master
+    $$PWD/dependences/libs/stb \
+    $$PWD/dependences/libs/tinygltf
 
 DEPENDPATH += \
     $$PWD/dependences
@@ -33,7 +33,6 @@ DISTFILES += \
     core/deferredGraphics/shaders/compile.bat \
     core/deferredGraphics/shaders/base/base.frag \
     core/deferredGraphics/shaders/base/base.vert \
-    core/deferredGraphics/shaders/compileBuild.bat \
     core/deferredGraphics/shaders/customFilter/customFilter.frag \
     core/deferredGraphics/shaders/customFilter/customFilter.vert \
     core/deferredGraphics/shaders/gaussianBlur/xBlur.frag \
@@ -115,4 +114,4 @@ HEADERS += \
     core/graphicsInterface.h \
     core/graphicsManager.h \
     test/physicalobject.h \
-    test/scene.h \
+    test/scene.h

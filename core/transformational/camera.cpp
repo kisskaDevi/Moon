@@ -2,6 +2,8 @@
 #include "../utils/operations.h"
 #include "dualQuaternion.h"
 
+#include <cstring>
+
 camera::camera(){}
 
 camera::~camera(){}
@@ -157,7 +159,7 @@ void camera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNu
             baseUBO.view = viewMatrix;
             baseUBO.proj = projMatrix;
             baseUBO.eyePosition = glm::vec4(translation.vector(), 1.0);
-        memcpy(uniformBuffersHost[frameNumber].map, &baseUBO, sizeof(baseUBO));
+        std::memcpy(uniformBuffersHost[frameNumber].map, &baseUBO, sizeof(baseUBO));
 
         uniformBuffersHost[frameNumber].updateFlag = false;
 

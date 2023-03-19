@@ -189,7 +189,7 @@ void customFilter::updateDescriptorSets()
             descriptorWrites.push_back(VkWriteDescriptorSet{});
                 descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 descriptorWrites.back().dstSet = *setIt;
-                descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+                descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
                 descriptorWrites.back().dstArrayElement = 0;
                 descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 descriptorWrites.back().descriptorCount = 1;

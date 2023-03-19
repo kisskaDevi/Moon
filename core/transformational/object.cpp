@@ -3,6 +3,8 @@
 #include "dualQuaternion.h"
 #include "../models/gltfmodel.h"
 
+#include <cstring>
+
 object::object()
 {}
 
@@ -141,7 +143,7 @@ void object::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNu
             ubo.colorFactor = colorFactor;
             ubo.bloomColor = bloomColor;
             ubo.bloomFactor = bloomFactor;
-        memcpy(uniformBuffersHost[frameNumber].map, &ubo, sizeof(ubo));
+        std::memcpy(uniformBuffersHost[frameNumber].map, &ubo, sizeof(ubo));
 
         uniformBuffersHost[frameNumber].updateFlag = false;
 
@@ -203,7 +205,7 @@ void object::createDescriptorSet(VkDevice device, uint32_t imageCount)
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstSet = descriptors[i];
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pBufferInfo = &bufferInfo;
@@ -352,7 +354,7 @@ void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = descriptors[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
@@ -360,7 +362,7 @@ void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = descriptors[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;

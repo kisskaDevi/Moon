@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
+#include <cstring>
 
 /* BoundingBox */
 
@@ -116,9 +117,9 @@ void Node::update() {
                 mesh->uniformBlock.jointMatrix[i] = jointMat;
             }
             mesh->uniformBlock.jointcount = (float)numJoints;
-            memcpy(mesh->uniformBuffer.mapped, &mesh->uniformBlock, sizeof(mesh->uniformBlock));
+            std::memcpy(mesh->uniformBuffer.mapped, &mesh->uniformBlock, sizeof(mesh->uniformBlock));
         } else {
-            memcpy(mesh->uniformBuffer.mapped, &m, sizeof(glm::mat4));
+            std::memcpy(mesh->uniformBuffer.mapped, &m, sizeof(glm::mat4));
         }
     }
 
@@ -458,7 +459,7 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel)
             const tinygltf::BufferView &bufferView = gltfModel.bufferViews[accessor.bufferView];
             const tinygltf::Buffer &buffer = gltfModel.buffers[bufferView.buffer];
             newSkin->inverseBindMatrices.resize(accessor.count);
-            memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
+            std::memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
         }
 
         skins.push_back(newSkin);
@@ -805,12 +806,12 @@ void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
 
     void* data;
     vkMapMemory(device, vertexStaging.memory, 0, vertexBufferSize, 0, &data);
-        memcpy(data, vertexBuffer.data(), (size_t) vertexBufferSize);
+        std::memcpy(data, vertexBuffer.data(), (size_t) vertexBufferSize);
     vkUnmapMemory(device, vertexStaging.memory);
 
     void* indexdata;
     vkMapMemory(device, indexStaging.memory, 0, indexBufferSize, 0, &indexdata);
-        memcpy(indexdata, indexBuffer.data(), (size_t) indexBufferSize);
+        std::memcpy(indexdata, indexBuffer.data(), (size_t) indexBufferSize);
     vkUnmapMemory(device, indexStaging.memory);
 
     Buffer::create(physicalDevice, device,vertexBufferSize,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &vertices.buffer, &vertices.memory);

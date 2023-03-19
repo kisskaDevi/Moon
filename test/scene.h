@@ -1,7 +1,6 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <glfw3.h>
 #include <string>
 #include <vector>
 
@@ -14,13 +13,13 @@ class object;
 class group;
 class camera;
 class skyboxObject;
+class GLFWwindow;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
 
 class scene
 {
 private:
-    std::string ExternalPath;
     uint32_t    WIDTH;
     uint32_t    HEIGHT;
 
@@ -44,9 +43,6 @@ private:
     uint32_t    controledGroup = 0;
     uint32_t    lightPointer = 10;
 
-    std::string ZERO_TEXTURE;
-    std::string ZERO_TEXTURE_WHITE;
-
     camera*                                         cameras;
     skyboxObject*                                   skyboxObject1;
     skyboxObject*                                   skyboxObject2;
@@ -57,20 +53,25 @@ private:
     std::vector<isotropicLight          *>          lightPoint;
     std::vector<group                   *>          groups;
 
-    graphicsManager*            app;
-    deferredGraphics*  graphics;
+    graphicsManager*    app;
+    deferredGraphics*   graphics;
+    GLFWwindow*         window;
 
-    void mouseEvent(GLFWwindow* window, float frameTime);
-    void keyboardEvent(GLFWwindow* window, float frameTime);
+    std::string ExternalPath;
+    std::string ZERO_TEXTURE;
+    std::string ZERO_TEXTURE_WHITE;
+
+    void mouseEvent(float frameTime);
+    void keyboardEvent(float frameTime);
     void updates(float frameTime);
 
     void loadModels();
     void createLight();
     void createObjects();
 public:
-    scene(graphicsManager *app, deferredGraphics* graphics, std::string ExternalPath);
+    scene(graphicsManager *app, deferredGraphics* graphics, GLFWwindow* window, std::string ExternalPath);
     void createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject);
-    void updateFrame(GLFWwindow* window, uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
+    void updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
     void destroyScene();
 
     bool framebufferResized = false;

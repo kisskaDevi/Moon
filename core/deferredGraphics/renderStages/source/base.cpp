@@ -320,7 +320,7 @@ void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* 
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = base.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
@@ -328,7 +328,7 @@ void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* 
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = base.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -336,7 +336,7 @@ void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* 
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = base.DescriptorSets.at(i);
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
@@ -344,7 +344,7 @@ void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* 
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = base.DescriptorSets.at(i);
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -413,7 +413,7 @@ void graphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *node, VkPip
             if(primitiveCount){
                 pushConstBlock.material.primitive = (*primitiveCount)++;
             }
-                pushConstBlock.transparencyPass = transparencyPass ? 1.0 : 0.0;
+                pushConstBlock.transparencyPass = transparencyPass ? 1.0f : 0.0f;
 
             vkCmdPushConstants(commandBuffer, *pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(pushConstBlock), &pushConstBlock);
 

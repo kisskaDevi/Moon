@@ -1,6 +1,6 @@
-#include "core/graphicsManager.h"
-#include "core/deferredGraphics/deferredGraphics.h"
-#include "core/transformational/camera.h"
+#include "../core/graphicsManager.h"
+#include "../core/deferredGraphics/deferredGraphics.h"
+#include "../core/transformational/camera.h"
 #include <glfw3.h>
 #include <glm.hpp>
 
@@ -56,7 +56,7 @@ int main()
     app.createGraphics(window);
     graphics.updateDescriptorSets();
 
-    scene testScene(&app,&graphics,ExternalPath);
+    scene testScene(&app,&graphics,window,ExternalPath);
     testScene.createScene(WIDTH,HEIGHT,&cameraObject);
 
     app.createCommandBuffers();
@@ -79,7 +79,7 @@ int main()
 
         if(app.checkNextFrame()!=VK_ERROR_OUT_OF_DATE_KHR)
         {
-            testScene.updateFrame(window,app.getImageIndex(),frameTime,WIDTH,HEIGHT);
+            testScene.updateFrame(app.getImageIndex(),frameTime,WIDTH,HEIGHT);
 
             VkResult result = app.drawFrame();
 

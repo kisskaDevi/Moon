@@ -1,6 +1,6 @@
 #include "deferredGraphics.h"
 #include "../utils/operations.h"
-#include "../models/gltfmodel.h"
+#include "../interfaces/model.h"
 #include "../transformational/lightInterface.h"
 #include "../transformational/object.h"
 #include "../transformational/camera.h"
@@ -331,10 +331,9 @@ void deferredGraphics::createCommandBuffers()
                     {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
                     device.getQueue(0,0))
         }, new node({
-            stage(  {   SSLR.getCommandBuffer(imageIndex), SSAO.getCommandBuffer(imageIndex),
-                        Filter.getCommandBuffer(imageIndex), Blur.getCommandBuffer(imageIndex),
-                        PostProcessing.getCommandBuffer(imageIndex)
-                    },
+            stage(  {SSLR.getCommandBuffer(imageIndex), SSAO.getCommandBuffer(imageIndex),
+                     Filter.getCommandBuffer(imageIndex), Blur.getCommandBuffer(imageIndex),
+                     PostProcessing.getCommandBuffer(imageIndex)},
                     {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
                     device.getQueue(0,0))
         }, nullptr)))));
@@ -513,17 +512,17 @@ void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
     PostProcessing.setEmptyTexture(emptyTexture);
 }
 
-void deferredGraphics::createModel(gltfModel *pModel){
+void deferredGraphics::createModel(model *pModel){
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
     pModel->loadFromFile(device.instance, device.getLogical(), commandBuffer);
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
     pModel->destroyStagingBuffer(device.getLogical());
-    pModel->createDescriptorPool(&device.getLogical());
-    pModel->createDescriptorSet(&device.getLogical(), emptyTexture);
+    pModel->createDescriptorPool(device.getLogical());
+    pModel->createDescriptorSet(device.getLogical(), emptyTexture);
 }
 
-void deferredGraphics::destroyModel(gltfModel* pModel){
-    pModel->destroy(&device.getLogical());
+void deferredGraphics::destroyModel(model* pModel){
+    pModel->destroy(device.getLogical());
 }
 
 void deferredGraphics::bindCameraObject(camera* cameraObject){
@@ -561,8 +560,9 @@ void deferredGraphics::bindLightSource(light* lightSource){
     lightSource->updateDescriptorSets(&device.getLogical(), imageCount, emptyTexture);
 
     DeferredGraphics.bindLightSource(lightSource);
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].bindLightSource(lightSource);
+    for(auto& TransparentLayer: TransparentLayers){
+        TransparentLayer.bindLightSource(lightSource);
+    }
 
     updateCmdFlags();
 }
@@ -575,8 +575,9 @@ void deferredGraphics::removeLightSource(light* lightSource){
     lightSource->destroy(&device.getLogical());
 
     DeferredGraphics.removeLightSource(lightSource);
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].removeLightSource(lightSource);
+    for(auto& TransparentLayer: TransparentLayers){
+        TransparentLayer.removeLightSource(lightSource);
+    }
 
     if(lightSource->getTexture()){
         lightSource->getTexture()->destroy(&device.getLogical());
@@ -651,7 +652,7 @@ void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
 }
 
 void deferredGraphics::updateCmdFlags(){
-    for(uint32_t index = 0; index < imageCount; index++){
-        updateCommandBufferFlags[index] = true;
+    for(auto flag: updateCommandBufferFlags){
+        flag = true;
     }
 }

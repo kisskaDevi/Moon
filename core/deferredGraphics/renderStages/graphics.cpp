@@ -155,10 +155,10 @@ void graphics::createRenderPass()
 void graphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
-    for (size_t Image = 0; Image < image.Count; Image++){
+    for (size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> attachments;
-        for(size_t i=0;i<pAttachments.size();i++){
-            attachments.push_back(pAttachments[i]->imageView[Image]);
+        for(size_t j = 0; j < pAttachments.size(); j++){
+            attachments.push_back(pAttachments[j]->imageView[i]);
         }
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -169,7 +169,7 @@ void graphics::createFramebuffers()
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[Image]);
+        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
     }
 }
 

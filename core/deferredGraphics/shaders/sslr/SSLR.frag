@@ -58,7 +58,15 @@ vec4 SSLR(int steps, float incrementFactor, float resolution)
 
     bool depthCond = texture(depth, fragTexCoord).r < texture(layerDepth, fragTexCoord).r;
     vec4 pointPosition = findPosition(fragTexCoord, depthCond);
-    vec4 pointNormal = findNormal(fragTexCoord, depthCond);
+    vec4 pointNormal = vec4(0.0f);
+
+    vec2 offset = 1.0f/textureSize(normal, 0);
+    for(int i = -1; i<2; i++){
+        for(int j = -1; j<2; j++){
+            pointNormal += findNormal(fragTexCoord + offset * vec2(i,j), depthCond);
+        }
+    }
+    pointNormal /= 9.0f;
 
     vec4 reflectDirection = normalize(reflect(pointPosition - pointOfView, pointNormal));
     vec2 increment = incrementFactor * findIncrement(projview,pointPosition,reflectDirection);
@@ -70,10 +78,9 @@ vec4 SSLR(int steps, float incrementFactor, float resolution)
 
         float cosTheta = dot(reflectDirection, direction);
         float cosPhi = dot(findNormal(planeCoords, depthCond), direction);
+
         if((cosTheta >= resolution) && (cosPhi <= 0.0f)){
-            vec4 color = findSampler(planeCoords, depthCond);
-            SSLR = max(SSLR,color);
-            break;
+            SSLR = findSampler(planeCoords, depthCond);
         }
     }
 
@@ -84,5 +91,6 @@ void main()
 {
     outColor = vec4(0.0f);
 
-    outColor += SSLR(20, 0.2f, 0.9995);
+    float roug = 1.0f - texture(position,fragTexCoord).a;
+    //outColor += SSLR(20, 0.2f, 0.9995);
 }

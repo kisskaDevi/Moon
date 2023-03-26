@@ -17,6 +17,7 @@
 #include <glm.hpp>
 
 class node;
+class model;
 
 struct StorageBufferObject{
     alignas(16) glm::vec4           mousePosition;
@@ -117,8 +118,8 @@ public:
     void        setEmptyTexture(std::string ZERO_TEXTURE);
     void        setMinAmbientFactor(const float& minAmbientFactor);
 
-    void        createModel(gltfModel* pModel);
-    void        destroyModel(gltfModel* pModel);
+    void        createModel(model* pModel);
+    void        destroyModel(model* pModel);
 
     void        bindCameraObject(camera* cameraObject);
     void        removeCameraObject(camera* cameraObject);

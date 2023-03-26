@@ -72,15 +72,16 @@ SOURCES += \
     core/deferredGraphics/renderStages/graphics.cpp \
     core/deferredGraphics/utils/attachments.cpp \
     core/deferredGraphics/utils/node.cpp \
-    core/deferredGraphics/utils/vkdefault.cpp \
+    core/interfaces/model.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
-    core/transformational/light.cpp \
     core/transformational/object.cpp \
     core/models/gltfmodel.cpp \
+    core/transformational/spotLight.cpp \
     core/utils/operations.cpp \
     core/utils/texture.cpp \
     core/utils/device.cpp \
+    core/utils/vkdefault.cpp \
     core/graphicsManager.cpp\
     test/physicalobject.cpp \
     test/scene.cpp \
@@ -100,17 +101,18 @@ HEADERS += \
     core/deferredGraphics/renderStages/graphics.h \
     core/deferredGraphics/utils/attachments.h \
     core/deferredGraphics/utils/node.h \
-    core/deferredGraphics/utils/vkdefault.h \
-    core/transformational/lightInterface.h \
+    core/interfaces/light.h \
+    core/interfaces/model.h \
+    core/transformational/spotLight.h \
     core/transformational/transformational.h \
     core/transformational/camera.h \
     core/transformational/group.h \
-    core/transformational/light.h \
     core/transformational/object.h \
     core/models/gltfmodel.h \
     core/utils/operations.h \
     core/utils/texture.h \
     core/utils/device.h \
+    core/utils/vkdefault.h \
     core/graphicsInterface.h \
     core/graphicsManager.h \
     test/physicalobject.h \

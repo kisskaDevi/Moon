@@ -2,7 +2,7 @@
 #include "../core/deferredGraphics/deferredGraphics.h"
 #include "../core/graphicsManager.h"
 #include "../core/models/gltfmodel.h"
-#include "../core/transformational/light.h"
+#include "../core/transformational/spotLight.h"
 #include "../core/transformational/object.h"
 #include "../core/transformational/group.h"
 #include "../core/transformational/camera.h"
@@ -92,11 +92,12 @@ void scene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, u
 
 void scene::destroyScene()
 {
-    for(size_t i=0;i<lightSource.size();i++){
-        graphics->removeLightSource(lightSource.at(i));
+    for(auto& lightSource: lightSources){
+        graphics->removeLightSource(lightSource);
     }
-    for(size_t i=0;i<lightPoint.size();i++)
-        delete lightPoint.at(i);
+    for(auto& lightPoint: lightPoints){
+        delete lightPoint;
+    }
 
     graphics->removeSkyBoxObject(skyboxObject1);
     delete skyboxObject1;
@@ -123,44 +124,44 @@ void scene::loadModels()
     gltfModel.resize(6);
 
     index = 0;
-        gltfModel[0].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
+        gltfModel[0].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
+        graphics->createModel(dynamic_cast<model*>(gltfModel[0].at(index)));
+    index++;
+        gltfModel[0].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
         graphics->createModel(gltfModel[0].at(index));
     index++;
-        gltfModel[0].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
-        graphics->createModel(gltfModel[0].at(index));
-    index++;
-        gltfModel[0].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
+        gltfModel[0].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
         graphics->createModel(gltfModel[0].at(index));
     index++;
 
     index = 0;
-        gltfModel[1].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
+        gltfModel[1].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
         graphics->createModel(gltfModel[1].at(index));
     index++;
-        gltfModel[1].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
+        gltfModel[1].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
         graphics->createModel(gltfModel[1].at(index));
     index++;
-        gltfModel[1].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
+        gltfModel[1].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
         graphics->createModel(gltfModel[1].at(index));
     index++;
 
     index = 0;
-        gltfModel[2].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Box.glb"));
+        gltfModel[2].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Box.glb"));
         graphics->createModel(gltfModel[2].at(index));
     index++;
 
     index = 0;
-        gltfModel[3].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
+        gltfModel[3].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
         graphics->createModel(gltfModel[3].at(index));
     index++;
 
     index = 0;
-        gltfModel[4].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\Duck.glb"));
+        gltfModel[4].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Duck.glb"));
         graphics->createModel(gltfModel[4].at(index));
     index++;
 
     index = 0;
-        gltfModel[5].push_back(new struct gltfModel(ExternalPath + "dependences\\model\\glb\\RetroUFO.glb"));
+        gltfModel[5].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\RetroUFO.glb"));
         graphics->createModel(gltfModel[5].at(index));
     index++;
 }
@@ -176,60 +177,60 @@ void scene::createLight()
     Proj[1][1] *= -1;
 
     int index = 0;
-    lightPoint.push_back(new isotropicLight(lightSource));
-    lightPoint.at(index)->setProjectionMatrix(Proj);
-    lightPoint.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    groups.at(0)->addObject(lightPoint.at(index));
+    lightPoints.push_back(new isotropicLight(lightSources));
+    lightPoints.at(index)->setProjectionMatrix(Proj);
+    lightPoints.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    groups.at(0)->addObject(lightPoints.at(index));
 
     for(int i=index;i<6;i++,index++){
-        graphics->bindLightSource(lightSource.at(index));
+        graphics->bindLightSource(lightSources.at(index));
         //lightSource.at(index)->setScattering(true);
     }
 
     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
     Proj[1][1] *= -1;
 
-    lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
-    lightSource.at(index)->setProjectionMatrix(Proj);
-    lightSource.at(index)->setScattering(true);
-    groups.at(2)->addObject(lightSource.at(index));
+    lightSources.push_back(new spotLight(LIGHT_TEXTURE0));
+    lightSources.at(index)->setProjectionMatrix(Proj);
+    lightSources.at(index)->setScattering(true);
+    groups.at(2)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
 
-    lightSource.push_back(new spotLight(LIGHT_TEXTURE1));
-    lightSource.at(index)->setProjectionMatrix(Proj);
-    lightSource.at(index)->setScattering(true);
-    groups.at(3)->addObject(lightSource.at(index));
+    lightSources.push_back(new spotLight(LIGHT_TEXTURE1));
+    lightSources.at(index)->setProjectionMatrix(Proj);
+    lightSources.at(index)->setScattering(true);
+    groups.at(3)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
 
-    lightSource.push_back(new spotLight(LIGHT_TEXTURE2));
-    lightSource.at(index)->setProjectionMatrix(Proj);
-    lightSource.at(index)->setScattering(true);
-    groups.at(4)->addObject(lightSource.at(index));
+    lightSources.push_back(new spotLight(LIGHT_TEXTURE2));
+    lightSources.at(index)->setProjectionMatrix(Proj);
+    lightSources.at(index)->setScattering(true);
+    groups.at(4)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
 
-    lightSource.push_back(new spotLight(LIGHT_TEXTURE3));
-    lightSource.at(index)->setProjectionMatrix(Proj);
-    lightSource.at(index)->setScattering(true);
-    groups.at(5)->addObject(lightSource.at(index));
+    lightSources.push_back(new spotLight(LIGHT_TEXTURE3));
+    lightSources.at(index)->setProjectionMatrix(Proj);
+    lightSources.at(index)->setScattering(true);
+    groups.at(5)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSource.at(lightSource.size()-1));
+    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
 
     for(int i=0;i<5;i++){
-        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
-        lightSource.at(index)->setProjectionMatrix(Proj);
-        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
-        lightSource.at(index)->setScattering(false);
+        lightSources.push_back(new spotLight(LIGHT_TEXTURE0));
+        lightSources.at(index)->setProjectionMatrix(Proj);
+        lightSources.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
+        lightSources.at(index)->setScattering(false);
         index++;
     }
 
     for(int i=0;i<5;i++){
-        lightSource.push_back(new spotLight(LIGHT_TEXTURE0));
-        lightSource.at(index)->setProjectionMatrix(Proj);
-        lightSource.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
-        lightSource.at(index)->setScattering(false);
+        lightSources.push_back(new spotLight(LIGHT_TEXTURE0));
+        lightSources.at(index)->setProjectionMatrix(Proj);
+        lightSources.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
+        lightSources.at(index)->setScattering(false);
         index++;
     }
 }
@@ -237,7 +238,7 @@ void scene::createLight()
 void scene::createObjects()
 {
     uint32_t index=0;
-    object3D.push_back( new object(gltfModel.at(0).size(),gltfModel.at(0).data()) );
+    object3D.push_back( new object(gltfModel.at(0).size(), gltfModel.at(0).data()) );
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setOutliningColor(glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->setOutliningWidth(0.05f);
@@ -380,12 +381,12 @@ void scene::mouseEvent(float frameTime)
     mouse1Stage = glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT);
 
     if(updateLightCone){
-        for(uint32_t index=6;index<lightSource.size();index++){
+        for(uint32_t index=6;index<lightSources.size();index++){
             if(spotAngle>0.0f){
                 glm::mat4x4 Proj;
                     Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
                     Proj[1][1] *= -1;
-                lightSource.at(index)->setProjectionMatrix(Proj);
+                lightSources.at(index)->setProjectionMatrix(Proj);
             }
         }
         updateLightCone = false;
@@ -574,7 +575,7 @@ void scene::keyboardEvent(float frameTime)
     if(backGStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_G) == 0)
     {
         if(lightPointer<20){
-            graphics->bindLightSource(lightSource.at(lightPointer));
+            graphics->bindLightSource(lightSources.at(lightPointer));
             lightPointer++;
         }
     }
@@ -584,7 +585,7 @@ void scene::keyboardEvent(float frameTime)
         app->deviceWaitIdle();
         if(lightPointer>0){
             lightPointer--;
-            graphics->removeLightSource(lightSource.at(lightPointer));
+            graphics->removeLightSource(lightSources.at(lightPointer));
         }
     }
     backHStage = glfwGetKey(window,GLFW_KEY_H);

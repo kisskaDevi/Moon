@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 class object;
-class Node;
 class light;
 
 class shadowGraphics : public filterGraphics
@@ -19,15 +18,15 @@ private:
         void createDescriptorSetLayout(VkDevice device) override;
 
         VkDescriptorSetLayout           lightUniformBufferSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout           uniformBufferSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout           uniformBlockSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           ObjectDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout           MaterialDescriptorSetLayout{VK_NULL_HANDLE};
 
         std::vector<object*>            objects;
         std::vector<light*>             lightSources;
     }shadow;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
-    void renderNode(VkCommandBuffer commandBuffer, Node* node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets);
 public:
     shadowGraphics() = default;
     void destroy();

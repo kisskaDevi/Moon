@@ -17,7 +17,7 @@ struct UniformBuffer
     alignas(16) glm::vec4   bloomFactor;
 };
 
-struct gltfModel;
+class model;
 struct Node;
 struct Material;
 
@@ -27,7 +27,7 @@ private:
     bool                            enable{true};
     bool                            enableShadow{true};
 
-    gltfModel**                     pModel;
+    model**                         pModel;
     uint32_t                        modelCount{0};
 
     quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
@@ -71,7 +71,7 @@ private:
     void updateModelMatrix();
 public:
     object();
-    object(uint32_t modelCount, gltfModel** model);
+    object(uint32_t modelCount, model** model);
     ~object();
     void destroyUniformBuffers(VkDevice device);
     void destroy(VkDevice device);
@@ -91,14 +91,14 @@ public:
     void                scale(const glm::vec3& scale);
     void                setPosition(const glm::vec3& translate);
 
-    void                setModel(gltfModel** model3D);
+    void                setModel(model** model3D);
     void                setConstantColor(const glm::vec4 & color);
     void                setColorFactor(const glm::vec4 & color);
     void                setBloomColor(const glm::vec4 & color);
     void                setBloomFactor(const glm::vec4 & color);
 
     glm::mat4x4         getModelMatrix() const;
-    gltfModel*          getModel(uint32_t index);
+    model*              getModel(uint32_t index);
     glm::vec4           getConstantColor() const;
     glm::vec4           getColorFactor() const;
 

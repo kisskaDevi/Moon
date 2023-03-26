@@ -14,7 +14,6 @@ class                               light;
 struct                              Node;
 struct                              Material;
 struct                              MaterialBlock;
-struct                              gltfModel;
 
 class graphics : public filterGraphics
 {
@@ -43,7 +42,6 @@ private:
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
         void createDescriptorSetLayout(VkDevice device);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
-            void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }base;
 
     struct OutliningExtension{
@@ -57,7 +55,6 @@ private:
         void DestroyPipeline(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
-            void renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount);
     }outlining;
 
     struct Lighting{

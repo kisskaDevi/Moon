@@ -1,14 +1,14 @@
 #include "object.h"
 #include "../utils/operations.h"
+#include "../interfaces/model.h"
 #include "dualQuaternion.h"
-#include "../models/gltfmodel.h"
 
 #include <cstring>
 
 object::object()
 {}
 
-object::object(uint32_t modelCount, gltfModel** model) :
+object::object(uint32_t modelCount, model** model) :
     pModel(model),
     modelCount(modelCount)
 {}
@@ -92,16 +92,17 @@ void object::scale(const glm::vec3 & scale)
 void object::updateAnimation(uint32_t imageNumber)
 {
     if(modelCount>1){
-        if(pModel[imageNumber]->animations.size() > 0){
+        if(pModel[imageNumber]->hasAnimation()){
             if(!changeAnimationFlag){
-                if (animationTimer > pModel[imageNumber]->animations[animationIndex].end)
-                    animationTimer -= pModel[imageNumber]->animations[animationIndex].end;
+                if (animationTimer > pModel[imageNumber]->animationEnd(animationIndex)){
+                    animationTimer -= pModel[imageNumber]->animationEnd(animationIndex);
+                }
                 pModel[imageNumber]->updateAnimation(animationIndex, animationTimer);
             }else{
                 pModel[imageNumber]->changeAnimation(animationIndex, newAnimationIndex, startTimer, animationTimer, changeAnimationTime);
-                if(startTimer+changeAnimationTime<animationTimer){
+                if(startTimer + changeAnimationTime < animationTimer){
                     changeAnimationFlag = false;
-                    animationTimer = pModel[imageNumber]->animations[animationIndex+1].start;
+                    animationTimer = pModel[imageNumber]->animationStart(animationIndex + 1);
                     animationIndex = newAnimationIndex;
                 }
             }
@@ -215,7 +216,7 @@ void object::createDescriptorSet(VkDevice device, uint32_t imageCount)
 
 void                            object::setEnable(const bool& enable)                   {this->enable = enable;}
 void                            object::setEnableShadow(const bool& enable)             {this->enableShadow = enable;}
-void                            object::setModel(gltfModel** model3D)                   {this->pModel = model3D;}
+void                            object::setModel(model** model3D)                       {this->pModel = model3D;}
 
 void                            object::setConstantColor(const glm::vec4 &color){
     this->constantColor = color;
@@ -236,8 +237,8 @@ void                            object::setBloomFactor(const glm::vec4 &color){
 
 bool                            object::getEnable() const                               {return enable;}
 bool                            object::getEnableShadow() const                         {return enableShadow;}
-gltfModel*                      object::getModel(uint32_t index)                        {
-    gltfModel* model;
+model*                          object::getModel(uint32_t index)                        {
+    model* model;
     if(modelCount>1&&index>=modelCount){
         model = nullptr;
     }else if(modelCount==1){

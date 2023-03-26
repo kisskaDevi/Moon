@@ -1,5 +1,5 @@
-#ifndef LIGHTINTERFACE_H
-#define LIGHTINTERFACE_H
+#ifndef LIGHT_H
+#define LIGHT_H
 
 #include <vulkan.h>
 #include "../deferredGraphics/utils/attachments.h"
@@ -39,4 +39,4 @@ namespace SpotLight {
     void createShadowDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
 }
 
-#endif // LIGHTINTERFACE_H
+#endif // LIGHT_H

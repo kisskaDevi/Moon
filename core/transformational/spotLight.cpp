@@ -1,4 +1,4 @@
-#include "light.h"
+#include "spotLight.h"
 #include "../utils/operations.h"
 #include "../utils/texture.h"
 #include "dualQuaternion.h"

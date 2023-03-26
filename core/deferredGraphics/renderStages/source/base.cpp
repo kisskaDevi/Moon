@@ -1,9 +1,9 @@
 #include "../graphics.h"
 #include "../../../utils/operations.h"
-#include "../../utils/vkdefault.h"
+#include "../../../utils/vkdefault.h"
+#include "../../../interfaces/model.h"
 #include "../../../transformational/camera.h"
 #include "../../../transformational/object.h"
-#include "../../../models/gltfmodel.h"
 
 void graphics::Base::Destroy(VkDevice device)
 {
@@ -40,8 +40,8 @@ void graphics::Base::createDescriptorSetLayout(VkDevice device)
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &SceneDescriptorSetLayout);
 
     object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
-    gltfModel::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
-    gltfModel::createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
+    model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
+    model::createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
 }
 
 void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -55,8 +55,8 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+    auto bindingDescription = model::Vertex::getBindingDescription();
+    auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -223,77 +223,36 @@ void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* 
 
 void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
-    for(auto object: objects)
-    {
+    for(auto object: objects){
         if(VkDeviceSize offsets = 0; object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineDictionary[object->getPipelineBitMask()]);
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel(frameNumber)->vertices.buffer, &offsets);
-            if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffers, object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel(frameNumber)->getVertices(), &offsets);
+            if (object->getModel(frameNumber)->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffers, *object->getModel(frameNumber)->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
             object->resetPrimitiveCount();
             object->setFirstPrimitive(primitiveCount);
-            for (auto node : object->getModel(frameNumber)->nodes){
-                std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-                renderNode(commandBuffers,node,PipelineLayoutDictionary[object->getPipelineBitMask()],static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(), primitiveCount);
-            }
-            object->setPrimitiveCount(primitiveCount-object->getFirstPrimitive());
-        }
-    }
-}
 
-void graphics::Base::renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
-            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
-            std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
-            nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
-            nodeDescriptorSets.push_back(primitive->material.descriptorSet);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
+            std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
 
             struct PushConstBlock{
                 float transparencyPass;
                 MaterialBlock material;
             } pushConstBlock;
-                pushConstBlock.material.emissiveFactor = primitive->material.emissiveFactor;
-                pushConstBlock.material.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                pushConstBlock.material.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                pushConstBlock.material.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
-                pushConstBlock.material.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-                pushConstBlock.material.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
-                pushConstBlock.material.alphaMaskCutoff = primitive->material.alphaCutoff;
-            if (primitive->material.pbrWorkflows.metallicRoughness) {
-                pushConstBlock.material.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
-                pushConstBlock.material.baseColorFactor = primitive->material.baseColorFactor;
-                pushConstBlock.material.metallicFactor = primitive->material.metallicFactor;
-                pushConstBlock.material.roughnessFactor = primitive->material.roughnessFactor;
-                pushConstBlock.material.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
-                pushConstBlock.material.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-            }
-            if (primitive->material.pbrWorkflows.specularGlossiness) {
-                pushConstBlock.material.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
-                pushConstBlock.material.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
-                pushConstBlock.material.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                pushConstBlock.material.diffuseFactor = primitive->material.extension.diffuseFactor;
-                pushConstBlock.material.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
-            }
-                pushConstBlock.material.primitive = primitiveCount++;
-                pushConstBlock.transparencyPass = transparencyPass ? 1.0f : 0.0f;
+            pushConstBlock.transparencyPass = transparencyPass ? 1.0f : 0.0f;
 
-            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(pushConstBlock), &pushConstBlock);
-
-            if (primitive->hasIndices){
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            }else{
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-            }
+            object->getModel(frameNumber)->render(
+                        commandBuffers,
+                        PipelineLayoutDictionary[object->getPipelineBitMask()],
+                        static_cast<uint32_t>(descriptorSets.size()),
+                        descriptorSets.data(),
+                        primitiveCount,
+                        sizeof(PushConstBlock),
+                        offsetof(PushConstBlock, material),
+                        &pushConstBlock);
+            object->setPrimitiveCount(primitiveCount - object->getFirstPrimitive());
         }
-    }
-    for (auto child : node->children){
-        renderNode(commandBuffer,child,pipelineLayout,descriptorSetsCount,descriptorSets,primitiveCount);
     }
 }

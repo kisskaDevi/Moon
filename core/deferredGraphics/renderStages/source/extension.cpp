@@ -1,8 +1,8 @@
 #include "../graphics.h"
 #include "../../../utils/operations.h"
-#include "../../utils/vkdefault.h"
+#include "../../../utils/vkdefault.h"
 #include "../../../transformational/object.h"
-#include "../../../models/gltfmodel.h"
+#include "../../../interfaces/model.h"
 
 struct OutliningPushConst{
     alignas(16) glm::vec4           stencilColor;
@@ -25,8 +25,8 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    auto bindingDescription = gltfModel::Vertex::getBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getAttributeDescriptions();
+    auto bindingDescription = model::Vertex::getBindingDescription();
+    auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -51,11 +51,12 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
+    struct PushConstBlock{ OutliningPushConst outlining; MaterialBlock material;};
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(OutliningPushConst);
+        pushConstantRange.back().size = sizeof(PushConstBlock);
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         Parent->SceneDescriptorSetLayout,
         Parent->ObjectDescriptorSetLayout,
@@ -96,47 +97,34 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
 void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-    for(auto object: Parent->objects)
-    {
+    for(auto object: Parent->objects){
         if(VkDeviceSize offsets = 0; object->getEnable()&&object->getOutliningEnable()){
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, & object->getModel(frameNumber)->vertices.buffer, &offsets);
-            if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffers, object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel(frameNumber)->getVertices(), &offsets);
+            if (object->getModel(frameNumber)->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffers, *object->getModel(frameNumber)->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            OutliningPushConst pushConst{};
-                pushConst.stencilColor = object->getOutliningColor();
-                pushConst.width = object->getOutliningWidth();
-            vkCmdPushConstants(commandBuffers, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(OutliningPushConst), &pushConst);
+            std::vector<VkDescriptorSet> descriptorSets = {Parent->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
 
-            uint32_t primiriveCount = 0;
-            for (auto node : object->getModel(frameNumber)->nodes){
-                std::vector<VkDescriptorSet> descriptorSets = {Parent->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
-                renderNode(commandBuffers,node,PipelineLayout,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data(),primiriveCount);
-            }
+            struct PushConstBlock{
+                OutliningPushConst outlining;
+                MaterialBlock material;
+            } pushConstBlock;
+                pushConstBlock.outlining.stencilColor = object->getOutliningColor();
+                pushConstBlock.outlining.width = object->getOutliningWidth();
+
+            uint32_t primirives = 0;
+            object->getModel(frameNumber)->render(
+                        commandBuffers,
+                        PipelineLayout,
+                        static_cast<uint32_t>(descriptorSets.size()),
+                        descriptorSets.data(),
+                        primirives,
+                        sizeof(PushConstBlock),
+                        offsetof(PushConstBlock, material),
+                        &pushConstBlock);
         }
     }
 }
 
-void graphics::OutliningExtension::renderNode(VkCommandBuffer commandBuffer, Node *node, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount)
-{
-    if (node->mesh)
-    {
-        for (Primitive* primitive : node->mesh->primitives)
-        {
-            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
-            std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
-            nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
-            nodeDescriptorSets.push_back(primitive->material.descriptorSet);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
-
-            if (primitive->hasIndices){
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            }else{
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-            }
-        }
-    }
-    for (auto child : node->children)
-        renderNode(commandBuffer,child,pipelineLayout,descriptorSetsCount,descriptorSets,primitiveCount);
-}

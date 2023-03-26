@@ -1,6 +1,6 @@
 #include "ssao.h"
 #include "../../utils/operations.h"
-#include "../utils/vkdefault.h"
+#include "../../utils/vkdefault.h"
 #include "../../transformational/camera.h"
 
 void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)

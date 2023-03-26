@@ -5,7 +5,7 @@
 #include <vector>
 
 class deferredGraphics;
-struct gltfModel;
+class model;
 class graphicsManager;
 class spotLight;
 class isotropicLight;
@@ -47,10 +47,10 @@ private:
     skyboxObject*                                   skyboxObject1;
     skyboxObject*                                   skyboxObject2;
 
-    std::vector<std::vector<gltfModel   *>>         gltfModel;
+    std::vector<std::vector<model      *>>         gltfModel;
     std::vector<object                  *>          object3D;
-    std::vector<spotLight               *>          lightSource;
-    std::vector<isotropicLight          *>          lightPoint;
+    std::vector<spotLight               *>          lightSources;
+    std::vector<isotropicLight          *>          lightPoints;
     std::vector<group                   *>          groups;
 
     graphicsManager*    app;

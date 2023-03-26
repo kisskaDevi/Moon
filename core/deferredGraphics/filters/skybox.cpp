@@ -1,6 +1,6 @@
 #include "skybox.h"
 #include "../../utils/operations.h"
-#include "../utils/vkdefault.h"
+#include "../../utils/vkdefault.h"
 #include "../../transformational/object.h"
 #include "../../transformational/camera.h"
 

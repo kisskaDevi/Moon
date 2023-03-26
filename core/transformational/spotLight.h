@@ -1,8 +1,8 @@
-#ifndef LIGHT_H
-#define LIGHT_H
+#ifndef SPOTLIGHT_H
+#define SPOTLIGHT_H
 
 #include "transformational.h"
-#include "lightInterface.h"
+#include "../interfaces/light.h"
 #include "quaternion.h"
 
 class shadowGraphics;
@@ -145,4 +145,4 @@ public:
     glm::vec4 getLightColor() const;
 };
 
-#endif // LIGHT_H
+#endif // SPOTLIGHT_H

@@ -1,5 +1,6 @@
 #version 450
-#define MAX_NUM_JOINTS 130
+
+layout (constant_id = 0) const int MAX_NUM_JOINTS = 128;
 
 layout(set = 0, binding = 0) uniform LightBufferObject
 {
@@ -24,8 +25,13 @@ layout (set = 2, binding = 0) uniform UBONode
 } node;
 
 layout(location = 0)	in  vec3 inPosition;
-layout(location = 1)	in  vec4 inJoint0;
-layout(location = 2)	in  vec4 inWeight0;
+layout(location = 1)	in  vec3 inNormal;
+layout(location = 2)	in  vec2 inUV0;
+layout(location = 3)	in  vec2 inUV1;
+layout(location = 4)	in  vec4 inJoint0;
+layout(location = 5)	in  vec4 inWeight0;
+layout(location = 6)	in  vec3 inTangent;
+layout(location = 7)	in  vec3 inBitangent;
 
 void main()
 {

@@ -1,9 +1,9 @@
 #include "shadow.h"
 #include "../../utils/operations.h"
-#include "../utils/vkdefault.h"
+#include "../../utils/vkdefault.h"
 #include "../../transformational/lightInterface.h"
 #include "../../transformational/object.h"
-#include "../../models/gltfmodel.h"
+#include "../../interfaces/model.h"
 
 void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
@@ -18,8 +18,9 @@ void shadowGraphics::Shadow::destroy(VkDevice device)
 {
     filter::destroy(device);
     if(lightUniformBufferSetLayout) {vkDestroyDescriptorSetLayout(device, lightUniformBufferSetLayout, nullptr); lightUniformBufferSetLayout = VK_NULL_HANDLE;}
-    if(uniformBlockSetLayout)       {vkDestroyDescriptorSetLayout(device, uniformBlockSetLayout, nullptr); uniformBlockSetLayout = VK_NULL_HANDLE;}
-    if(uniformBufferSetLayout)      {vkDestroyDescriptorSetLayout(device, uniformBufferSetLayout, nullptr); uniformBufferSetLayout = VK_NULL_HANDLE;}
+    if(ObjectDescriptorSetLayout)       {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(PrimitiveDescriptorSetLayout)      {vkDestroyDescriptorSetLayout(device, PrimitiveDescriptorSetLayout, nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(MaterialDescriptorSetLayout)      {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
 void shadowGraphics::destroy()
@@ -57,8 +58,9 @@ void shadowGraphics::createPipelines()
 void shadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
 {
     SpotLight::createShadowDescriptorSetLayout(device, &lightUniformBufferSetLayout);
-    object::createDescriptorSetLayout(device, &uniformBufferSetLayout);
-    gltfModel::createNodeDescriptorSetLayout(device, &uniformBlockSetLayout);
+    object::createDescriptorSetLayout(device, &ObjectDescriptorSetLayout);
+    model::createNodeDescriptorSetLayout(device, &PrimitiveDescriptorSetLayout);
+    model::createMaterialDescriptorSetLayout(device, &MaterialDescriptorSetLayout);
 }
 
 void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -68,8 +70,8 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = vkDefault::vertrxShaderStage(vertShaderModule);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vertShaderStageInfo};
 
-    auto bindingDescription = gltfModel::Vertex::getShadowBindingDescription();
-    auto attributeDescriptions = gltfModel::Vertex::getShadowAttributeDescriptions();
+    auto bindingDescription = model::Vertex::getBindingDescription();
+    auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -92,11 +94,23 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    std::array<VkDescriptorSetLayout,3> SetLayouts = {lightUniformBufferSetLayout,uniformBufferSetLayout,uniformBlockSetLayout};
+    std::vector<VkPushConstantRange> pushConstantRange;
+    pushConstantRange.push_back(VkPushConstantRange{});
+        pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange.back().offset = 0;
+        pushConstantRange.back().size = sizeof(MaterialBlock);
+    std::vector<VkDescriptorSetLayout> SetLayouts = {
+        lightUniformBufferSetLayout,
+        ObjectDescriptorSetLayout,
+        PrimitiveDescriptorSetLayout,
+        MaterialDescriptorSetLayout
+    };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
+        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
+        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -200,39 +214,28 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
-        for(auto object: shadow.objects)
-        {
-            if(object->getEnable()&&object->getEnableShadow()){
-                VkDeviceSize offsets[1] = { 0 };
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, & object->getModel(frameNumber)->vertices.buffer, offsets);
-                if (object->getModel(frameNumber)->indices.buffer != VK_NULL_HANDLE)
-                    vkCmdBindIndexBuffer(commandBuffer,  object->getModel(frameNumber)->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-                for (auto node : object->getModel(frameNumber)->nodes){
-                    std::vector<VkDescriptorSet> descriptorSets = {shadow.lightSources[attachmentNumber]->getShadowDescriptorSets()[frameNumber],object->getDescriptorSet()[frameNumber]};
-                    renderNode(commandBuffer,node,static_cast<uint32_t>(descriptorSets.size()),descriptorSets.data());
+        for(auto object: shadow.objects){
+            if(VkDeviceSize offsets = 0;object->getEnable()&&object->getEnableShadow()){
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel(frameNumber)->getVertices(), &offsets);
+                if (object->getModel(frameNumber)->getIndices() != VK_NULL_HANDLE){
+                    vkCmdBindIndexBuffer(commandBuffer, *object->getModel(frameNumber)->getIndices(), 0, VK_INDEX_TYPE_UINT32);
                 }
+
+                std::vector<VkDescriptorSet> descriptorSets = {shadow.lightSources[attachmentNumber]->getShadowDescriptorSets()[frameNumber],object->getDescriptorSet()[frameNumber]};
+
+                MaterialBlock material{};
+
+                uint32_t primitives = 0;
+                object->getModel(frameNumber)->render(
+                            commandBuffer,
+                            shadow.PipelineLayout,
+                            static_cast<uint32_t>(descriptorSets.size()),
+                            descriptorSets.data(),primitives,
+                            sizeof(MaterialBlock),
+                            0,
+                            &material);
             }
         }
 
     vkCmdEndRenderPass(commandBuffer);
-}
-
-void shadowGraphics::renderNode(VkCommandBuffer commandBuffer, Node* node, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
-{
-    if (node->mesh)
-    {
-        std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount+1);
-        for(uint32_t i=0;i<descriptorSetsCount;i++)
-            nodeDescriptorSets[i] = descriptorSets[i];
-        nodeDescriptorSets[descriptorSetsCount] = node->mesh->uniformBuffer.descriptorSet;
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.PipelineLayout, 0, descriptorSetsCount+1, nodeDescriptorSets.data(), 0, NULL);
-
-        for (Primitive* primitive : node->mesh->primitives)
-            if (primitive->hasIndices)  vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            else                        vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-    }
-    for (auto child : node->children)
-        renderNode(commandBuffer, child, descriptorSetsCount, descriptorSets);
 }

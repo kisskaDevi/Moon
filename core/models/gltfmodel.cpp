@@ -378,7 +378,8 @@ void gltfModel::loadNode(VkPhysicalDevice physicalDevice, VkDevice device, Node*
     if (node.mesh > -1) {
         const tinygltf::Mesh mesh = model.meshes[node.mesh];
         Mesh *newMesh = new Mesh(physicalDevice,device,newNode->matrix);
-        for (size_t j = 0; j < mesh.primitives.size(); j++) {
+        for (size_t j = 0; j < mesh.primitives.size(); j++)
+        {
             const tinygltf::Primitive &primitive = mesh.primitives[j];
             uint32_t indexStart = static_cast<uint32_t>(indexBuffer.size());
             uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());

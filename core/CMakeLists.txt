@@ -30,15 +30,16 @@ deferredGraphics/renderStages/source/extension.cpp
 deferredGraphics/renderStages/graphics.cpp
 deferredGraphics/utils/attachments.cpp
 deferredGraphics/utils/node.cpp
-deferredGraphics/utils/vkdefault.cpp
+interfaces/model.cpp
 transformational/camera.cpp
 transformational/group.cpp
-transformational/light.cpp
+transformational/spotLight.cpp
 transformational/object.cpp
 models/gltfmodel.cpp
 utils/operations.cpp
 utils/texture.cpp
 utils/device.cpp
+utils/vkdefault.cpp
 graphicsManager.cpp)
 
 add_library(core STATIC ${SOURCES})

@@ -70,14 +70,15 @@ SOURCES += \
     core/deferredGraphics/renderStages/source/base.cpp \
     core/deferredGraphics/renderStages/source/extension.cpp \
     core/deferredGraphics/renderStages/graphics.cpp \
-    core/deferredGraphics/utils/attachments.cpp \
-    core/deferredGraphics/utils/node.cpp \
+    core/interfaces/light.cpp \
     core/interfaces/model.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/object.cpp \
-    core/models/gltfmodel.cpp \
     core/transformational/spotLight.cpp \
+    core/models/gltfmodel.cpp \
+    core/utils/attachments.cpp \
+    core/utils/node.cpp \
     core/utils/operations.cpp \
     core/utils/texture.cpp \
     core/utils/device.cpp \
@@ -99,8 +100,6 @@ HEADERS += \
     core/deferredGraphics/filters/ssao.h \
     core/deferredGraphics/filters/sslr.h \
     core/deferredGraphics/renderStages/graphics.h \
-    core/deferredGraphics/utils/attachments.h \
-    core/deferredGraphics/utils/node.h \
     core/interfaces/light.h \
     core/interfaces/model.h \
     core/transformational/spotLight.h \
@@ -109,6 +108,8 @@ HEADERS += \
     core/transformational/group.h \
     core/transformational/object.h \
     core/models/gltfmodel.h \
+    core/utils/attachments.h \
+    core/utils/node.h \
     core/utils/operations.h \
     core/utils/texture.h \
     core/utils/device.h \

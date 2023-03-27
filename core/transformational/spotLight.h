@@ -47,11 +47,11 @@ private:
     glm::mat4x4                         globalTransformation{1.0f};
     glm::mat4x4                         modelMatrix{1.0f};
 
+    VkDescriptorSetLayout               bufferDescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorSetLayout               descriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorSetLayout               shadowDescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                    descriptorPool{VK_NULL_HANDLE};
+    std::vector<VkDescriptorSet>        bufferDescriptorSets;
     std::vector<VkDescriptorSet>        descriptorSets;
-    std::vector<VkDescriptorSet>        shadowDescriptorSets;
 
     struct buffer{
         VkBuffer       instance{VK_NULL_HANDLE};
@@ -98,7 +98,7 @@ public:
     bool                isScatteringEnable() const;
 
     VkDescriptorSet*    getDescriptorSets() override;
-    VkDescriptorSet*    getShadowDescriptorSets() override;
+    VkDescriptorSet*    getBufferDescriptorSets() override;
 
     void                createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) override;
     void                updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;

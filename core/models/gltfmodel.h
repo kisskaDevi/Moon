@@ -15,7 +15,6 @@
 
 #include <string>
 #include <vector>
-#include <memory>
 
 #define MAX_NUM_JOINTS 128u
 
@@ -77,9 +76,10 @@ struct Node {
 
     uint32_t index;
     Node* parent{nullptr};
-    std::vector<Node*> children;
     Mesh* mesh{nullptr};
-    std::shared_ptr<Skin> skin;
+    Skin* skin;
+
+    std::vector<Node*> children;
 
     glm::mat4 matrix;
     glm::vec3 translation{};

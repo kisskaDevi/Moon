@@ -1,9 +1,8 @@
 #include "../graphics.h"
 #include "../../../utils/vkdefault.h"
 #include "../../../transformational/camera.h"
-#include "../../../transformational/lightInterface.h"
+#include "../../../interfaces/light.h"
 
-#include <array>
 #include <iostream>
 
 struct lightPassPushConst{
@@ -12,6 +11,9 @@ struct lightPassPushConst{
 
 void graphics::Lighting::Destroy(VkDevice device)
 {
+    for(auto& descriptorSetLayout: bufferDescriptorSetLayoutDictionary){
+        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
+    }
     for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
     }
@@ -42,7 +44,8 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    SpotLight::createDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
+    light::createBufferDescriptorSetLayout(device,&bufferDescriptorSetLayoutDictionary[0x0]);
+    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
 }
 
 void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -139,7 +142,10 @@ void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuf
     {
         vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelinesDictionary[lightSource->getPipelineBitMask()]);
 
-        std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],lightSource->getDescriptorSets()[frameNumber]};
+        std::vector<VkDescriptorSet> descriptorSets = {
+            DescriptorSets[frameNumber],
+            lightSource->getBufferDescriptorSets()[frameNumber],
+            lightSource->getDescriptorSets()[frameNumber]};
         vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayoutDictionary[lightSource->getPipelineBitMask()], 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
         vkCmdDraw(commandBuffers, 18, 1, 0, 0);

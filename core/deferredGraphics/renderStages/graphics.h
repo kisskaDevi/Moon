@@ -62,6 +62,7 @@ private:
         bool                                                enableScattering{true};
 
         VkDescriptorSetLayout                               DescriptorSetLayout{VK_NULL_HANDLE};
+        std::unordered_map<uint8_t, VkDescriptorSetLayout>  bufferDescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkDescriptorSetLayout>  DescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkPipelineLayout>       PipelineLayoutDictionary;
         std::unordered_map<uint8_t, VkPipeline>             PipelinesDictionary;

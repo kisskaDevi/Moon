@@ -2,10 +2,6 @@
 #define LIGHT_H
 
 #include <vulkan.h>
-#include "../deferredGraphics/utils/attachments.h"
-
-#include <vector>
-#include <string>
 
 class texture;
 class attachments;
@@ -24,7 +20,7 @@ public:
     virtual bool isShadowEnable() const = 0;
 
     virtual VkDescriptorSet* getDescriptorSets() = 0;
-    virtual VkDescriptorSet* getShadowDescriptorSets() = 0;
+    virtual VkDescriptorSet* getBufferDescriptorSets() = 0;
 
     virtual void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) = 0;
     virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
@@ -32,11 +28,9 @@ public:
     virtual void createDescriptorPool(VkDevice* device, uint32_t imageCount) = 0;
     virtual void createDescriptorSets(VkDevice* device, uint32_t imageCount) = 0;
     virtual void updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture) = 0;
-};
 
-namespace SpotLight {
-    void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
-    void createShadowDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
-}
+    static void createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
+    static void createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
+};
 
 #endif // LIGHT_H

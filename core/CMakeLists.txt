@@ -28,14 +28,15 @@ deferredGraphics/renderStages/source/lightingPipelines.cpp
 deferredGraphics/renderStages/source/base.cpp
 deferredGraphics/renderStages/source/extension.cpp
 deferredGraphics/renderStages/graphics.cpp
-deferredGraphics/utils/attachments.cpp
-deferredGraphics/utils/node.cpp
 interfaces/model.cpp
+interfaces/light.cpp
 transformational/camera.cpp
 transformational/group.cpp
 transformational/spotLight.cpp
 transformational/object.cpp
 models/gltfmodel.cpp
+utils/attachments.cpp
+utils/node.cpp
 utils/operations.cpp
 utils/texture.cpp
 utils/device.cpp

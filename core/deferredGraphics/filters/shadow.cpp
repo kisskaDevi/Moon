@@ -1,7 +1,7 @@
 #include "shadow.h"
 #include "../../utils/operations.h"
 #include "../../utils/vkdefault.h"
-#include "../../transformational/lightInterface.h"
+#include "../../interfaces/light.h"
 #include "../../transformational/object.h"
 #include "../../interfaces/model.h"
 
@@ -57,7 +57,7 @@ void shadowGraphics::createPipelines()
 
 void shadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
 {
-    SpotLight::createShadowDescriptorSetLayout(device, &lightUniformBufferSetLayout);
+    light::createBufferDescriptorSetLayout(device, &lightUniformBufferSetLayout);
     object::createDescriptorSetLayout(device, &ObjectDescriptorSetLayout);
     model::createNodeDescriptorSetLayout(device, &PrimitiveDescriptorSetLayout);
     model::createMaterialDescriptorSetLayout(device, &MaterialDescriptorSetLayout);
@@ -221,7 +221,7 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
                     vkCmdBindIndexBuffer(commandBuffer, *object->getModel(frameNumber)->getIndices(), 0, VK_INDEX_TYPE_UINT32);
                 }
 
-                std::vector<VkDescriptorSet> descriptorSets = {shadow.lightSources[attachmentNumber]->getShadowDescriptorSets()[frameNumber],object->getDescriptorSet()[frameNumber]};
+                std::vector<VkDescriptorSet> descriptorSets = {shadow.lightSources[attachmentNumber]->getBufferDescriptorSets()[frameNumber],object->getDescriptorSet()[frameNumber]};
 
                 MaterialBlock material{};
 

@@ -30,6 +30,7 @@ void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, V
 
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         DescriptorSetLayout,
+        bufferDescriptorSetLayoutDictionary[0x0],
         DescriptorSetLayoutDictionary[0x0]
     };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};

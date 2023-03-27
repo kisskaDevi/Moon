@@ -1,10 +1,10 @@
 #include "deferredGraphics.h"
 #include "../utils/operations.h"
 #include "../interfaces/model.h"
-#include "../transformational/lightInterface.h"
+#include "../interfaces/light.h"
 #include "../transformational/object.h"
 #include "../transformational/camera.h"
-#include "utils/node.h"
+#include "../utils/node.h"
 
 #include <cstring>
 

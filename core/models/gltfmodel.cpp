@@ -283,6 +283,9 @@ void Node::destroy(VkDevice device)
         child->destroy(device);
         delete child;
     }
+    if(skin){
+        delete skin;
+    }
 }
 
 gltfModel::gltfModel(std::string filename)
@@ -546,7 +549,7 @@ void gltfModel::loadNode(VkPhysicalDevice physicalDevice, VkDevice device, Node*
 
 void gltfModel::loadSkins(tinygltf::Model &gltfModel){
     for (const tinygltf::Skin& source: gltfModel.skins) {
-        std::shared_ptr<Node::Skin> newSkin(new Node::Skin{});
+        Node::Skin* newSkin = new Node::Skin{};
 
         for (const auto& node: gltfModel.nodes) {
             if(node.skin == &source - &gltfModel.skins[0]){

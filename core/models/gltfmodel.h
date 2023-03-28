@@ -68,12 +68,14 @@ struct Mesh{
     ~Mesh() = default;
 };
 
-struct Node {
-    struct Skin {
-        std::vector<glm::mat4> inverseBindMatrices;
-        std::vector<Node*> joints;
-    };
+struct Node;
 
+struct Skin {
+    std::vector<glm::mat4> inverseBindMatrices;
+    std::vector<Node*> joints;
+};
+
+struct Node {
     uint32_t index;
     Node* parent{nullptr};
     Mesh* mesh{nullptr};
@@ -127,6 +129,7 @@ private:
     VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
 
     std::vector<Node*>              nodes;
+    std::vector<Skin*>              skins;
     std::vector<Animation>          animations;
     std::vector<texture>            textures;
     std::vector<Material>           materials;

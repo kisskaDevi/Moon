@@ -283,9 +283,6 @@ void Node::destroy(VkDevice device)
         child->destroy(device);
         delete child;
     }
-    if(skin){
-        delete skin;
-    }
 }
 
 gltfModel::gltfModel(std::string filename)
@@ -316,10 +313,14 @@ void gltfModel::destroy(VkDevice device)
         node->destroy(device);
         delete node;
     }
+    for (auto& skin : skins){
+        delete skin;
+    }
     for (auto texture : textures){
         texture.destroy(&device);
     }
     nodes.clear();
+    skins.clear();
     animations.clear();
     textures.clear();
     materials.clear();
@@ -549,13 +550,7 @@ void gltfModel::loadNode(VkPhysicalDevice physicalDevice, VkDevice device, Node*
 
 void gltfModel::loadSkins(tinygltf::Model &gltfModel){
     for (const tinygltf::Skin& source: gltfModel.skins) {
-        Node::Skin* newSkin = new Node::Skin{};
-
-        for (const auto& node: gltfModel.nodes) {
-            if(node.skin == &source - &gltfModel.skins[0]){
-                nodeFromIndex(&node - &gltfModel.nodes[0], nodes)->skin = newSkin;
-            }
-        }
+        Skin* newSkin = new Skin{};
 
         for (int jointIndex : source.joints) {
             if (Node* node = nodeFromIndex(jointIndex, nodes); node) {
@@ -571,6 +566,14 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel){
             newSkin->inverseBindMatrices.resize(accessor.count);
             std::memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
         }
+
+        for (const auto& node: gltfModel.nodes) {
+            if(node.skin == &source - &gltfModel.skins[0]){
+                nodeFromIndex(&node - &gltfModel.nodes[0], nodes)->skin = newSkin;
+            }
+        }
+
+        skins.push_back(newSkin);
     }
 }
 

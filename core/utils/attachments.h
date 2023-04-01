@@ -30,8 +30,6 @@ struct attachment
 
 class attachments
 {
-private:
-    size_t size{0};
 public:
     std::vector<VkImage> image;
     std::vector<VkDeviceMemory> imageMemory;
@@ -40,18 +38,16 @@ public:
     VkFormat format{VK_FORMAT_UNDEFINED};
     VkClearValue clearValue{};
 
-    attachments();
-    ~attachments();
-
+    attachments() = default;
     attachments(const attachments& other);
     attachments& operator=(const attachments& other);
 
-    void resize(size_t size);
-    void create(VkPhysicalDevice* physicalDevice, VkDevice* device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
-    void createDepth(VkPhysicalDevice* physicalDevice, VkDevice* device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
-    void deleteAttachment(VkDevice* device);
-    void deleteSampler(VkDevice* device);
-    size_t getSize();
+    ~attachments() = default;
+    void deleteAttachment(VkDevice device);
+    void deleteSampler(VkDevice device);
+
+    void create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
+    void createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
 
     static VkAttachmentDescription imageDescription(VkFormat format);
     static VkAttachmentDescription imageDescription(VkFormat format, VkImageLayout layout);
@@ -81,8 +77,8 @@ struct DeferredAttachments{
     DeferredAttachments(const DeferredAttachments& other);
     DeferredAttachments& operator=(const DeferredAttachments& other);
 
-    void deleteAttachment(VkDevice* device);
-    void deleteSampler(VkDevice* device);
+    void deleteAttachment(VkDevice device);
+    void deleteSampler(VkDevice device);
 
     static size_t getGBufferOffset() {return 4;}
 };

@@ -8,20 +8,10 @@
 #include <iostream>
 #include <cstring>
 
-texture::texture(){}
+texture::texture(const std::string& path) : path(path)
+{}
 
-texture::texture(const std::string & TEXTURE_PATH)
-{
-    this->TEXTURE_PATH = TEXTURE_PATH;
-}
-
-texture::~texture()
-{
-
-}
-
-void texture::destroy(VkDevice* device)
-{
+void texture::destroy(VkDevice device){
     image.destroy(device);
 }
 
@@ -74,35 +64,20 @@ void texture::createTextureImage(
         VkCommandBuffer     commandBuffer,
         tinygltf::Image&    gltfimage)
 {
-    stbi_uc* buffer = nullptr;
-    VkDeviceSize bufferSize = 0;
-    bool deleteBuffer = false;
-    if (gltfimage.component == 3)
-    {
-        bufferSize = gltfimage.width * gltfimage.height * 4;
-        buffer = new stbi_uc[bufferSize];
-        stbi_uc* rgba = buffer;
-        stbi_uc* rgb = &gltfimage.image[0];
-        for (int32_t i = 0; i< gltfimage.width * gltfimage.height; ++i)
-        {
+    if (stbi_uc* rgb = &gltfimage.image[0]; gltfimage.component == 3){
+        VkDeviceSize bufferSize = gltfimage.width * gltfimage.height * 4;
+        stbi_uc* buffer = new stbi_uc[bufferSize];
+
+        for (int32_t i = 0; i< gltfimage.width * gltfimage.height; ++i){
             for (int32_t j = 0; j < 3; ++j) {
-                rgba[j] = rgb[j];
+                buffer[4*i + j] = rgb[3*i + j];
             }
-            rgba += 4;
-            rgb += 3;
         }
-        deleteBuffer = true;
+        image.create(physicalDevice,device, commandBuffer, mipLevels, gltfimage.width, gltfimage.height, bufferSize, buffer);
+        delete[] buffer;
+    }else{
+        image.create(physicalDevice,device, commandBuffer, mipLevels, gltfimage.width, gltfimage.height, static_cast<VkDeviceSize>(gltfimage.image.size()), &gltfimage.image[0]);
     }
-    else
-    {
-        buffer = &gltfimage.image[0];
-        bufferSize = gltfimage.image.size();
-    }
-
-    if(!buffer)    throw std::runtime_error("failed to load texture image!");
-
-    image.create(physicalDevice,device, commandBuffer, mipLevels, gltfimage.width, gltfimage.height, bufferSize, buffer);
-    if (deleteBuffer){   delete[] buffer;}
 }
 
 void texture::createTextureImage(
@@ -111,7 +86,7 @@ void texture::createTextureImage(
         VkCommandBuffer     commandBuffer)
 {
     int texWidth = 0, texHeight = 0, texChannels = 0;
-    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = 4 * texWidth * texHeight;
 
     if(!pixels)    throw std::runtime_error("failed to load texture image!");
@@ -120,9 +95,9 @@ void texture::createTextureImage(
     stbi_image_free(pixels);
 }
 
-void texture::createTextureImageView(VkDevice* device)
+void texture::createTextureImageView(VkDevice device)
 {
-    Texture::createView(    *device,
+    Texture::createView(    device,
                             VK_IMAGE_VIEW_TYPE_2D,
                             image.format,
                             VK_IMAGE_ASPECT_COLOR_BIT,
@@ -133,7 +108,7 @@ void texture::createTextureImageView(VkDevice* device)
                             &image.textureImageView);
 }
 
-void texture::createTextureSampler(VkDevice* device, struct textureSampler TextureSampler)
+void texture::createTextureSampler(VkDevice device, struct textureSampler TextureSampler)
 {
     VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -152,7 +127,7 @@ void texture::createTextureSampler(VkDevice* device, struct textureSampler Textu
         samplerInfo.minLod = static_cast<float>(mipLevel*mipLevels);
         samplerInfo.maxLod = static_cast<float>(mipLevels);
         samplerInfo.mipLodBias = 0.0f;
-    vkCreateSampler(*device, &samplerInfo, nullptr, &image.textureSampler);
+    vkCreateSampler(device, &samplerInfo, nullptr, &image.textureSampler);
 }
 
 void                texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
@@ -163,19 +138,14 @@ VkSampler*          texture::getTextureSampler(){return &image.textureSampler;}
 
 //cubeTexture
 
-cubeTexture::cubeTexture(const std::vector<std::string> & TEXTURE_PATH)
+cubeTexture::cubeTexture(const std::vector<std::string>& path)
 {
-    this->TEXTURE_PATH.resize(6);
-    for(uint32_t i= 0;i<6;i++)
-    {
-        this->TEXTURE_PATH.at(i) = TEXTURE_PATH.at(i);
+    for(const auto& p: path){
+        this->path.push_back(p);
     }
 }
 
-cubeTexture::~cubeTexture(){}
-
-void cubeTexture::destroy(VkDevice* device)
-{
+void cubeTexture::destroy(VkDevice device){
     image.destroy(device);
 }
 
@@ -234,7 +204,7 @@ void cubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice d
     VkDeviceSize imageSize = 0;
     for(uint32_t i=0;i<6;i++)
     {
-        pixels[i]= stbi_load(TEXTURE_PATH.at(i).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        pixels[i]= stbi_load(path[i].c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         imageSize += 4 * texWidth * texHeight;
 
         if(!pixels[i])  throw std::runtime_error("failed to load texture image!");
@@ -243,9 +213,9 @@ void cubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice d
     image.create(physicalDevice,device,commandBuffer,mipLevels,texWidth,texHeight,imageSize,pixels);
 }
 
-void cubeTexture::createTextureImageView(VkDevice* device)
+void cubeTexture::createTextureImageView(VkDevice device)
 {
-    Texture::createView(    *device,
+    Texture::createView(    device,
                             VK_IMAGE_VIEW_TYPE_CUBE,
                             image.format,
                             VK_IMAGE_ASPECT_COLOR_BIT,
@@ -256,7 +226,7 @@ void cubeTexture::createTextureImageView(VkDevice* device)
                             &image.textureImageView);
 }
 
-void cubeTexture::createTextureSampler(VkDevice* device, struct textureSampler TextureSampler)
+void cubeTexture::createTextureSampler(VkDevice device, struct textureSampler TextureSampler)
 {
     VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -275,7 +245,7 @@ void cubeTexture::createTextureSampler(VkDevice* device, struct textureSampler T
         samplerInfo.minLod = static_cast<float>(mipLevel*mipLevels);
         samplerInfo.maxLod = static_cast<float>(mipLevels);
         samplerInfo.mipLodBias = 0.0f; // Optional
-    vkCreateSampler(*device, &samplerInfo, nullptr, &image.textureSampler);
+    vkCreateSampler(device, &samplerInfo, nullptr, &image.textureSampler);
 }
 
 void                cubeTexture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}

@@ -7,7 +7,7 @@ void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAt
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
     {
-        pAttachments[attachmentNumber].create(&physicalDevice,&device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
+        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
         VkSamplerCreateInfo samplerInfo = vkDefault::samler();
         vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
     }

@@ -72,11 +72,13 @@ SOURCES += \
     core/deferredGraphics/renderStages/graphics.cpp \
     core/interfaces/light.cpp \
     core/interfaces/model.cpp \
+    core/models/gltfmodel/nodes.cpp \
     core/transformational/camera.cpp \
     core/transformational/group.cpp \
     core/transformational/object.cpp \
     core/transformational/spotLight.cpp \
-    core/models/gltfmodel.cpp \
+    core/models/gltfmodel/gltfmodel.cpp \
+    core/models/gltfmodel/animation.cpp \
     core/utils/attachments.cpp \
     core/utils/node.cpp \
     core/utils/operations.cpp \

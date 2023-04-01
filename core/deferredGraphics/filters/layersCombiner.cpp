@@ -10,7 +10,7 @@ void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
 
 void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
     for(size_t index=0; index<attachmentsCount; index++){
-        pAttachments[index].create(&physicalDevice,&device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (index==1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),image.Extent,image.Count);
+        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (index==1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),image.Extent,image.Count);
         VkSamplerCreateInfo samplerInfo = vkDefault::samler();
         vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[index].sampler);
     }

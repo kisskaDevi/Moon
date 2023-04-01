@@ -15,14 +15,14 @@ void customFilter::setBlitFactor(const float &blitFactor){
 }
 
 void customFilter::createBufferAttachments(){
-    bufferAttachment.create(&physicalDevice,&device,image.Format,VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
+    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
     VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
     vkCreateSampler(device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
 void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
     for(size_t index=0; index<attachmentsCount; index++){
-        pAttachments[index].create(&physicalDevice,&device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
+        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
         VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
         vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
     }
@@ -33,8 +33,8 @@ void customFilter::destroy(){
 
     filterGraphics::destroy();
 
-    bufferAttachment.deleteAttachment(&device);
-    bufferAttachment.deleteSampler(&device);
+    bufferAttachment.deleteAttachment(device);
+    bufferAttachment.deleteSampler(device);
 }
 
 void customFilter::createRenderPass(){

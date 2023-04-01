@@ -16,20 +16,20 @@ object::object(uint32_t modelCount, model** model) :
 object::~object()
 {}
 
-void object::destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers)
+void object::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
-        if(buffer.map){      vkUnmapMemory(*device, buffer.memory); buffer.map = nullptr;}
-        if(buffer.instance){ vkDestroyBuffer(*device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
-        if(buffer.memory){   vkFreeMemory(*device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
+        if(buffer.map){      vkUnmapMemory(device, buffer.memory); buffer.map = nullptr;}
+        if(buffer.instance){ vkDestroyBuffer(device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
+        if(buffer.memory){   vkFreeMemory(device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
     }
     uniformBuffers.resize(0);
 }
 
 void object::destroy(VkDevice device)
 {
-    destroyUniformBuffers(&device, uniformBuffersHost);
-    destroyUniformBuffers(&device, uniformBuffersDevice);
+    destroyUniformBuffers(device, uniformBuffersHost);
+    destroyUniformBuffers(device, uniformBuffersDevice);
 
     if(descriptorPool )     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     if(descriptorSetLayout) vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr);

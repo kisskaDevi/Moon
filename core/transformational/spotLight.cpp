@@ -35,24 +35,24 @@ spotLight::~spotLight(){
     }
 }
 
-void spotLight::destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers)
+void spotLight::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
-        if(buffer.map){      vkUnmapMemory(*device, buffer.memory); buffer.map = nullptr;}
-        if(buffer.instance){ vkDestroyBuffer(*device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
-        if(buffer.memory){   vkFreeMemory(*device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
+        if(buffer.map){      vkUnmapMemory(device, buffer.memory); buffer.map = nullptr;}
+        if(buffer.instance){ vkDestroyBuffer(device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
+        if(buffer.memory){   vkFreeMemory(device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
     }
     uniformBuffers.resize(0);
 }
 
-void spotLight::destroy(VkDevice* device)
+void spotLight::destroy(VkDevice device)
 {
     destroyUniformBuffers(device, uniformBuffersHost);
     destroyUniformBuffers(device, uniformBuffersDevice);
 
-    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
-    if(bufferDescriptorSetLayout) {vkDestroyDescriptorSetLayout(*device, bufferDescriptorSetLayout,  nullptr); bufferDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(descriptorPool)      {vkDestroyDescriptorPool(*device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
+    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
+    if(bufferDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, bufferDescriptorSetLayout,  nullptr); bufferDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(descriptorPool)      {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 }
 
 void spotLight::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
@@ -151,23 +151,23 @@ bool                            spotLight::isScatteringEnable() const{return ena
 VkDescriptorSet*                spotLight::getDescriptorSets(){return descriptorSets.data();}
 VkDescriptorSet*                spotLight::getBufferDescriptorSets() {return bufferDescriptorSets.data();}
 
-void spotLight::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-       Buffer::create(  *physicalDevice,
-                        *device,
+       Buffer::create(  physicalDevice,
+                        device,
                         sizeof(LightBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
-       vkMapMemory(*device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map);
+       vkMapMemory(device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map);
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-       Buffer::create(  *physicalDevice,
-                        *device,
+       Buffer::create(  physicalDevice,
+                        device,
                         sizeof(LightBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -194,7 +194,7 @@ void spotLight::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t fram
     }
 }
 
-void spotLight::createDescriptorPool(VkDevice* device, uint32_t imageCount)
+void spotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
 {
     std::vector<VkDescriptorPoolSize> poolSize;
     poolSize.push_back(VkDescriptorPoolSize{});
@@ -210,13 +210,13 @@ void spotLight::createDescriptorPool(VkDevice* device, uint32_t imageCount)
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
         poolInfo.pPoolSizes = poolSize.data();
         poolInfo.maxSets = static_cast<uint32_t>(2*imageCount);
-    vkCreateDescriptorPool(*device, &poolInfo, nullptr, &descriptorPool);
+    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
 }
 
-void spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
+void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
 {
-    light::createTextureDescriptorSetLayout(*device,&descriptorSetLayout);
-    light::createBufferDescriptorSetLayout(*device,&bufferDescriptorSetLayout);
+    light::createTextureDescriptorSetLayout(device,&descriptorSetLayout);
+    light::createBufferDescriptorSetLayout(device,&bufferDescriptorSetLayout);
 
     descriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
@@ -225,7 +225,7 @@ void spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(*device, &allocInfo, descriptorSets.data());
+    vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data());
 
     bufferDescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> shadowLayouts(imageCount, bufferDescriptorSetLayout);
@@ -234,10 +234,10 @@ void spotLight::createDescriptorSets(VkDevice* device, uint32_t imageCount)
         shadowAllocInfo.descriptorPool = descriptorPool;
         shadowAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         shadowAllocInfo.pSetLayouts = shadowLayouts.data();
-    vkAllocateDescriptorSets(*device, &shadowAllocInfo, bufferDescriptorSets.data());
+    vkAllocateDescriptorSets(device, &shadowAllocInfo, bufferDescriptorSets.data());
 }
 
-void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture)
+void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTexture)
 {
     for (size_t i=0; i<imageCount; i++)
     {
@@ -271,7 +271,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &lightTexture;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
         std::vector<VkWriteDescriptorSet> bufferDescriptorWrites;
         bufferDescriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -282,7 +282,7 @@ void spotLight::updateDescriptorSets(VkDevice* device, uint32_t imageCount, text
             bufferDescriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             bufferDescriptorWrites.back().descriptorCount = 1;
             bufferDescriptorWrites.back().pBufferInfo = &lightBufferInfo;
-        vkUpdateDescriptorSets(*device, static_cast<uint32_t>(bufferDescriptorWrites.size()), bufferDescriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(bufferDescriptorWrites.size()), bufferDescriptorWrites.data(), 0, nullptr);
     }
 }
 

@@ -18,6 +18,16 @@
 
 #define MAX_NUM_JOINTS 128u
 
+struct BoundingBox{
+    glm::vec3 min;
+    glm::vec3 max;
+    bool valid{false};
+
+    BoundingBox() = default;
+    BoundingBox(glm::vec3 min, glm::vec3 max);
+    BoundingBox getAABB(glm::mat4 m) const;
+};
+
 struct buffer{
     VkBuffer       instance{VK_NULL_HANDLE};
     VkDeviceMemory memory{VK_NULL_HANDLE};
@@ -30,25 +40,15 @@ struct buffer{
     }
 };
 
-struct BoundingBox{
-    glm::vec3 min;
-    glm::vec3 max;
-    bool valid{false};
-
-    BoundingBox() = default;
-    BoundingBox(glm::vec3 min, glm::vec3 max);
-    BoundingBox getAABB(glm::mat4 m) const;
-};
-
 struct Mesh{
     struct Primitive{
         uint32_t firstIndex;
         uint32_t indexCount;
         uint32_t vertexCount;
-        Material& material;
+        Material* material;
         bool hasIndices;
         BoundingBox bb;
-        Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material);
+        Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material);
     };
 
     struct UniformBuffer : public buffer {
@@ -99,7 +99,7 @@ struct Animation
     struct AnimationChannel{
         enum PathType { TRANSLATION, ROTATION, SCALE };
         PathType path;
-        Node *node;
+        Node* node;
         uint32_t samplerIndex;
     };
 
@@ -130,9 +130,9 @@ private:
 
     std::vector<Node*>              nodes;
     std::vector<Skin*>              skins;
-    std::vector<Animation>          animations;
     std::vector<texture>            textures;
     std::vector<Material>           materials;
+    std::vector<Animation>          animations;
 
     void loadNode(VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
     void loadSkins(tinygltf::Model& gltfModel);
@@ -140,6 +140,7 @@ private:
     void loadMaterials(tinygltf::Model& gltfModel);
     void loadAnimations(tinygltf::Model& gltfModel);
 
+    Node* nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes);
 public:
     gltfModel(std::string filename);
 

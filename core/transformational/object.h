@@ -67,7 +67,7 @@ protected:
 
 private:
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
-    void destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers);
+    void destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
     object();

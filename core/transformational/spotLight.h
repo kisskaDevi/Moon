@@ -63,13 +63,13 @@ private:
     std::vector<buffer> uniformBuffersDevice;
 
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
-    void destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers);
+    void destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
     spotLight(bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     spotLight(const std::string & TEXTURE_PATH, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     ~spotLight();
-    void destroy(VkDevice* device) override;
+    void destroy(VkDevice device) override;
 
     void                setGlobalTransform(const glm::mat4 & transform) override;
     void                translate(const glm::vec3 & translate) override;
@@ -100,12 +100,12 @@ public:
     VkDescriptorSet*    getDescriptorSets() override;
     VkDescriptorSet*    getBufferDescriptorSets() override;
 
-    void                createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) override;
+    void                createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) override;
     void                updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 
-    void                createDescriptorPool(VkDevice* device, uint32_t imageCount) override;
-    void                createDescriptorSets(VkDevice* device, uint32_t imageCount) override;
-    void                updateDescriptorSets(VkDevice* device, uint32_t imageCount, texture* emptyTexture) override;
+    void                createDescriptorPool(VkDevice device, uint32_t imageCount) override;
+    void                createDescriptorSets(VkDevice device, uint32_t imageCount) override;
+    void                updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTexture) override;
 };
 
 class isotropicLight: public transformational

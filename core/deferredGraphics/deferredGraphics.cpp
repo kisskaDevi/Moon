@@ -33,7 +33,7 @@ deferredGraphics::~deferredGraphics()
 void deferredGraphics::destroyEmptyTextures()
 {
     if(emptyTexture){
-        emptyTexture->destroy(&device.getLogical());
+        emptyTexture->destroy(device.getLogical());
         emptyTexture = nullptr;
     }
 }
@@ -77,33 +77,33 @@ void deferredGraphics::destroyGraphics()
         layer.destroy();
     }
 
-    blurAttachment.deleteAttachment(&device.getLogical());
-    blurAttachment.deleteSampler(&device.getLogical());
+    blurAttachment.deleteAttachment(device.getLogical());
+    blurAttachment.deleteSampler(device.getLogical());
 
     for(auto& attachment: blitAttachments){
-        attachment.deleteAttachment(&device.getLogical());
-        attachment.deleteSampler(&device.getLogical());
+        attachment.deleteAttachment(device.getLogical());
+        attachment.deleteSampler(device.getLogical());
     }
 
-    ssaoAttachment.deleteAttachment(&device.getLogical());
-    ssaoAttachment.deleteSampler(&device.getLogical());
+    ssaoAttachment.deleteAttachment(device.getLogical());
+    ssaoAttachment.deleteSampler(device.getLogical());
 
-    sslrAttachment.deleteAttachment(&device.getLogical());
-    sslrAttachment.deleteSampler(&device.getLogical());
+    sslrAttachment.deleteAttachment(device.getLogical());
+    sslrAttachment.deleteSampler(device.getLogical());
 
-    skyboxAttachment.deleteAttachment(&device.getLogical());
-    skyboxAttachment.deleteSampler(&device.getLogical());
+    skyboxAttachment.deleteAttachment(device.getLogical());
+    skyboxAttachment.deleteSampler(device.getLogical());
 
     for(auto& attachment: layersCombinedAttachment){
-        attachment.deleteAttachment(&device.getLogical());
-        attachment.deleteSampler(&device.getLogical());
+        attachment.deleteAttachment(device.getLogical());
+        attachment.deleteSampler(device.getLogical());
     }
 
-    deferredAttachments.deleteAttachment(&device.getLogical());
-    deferredAttachments.deleteSampler(&device.getLogical());
+    deferredAttachments.deleteAttachment(device.getLogical());
+    deferredAttachments.deleteSampler(device.getLogical());
     for(auto& attachment: transparentLayersAttachments){
-        attachment.deleteAttachment(&device.getLogical());
-        attachment.deleteSampler(&device.getLogical());
+        attachment.deleteAttachment(device.getLogical());
+        attachment.deleteSampler(device.getLogical());
     }
 
     for (auto& buffer: storageBuffersHost){
@@ -493,10 +493,10 @@ void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
     emptyTexture->createTextureImage(device.instance, device.getLogical(), commandBuffer);
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-    emptyTexture->destroyStagingBuffer(&device.getLogical());
+    emptyTexture->destroyStagingBuffer(device.getLogical());
 
-    emptyTexture->createTextureImageView(&device.getLogical());
-    emptyTexture->createTextureSampler(&device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+    emptyTexture->createTextureImageView(device.getLogical());
+    emptyTexture->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
 
     DeferredGraphics.setEmptyTexture(emptyTexture);
     for(uint32_t i=0;i<TransparentLayers.size();i++)
@@ -542,9 +542,9 @@ void deferredGraphics::bindLightSource(light* lightSource){
         VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
         lightSource->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
         SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-        lightSource->getTexture()->destroyStagingBuffer(&device.getLogical());
-        lightSource->getTexture()->createTextureImageView(&device.getLogical());
-        lightSource->getTexture()->createTextureSampler(&device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        lightSource->getTexture()->destroyStagingBuffer(device.getLogical());
+        lightSource->getTexture()->createTextureImageView(device.getLogical());
+        lightSource->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
     }
     if(lightSource->isShadowEnable()){
         Shadow.addLightSource(lightSource);
@@ -553,11 +553,11 @@ void deferredGraphics::bindLightSource(light* lightSource){
         Shadow.createFramebuffers(lightSource);
     }
 
-    lightSource->createUniformBuffers(&device.instance,&device.getLogical(),imageCount);
+    lightSource->createUniformBuffers(device.instance,device.getLogical(),imageCount);
 
-    lightSource->createDescriptorPool(&device.getLogical(), imageCount);
-    lightSource->createDescriptorSets(&device.getLogical(), imageCount);
-    lightSource->updateDescriptorSets(&device.getLogical(), imageCount, emptyTexture);
+    lightSource->createDescriptorPool(device.getLogical(), imageCount);
+    lightSource->createDescriptorSets(device.getLogical(), imageCount);
+    lightSource->updateDescriptorSets(device.getLogical(), imageCount, emptyTexture);
 
     DeferredGraphics.bindLightSource(lightSource);
     for(auto& TransparentLayer: TransparentLayers){
@@ -569,10 +569,10 @@ void deferredGraphics::bindLightSource(light* lightSource){
 
 void deferredGraphics::removeLightSource(light* lightSource){
     if(lightSource->getAttachments()){
-        lightSource->getAttachments()->deleteAttachment(&device.getLogical());
-        lightSource->getAttachments()->deleteSampler(&device.getLogical());
+        lightSource->getAttachments()->deleteAttachment(device.getLogical());
+        lightSource->getAttachments()->deleteSampler(device.getLogical());
     }
-    lightSource->destroy(&device.getLogical());
+    lightSource->destroy(device.getLogical());
 
     DeferredGraphics.removeLightSource(lightSource);
     for(auto& TransparentLayer: TransparentLayers){
@@ -580,7 +580,7 @@ void deferredGraphics::removeLightSource(light* lightSource){
     }
 
     if(lightSource->getTexture()){
-        lightSource->getTexture()->destroy(&device.getLogical());
+        lightSource->getTexture()->destroy(device.getLogical());
     }
     Shadow.removeLightSource(lightSource);
 
@@ -622,9 +622,9 @@ void deferredGraphics::bindSkyBoxObject(skyboxObject* object){
         VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
         object->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
         SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-        object->getTexture()->createTextureImageView(&device.getLogical());
-        object->getTexture()->createTextureSampler(&device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-        object->getTexture()->destroyStagingBuffer(&device.getLogical());
+        object->getTexture()->createTextureImageView(device.getLogical());
+        object->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        object->getTexture()->destroyStagingBuffer(device.getLogical());
     }
 
     object->createDescriptorPool(device.getLogical(),imageCount);
@@ -636,7 +636,7 @@ void deferredGraphics::bindSkyBoxObject(skyboxObject* object){
 bool deferredGraphics::removeSkyBoxObject(skyboxObject* object){
     object->destroy(device.getLogical());
     if(object->getTexture()){
-        object->getTexture()->destroy(&device.getLogical());
+        object->getTexture()->destroy(device.getLogical());
     }
 
     return Skybox.removeObject(object);

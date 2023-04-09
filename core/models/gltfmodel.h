@@ -42,11 +42,10 @@ struct buffer{
 
 struct Mesh{
     struct Primitive{
-        uint32_t firstIndex;
-        uint32_t indexCount;
-        uint32_t vertexCount;
-        Material* material;
-        bool hasIndices;
+        uint32_t firstIndex{0};
+        uint32_t indexCount{0};
+        uint32_t vertexCount{0};
+        Material* material{nullptr};
         BoundingBox bb;
         Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material);
     };

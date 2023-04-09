@@ -77,7 +77,7 @@ void Node::destroy(VkDevice device)
 }
 
 Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material)
-    : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material), hasIndices(indexCount > 0)
+    : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material)
 {}
 
 Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, glm::mat4 matrix)

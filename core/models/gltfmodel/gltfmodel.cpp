@@ -492,7 +492,7 @@ void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipe
 
             vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
 
-            if (primitive->hasIndices){
+            if (primitive->indexCount > 0){
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
             }else{
                 vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);

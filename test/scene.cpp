@@ -57,17 +57,24 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject)
     cameras = cameraObject;
 
     skyboxObject1 = new skyboxObject(SKYBOX);
-        skyboxObject1->scale(glm::vec3(200.0f,200.0f,200.0f));
-    graphics->bindSkyBoxObject(skyboxObject1);
+    skyboxObject1->scale(glm::vec3(200.0f,200.0f,200.0f));
     skyboxObject1->setColorFactor(glm::vec4(0.5));
+    graphics->bindSkyBoxObject(skyboxObject1);
 
     skyboxObject2 = new skyboxObject(SKYBOX1);
-        skyboxObject2->scale(glm::vec3(200.0f,200.0f,200.0f));
+    skyboxObject2->scale(glm::vec3(200.0f,200.0f,200.0f));
     graphics->bindSkyBoxObject(skyboxObject2);
 
     loadModels();
     createLight();
     createObjects();
+
+    groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
+    groups.at(1)->translate(glm::vec3(0.0f,0.0f,3.0f));
+    groups.at(2)->translate(glm::vec3(5.0f,0.0f,5.0f));
+    groups.at(3)->translate(glm::vec3(-5.0f,0.0f,5.0f));
+    groups.at(4)->translate(glm::vec3(10.0f,0.0f,5.0f));
+    groups.at(5)->translate(glm::vec3(-10.0f,0.0f,5.0f));
 }
 
 void scene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
@@ -95,6 +102,7 @@ void scene::destroyScene()
     for(auto& lightSource: lightSources){
         graphics->removeLightSource(lightSource);
     }
+
     for(auto& lightPoint: lightPoints){
         delete lightPoint;
     }
@@ -105,12 +113,13 @@ void scene::destroyScene()
     graphics->removeSkyBoxObject(skyboxObject2);
     delete skyboxObject2;
 
-    for (size_t i =0 ;i<gltfModel.size();i++)
-        graphics->destroyModel(gltfModel.at(i));
+    for (auto& model: gltfModel){
+        graphics->destroyModel(model);
+    }
 
-    for (size_t i=0 ;i<object3D.size();i++){
-        graphics->removeObject(object3D[i]);
-        delete object3D.at(i);
+    for (auto& object: object3D){
+        graphics->removeObject(object);
+        delete object;
     }
 
     graphics->destroyEmptyTextures();
@@ -205,101 +214,73 @@ void scene::createLight()
 
 void scene::createObjects()
 {
-    uint32_t index=0;
-    object3D.push_back( new object(gltfModel.at(0), 0, 3));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setOutliningColor(glm::vec4(0.0f,0.5f,0.8f,1.0f));
-    object3D.at(index)->setOutliningWidth(0.05f);
-    object3D.at(index)->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
-    object3D.at(index)->translate(glm::vec3(3.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
-    index++;
+    object3D.push_back( new object(gltfModel[0], 0, 3));
+    object3D.back()->setOutliningColor(glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    object3D.back()->setOutliningWidth(0.05f);
+    object3D.back()->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
+    object3D.back()->translate(glm::vec3(3.0f,0.0f,0.0f));
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->scale(glm::vec3(0.2f,0.2f,0.2f));
+    graphics->bindBaseObject(object3D.back());
 
-    object3D.push_back(new object(gltfModel.at(0), 3, 3));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setOutliningColor(glm::vec4(1.0f,0.5f,0.8f,1.0f));
-    object3D.at(index)->setOutliningWidth(0.05f);
-    object3D.at(index)->setConstantColor(glm::vec4(0.0,0.0,0.0,-0.7));
-    object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
-    object3D.at(index)->animationTimer = 1.0f;
-    object3D.at(index)->animationIndex = 1;
-    index++;
+    object3D.push_back(new object(gltfModel[0], 3, 3));
+    object3D.back()->setOutliningColor(glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    object3D.back()->setOutliningWidth(0.05f);
+    object3D.back()->setConstantColor(glm::vec4(0.0,0.0,0.0,-0.7));
+    object3D.back()->translate(glm::vec3(-3.0f,0.0f,0.0f));
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->scale(glm::vec3(0.2f,0.2f,0.2f));
+    object3D.back()->animationTimer = 1.0f;
+    object3D.back()->animationIndex = 1;
+    graphics->bindBaseObject(object3D.back());
 
     object3D.push_back(new object(gltfModel.at(3)));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setOutliningColor(glm::vec4(0.7f,0.5f,0.2f,1.0f));
-    object3D.at(index)->setOutliningWidth(0.025f);
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(3.0f));
-    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,0.0f,-0.8f));
-    object3D.at(index)->animationTimer = 0.0f;
-    object3D.at(index)->animationIndex = 0;
-    object *Duck = object3D.at(index);
-    index++;
+    object3D.back()->setOutliningColor(glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    object3D.back()->setOutliningWidth(0.025f);
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->scale(glm::vec3(3.0f));
+    object3D.back()->setConstantColor(glm::vec4(0.0f,0.0f,0.0f,-0.8f));
+    object3D.back()->animationTimer = 0.0f;
+    object3D.back()->animationIndex = 0;
+    graphics->bindBaseObject(object3D.back());
+    groups.at(1)->addObject(object3D.back());
 
     object3D.push_back(new object(gltfModel.at(2)));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
-    index++;
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->scale(glm::vec3(3.0f,3.0f,3.0f));
+    graphics->bindBaseObject(object3D.back());
 
     object3D.push_back(new object(gltfModel.at(1)));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
-    object3D.at(index)->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    object *Box0 = object3D.at(index);
-    index++;
+    object3D.back()->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
+    object3D.back()->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    graphics->bindBaseObject(object3D.back());
+    groups.at(0)->addObject(object3D.back());
 
     object3D.push_back(new object(gltfModel.at(4)));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,-0.8f));
-    object3D.at(index)->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object *UFO1 = object3D.at(index);
-    index++;
+    object3D.back()->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,-0.8f));
+    object3D.back()->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    graphics->bindBaseObject(object3D.back());
+    groups.at(2)->addObject(object3D.back());
 
     object3D.push_back(new object(gltfModel.at(4)));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,-0.8f));
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object *UFO2 = object3D.at(index);
-    index++;
+    object3D.back()->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,-0.8f));
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    graphics->bindBaseObject(object3D.back());
+    groups.at(3)->addObject(object3D.back());
 
     object3D.push_back(new object(gltfModel.at(4)));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,-0.8f));
-    object3D.at(index)->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object *UFO3 = object3D.at(index);
-    index++;
+    object3D.back()->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,-0.8f));
+    object3D.back()->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    graphics->bindBaseObject(object3D.back());
+    groups.at(4)->addObject(object3D.back());
 
     object3D.push_back(new object(gltfModel.at(4)));
-    graphics->bindBaseObject(object3D.at(index));
-    object3D.at(index)->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,-0.8f));
-    object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object *UFO4 = object3D.at(index);
-    index++;
-
-    groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
-    groups.at(0)->addObject(Box0);
-
-    groups.at(1)->translate(glm::vec3(0.0f,0.0f,3.0f));
-    groups.at(1)->addObject(Duck);
-
-    groups.at(2)->translate(glm::vec3(5.0f,0.0f,5.0f));
-    groups.at(2)->addObject(UFO1);
-
-    groups.at(3)->translate(glm::vec3(-5.0f,0.0f,5.0f));
-    groups.at(3)->addObject(UFO2);
-
-    groups.at(4)->translate(glm::vec3(10.0f,0.0f,5.0f));
-    groups.at(4)->addObject(UFO3);
-
-    groups.at(5)->translate(glm::vec3(-10.0f,0.0f,5.0f));
-    groups.at(5)->addObject(UFO4);
+    object3D.back()->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,-0.8f));
+    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    graphics->bindBaseObject(object3D.back());
+    groups.at(5)->addObject(object3D.back());
 }
 
 void scene::mouseEvent(float frameTime)

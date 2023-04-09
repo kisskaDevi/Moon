@@ -216,9 +216,9 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
         for(auto object: shadow.objects){
             if(VkDeviceSize offsets = 0;object->getEnable()&&object->getEnableShadow()){
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel(frameNumber)->getVertices(), &offsets);
-                if (object->getModel(frameNumber)->getIndices() != VK_NULL_HANDLE){
-                    vkCmdBindIndexBuffer(commandBuffer, *object->getModel(frameNumber)->getIndices(), 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel()->getVertices(), &offsets);
+                if (object->getModel()->getIndices() != VK_NULL_HANDLE){
+                    vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
                 }
 
                 std::vector<VkDescriptorSet> descriptorSets = {shadow.lightSources[attachmentNumber]->getBufferDescriptorSets()[frameNumber],object->getDescriptorSet()[frameNumber]};
@@ -226,7 +226,8 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
                 MaterialBlock material{};
 
                 uint32_t primitives = 0;
-                object->getModel(frameNumber)->render(
+                object->getModel()->render(
+                            object->getInstanceNumber(frameNumber),
                             commandBuffer,
                             shadow.PipelineLayout,
                             static_cast<uint32_t>(descriptorSets.size()),

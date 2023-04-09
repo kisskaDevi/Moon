@@ -37,34 +37,27 @@ namespace {
         return VK_FILTER_LINEAR;
     }
 
-    void calculateNodeTangent(Node* node, std::vector<model::Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer){
-        if (node->mesh) {
-            for (Mesh::Primitive* primitive : node->mesh->primitives) {
-                for(uint32_t i = primitive->firstIndex; i < primitive->firstIndex + primitive->indexCount; i += 3){
-                    glm::vec3 dv1   = vertexBuffer[indexBuffer[i+1]].pos - vertexBuffer[indexBuffer[i+0]].pos;
-                    glm::vec3 dv2   = vertexBuffer[indexBuffer[i+2]].pos - vertexBuffer[indexBuffer[i+0]].pos;
+    void calculateNodeTangent(std::vector<model::Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer){
+        for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
+            glm::vec3 dv1   = vertexBuffer[indexBuffer[i+1]].pos - vertexBuffer[indexBuffer[i+0]].pos;
+            glm::vec3 dv2   = vertexBuffer[indexBuffer[i+2]].pos - vertexBuffer[indexBuffer[i+0]].pos;
 
-                    glm::vec2 duv1  = vertexBuffer[indexBuffer[i+1]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
-                    glm::vec2 duv2  = vertexBuffer[indexBuffer[i+2]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
+            glm::vec2 duv1  = vertexBuffer[indexBuffer[i+1]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
+            glm::vec2 duv2  = vertexBuffer[indexBuffer[i+2]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
 
-                    float det = 1.0f/(duv1.x*duv2.y - duv1.y*duv2.x);
+            float det = 1.0f/(duv1.x*duv2.y - duv1.y*duv2.x);
 
-                    glm::vec3 tangent = glm::normalize( det*(duv2.y*dv1-duv1.y*dv2));
-                    glm::vec3 bitangent = glm::normalize( det*(duv1.x*dv2-duv2.x*dv1));
+            glm::vec3 tangent = glm::normalize( det*(duv2.y*dv1-duv1.y*dv2));
+            glm::vec3 bitangent = glm::normalize( det*(duv1.x*dv2-duv2.x*dv1));
 
-                    if(dot(glm::cross(tangent,bitangent),vertexBuffer[indexBuffer[i+0]].normal)<0.0f){
-                        tangent = -tangent;
-                    }
-
-                    for(uint32_t index = 0; index < 3; index++){
-                        vertexBuffer[indexBuffer[i+index]].tangent      = glm::normalize(tangent - vertexBuffer[indexBuffer[i+index]].normal * glm::dot(vertexBuffer[indexBuffer[i+index]].normal, tangent));
-                        vertexBuffer[indexBuffer[i+index]].bitangent    = glm::normalize(glm::cross(vertexBuffer[indexBuffer[i+index]].normal, vertexBuffer[indexBuffer[i+index]].tangent));
-                    }
-                }
+            if(dot(glm::cross(tangent,bitangent),vertexBuffer[indexBuffer[i+0]].normal)<0.0f){
+                tangent = -tangent;
             }
-        }
-        for (auto& child : node->children) {
-            calculateNodeTangent(child, vertexBuffer,indexBuffer);
+
+            for(uint32_t index = 0; index < 3; index++){
+                vertexBuffer[indexBuffer[i+index]].tangent      = glm::normalize(tangent - vertexBuffer[indexBuffer[i+index]].normal * glm::dot(vertexBuffer[indexBuffer[i+index]].normal, tangent));
+                vertexBuffer[indexBuffer[i+index]].bitangent    = glm::normalize(glm::cross(vertexBuffer[indexBuffer[i+index]].normal, vertexBuffer[indexBuffer[i+index]].tangent));
+            }
         }
     }
 
@@ -153,6 +146,17 @@ namespace {
         }
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+
+    void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, size_t bufferSize, void* data, VkBufferUsageFlagBits usage, buffer& staging, buffer& deviceLocal){
+        Buffer::create(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging.instance, &staging.memory);
+        Buffer::create(physicalDevice, device, bufferSize, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &deviceLocal.instance, &deviceLocal.memory);
+
+        vkMapMemory(device, staging.memory, 0, bufferSize, 0, &staging.map);
+            std::memcpy(staging.map, data, bufferSize);
+        vkUnmapMemory(device, staging.memory);
+
+        Buffer::copy(commandBuffer, bufferSize, staging.instance, deviceLocal.instance);
+    };
 }
 
 BoundingBox::BoundingBox(glm::vec3 min, glm::vec3 max)
@@ -169,9 +173,11 @@ BoundingBox BoundingBox::getAABB(glm::mat4 m) const {
         + glm::max(glm::vec3(m[2]) * this->min.z, glm::vec3(m[2]) * this->max.z));
 }
 
-gltfModel::gltfModel(std::string filename)
-    : filename(filename)
-{}
+gltfModel::gltfModel(std::string filename, uint32_t instanceCount)
+    : filename(filename), instanceCount(instanceCount)
+{
+    instances.resize(instanceCount);
+}
 
 void gltfModel::destroy(VkDevice device)
 {
@@ -193,19 +199,21 @@ void gltfModel::destroy(VkDevice device)
         materialDescriptorSetLayout = VK_NULL_HANDLE;
     }
 
-    for (auto& node : nodes){
-        node->destroy(device);
-        delete node;
-    }
-    for (auto& skin : skins){
-        delete skin;
+    for(auto& instance : instances){
+        for (auto& node : instance.nodes){
+            node->destroy(device);
+            delete node;
+        }
+        for (auto& skin : instance.skins){
+            delete skin;
+        }
+        instance.nodes.clear();
+        instance.skins.clear();
+        instance.animations.clear();
     }
     for (auto texture : textures){
         texture.destroy(device);
     }
-    nodes.clear();
-    skins.clear();
-    animations.clear();
     textures.clear();
     materials.clear();
 };
@@ -229,31 +237,33 @@ const VkBuffer* gltfModel::getIndices() const{
 }
 
 void gltfModel::loadSkins(tinygltf::Model &gltfModel){
-    for (const tinygltf::Skin& source: gltfModel.skins) {
-        Skin* newSkin = new Skin{};
+    for(auto& instance : instances){
+        for (const tinygltf::Skin& source: gltfModel.skins) {
+            Skin* newSkin = new Skin{};
 
-        for (int jointIndex : source.joints) {
-            if (Node* node = nodeFromIndex(jointIndex, nodes); node) {
-                newSkin->joints.push_back(node);
+            for (int jointIndex : source.joints) {
+                if (Node* node = nodeFromIndex(jointIndex, instance.nodes); node) {
+                    newSkin->joints.push_back(node);
+                }
             }
-        }
 
-        if (source.inverseBindMatrices > -1) {
-            const tinygltf::Accessor& accessor = gltfModel.accessors[source.inverseBindMatrices];
-            const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
-            const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
+            if (source.inverseBindMatrices > -1) {
+                const tinygltf::Accessor& accessor = gltfModel.accessors[source.inverseBindMatrices];
+                const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
 
-            newSkin->inverseBindMatrices.resize(accessor.count);
-            std::memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
-        }
-
-        for (const auto& node: gltfModel.nodes) {
-            if(node.skin == &source - &gltfModel.skins[0]){
-                nodeFromIndex(&node - &gltfModel.nodes[0], nodes)->skin = newSkin;
+                newSkin->inverseBindMatrices.resize(accessor.count);
+                std::memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
             }
-        }
 
-        skins.push_back(newSkin);
+            for (const auto& node: gltfModel.nodes) {
+                if(node.skin == &source - &gltfModel.skins[0]){
+                    nodeFromIndex(&node - &gltfModel.nodes[0], instance.nodes)->skin = newSkin;
+                }
+            }
+
+            instance.skins.push_back(newSkin);
+        }
     }
 }
 
@@ -372,32 +382,30 @@ void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
         loadTextures(physicalDevice,device,commandBuffer,gltfModel);
         loadMaterials(gltfModel);
 
+        for(uint32_t instanceNumber = 0; instanceNumber < instanceCount; instanceNumber++){
+            uint32_t indexStart = 0;
+            for (const auto& nodeIndex: gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0].nodes) {
+                loadNode(instanceNumber, physicalDevice, device, nullptr, nodeIndex, gltfModel, indexStart);
+            }
+        }
+
         std::vector<uint32_t> indexBuffer;
         std::vector<Vertex> vertexBuffer;
-
-        for (const auto& node: gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0].nodes) {
-            loadNode(physicalDevice, device, nullptr, gltfModel.nodes[node], node, gltfModel, indexBuffer, vertexBuffer);
+        for (const auto& nodeIndex: gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0].nodes) {
+            loadVertexBuffer(gltfModel.nodes[nodeIndex], gltfModel, indexBuffer, vertexBuffer);
         }
+        calculateNodeTangent(vertexBuffer, indexBuffer);
+
         loadSkins(gltfModel);
         if (gltfModel.animations.size() > 0) {
             loadAnimations(gltfModel);
         }
 
-        for (auto& node : nodes) {
-            calculateNodeTangent(node, vertexBuffer, indexBuffer);
-            node->update();
+        for(auto& instance : instances){
+            for (auto& node : instance.nodes) {
+                node->update();
+            }
         }
-
-        auto createBuffer = [](VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, size_t bufferSize, void* data, VkBufferUsageFlagBits usage, buffer& staging, buffer& deviceLocal){
-            Buffer::create(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging.instance, &staging.memory);
-            Buffer::create(physicalDevice, device, bufferSize, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &deviceLocal.instance, &deviceLocal.memory);
-
-            vkMapMemory(device, staging.memory, 0, bufferSize, 0, &staging.map);
-                std::memcpy(staging.map, data, bufferSize);
-            vkUnmapMemory(device, staging.memory);
-
-            Buffer::copy(commandBuffer, bufferSize, staging.instance, deviceLocal.instance);
-        };
 
         createBuffer(physicalDevice, device, commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexStaging, vertices);
         createBuffer(physicalDevice, device, commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexStaging, indices);
@@ -410,8 +418,10 @@ void gltfModel::createDescriptorPool(VkDevice device)
         static_cast<void>(material);
         return count + 5;
     });
-    uint32_t meshCount = std::accumulate(nodes.begin(), nodes.end(), 0, [](const uint32_t& count, Node* node){
-        return count + node->meshCount();
+    uint32_t meshCount = std::accumulate(instances.begin(), instances.end(), 0, [](const uint32_t& count, const auto& instance){
+        return count + std::accumulate(instance.nodes.begin(), instance.nodes.end(), 0, [](const uint32_t& count, Node* node){
+            return count + node->meshCount();
+        });
     });
 
     std::vector<VkDescriptorPoolSize> poolSize;
@@ -431,8 +441,10 @@ void gltfModel::createDescriptorSet(VkDevice device, texture* emptyTexture)
     gltfModel::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
     gltfModel::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
 
-    for (auto& node : nodes){
-        createNodeDescriptorSet(device, node , descriptorPool, nodeDescriptorSetLayout);
+    for(auto& instance : instances){
+        for (auto& node : instance.nodes){
+            createNodeDescriptorSet(device, node , descriptorPool, nodeDescriptorSetLayout);
+        }
     }
 
     for (auto &material : materials){
@@ -492,8 +504,8 @@ void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipe
     }
 }
 
-void gltfModel::render(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t &primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant){
-    for (auto node: nodes){
+void gltfModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t &primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant){
+    for (auto node: instances[frameIndex].nodes){
         renderNode(node, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets, primitiveCount, pushConstantSize, pushConstantOffset, pushConstant);
     }
 }

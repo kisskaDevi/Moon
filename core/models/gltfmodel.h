@@ -120,6 +120,7 @@ class gltfModel : public model
 {
 private:
     std::string filename{};
+    uint32_t instanceCount{0};
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
@@ -128,13 +129,18 @@ private:
     VkDescriptorSetLayout           materialDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
 
-    std::vector<Node*>              nodes;
-    std::vector<Skin*>              skins;
+    struct instance{
+        std::vector<Node*> nodes;
+        std::vector<Skin*> skins;
+        std::vector<Animation> animations;
+    };
+
+    std::vector<instance>           instances;
     std::vector<texture>            textures;
     std::vector<Material>           materials;
-    std::vector<Animation>          animations;
 
-    void loadNode(VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
+    void loadNode(uint32_t instanceNumber, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);
+    void loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
     void loadSkins(tinygltf::Model& gltfModel);
     void loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel);
     void loadMaterials(tinygltf::Model& gltfModel);
@@ -142,7 +148,7 @@ private:
 
     Node* nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes);
 public:
-    gltfModel(std::string filename);
+    gltfModel(std::string filename, uint32_t instanceCount = 1);
 
     void destroy(VkDevice device) override;
     void destroyStagingBuffer(VkDevice device) override;
@@ -152,16 +158,16 @@ public:
 
     void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) override;
 
-    bool hasAnimation() const override;
-    float animationStart(uint32_t index) const override;
-    float animationEnd(uint32_t index) const override;
-    void updateAnimation(uint32_t index, float time) override;
-    void changeAnimation(uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) override;
+    bool hasAnimation(uint32_t frameIndex) const override;
+    float animationStart(uint32_t frameIndex, uint32_t index) const override;
+    float animationEnd(uint32_t frameIndex, uint32_t index) const override;
+    void updateAnimation(uint32_t frameIndex, uint32_t index, float time) override;
+    void changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) override;
 
     void createDescriptorPool(VkDevice device) override;
     void createDescriptorSet(VkDevice device, texture* emptyTexture) override;
 
-    void render(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
+    void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
 };
 
 #endif // GLTFMODEL_H

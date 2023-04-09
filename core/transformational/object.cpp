@@ -8,9 +8,10 @@
 object::object()
 {}
 
-object::object(uint32_t modelCount, model** model) :
+object::object(model* model, uint32_t firstInstance, uint32_t instanceCount) :
     pModel(model),
-    modelCount(modelCount)
+    firstInstance(firstInstance),
+    instanceCount(instanceCount)
 {}
 
 object::~object()
@@ -91,20 +92,16 @@ void object::scale(const glm::vec3 & scale)
 
 void object::updateAnimation(uint32_t imageNumber)
 {
-    if(modelCount>1){
-        if(pModel[imageNumber]->hasAnimation()){
-            if(!changeAnimationFlag){
-                if (animationTimer > pModel[imageNumber]->animationEnd(animationIndex)){
-                    animationTimer -= pModel[imageNumber]->animationEnd(animationIndex);
-                }
-                pModel[imageNumber]->updateAnimation(animationIndex, animationTimer);
-            }else{
-                pModel[imageNumber]->changeAnimation(animationIndex, newAnimationIndex, startTimer, animationTimer, changeAnimationTime);
-                if(startTimer + changeAnimationTime < animationTimer){
-                    changeAnimationFlag = false;
-                    animationTimer = pModel[imageNumber]->animationStart(animationIndex + 1);
-                    animationIndex = newAnimationIndex;
-                }
+    if(uint32_t index = getInstanceNumber(imageNumber); pModel->hasAnimation(index)){
+        if(float end = pModel->animationEnd(index, animationIndex); !changeAnimationFlag){
+            animationTimer -= animationTimer > end ? end : 0;
+            pModel->updateAnimation(index, animationIndex, animationTimer);
+        }else{
+            pModel->changeAnimation(index, animationIndex, newAnimationIndex, startTimer, animationTimer, changeAnimationTime);
+            if(startTimer + changeAnimationTime < animationTimer){
+                changeAnimationFlag = false;
+                animationIndex = newAnimationIndex;
+                animationTimer = pModel->animationStart(index, animationIndex);
             }
         }
     }
@@ -214,39 +211,45 @@ void object::createDescriptorSet(VkDevice device, uint32_t imageCount)
     }
 }
 
-void                            object::setEnable(const bool& enable)                   {this->enable = enable;}
-void                            object::setEnableShadow(const bool& enable)             {this->enableShadow = enable;}
-void                            object::setModel(model** model3D)                       {this->pModel = model3D;}
+void object::setEnable(const bool& enable) {
+    this->enable = enable;
+}
 
-void                            object::setConstantColor(const glm::vec4 &color){
+void object::setEnableShadow(const bool& enable) {
+    this->enableShadow = enable;
+}
+
+void object::setModel(model* model, uint32_t firstInstance, uint32_t instanceCount){
+    this->pModel = model;
+    this->firstInstance = firstInstance;
+    this->instanceCount = instanceCount;
+}
+
+void object::setConstantColor(const glm::vec4 &color){
     this->constantColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void                            object::setColorFactor(const glm::vec4 & color){
+void object::setColorFactor(const glm::vec4 & color){
     this->colorFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void                            object::setBloomColor(const glm::vec4 & color){
+void object::setBloomColor(const glm::vec4 & color){
     this->bloomColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void                            object::setBloomFactor(const glm::vec4 &color){
+void object::setBloomFactor(const glm::vec4 &color){
     this->bloomFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
 bool                            object::getEnable() const                               {return enable;}
 bool                            object::getEnableShadow() const                         {return enableShadow;}
-model*                          object::getModel(uint32_t index)                        {
-    model* model;
-    if(modelCount>1&&index>=modelCount){
-        model = nullptr;
-    }else if(modelCount==1){
-        model = pModel[0];
-    }else{
-        model = pModel[index];
-    }
-    return model;
+model*                          object::getModel()                                      {
+    return pModel;
+}
+
+uint32_t object::getInstanceNumber(uint32_t imageNumber) const {
+    return firstInstance + (instanceCount > imageNumber ? imageNumber : 0);
 }
 glm::vec4                       object::getConstantColor() const                        {return constantColor;}
 glm::vec4                       object::getColorFactor()   const                        {return colorFactor;}

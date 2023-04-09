@@ -47,7 +47,7 @@ private:
     skyboxObject*                                   skyboxObject1;
     skyboxObject*                                   skyboxObject2;
 
-    std::vector<std::vector<model      *>>         gltfModel;
+    std::vector<model                   *>          gltfModel;
     std::vector<object                  *>          object3D;
     std::vector<spotLight               *>          lightSources;
     std::vector<isotropicLight          *>          lightPoints;

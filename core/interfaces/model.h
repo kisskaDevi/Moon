@@ -90,16 +90,16 @@ public:
 
     virtual void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) = 0;
 
-    virtual bool hasAnimation() const = 0;
-    virtual float animationStart(uint32_t index) const = 0;
-    virtual float animationEnd(uint32_t index) const = 0;
-    virtual void updateAnimation(uint32_t index, float time) = 0;
-    virtual void changeAnimation(uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) = 0;
+    virtual bool hasAnimation(uint32_t frameIndex) const = 0;
+    virtual float animationStart(uint32_t frameIndex, uint32_t index) const = 0;
+    virtual float animationEnd(uint32_t frameIndex, uint32_t index) const = 0;
+    virtual void updateAnimation(uint32_t frameIndex, uint32_t index, float time) = 0;
+    virtual void changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) = 0;
 
     virtual void createDescriptorPool(VkDevice device) = 0;
     virtual void createDescriptorSet(VkDevice device, texture* emptyTexture) = 0;
 
-    virtual void render(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;
+    virtual void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;
 
     static void createNodeDescriptorSetLayout(
             VkDevice                        device,

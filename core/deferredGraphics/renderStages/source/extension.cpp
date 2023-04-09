@@ -100,9 +100,9 @@ void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
     for(auto object: Parent->objects){
         if(VkDeviceSize offsets = 0; object->getEnable()&&object->getOutliningEnable()){
 
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel(frameNumber)->getVertices(), &offsets);
-            if (object->getModel(frameNumber)->getIndices() != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffers, *object->getModel(frameNumber)->getIndices(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
+            if (object->getModel()->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
             std::vector<VkDescriptorSet> descriptorSets = {Parent->DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
@@ -115,7 +115,8 @@ void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
                 pushConstBlock.outlining.width = object->getOutliningWidth();
 
             uint32_t primirives = 0;
-            object->getModel(frameNumber)->render(
+            object->getModel()->render(
+                        object->getInstanceNumber(frameNumber),
                         commandBuffers,
                         PipelineLayout,
                         static_cast<uint32_t>(descriptorSets.size()),

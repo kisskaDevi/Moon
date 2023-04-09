@@ -27,8 +27,7 @@ private:
     bool                            enable{true};
     bool                            enableShadow{true};
 
-    model**                         pModel;
-    uint32_t                        modelCount{0};
+    model*                          pModel;
 
     quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>               rotation{1.0f,0.0f,0.0f,0.0f};
@@ -49,6 +48,9 @@ private:
         float                       Width{0.0f};
         glm::vec4                   Color{0.0f};
     }outlining;
+
+    uint32_t                        firstInstance{0};
+    uint32_t                        instanceCount{1};
 
 protected:
     VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
@@ -71,7 +73,7 @@ private:
     void updateModelMatrix();
 public:
     object();
-    object(uint32_t modelCount, model** model);
+    object(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
     ~object();
     void destroyUniformBuffers(VkDevice device);
     void destroy(VkDevice device);
@@ -91,14 +93,15 @@ public:
     void                scale(const glm::vec3& scale);
     void                setPosition(const glm::vec3& translate);
 
-    void                setModel(model** model3D);
+    void                setModel(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
     void                setConstantColor(const glm::vec4 & color);
     void                setColorFactor(const glm::vec4 & color);
     void                setBloomColor(const glm::vec4 & color);
     void                setBloomFactor(const glm::vec4 & color);
 
     glm::mat4x4         getModelMatrix() const;
-    model*              getModel(uint32_t index);
+    model*              getModel();
+    uint32_t            getInstanceNumber(uint32_t imageNumber) const;
     glm::vec4           getConstantColor() const;
     glm::vec4           getColorFactor() const;
 

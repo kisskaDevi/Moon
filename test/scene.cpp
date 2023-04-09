@@ -85,7 +85,7 @@ void scene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, u
     updates(frameTime);
 
     for(auto& object: object3D){
-        object->animationTimer += timeScale*frameTime;
+        object->animationTimer += timeScale * frameTime;
         object->updateAnimation(frameNumber);
     }
 }
@@ -106,8 +106,7 @@ void scene::destroyScene()
     delete skyboxObject2;
 
     for (size_t i =0 ;i<gltfModel.size();i++)
-        for (size_t j =0 ;j<gltfModel.at(i).size();j++)
-            graphics->destroyModel(gltfModel.at(i)[j]);
+        graphics->destroyModel(gltfModel.at(i));
 
     for (size_t i=0 ;i<object3D.size();i++){
         graphics->removeObject(object3D[i]);
@@ -119,51 +118,20 @@ void scene::destroyScene()
 
 void scene::loadModels()
 {
-    size_t index = 0;
+    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb",6));
+    graphics->createModel(gltfModel.back());
 
-    gltfModel.resize(6);
+    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Box.glb"));
+    graphics->createModel(gltfModel.back());
 
-    index = 0;
-        gltfModel[0].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
-        graphics->createModel(dynamic_cast<model*>(gltfModel[0].at(index)));
-    index++;
-        gltfModel[0].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
-        graphics->createModel(gltfModel[0].at(index));
-    index++;
-        gltfModel[0].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
-        graphics->createModel(gltfModel[0].at(index));
-    index++;
+    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
+    graphics->createModel(gltfModel.back());
 
-    index = 0;
-        gltfModel[1].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
-        graphics->createModel(gltfModel[1].at(index));
-    index++;
-        gltfModel[1].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
-        graphics->createModel(gltfModel[1].at(index));
-    index++;
-        gltfModel[1].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb"));
-        graphics->createModel(gltfModel[1].at(index));
-    index++;
+    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Duck.glb"));
+    graphics->createModel(gltfModel.back());
 
-    index = 0;
-        gltfModel[2].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Box.glb"));
-        graphics->createModel(gltfModel[2].at(index));
-    index++;
-
-    index = 0;
-        gltfModel[3].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
-        graphics->createModel(gltfModel[3].at(index));
-    index++;
-
-    index = 0;
-        gltfModel[4].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Duck.glb"));
-        graphics->createModel(gltfModel[4].at(index));
-    index++;
-
-    index = 0;
-        gltfModel[5].push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\RetroUFO.glb"));
-        graphics->createModel(gltfModel[5].at(index));
-    index++;
+    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\RetroUFO.glb"));
+    graphics->createModel(gltfModel.back());
 }
 
 void scene::createLight()
@@ -238,7 +206,7 @@ void scene::createLight()
 void scene::createObjects()
 {
     uint32_t index=0;
-    object3D.push_back( new object(gltfModel.at(0).size(), gltfModel.at(0).data()) );
+    object3D.push_back( new object(gltfModel.at(0), 0, 3));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setOutliningColor(glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->setOutliningWidth(0.05f);
@@ -248,11 +216,11 @@ void scene::createObjects()
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
     index++;
 
-    object3D.push_back( new object(gltfModel.at(1).size(),gltfModel.at(1).data()) );
+    object3D.push_back(new object(gltfModel.at(0), 3, 3));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setOutliningColor(glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.at(index)->setOutliningWidth(0.05f);
-    object3D.at(index)->setConstantColor(glm::vec4(1.0,0.0,0.0,-0.8));
+    object3D.at(index)->setConstantColor(glm::vec4(0.0,0.0,0.0,-0.7));
     object3D.at(index)->translate(glm::vec3(-3.0f,0.0f,0.0f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(0.2f,0.2f,0.2f));
@@ -260,7 +228,7 @@ void scene::createObjects()
     object3D.at(index)->animationIndex = 1;
     index++;
 
-    object3D.push_back( new object(gltfModel.at(4).size(),gltfModel.at(4).data()) );
+    object3D.push_back(new object(gltfModel.at(3)));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setOutliningColor(glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.at(index)->setOutliningWidth(0.025f);
@@ -272,20 +240,20 @@ void scene::createObjects()
     object *Duck = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(gltfModel.at(3).size(),gltfModel.at(3).data()) );
+    object3D.push_back(new object(gltfModel.at(2)));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.at(index)->scale(glm::vec3(3.0f,3.0f,3.0f));
     index++;
 
-    object3D.push_back( new object(gltfModel.at(2).size(),gltfModel.at(2).data()) );
+    object3D.push_back(new object(gltfModel.at(1)));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
     object3D.at(index)->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     object *Box0 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
+    object3D.push_back(new object(gltfModel.at(4)));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,-0.8f));
     object3D.at(index)->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
@@ -293,14 +261,14 @@ void scene::createObjects()
     object *UFO1 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
+    object3D.push_back(new object(gltfModel.at(4)));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,-0.8f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object *UFO2 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
+    object3D.push_back(new object(gltfModel.at(4)));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,-0.8f));
     object3D.at(index)->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
@@ -308,7 +276,7 @@ void scene::createObjects()
     object *UFO3 = object3D.at(index);
     index++;
 
-    object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
+    object3D.push_back(new object(gltfModel.at(4)));
     graphics->bindBaseObject(object3D.at(index));
     object3D.at(index)->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,-0.8f));
     object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -539,21 +507,10 @@ void scene::keyboardEvent(float frameTime)
             object3D[0]->newAnimationIndex = 0;
     }
     backTStage = glfwGetKey(window,GLFW_KEY_T);
-    if(backYStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_Y) == 0)
-    {
-        object3D.at(2)->changeAnimationFlag = true;
-        object3D.at(2)->startTimer = object3D.at(2)->animationTimer;
-        object3D.at(2)->changeAnimationTime = 0.1f;
-        if(object3D.at(2)->animationIndex<4)
-            object3D.at(2)->newAnimationIndex += 1;
-        else
-            object3D.at(2)->newAnimationIndex = 0;
-    }
-    backYStage = glfwGetKey(window,GLFW_KEY_Y);
     if(backNStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_N) == 0)
     {
         size_t index = object3D.size();
-        object3D.push_back( new object(gltfModel.at(5).size(),gltfModel.at(5).data()) );
+        object3D.push_back(new object(gltfModel.at(4)));
         graphics->bindBaseObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslation());
         object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));

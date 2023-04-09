@@ -2,131 +2,133 @@
 
 #include <iostream>
 
-bool gltfModel::hasAnimation() const {
-    return animations.size() > 0;
+bool gltfModel::hasAnimation(uint32_t frameIndex) const {
+    return instances[instanceCount > frameIndex ? frameIndex : 0].animations.size() > 0;
 }
 
-float gltfModel::animationStart(uint32_t index) const {
-    return animations[index].start;
+float gltfModel::animationStart(uint32_t frameIndex, uint32_t index) const {
+    return instances[frameIndex].animations[index].start;
 }
 
-float gltfModel::animationEnd(uint32_t index) const {
-    return animations[index].end;
+float gltfModel::animationEnd(uint32_t frameIndex, uint32_t index) const {
+    return instances[frameIndex].animations[index].end;
 }
 
 void gltfModel::loadAnimations(tinygltf::Model& gltfModel)
 {
-    for (tinygltf::Animation &anim : gltfModel.animations) {
-        Animation animation{};
+    for(auto& instance: instances){
+        for (tinygltf::Animation &anim : gltfModel.animations) {
+            Animation animation{};
 
-        // Samplers
-        for (auto &samp : anim.samplers) {
-            Animation::AnimationSampler sampler{};
+            // Samplers
+            for (auto &samp : anim.samplers) {
+                Animation::AnimationSampler sampler{};
 
-            if (samp.interpolation == "LINEAR") {
-                sampler.interpolation = Animation::AnimationSampler::InterpolationType::LINEAR;
-            }
-            if (samp.interpolation == "STEP") {
-                sampler.interpolation = Animation::AnimationSampler::InterpolationType::STEP;
-            }
-            if (samp.interpolation == "CUBICSPLINE") {
-                sampler.interpolation = Animation::AnimationSampler::InterpolationType::CUBICSPLINE;
-            }
-
-            // Read sampler input time values
-            {
-                const tinygltf::Accessor &accessor = gltfModel.accessors[samp.input];
-                const tinygltf::BufferView &bufferView = gltfModel.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer &buffer = gltfModel.buffers[bufferView.buffer];
-
-                assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-
-                const void *dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
-                const float *buf = static_cast<const float*>(dataPtr);
-                for (size_t index = 0; index < accessor.count; index++) {
-                    sampler.inputs.push_back(buf[index]);
+                if (samp.interpolation == "LINEAR") {
+                    sampler.interpolation = Animation::AnimationSampler::InterpolationType::LINEAR;
+                }
+                if (samp.interpolation == "STEP") {
+                    sampler.interpolation = Animation::AnimationSampler::InterpolationType::STEP;
+                }
+                if (samp.interpolation == "CUBICSPLINE") {
+                    sampler.interpolation = Animation::AnimationSampler::InterpolationType::CUBICSPLINE;
                 }
 
-                for (const auto& input: sampler.inputs) {
-                    animation.start = std::min(input, animation.start);
-                    animation.end = std::max(input, animation.end);
+                // Read sampler input time values
+                {
+                    const tinygltf::Accessor &accessor = gltfModel.accessors[samp.input];
+                    const tinygltf::BufferView &bufferView = gltfModel.bufferViews[accessor.bufferView];
+                    const tinygltf::Buffer &buffer = gltfModel.buffers[bufferView.buffer];
+
+                    assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+                    const void *dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
+                    const float *buf = static_cast<const float*>(dataPtr);
+                    for (size_t index = 0; index < accessor.count; index++) {
+                        sampler.inputs.push_back(buf[index]);
+                    }
+
+                    for (const auto& input: sampler.inputs) {
+                        animation.start = std::min(input, animation.start);
+                        animation.end = std::max(input, animation.end);
+                    }
                 }
-            }
 
-            // Read sampler output T/R/S values
-            {
-                const tinygltf::Accessor &accessor = gltfModel.accessors[samp.output];
-                const tinygltf::BufferView &bufferView = gltfModel.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer &buffer = gltfModel.buffers[bufferView.buffer];
+                // Read sampler output T/R/S values
+                {
+                    const tinygltf::Accessor &accessor = gltfModel.accessors[samp.output];
+                    const tinygltf::BufferView &bufferView = gltfModel.bufferViews[accessor.bufferView];
+                    const tinygltf::Buffer &buffer = gltfModel.buffers[bufferView.buffer];
 
-                assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+                    assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-                const void *dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
+                    const void *dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
 
-                switch (accessor.type) {
-                    case TINYGLTF_TYPE_VEC3: {
-                        const glm::vec3 *buf = static_cast<const glm::vec3*>(dataPtr);
-                        for (size_t index = 0; index < accessor.count; index++) {
-                            sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+                    switch (accessor.type) {
+                        case TINYGLTF_TYPE_VEC3: {
+                            const glm::vec3 *buf = static_cast<const glm::vec3*>(dataPtr);
+                            for (size_t index = 0; index < accessor.count; index++) {
+                                sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    case TINYGLTF_TYPE_VEC4: {
-                        const glm::vec4 *buf = static_cast<const glm::vec4*>(dataPtr);
-                        for (size_t index = 0; index < accessor.count; index++) {
-                            sampler.outputsVec4.push_back(buf[index]);
+                        case TINYGLTF_TYPE_VEC4: {
+                            const glm::vec4 *buf = static_cast<const glm::vec4*>(dataPtr);
+                            for (size_t index = 0; index < accessor.count; index++) {
+                                sampler.outputsVec4.push_back(buf[index]);
+                            }
+                            break;
                         }
-                        break;
+                        default: {
+                            std::cout << "unknown type" << std::endl;
+                            break;
+                        }
                     }
-                    default: {
-                        std::cout << "unknown type" << std::endl;
-                        break;
-                    }
+                }
+
+                animation.samplers.push_back(sampler);
+            }
+
+            // Channels
+            for (auto &source: anim.channels)
+            {
+                Animation::AnimationChannel channel{};
+
+                if (source.target_path == "rotation") {
+                    channel.path = Animation::AnimationChannel::PathType::ROTATION;
+                }
+                if (source.target_path == "translation") {
+                    channel.path = Animation::AnimationChannel::PathType::TRANSLATION;
+                }
+                if (source.target_path == "scale") {
+                    channel.path = Animation::AnimationChannel::PathType::SCALE;
+                }
+                if (source.target_path == "weights") {
+                    std::cout << "weights not yet supported, skipping channel" << std::endl;
+                    continue;
+                }
+                channel.samplerIndex = source.sampler;
+                if (channel.node = nodeFromIndex(source.target_node, instance.nodes); channel.node) {
+                    animation.channels.push_back(channel);
                 }
             }
 
-            animation.samplers.push_back(sampler);
+            instance.animations.push_back(animation);
         }
-
-        // Channels
-        for (auto &source: anim.channels)
-        {
-            Animation::AnimationChannel channel{};
-
-            if (source.target_path == "rotation") {
-                channel.path = Animation::AnimationChannel::PathType::ROTATION;
-            }
-            if (source.target_path == "translation") {
-                channel.path = Animation::AnimationChannel::PathType::TRANSLATION;
-            }
-            if (source.target_path == "scale") {
-                channel.path = Animation::AnimationChannel::PathType::SCALE;
-            }
-            if (source.target_path == "weights") {
-                std::cout << "weights not yet supported, skipping channel" << std::endl;
-                continue;
-            }
-            channel.samplerIndex = source.sampler;
-            if (channel.node = nodeFromIndex(source.target_node, nodes); channel.node) {
-                animation.channels.push_back(channel);
-            }
-        }
-
-        animations.push_back(animation);
     }
 }
 
-void gltfModel::updateAnimation(uint32_t index, float time)
+void gltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
 {
-    if (animations.empty()) {
+    if (instances[frameIndex].animations.empty()) {
         std::cout << ".glTF does not contain animation." << std::endl;
         return;
     }
-    if (index > static_cast<uint32_t>(animations.size()) - 1) {
+    if (index > static_cast<uint32_t>(instances[frameIndex].animations.size()) - 1) {
         std::cout << "No animation with index " << index << std::endl;
         return;
     }
-    Animation &animation = animations[index];
+    Animation &animation = instances[frameIndex].animations[index];
 
     bool updated = false;
     for (auto& channel : animation.channels) {
@@ -171,16 +173,16 @@ void gltfModel::updateAnimation(uint32_t index, float time)
         }
     }
     if (updated) {
-        for (auto &node : nodes) {
+        for (auto &node : instances[frameIndex].nodes) {
             node->update();
         }
     }
 }
 
-void gltfModel::changeAnimation(uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime)
+void gltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime)
 {
-    Animation &animationOld = animations[oldIndex];
-    Animation &animationNew = animations[newIndex];
+    Animation &animationOld = instances[frameIndex].animations[oldIndex];
+    Animation &animationNew = instances[frameIndex].animations[newIndex];
 
     bool updated = false;
     for (auto& channel : animationOld.channels) {
@@ -225,7 +227,7 @@ void gltfModel::changeAnimation(uint32_t oldIndex, uint32_t newIndex, float star
         }
     }
     if (updated) {
-        for (auto &node : nodes) {
+        for (auto &node : instances[frameIndex].nodes) {
             node->update();
         }
     }

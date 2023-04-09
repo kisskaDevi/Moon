@@ -227,9 +227,9 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
         if(VkDeviceSize offsets = 0; object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineDictionary[object->getPipelineBitMask()]);
 
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel(frameNumber)->getVertices(), &offsets);
-            if (object->getModel(frameNumber)->getIndices() != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffers, *object->getModel(frameNumber)->getIndices(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
+            if (object->getModel()->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
             object->resetPrimitiveCount();
@@ -243,7 +243,8 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
             } pushConstBlock;
             pushConstBlock.transparencyPass = transparencyPass ? 1.0f : 0.0f;
 
-            object->getModel(frameNumber)->render(
+            object->getModel()->render(
+                        object->getInstanceNumber(frameNumber),
                         commandBuffers,
                         PipelineLayoutDictionary[object->getPipelineBitMask()],
                         static_cast<uint32_t>(descriptorSets.size()),

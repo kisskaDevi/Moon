@@ -1,7 +1,8 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#ifndef BASECAMERA_H
+#define BASECAMERA_H
 
 #include <vulkan.h>
+#include "../interfaces/camera.h"
 #include "transformational.h"
 #include "quaternion.h"
 
@@ -11,7 +12,7 @@ struct UniformBufferObject{
     alignas(16) glm::vec4           eyePosition;
 };
 
-class camera : public transformational
+class baseCamera : public transformational, public camera
 {
 private:
     glm::mat4x4             projMatrix{1.0f};
@@ -37,14 +38,14 @@ protected:
     void destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers);
     void updateViewMatrix();
 public:
-    camera();
-    ~camera();
-    void destroy(VkDevice* device);
+    baseCamera();
+    ~baseCamera();
+    void destroy(VkDevice* device) override;
 
-    void setGlobalTransform(const glm::mat4 & transform);
-    void translate(const glm::vec3 & translate);
-    void rotate(const float & ang ,const glm::vec3 & ax);
-    void scale(const glm::vec3 & scale);
+    void setGlobalTransform(const glm::mat4 & transform) override;
+    void translate(const glm::vec3 & translate) override;
+    void rotate(const float & ang ,const glm::vec3 & ax) override;
+    void scale(const glm::vec3 & scale) override;
 
     void rotateX(const float & ang ,const glm::vec3 & ax);
     void rotateY(const float & ang ,const glm::vec3 & ax);
@@ -55,10 +56,11 @@ public:
     void                    setRotation(const quaternion<float>& rotation);
     void                    setRotations(const quaternion<float>& rotationX, const quaternion<float>& rotationY);
 
-    void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount);
-    void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber);
+    void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) override;
+    void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 
-    VkBuffer                getBuffer(uint32_t index)const;
+    VkBuffer                getBuffer(uint32_t index) const override;
+    VkDeviceSize            getBufferRange() const override;
     glm::vec3               getTranslation()const;
     quaternion<float>       getRotationX()const;
     quaternion<float>       getRotationY()const;
@@ -67,4 +69,4 @@ public:
     glm::mat4x4             getViewMatrix() const;
 };
 
-#endif // CAMERA_H
+#endif // BASECAMERA_H

@@ -72,10 +72,11 @@ SOURCES += \
     core/deferredGraphics/renderStages/graphics.cpp \
     core/interfaces/light.cpp \
     core/interfaces/model.cpp \
+    core/interfaces/object.cpp \
     core/models/gltfmodel/nodes.cpp \
-    core/transformational/camera.cpp \
+    core/transformational/baseCamera.cpp \
+    core/transformational/baseObject.cpp \
     core/transformational/group.cpp \
-    core/transformational/object.cpp \
     core/transformational/spotLight.cpp \
     core/models/gltfmodel/gltfmodel.cpp \
     core/models/gltfmodel/animation.cpp \
@@ -102,13 +103,15 @@ HEADERS += \
     core/deferredGraphics/filters/ssao.h \
     core/deferredGraphics/filters/sslr.h \
     core/deferredGraphics/renderStages/graphics.h \
+    core/interfaces/camera.h \
     core/interfaces/light.h \
     core/interfaces/model.h \
+    core/interfaces/object.h \
+    core/transformational/baseCamera.h \
+    core/transformational/baseObject.h \
     core/transformational/spotLight.h \
     core/transformational/transformational.h \
-    core/transformational/camera.h \
     core/transformational/group.h \
-    core/transformational/object.h \
     core/models/gltfmodel.h \
     core/utils/attachments.h \
     core/utils/node.h \

@@ -18,6 +18,7 @@
 
 class node;
 class model;
+class camera;
 
 struct StorageBufferObject{
     alignas(16) glm::vec4           mousePosition;
@@ -124,10 +125,7 @@ public:
     void        bindCameraObject(camera* cameraObject);
     void        removeCameraObject(camera* cameraObject);
 
-    void        bindSkyBoxObject(skyboxObject* object);
-    bool        removeSkyBoxObject(skyboxObject* object);
-
-    void        bindBaseObject(object* object);
+    void        bindObject(object* object);
     bool        removeObject(object* object);
 
     void        bindLightSource(light* lightSource);

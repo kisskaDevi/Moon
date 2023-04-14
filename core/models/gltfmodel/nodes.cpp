@@ -120,9 +120,9 @@ size_t Node::meshCount() const {
     });
 }
 
-void gltfModel::loadNode(uint32_t instanceNumber, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model &model, uint32_t& indexStart)
+void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model &model, uint32_t& indexStart)
 {
-    Node *newNode = new Node{};
+    Node* newNode = new Node{};
     newNode->index = nodeIndex;
     newNode->parent = parent;
     newNode->matrix = glm::mat4(1.0f);
@@ -141,7 +141,7 @@ void gltfModel::loadNode(uint32_t instanceNumber, VkPhysicalDevice physicalDevic
     }
 
     for (size_t i = 0; i < model.nodes[nodeIndex].children.size(); i++) {
-        loadNode(instanceNumber, physicalDevice, device, newNode, model.nodes[nodeIndex].children[i], model, indexStart);
+        loadNode(instance, physicalDevice, device, newNode, model.nodes[nodeIndex].children[i], model, indexStart);
     }
 
     if (model.nodes[nodeIndex].mesh > -1) {
@@ -160,8 +160,7 @@ void gltfModel::loadNode(uint32_t instanceNumber, VkPhysicalDevice physicalDevic
                                             glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]));
             newMesh->primitives.push_back(newPrimitive);
 
-            if (primitive.indices > -1)
-            {
+            if (primitive.indices > -1){
                 indexStart += model.accessors[primitive.indices > -1 ? primitive.indices : 0].count;
             }
         }
@@ -169,7 +168,7 @@ void gltfModel::loadNode(uint32_t instanceNumber, VkPhysicalDevice physicalDevic
     if (parent) {
         parent->children.push_back(newNode);
     } else {
-        instances[instanceNumber].nodes.push_back(newNode);
+        instance->nodes.push_back(newNode);
     }
 }
 

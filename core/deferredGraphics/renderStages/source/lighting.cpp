@@ -1,6 +1,6 @@
 #include "../graphics.h"
 #include "../../../utils/vkdefault.h"
-#include "../../../transformational/camera.h"
+#include "../../../interfaces/camera.h"
 #include "../../../interfaces/light.h"
 
 #include <iostream>
@@ -111,7 +111,7 @@ void graphics::updateLightingDescriptorSets(camera* cameraObject)
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
+            bufferInfo.range = cameraObject->getBufferRange();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for(auto& imageInfo: imageInfos){

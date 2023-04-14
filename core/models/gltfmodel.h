@@ -119,7 +119,6 @@ class gltfModel : public model
 {
 private:
     std::string filename{};
-    uint32_t instanceCount{0};
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
@@ -138,7 +137,7 @@ private:
     std::vector<texture>            textures;
     std::vector<Material>           materials;
 
-    void loadNode(uint32_t instanceNumber, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);
+    void loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);
     void loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
     void loadSkins(tinygltf::Model& gltfModel);
     void loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel);

@@ -3,7 +3,7 @@
 #include <iostream>
 
 bool gltfModel::hasAnimation(uint32_t frameIndex) const {
-    return instances[instanceCount > frameIndex ? frameIndex : 0].animations.size() > 0;
+    return instances[instances.size() > frameIndex ? frameIndex : 0].animations.size() > 0;
 }
 
 float gltfModel::animationStart(uint32_t frameIndex, uint32_t index) const {

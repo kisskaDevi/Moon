@@ -174,7 +174,7 @@ BoundingBox BoundingBox::getAABB(glm::mat4 m) const {
 }
 
 gltfModel::gltfModel(std::string filename, uint32_t instanceCount)
-    : filename(filename), instanceCount(instanceCount)
+    : filename(filename)
 {
     instances.resize(instanceCount);
 }
@@ -382,10 +382,10 @@ void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
         loadTextures(physicalDevice,device,commandBuffer,gltfModel);
         loadMaterials(gltfModel);
 
-        for(uint32_t instanceNumber = 0; instanceNumber < instanceCount; instanceNumber++){
+        for(auto& instance: instances){
             uint32_t indexStart = 0;
             for (const auto& nodeIndex: gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0].nodes) {
-                loadNode(instanceNumber, physicalDevice, device, nullptr, nodeIndex, gltfModel, indexStart);
+                loadNode(&instance, physicalDevice, device, nullptr, nodeIndex, gltfModel, indexStart);
             }
         }
 

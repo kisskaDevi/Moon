@@ -9,9 +9,9 @@ class model;
 class graphicsManager;
 class spotLight;
 class isotropicLight;
-class object;
+class baseObject;
 class group;
-class camera;
+class baseCamera;
 class skyboxObject;
 class GLFWwindow;
 
@@ -43,12 +43,12 @@ private:
     uint32_t    controledGroup = 0;
     uint32_t    lightPointer = 10;
 
-    camera*                                         cameras;
+    baseCamera*                                         cameras;
     skyboxObject*                                   skyboxObject1;
     skyboxObject*                                   skyboxObject2;
 
     std::vector<model                   *>          gltfModel;
-    std::vector<object                  *>          object3D;
+    std::vector<baseObject                  *>          object3D;
     std::vector<spotLight               *>          lightSources;
     std::vector<isotropicLight          *>          lightPoints;
     std::vector<group                   *>          groups;
@@ -70,7 +70,7 @@ private:
     void createObjects();
 public:
     scene(graphicsManager *app, deferredGraphics* graphics, GLFWwindow* window, std::string ExternalPath);
-    void createScene(uint32_t WIDTH, uint32_t HEIGHT, camera* cameraObject);
+    void createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObject);
     void updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
     void destroyScene();
 

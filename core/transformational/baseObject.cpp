@@ -1,23 +1,17 @@
-#include "object.h"
+#include "baseObject.h"
 #include "../utils/operations.h"
 #include "../interfaces/model.h"
 #include "dualQuaternion.h"
 
 #include <cstring>
 
-object::object()
-{}
-
-object::object(model* model, uint32_t firstInstance, uint32_t instanceCount) :
+baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCount) :
     pModel(model),
     firstInstance(firstInstance),
     instanceCount(instanceCount)
 {}
 
-object::~object()
-{}
-
-void object::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
+void baseObject::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
         if(buffer.map){      vkUnmapMemory(device, buffer.memory); buffer.map = nullptr;}
@@ -27,7 +21,7 @@ void object::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniform
     uniformBuffers.resize(0);
 }
 
-void object::destroy(VkDevice device)
+void baseObject::destroy(VkDevice device)
 {
     destroyUniformBuffers(device, uniformBuffersHost);
     destroyUniformBuffers(device, uniformBuffersDevice);
@@ -36,19 +30,19 @@ void object::destroy(VkDevice device)
     if(descriptorSetLayout) vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr);
 }
 
-void object::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
+void baseObject::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
         buffer.updateFlag = true;
     }
 }
 
-uint8_t object::getPipelineBitMask() const
+uint8_t baseObject::getPipelineBitMask() const
 {
-    return (outlining.Enable<<0);
+    return (outlining.Enable<<4)|(0x0);
 }
 
-void object::updateModelMatrix()
+void baseObject::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
@@ -59,38 +53,38 @@ void object::updateModelMatrix()
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void object::setGlobalTransform(const glm::mat4x4 & transform)
+void baseObject::setGlobalTransform(const glm::mat4x4 & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
 }
 
-void object::translate(const glm::vec3 & translate)
+void baseObject::translate(const glm::vec3 & translate)
 {
     translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
 }
 
-void object::setPosition(const glm::vec3& translate)
+void baseObject::setPosition(const glm::vec3& translate)
 {
     translation = quaternion<float>(0.0f,translate);
     updateModelMatrix();
 }
 
-void object::rotate(const float & ang ,const glm::vec3 & ax)
+void baseObject::rotate(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     rotation = convert(ang,ax)*rotation;
     updateModelMatrix();
 }
 
-void object::scale(const glm::vec3 & scale)
+void baseObject::scale(const glm::vec3 & scale)
 {
     scaling = scale;
     updateModelMatrix();
 }
 
-void object::updateAnimation(uint32_t imageNumber)
+void baseObject::updateAnimation(uint32_t imageNumber)
 {
     if(uint32_t index = getInstanceNumber(imageNumber); pModel->hasAnimation(index)){
         if(float end = pModel->animationEnd(index, animationIndex); !changeAnimationFlag){
@@ -107,7 +101,7 @@ void object::updateAnimation(uint32_t imageNumber)
     }
 }
 
-void object::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
+void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
@@ -132,7 +126,7 @@ void object::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice devi
     }
 }
 
-void object::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
+void baseObject::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
 {
     if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBuffer ubo{};
@@ -149,23 +143,7 @@ void object::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNu
     }
 }
 
-
-void object::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
-    std::vector<VkDescriptorSetLayoutBinding> binding;
-    binding.push_back(VkDescriptorSetLayoutBinding{});
-        binding.back().binding = binding.size() - 1;
-        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        binding.back().descriptorCount = 1;
-        binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        binding.back().pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
-        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
-        uniformBufferLayoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout);
-}
-
-void object::createDescriptorPool(VkDevice device, uint32_t imageCount)
+void baseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{});
@@ -180,7 +158,7 @@ void object::createDescriptorPool(VkDevice device, uint32_t imageCount)
     vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
 }
 
-void object::createDescriptorSet(VkDevice device, uint32_t imageCount)
+void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
 {
     object::createDescriptorSetLayout(device,&descriptorSetLayout);
 
@@ -211,107 +189,87 @@ void object::createDescriptorSet(VkDevice device, uint32_t imageCount)
     }
 }
 
-void object::setEnable(const bool& enable) {
+void baseObject::setEnable(const bool& enable) {
     this->enable = enable;
 }
 
-void object::setEnableShadow(const bool& enable) {
+void baseObject::setEnableShadow(const bool& enable) {
     this->enableShadow = enable;
 }
 
-void object::setModel(model* model, uint32_t firstInstance, uint32_t instanceCount){
+void baseObject::setModel(model* model, uint32_t firstInstance, uint32_t instanceCount){
     this->pModel = model;
     this->firstInstance = firstInstance;
     this->instanceCount = instanceCount;
 }
 
-void object::setConstantColor(const glm::vec4 &color){
+void baseObject::setConstantColor(const glm::vec4 &color){
     this->constantColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void object::setColorFactor(const glm::vec4 & color){
+void baseObject::setColorFactor(const glm::vec4 & color){
     this->colorFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void object::setBloomColor(const glm::vec4 & color){
+void baseObject::setBloomColor(const glm::vec4 & color){
     this->bloomColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void object::setBloomFactor(const glm::vec4 &color){
+void baseObject::setBloomFactor(const glm::vec4 &color){
     this->bloomFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-bool                            object::getEnable() const                               {return enable;}
-bool                            object::getEnableShadow() const                         {return enableShadow;}
-model*                          object::getModel()                                      {
+bool baseObject::getEnable() const {return enable;}
+bool baseObject::getEnableShadow() const {return enableShadow;}
+model* baseObject::getModel() {
     return pModel;
 }
 
-uint32_t object::getInstanceNumber(uint32_t imageNumber) const {
+uint32_t baseObject::getInstanceNumber(uint32_t imageNumber) const {
     return firstInstance + (instanceCount > imageNumber ? imageNumber : 0);
 }
-glm::vec4                       object::getConstantColor() const                        {return constantColor;}
-glm::vec4                       object::getColorFactor()   const                        {return colorFactor;}
+glm::vec4                       baseObject::getConstantColor() const                        {return constantColor;}
+glm::vec4                       baseObject::getColorFactor()   const                        {return colorFactor;}
 
-glm::mat4x4                     object::getModelMatrix()   const                        {return modelMatrix;}
+glm::mat4x4                     baseObject::getModelMatrix()   const                        {return modelMatrix;}
 
-VkDescriptorPool                &object::getDescriptorPool()                            {return descriptorPool;}
-std::vector<VkDescriptorSet>    &object::getDescriptorSet()                             {return descriptors;}
+VkDescriptorPool                &baseObject::getDescriptorPool()                            {return descriptorPool;}
+std::vector<VkDescriptorSet>    &baseObject::getDescriptorSet()                             {return descriptors;}
 
-void                            object::setOutliningEnable(const bool& enable)          {outlining.Enable = enable;}
-void                            object::setOutliningWidth(const float& width)           {outlining.Width = width;}
-void                            object::setOutliningColor(const glm::vec4& color)       {outlining.Color = color;}
+void                            baseObject::setOutliningEnable(const bool& enable)          {outlining.Enable = enable;}
+void                            baseObject::setOutliningWidth(const float& width)           {outlining.Width = width;}
+void                            baseObject::setOutliningColor(const glm::vec4& color)       {outlining.Color = color;}
 
-bool                            object::getOutliningEnable() const                      {return outlining.Enable;}
-float                           object::getOutliningWidth()  const                      {return outlining.Width;}
-glm::vec4                       object::getOutliningColor()  const                      {return outlining.Color;}
+bool                            baseObject::getOutliningEnable() const                      {return outlining.Enable;}
+float                           baseObject::getOutliningWidth()  const                      {return outlining.Width;}
+glm::vec4                       baseObject::getOutliningColor()  const                      {return outlining.Color;}
 
-void                            object::setFirstPrimitive(uint32_t firstPrimitive)      {this->firstPrimitive = firstPrimitive;}
-void                            object::setPrimitiveCount(uint32_t primitiveCount)      {this->primitiveCount = primitiveCount;}
-void                            object::resetPrimitiveCount()                           {primitiveCount=0;}
-void                            object::increasePrimitiveCount()                        {primitiveCount++;}
+void                            baseObject::setFirstPrimitive(uint32_t firstPrimitive)      {this->firstPrimitive = firstPrimitive;}
+void                            baseObject::setPrimitiveCount(uint32_t primitiveCount)      {this->primitiveCount = primitiveCount;}
+void                            baseObject::resetPrimitiveCount()                           {primitiveCount=0;}
+void                            baseObject::increasePrimitiveCount()                        {primitiveCount++;}
 
-bool                            object::comparePrimitive(uint32_t primitive)            {return primitive>=firstPrimitive&&primitive<firstPrimitive+primitiveCount;}
-uint32_t                        object::getFirstPrimitive() const                       {return firstPrimitive;}
-uint32_t                        object::getPrimitiveCount() const                       {return primitiveCount;}
+bool                            baseObject::comparePrimitive(uint32_t primitive)            {return primitive>=firstPrimitive&&primitive<firstPrimitive+primitiveCount;}
+uint32_t                        baseObject::getFirstPrimitive() const                       {return firstPrimitive;}
+uint32_t                        baseObject::getPrimitiveCount() const                       {return primitiveCount;}
 
-skyboxObject::skyboxObject(const std::vector<std::string> &TEXTURE_PATH) : object(), texture(new cubeTexture(TEXTURE_PATH)){}
+skyboxObject::skyboxObject(const std::vector<std::string> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){}
 
 skyboxObject::~skyboxObject(){
     delete texture;
 }
 
-void skyboxObject::translate(const glm::vec3 &translate)
-{
+void skyboxObject::translate(const glm::vec3 &translate) {
     static_cast<void>(translate);
+}
+
+uint8_t skyboxObject::getPipelineBitMask() const {
+    return (0<<4)|(0x1);
 }
 
 cubeTexture *skyboxObject::getTexture(){
     return texture;
-}
-
-void skyboxObject::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
-{
-    std::vector<VkDescriptorSetLayoutBinding> binding;
-    binding.push_back(VkDescriptorSetLayoutBinding{});
-        binding.back().binding = binding.size() - 1;
-        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        binding.back().descriptorCount = 1;
-        binding.back().stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        binding.back().pImmutableSamplers = nullptr;
-    binding.push_back(VkDescriptorSetLayoutBinding{});
-        binding.back().binding = binding.size() - 1;
-        binding.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        binding.back().descriptorCount = 1;
-        binding.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        binding.back().pImmutableSamplers = nullptr;
-
-    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
-        uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
-        uniformBufferLayoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout);
 }
 
 void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
@@ -332,7 +290,7 @@ void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
 }
 
 void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
-    skyboxObject::createDescriptorSetLayout(device,&descriptorSetLayout);
+    object::createSkyboxDescriptorSetLayout(device,&descriptorSetLayout);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};

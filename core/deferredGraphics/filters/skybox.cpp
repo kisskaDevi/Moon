@@ -1,8 +1,10 @@
 #include "skybox.h"
 #include "../../utils/operations.h"
 #include "../../utils/vkdefault.h"
-#include "../../transformational/object.h"
-#include "../../transformational/camera.h"
+#include "../../interfaces/object.h"
+#include "../../interfaces/camera.h"
+
+#include <algorithm>
 
 void skyboxGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
@@ -99,7 +101,7 @@ void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    skyboxObject::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
+    object::createSkyboxDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
 }
 
 void skyboxGraphics::Skybox::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -169,7 +171,7 @@ void skyboxGraphics::updateDescriptorSets(camera* cameraObject)
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
+            bufferInfo.range = cameraObject->getBufferRange();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -215,12 +217,12 @@ void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
 }
 
-void skyboxGraphics::bindObject(skyboxObject* newObject)
+void skyboxGraphics::bindObject(object* newObject)
 {
     skybox.objects.push_back(newObject);
 }
 
-bool skyboxGraphics::removeObject(skyboxObject* object)
+bool skyboxGraphics::removeObject(object* object)
 {
     auto& objects = skybox.objects;
     size_t size = objects.size();

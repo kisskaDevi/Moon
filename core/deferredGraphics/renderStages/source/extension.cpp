@@ -1,7 +1,7 @@
 #include "../graphics.h"
 #include "../../../utils/operations.h"
 #include "../../../utils/vkdefault.h"
-#include "../../../transformational/object.h"
+#include "../../../interfaces/object.h"
 #include "../../../interfaces/model.h"
 
 struct OutliningPushConst{

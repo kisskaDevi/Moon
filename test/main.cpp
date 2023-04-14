@@ -1,6 +1,6 @@
 #include "../core/graphicsManager.h"
 #include "../core/deferredGraphics/deferredGraphics.h"
-#include "../core/transformational/camera.h"
+#include "../core/transformational/baseCamera.h"
 #include <glfw3.h>
 #include <glm.hpp>
 
@@ -29,7 +29,7 @@ const std::string ZERO_TEXTURE_WHITE  = ExternalPath + "dependences\\texture\\1.
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 void initializeWindow(GLFWwindow* &window);
-void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, camera* cameraObject);
+void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, baseCamera* cameraObject);
 
 int main()
 {
@@ -44,7 +44,7 @@ int main()
     app.setGraphics(&graphics);
     graphics.createCommandPool();
 
-    camera cameraObject;
+    baseCamera cameraObject;
         cameraObject.translate(glm::vec3(0.0f,0.0f,10.0f));
         glm::mat4x4 proj = glm::perspective(glm::radians(90.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
         proj[1][1] *= -1.0f;
@@ -109,7 +109,7 @@ int main()
     return 0;
 }
 
-void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, camera* cameraObject)
+void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, baseCamera* cameraObject)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);

@@ -1,7 +1,6 @@
 #include "graphics.h"
 #include "../../utils/operations.h"
-#include "../../transformational/object.h"
-#include "../../transformational/camera.h"
+#include "../../interfaces/object.h"
 
 #include <memory>
 #include <algorithm>

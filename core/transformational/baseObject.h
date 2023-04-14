@@ -1,10 +1,11 @@
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef BASEOBJECT_H
+#define BASEOBJECT_H
 
 #include <vulkan.h>
 #include "transformational.h"
 #include "quaternion.h"
 #include "../utils/texture.h"
+#include "../interfaces/object.h"
 
 #include <string>
 
@@ -18,10 +19,8 @@ struct UniformBuffer
 };
 
 class model;
-struct Node;
-struct Material;
 
-class object : public transformational
+class baseObject : public object, public transformational
 {
 private:
     bool                            enable{true};
@@ -72,25 +71,25 @@ private:
     void destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
-    object();
-    object(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    ~object();
-    void destroyUniformBuffers(VkDevice device);
-    void destroy(VkDevice device);
+    baseObject() = default;
+    baseObject(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
+    ~baseObject() = default;
 
-    uint8_t                         getPipelineBitMask() const;
+    void destroy(VkDevice device) override;
+
+    uint8_t                         getPipelineBitMask() const override;
 
     VkDescriptorPool&               getDescriptorPool();
-    std::vector<VkDescriptorSet>&   getDescriptorSet();
+    std::vector<VkDescriptorSet>&   getDescriptorSet() override;
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
-    void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber);
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) override;
+    void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
     void updateAnimation(uint32_t imageNumber);
 
-    void                setGlobalTransform(const glm::mat4& transform);
-    void                translate(const glm::vec3& translate);
-    void                rotate(const float& ang, const glm::vec3& ax);
-    void                scale(const glm::vec3& scale);
+    void                setGlobalTransform(const glm::mat4& transform) override;
+    void                translate(const glm::vec3& translate) override;
+    void                rotate(const float& ang, const glm::vec3& ax) override;
+    void                scale(const glm::vec3& scale) override;
     void                setPosition(const glm::vec3& translate);
 
     void                setModel(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
@@ -100,36 +99,37 @@ public:
     void                setBloomFactor(const glm::vec4 & color);
 
     glm::mat4x4         getModelMatrix() const;
-    model*              getModel();
-    uint32_t            getInstanceNumber(uint32_t imageNumber) const;
+    model*              getModel() override;
+    uint32_t            getInstanceNumber(uint32_t imageNumber) const override;
     glm::vec4           getConstantColor() const;
     glm::vec4           getColorFactor() const;
 
     void                setEnable(const bool& enable);
     void                setEnableShadow(const bool& enable);
-    bool                getEnable() const;
-    bool                getEnableShadow() const;
+    bool                getEnable() const override;
+    bool                getEnableShadow() const override;
 
     void                setOutliningEnable(const bool& enable);
     void                setOutliningWidth(const float& width);
     void                setOutliningColor(const glm::vec4& color);
 
-    bool                getOutliningEnable() const;
-    float               getOutliningWidth() const;
-    glm::vec4           getOutliningColor() const;
+    bool                getOutliningEnable() const override;
+    float               getOutliningWidth() const override;
+    glm::vec4           getOutliningColor() const override;
 
-    void                setFirstPrimitive(uint32_t firstPrimitive);
-    void                setPrimitiveCount(uint32_t primitiveCount);
-    void                resetPrimitiveCount();
+    void                setFirstPrimitive(uint32_t firstPrimitive) override;
+    void                setPrimitiveCount(uint32_t primitiveCount) override;
+    void                resetPrimitiveCount() override;
     void                increasePrimitiveCount();
 
     bool                comparePrimitive(uint32_t primitive);
-    uint32_t            getFirstPrimitive() const;
+    uint32_t            getFirstPrimitive() const override;
     uint32_t            getPrimitiveCount() const;
 
-    static void         createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
-    void                createDescriptorPool(VkDevice device, uint32_t imageCount);
-    void                createDescriptorSet(VkDevice device, uint32_t imageCount);
+    void                createDescriptorPool(VkDevice device, uint32_t imageCount) override;
+    void                createDescriptorSet(VkDevice device, uint32_t imageCount) override;
+
+    cubeTexture* getTexture() override {return nullptr;};
 
     float animationTimer{0.0f};
     uint32_t animationIndex{0};
@@ -139,20 +139,20 @@ public:
     float changeAnimationTime;
 };
 
-class skyboxObject : public object{
+class skyboxObject : public baseObject{
 private:
     cubeTexture* texture{nullptr};
 public:
     skyboxObject(const std::vector<std::string>& TEXTURE_PATH);
     ~skyboxObject();
 
-    void translate(const glm::vec3& translate);
+    void translate(const glm::vec3& translate) override;
 
-    cubeTexture* getTexture();
+    uint8_t getPipelineBitMask() const override;
+    cubeTexture* getTexture() override;
 
-    static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
-    void createDescriptorPool(VkDevice device, uint32_t imageCount);
-    void createDescriptorSet(VkDevice device, uint32_t imageCount);
+    void createDescriptorPool(VkDevice device, uint32_t imageCount) override;
+    void createDescriptorSet(VkDevice device, uint32_t imageCount) override;
 };
 
-#endif // OBJECT_H
+#endif // BASEOBJECT_H

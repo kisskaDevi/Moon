@@ -1,10 +1,11 @@
 #include "deferredGraphics.h"
 #include "../utils/operations.h"
+#include "../utils/texture.h"
+#include "../utils/node.h"
 #include "../interfaces/model.h"
 #include "../interfaces/light.h"
-#include "../transformational/object.h"
-#include "../transformational/camera.h"
-#include "../utils/node.h"
+#include "../interfaces/object.h"
+#include "../interfaces/camera.h"
 
 #include <cstring>
 
@@ -499,8 +500,9 @@ void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
     emptyTexture->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
 
     DeferredGraphics.setEmptyTexture(emptyTexture);
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        TransparentLayers[i].setEmptyTexture(emptyTexture);
+    for(auto& layer: TransparentLayers){
+        layer.setEmptyTexture(emptyTexture);
+    }
 
     Blur.setEmptyTexture(emptyTexture);
     Filter.setEmptyTexture(emptyTexture);
@@ -587,38 +589,8 @@ void deferredGraphics::removeLightSource(light* lightSource){
     updateCmdFlags();
 }
 
-void deferredGraphics::bindBaseObject(object* object){
-    object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
-    object->createDescriptorPool(device.getLogical(),imageCount);
-    object->createDescriptorSet(device.getLogical(),imageCount);
-
-    DeferredGraphics.bindBaseObject(object);
-    for(auto& layer: TransparentLayers){
-        layer.bindBaseObject(object);
-    }
-
-    Shadow.bindBaseObject(object);
-
-    updateCmdFlags();
-}
-
-bool deferredGraphics::removeObject(object* object){
-    object->destroy(device.getLogical());
-
-    bool res = true;
-    for(uint32_t i=0;i<TransparentLayers.size();i++)
-        res = res&&(TransparentLayers[i].removeBaseObject(object));
-
-    Shadow.removeBaseObject(object);
-
-    updateCmdFlags();
-
-    return res&&(DeferredGraphics.removeBaseObject(object));
-}
-
-void deferredGraphics::bindSkyBoxObject(skyboxObject* object){
-    object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
-    if(object->getTexture()){
+void deferredGraphics::bindObject(object* object){
+    if(object->getTexture() && (object->getPipelineBitMask() & (0x1))){
         VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
         object->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
         SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
@@ -626,20 +598,43 @@ void deferredGraphics::bindSkyBoxObject(skyboxObject* object){
         object->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
         object->getTexture()->destroyStagingBuffer(device.getLogical());
     }
-
+    object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
     object->createDescriptorPool(device.getLogical(),imageCount);
     object->createDescriptorSet(device.getLogical(),imageCount);
 
-    Skybox.bindObject(object);
+    if(object->getPipelineBitMask() & (0x1)){
+        Skybox.bindObject(object);
+    } else {
+        DeferredGraphics.bindBaseObject(object);
+        for(auto& layer: TransparentLayers){
+            layer.bindBaseObject(object);
+        }
+        Shadow.bindBaseObject(object);
+    }
+
+    updateCmdFlags();
 }
 
-bool deferredGraphics::removeSkyBoxObject(skyboxObject* object){
+bool deferredGraphics::removeObject(object* object){
     object->destroy(device.getLogical());
-    if(object->getTexture()){
+    if(object->getTexture() && (object->getPipelineBitMask() & (0x1))){
         object->getTexture()->destroy(device.getLogical());
     }
 
-    return Skybox.removeObject(object);
+    bool res = true;
+
+    if(object->getPipelineBitMask() & (0x1)){
+        res = res && Skybox.removeObject(object);
+    } else {
+        res = res && Shadow.removeBaseObject(object) && DeferredGraphics.removeBaseObject(object);
+        for(auto& layer: TransparentLayers){
+            res = res && layer.removeBaseObject(object);
+        }
+    }
+
+    updateCmdFlags();
+
+    return res;
 }
 
 void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){

@@ -2,7 +2,7 @@
 #include "../../utils/operations.h"
 #include "../../utils/vkdefault.h"
 #include "../../utils/texture.h"
-#include "../../transformational/camera.h"
+#include "../../interfaces/camera.h"
 
 void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
     combiner.transparentLayersCount = transparentLayersCount;
@@ -193,7 +193,7 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
         VkDescriptorBufferInfo bufferInfo;
             bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
+            bufferInfo.range = cameraObject->getBufferRange();
 
         VkDescriptorImageInfo colorImageInfo;
             colorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

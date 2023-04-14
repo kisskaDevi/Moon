@@ -1,37 +1,37 @@
-#include "camera.h"
+#include "baseCamera.h"
 #include "../utils/operations.h"
 #include "dualQuaternion.h"
 
 #include <cstring>
 
-camera::camera(){}
+baseCamera::baseCamera(){}
 
-camera::~camera(){}
+baseCamera::~baseCamera(){}
 
-void camera::destroy(VkDevice* device)
+void baseCamera::destroy(VkDevice* device)
 {
     destroyUniformBuffers(device, uniformBuffersHost);
     destroyUniformBuffers(device, uniformBuffersDevice);
 }
 
-void camera::destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers)
+void baseCamera::destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
         if(buffer.map){      vkUnmapMemory(*device, buffer.memory); buffer.map = nullptr;}
         if(buffer.instance){ vkDestroyBuffer(*device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
         if(buffer.memory){   vkFreeMemory(*device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
     }
-    uniformBuffers.resize(0);
+    uniformBuffers.clear();
 }
 
-void camera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
+void baseCamera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
         buffer.updateFlag = true;
     }
 }
 
-void camera::updateViewMatrix()
+void baseCamera::updateViewMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
@@ -41,38 +41,38 @@ void camera::updateViewMatrix()
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void camera::setProjMatrix(const glm::mat4 & proj)
+void baseCamera::setProjMatrix(const glm::mat4 & proj)
 {
     projMatrix = proj;
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void camera::setGlobalTransform(const glm::mat4 & transform)
+void baseCamera::setGlobalTransform(const glm::mat4 & transform)
 {
     globalTransformation = transform;
     updateViewMatrix();
 }
 
-void camera::translate(const glm::vec3 & translate)
+void baseCamera::translate(const glm::vec3 & translate)
 {
     translation += quaternion<float>(0.0f,translate);
     updateViewMatrix();
 }
 
-void camera::rotate(const float & ang ,const glm::vec3 & ax)
+void baseCamera::rotate(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     rotation = convert(ang,ax)*rotation;
     updateViewMatrix();
 }
 
-void camera::scale(const glm::vec3 &scale)
+void baseCamera::scale(const glm::vec3 &scale)
 {
     static_cast<void>(scale);
 }
 
-void camera::rotateX(const float & ang ,const glm::vec3 & ax)
+void baseCamera::rotateX(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     rotationX = convert(ang,ax) * rotationX;
@@ -80,7 +80,7 @@ void camera::rotateX(const float & ang ,const glm::vec3 & ax)
     updateViewMatrix();
 }
 
-void camera::rotateY(const float & ang ,const glm::vec3 & ax)
+void baseCamera::rotateY(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     rotationY = convert(ang,ax) * rotationY;
@@ -88,46 +88,46 @@ void camera::rotateY(const float & ang ,const glm::vec3 & ax)
     updateViewMatrix();
 }
 
-void camera::setPosition(const glm::vec3 & translate)
+void baseCamera::setPosition(const glm::vec3 & translate)
 {
     translation = quaternion<float>(0.0f,translate);
     updateViewMatrix();
 }
 
-void camera::setRotation(const float & ang ,const glm::vec3 & ax)
+void baseCamera::setRotation(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
     rotation = convert(ang,ax);
     updateViewMatrix();
 }
 
-void    camera::setRotation(const quaternion<float>& rotation)
+void baseCamera::setRotation(const quaternion<float>& rotation)
 {
     this->rotation = rotation;
     updateViewMatrix();
 }
 
-void    camera::setRotations(const quaternion<float>& quatX, const quaternion<float>& quatY)
+void baseCamera::setRotations(const quaternion<float>& quatX, const quaternion<float>& quatY)
 {
     this->rotationX = quatX;
     this->rotationY = quatY;
 }
 
-glm::mat4x4 camera::getProjMatrix() const
+glm::mat4x4 baseCamera::getProjMatrix() const
 {
     return projMatrix;
 }
 
-glm::mat4x4 camera::getViewMatrix() const
+glm::mat4x4 baseCamera::getViewMatrix() const
 {
     return viewMatrix;
 }
 
-glm::vec3           camera::getTranslation() const  {   return translation.vector();}
-quaternion<float>   camera::getRotationX()const     {   return rotationX;}
-quaternion<float>   camera::getRotationY()const     {   return rotationY;}
+glm::vec3           baseCamera::getTranslation() const  {   return translation.vector();}
+quaternion<float>   baseCamera::getRotationX()const     {   return rotationX;}
+quaternion<float>   baseCamera::getRotationY()const     {   return rotationY;}
 
-void camera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+void baseCamera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
@@ -152,7 +152,7 @@ void camera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* de
     }
 }
 
-void camera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
+void baseCamera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
 {
     if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBufferObject baseUBO{};
@@ -167,7 +167,12 @@ void camera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNu
     }
 }
 
-VkBuffer camera::getBuffer(uint32_t index)const
+VkBuffer baseCamera::getBuffer(uint32_t index)const
 {
     return uniformBuffersDevice[index].instance;
+}
+
+VkDeviceSize baseCamera::getBufferRange() const
+{
+    return sizeof(UniformBufferObject);
 }

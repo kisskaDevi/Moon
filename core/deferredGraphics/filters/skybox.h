@@ -3,7 +3,7 @@
 
 #include "filtergraphics.h"
 
-class skyboxObject;
+class object;
 class camera;
 
 class skyboxGraphics : public filterGraphics
@@ -15,7 +15,7 @@ private:
 
         VkDescriptorSetLayout           ObjectDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<skyboxObject*>      objects;
+        std::vector<object*>            objects;
 
         void destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
@@ -37,8 +37,8 @@ public:
 
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    void bindObject(skyboxObject* newObject);
-    bool removeObject(skyboxObject* object);
+    void bindObject(object* newObject);
+    bool removeObject(object* object);
 
     void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
 };

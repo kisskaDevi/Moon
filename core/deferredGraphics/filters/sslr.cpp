@@ -1,7 +1,7 @@
 #include "sslr.h"
 #include "../../utils/operations.h"
 #include "../../utils/vkdefault.h"
-#include "../../transformational/camera.h"
+#include "../../interfaces/camera.h"
 
 void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
@@ -168,7 +168,7 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
+            bufferInfo.range = cameraObject->getBufferRange();
 
         VkDescriptorImageInfo positionInfo{};
             positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

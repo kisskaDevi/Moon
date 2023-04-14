@@ -1,9 +1,10 @@
 #include "../graphics.h"
 #include "../../../utils/operations.h"
 #include "../../../utils/vkdefault.h"
+#include "../../../utils/texture.h"
 #include "../../../interfaces/model.h"
-#include "../../../transformational/camera.h"
-#include "../../../transformational/object.h"
+#include "../../../interfaces/object.h"
+#include "../../../interfaces/camera.h"
 
 void graphics::Base::Destroy(VkDevice device)
 {
@@ -98,7 +99,7 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineLayoutInfo.pSetLayouts = setLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[0]);
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[(0<<4)|0]);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -112,17 +113,17 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = PipelineLayoutDictionary[0];
+        pipelineInfo.back().layout = PipelineLayoutDictionary[(0<<4)|0];
         pipelineInfo.back().renderPass = pRenderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[0]);
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(0<<4)|0]);
 
     depthStencil = vkDefault::depthStencilEnable();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[1]);
-    pipelineInfo.back().layout = PipelineLayoutDictionary[1];
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[1]);
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[(1<<4)|0]);
+    pipelineInfo.back().layout = PipelineLayoutDictionary[(1<<4)|0];
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(1<<4)|0]);
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -167,7 +168,7 @@ void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* 
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
+            bufferInfo.range = cameraObject->getBufferRange();
 
         VkDescriptorImageInfo skyboxImageInfo{};
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

@@ -3,7 +3,7 @@
 #include "../../../utils/vkdefault.h"
 
 struct lightPassPushConst{
-    alignas(4) float                minAmbientFactor;
+    alignas(4) float minAmbientFactor;
 };
 
 void graphics::AmbientLighting::DestroyPipeline(VkDevice device){

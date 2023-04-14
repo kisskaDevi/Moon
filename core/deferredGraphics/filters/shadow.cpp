@@ -2,7 +2,7 @@
 #include "../../utils/operations.h"
 #include "../../utils/vkdefault.h"
 #include "../../interfaces/light.h"
-#include "../../transformational/object.h"
+#include "../../interfaces/object.h"
 #include "../../interfaces/model.h"
 
 void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
@@ -215,7 +215,7 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
         for(auto object: shadow.objects){
-            if(VkDeviceSize offsets = 0;object->getEnable()&&object->getEnableShadow()){
+            if(VkDeviceSize offsets = 0; object->getEnable() && object->getEnableShadow()){
                 vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel()->getVertices(), &offsets);
                 if (object->getModel()->getIndices() != VK_NULL_HANDLE){
                     vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);

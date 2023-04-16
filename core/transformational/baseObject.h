@@ -4,8 +4,8 @@
 #include <vulkan.h>
 #include "transformational.h"
 #include "quaternion.h"
-#include "../utils/texture.h"
-#include "../interfaces/object.h"
+#include "texture.h"
+#include "object.h"
 
 #include <string>
 

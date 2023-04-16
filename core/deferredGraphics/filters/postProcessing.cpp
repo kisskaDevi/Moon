@@ -1,7 +1,7 @@
 #include "postProcessing.h"
-#include "../../utils/operations.h"
-#include "../../utils/vkdefault.h"
-#include "../../utils/texture.h"
+#include "operations.h"
+#include "vkdefault.h"
+#include "texture.h"
 
 void postProcessingGraphics::setBlurAttachment(attachments *blurAttachment)
 {

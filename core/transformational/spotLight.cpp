@@ -1,7 +1,7 @@
 #include "spotLight.h"
-#include "../utils/attachments.h"
-#include "../utils/operations.h"
-#include "../utils/texture.h"
+#include "attachments.h"
+#include "operations.h"
+#include "texture.h"
 #include "dualQuaternion.h"
 
 #include <iostream>

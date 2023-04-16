@@ -1,6 +1,6 @@
 #include "graphics.h"
-#include "../../utils/operations.h"
-#include "../../interfaces/object.h"
+#include "operations.h"
+#include "object.h"
 
 #include <memory>
 #include <algorithm>

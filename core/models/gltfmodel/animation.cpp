@@ -1,4 +1,4 @@
-#include "../gltfmodel.h"
+#include "gltfmodel.h"
 
 #include <iostream>
 

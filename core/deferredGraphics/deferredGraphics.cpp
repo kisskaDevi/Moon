@@ -1,11 +1,11 @@
 #include "deferredGraphics.h"
-#include "../utils/operations.h"
-#include "../utils/texture.h"
-#include "../utils/node.h"
-#include "../interfaces/model.h"
-#include "../interfaces/light.h"
-#include "../interfaces/object.h"
-#include "../interfaces/camera.h"
+#include "operations.h"
+#include "texture.h"
+#include "node.h"
+#include "model.h"
+#include "light.h"
+#include "object.h"
+#include "camera.h"
 
 #include <cstring>
 

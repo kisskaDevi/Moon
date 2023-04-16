@@ -1,5 +1,5 @@
-#include "../gltfmodel.h"
-#include "../../utils/operations.h"
+#include "gltfmodel.h"
+#include "operations.h"
 
 #include <iostream>
 #include <numeric>

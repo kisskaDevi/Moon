@@ -1,10 +1,9 @@
 #ifndef GRAPHICSMANAGER_H
 #define GRAPHICSMANAGER_H
 
-#define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan.h>
-#include "utils/operations.h"
-#include "utils/device.h"
+#include "operations.h"
+#include "device.h"
 
 #include "graphicsInterface.h"
 

@@ -1,7 +1,7 @@
-#include "../graphics.h"
-#include "../../../utils/vkdefault.h"
-#include "../../../interfaces/camera.h"
-#include "../../../interfaces/light.h"
+#include "graphics.h"
+#include "vkdefault.h"
+#include "camera.h"
+#include "light.h"
 
 #include <iostream>
 

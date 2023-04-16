@@ -1,7 +1,6 @@
 #include "texture.h"
 #include "operations.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include "tiny_gltf.h"
 

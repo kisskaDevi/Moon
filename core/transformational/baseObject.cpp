@@ -1,6 +1,6 @@
 #include "baseObject.h"
-#include "../utils/operations.h"
-#include "../interfaces/model.h"
+#include "operations.h"
+#include "model.h"
 #include "dualQuaternion.h"
 
 #include <cstring>

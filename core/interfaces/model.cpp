@@ -1,5 +1,5 @@
 #include "model.h"
-#include "../utils/vkdefault.h"
+#include "vkdefault.h"
 
 VkVertexInputBindingDescription model::Vertex::getBindingDescription(){
     return VkVertexInputBindingDescription{0,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX};

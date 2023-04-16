@@ -1,18 +1,18 @@
 #ifndef DEFERREDGRAPHICS_H
 #define DEFERREDGRAPHICS_H
 
-#include "../graphicsInterface.h"
+#include "graphicsInterface.h"
 
-#include "renderStages/graphics.h"
-#include "filters/postProcessing.h"
-#include "filters/blur.h"
-#include "filters/customfilter.h"
-#include "filters/sslr.h"
-#include "filters/ssao.h"
-#include "filters/layersCombiner.h"
-#include "filters/skybox.h"
-#include "filters/shadow.h"
-#include "../utils/device.h"
+#include "graphics.h"
+#include "postProcessing.h"
+#include "blur.h"
+#include "customfilter.h"
+#include "sslr.h"
+#include "ssao.h"
+#include "layersCombiner.h"
+#include "skybox.h"
+#include "shadow.h"
+#include "device.h"
 
 #include <glm.hpp>
 

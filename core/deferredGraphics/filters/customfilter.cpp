@@ -1,6 +1,6 @@
 #include "customfilter.h"
-#include "../../utils/operations.h"
-#include "../../utils/vkdefault.h"
+#include "operations.h"
+#include "vkdefault.h"
 
 void customFilter::setSampleStep(const float& deltaX, const float& deltaY){
     xSampleStep = deltaX; ySampleStep = deltaY;

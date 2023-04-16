@@ -2,8 +2,8 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define STBI_MSC_SECURE_CRT
 
-#include "../gltfmodel.h"
-#include "../../utils/operations.h"
+#include "gltfmodel.h"
+#include "operations.h"
 
 #include <iostream>
 #include <fstream>

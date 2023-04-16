@@ -2,7 +2,7 @@
 #define SPOTLIGHT_H
 
 #include "transformational.h"
-#include "../interfaces/light.h"
+#include "light.h"
 #include "quaternion.h"
 
 class shadowGraphics;

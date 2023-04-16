@@ -2,7 +2,7 @@
 #define OBJECT_H
 
 #include <vulkan.h>
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <vector>
 
 class model;

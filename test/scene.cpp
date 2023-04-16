@@ -1,11 +1,11 @@
 #include "scene.h"
-#include "../core/deferredGraphics/deferredGraphics.h"
-#include "../core/graphicsManager.h"
-#include "../core/models/gltfmodel.h"
-#include "../core/transformational/spotLight.h"
-#include "../core/transformational/baseObject.h"
-#include "../core/transformational/group.h"
-#include "../core/transformational/baseCamera.h"
+#include "deferredGraphics.h"
+#include "graphicsManager.h"
+#include "gltfmodel.h"
+#include "spotLight.h"
+#include "baseObject.h"
+#include "group.h"
+#include "baseCamera.h"
 
 #include <glfw3.h>
 

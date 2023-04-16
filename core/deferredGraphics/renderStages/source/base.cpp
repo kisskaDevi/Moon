@@ -1,10 +1,10 @@
 #include "../graphics.h"
-#include "../../../utils/operations.h"
-#include "../../../utils/vkdefault.h"
-#include "../../../utils/texture.h"
-#include "../../../interfaces/model.h"
-#include "../../../interfaces/object.h"
-#include "../../../interfaces/camera.h"
+#include "operations.h"
+#include "vkdefault.h"
+#include "texture.h"
+#include "model.h"
+#include "object.h"
+#include "camera.h"
 
 void graphics::Base::Destroy(VkDevice device)
 {

@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#include "../filters/filtergraphics.h"
+#include "filtergraphics.h"
 
 #include <string>
 #include <unordered_map>

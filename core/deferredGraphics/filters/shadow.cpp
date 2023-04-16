@@ -1,9 +1,9 @@
 #include "shadow.h"
-#include "../../utils/operations.h"
-#include "../../utils/vkdefault.h"
-#include "../../interfaces/light.h"
-#include "../../interfaces/object.h"
-#include "../../interfaces/model.h"
+#include "operations.h"
+#include "vkdefault.h"
+#include "light.h"
+#include "object.h"
+#include "model.h"
 
 void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {

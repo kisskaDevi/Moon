@@ -1,6 +1,7 @@
-#include "../core/graphicsManager.h"
-#include "../core/deferredGraphics/deferredGraphics.h"
-#include "../core/transformational/baseCamera.h"
+#define VK_USE_PLATFORM_WIN32_KHR
+#include "graphicsManager.h"
+#include "deferredGraphics.h"
+#include "baseCamera.h"
 #include <glfw3.h>
 #include <glm.hpp>
 
@@ -10,6 +11,8 @@
 #include <sstream>
 
 #include "scene.h"
+
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 uint32_t WIDTH = 800;

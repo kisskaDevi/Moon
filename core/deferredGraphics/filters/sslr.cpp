@@ -1,7 +1,7 @@
 #include "sslr.h"
-#include "../../utils/operations.h"
-#include "../../utils/vkdefault.h"
-#include "../../interfaces/camera.h"
+#include "operations.h"
+#include "vkdefault.h"
+#include "camera.h"
 
 void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {

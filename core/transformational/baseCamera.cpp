@@ -1,5 +1,5 @@
 #include "baseCamera.h"
-#include "../utils/operations.h"
+#include "operations.h"
 #include "dualQuaternion.h"
 
 #include <cstring>

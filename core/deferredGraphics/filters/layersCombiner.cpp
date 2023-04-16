@@ -1,8 +1,8 @@
 #include "layersCombiner.h"
-#include "../../utils/operations.h"
-#include "../../utils/vkdefault.h"
-#include "../../utils/texture.h"
-#include "../../interfaces/camera.h"
+#include "operations.h"
+#include "vkdefault.h"
+#include "texture.h"
+#include "camera.h"
 
 void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
     combiner.transparentLayersCount = transparentLayersCount;

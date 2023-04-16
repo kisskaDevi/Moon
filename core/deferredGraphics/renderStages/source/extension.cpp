@@ -1,8 +1,8 @@
 #include "../graphics.h"
-#include "../../../utils/operations.h"
-#include "../../../utils/vkdefault.h"
-#include "../../../interfaces/object.h"
-#include "../../../interfaces/model.h"
+#include "operations.h"
+#include "vkdefault.h"
+#include "object.h"
+#include "model.h"
 
 struct OutliningPushConst{
     alignas(16) glm::vec4           stencilColor;

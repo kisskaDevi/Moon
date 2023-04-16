@@ -2,7 +2,7 @@
 #define FILTERGRAPHICS_H
 
 #include <vulkan.h>
-#include "../../utils/attachments.h"
+#include "attachments.h"
 
 #include <string>
 

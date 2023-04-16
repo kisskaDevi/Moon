@@ -2,7 +2,7 @@
 #define BASECAMERA_H
 
 #include <vulkan.h>
-#include "../interfaces/camera.h"
+#include "camera.h"
 #include "transformational.h"
 #include "quaternion.h"
 

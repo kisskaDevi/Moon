@@ -1,6 +1,7 @@
 #include "attachments.h"
 #include "operations.h"
 #include <algorithm>
+#include <iterator>
 
 attachments::attachments(const attachments &other)
 {
@@ -46,8 +47,8 @@ void attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFor
                             VK_IMAGE_LAYOUT_UNDEFINED,
                             usage,
                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            instance.base(),
-                            memory.base());
+                            &(*instance),
+                            &(*memory));
 
         Texture::createView(    device,
                                 VK_IMAGE_VIEW_TYPE_2D,
@@ -56,8 +57,8 @@ void attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFor
                                 1,
                                 0,
                                 1,
-                                *instance.base(),
-                                view.base());
+                                *instance,
+                                &(*view));
     }
 }
 
@@ -85,8 +86,8 @@ void attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, 
                             VK_IMAGE_LAYOUT_UNDEFINED,
                             usage,
                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            instance.base(),
-                            memory.base());
+                            &(*instance),
+                            &(*memory));
 
         Texture::createView(    device,
                                 VK_IMAGE_VIEW_TYPE_2D,
@@ -95,8 +96,8 @@ void attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, 
                                 1,
                                 0,
                                 1,
-                                *instance.base(),
-                                view.base());
+                                *instance,
+                                &(*view));
     }
 }
 

@@ -191,7 +191,10 @@ void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
             std::pair<const float*, int> normals = loadBuffer<float>(primitive, model, "NORMAL", sizeof(float), TINYGLTF_TYPE_VEC3);
             std::pair<const float*, int> texCoordSet0 = loadBuffer<float>(primitive, model, "TEXCOORD_0", sizeof(float), TINYGLTF_TYPE_VEC2);
             std::pair<const float*, int> texCoordSet1 = loadBuffer<float>(primitive, model, "TEXCOORD_1", sizeof(float), TINYGLTF_TYPE_VEC2);
-            std::pair<const void*, int> joints = loadBuffer<void>(primitive, model, "JOINTS_0", tinygltf::GetComponentSizeInBytes(model.accessors[primitive.attributes.find("JOINTS_0")->second].componentType), TINYGLTF_TYPE_VEC4);
+            std::pair<const void*, int> joints = { nullptr, 0 };
+            if (auto jointsAttr = primitive.attributes.find("JOINTS_0"); jointsAttr != primitive.attributes.end()) {
+                joints = loadBuffer<void>(primitive, model, "JOINTS_0", tinygltf::GetComponentSizeInBytes(model.accessors[jointsAttr->second].componentType), TINYGLTF_TYPE_VEC4);
+            }
             std::pair<const float*, int> weights = loadBuffer<float>(primitive, model, "WEIGHTS_0", sizeof(float), TINYGLTF_TYPE_VEC4);
 
             for (uint32_t index = 0; index < vertexCount; index++) {

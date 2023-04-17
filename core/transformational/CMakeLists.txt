@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.5)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
+
+include_directories(
+../../dependences/libs
+${VULKAN_INCLUDE_DIR}
+${GLM_DIR}
+../utils
+../interfaces)
+                    
+set(SOURCES baseCamera.cpp
+baseObject.cpp
+group.cpp
+spotLight.cpp)
+
+set(HEADERS baseCamera.h
+baseObject.h
+spotLight.h
+transformational.h
+group.h)
+
+add_library(transformational STATIC ${SOURCES} ${HEADERS})

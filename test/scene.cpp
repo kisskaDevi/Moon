@@ -127,7 +127,7 @@ void scene::destroyScene()
 
 void scene::loadModels()
 {
-    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb",6));
+    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb", 6));
     graphics->createModel(gltfModel.back());
 
     gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Box.glb"));

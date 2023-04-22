@@ -1,42 +1,36 @@
 #define VK_USE_PLATFORM_WIN32_KHR
+#define STB_IMAGE_IMPLEMENTATION
+
 #include "graphicsManager.h"
 #include "deferredGraphics.h"
 #include "baseCamera.h"
+#include "scene.h"
+
+#include "stb_image.h"
 #include <glfw3.h>
 #include <glm.hpp>
-
 #include <chrono>
 #include <stdexcept>
 #include <cstdlib>
 #include <sstream>
-
-#include "scene.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
 uint32_t WIDTH = 800;
 uint32_t HEIGHT = 800;
 
 bool framebufferResized = false;
 
-float fps = 60.0f;
-bool  fpsLock = false;
-
-GLFWwindow* window;
-
-const std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
-
-const std::string ZERO_TEXTURE        = ExternalPath + "dependences\\texture\\0.png";
-const std::string ZERO_TEXTURE_WHITE  = ExternalPath + "dependences\\texture\\1.png";
-
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-void initializeWindow(GLFWwindow* &window);
+void initializeWindow(GLFWwindow* &window, std::string iconName);
 void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, baseCamera* cameraObject);
 
 int main()
 {
-    initializeWindow(window);
+    float fps = 60.0f;
+    bool fpsLock = false;
+    const std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
+
+    GLFWwindow* window;
+    initializeWindow(window, ExternalPath + "dependences\\texture\\icon.png");
 
     deferredGraphics graphics(ExternalPath);
 
@@ -54,6 +48,8 @@ int main()
         cameraObject.setProjMatrix(proj);
     graphics.bindCameraObject(&cameraObject);
 
+    const std::string ZERO_TEXTURE        = ExternalPath + "dependences\\texture\\0.png";
+    const std::string ZERO_TEXTURE_WHITE  = ExternalPath + "dependences\\texture\\1.png";
     graphics.setEmptyTexture(ZERO_TEXTURE);
 
     app.createGraphics(window);
@@ -143,7 +139,7 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height)
     static_cast<void>(window);
     framebufferResized = true;
 }
-void initializeWindow(GLFWwindow* &window)
+void initializeWindow(GLFWwindow* &window, std::string iconName)
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -153,8 +149,7 @@ void initializeWindow(GLFWwindow* &window)
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
     int width,height,comp;
-    std::string filename = ExternalPath + "dependences\\texture\\icon.png";
-    stbi_uc* img = stbi_load(filename.c_str(), &width, &height, &comp, 0);
+    stbi_uc* img = stbi_load(iconName.c_str(), &width, &height, &comp, 0);
     GLFWimage images{width,height,img};
     glfwSetWindowIcon(window,1,&images);
 }

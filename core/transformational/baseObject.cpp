@@ -145,10 +145,9 @@ void baseObject::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t fra
 
 void baseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
 {
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(imageCount);
+    std::vector<VkDescriptorPoolSize> poolSizes = {
+        VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)}
+    };
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -229,6 +228,7 @@ model* baseObject::getModel() {
 uint32_t baseObject::getInstanceNumber(uint32_t imageNumber) const {
     return firstInstance + (instanceCount > imageNumber ? imageNumber : 0);
 }
+
 glm::vec4                       baseObject::getConstantColor() const                        {return constantColor;}
 glm::vec4                       baseObject::getColorFactor()   const                        {return colorFactor;}
 
@@ -273,13 +273,10 @@ cubeTexture *skyboxObject::getTexture(){
 }
 
 void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(imageCount);
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(imageCount);
+    std::vector<VkDescriptorPoolSize> poolSizes = {
+        VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)},
+        VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)}
+    };
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

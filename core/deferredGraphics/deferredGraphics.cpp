@@ -602,14 +602,18 @@ void deferredGraphics::bindObject(object* object){
     object->createDescriptorPool(device.getLogical(),imageCount);
     object->createDescriptorSet(device.getLogical(),imageCount);
 
-    if(object->getPipelineBitMask() & (0x1)){
-        Skybox.bindObject(object);
-    } else {
-        DeferredGraphics.bindBaseObject(object);
-        for(auto& layer: TransparentLayers){
-            layer.bindBaseObject(object);
-        }
-        Shadow.bindBaseObject(object);
+    switch (object->getPipelineBitMask()) {
+        case (0<<4)|0x0:
+        case (1<<4)|0x0:
+            Shadow.bindBaseObject(object);
+            DeferredGraphics.bindBaseObject(object);
+            for(auto& layer: TransparentLayers){
+                layer.bindBaseObject(object);
+            }
+            break;
+        case (0<<4)|0x1:
+            Skybox.bindObject(object);
+            break;
     }
 
     updateCmdFlags();
@@ -623,13 +627,17 @@ bool deferredGraphics::removeObject(object* object){
 
     bool res = true;
 
-    if(object->getPipelineBitMask() & (0x1)){
-        res = res && Skybox.removeObject(object);
-    } else {
-        res = res && Shadow.removeBaseObject(object) && DeferredGraphics.removeBaseObject(object);
-        for(auto& layer: TransparentLayers){
-            res = res && layer.removeBaseObject(object);
-        }
+    switch (object->getPipelineBitMask()) {
+        case (0<<4)|0x0:
+        case (1<<4)|0x0:
+            res = res && Shadow.removeBaseObject(object) && DeferredGraphics.removeBaseObject(object);
+            for(auto& layer: TransparentLayers){
+                res = res && layer.removeBaseObject(object);
+            }
+            break;
+        case (0<<4)|0x1:
+            res = res && Skybox.removeObject(object);
+            break;
     }
 
     updateCmdFlags();

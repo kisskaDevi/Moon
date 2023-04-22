@@ -16,6 +16,8 @@
 
 #include <glm.hpp>
 
+#include <unordered_map>
+
 class node;
 class model;
 class camera;

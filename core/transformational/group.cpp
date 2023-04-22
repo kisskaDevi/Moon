@@ -19,11 +19,12 @@ void group::updateModelMatrix()
 void group::rotate(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotation = convert(ang,ax)*rotation;
+    rotation = convert(ang, ax)*rotation;
     updateModelMatrix();
 
-    for(size_t i=0; i < objects.size();++i)
-        objects[i]->setGlobalTransform(modelMatrix);
+    for(auto& object: objects){
+        object->setGlobalTransform(modelMatrix);
+    }
 }
 
 void group::translate(const glm::vec3 & translate)
@@ -31,8 +32,9 @@ void group::translate(const glm::vec3 & translate)
     translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
 
-    for(size_t i=0; i < objects.size();++i)
-        objects[i]->setGlobalTransform(modelMatrix);
+    for(auto& object: objects){
+        object->setGlobalTransform(modelMatrix);
+    }
 }
 
 void group::scale(const glm::vec3 & scale)
@@ -40,8 +42,9 @@ void group::scale(const glm::vec3 & scale)
     scaling = scale;
     updateModelMatrix();
 
-    for(size_t i=0; i < objects.size();++i)
-        objects[i]->setGlobalTransform(modelMatrix);
+    for(auto& object: objects){
+        object->setGlobalTransform(modelMatrix);
+    }
 }
 
 void group::setGlobalTransform(const glm::mat4 & transform)
@@ -49,8 +52,9 @@ void group::setGlobalTransform(const glm::mat4 & transform)
     globalTransformation = transform;
     updateModelMatrix();
 
-    for(size_t i=0; i < objects.size();++i)
-        objects[i]->setGlobalTransform(modelMatrix);
+    for(auto& object: objects){
+        object->setGlobalTransform(modelMatrix);
+    }
 }
 
 void group::addObject(transformational* object)

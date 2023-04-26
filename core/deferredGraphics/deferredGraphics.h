@@ -88,6 +88,7 @@ private:
     camera*                                     cameraObject{nullptr};
     texture*                                    emptyTexture{nullptr};
 
+    std::vector<VkCommandBuffer> getTransparentLayersCommandBuffers(uint32_t imageIndex);
     void createStorageBuffers(uint32_t imageCount);
 public:
     deferredGraphics(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);

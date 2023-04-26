@@ -324,7 +324,7 @@ void deferredGraphics::createCommandBuffers()
             stage(  {DeferredGraphics.getCommandBuffer(imageIndex)},
                     {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
                     device.getQueue(0,0)),
-            stage(  {TransparentLayers[0].getCommandBuffer(imageIndex), TransparentLayers[1].getCommandBuffer(imageIndex)},
+            stage(  getTransparentLayersCommandBuffers(imageIndex),
                     {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
                     device.getQueue(0,0))
         }, new node({
@@ -452,6 +452,15 @@ void deferredGraphics::updateBuffers(uint32_t imageIndex)
     DeferredGraphics.updateLightSourcesUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
 
     vkEndCommandBuffer(copyCommandBuffers[imageIndex]);
+}
+
+std::vector<VkCommandBuffer> deferredGraphics::getTransparentLayersCommandBuffers(uint32_t imageIndex)
+{
+    std::vector<VkCommandBuffer> commandBuffers;
+    for(auto& transparentLayer: TransparentLayers){
+        commandBuffers.push_back(transparentLayer.getCommandBuffer(imageIndex));
+    }
+    return commandBuffers;
 }
 
 void deferredGraphics::createStorageBuffers(uint32_t imageCount)

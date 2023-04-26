@@ -2,13 +2,16 @@ TEMPLATE = app
 CONFIG += c++17 console
 WARNINGS += -Wall
 
+Release:DESTDIR = release
+Debug:DESTDIR = debug
+
 win32: LIBS += \
-    -L$$OUT_PWD/../core/graphicsManager/debug \
-    -L$$OUT_PWD/../core/deferredGraphics/debug \
-    -L$$OUT_PWD/../core/models/debug \
-    -L$$OUT_PWD/../core/transformational/debug \
-    -L$$OUT_PWD/../core/interfaces/debug \
-    -L$$OUT_PWD/../core/utils/debug \
+    -L$$OUT_PWD/../core/graphicsManager/$$DESTDIR \
+    -L$$OUT_PWD/../core/deferredGraphics/$$DESTDIR \
+    -L$$OUT_PWD/../core/models/$$DESTDIR \
+    -L$$OUT_PWD/../core/transformational/$$DESTDIR \
+    -L$$OUT_PWD/../core/interfaces/$$DESTDIR \
+    -L$$OUT_PWD/../core/utils/$$DESTDIR \
     -L$$PWD/../dependences/libs/vulkan/x64 \
     -L$$PWD/../dependences/libs/glfw-3.3.4.bin.WIN64/lib-static-ucrt \
     -lgraphicsManager \

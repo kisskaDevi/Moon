@@ -14,13 +14,15 @@ node.cpp
 operations.cpp
 texture.cpp
 device.cpp
-vkdefault.cpp)
+vkdefault.cpp
+buffer.cpp)
 
 set(HEADERS attachments.h
 node.h
 operations.h
 texture.h
 device.h
-vkdefault.h)
+vkdefault.h
+buffer.h)
 
 add_library(utils STATIC ${SOURCES} ${HEADERS})

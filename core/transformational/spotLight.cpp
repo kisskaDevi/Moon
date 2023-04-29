@@ -38,9 +38,7 @@ spotLight::~spotLight(){
 void spotLight::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
-        if(buffer.map){      vkUnmapMemory(device, buffer.memory); buffer.map = nullptr;}
-        if(buffer.instance){ vkDestroyBuffer(device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
-        if(buffer.memory){   vkFreeMemory(device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
+        buffer.destroy(device);
     }
     uniformBuffers.clear();
 }

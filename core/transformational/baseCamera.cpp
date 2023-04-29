@@ -8,18 +8,16 @@ baseCamera::baseCamera(){}
 
 baseCamera::~baseCamera(){}
 
-void baseCamera::destroy(VkDevice* device)
+void baseCamera::destroy(VkDevice device)
 {
     destroyUniformBuffers(device, uniformBuffersHost);
     destroyUniformBuffers(device, uniformBuffersDevice);
 }
 
-void baseCamera::destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers)
+void baseCamera::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
-        if(buffer.map){      vkUnmapMemory(*device, buffer.memory); buffer.map = nullptr;}
-        if(buffer.instance){ vkDestroyBuffer(*device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
-        if(buffer.memory){   vkFreeMemory(*device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
+        buffer.destroy(device);
     }
     uniformBuffers.clear();
 }
@@ -127,23 +125,23 @@ glm::vec3           baseCamera::getTranslation() const  {   return translation.v
 quaternion<float>   baseCamera::getRotationX()const     {   return rotationX;}
 quaternion<float>   baseCamera::getRotationY()const     {   return rotationY;}
 
-void baseCamera::createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount)
+void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-      Buffer::create( *physicalDevice,
-                        *device,
+      Buffer::create(   physicalDevice,
+                        device,
                         sizeof(UniformBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
-      vkMapMemory(*device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map);
+      vkMapMemory(device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map);
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-      Buffer::create( *physicalDevice,
-                        *device,
+      Buffer::create(   physicalDevice,
+                        device,
                         sizeof(UniformBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,

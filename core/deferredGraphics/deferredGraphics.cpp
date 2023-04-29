@@ -538,12 +538,12 @@ void deferredGraphics::destroyModel(model* pModel){
 
 void deferredGraphics::bindCameraObject(camera* cameraObject){
     this->cameraObject = cameraObject;
-    cameraObject->createUniformBuffers(&device.instance,&device.getLogical(),imageCount);
+    cameraObject->createUniformBuffers(device.instance,device.getLogical(),imageCount);
 }
 
 void deferredGraphics::removeCameraObject(camera* cameraObject){
     if(this->cameraObject == cameraObject){
-        this->cameraObject->destroy(&device.getLogical());
+        this->cameraObject->destroy(device.getLogical());
         this->cameraObject = nullptr;
     }
 }

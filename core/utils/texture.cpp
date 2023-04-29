@@ -7,7 +7,6 @@
 #include <iostream>
 #include <cstring>
 
-
 void iamge::destroy(VkDevice device){
     destroyStagingBuffer(device);
     if(textureImage)        {vkDestroyImage(device, textureImage, nullptr); textureImage = VK_NULL_HANDLE;}
@@ -17,8 +16,7 @@ void iamge::destroy(VkDevice device){
 }
 
 void iamge::destroyStagingBuffer(VkDevice device){
-    if(stagingBuffer.instance) {vkDestroyBuffer(device, stagingBuffer.instance, nullptr); stagingBuffer.instance = VK_NULL_HANDLE;}
-    if(stagingBuffer.memory)   {vkFreeMemory(device, stagingBuffer.memory, nullptr); stagingBuffer.memory = VK_NULL_HANDLE;}
+    stagingBuffer.destroy(device);
 }
 
 void iamge::create(
@@ -39,12 +37,12 @@ void iamge::create(
 
     Buffer::create(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
 
-    for(uint32_t i=0;i<imageCount;i++)
+    for(uint32_t i = 0, singleImageSize = static_cast<uint32_t>(imageSize/imageCount); i< imageCount; i++)
     {
-        void* data;
-        vkMapMemory(device, stagingBuffer.memory, static_cast<uint32_t>(i*imageSize/imageCount), static_cast<uint32_t>(imageSize/imageCount), 0, &data);
-            std::memcpy(data, pixels[i], static_cast<uint32_t>(imageSize/imageCount));
+        vkMapMemory(device, stagingBuffer.memory, i * singleImageSize, singleImageSize, 0, &stagingBuffer.map);
+            std::memcpy(stagingBuffer.map, pixels[i], singleImageSize);
         vkUnmapMemory(device, stagingBuffer.memory);
+        stagingBuffer.map = nullptr;
     }
 
     Texture::create(    physicalDevice,

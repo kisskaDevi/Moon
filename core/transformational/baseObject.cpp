@@ -14,11 +14,9 @@ baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCo
 void baseObject::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
 {
     for(auto& buffer: uniformBuffers){
-        if(buffer.map){      vkUnmapMemory(device, buffer.memory); buffer.map = nullptr;}
-        if(buffer.instance){ vkDestroyBuffer(device, buffer.instance, nullptr); buffer.instance = VK_NULL_HANDLE;}
-        if(buffer.memory){   vkFreeMemory(device, buffer.memory, nullptr); buffer.memory = VK_NULL_HANDLE;}
+        buffer.destroy(device);
     }
-    uniformBuffers.resize(0);
+    uniformBuffers.clear();
 }
 
 void baseObject::destroy(VkDevice device)

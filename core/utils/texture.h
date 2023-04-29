@@ -3,6 +3,8 @@
 
 #include <vulkan.h>
 
+#include "buffer.h"
+
 #include <string>
 #include <vector>
 
@@ -27,10 +29,7 @@ struct iamge
 
     VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
 
-    struct buffer{
-        VkBuffer instance{VK_NULL_HANDLE};
-        VkDeviceMemory memory{VK_NULL_HANDLE};
-    }stagingBuffer;
+    buffer stagingBuffer;
 
     void destroy(VkDevice device);
     void destroyStagingBuffer(VkDevice device);

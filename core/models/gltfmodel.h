@@ -12,6 +12,7 @@
 
 #include "texture.h"
 #include "model.h"
+#include "buffer.h"
 
 #include <string>
 #include <vector>
@@ -28,18 +29,6 @@ struct BoundingBox{
     BoundingBox getAABB(glm::mat4 m) const;
 };
 
-struct buffer{
-    VkBuffer       instance{VK_NULL_HANDLE};
-    VkDeviceMemory memory{VK_NULL_HANDLE};
-    void*          map{nullptr};
-
-    void destroy(VkDevice device){
-        if (instance != VK_NULL_HANDLE){ vkDestroyBuffer(device, instance, nullptr); instance = VK_NULL_HANDLE;}
-        if (memory != VK_NULL_HANDLE){ vkFreeMemory(device, memory, nullptr); memory = VK_NULL_HANDLE;}
-        if (map){ map = nullptr;}
-    }
-};
-
 struct Mesh{
     struct Primitive{
         uint32_t firstIndex{0};
@@ -50,8 +39,10 @@ struct Mesh{
         Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material);
     };
 
-    struct UniformBuffer : public buffer {
-        VkDescriptorSet descriptorSet;
+    class UniformBuffer : public buffer {
+    public:
+        UniformBuffer() = default;
+        VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
     } uniformBuffer;
 
     struct UniformBlock {

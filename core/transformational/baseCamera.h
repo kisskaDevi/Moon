@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "transformational.h"
 #include "quaternion.h"
+#include "buffer.h"
 
 struct UniformBufferObject{
     alignas(16) glm::mat4           view;
@@ -25,22 +26,16 @@ private:
     quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
 
 protected:
-    struct buffer{
-        VkBuffer       instance{VK_NULL_HANDLE};
-        VkDeviceMemory memory{VK_NULL_HANDLE};
-        bool           updateFlag{true};
-        void*          map{nullptr};
-    };
     std::vector<buffer>     uniformBuffersHost;
     std::vector<buffer>     uniformBuffersDevice;
 
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
-    void destroyUniformBuffers(VkDevice* device, std::vector<buffer>& uniformBuffers);
+    void destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers);
     void updateViewMatrix();
 public:
     baseCamera();
     ~baseCamera();
-    void destroy(VkDevice* device) override;
+    void destroy(VkDevice device) override;
 
     void setGlobalTransform(const glm::mat4 & transform) override;
     void translate(const glm::vec3 & translate) override;
@@ -56,7 +51,7 @@ public:
     void                    setRotation(const quaternion<float>& rotation);
     void                    setRotations(const quaternion<float>& rotationX, const quaternion<float>& rotationY);
 
-    void createUniformBuffers(VkPhysicalDevice* physicalDevice, VkDevice* device, uint32_t imageCount) override;
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) override;
     void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 
     VkBuffer                getBuffer(uint32_t index) const override;

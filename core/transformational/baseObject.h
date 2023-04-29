@@ -5,6 +5,7 @@
 #include "transformational.h"
 #include "quaternion.h"
 #include "texture.h"
+#include "buffer.h"
 #include "object.h"
 
 #include <string>
@@ -56,13 +57,6 @@ protected:
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptors;
 
-    struct buffer
-    {
-        VkBuffer       instance{VK_NULL_HANDLE};
-        VkDeviceMemory memory{VK_NULL_HANDLE};
-        bool           updateFlag{true};
-        void*          map{nullptr};
-    };
     std::vector<buffer> uniformBuffersHost;
     std::vector<buffer> uniformBuffersDevice;
 

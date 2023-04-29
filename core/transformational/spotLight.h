@@ -4,6 +4,7 @@
 #include "transformational.h"
 #include "light.h"
 #include "quaternion.h"
+#include "buffer.h"
 
 class shadowGraphics;
 
@@ -53,12 +54,6 @@ private:
     std::vector<VkDescriptorSet>        bufferDescriptorSets;
     std::vector<VkDescriptorSet>        descriptorSets;
 
-    struct buffer{
-        VkBuffer       instance{VK_NULL_HANDLE};
-        VkDeviceMemory memory{VK_NULL_HANDLE};
-        bool           updateFlag{true};
-        void*          map{nullptr};
-    };
     std::vector<buffer> uniformBuffersHost;
     std::vector<buffer> uniformBuffersDevice;
 

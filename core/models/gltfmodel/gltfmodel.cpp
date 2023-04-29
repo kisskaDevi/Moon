@@ -154,6 +154,7 @@ namespace {
         vkMapMemory(device, staging.memory, 0, bufferSize, 0, &staging.map);
             std::memcpy(staging.map, data, bufferSize);
         vkUnmapMemory(device, staging.memory);
+        staging.map = nullptr;
 
         Buffer::copy(commandBuffer, bufferSize, staging.instance, deviceLocal.instance);
     };
@@ -165,12 +166,13 @@ BoundingBox::BoundingBox(glm::vec3 min, glm::vec3 max)
 
 BoundingBox BoundingBox::getAABB(glm::mat4 m) const {
     return BoundingBox(
-        glm::min(glm::vec3(m[0]) * this->min.x, glm::vec3(m[0]) * this->max.x)
-        + glm::min(glm::vec3(m[1]) * this->min.y, glm::vec3(m[1]) * this->max.y)
-        + glm::min(glm::vec3(m[2]) * this->min.z, glm::vec3(m[2]) * this->max.z),
-        glm::max(glm::vec3(m[0]) * this->min.x, glm::vec3(m[0]) * this->max.x)
-        + glm::max(glm::vec3(m[1]) * this->min.y, glm::vec3(m[1]) * this->max.y)
-        + glm::max(glm::vec3(m[2]) * this->min.z, glm::vec3(m[2]) * this->max.z));
+        glm::min(glm::vec3(m[0]) * this->min.x, glm::vec3(m[0]) * this->max.x) +
+        glm::min(glm::vec3(m[1]) * this->min.y, glm::vec3(m[1]) * this->max.y) +
+        glm::min(glm::vec3(m[2]) * this->min.z, glm::vec3(m[2]) * this->max.z),
+        glm::max(glm::vec3(m[0]) * this->min.x, glm::vec3(m[0]) * this->max.x) +
+        glm::max(glm::vec3(m[1]) * this->min.y, glm::vec3(m[1]) * this->max.y) +
+        glm::max(glm::vec3(m[2]) * this->min.z, glm::vec3(m[2]) * this->max.z)
+    );
 }
 
 gltfModel::gltfModel(std::string filename, uint32_t instanceCount)

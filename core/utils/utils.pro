@@ -11,6 +11,7 @@ INCLUDEPATH += \
 
 SOURCES += \
     attachments.cpp \
+    buffer.cpp \
     node.cpp \
     operations.cpp \
     texture.cpp \
@@ -19,8 +20,13 @@ SOURCES += \
 
 HEADERS += \
     attachments.h \
+    buffer.h \
     node.h \
     operations.h \
     texture.h \
     device.h \
     vkdefault.h
+
+
+DISTFILES += \
+    $$PWD/CMakelists.txt

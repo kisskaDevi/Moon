@@ -19,3 +19,6 @@ SOURCES += \
 
 HEADERS += \
     gltfmodel.h
+
+DISTFILES += \
+    $$PWD/CMakelists.txt

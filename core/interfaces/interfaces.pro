@@ -18,3 +18,6 @@ HEADERS += \
     light.h \
     model.h \
     object.h
+
+DISTFILES += \
+    $$PWD/CMakelists.txt

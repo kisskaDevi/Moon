@@ -22,3 +22,6 @@ HEADERS += \
     spotLight.h \
     transformational.h \
     group.h
+
+DISTFILES += \
+    $$PWD/CMakelists.txt

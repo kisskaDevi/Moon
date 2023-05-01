@@ -78,3 +78,6 @@ HEADERS += \
     filters/ssao.h \
     filters/sslr.h \
     renderStages/graphics.h \
+
+DISTFILES += \
+    $$PWD/CMakelists.txt

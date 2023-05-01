@@ -108,8 +108,7 @@ void deferredGraphics::destroyGraphics()
     }
 
     for (auto& buffer: storageBuffersHost){
-        if(buffer.instance) vkDestroyBuffer(device.getLogical(), buffer.instance, nullptr);
-        if(buffer.memory)   vkFreeMemory(device.getLogical(), buffer.memory, nullptr);
+        buffer.destroy(device.getLogical());
     }
     storageBuffersHost.clear();
 

@@ -15,3 +15,5 @@ HEADERS += \
     graphicsInterface.h \
     graphicsManager.h
 
+DISTFILES += \
+    $$PWD/CMakelists.txt

@@ -13,6 +13,7 @@
 #include "skybox.h"
 #include "shadow.h"
 #include "device.h"
+#include "buffer.h"
 
 #include <glm.hpp>
 
@@ -45,13 +46,13 @@ private:
     std::vector<DeferredAttachments>            transparentLayersAttachments;
 
     attachments                                 blurAttachment;
-    float                                       blitFactor{1.5f};
-    uint32_t                                    blitAttachmentCount{8};
-    std::vector<attachments>                    blitAttachments;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
     attachments                                 skyboxAttachment;
+    std::vector<attachments>                    blitAttachments;
     std::vector<attachments>                    layersCombinedAttachment;
+    float                                       blitFactor{1.5f};
+    uint32_t                                    blitAttachmentCount{8};
 
     graphics                                    DeferredGraphics;
     gaussianBlur                                Blur;
@@ -72,12 +73,6 @@ private:
     bool                                        enableSSLR{true};
     bool                                        enableSSAO{true};
 
-    struct buffer{
-        VkBuffer       instance{VK_NULL_HANDLE};
-        VkDeviceMemory memory{VK_NULL_HANDLE};
-        bool           updateFlag{true};
-        void*          map{nullptr};
-    };
     std::vector<buffer>                         storageBuffersHost;
 
     VkCommandPool                               commandPool{VK_NULL_HANDLE};

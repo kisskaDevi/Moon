@@ -48,3 +48,6 @@ SOURCES += \
 HEADERS += \
     physicalobject.h \
     scene.h
+
+DISTFILES += \
+    $$PWD/CMakelists.txt

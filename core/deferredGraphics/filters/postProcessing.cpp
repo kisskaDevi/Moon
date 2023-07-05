@@ -2,7 +2,12 @@
 #include "operations.h"
 #include "vkdefault.h"
 #include "texture.h"
+#include "swapChain.h"
 
+void postProcessingGraphics::setSwapChain(swapChain* swapChainKHR)
+{
+    this->swapChainKHR = swapChainKHR;
+}
 void postProcessingGraphics::setBlurAttachment(attachments *blurAttachment)
 {
     this->blurAttachment = blurAttachment;
@@ -31,63 +36,6 @@ void postProcessingGraphics::destroy()
     postProcessing.destroy(device);
 
     filterGraphics::destroy();
-}
-
-void postProcessingGraphics::destroySwapChainAttachments()
-{
-    for(size_t i=0; i<swapChainAttachments.size(); i++)
-        for(size_t j=0; j <image.Count;j++)
-            if(swapChainAttachments[i].imageView[j]) vkDestroyImageView(device,swapChainAttachments[i].imageView[j],nullptr);
-    swapChainAttachments.resize(0);
-}
-
-void postProcessingGraphics::createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails* swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices)
-{
-    VkPresentModeKHR presentMode = SwapChain::queryingPresentMode(swapChainSupport->presentModes);
-    VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport->formats);
-    VkExtent2D extent = SwapChain::queryingExtent(window, swapChainSupport->capabilities);
-
-    VkSwapchainCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = *surface;
-        createInfo.minImageCount = image.Count;
-        createInfo.imageFormat = surfaceFormat.format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = extent;
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ;
-        createInfo.imageSharingMode = queueFamilyIndexCount > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.pQueueFamilyIndices = pQueueFamilyIndices;
-        createInfo.queueFamilyIndexCount = queueFamilyIndexCount;
-        createInfo.preTransform = swapChainSupport->capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = presentMode;
-        createInfo.clipped = VK_TRUE;
-        createInfo.oldSwapchain = VK_NULL_HANDLE;
-    vkCreateSwapchainKHR(device, &createInfo, nullptr, swapChain);
-}
-
-void postProcessingGraphics::createSwapChainAttachments(VkSwapchainKHR* swapChain)
-{
-    swapChainAttachments.resize(swapChainAttachmentCount);
-    for(size_t i=0;i<swapChainAttachments.size();i++)
-    {
-        swapChainAttachments[i].image.resize(image.Count);
-        swapChainAttachments[i].imageView.resize(image.Count);
-        vkGetSwapchainImagesKHR(device, *swapChain, &image.Count, swapChainAttachments[i].image.data());
-    }
-
-    for(size_t i=0;i<swapChainAttachments.size();i++)
-        for (size_t size = 0; size < swapChainAttachments[i].imageView.size(); size++)
-            Texture::createView(    device,
-                                    VK_IMAGE_VIEW_TYPE_2D,
-                                    image.Format,
-                                    VK_IMAGE_ASPECT_COLOR_BIT,
-                                    1,
-                                    0,
-                                    1,
-                                    swapChainAttachments[i].image[size],
-                                    &swapChainAttachments[i].imageView[size]);
 }
 
 void postProcessingGraphics::createRenderPass()
@@ -133,18 +81,13 @@ void postProcessingGraphics::createFramebuffers()
     framebuffers.resize(image.Count);
     for (size_t Image = 0; Image < framebuffers.size(); Image++)
     {
-        std::vector<VkImageView> attachments(swapChainAttachments.size());
-        for(size_t index=0; index<swapChainAttachments.size(); index++){
-            attachments[index] = swapChainAttachments[index].imageView[Image];
-        }
-
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.attachmentCount = 1;
+            framebufferInfo.pAttachments = &swapChainKHR->attachment().imageView[Image];
+            framebufferInfo.width = image.frameBufferExtent.width;
+            framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
         vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[Image]);
     }
@@ -203,8 +146,8 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, ima
         shaderStages.back().pName = "main";
         shaderStages.back().pSpecializationInfo = &specializationInfo;
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor(pInfo->Extent);
+    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -344,7 +287,7 @@ void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber)
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.offset = image.Offset;
         renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();

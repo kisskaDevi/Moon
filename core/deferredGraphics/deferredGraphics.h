@@ -29,18 +29,26 @@ struct StorageBufferObject{
     alignas(4)  float               depth;
 };
 
+struct frameScale
+{
+    float xScale{0};
+    float yScale{0};
+};
+
 class deferredGraphics: public graphicsInterface
 {
 private:
     std::string                                 ExternalPath{};
     uint32_t                                    imageCount{0};
-    VkExtent2D                                  extent{0,0};
+    frameScale                                  offsetСoefficient{0,0};
+    frameScale                                  extentСoefficient{0,0};
+    VkExtent2D                                  frameBufferExtent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
     std::vector<physicalDevice>                 devices;
     physicalDevice                              device;
 
-    VkSwapchainKHR                              swapChain{VK_NULL_HANDLE};
+    swapChain*                                  swapChainKHR{nullptr};
 
     DeferredAttachments                         deferredAttachments;
     std::vector<DeferredAttachments>            transparentLayersAttachments;
@@ -86,7 +94,7 @@ private:
     std::vector<VkCommandBuffer> getTransparentLayersCommandBuffers(uint32_t imageIndex);
     void createStorageBuffers(uint32_t imageCount);
 public:
-    deferredGraphics(const std::string& ExternalPath, VkExtent2D extent = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    deferredGraphics(const std::string& ExternalPath, frameScale offset = {0.0f,0.0f}, frameScale extent = {1.0f,1.0f}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
 
     ~deferredGraphics();
     void destroyGraphics() override;
@@ -94,8 +102,9 @@ public:
     void freeCommandBuffers() override;
     void destroyEmptyTextures();
 
+    void setSwapChain(swapChain* swapChainKHR) override;
     void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
-    void setSupportImageCount(VkSurfaceKHR* surface) override;
+    void setImageCount(uint32_t imageCount) override;
     void createCommandPool() override;
     void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) override;
     void updateDescriptorSets() override;
@@ -105,14 +114,13 @@ public:
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
 
-    uint32_t getImageCount() override;
-    VkSwapchainKHR& getSwapChain() override;
-
     std::vector<std::vector<VkSemaphore>> sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 
     void        updateCmdFlags();
 
-    void        setExtent(VkExtent2D extent);
+    void        setOffset(frameScale offset);
+    void        setExtent(frameScale extent);
+    void        setFrameBufferExtent(VkExtent2D extent);
     void        setExternalPath(const std::string& ExternalPath);
     void        setEmptyTexture(std::string ZERO_TEXTURE);
     void        setMinAmbientFactor(const float& minAmbientFactor);
@@ -120,13 +128,13 @@ public:
     void        createModel(model* pModel);
     void        destroyModel(model* pModel);
 
-    void        bindCameraObject(camera* cameraObject);
+    void        bindCameraObject(camera* cameraObject, bool create = false);
     void        removeCameraObject(camera* cameraObject);
 
-    void        bindObject(object* object);
+    void        bindObject(object* object, bool create = false);
     bool        removeObject(object* object);
 
-    void        bindLightSource(light* lightSource);
+    void        bindLightSource(light* lightSource, bool create = false);
     void        removeLightSource(light* lightSource);
 
     void        updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);

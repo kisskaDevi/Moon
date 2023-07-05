@@ -195,6 +195,10 @@ namespace SwapChain {
         VkPhysicalDevice                            device,
         VkSurfaceKHR                                surface);
 
+    uint32_t queryingSupportImageCount(
+        VkPhysicalDevice                            device,
+        VkSurfaceKHR                                surface);
+
     VkSurfaceFormatKHR queryingSurfaceFormat(
             const std::vector<VkSurfaceFormatKHR>&  availableFormats);
 

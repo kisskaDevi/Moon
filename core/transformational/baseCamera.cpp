@@ -6,6 +6,20 @@
 
 baseCamera::baseCamera(){}
 
+baseCamera::baseCamera(float angle, float aspect, float near, float far)
+{
+    glm::mat4x4 proj = glm::perspective(glm::radians(angle), aspect, near, far);
+    proj[1][1] *= -1.0f;
+    setProjMatrix(proj);
+}
+
+void baseCamera::recreate(float angle, float aspect, float near, float far)
+{
+    glm::mat4x4 proj = glm::perspective(glm::radians(angle), aspect, near, far);
+    proj[1][1] *= -1.0f;
+    setProjMatrix(proj);
+}
+
 baseCamera::~baseCamera(){}
 
 void baseCamera::destroy(VkDevice device)

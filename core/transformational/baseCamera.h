@@ -34,8 +34,10 @@ protected:
     void updateViewMatrix();
 public:
     baseCamera();
+    baseCamera(float angle, float aspect, float near, float far);
     ~baseCamera();
     void destroy(VkDevice device) override;
+    void recreate(float angle, float aspect, float near, float far);
 
     void setGlobalTransform(const glm::mat4 & transform) override;
     void translate(const glm::vec3 & translate) override;

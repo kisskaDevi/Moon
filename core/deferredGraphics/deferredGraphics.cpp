@@ -9,8 +9,8 @@
 
 #include <cstring>
 
-deferredGraphics::deferredGraphics(const std::string& ExternalPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
-    ExternalPath(ExternalPath), extent(extent), MSAASamples(MSAASamples)
+deferredGraphics::deferredGraphics(const std::string& ExternalPath, frameScale offset, frameScale extent, VkSampleCountFlagBits MSAASamples):
+    ExternalPath(ExternalPath), offsetСoefficient(offset), extentСoefficient(extent), MSAASamples(MSAASamples)
 {
     DeferredGraphics.setExternalPath(ExternalPath);
     PostProcessing.setExternalPath(ExternalPath);
@@ -71,7 +71,6 @@ void deferredGraphics::destroyGraphics()
     Skybox.destroy();
     Shadow.destroy();
     PostProcessing.destroy();
-    PostProcessing.destroySwapChainAttachments();
     LayersCombiner.destroy();
     Blur.destroy();
     for(auto& layer: TransparentLayers){
@@ -111,13 +110,17 @@ void deferredGraphics::destroyGraphics()
         buffer.destroy(device.getLogical());
     }
     storageBuffersHost.clear();
-
-    if(swapChain) {vkDestroySwapchainKHR(device.getLogical(), swapChain, nullptr); swapChain = VK_NULL_HANDLE;}
 }
 
 void deferredGraphics::destroyCommandPool()
 {
     if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
+}
+
+
+void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
+{
+    this->swapChainKHR = swapChainKHR;
 }
 
 void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices)
@@ -141,15 +144,9 @@ void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices
     }
 }
 
-void deferredGraphics::setSupportImageCount(VkSurfaceKHR* surface)
+void deferredGraphics::setImageCount(uint32_t imageCount)
 {
-    auto capabilities = SwapChain::queryingSupport(device.instance, *surface).capabilities;
-    imageCount = capabilities.minImageCount + 1;
-    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount){
-        imageCount = capabilities.maxImageCount;
-    }
-
-    updateCommandBufferFlags.resize(imageCount, true);
+    this->imageCount = imageCount;
 }
 
 void deferredGraphics::createCommandPool()
@@ -186,16 +183,21 @@ namespace {
 
 void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
 {
+    imageCount = imageCount == 0 ? SwapChain::queryingSupportImageCount(device.instance,*surface) : imageCount;
+
     SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance,*surface);
 
-    if(extent.height==0&&extent.width==0){
-        extent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
-    }
+    frameBufferExtent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
 
-    imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples};
+    imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkOffset2D{0,0},VkExtent2D{1024,1024},VkExtent2D{1024,1024},MSAASamples};
     Shadow.setImageProp(&shadowsInfo);
 
-    imageInfo info{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, extent, MSAASamples};
+    imageInfo info{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, VkOffset2D{0,0},
+                   {static_cast<uint32_t>(frameBufferExtent.width * extentСoefficient.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentСoefficient.yScale)},
+                   {static_cast<uint32_t>(frameBufferExtent.width * extentСoefficient.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentСoefficient.yScale)},
+                   MSAASamples
+    };
+
     DeferredGraphics.setImageProp(&info);
     Blur.setImageProp(&info);
     LayersCombiner.setImageProp(&info);
@@ -203,10 +205,17 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     SSLR.setImageProp(&info);
     SSAO.setImageProp(&info);
     Skybox.setImageProp(&info);
-    PostProcessing.setImageProp(&info);
     for(auto& layer: TransparentLayers){
         layer.setImageProp(&info);
     }
+
+    imageInfo swapChainInfo{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format,
+        {static_cast<int32_t>(frameBufferExtent.width * offsetСoefficient.xScale), static_cast<int32_t>(frameBufferExtent.height * offsetСoefficient.yScale)},
+        {static_cast<uint32_t>(frameBufferExtent.width * extentСoefficient.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentСoefficient.yScale)},
+        frameBufferExtent, MSAASamples
+    };
+
+    PostProcessing.setImageProp(&swapChainInfo);
 
     if(enableSkybox){
         Skybox.createAttachments(1,&skyboxAttachment);
@@ -266,10 +275,8 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     Shadow.createRenderPass();
     Shadow.createPipelines();
 
-    std::vector<uint32_t> queueIndices = {0};
     PostProcessing.setLayersAttachment(enableTransparentLayers ? &layersCombinedAttachment[0] : &deferredAttachments.image);
-    PostProcessing.createSwapChain(&swapChain, window, &swapChainSupport, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data());
-    PostProcessing.createSwapChainAttachments(&swapChain);
+    PostProcessing.setSwapChain(swapChainKHR);
     PostProcessing.createRenderPass();
     PostProcessing.createFramebuffers();
     PostProcessing.createPipelines();
@@ -278,6 +285,8 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     PostProcessing.updateDescriptorSets();
 
     createStorageBuffers(imageCount);
+
+    updateCommandBufferFlags.resize(imageCount, true);
 }
 
 void deferredGraphics::createCommandBuffers()
@@ -344,8 +353,12 @@ void deferredGraphics::createCommandBuffers()
 
 std::vector<std::vector<VkSemaphore>> deferredGraphics::sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex)
 {
-    nodes[imageIndex]->setExternalSemaphore(externalSemaphore);
-    nodes[imageIndex]->back()->setExternalFence(externalFence);
+    if(externalSemaphore.size()){
+        nodes[imageIndex]->setExternalSemaphore(externalSemaphore);
+    }
+    if(externalFence.size()){
+        nodes[imageIndex]->back()->setExternalFence(externalFence);
+    }
 
     nodes[imageIndex]->submit();
 
@@ -491,10 +504,9 @@ uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage){
     return storageBuffer.number;
 }
 
-uint32_t deferredGraphics::getImageCount()       {   return imageCount;}
-VkSwapchainKHR& deferredGraphics::getSwapChain() {   return swapChain;}
-
-void deferredGraphics::setExtent(VkExtent2D extent)             {   this->extent = extent;}
+void deferredGraphics::setOffset(frameScale offset)             {   this->offsetСoefficient = offset;}
+void deferredGraphics::setExtent(frameScale extent)             {   this->extentСoefficient = extent;}
+void deferredGraphics::setFrameBufferExtent(VkExtent2D extent)  {   this->frameBufferExtent = extent;}
 void deferredGraphics::setExternalPath(const std::string &path) {   ExternalPath = path;}
 void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
     this->emptyTexture = new texture(ZERO_TEXTURE);
@@ -535,9 +547,11 @@ void deferredGraphics::destroyModel(model* pModel){
     pModel->destroy(device.getLogical());
 }
 
-void deferredGraphics::bindCameraObject(camera* cameraObject){
+void deferredGraphics::bindCameraObject(camera* cameraObject, bool create){
     this->cameraObject = cameraObject;
-    cameraObject->createUniformBuffers(device.instance,device.getLogical(),imageCount);
+    if(create){
+        cameraObject->createUniformBuffers(device.instance,device.getLogical(),imageCount);
+    }
 }
 
 void deferredGraphics::removeCameraObject(camera* cameraObject){
@@ -547,27 +561,29 @@ void deferredGraphics::removeCameraObject(camera* cameraObject){
     }
 }
 
-void deferredGraphics::bindLightSource(light* lightSource){
-    if(lightSource->getTexture()){
-        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-        lightSource->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
-        SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-        lightSource->getTexture()->destroyStagingBuffer(device.getLogical());
-        lightSource->getTexture()->createTextureImageView(device.getLogical());
-        lightSource->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-    }
-    if(lightSource->isShadowEnable()){
-        Shadow.addLightSource(lightSource);
-        Shadow.createAttachments(1,lightSource->getAttachments());
-        Shadow.setAttachments(1,lightSource->getAttachments());
-        Shadow.createFramebuffers(lightSource);
-    }
+void deferredGraphics::bindLightSource(light* lightSource, bool create){
+    if(create){
+        if(lightSource->getTexture()){
+            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+            lightSource->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+            lightSource->getTexture()->destroyStagingBuffer(device.getLogical());
+            lightSource->getTexture()->createTextureImageView(device.getLogical());
+            lightSource->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        }
+        if(lightSource->isShadowEnable()){
+            Shadow.addLightSource(lightSource);
+            Shadow.createAttachments(1,lightSource->getAttachments());
+            Shadow.setAttachments(1,lightSource->getAttachments());
+            Shadow.createFramebuffers(lightSource);
+        }
 
-    lightSource->createUniformBuffers(device.instance,device.getLogical(),imageCount);
+        lightSource->createUniformBuffers(device.instance,device.getLogical(),imageCount);
 
-    lightSource->createDescriptorPool(device.getLogical(), imageCount);
-    lightSource->createDescriptorSets(device.getLogical(), imageCount);
-    lightSource->updateDescriptorSets(device.getLogical(), imageCount, emptyTexture);
+        lightSource->createDescriptorPool(device.getLogical(), imageCount);
+        lightSource->createDescriptorSets(device.getLogical(), imageCount);
+        lightSource->updateDescriptorSets(device.getLogical(), imageCount, emptyTexture);
+    }
 
     DeferredGraphics.bindLightSource(lightSource);
     for(auto& TransparentLayer: TransparentLayers){
@@ -597,18 +613,20 @@ void deferredGraphics::removeLightSource(light* lightSource){
     updateCmdFlags();
 }
 
-void deferredGraphics::bindObject(object* object){
-    if(object->getTexture() && (object->getPipelineBitMask() & (0x1))){
-        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-        object->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
-        SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-        object->getTexture()->createTextureImageView(device.getLogical());
-        object->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-        object->getTexture()->destroyStagingBuffer(device.getLogical());
+void deferredGraphics::bindObject(object* object, bool create){
+    if(create){
+        if(object->getTexture() && (object->getPipelineBitMask() & (0x1))){
+            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+            object->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+            object->getTexture()->createTextureImageView(device.getLogical());
+            object->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+            object->getTexture()->destroyStagingBuffer(device.getLogical());
+        }
+        object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
+        object->createDescriptorPool(device.getLogical(),imageCount);
+        object->createDescriptorSet(device.getLogical(),imageCount);
     }
-    object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
-    object->createDescriptorPool(device.getLogical(),imageCount);
-    object->createDescriptorSet(device.getLogical(),imageCount);
 
     switch (object->getPipelineBitMask()) {
         case (0<<4)|0x0:

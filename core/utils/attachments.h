@@ -7,7 +7,9 @@
 struct imageInfo{
     uint32_t                        Count;
     VkFormat                        Format;
+    VkOffset2D                      Offset;
     VkExtent2D                      Extent;
+    VkExtent2D                      frameBufferExtent;
     VkSampleCountFlagBits           Samples;
 };
 

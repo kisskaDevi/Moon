@@ -47,20 +47,20 @@ VkPipelineInputAssemblyStateCreateInfo vkDefault::inputAssembly(){
     return inputAssembly;
 }
 
-VkViewport vkDefault::viewport(VkExtent2D extent){
+VkViewport vkDefault::viewport(VkOffset2D offset, VkExtent2D extent){
     VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
+        viewport.x = static_cast<float>(offset.x);
+        viewport.y = static_cast<float>(offset.y);
         viewport.width  = static_cast<float>(extent.width);
-        viewport.height= static_cast<float>(extent.height);
+        viewport.height = static_cast<float>(extent.height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
     return viewport;
 }
 
-VkRect2D vkDefault::scissor(VkExtent2D extent){
+VkRect2D vkDefault::scissor(VkOffset2D offset, VkExtent2D extent){
     VkRect2D scissor{};
-        scissor.offset = {0, 0};
+        scissor.offset = offset;
         scissor.extent = extent;
     return scissor;
 }

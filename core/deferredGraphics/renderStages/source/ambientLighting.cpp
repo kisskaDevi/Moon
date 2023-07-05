@@ -21,8 +21,8 @@ void graphics::AmbientLighting::createPipeline(VkDevice device, imageInfo* pInfo
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor(pInfo->Extent);
+    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();

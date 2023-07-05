@@ -11,8 +11,8 @@ VkPipelineShaderStageCreateInfo fragmentShaderStage(VkShaderModule shaderModule)
 VkPipelineShaderStageCreateInfo vertrxShaderStage(VkShaderModule shaderModule);
 
 VkPipelineVertexInputStateCreateInfo vertexInputState();
-VkViewport viewport(VkExtent2D extent);
-VkRect2D scissor(VkExtent2D extent);
+VkViewport viewport(VkOffset2D offset, VkExtent2D extent);
+VkRect2D scissor(VkOffset2D offset, VkExtent2D extent);
 VkPipelineViewportStateCreateInfo viewportState(VkViewport* viewport, VkRect2D* scissor);
 VkPipelineInputAssemblyStateCreateInfo inputAssembly();
 VkPipelineRasterizationStateCreateInfo rasterizationState();

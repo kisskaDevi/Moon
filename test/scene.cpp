@@ -15,7 +15,7 @@ float spotAngle = 90.0f;
 bool updateCamera = false;
 float cameraAngle = 45.0f;
 
-scene::scene(graphicsManager *app, deferredGraphics* graphics, GLFWwindow* window, std::string ExternalPath):
+scene::scene(graphicsManager *app, std::vector<deferredGraphics*> graphics, GLFWwindow* window, std::string ExternalPath):
     app(app),
     graphics(graphics),
     window(window),
@@ -59,11 +59,15 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObjec
     skyboxObject1 = new skyboxObject(SKYBOX);
     skyboxObject1->scale(glm::vec3(200.0f,200.0f,200.0f));
     skyboxObject1->setColorFactor(glm::vec4(0.5));
-    graphics->bindObject(skyboxObject1);
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(skyboxObject1, i == 0);
+    }
 
     skyboxObject2 = new skyboxObject(SKYBOX1);
     skyboxObject2->scale(glm::vec3(200.0f,200.0f,200.0f));
-    graphics->bindObject(skyboxObject2);
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(skyboxObject2, i == 0);
+    }
 
     loadModels();
     createLight();
@@ -82,10 +86,6 @@ void scene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, u
     this->WIDTH = WIDTH;
     this->HEIGHT = HEIGHT;
 
-    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-    proj[1][1] *= -1.0f;
-    cameras->setProjMatrix(proj);
-
     glfwPollEvents();
     mouseEvent(frameTime);
     keyboardEvent(frameTime);
@@ -100,47 +100,60 @@ void scene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, u
 void scene::destroyScene()
 {
     for(auto& lightSource: lightSources){
-        graphics->removeLightSource(lightSource);
+        for(size_t i = 0; i < graphics.size(); i++){
+            graphics[i]->removeLightSource(lightSource);
+        }
     }
 
     for(auto& lightPoint: lightPoints){
         delete lightPoint;
     }
 
-    graphics->removeObject(skyboxObject1);
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->removeObject(skyboxObject1);
+    }
     delete skyboxObject1;
 
-    graphics->removeObject(skyboxObject2);
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->removeObject(skyboxObject2);
+    }
     delete skyboxObject2;
 
     for (auto& model: gltfModel){
-        graphics->destroyModel(model);
+        graphics[0]->destroyModel(model);
     }
 
     for (auto& object: object3D){
-        graphics->removeObject(object);
+        for(size_t i = 0; i < graphics.size(); i++){
+            graphics[i]->removeObject(object);
+        }
         delete object;
     }
 
-    graphics->destroyEmptyTextures();
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->destroyEmptyTextures();
+    }
 }
 
 void scene::loadModels()
 {
     gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb", 6));
-    graphics->createModel(gltfModel.back());
+    graphics[0]->createModel(gltfModel.back());
 
     gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Box.glb"));
-    graphics->createModel(gltfModel.back());
+    graphics[0]->createModel(gltfModel.back());
 
     gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
-    graphics->createModel(gltfModel.back());
+    graphics[0]->createModel(gltfModel.back());
 
     gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Duck.glb"));
-    graphics->createModel(gltfModel.back());
+    graphics[0]->createModel(gltfModel.back());
 
     gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\RetroUFO.glb"));
-    graphics->createModel(gltfModel.back());
+    graphics[0]->createModel(gltfModel.back());
+
+    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
+    graphics[0]->createModel(gltfModel.back());
 }
 
 void scene::createLight()
@@ -160,7 +173,9 @@ void scene::createLight()
     groups.at(0)->addObject(lightPoints.at(index));
 
     for(int i=index;i<6;i++,index++){
-        graphics->bindLightSource(lightSources.at(index));
+        for(size_t i = 0; i < graphics.size(); i++){
+            graphics[i]->bindLightSource(lightSources.at(index), i == 0);
+        }
         //lightSource.at(index)->setScattering(true);
     }
 
@@ -172,28 +187,36 @@ void scene::createLight()
     lightSources.at(index)->setScattering(true);
     groups.at(2)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindLightSource(lightSources.at(lightSources.size()-1), i == 0);
+    }
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE1));
     lightSources.at(index)->setProjectionMatrix(Proj);
     lightSources.at(index)->setScattering(true);
     groups.at(3)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindLightSource(lightSources.at(lightSources.size()-1), i == 0);
+    }
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE2));
     lightSources.at(index)->setProjectionMatrix(Proj);
     lightSources.at(index)->setScattering(true);
     groups.at(4)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindLightSource(lightSources.at(lightSources.size()-1), i == 0);
+    }
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE3));
     lightSources.at(index)->setProjectionMatrix(Proj);
     lightSources.at(index)->setScattering(true);
     groups.at(5)->addObject(lightSources.at(index));
     index++;
-    graphics->bindLightSource(lightSources.at(lightSources.size()-1));
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindLightSource(lightSources.at(lightSources.size()-1), i == 0);
+    }
 
     for(int i=0;i<5;i++){
         lightSources.push_back(new spotLight(LIGHT_TEXTURE0));
@@ -221,7 +244,9 @@ void scene::createObjects()
     object3D.back()->translate(glm::vec3(3.0f,0.0f,0.0f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.back()->scale(glm::vec3(0.2f,0.2f,0.2f));
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
 
     object3D.push_back(new baseObject(gltfModel[0], 3, 3));
     object3D.back()->setOutliningColor(glm::vec4(1.0f,0.5f,0.8f,1.0f));
@@ -232,7 +257,9 @@ void scene::createObjects()
     object3D.back()->scale(glm::vec3(0.2f,0.2f,0.2f));
     object3D.back()->animationTimer = 1.0f;
     object3D.back()->animationIndex = 1;
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
 
     object3D.push_back(new baseObject(gltfModel.at(3)));
     object3D.back()->setOutliningColor(glm::vec4(0.7f,0.5f,0.2f,1.0f));
@@ -242,44 +269,58 @@ void scene::createObjects()
     object3D.back()->setConstantColor(glm::vec4(0.0f,0.0f,0.0f,-0.8f));
     object3D.back()->animationTimer = 0.0f;
     object3D.back()->animationIndex = 0;
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
     groups.at(1)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(gltfModel.at(2)));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.back()->scale(glm::vec3(3.0f,3.0f,3.0f));
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
 
     object3D.push_back(new baseObject(gltfModel.at(1)));
     object3D.back()->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
     object3D.back()->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
     groups.at(0)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(gltfModel.at(4)));
     object3D.back()->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,-0.8f));
     object3D.back()->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
     groups.at(2)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(gltfModel.at(4)));
     object3D.back()->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,-0.8f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
     groups.at(3)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(gltfModel.at(4)));
     object3D.back()->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,-0.8f));
     object3D.back()->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
     groups.at(4)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(gltfModel.at(4)));
     object3D.back()->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,-0.8f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    graphics->bindObject(object3D.back());
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
     groups.at(5)->addObject(object3D.back());
 }
 
@@ -290,8 +331,8 @@ void scene::mouseEvent(float frameTime)
     double x, y;
 
     int primitiveNumber = INT_FAST32_MAX;
-    for(uint32_t i=0;i<graphics->getImageCount();i++){
-        primitiveNumber = graphics->readStorageBuffer(i);
+    for(uint32_t i=0; i < app->getImageCount(); i++){
+        primitiveNumber = graphics[0]->readStorageBuffer(i);
         if(primitiveNumber!=INT_FAST32_MAX)
             break;
     }
@@ -309,8 +350,8 @@ void scene::mouseEvent(float frameTime)
         cameras->rotateX(angy,glm::vec3(1.0f,0.0f,0.0f));
         cameras->rotateY(angx,glm::vec3(0.0f,0.0f,1.0f));
 
-        for(uint32_t i=0;i<graphics->getImageCount();i++){
-            graphics->updateStorageBuffer(i, -1.0f+2.0f*xMpos/(WIDTH), -1.0f+2.0f*yMpos/(HEIGHT));
+        for(uint32_t i=0; i < app->getImageCount(); i++){
+            graphics[0]->updateStorageBuffer(i, 2.0f*xMpos/WIDTH - 1.0f , 2.0f*yMpos/HEIGHT - 1.0f);
         }
     }
     else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)
@@ -474,7 +515,7 @@ void scene::keyboardEvent(float frameTime)
         object3D[0]->setOutliningEnable(!object3D[0]->getOutliningEnable());
         object3D[1]->setOutliningEnable(!object3D[1]->getOutliningEnable());
         object3D[2]->setOutliningEnable(!object3D[2]->getOutliningEnable());
-        graphics->updateCmdFlags();
+        graphics[0]->updateCmdFlags();
     }
     backOStage = glfwGetKey(window,GLFW_KEY_O);
     if(backTStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_T) == 0)
@@ -492,7 +533,7 @@ void scene::keyboardEvent(float frameTime)
     {
         size_t index = object3D.size();
         object3D.push_back(new baseObject(gltfModel.at(4)));
-        graphics->bindObject(object3D.at(index));
+        graphics[0]->bindObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslation());
         object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     }
@@ -502,7 +543,7 @@ void scene::keyboardEvent(float frameTime)
         app->deviceWaitIdle();
         if(object3D.size()>0){
             size_t index = object3D.size()-1;
-            if(graphics->removeObject(object3D[index]))
+            if(graphics[0]->removeObject(object3D[index]))
             {
                 delete object3D[index];
                 object3D.erase(object3D.begin()+index);
@@ -513,7 +554,7 @@ void scene::keyboardEvent(float frameTime)
     if(backGStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_G) == 0)
     {
         if(lightPointer<20){
-            graphics->bindLightSource(lightSources.at(lightPointer));
+            graphics[0]->bindLightSource(lightSources.at(lightPointer));
             lightPointer++;
         }
     }
@@ -523,7 +564,7 @@ void scene::keyboardEvent(float frameTime)
         app->deviceWaitIdle();
         if(lightPointer>0){
             lightPointer--;
-            graphics->removeLightSource(lightSources.at(lightPointer));
+            graphics[0]->removeLightSource(lightSources.at(lightPointer));
         }
     }
     backHStage = glfwGetKey(window,GLFW_KEY_H);
@@ -531,12 +572,12 @@ void scene::keyboardEvent(float frameTime)
     if(glfwGetKey(window,GLFW_KEY_KP_0) == GLFW_PRESS)
     {
         minAmbientFactor -= 0.1f*sensitivity;
-        graphics->setMinAmbientFactor(minAmbientFactor);
+        graphics[0]->setMinAmbientFactor(minAmbientFactor);
     }
     if(glfwGetKey(window,GLFW_KEY_KP_2) == GLFW_PRESS)
     {
         minAmbientFactor += 0.1f*sensitivity;
-        graphics->setMinAmbientFactor(minAmbientFactor);
+        graphics[0]->setMinAmbientFactor(minAmbientFactor);
     }
 
     if(glfwGetKey(window,GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS)

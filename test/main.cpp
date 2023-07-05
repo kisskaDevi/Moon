@@ -20,8 +20,8 @@ uint32_t HEIGHT = 800;
 bool framebufferResized = false;
 
 void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-void initializeWindow(GLFWwindow* &window, std::string iconName);
-void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, baseCamera* cameraObject);
+void initializeWindow(GLFWwindow* &window, uint32_t WIDTH, uint32_t HEIGHT, std::string iconName);
+void recreateSwapChain(graphicsManager* app, std::vector<deferredGraphics*> graphics, GLFWwindow* window, baseCamera* cameraObject);
 
 int main()
 {
@@ -30,32 +30,41 @@ int main()
     const std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
 
     GLFWwindow* window;
-    initializeWindow(window, ExternalPath + "dependences\\texture\\icon.png");
+    initializeWindow(window, WIDTH, HEIGHT, ExternalPath + "dependences\\texture\\icon.png");
 
-    deferredGraphics graphics(ExternalPath);
+    std::vector<deferredGraphics*> graphics = {
+        new deferredGraphics{ExternalPath, {0.0f, 0.0f}, {0.5f, 1.0f}}
+        , new deferredGraphics{ExternalPath, {0.5f, 0.0f}, {0.5f, 1.0f}}
+    };
 
     graphicsManager app;
     app.createInstance();
     app.createSurface(window);
     app.createDevice();
-    app.setGraphics(&graphics);
-    graphics.createCommandPool();
+    app.createSwapChain(window);
+    for(auto& graphics: graphics){
+        app.setGraphics(graphics);
+        graphics->createCommandPool();
+    }
 
-    baseCamera cameraObject;
-        cameraObject.translate(glm::vec3(0.0f,0.0f,10.0f));
-        glm::mat4x4 proj = glm::perspective(glm::radians(90.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-        proj[1][1] *= -1.0f;
-        cameraObject.setProjMatrix(proj);
-    graphics.bindCameraObject(&cameraObject);
+    baseCamera cameraObject(45.0f, 0.5f * (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
+    cameraObject.translate(glm::vec3(0.0f,0.0f,10.0f));
+
+    for(auto& graph: graphics){
+        graph->bindCameraObject(&cameraObject, &graph == &graphics[0]);
+    }
 
     const std::string ZERO_TEXTURE        = ExternalPath + "dependences\\texture\\0.png";
     const std::string ZERO_TEXTURE_WHITE  = ExternalPath + "dependences\\texture\\1.png";
-    graphics.setEmptyTexture(ZERO_TEXTURE);
-
+    for(auto& graphics: graphics){
+        graphics->setEmptyTexture(ZERO_TEXTURE);
+    }
     app.createGraphics(window);
-    graphics.updateDescriptorSets();
+    for(auto& graphics: graphics){
+        graphics->updateDescriptorSets();
+    }
 
-    scene testScene(&app,&graphics,window,ExternalPath);
+    scene testScene(&app, graphics, window, ExternalPath);
     testScene.createScene(WIDTH,HEIGHT,&cameraObject);
 
     app.createCommandBuffers();
@@ -68,39 +77,46 @@ int main()
         auto currentTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - pastTime).count();
 
-            if(fpsLock)
-                if(fps<1.0f/frameTime)  continue;
-            pastTime = currentTime;
+        if(fpsLock && fps < 1.0f/frameTime)  continue;
+        pastTime = currentTime;
 
-            std::stringstream ss;
-            ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
-            glfwSetWindowTitle(window, ss.str().c_str());
+        std::stringstream ss;
+        ss << "Vulkan" << " [" << 1.0f/frameTime << " FPS]";
+        glfwSetWindowTitle(window, ss.str().c_str());
 
         if(app.checkNextFrame()!=VK_ERROR_OUT_OF_DATE_KHR)
         {
             testScene.updateFrame(app.getImageIndex(),frameTime,WIDTH,HEIGHT);
 
-            VkResult result = app.drawFrame();
-
-            if (result == VK_ERROR_OUT_OF_DATE_KHR)                         recreateSwapChain(&app,&graphics,window,&cameraObject);
-            else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)   throw std::runtime_error("failed to acquire swap chain image!");
-
-            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized || testScene.framebufferResized){
-                framebufferResized = false;
-                testScene.framebufferResized = false;
-                recreateSwapChain(&app,&graphics,window,&cameraObject);
-            }else if(result != VK_SUCCESS){
-                throw std::runtime_error("failed to present swap chain image!");
+            if (VkResult result = app.drawFrame(); result == VK_ERROR_OUT_OF_DATE_KHR){
+                recreateSwapChain(&app,graphics,window,&cameraObject);
+            } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
+                throw std::runtime_error("failed to acquire swap chain image!");
+            } else {
+                if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized || testScene.framebufferResized){
+                    framebufferResized = false;
+                    testScene.framebufferResized = false;
+                    recreateSwapChain(&app,graphics,window,&cameraObject);
+                }else if(result != VK_SUCCESS){
+                    throw std::runtime_error("failed to present swap chain image!");
+                }
             }
         }
     }
 
     app.deviceWaitIdle();
 
-    graphics.removeCameraObject(&cameraObject);
+    for(auto& graphics: graphics){
+        graphics->removeCameraObject(&cameraObject);
+        graphics->destroyGraphics();
+    }
     testScene.destroyScene();
-    graphics.destroyGraphics();
+    app.destroySwapChain();
     app.destroy();
+
+    for(auto& graphics: graphics){
+        delete graphics;
+    }
 
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -108,7 +124,7 @@ int main()
     return 0;
 }
 
-void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwindow* window, baseCamera* cameraObject)
+void recreateSwapChain(graphicsManager* app, std::vector<deferredGraphics*> graphics, GLFWwindow* window, baseCamera* cameraObject)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
@@ -120,15 +136,18 @@ void recreateSwapChain(graphicsManager* app, deferredGraphics* graphics, GLFWwin
     WIDTH = width;
     HEIGHT = height;
     app->deviceWaitIdle();
-    graphics->destroyGraphics();
+    app->destroySwapChain();
+    for(auto graphics: graphics){
+        graphics->destroyGraphics();
+    }
 
-    glm::mat4x4 proj = glm::perspective(glm::radians(90.0f), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-    proj[1][1] *= -1.0f;
-    cameraObject->setProjMatrix(proj);
+    cameraObject->recreate(45.0f, 0.5f * (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
 
-    graphics->setExtent({static_cast<uint32_t>(width),static_cast<uint32_t>(height)});
+    app->createSwapChain(window);
     app->createGraphics(window);
-    graphics->updateDescriptorSets();
+    for(auto graphics: graphics){
+        graphics->updateDescriptorSets();
+    }
     app->createCommandBuffers();
 }
 
@@ -139,7 +158,7 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height)
     static_cast<void>(window);
     framebufferResized = true;
 }
-void initializeWindow(GLFWwindow* &window, std::string iconName)
+void initializeWindow(GLFWwindow* &window, uint32_t WIDTH, uint32_t HEIGHT, std::string iconName)
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

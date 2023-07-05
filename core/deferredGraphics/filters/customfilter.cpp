@@ -15,14 +15,14 @@ void customFilter::setBlitFactor(const float &blitFactor){
 }
 
 void customFilter::createBufferAttachments(){
-    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
+    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
     VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
     vkCreateSampler(device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
 void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
     for(size_t index=0; index<attachmentsCount; index++){
-        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
+        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
         VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
         vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
     }
@@ -83,8 +83,8 @@ void customFilter::createFramebuffers(){
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
                 framebufferInfo.pAttachments = &pAttachments[i].imageView[j];
-                framebufferInfo.width = image.Extent.width;
-                framebufferInfo.height = image.Extent.height;
+                framebufferInfo.width = image.frameBufferExtent.width;
+                framebufferInfo.height = image.frameBufferExtent.height;
                 framebufferInfo.layers = 1;
             vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * i + j]);
         }
@@ -119,8 +119,8 @@ void customFilter::Filter::createPipeline(VkDevice device, imageInfo* pInfo, VkR
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor(pInfo->Extent);
+    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -220,8 +220,8 @@ void customFilter::updateCommandBuffer(uint32_t frameNumber)
             blitImages[i] = pAttachments[i-1].image[frameNumber];
         }
         VkImage blitBufferImage = bufferAttachment.image[frameNumber];
-        uint32_t width = image.Extent.width;
-        uint32_t height = image.Extent.height;
+        uint32_t width = image.frameBufferExtent.width;
+        uint32_t height = image.frameBufferExtent.height;
 
         for(uint32_t k=0;k<attachmentsCount;k++){
             Texture::transitionLayout(commandBuffers[frameNumber],blitBufferImage, k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
@@ -246,8 +246,8 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, u
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[attachmentNumber * image.Count + frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.renderArea.offset = {0,0};
+        renderPassInfo.renderArea.extent = image.frameBufferExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

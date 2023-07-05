@@ -24,8 +24,8 @@ void baseObject::destroy(VkDevice device)
     destroyUniformBuffers(device, uniformBuffersHost);
     destroyUniformBuffers(device, uniformBuffersDevice);
 
-    if(descriptorPool )     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    if(descriptorSetLayout) vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr);
+    if(descriptorPool )     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
+    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
 }
 
 void baseObject::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)

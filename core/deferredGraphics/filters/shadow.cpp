@@ -8,7 +8,7 @@
 void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     static_cast<void>(attachmentsCount);
-    pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
+    pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->sampler);
@@ -79,8 +79,8 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor(pInfo->Extent);
+    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
@@ -160,8 +160,8 @@ void shadowGraphics::createFramebuffers(light* lightSource)
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &lightSource->getAttachments()->imageView[j];
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = image.frameBufferExtent.width;
+            framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
         vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[lightSource][j]);
     }
@@ -206,8 +206,8 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[shadow.lightSources[attachmentNumber]][frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.renderArea.offset = {0,0};
+        renderPassInfo.renderArea.extent = image.frameBufferExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

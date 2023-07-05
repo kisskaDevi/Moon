@@ -546,6 +546,16 @@ SwapChain::SupportDetails SwapChain::queryingSupport(VkPhysicalDevice device, Vk
     return details;
 }
 
+uint32_t SwapChain::queryingSupportImageCount(VkPhysicalDevice device, VkSurfaceKHR surface)
+{
+    auto capabilities = SwapChain::queryingSupport(device, surface).capabilities;
+    uint32_t imageCount = capabilities.minImageCount + 1;
+    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount){
+        imageCount = capabilities.maxImageCount;
+    }
+    return imageCount;
+}
+
 VkSurfaceFormatKHR SwapChain::queryingSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
     for (const auto& availableFormat : availableFormats) {

@@ -35,8 +35,8 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor(pInfo->Extent);
+    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);

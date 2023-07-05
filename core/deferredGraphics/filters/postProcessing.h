@@ -8,6 +8,7 @@ namespace SwapChain{
 }
 class GLFWwindow;
 class texture;
+class swapChain;
 
 struct postProcessingPushConst{
     alignas(4) float                    blitFactor;
@@ -16,9 +17,7 @@ struct postProcessingPushConst{
 class postProcessingGraphics : public filterGraphics
 {
 private:
-    uint32_t                            swapChainAttachmentCount{1};
-    std::vector<attachments>            swapChainAttachments;
-
+    swapChain*                          swapChainKHR{nullptr};
     attachments*                        blurAttachment{nullptr};
     attachments*                        blitAttachments{nullptr};
     attachments*                        sslrAttachment{nullptr};
@@ -36,10 +35,7 @@ private:
 public:
     postProcessingGraphics() = default;
     void destroy();
-    void destroySwapChainAttachments();
 
-    void createSwapChain(VkSwapchainKHR* swapChain, GLFWwindow* window, SwapChain::SupportDetails* swapChainSupport, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices);
-    void createSwapChainAttachments(VkSwapchainKHR* swapChain);
     void createRenderPass()override;
     void createFramebuffers()override;
     void createPipelines()override;
@@ -50,6 +46,7 @@ public:
 
     void updateCommandBuffer(uint32_t frameNumber) override;
 
+    void setSwapChain(swapChain* swapChainKHR);
     void setBlurAttachment(attachments* blurAttachment);
     void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor);
     void setSSLRAttachment(attachments* sslrAttachment);

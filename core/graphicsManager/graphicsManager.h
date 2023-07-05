@@ -4,6 +4,7 @@
 #include <vulkan.h>
 #include "operations.h"
 #include "device.h"
+#include "swapChain.h"
 
 #include "graphicsInterface.h"
 
@@ -14,13 +15,16 @@ class graphicsManager
 public:
     graphicsManager();
     void destroy();
+    void destroySwapChain();
 
     uint32_t                                    getImageIndex();
+    uint32_t                                    getImageCount();
     void                                        deviceWaitIdle();
 
     void                                        createInstance();
     void                                        createSurface(GLFWwindow* window);
     void                                        createDevice();
+    void                                        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
     void                                        setGraphics(graphicsInterface* graphics);
     void                                        createGraphics(GLFWwindow* window);
     void                                        createCommandBuffers();
@@ -45,7 +49,9 @@ private:
 
     std::vector<physicalDevice>                 devices;
 
-    graphicsInterface*                          graphics{nullptr};
+    swapChain                                   swapChainKHR;
+
+    std::vector<graphicsInterface*>             graphics;
 
     std::vector<VkSemaphore>                    availableSemaphores;
     std::vector<VkSemaphore>                    signalSemaphores;

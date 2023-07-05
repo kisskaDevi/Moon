@@ -14,6 +14,7 @@ SOURCES += \
     buffer.cpp \
     node.cpp \
     operations.cpp \
+    swapChain.cpp \
     texture.cpp \
     device.cpp \
     vkdefault.cpp
@@ -23,6 +24,7 @@ HEADERS += \
     buffer.h \
     node.h \
     operations.h \
+    swapChain.h \
     texture.h \
     device.h \
     vkdefault.h

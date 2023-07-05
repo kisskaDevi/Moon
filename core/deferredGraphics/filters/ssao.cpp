@@ -7,7 +7,7 @@ void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAt
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
     {
-        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
+        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
         VkSamplerCreateInfo samplerInfo = vkDefault::samler();
         vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
     }
@@ -67,8 +67,8 @@ void SSAOGraphics::createFramebuffers()
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &pAttachments->imageView[i];
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = image.frameBufferExtent.width;
+            framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
         vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
     }
@@ -109,8 +109,8 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor(pInfo->Extent);
+    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -242,8 +242,8 @@ void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber)
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.renderArea.offset = {0,0};
+        renderPassInfo.renderArea.extent = image.frameBufferExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

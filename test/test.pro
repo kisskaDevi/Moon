@@ -38,7 +38,8 @@ INCLUDEPATH += \
     $$PWD/../core/utils \
     $$PWD/../core/transformational \
     $$PWD/../core/interfaces \
-    $$PWD/../core/models
+    $$PWD/../core/models \
+    $$PWD/../core/math
 
 SOURCES += \
     physicalobject.cpp \

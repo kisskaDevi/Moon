@@ -17,7 +17,8 @@ ${GLTF_DIR}
 ../core/utils
 ../core/transformational
 ../core/interfaces
-../core/models)
+../core/models
+../core/math)
                     
 set(SOURCES main.cpp scene.cpp)
 set(INCLUDES scene.h)
@@ -28,3 +29,8 @@ SET(LIBS ${VULKAN_LIB_DIR}/vulkan-1.lib
 ${GLFW_DIR}/lib-static-ucrt/glfw3dll.lib)
 
 target_link_libraries(test graphicsManager deferredGraphics models transformational interfaces utils ${LIBS})
+
+add_custom_command(TARGET test POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy_if_different
+"${GLFW_DIR}/lib-static-ucrt/glfw3.dll"
+$<TARGET_FILE_DIR:test>)

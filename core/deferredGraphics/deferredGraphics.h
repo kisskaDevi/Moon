@@ -31,8 +31,8 @@ struct StorageBufferObject{
 
 struct frameScale
 {
-    float xScale{0};
-    float yScale{0};
+    float xScale{0.0f};
+    float yScale{0.0f};
 };
 
 class deferredGraphics: public graphicsInterface
@@ -40,8 +40,8 @@ class deferredGraphics: public graphicsInterface
 private:
     std::string                                 ExternalPath{};
     uint32_t                                    imageCount{0};
-    frameScale                                  offsetСoefficient{0,0};
-    frameScale                                  extentСoefficient{0,0};
+    frameScale                                  offsetScale;
+    frameScale                                  extentScale;
     VkExtent2D                                  frameBufferExtent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
@@ -94,7 +94,7 @@ private:
     std::vector<VkCommandBuffer> getTransparentLayersCommandBuffers(uint32_t imageIndex);
     void createStorageBuffers(uint32_t imageCount);
 public:
-    deferredGraphics(const std::string& ExternalPath, frameScale offset = {0.0f,0.0f}, frameScale extent = {1.0f,1.0f}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    deferredGraphics(const std::string& ExternalPath, frameScale offsetScale = {0.0f,0.0f}, frameScale extentScale = {1.0f,1.0f}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
 
     ~deferredGraphics();
     void destroyGraphics() override;

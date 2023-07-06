@@ -15,7 +15,8 @@ operations.cpp
 texture.cpp
 device.cpp
 vkdefault.cpp
-buffer.cpp)
+buffer.cpp
+swapChain.cpp)
 
 set(HEADERS attachments.h
 node.h
@@ -23,6 +24,7 @@ operations.h
 texture.h
 device.h
 vkdefault.h
-buffer.h)
+buffer.h
+swapChain.h)
 
 add_library(utils STATIC ${SOURCES} ${HEADERS})

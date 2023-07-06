@@ -4,11 +4,11 @@ CONFIG += c++17 console
 WARNINGS += -Wall
 
 INCLUDEPATH += \
-    $$PWD/../../dependences/libs \
     $$PWD/../../dependences/libs/vulkan \
     $$PWD/../../dependences/libs/glm \
     $$PWD/../utils \
-    $$PWD/../interfaces
+    $$PWD/../interfaces \
+    $$PWD/../math
 
 SOURCES += \
     baseCamera.cpp \

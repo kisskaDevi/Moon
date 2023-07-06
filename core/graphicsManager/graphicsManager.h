@@ -17,20 +17,19 @@ public:
     void destroy();
     void destroySwapChain();
 
-    uint32_t                                    getImageIndex();
-    uint32_t                                    getImageCount();
-    void                                        deviceWaitIdle();
+    VkSurfaceKHR&   getSurface();
+    uint32_t        getImageIndex();
+    uint32_t        getImageCount();
+    void            deviceWaitIdle();
 
-    void                                        createInstance();
-    void                                        createSurface(GLFWwindow* window);
-    void                                        createDevice();
-    void                                        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
-    void                                        setGraphics(graphicsInterface* graphics);
-    void                                        createGraphics(GLFWwindow* window);
-    void                                        createCommandBuffers();
-    void                                        createSyncObjects();
-    VkResult                                    checkNextFrame();
-    VkResult                                    drawFrame();
+    void            createInstance();
+    void            createSurface(GLFWwindow* window);
+    void            createDevice();
+    void            createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
+    void            setGraphics(graphicsInterface* graphics);
+    void            createSyncObjects();
+    VkResult        checkNextFrame();
+    VkResult        drawFrame();
 
 private:
 

@@ -5,7 +5,9 @@
 #include <iostream>
 
 graphicsManager::graphicsManager()
-{}
+{
+    createInstance();
+}
 
 void graphicsManager::createInstance()
 {
@@ -46,11 +48,6 @@ void graphicsManager::createInstance()
     }
 }
 
-void graphicsManager::createSurface(GLFWwindow* window)
-{
-    glfwCreateWindowSurface(instance, window, nullptr, &surface);
-}
-
 void graphicsManager::createDevice()
 {
     uint32_t deviceCount = 0;
@@ -74,6 +71,11 @@ void graphicsManager::createDevice()
     devices[0].createDevice(logical,{{0,16},{1,1},{2,1}});
 }
 
+void graphicsManager::createSurface(GLFWwindow* window)
+{
+    glfwCreateWindowSurface(instance, window, nullptr, &surface);
+}
+
 void graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCount)
 {
     swapChainKHR.setDevice(devices[0].instance, devices[0].getLogical());
@@ -87,21 +89,7 @@ void graphicsManager::setGraphics(graphicsInterface* graphics)
     this->graphics.back()->setDevices(static_cast<uint32_t>(devices.size()), devices.data());
     this->graphics.back()->setSwapChain(&swapChainKHR);
     this->graphics.back()->setImageCount(swapChainKHR.getImageCount());
-}
-
-void graphicsManager::createGraphics(GLFWwindow* window)
-{
-    for(auto graphics: graphics){
-        graphics->createGraphics(window,&surface);
-    }
-}
-
-void graphicsManager::createCommandBuffers()
-{
-    for(auto graphics: graphics){
-        graphics->createCommandBuffers();
-        graphics->updateCommandBuffers();
-    }
+    this->graphics.back()->createCommandPool();
 }
 
 void graphicsManager::createSyncObjects()
@@ -188,6 +176,7 @@ void graphicsManager::destroy()
     if(instance)                                    {vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
 }
 
-uint32_t graphicsManager::getImageIndex(){return imageIndex;}
-uint32_t graphicsManager::getImageCount(){return swapChainKHR.getImageCount();}
-void     graphicsManager::deviceWaitIdle(){vkDeviceWaitIdle(devices[0].getLogical());}
+VkSurfaceKHR&   graphicsManager::getSurface(){return surface;}
+uint32_t        graphicsManager::getImageIndex(){return imageIndex;}
+uint32_t        graphicsManager::getImageCount(){return swapChainKHR.getImageCount();}
+void            graphicsManager::deviceWaitIdle(){vkDeviceWaitIdle(devices[0].getLogical());}

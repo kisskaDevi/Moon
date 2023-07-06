@@ -9,8 +9,8 @@
 
 #include <cstring>
 
-deferredGraphics::deferredGraphics(const std::string& ExternalPath, frameScale offset, frameScale extent, VkSampleCountFlagBits MSAASamples):
-    ExternalPath(ExternalPath), offsetСoefficient(offset), extentСoefficient(extent), MSAASamples(MSAASamples)
+deferredGraphics::deferredGraphics(const std::string& ExternalPath, frameScale offsetScale, frameScale extentScale, VkSampleCountFlagBits MSAASamples):
+    ExternalPath(ExternalPath), offsetScale(offsetScale), extentScale(extentScale), MSAASamples(MSAASamples)
 {
     DeferredGraphics.setExternalPath(ExternalPath);
     PostProcessing.setExternalPath(ExternalPath);
@@ -117,7 +117,6 @@ void deferredGraphics::destroyCommandPool()
     if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
 }
 
-
 void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
 {
     this->swapChainKHR = swapChainKHR;
@@ -193,8 +192,8 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     Shadow.setImageProp(&shadowsInfo);
 
     imageInfo info{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, VkOffset2D{0,0},
-                   {static_cast<uint32_t>(frameBufferExtent.width * extentСoefficient.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentСoefficient.yScale)},
-                   {static_cast<uint32_t>(frameBufferExtent.width * extentСoefficient.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentСoefficient.yScale)},
+                   {static_cast<uint32_t>(frameBufferExtent.width * extentScale.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentScale.yScale)},
+                   {static_cast<uint32_t>(frameBufferExtent.width * extentScale.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentScale.yScale)},
                    MSAASamples
     };
 
@@ -210,8 +209,8 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     }
 
     imageInfo swapChainInfo{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format,
-        {static_cast<int32_t>(frameBufferExtent.width * offsetСoefficient.xScale), static_cast<int32_t>(frameBufferExtent.height * offsetСoefficient.yScale)},
-        {static_cast<uint32_t>(frameBufferExtent.width * extentСoefficient.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentСoefficient.yScale)},
+        {static_cast<int32_t>(frameBufferExtent.width * offsetScale.xScale), static_cast<int32_t>(frameBufferExtent.height * offsetScale.yScale)},
+        {static_cast<uint32_t>(frameBufferExtent.width * extentScale.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentScale.yScale)},
         frameBufferExtent, MSAASamples
     };
 
@@ -504,8 +503,8 @@ uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage){
     return storageBuffer.number;
 }
 
-void deferredGraphics::setOffset(frameScale offset)             {   this->offsetСoefficient = offset;}
-void deferredGraphics::setExtent(frameScale extent)             {   this->extentСoefficient = extent;}
+void deferredGraphics::setOffset(frameScale offset)             {   this->offsetScale = offset;}
+void deferredGraphics::setExtent(frameScale extent)             {   this->extentScale = extent;}
 void deferredGraphics::setFrameBufferExtent(VkExtent2D extent)  {   this->frameBufferExtent = extent;}
 void deferredGraphics::setExternalPath(const std::string &path) {   ExternalPath = path;}
 void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){

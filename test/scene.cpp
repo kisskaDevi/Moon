@@ -505,11 +505,6 @@ void scene::keyboardEvent(float frameTime)
     {
         glfwSetWindowShouldClose(window,GLFW_TRUE);
     }
-    if(backRStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_R) == 0)
-    {
-        framebufferResized = true;
-    }
-    backRStage = glfwGetKey(window,GLFW_KEY_R);
     if(backOStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_O) == 0)
     {
         object3D[0]->setOutliningEnable(!object3D[0]->getOutliningEnable());

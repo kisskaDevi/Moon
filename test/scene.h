@@ -30,7 +30,6 @@ private:
     double      xMpos, yMpos;
     double      angx=0.0, angy=0.0;
     bool        mouse1Stage = 0;
-    bool        backRStage = 0;
     bool        backTStage = 0;
     bool        backYStage = 0;
     bool        backNStage = 0;
@@ -73,8 +72,6 @@ public:
     void createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObject);
     void updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
     void destroyScene();
-
-    bool framebufferResized = false;
 };
 
 #endif // SCENE_H

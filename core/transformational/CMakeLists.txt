@@ -9,7 +9,8 @@ include_directories(
 ${VULKAN_INCLUDE_DIR}
 ${GLM_DIR}
 ../utils
-../interfaces)
+../interfaces
+../math)
                     
 set(SOURCES baseCamera.cpp
 baseObject.cpp

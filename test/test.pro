@@ -15,7 +15,7 @@ win32: LIBS += \
     -L$$OUT_PWD/../core/transformational/$$DESTDIR \
     -L$$OUT_PWD/../core/interfaces/$$DESTDIR \
     -L$$OUT_PWD/../core/utils/$$DESTDIR \
-    -L$$PWD/../dependences/libs/vulkan/x64 \
+    -L$$PWD/../dependences/libs/vulkan_runtime/x64 \
     -L$$PWD/../dependences/libs/glfw/build/src/$$GLFW_BIN_DIR \
     -lgraphicsManager \
     -ldeferredGraphics \
@@ -28,9 +28,9 @@ win32: LIBS += \
 
 INCLUDEPATH += \
     $$PWD/../dependences\libs \
-    $$PWD/../dependences/libs/vulkan \
+    $$PWD/../dependences/libs/vulkan/include/vulkan \
     $$PWD/../dependences/libs/glfw/include/GLFW \
-    $$PWD/../dependences/libs/glm \
+    $$PWD/../dependences/libs/glm/glm \
     $$PWD/../dependences/libs/stb \
     $$PWD/../dependences/libs/tinygltf \
     $$PWD/../core/graphicsManager \

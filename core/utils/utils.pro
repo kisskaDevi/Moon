@@ -4,7 +4,7 @@ CONFIG += c++17 console
 WARNINGS += -Wall
 
 INCLUDEPATH += \
-    $$PWD/../../dependences/libs/vulkan \
+    $$PWD/../../dependences/libs/vulkan/include/vulkan \
     $$PWD/../../dependences/libs/glfw/include/GLFW \
     $$PWD/../../dependences/libs/stb \
     $$PWD/../../dependences/libs/tinygltf

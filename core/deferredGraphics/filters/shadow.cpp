@@ -50,7 +50,7 @@ void shadowGraphics::createRenderPass()
 
 void shadowGraphics::createPipelines()
 {
-    shadow.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\shadow\\shad.spv";
+    shadow.vertShaderPath = shadersPath / "shadow/shad.spv";
     shadow.createDescriptorSetLayout(device);
     shadow.createPipeline(device,&image,renderPass);
 }

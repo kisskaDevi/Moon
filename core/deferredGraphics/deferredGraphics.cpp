@@ -9,22 +9,22 @@
 
 #include <cstring>
 
-deferredGraphics::deferredGraphics(const std::string& ExternalPath, frameScale offsetScale, frameScale extentScale, VkSampleCountFlagBits MSAASamples):
-    ExternalPath(ExternalPath), offsetScale(offsetScale), extentScale(extentScale), MSAASamples(MSAASamples)
+deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset, VkSampleCountFlagBits MSAASamples):
+    shadersPath(shadersPath), extent(extent), offset(offset), MSAASamples(MSAASamples)
 {
-    DeferredGraphics.setExternalPath(ExternalPath);
-    PostProcessing.setExternalPath(ExternalPath);
-    Filter.setExternalPath(ExternalPath);
-    SSLR.setExternalPath(ExternalPath);
-    SSAO.setExternalPath(ExternalPath);
-    Skybox.setExternalPath(ExternalPath);
-    Shadow.setExternalPath(ExternalPath);
-    LayersCombiner.setExternalPath(ExternalPath);
-    Blur.setExternalPath(ExternalPath);
+    DeferredGraphics.setShadersPath(shadersPath);
+    PostProcessing.setShadersPath(shadersPath);
+    Filter.setShadersPath(shadersPath);
+    SSLR.setShadersPath(shadersPath);
+    SSAO.setShadersPath(shadersPath);
+    Skybox.setShadersPath(shadersPath);
+    Shadow.setShadersPath(shadersPath);
+    LayersCombiner.setShadersPath(shadersPath);
+    Blur.setShadersPath(shadersPath);
 
     TransparentLayers.resize(TransparentLayersCount);
     for(auto& layer: TransparentLayers){
-        layer.setExternalPath(ExternalPath);
+        layer.setShadersPath(shadersPath);
     }
 }
 
@@ -191,11 +191,7 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkOffset2D{0,0},VkExtent2D{1024,1024},VkExtent2D{1024,1024},MSAASamples};
     Shadow.setImageProp(&shadowsInfo);
 
-    imageInfo info{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, VkOffset2D{0,0},
-                   {static_cast<uint32_t>(frameBufferExtent.width * extentScale.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentScale.yScale)},
-                   {static_cast<uint32_t>(frameBufferExtent.width * extentScale.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentScale.yScale)},
-                   MSAASamples
-    };
+    imageInfo info{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, VkOffset2D{0,0}, extent, extent, MSAASamples};
 
     DeferredGraphics.setImageProp(&info);
     Blur.setImageProp(&info);
@@ -208,11 +204,7 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
         layer.setImageProp(&info);
     }
 
-    imageInfo swapChainInfo{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format,
-        {static_cast<int32_t>(frameBufferExtent.width * offsetScale.xScale), static_cast<int32_t>(frameBufferExtent.height * offsetScale.yScale)},
-        {static_cast<uint32_t>(frameBufferExtent.width * extentScale.xScale), static_cast<uint32_t>(frameBufferExtent.height * extentScale.yScale)},
-        frameBufferExtent, MSAASamples
-    };
+    imageInfo swapChainInfo{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, offset, extent, frameBufferExtent, MSAASamples};
 
     PostProcessing.setImageProp(&swapChainInfo);
 
@@ -503,11 +495,13 @@ uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage){
     return storageBuffer.number;
 }
 
-void deferredGraphics::setOffset(frameScale offset)             {   this->offsetScale = offset;}
-void deferredGraphics::setExtent(frameScale extent)             {   this->extentScale = extent;}
+void deferredGraphics::setExtentAndOffset(VkExtent2D extent, VkOffset2D offset) {
+    this->offset = offset;
+    this->extent = extent;
+}
 void deferredGraphics::setFrameBufferExtent(VkExtent2D extent)  {   this->frameBufferExtent = extent;}
-void deferredGraphics::setExternalPath(const std::string &path) {   ExternalPath = path;}
-void deferredGraphics::setEmptyTexture(std::string ZERO_TEXTURE){
+void deferredGraphics::setShadersPath(const std::filesystem::path& path) {   shadersPath = path;}
+void deferredGraphics::setEmptyTexture(const std::filesystem::path& ZERO_TEXTURE){
     this->emptyTexture = new texture(ZERO_TEXTURE);
 
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);

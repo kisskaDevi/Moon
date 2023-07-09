@@ -2,9 +2,11 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout, VkPipeline* pipeline){
-    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
+#include <filesystem>
+
+void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath, VkPipelineLayout* pipelineLayout, VkPipeline* pipeline){
+    auto vertShaderCode = ShaderModule::readFile(vertShadersPath);
+    auto fragShaderCode = ShaderModule::readFile(fragShadersPath);
     VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
     VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {

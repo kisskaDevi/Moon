@@ -14,7 +14,7 @@
 #include "model.h"
 #include "buffer.h"
 
-#include <string>
+#include <filesystem>
 #include <vector>
 
 #define MAX_NUM_JOINTS 128u
@@ -109,7 +109,7 @@ struct Animation
 class gltfModel : public model
 {
 private:
-    std::string filename{};
+    std::filesystem::path filename;
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
@@ -137,7 +137,7 @@ private:
 
     Node* nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes);
 public:
-    gltfModel(std::string filename, uint32_t instanceCount = 1);
+    gltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
 
     void destroy(VkDevice device) override;
     void destroyStagingBuffer(VkDevice device) override;

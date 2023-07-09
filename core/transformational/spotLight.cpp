@@ -4,7 +4,6 @@
 #include "texture.h"
 #include "dualQuaternion.h"
 
-#include <iostream>
 #include <cstring>
 
 spotLight::spotLight(bool enableShadow, bool enableScattering, uint32_t type):
@@ -17,7 +16,7 @@ spotLight::spotLight(bool enableShadow, bool enableScattering, uint32_t type):
     }
 }
 
-spotLight::spotLight(const std::string & TEXTURE_PATH, bool enableShadow, bool enableScattering, uint32_t type):
+spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, bool enableShadow, bool enableScattering, uint32_t type):
     tex(new texture(TEXTURE_PATH)),
     enableShadow(enableShadow),
     enableScattering(enableScattering),

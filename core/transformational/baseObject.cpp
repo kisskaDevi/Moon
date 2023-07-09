@@ -252,7 +252,7 @@ bool                            baseObject::comparePrimitive(uint32_t primitive)
 uint32_t                        baseObject::getFirstPrimitive() const                       {return firstPrimitive;}
 uint32_t                        baseObject::getPrimitiveCount() const                       {return primitiveCount;}
 
-skyboxObject::skyboxObject(const std::vector<std::string> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){}
+skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){}
 
 skyboxObject::~skyboxObject(){
     delete texture;

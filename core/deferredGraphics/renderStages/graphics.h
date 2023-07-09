@@ -3,7 +3,7 @@
 
 #include "filtergraphics.h"
 
-#include <string>
+#include <filesystem>
 #include <unordered_map>
 
 class                               texture;
@@ -22,7 +22,7 @@ private:
     std::vector<attachments*>       pAttachments;
 
     struct Base{
-        std::string                                     ExternalPath;
+        std::filesystem::path                           ShadersPath;
         bool                                            transparencyPass{false};
 
         std::unordered_map<uint8_t, VkPipelineLayout>   PipelineLayoutDictionary;
@@ -45,7 +45,7 @@ private:
     }base;
 
     struct OutliningExtension{
-        std::string                     ExternalPath;
+        std::filesystem::path           ShadersPath;
 
         Base*                           Parent{nullptr};
 
@@ -58,7 +58,7 @@ private:
     }outlining;
 
     struct Lighting{
-        std::string                                         ExternalPath;
+        std::filesystem::path                               ShadersPath;
         bool                                                enableScattering{true};
 
         VkDescriptorSetLayout                               DescriptorSetLayout{VK_NULL_HANDLE};
@@ -74,13 +74,13 @@ private:
 
         void Destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
-            void createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::string vertShaderPath, std::string fragShaderPath, VkPipelineLayout* pipelineLayout, VkPipeline* pipeline);
+        void createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath, VkPipelineLayout* pipelineLayout, VkPipeline* pipeline);
         void createDescriptorSetLayout(VkDevice device);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }lighting;
 
     struct AmbientLighting{
-        std::string                                         ExternalPath;
+        std::filesystem::path                               ShadersPath;
         float                                               minAmbientFactor{0.05f};
 
         Lighting*                                           Parent{nullptr};

@@ -33,6 +33,6 @@ Eventually we have same image of deferred render, but calculations are more fast
 win32 instruction:
 mkdir build
 cd build
-cmake .. -DVULKAN_INCLUDE_DIR=C:\Qt\repositories\kisskaVulkan\dependences\libs\vulkan -DVULKAN_LIB_DIR=C:\Qt\repositories\kisskaVulkan\dependences\libs\vulkan\x64 -DGLFW_DIR=C:\Qt\repositories\kisskaVulkan\dependences\libs\glfw-3.3.4.bin.WIN64 -DGLM_DIR=C:\Qt\repositories\kisskaVulkan\dependences\libs\glm -DSTB_DIR=C:\Qt\repositories\kisskaVulkan\dependences\libs\stb -DGLTF_DIR=C:\Qt\repositories\kisskaVulkan\dependences\libs\tinygltf
+cmake ..
 cmake --build . --config Release
 -->

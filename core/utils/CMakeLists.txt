@@ -4,11 +4,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 
-include_directories(${VULKAN_INCLUDE_DIR}
-${GLFW_DIR}/include/GLFW
-${STB_DIR}
-${GLTF_DIR})
-                    
+set(INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS} ${GLFW_DIR}/include/GLFW
+${STB_DIR} ${GLTF_DIR} ${GLM_DIR})
+
+include_directories(${INCLUDE_DIRS})
+
 set(SOURCES attachments.cpp
 node.cpp
 operations.cpp
@@ -28,3 +28,7 @@ buffer.h
 swapChain.h)
 
 add_library(utils STATIC ${SOURCES} ${HEADERS})
+target_include_directories(utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${INCLUDE_DIRS})
+target_link_libraries(utils PUBLIC
+    $<$<CONFIG:Debug>:${LIBS_DIRS_D}>
+    $<$<CONFIG:Release>:${LIBS_DIRS}>)

@@ -95,8 +95,8 @@ void postProcessingGraphics::createFramebuffers()
 
 void postProcessingGraphics::createPipelines()
 {
-    postProcessing.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\postProcessing\\postProcessingVert.spv";
-    postProcessing.fragShaderPath = externalPath + "core\\deferredGraphics\\shaders\\postProcessing\\postProcessingFrag.spv";
+    postProcessing.vertShaderPath = shadersPath / "postProcessing/postProcessingVert.spv";
+    postProcessing.fragShaderPath = shadersPath / "postProcessing/postProcessingFrag.spv";
     postProcessing.createDescriptorSetLayout(device);
     postProcessing.createPipeline(device,&image,renderPass);
 }

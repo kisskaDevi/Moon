@@ -19,8 +19,8 @@ void filterGraphics::destroy(){
 void filterGraphics::setEmptyTexture(texture* emptyTexture){
     this->emptyTexture = emptyTexture;
 }
-void filterGraphics::setExternalPath(const std::string &path){
-    externalPath = path;
+void filterGraphics::setShadersPath(const std::filesystem::path &path){
+    shadersPath = path;
 }
 void filterGraphics::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
     this->physicalDevice = physicalDevice;

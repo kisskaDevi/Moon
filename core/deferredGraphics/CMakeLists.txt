@@ -4,15 +4,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 
-include_directories(${VULKAN_INCLUDE_DIR}
-${GLM_DIR}
-filters
-renderStages
-../utils
-../interfaces
-../graphicsManager
-)
-                    
+include_directories(filters renderStages)
+
 set(SOURCES deferredGraphics.cpp
 filters/blur.cpp
 filters/filtergraphics.cpp
@@ -43,3 +36,7 @@ filters/sslr.h
 renderStages/graphics.h)
 
 add_library(deferredGraphics STATIC ${SOURCES} ${HEADERS})
+target_include_directories(deferredGraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+${CMAKE_CURRENT_SOURCE_DIR}/renderStages
+${CMAKE_CURRENT_SOURCE_DIR}/filters)
+target_link_libraries(deferredGraphics PUBLIC graphicsManager interfaces utils)

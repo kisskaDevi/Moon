@@ -174,10 +174,10 @@ void graphics::createFramebuffers()
 
 void graphics::createPipelines()
 {
-    base.ExternalPath = externalPath;
-    outlining.ExternalPath = externalPath;
-    lighting.ExternalPath = externalPath;
-    ambientLighting.ExternalPath = externalPath;
+    base.ShadersPath = shadersPath;
+    outlining.ShadersPath = shadersPath;
+    lighting.ShadersPath = shadersPath;
+    ambientLighting.ShadersPath = shadersPath;
 
     base.createDescriptorSetLayout(device);
     base.createPipeline(device,&image,renderPass);

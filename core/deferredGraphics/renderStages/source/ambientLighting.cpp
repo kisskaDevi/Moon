@@ -12,8 +12,8 @@ void graphics::AmbientLighting::DestroyPipeline(VkDevice device){
 }
 
 void graphics::AmbientLighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass){
-    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\deferredGraphics\\shaders\\ambientLightingPass\\ambientLightingVert.spv");
-    auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\deferredGraphics\\shaders\\ambientLightingPass\\ambientLightingFrag.spv");
+    auto vertShaderCode = ShaderModule::readFile(ShadersPath / "ambientLightingPass/ambientLightingVert.spv");
+    auto fragShaderCode = ShaderModule::readFile(ShadersPath / "ambientLightingPass/ambientLightingFrag.spv");
     VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
     VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {

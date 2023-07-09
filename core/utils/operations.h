@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <filesystem>
 #include <optional>
 
 class GLFWwindow;
@@ -225,7 +226,7 @@ namespace Image{
 namespace ShaderModule {
 
     std::vector<char> readFile(
-            const std::string&              filename);
+            const std::filesystem::path&    filename);
 
     VkShaderModule create(
             VkDevice*                       device,

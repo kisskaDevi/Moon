@@ -20,7 +20,7 @@ private:
     struct Filter : public filter{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
-    }filter;
+    }customfilter;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 public:

@@ -8,7 +8,7 @@
 #include "buffer.h"
 #include "object.h"
 
-#include <string>
+#include <filesystem>
 
 struct UniformBuffer
 {
@@ -137,7 +137,7 @@ class skyboxObject : public baseObject{
 private:
     cubeTexture* texture{nullptr};
 public:
-    skyboxObject(const std::vector<std::string>& TEXTURE_PATH);
+    skyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
     ~skyboxObject();
 
     void translate(const glm::vec3& translate) override;

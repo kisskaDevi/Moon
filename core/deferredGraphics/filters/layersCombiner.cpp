@@ -81,8 +81,8 @@ void layersCombiner::createFramebuffers(){
 }
 
 void layersCombiner::createPipelines(){
-    combiner.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\layersCombiner\\layersCombinerVert.spv";
-    combiner.fragShaderPath = externalPath + "core\\deferredGraphics\\shaders\\layersCombiner\\layersCombinerFrag.spv";
+    combiner.vertShaderPath = shadersPath / "layersCombiner/layersCombinerVert.spv";
+    combiner.fragShaderPath = shadersPath / "layersCombiner/layersCombinerFrag.spv";
     combiner.createDescriptorSetLayout(device);
     combiner.createPipeline(device,&image,renderPass);
 }

@@ -68,7 +68,7 @@ void iamge::create(
     }
 }
 
-texture::texture(const std::string& path) : path({path})
+texture::texture(const std::filesystem::path& path) : path({path})
 {}
 
 void texture::destroy(VkDevice device){
@@ -109,7 +109,7 @@ void texture::createTextureImage(
         VkCommandBuffer     commandBuffer)
 {
     int texWidth = 0, texHeight = 0, texChannels = 0;
-    stbi_uc* pixels[1] = {stbi_load(path[0].c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha)};
+    stbi_uc* pixels[1] = {stbi_load(path[0].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha)};
     VkDeviceSize imageSize = 4 * texWidth * texHeight;
 
     if(!pixels[0])    throw std::runtime_error("failed to load texture image!");
@@ -161,7 +161,7 @@ VkSampler*          texture::getTextureSampler(){return &image.textureSampler;}
 
 //cubeTexture
 
-cubeTexture::cubeTexture(const std::vector<std::string>& path)
+cubeTexture::cubeTexture(const std::vector<std::filesystem::path>& path)
 {
     for(const auto& p: path){
         this->path.push_back(p);
@@ -175,7 +175,7 @@ void cubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice d
     VkDeviceSize imageSize = 0;
     for(uint32_t i=0;i<6;i++)
     {
-        pixels[i]= stbi_load(path[i].c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        pixels[i]= stbi_load(path[i].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         imageSize += 4 * texWidth * texHeight;
 
         if(!pixels[i]){

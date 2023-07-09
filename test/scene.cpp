@@ -15,13 +15,13 @@ float spotAngle = 90.0f;
 bool updateCamera = false;
 float cameraAngle = 45.0f;
 
-scene::scene(graphicsManager *app, std::vector<deferredGraphics*> graphics, GLFWwindow* window, std::string ExternalPath):
+scene::scene(graphicsManager *app, std::vector<deferredGraphics*> graphics, GLFWwindow* window, const std::filesystem::path& ExternalPath):
     app(app),
     graphics(graphics),
     window(window),
     ExternalPath(ExternalPath),
-    ZERO_TEXTURE(ExternalPath + "dependences\\texture\\0.png"),
-    ZERO_TEXTURE_WHITE(ExternalPath + "dependences\\texture\\1.png")
+    ZERO_TEXTURE(ExternalPath / "dependences/texture/0.png"),
+    ZERO_TEXTURE_WHITE(ExternalPath / "dependences/texture/1.png")
 {}
 
 void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObject)
@@ -36,22 +36,22 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObjec
     groups.push_back(new group);
     groups.push_back(new group);
 
-    std::vector<std::string> SKYBOX = {
-        ExternalPath+"dependences\\texture\\skybox\\left.jpg",
-        ExternalPath+"dependences\\texture\\skybox\\right.jpg",
-        ExternalPath+"dependences\\texture\\skybox\\front.jpg",
-        ExternalPath+"dependences\\texture\\skybox\\back.jpg",
-        ExternalPath+"dependences\\texture\\skybox\\top.jpg",
-        ExternalPath+"dependences\\texture\\skybox\\bottom.jpg"
+    std::vector<std::filesystem::path> SKYBOX = {
+        ExternalPath / "dependences/texture/skybox/left.jpg",
+        ExternalPath / "dependences/texture/skybox/right.jpg",
+        ExternalPath / "dependences/texture/skybox/front.jpg",
+        ExternalPath / "dependences/texture/skybox/back.jpg",
+        ExternalPath / "dependences/texture/skybox/top.jpg",
+        ExternalPath / "dependences/texture/skybox/bottom.jpg"
     };
 
-    std::vector<std::string> SKYBOX1 = {
-        ExternalPath+"dependences\\texture\\skybox1\\left.png",
-        ExternalPath+"dependences\\texture\\skybox1\\right.png",
-        ExternalPath+"dependences\\texture\\skybox1\\front.png",
-        ExternalPath+"dependences\\texture\\skybox1\\back.png",
-        ExternalPath+"dependences\\texture\\skybox1\\top.png",
-        ExternalPath+"dependences\\texture\\skybox1\\bottom.png"
+    std::vector<std::filesystem::path> SKYBOX1 = {
+        ExternalPath / "dependences/texture/skybox1/left.png",
+        ExternalPath / "dependences/texture/skybox1/right.png",
+        ExternalPath / "dependences/texture/skybox1/front.png",
+        ExternalPath / "dependences/texture/skybox1/back.png",
+        ExternalPath / "dependences/texture/skybox1/top.png",
+        ExternalPath / "dependences/texture/skybox1/bottom.png"
     };
 
     cameras = cameraObject;
@@ -137,31 +137,31 @@ void scene::destroyScene()
 
 void scene::loadModels()
 {
-    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Bee.glb", 6));
+    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Bee.glb", 6));
     graphics[0]->createModel(gltfModel.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Box.glb"));
+    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Box.glb"));
     graphics[0]->createModel(gltfModel.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
+    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
     graphics[0]->createModel(gltfModel.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\Duck.glb"));
+    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Duck.glb"));
     graphics[0]->createModel(gltfModel.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glb\\RetroUFO.glb"));
+    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb"));
     graphics[0]->createModel(gltfModel.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath + "dependences\\model\\glTF\\Sponza\\Sponza.gltf"));
+    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
     graphics[0]->createModel(gltfModel.back());
 }
 
 void scene::createLight()
 {
-    std::string LIGHT_TEXTURE0  = ExternalPath + "dependences\\texture\\icon.PNG";
-    std::string LIGHT_TEXTURE1  = ExternalPath + "dependences\\texture\\light1.jpg";
-    std::string LIGHT_TEXTURE2  = ExternalPath + "dependences\\texture\\light2.jpg";
-    std::string LIGHT_TEXTURE3  = ExternalPath + "dependences\\texture\\light3.jpg";
+    std::filesystem::path LIGHT_TEXTURE0  = ExternalPath / "dependences/texture/icon.PNG";
+    std::filesystem::path LIGHT_TEXTURE1  = ExternalPath / "dependences/texture/light1.jpg";
+    std::filesystem::path LIGHT_TEXTURE2  = ExternalPath / "dependences/texture/light2.jpg";
+    std::filesystem::path LIGHT_TEXTURE3  = ExternalPath / "dependences/texture/light3.jpg";
 
     glm::mat4x4 Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
     Proj[1][1] *= -1;

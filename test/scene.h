@@ -1,7 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <string>
+#include <filesystem>
 #include <vector>
 
 class deferredGraphics;
@@ -56,9 +56,9 @@ private:
     std::vector<deferredGraphics*>   graphics;
     GLFWwindow*         window;
 
-    std::string ExternalPath;
-    std::string ZERO_TEXTURE;
-    std::string ZERO_TEXTURE_WHITE;
+    std::filesystem::path ExternalPath;
+    std::filesystem::path ZERO_TEXTURE;
+    std::filesystem::path ZERO_TEXTURE_WHITE;
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);
@@ -68,7 +68,7 @@ private:
     void createLight();
     void createObjects();
 public:
-    scene(graphicsManager *app, std::vector<deferredGraphics*> graphics, GLFWwindow* window, std::string ExternalPath);
+    scene(graphicsManager *app, std::vector<deferredGraphics*> graphics, GLFWwindow* window, const std::filesystem::path& ExternalPath);
     void createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObject);
     void updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT);
     void destroyScene();

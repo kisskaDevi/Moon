@@ -1,5 +1,7 @@
 #include "device.h"
 
+#include <iostream>
+
 queueFamily::queueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport):
 index(index), flags(flag), queueCount(queueCount), presentSupport(presentSupport){
     queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));

@@ -5,7 +5,7 @@
 
 #include "buffer.h"
 
-#include <string>
+#include <filesystem>
 #include <vector>
 
 namespace tinygltf{
@@ -49,7 +49,7 @@ struct iamge
 class texture
 {
 protected:
-    std::vector<std::string> path;
+    std::vector<std::filesystem::path> path;
 
     float mipLevel{0.0f};
     uint32_t mipLevels{1};
@@ -58,7 +58,7 @@ protected:
 
 public:
     texture() = default;
-    texture(const std::string & path);
+    texture(const std::filesystem::path & path);
     ~texture() = default;
     void destroy(VkDevice device);
     void destroyStagingBuffer(VkDevice device);
@@ -86,7 +86,7 @@ class cubeTexture: public texture
 {
 public:
     cubeTexture() = default;
-    cubeTexture(const std::vector<std::string> & path);
+    cubeTexture(const std::vector<std::filesystem::path> & path);
     ~cubeTexture() = default;
 
     void createTextureImage(

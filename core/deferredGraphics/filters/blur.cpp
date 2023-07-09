@@ -116,14 +116,14 @@ void gaussianBlur::blur::createDescriptorSetLayout(VkDevice device){
 
 void gaussianBlur::createPipelines(){
     xblur.subpassNumber = 0;
-    xblur.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\gaussianBlur\\xBlurVert.spv";
-    xblur.fragShaderPath = externalPath + "core\\deferredGraphics\\shaders\\gaussianBlur\\xBlurFrag.spv";
+    xblur.vertShaderPath = shadersPath / "gaussianBlur/xBlurVert.spv";
+    xblur.fragShaderPath = shadersPath / "gaussianBlur/xBlurFrag.spv";
     xblur.createDescriptorSetLayout(device);
     xblur.createPipeline(device,&image,renderPass);
 
     yblur.subpassNumber = 2;
-    yblur.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\gaussianBlur\\yBlurVert.spv";
-    yblur.fragShaderPath = externalPath + "core\\deferredGraphics\\shaders\\gaussianBlur\\yBlurFrag.spv";
+    yblur.vertShaderPath = shadersPath / "gaussianBlur/yBlurVert.spv";
+    yblur.fragShaderPath = shadersPath / "gaussianBlur/yBlurFrag.spv";
     yblur.createDescriptorSetLayout(device);
     yblur.createPipeline(device,&image,renderPass);
 }

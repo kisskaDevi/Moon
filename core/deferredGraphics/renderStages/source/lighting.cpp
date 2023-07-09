@@ -50,15 +50,11 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 
 void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    std::string spotVert = ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingVert.spv";
-    std::string spotFrag = ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingFrag.spv";
-    std::string shadowSpotFrag = ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\shadowSpotLightingFrag.spv";
-    std::string scatteringSpotFrag = enableScattering ?
-                ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\scatteringSpotLightingFrag.spv":
-                ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\spotLightingFrag.spv";
-    std::string scatteringShadowSpotFrag = enableScattering ?
-                ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\scatteringShadowSpotLightingFrag.spv":
-                ExternalPath + "core\\deferredGraphics\\shaders\\spotLightingPass\\shadowSpotLightingFrag.spv";
+    std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
+    std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
+    std::filesystem::path shadowSpotFrag = ShadersPath / "spotLightingPass/shadowSpotLightingFrag.spv";
+    std::filesystem::path scatteringSpotFrag = ShadersPath / std::filesystem::path("spotLightingPass") / (enableScattering ? "scatteringSpotLightingFrag.spv" : "spotLightingFrag.spv");
+    std::filesystem::path scatteringShadowSpotFrag = ShadersPath / std::filesystem::path("spotLightingPass") / (enableScattering ? "scatteringShadowSpotLightingFrag.spv": "shadowSpotLightingFrag.spv");
     createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,&PipelineLayoutDictionary[(false<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(false <<4)|(0x0)]);
     createSpotPipeline(device,pInfo,pRenderPass,spotVert,shadowSpotFrag,&PipelineLayoutDictionary[(false<<5)|(true <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(true <<4)|(0x0)]);
     createSpotPipeline(device,pInfo,pRenderPass,spotVert,scatteringSpotFrag,&PipelineLayoutDictionary[(true<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(true<<5)|(false <<4)|(0x0)]);

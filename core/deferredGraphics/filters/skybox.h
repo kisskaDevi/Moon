@@ -2,6 +2,7 @@
 #define SKYBOX_H
 
 #include "filtergraphics.h"
+#include <filesystem>
 
 class object;
 class camera;
@@ -10,8 +11,8 @@ class skyboxGraphics : public filterGraphics
 {
 private:
     struct Skybox : public filter{
-        std::string                     vertShaderPath;
-        std::string                     fragShaderPath;
+        std::filesystem::path           vertShaderPath;
+        std::filesystem::path           fragShaderPath;
 
         VkDescriptorSetLayout           ObjectDescriptorSetLayout{VK_NULL_HANDLE};
 

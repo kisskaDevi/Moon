@@ -76,8 +76,8 @@ void SSLRGraphics::createFramebuffers()
 
 void SSLRGraphics::createPipelines()
 {
-    sslr.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\sslr\\sslrVert.spv";
-    sslr.fragShaderPath = externalPath + "core\\deferredGraphics\\shaders\\sslr\\sslrFrag.spv";
+    sslr.vertShaderPath = shadersPath / "sslr/sslrVert.spv";
+    sslr.fragShaderPath = shadersPath / "sslr/sslrFrag.spv";
     sslr.createDescriptorSetLayout(device);
     sslr.createPipeline(device,&image,renderPass);
 }

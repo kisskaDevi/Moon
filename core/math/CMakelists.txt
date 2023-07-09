@@ -8,3 +8,9 @@ include_directories(${GLM_DIR})
 
 set(HEADERS quaternion.h
 dualQuaternion.h)
+
+set(SOURCES quaternion.cpp
+dualQuaternion.cpp)
+
+add_library(math STATIC ${SOURCES} ${HEADERS})
+target_include_directories(math PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -16,8 +16,8 @@ void graphics::OutliningExtension::DestroyPipeline(VkDevice device)
 }
 
 void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass){
-    auto vertShaderCode = ShaderModule::readFile(ExternalPath + "core\\deferredGraphics\\shaders\\outlining\\outliningVert.spv");
-    auto fragShaderCode = ShaderModule::readFile(ExternalPath + "core\\deferredGraphics\\shaders\\outlining\\outliningFrag.spv");
+    auto vertShaderCode = ShaderModule::readFile(ShadersPath / "outlining/outliningVert.spv");
+    auto fragShaderCode = ShaderModule::readFile(ShadersPath / "outlining/outliningFrag.spv");
     VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
     VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {

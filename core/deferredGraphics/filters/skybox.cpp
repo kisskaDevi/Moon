@@ -85,8 +85,8 @@ void skyboxGraphics::createFramebuffers()
 
 void skyboxGraphics::createPipelines()
 {
-    skybox.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\skybox\\skyboxVert.spv";
-    skybox.fragShaderPath = externalPath + "core\\deferredGraphics\\shaders\\skybox\\skyboxFrag.spv";
+    skybox.vertShaderPath = shadersPath / "skybox/skyboxVert.spv";
+    skybox.fragShaderPath = shadersPath / "skybox/skyboxFrag.spv";
     skybox.createDescriptorSetLayout(device);
     skybox.createPipeline(device,&image,renderPass);
 }

@@ -4,14 +4,14 @@
 #include <vulkan.h>
 #include "attachments.h"
 
-#include <string>
+#include <filesystem>
 
 class texture;
 
 class filter{
 public:
-    std::string                     vertShaderPath;
-    std::string                     fragShaderPath;
+    std::filesystem::path           vertShaderPath;
+    std::filesystem::path           fragShaderPath;
 
     VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
     VkPipeline                      Pipeline{VK_NULL_HANDLE};
@@ -27,14 +27,14 @@ public:
 class filterGraphics
 {
 protected:
-    VkPhysicalDevice    physicalDevice{VK_NULL_HANDLE};
-    VkDevice            device{VK_NULL_HANDLE};
-    std::string         externalPath{};
-    imageInfo           image;
-    texture*            emptyTexture;
+    VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
+    VkDevice                        device{VK_NULL_HANDLE};
+    std::filesystem::path           shadersPath;
+    imageInfo                       image;
+    texture*                        emptyTexture;
 
-    uint32_t            attachmentsCount{0};
-    attachments*        pAttachments{nullptr};
+    uint32_t                        attachmentsCount{0};
+    attachments*                    pAttachments{nullptr};
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
@@ -44,7 +44,7 @@ public:
     void destroy();
 
     void setEmptyTexture(texture* emptyTexture);
-    void setExternalPath(const std::string &path);
+    void setShadersPath(const std::filesystem::path &path);
     void setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
     void setImageProp(imageInfo* pInfo);
     void setAttachments(uint32_t attachmentsCount, attachments* pAttachments);

@@ -1,4 +1,6 @@
+#ifdef WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
+#endif
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "graphicsManager.h"
@@ -14,10 +16,11 @@
 #include <cstdlib>
 #include <sstream>
 #include <utility>
+#include <filesystem>
 
 bool framebufferResized = false;
 
-void initializeWindow(GLFWwindow* &window, uint32_t WIDTH, uint32_t HEIGHT, std::string iconName);
+void initializeWindow(GLFWwindow* &window, uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName);
 std::pair<uint32_t,uint32_t> recreateSwapChain(GLFWwindow* window, graphicsManager* app, std::vector<deferredGraphics*> graphics, baseCamera* cameraObject);
 
 int main()
@@ -27,13 +30,13 @@ int main()
     bool fpsLock = false;
     uint32_t WIDTH = 800;
     uint32_t HEIGHT = 800;
-    const std::string ExternalPath = "C:\\Qt\\repositories\\kisskaVulkan\\";
+    const std::filesystem::path ExternalPath = std::filesystem::absolute(std::string(__FILE__) + "/../../");
 
-    initializeWindow(window, WIDTH, HEIGHT, ExternalPath + "dependences\\texture\\icon.png");
+    initializeWindow(window, WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.png");
 
     std::vector<deferredGraphics*> graphics = {
-          new deferredGraphics{ExternalPath, {0.0f, 0.0f}, {0.5f, 1.0f}}
-        , new deferredGraphics{ExternalPath, {0.5f, 0.0f}, {0.5f, 1.0f}}
+          new deferredGraphics{ExternalPath / "core/deferredGraphics/shaders", {WIDTH/2, HEIGHT}}
+        , new deferredGraphics{ExternalPath / "core/deferredGraphics/shaders", {WIDTH/2, HEIGHT}, {static_cast<int32_t>(WIDTH / 2), 0}}
     };
 
     graphicsManager app;
@@ -47,7 +50,7 @@ int main()
 
     for(auto& graph: graphics){
         app.setGraphics(graph);
-        graph->setEmptyTexture(ExternalPath + "dependences\\texture\\0.png");
+        graph->setEmptyTexture(ExternalPath / "dependences/texture/0.png");
         graph->bindCameraObject(&cameraObject, &graph == &graphics[0]);
         graph->createGraphics(window, &app.getSurface());
         graph->updateDescriptorSets();
@@ -112,6 +115,8 @@ std::pair<uint32_t,uint32_t> recreateSwapChain(GLFWwindow* window, graphicsManag
     }
 
     cameraObject->recreate(45.0f, 0.5f * (float) width / (float) height, 0.1f, 500.0f);
+    graphics[0]->setExtentAndOffset({static_cast<uint32_t>(width / 2), static_cast<uint32_t>(height)});
+    graphics[1]->setExtentAndOffset({static_cast<uint32_t>(width / 2), static_cast<uint32_t>(height)}, {static_cast<int32_t>(width / 2), 0});
 
     app->deviceWaitIdle();
     app->destroySwapChain();
@@ -128,7 +133,7 @@ std::pair<uint32_t,uint32_t> recreateSwapChain(GLFWwindow* window, graphicsManag
     return std::pair<uint32_t,uint32_t>(width, height);
 }
 
-void initializeWindow(GLFWwindow* &window, uint32_t WIDTH, uint32_t HEIGHT, std::string iconName)
+void initializeWindow(GLFWwindow* &window, uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName)
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -138,7 +143,7 @@ void initializeWindow(GLFWwindow* &window, uint32_t WIDTH, uint32_t HEIGHT, std:
     glfwSetFramebufferSizeCallback(window, [](GLFWwindow*, int, int){ framebufferResized = true;});
 
     int width, height, comp;
-    stbi_uc* img = stbi_load(iconName.c_str(), &width, &height, &comp, 0);
+    stbi_uc* img = stbi_load(iconName.string().c_str(), &width, &height, &comp, 0);
     GLFWimage images{width,height,img};
     glfwSetWindowIcon(window,1,&images);
 }

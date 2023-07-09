@@ -61,9 +61,9 @@ namespace {
         }
     }
 
-    bool isBinary(const std::string& filename){
-        size_t extpos = filename.rfind('.', filename.length());
-        return (extpos != std::string::npos) && (filename.substr(extpos + 1, filename.length() - extpos) == "glb");
+    bool isBinary(const std::filesystem::path& filename){
+        size_t extpos = filename.string().rfind('.', filename.string().length());
+        return (extpos != std::string::npos) && (filename.string().substr(extpos + 1, filename.string().length() - extpos) == "glb");
     }
 
     void createNodeDescriptorSet(VkDevice device, Node* node, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
@@ -175,7 +175,7 @@ BoundingBox BoundingBox::getAABB(glm::mat4 m) const {
     );
 }
 
-gltfModel::gltfModel(std::string filename, uint32_t instanceCount)
+gltfModel::gltfModel(std::filesystem::path filename, uint32_t instanceCount)
     : filename(filename)
 {
     instances.resize(instanceCount);
@@ -379,7 +379,7 @@ void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
 
-    if (std::string error{}, warning{}; isBinary(filename) ? gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename.c_str()) : gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.c_str()))
+    if (std::string error{}, warning{}; isBinary(filename) ? gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename.string().c_str()) : gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.string().c_str()))
     {
         loadTextures(physicalDevice,device,commandBuffer,gltfModel);
         loadMaterials(gltfModel);

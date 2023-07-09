@@ -5,7 +5,7 @@ WARNINGS += -Wall
 
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan \
-    $$PWD/../../dependences/libs/glfw-3.3.4.bin.WIN64/include/GLFW \
+    $$PWD/../../dependences/libs/glfw/include/GLFW \
     $$PWD/../../dependences/libs/stb \
     $$PWD/../../dependences/libs/tinygltf
 

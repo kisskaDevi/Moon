@@ -6,6 +6,8 @@
 #include "quaternion.h"
 #include "buffer.h"
 
+#include <filesystem>
+
 class shadowGraphics;
 
 struct LightBufferObject
@@ -62,7 +64,7 @@ private:
     void updateModelMatrix();
 public:
     spotLight(bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
-    spotLight(const std::string & TEXTURE_PATH, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
+    spotLight(const std::filesystem::path & TEXTURE_PATH, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     ~spotLight();
     void destroy(VkDevice device) override;
 

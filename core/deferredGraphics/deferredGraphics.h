@@ -18,6 +18,7 @@
 #include <glm.hpp>
 
 #include <unordered_map>
+#include <filesystem>
 
 class node;
 class model;
@@ -29,19 +30,13 @@ struct StorageBufferObject{
     alignas(4)  float               depth;
 };
 
-struct frameScale
-{
-    float xScale{0.0f};
-    float yScale{0.0f};
-};
-
 class deferredGraphics: public graphicsInterface
 {
 private:
-    std::string                                 ExternalPath{};
+    std::filesystem::path                       shadersPath;
     uint32_t                                    imageCount{0};
-    frameScale                                  offsetScale;
-    frameScale                                  extentScale;
+    VkExtent2D                                  extent{0,0};
+    VkOffset2D                                  offset{0,0};
     VkExtent2D                                  frameBufferExtent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
@@ -94,7 +89,7 @@ private:
     std::vector<VkCommandBuffer> getTransparentLayersCommandBuffers(uint32_t imageIndex);
     void createStorageBuffers(uint32_t imageCount);
 public:
-    deferredGraphics(const std::string& ExternalPath, frameScale offsetScale = {0.0f,0.0f}, frameScale extentScale = {1.0f,1.0f}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
 
     ~deferredGraphics();
     void destroyGraphics() override;
@@ -118,11 +113,10 @@ public:
 
     void        updateCmdFlags();
 
-    void        setOffset(frameScale offset);
-    void        setExtent(frameScale extent);
+    void        setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
     void        setFrameBufferExtent(VkExtent2D extent);
-    void        setExternalPath(const std::string& ExternalPath);
-    void        setEmptyTexture(std::string ZERO_TEXTURE);
+    void        setShadersPath(const std::filesystem::path& shadersPath);
+    void        setEmptyTexture(const std::filesystem::path& ZERO_TEXTURE);
     void        setMinAmbientFactor(const float& minAmbientFactor);
 
     void        createModel(model* pModel);

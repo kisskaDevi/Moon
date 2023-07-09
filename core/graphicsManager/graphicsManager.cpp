@@ -68,7 +68,7 @@ void graphicsManager::createDevice()
         deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 
     device logical(deviceFeatures);
-    devices[0].createDevice(logical,{{0,16},{1,1},{2,1}});
+    devices[0].createDevice(logical,{{0,2}});
 }
 
 void graphicsManager::createSurface(GLFWwindow* window)

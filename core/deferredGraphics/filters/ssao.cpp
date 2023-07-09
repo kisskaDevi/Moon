@@ -76,8 +76,8 @@ void SSAOGraphics::createFramebuffers()
 
 void SSAOGraphics::createPipelines()
 {
-    ssao.vertShaderPath = externalPath + "core\\deferredGraphics\\shaders\\ssao\\ssaoVert.spv";
-    ssao.fragShaderPath = externalPath + "core\\deferredGraphics\\shaders\\ssao\\ssaoFrag.spv";
+    ssao.vertShaderPath = shadersPath / "ssao/ssaoVert.spv";
+    ssao.fragShaderPath = shadersPath / "ssao/ssaoFrag.spv";
     ssao.createDescriptorSetLayout(device);
     ssao.createPipeline(device,&image,renderPass);
 }

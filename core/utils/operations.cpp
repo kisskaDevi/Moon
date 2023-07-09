@@ -614,12 +614,12 @@ VkFormat Image::depthStencilFormat(VkPhysicalDevice physicalDevice)
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-std::vector<char> ShaderModule::readFile(const std::string& filename)
+std::vector<char> ShaderModule::readFile(const std::filesystem::path& filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
-        std::cout << "Failed to open file " << filename << std::endl;
+        std::cout << "Failed to open file " << filename.string() << std::endl;
         throw std::runtime_error("failed to open file!");
     }
     size_t fileSize = static_cast<size_t>(file.tellg());

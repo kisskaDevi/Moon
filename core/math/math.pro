@@ -4,7 +4,11 @@ CONFIG += c++17 console
 WARNINGS += -Wall
 
 INCLUDEPATH += \
-    $$PWD/../../dependences/libs/glm \
+    $$PWD/../../dependences/libs/glm
+
+SOURCES += \
+    quaternion.cpp \
+    dualQuaternion.cpp
 
 HEADERS += \
     quaternion.h \

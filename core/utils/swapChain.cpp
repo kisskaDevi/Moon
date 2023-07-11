@@ -2,6 +2,10 @@
 
 #include <glfw3.h>
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
 swapChain::swapChain()
 {}
 
@@ -15,7 +19,9 @@ void swapChain::destroy(){
     if(swapChainKHR) {vkDestroySwapchainKHR(device, swapChainKHR, nullptr); swapChainKHR = VK_NULL_HANDLE;}
 }
 
-void swapChain::create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount){
+VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount){
+    VkResult result = VK_SUCCESS;
+
     SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(physicalDevice, *surface);
     VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
     VkSurfaceCapabilitiesKHR capabilities = SwapChain::queryingSupport(physicalDevice, *surface).capabilities;
@@ -40,23 +46,27 @@ void swapChain::create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t queue
         createInfo.presentMode = SwapChain::queryingPresentMode(swapChainSupport.presentModes);
         createInfo.clipped = VK_TRUE;
         createInfo.oldSwapchain = VK_NULL_HANDLE;
-    vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChainKHR);
+    result = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChainKHR);
+    debug::checkResult(result, "VkSwapchainKHR : vkCreateSwapchainKHR result = " + std::to_string(result));
 
     swapChainAttachments.image.resize(imageCount);
     swapChainAttachments.imageView.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapChainKHR, &imageCount, swapChainAttachments.image.data());
+    result = vkGetSwapchainImagesKHR(device, swapChainKHR, &imageCount, swapChainAttachments.image.data());
+    debug::checkResult(result, "VkSwapchainKHR : vkGetSwapchainImagesKHR result = " + std::to_string(result));
 
     for (size_t size = 0; size < swapChainAttachments.imageView.size(); size++){
-        Texture::createView(    device,
-                                VK_IMAGE_VIEW_TYPE_2D,
-                                surfaceFormat.format,
-                                VK_IMAGE_ASPECT_COLOR_BIT,
-                                1,
-                                0,
-                                1,
-                                swapChainAttachments.image[size],
-                                &swapChainAttachments.imageView[size]);
+        result = Texture::createView(   device,
+                                        VK_IMAGE_VIEW_TYPE_2D,
+                                        surfaceFormat.format,
+                                        VK_IMAGE_ASPECT_COLOR_BIT,
+                                        1,
+                                        0,
+                                        1,
+                                        swapChainAttachments.image[size],
+                                        &swapChainAttachments.imageView[size]);
+        debug::checkResult(result, "attachments::image : Texture::createView result = " + std::to_string(result));
     }
+    return result;
 }
 
 VkSwapchainKHR& swapChain::operator()(){

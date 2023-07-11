@@ -48,8 +48,8 @@ public:
     void deleteAttachment(VkDevice device);
     void deleteSampler(VkDevice device);
 
-    void create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
-    void createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
+    VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
+    VkResult createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
 
     static VkAttachmentDescription imageDescription(VkFormat format);
     static VkAttachmentDescription imageDescription(VkFormat format, VkImageLayout layout);

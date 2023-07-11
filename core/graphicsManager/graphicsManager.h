@@ -20,14 +20,14 @@ public:
     VkSurfaceKHR&   getSurface();
     uint32_t        getImageIndex();
     uint32_t        getImageCount();
-    void            deviceWaitIdle();
+    VkResult        deviceWaitIdle();
 
-    void            createInstance();
-    void            createSurface(GLFWwindow* window);
-    void            createDevice();
-    void            createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
+    VkResult        createInstance();
+    VkResult        createSurface(GLFWwindow* window);
+    VkResult        createDevice();
+    VkResult        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
     void            setGraphics(graphicsInterface* graphics);
-    void            createSyncObjects();
+    VkResult        createSyncObjects();
     VkResult        checkNextFrame();
     VkResult        drawFrame();
 

@@ -40,16 +40,17 @@ int main()
     };
 
     graphicsManager app;
-    app.createDevice();
-    app.createSurface(window);
-    app.createSwapChain(window);
-    app.createSyncObjects();
+    debug::checkResult(app.createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(app.createDevice(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(app.createSwapChain(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
     baseCamera cameraObject(45.0f, 0.5f * (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
     cameraObject.translate(glm::vec3(0.0f,0.0f,10.0f));
 
     for(auto& graph: graphics){
         app.setGraphics(graph);
+        graph->createCommandPool();
         graph->setEmptyTexture(ExternalPath / "dependences/texture/0.png");
         graph->bindCameraObject(&cameraObject, &graph == &graphics[0]);
         graph->createGraphics(window, &app.getSurface());
@@ -84,19 +85,18 @@ int main()
         }
     }
 
-    app.deviceWaitIdle();
 
+    debug::checkResult(app.deviceWaitIdle(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+
+    testScene.destroyScene();
     for(auto& graph: graphics){
         graph->removeCameraObject(&cameraObject);
         graph->destroyGraphics();
+        graph->destroyCommandPool();
+        delete graph;
     }
-    testScene.destroyScene();
     app.destroySwapChain();
     app.destroy();
-
-    for(auto& graphics: graphics){
-        delete graphics;
-    }
 
     glfwDestroyWindow(window);
     glfwTerminate();

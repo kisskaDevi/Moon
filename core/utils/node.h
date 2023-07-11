@@ -35,7 +35,7 @@ struct node
     void setExternalFence(std::vector<VkFence>& externalFence);
     std::vector<std::vector<VkSemaphore>> getBackSemaphores();
 
-    void createSemaphores(VkDevice device);
+    VkResult createSemaphores(VkDevice device);
     void submit();
 };
 

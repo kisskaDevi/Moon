@@ -21,7 +21,7 @@ public:
     swapChain();
     void destroy();
 
-    void create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);
+    VkResult create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);
 
     VkSwapchainKHR& operator()();
     attachments& attachment();

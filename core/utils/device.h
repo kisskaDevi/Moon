@@ -56,9 +56,10 @@ struct physicalDevice
     physicalDevice& operator=(const physicalDevice& other);
     physicalDevice(const physicalDevice& other);
 
-    void createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap);
+    VkResult createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap);
     VkDevice& getLogical();
     VkQueue getQueue(uint32_t familyIndex, uint32_t queueIndex);
+    bool createdLogical();
 };
 
 #endif // DEVICE_H

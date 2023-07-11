@@ -1,4 +1,5 @@
 #include "node.h"
+#include "operations.h"
 
 stage::stage(   std::vector<VkCommandBuffer> commandBuffers,
                 std::vector<VkPipelineStageFlags> waitStages,
@@ -58,10 +59,12 @@ std::vector<std::vector<VkSemaphore>> node::getBackSemaphores(){
     return semaphores;
 }
 
-void node::createSemaphores(VkDevice device){
-    auto createSemaphore = [this](VkDevice device, VkSemaphoreCreateInfo* semaphoreInfo, stage* stage){
+VkResult node::createSemaphores(VkDevice device){
+    VkResult result = VK_SUCCESS;
+    auto createSemaphore = [this, &result](VkDevice device, VkSemaphoreCreateInfo* semaphoreInfo, stage* stage){
         signalSemaphores.push_back(VkSemaphore{});
-        vkCreateSemaphore(device, semaphoreInfo, nullptr, &signalSemaphores.back());
+        result = vkCreateSemaphore(device, semaphoreInfo, nullptr, &signalSemaphores.back());
+        debug::checkResult(result, "VkSemaphore : vkCreateSemaphore result = " + std::to_string(result));
         stage->signalSemaphores.push_back(signalSemaphores.back());
     };
 
@@ -78,6 +81,7 @@ void node::createSemaphores(VkDevice device){
             createSemaphore(device, &semaphoreInfo, &currentStage);
         }
     }
+    return result;
 }
 
 void node::submit(){

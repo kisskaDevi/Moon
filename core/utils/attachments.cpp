@@ -23,8 +23,10 @@ attachments& attachments::operator=(const attachments& other)
     return *this;
 }
 
-void attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
+VkResult attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
 {
+    VkResult result = VK_SUCCESS;
+
     image.resize(count);
     imageMemory.resize(count);
     imageView.resize(count);
@@ -36,34 +38,39 @@ void attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFor
     auto memory = imageMemory.begin();
     auto view = imageView.begin();
     for(; instance != image.end() || memory != imageMemory.end() || view != imageView.end(); instance++, memory++, view++){
-        Texture::create(    physicalDevice,
-                            device,
-                            0,
-                            {extent.width,extent.height,1},
-                            1,
-                            1,
-                            VK_SAMPLE_COUNT_1_BIT,
-                            format,
-                            VK_IMAGE_LAYOUT_UNDEFINED,
-                            usage,
-                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            &(*instance),
-                            &(*memory));
+        result = Texture::create(   physicalDevice,
+                                    device,
+                                    0,
+                                    {extent.width,extent.height,1},
+                                    1,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    format,
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    usage,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    &(*instance),
+                                    &(*memory));
+        debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
 
-        Texture::createView(    device,
-                                VK_IMAGE_VIEW_TYPE_2D,
-                                format,
-                                VK_IMAGE_ASPECT_COLOR_BIT,
-                                1,
-                                0,
-                                1,
-                                *instance,
-                                &(*view));
+        result = Texture::createView(   device,
+                                        VK_IMAGE_VIEW_TYPE_2D,
+                                        format,
+                                        VK_IMAGE_ASPECT_COLOR_BIT,
+                                        1,
+                                        0,
+                                        1,
+                                        *instance,
+                                        &(*view));
+        debug::checkResult(result, "VkImageView : Texture::createView result = " + std::to_string(result));
     }
+    return result;
 }
 
-void attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
+VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
 {
+    VkResult result = VK_SUCCESS;
+
     image.resize(count);
     imageMemory.resize(count);
     imageView.resize(count);
@@ -75,30 +82,33 @@ void attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, 
     auto memory = imageMemory.begin();
     auto view = imageView.begin();
     for(; instance != image.end() || memory != imageMemory.end() || view != imageView.end(); instance++, memory++, view++){
-        Texture::create(    physicalDevice,
-                            device,
-                            0,
-                            {extent.width,extent.height,1},
-                            1,
-                            1,
-                            VK_SAMPLE_COUNT_1_BIT,
-                            format,
-                            VK_IMAGE_LAYOUT_UNDEFINED,
-                            usage,
-                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            &(*instance),
-                            &(*memory));
+        result = Texture::create(   physicalDevice,
+                                    device,
+                                    0,
+                                    {extent.width,extent.height,1},
+                                    1,
+                                    1,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    format,
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    usage,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    &(*instance),
+                                    &(*memory));
+        debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
 
-        Texture::createView(    device,
-                                VK_IMAGE_VIEW_TYPE_2D,
-                                format,
-                                VK_IMAGE_ASPECT_DEPTH_BIT,
-                                1,
-                                0,
-                                1,
-                                *instance,
-                                &(*view));
+        result = Texture::createView(   device,
+                                        VK_IMAGE_VIEW_TYPE_2D,
+                                        format,
+                                        VK_IMAGE_ASPECT_DEPTH_BIT,
+                                        1,
+                                        0,
+                                        1,
+                                        *instance,
+                                        &(*view));
+        debug::checkResult(result, "VkImageView : Texture::createView result = " + std::to_string(result));
     }
+    return result;
 }
 
 void attachments::deleteAttachment(VkDevice device)
@@ -119,56 +129,56 @@ void attachments::deleteSampler(VkDevice device)
 VkAttachmentDescription attachments::imageDescription(VkFormat format)
 {
     VkAttachmentDescription description{};
-    description.format = format;
-    description.samples = VK_SAMPLE_COUNT_1_BIT;
-    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        description.format = format;
+        description.samples = VK_SAMPLE_COUNT_1_BIT;
+        description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     return description;
 }
 
 VkAttachmentDescription attachments::imageDescription(VkFormat format, VkImageLayout layout)
 {
     VkAttachmentDescription description{};
-    description.format = format;
-    description.samples = VK_SAMPLE_COUNT_1_BIT;
-    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    description.finalLayout = layout;
+        description.format = format;
+        description.samples = VK_SAMPLE_COUNT_1_BIT;
+        description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        description.finalLayout = layout;
     return description;
 }
 
 VkAttachmentDescription attachments::depthDescription(VkFormat format)
 {
     VkAttachmentDescription description{};
-    description.format = format;
-    description.samples = VK_SAMPLE_COUNT_1_BIT;
-    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        description.format = format;
+        description.samples = VK_SAMPLE_COUNT_1_BIT;
+        description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     return description;
 }
 
 VkAttachmentDescription attachments::depthStencilDescription(VkFormat format)
 {
     VkAttachmentDescription description{};
-    description.format = format;
-    description.samples = VK_SAMPLE_COUNT_1_BIT;
-    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        description.format = format;
+        description.samples = VK_SAMPLE_COUNT_1_BIT;
+        description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        description.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     return description;
 }
 

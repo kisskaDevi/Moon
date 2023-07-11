@@ -10,6 +10,16 @@
 
 class GLFWwindow;
 
+namespace debug {
+
+    VkResult errorResult(
+            const std::string& message);
+
+    void checkResult(
+            VkResult        result,
+            std::string     message);
+}
+
 namespace ValidationLayer{
 
     bool checkSupport(

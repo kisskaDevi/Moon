@@ -1,4 +1,5 @@
 #include "device.h"
+#include "operations.h"
 
 #include <iostream>
 
@@ -38,13 +39,14 @@ physicalDevice::physicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR sur
     for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
         VkBool32 presentSupport = surface ? false : true;
         if(surface){
-            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, surface, &presentSupport);
+            VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, surface, &presentSupport);
+            debug::checkResult(result, "VkPhysicalDevice : vkGetPhysicalDeviceSurfaceSupportKHR result = " + std::to_string(result));
         }
         queueFamilies[index] = queueFamily{index,aueueFamilyProperties[index].queueFlags,aueueFamilyProperties[index].queueCount, presentSupport};
     }
 }
 
-void physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap)
+VkResult physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap)
 {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     for(auto queueSize: queueSizeMap){
@@ -66,7 +68,8 @@ void physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t> qu
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
         createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
         createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
-    vkCreateDevice(instance, &createInfo, nullptr, &logical.instance);
+    VkResult result = vkCreateDevice(instance, &createInfo, nullptr, &logical.instance);
+    debug::checkResult(result, "VkDevice : vkCreateDevice result = " + std::to_string(result));
 
     for(auto queueCreateInfo: queueCreateInfos){
         logical.queueMap[queueCreateInfo.queueFamilyIndex] = std::vector<VkQueue>(queueCreateInfo.queueCount);
@@ -76,10 +79,15 @@ void physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t> qu
     }
 
     this->logical.emplace_back(logical);
+    return result;
 }
 
 VkDevice& physicalDevice::getLogical(){
     return logical.back().instance;
+}
+
+bool physicalDevice::createdLogical(){
+    return !logical.empty();
 }
 
 physicalDevice& physicalDevice::operator=(const physicalDevice& other){

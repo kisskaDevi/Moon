@@ -9,6 +9,26 @@
 #include <iostream>
 #include <string.h>
 
+
+VkResult debug::errorResult(const std::string& message){
+#ifndef NDEBUG
+    std::cerr << "ERROR : " << message << std::endl;
+#endif
+    return VK_ERROR_UNKNOWN;
+}
+
+void debug::checkResult(VkResult result, std::string message){
+    if (result != VK_SUCCESS){
+#ifndef NDEBUG
+        std::cerr << "ERROR [" << result <<"] :: " << message << std::endl;
+#endif
+#ifdef THROW_EXEPTION
+        throw std::runtime_error(message);
+#endif
+    }
+}
+
+
 #define ONLYDEVICELOCALHEAP
 
 bool ValidationLayer::checkSupport(const std::vector<const char*> validationLayers)
@@ -256,11 +276,7 @@ VkResult Buffer::create(VkPhysicalDevice physicalDevice, VkDevice device, VkDevi
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkBuffer " << *buffer << ": vkCreateBuffer result = " << result << std::endl;
-        throw std::runtime_error("failed to create buffer!");
-    }
+    debug::checkResult(result, "VkBuffer : vkCreateBuffer result = " + std::to_string(result));
 
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
@@ -270,11 +286,7 @@ VkResult Buffer::create(VkPhysicalDevice physicalDevice, VkDevice device, VkDevi
         allocInfo.allocationSize = memoryRequirements.size;
         allocInfo.memoryTypeIndex = PhysicalDevice::findMemoryTypeIndex(physicalDevice, memoryRequirements.memoryTypeBits, properties);
     result = vkAllocateMemory(device, &allocInfo, nullptr, bufferMemory);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkDeviceMemory " << *bufferMemory << ": vkAllocateMemory result = " << result << std::endl;
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
+    debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
 
     vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
 
@@ -290,6 +302,7 @@ void Buffer::copy(VkCommandBuffer commandBuffer, VkDeviceSize size, VkBuffer src
 
 VkCommandBuffer SingleCommandBuffer::create(VkDevice device, VkCommandPool commandPool)
 {
+    VkResult result = VK_SUCCESS;
     VkCommandBuffer commandBuffer;
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -297,39 +310,33 @@ VkCommandBuffer SingleCommandBuffer::create(VkDevice device, VkCommandPool comma
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandPool = commandPool;
         allocInfo.commandBufferCount = 1;
-    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    result = vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    debug::checkResult(result, "VkCommandBuffer : vkAllocateCommandBuffers result = " + std::to_string(result));
+
 
     VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    debug::checkResult(result, "VkCommandBuffer : vkBeginCommandBuffer result = " + std::to_string(result));
 
     return commandBuffer;
 }
 
 VkResult SingleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPool commandPool, VkCommandBuffer* commandBuffer)
 {
-    VkResult result = VK_SUCCESS;
-
-    vkEndCommandBuffer(*commandBuffer);
+    VkResult result = vkEndCommandBuffer(*commandBuffer);
+    debug::checkResult(result, "VkCommandPool : vkEndCommandBuffer result = " + std::to_string(result));
 
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = commandBuffer;
     result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkQueue " << queue << ": vkQueueSubmit result = " << result << std::endl;
-        throw std::runtime_error("failed to submit command buffer!");
-    }
+    debug::checkResult(result, "VkSubmitInfo : vkQueueSubmit result = " + std::to_string(result));
 
     result = vkQueueWaitIdle(queue);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkQueue " << queue << ": vkWaitForFences result = " << result << std::endl;
-        throw std::runtime_error("failed to wait fence!");
-    }
+    debug::checkResult(result, "VkQueue : vkQueueWaitIdle result = " + std::to_string(result));
 
     vkFreeCommandBuffers(device, commandPool, 1, commandBuffer);
 
@@ -391,11 +398,7 @@ VkResult Texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkIma
         imageInfo.samples = numSamples;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     result = vkCreateImage(device, &imageInfo, nullptr, image);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkImage " << *image << ": vkCreateImage result = " << result << std::endl;
-        throw std::runtime_error("failed to create image!");
-    }
+    debug::checkResult(result, "VkImage : vkCreateImage result = " + std::to_string(result));
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device, *image, &memRequirements);
@@ -405,18 +408,10 @@ VkResult Texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkIma
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = PhysicalDevice::findMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits, properties);
     result = vkAllocateMemory(device, &allocInfo, nullptr, imageMemory);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkDeviceMemory " << *imageMemory << ": vkAllocateMemory result = " << result << std::endl;
-        throw std::runtime_error("failed to allocate memory!");
-    }
+    debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
 
     result = vkBindImageMemory(device, *image, *imageMemory, 0);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkImage " << *image << ": vkBindImageMemory result = " << result << std::endl;
-        throw std::runtime_error("failed to bind image memory!");
-    }
+    debug::checkResult(result, "VkImage : vkBindImageMemory result = " + std::to_string(result));
 
     return result;
 }
@@ -436,11 +431,7 @@ VkResult Texture::createView(VkDevice device, VkImageViewType type, VkFormat for
         viewInfo.subresourceRange.baseArrayLayer = baseArrayLayer;
         viewInfo.subresourceRange.layerCount = layerCount;
     result = vkCreateImageView(device, &viewInfo, nullptr, imageView);
-
-    if (result != VK_SUCCESS){
-        std::cout << "VkImageView " << *imageView << ": vkCreateImageView result = " << result << std::endl;
-        throw std::runtime_error("failed to create image view!");
-    }
+    debug::checkResult(result, "VkImageView : vkCreateImageView result = " + std::to_string(result));
 
     return result;
 }
@@ -527,20 +518,25 @@ void Texture::blitUp(VkCommandBuffer commandBuffer, VkImage srcImage, uint32_t s
 SwapChain::SupportDetails SwapChain::queryingSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     SwapChain::SupportDetails details{};
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+    VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+    debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfaceCapabilitiesKHR result = " + std::to_string(result));
 
     uint32_t formatCount = 0, presentModeCount = 0;
 
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfaceFormatsKHR result = " + std::to_string(result));
     if (formatCount != 0){
         details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+        result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+        debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfaceFormatsKHR result = " + std::to_string(result));
     }
 
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfacePresentModesKHR result = " + std::to_string(result));
     if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+        debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfacePresentModesKHR result = " + std::to_string(result));
     }
 
     return details;
@@ -639,10 +635,7 @@ VkShaderModule ShaderModule::create(VkDevice* device, const std::vector<char>& c
         createInfo.codeSize = code.size();
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
     VkResult result = vkCreateShaderModule(*device, &createInfo, nullptr, &shaderModule);
-    if (result != VK_SUCCESS){
-        std::cout << "VkShaderModule " << shaderModule << ": vkCreateShaderModule result = " << result << std::endl;
-        throw std::runtime_error("failed to create shader module!");
-    }
+    debug::checkResult(result, "VkShaderModule : vkCreateShaderModule result = " + std::to_string(result));
 
     return shaderModule;
 }

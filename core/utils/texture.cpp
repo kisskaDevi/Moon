@@ -19,7 +19,7 @@ void iamge::destroyStagingBuffer(VkDevice device){
     stagingBuffer.destroy(device);
 }
 
-void iamge::create(
+VkResult iamge::create(
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer,
@@ -31,6 +31,8 @@ void iamge::create(
         stbi_uc**           pixels,
         const uint32_t&     imageCount)
 {
+    VkResult result = VK_SUCCESS;
+
     if(!pixels) throw std::runtime_error("failed to load texture image!");
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
@@ -39,13 +41,14 @@ void iamge::create(
 
     for(uint32_t i = 0, singleImageSize = static_cast<uint32_t>(imageSize/imageCount); i< imageCount; i++)
     {
-        vkMapMemory(device, stagingBuffer.memory, i * singleImageSize, singleImageSize, 0, &stagingBuffer.map);
+        result = vkMapMemory(device, stagingBuffer.memory, i * singleImageSize, singleImageSize, 0, &stagingBuffer.map);
+        debug::checkResult(result, "VkDeviceMemory : vkMapMemory result = " + std::to_string(result));
             std::memcpy(stagingBuffer.map, pixels[i], singleImageSize);
         vkUnmapMemory(device, stagingBuffer.memory);
         stagingBuffer.map = nullptr;
     }
 
-    Texture::create(    physicalDevice,
+    result = Texture::create(    physicalDevice,
                         device,
                         flags,
                         {static_cast<uint32_t>(texWidth),static_cast<uint32_t>(texHeight),1},
@@ -58,6 +61,7 @@ void iamge::create(
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         &textureImage,
                         &textureImageMemory);
+    debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
 
     Texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
     Texture::copyFromBuffer(commandBuffer, stagingBuffer.instance, textureImage, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),1},imageCount);
@@ -66,6 +70,7 @@ void iamge::create(
     } else {
         Texture::generateMipmaps(physicalDevice, commandBuffer, textureImage, format, texWidth, texHeight, mipLevels, 0, imageCount);
     }
+    return result;
 }
 
 texture::texture(const std::filesystem::path& path) : path({path})
@@ -79,12 +84,13 @@ void texture::destroyStagingBuffer(VkDevice device){
     image.destroyStagingBuffer(device);
 }
 
-void texture::createTextureImage(
+VkResult texture::createTextureImage(
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer,
         tinygltf::Image&    gltfimage)
 {
+    VkResult result = VK_SUCCESS;
     VkDeviceSize bufferSize = gltfimage.width * gltfimage.height * 4;
     stbi_uc* buffer[1];
     if (stbi_uc* rgb = &gltfimage.image[0]; gltfimage.component == 3){
@@ -95,43 +101,49 @@ void texture::createTextureImage(
                 buffer[0][4*i + j] = rgb[3*i + j];
             }
         }
-        image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, bufferSize, buffer, 1);
+        result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, bufferSize, buffer, 1);
+        debug::checkResult(result, "iamge : create result = " + std::to_string(result));
         delete[] buffer[0];
     }else{
         buffer[0] = &gltfimage.image[0];
-        image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, static_cast<VkDeviceSize>(gltfimage.image.size()), buffer, 1);
+        result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, static_cast<VkDeviceSize>(gltfimage.image.size()), buffer, 1);
+        debug::checkResult(result, "iamge : create result = " + std::to_string(result));
     }
+    return result;
 }
 
-void texture::createTextureImage(
+VkResult texture::createTextureImage(
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer)
 {
+    VkResult result = VK_SUCCESS;
     int texWidth = 0, texHeight = 0, texChannels = 0;
     stbi_uc* pixels[1] = {stbi_load(path[0].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha)};
     VkDeviceSize imageSize = 4 * texWidth * texHeight;
 
     if(!pixels[0])    throw std::runtime_error("failed to load texture image!");
 
-    image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, imageSize, pixels, 1);
+    result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, imageSize, pixels, 1);
+    debug::checkResult(result, "iamge : create result = " + std::to_string(result));
     stbi_image_free(pixels[0]);
+    return result;
 }
 
-void texture::createTextureImageView(VkDevice device)
+VkResult texture::createTextureImageView(VkDevice device)
 {
-    Texture::createView(    device,
-                            VK_IMAGE_VIEW_TYPE_2D,
-                            image.format,
-                            VK_IMAGE_ASPECT_COLOR_BIT,
-                            mipLevels,
-                            0,
-                            1,
-                            image.textureImage,
-                            &image.textureImageView);
+    return Texture::createView( device,
+                                VK_IMAGE_VIEW_TYPE_2D,
+                                image.format,
+                                VK_IMAGE_ASPECT_COLOR_BIT,
+                                mipLevels,
+                                0,
+                                1,
+                                image.textureImage,
+                                &image.textureImageView);
 }
 
-void texture::createTextureSampler(VkDevice device, struct textureSampler TextureSampler)
+VkResult texture::createTextureSampler(VkDevice device, struct textureSampler TextureSampler)
 {
     VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -150,7 +162,7 @@ void texture::createTextureSampler(VkDevice device, struct textureSampler Textur
         samplerInfo.minLod = static_cast<float>(mipLevel*mipLevels);
         samplerInfo.maxLod = static_cast<float>(mipLevels);
         samplerInfo.mipLodBias = 0.0f;
-    vkCreateSampler(device, &samplerInfo, nullptr, &image.textureSampler);
+    return vkCreateSampler(device, &samplerInfo, nullptr, &image.textureSampler);
 }
 
 void                texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}

@@ -24,6 +24,7 @@ if __name__ == '__main__':
         subprocess.run( 'mkdir .\\glfw\\build', shell=True)
         subprocess.run( 'cmake -B glfw\\build -S glfw -DBUILD_SHARED_LIBS=ON', shell=True)
         subprocess.run( 'cmake --build glfw\\build --config Release', shell=True)
+        subprocess.run( 'cmake --build glfw\\build --config Debug', shell=True)
     elif osname.startswith('Linux'):
         subprocess.run( 'mkdir ./glfw/build', shell=True)
         subprocess.run( 'cmake -B ./glfw/build -S ./glfw -DBUILD_SHARED_LIBS=ON', shell=True)

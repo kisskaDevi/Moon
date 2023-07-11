@@ -33,7 +33,7 @@ struct iamge
 
     void destroy(VkDevice device);
     void destroyStagingBuffer(VkDevice device);
-    void create(
+    VkResult create(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
@@ -63,17 +63,17 @@ public:
     void destroy(VkDevice device);
     void destroyStagingBuffer(VkDevice device);
 
-    void createTextureImage(
+    VkResult createTextureImage(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
             tinygltf::Image&    gltfimage);
-    void createTextureImage(
+    VkResult createTextureImage(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer);
-    void createTextureImageView(VkDevice device);
-    void createTextureSampler(VkDevice device, struct textureSampler TextureSampler);
+    VkResult createTextureImageView(VkDevice device);
+    VkResult createTextureSampler(VkDevice device, struct textureSampler TextureSampler);
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 

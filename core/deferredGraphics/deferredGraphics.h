@@ -116,7 +116,7 @@ public:
     void        setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
     void        setFrameBufferExtent(VkExtent2D extent);
     void        setShadersPath(const std::filesystem::path& shadersPath);
-    void        setEmptyTexture(const std::filesystem::path& ZERO_TEXTURE);
+    void        createEmptyTexture();
     void        setMinAmbientFactor(const float& minAmbientFactor);
 
     void        createModel(model* pModel);

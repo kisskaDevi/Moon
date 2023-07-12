@@ -51,7 +51,7 @@ int main()
     for(auto& graph: graphics){
         app.setGraphics(graph);
         graph->createCommandPool();
-        graph->setEmptyTexture(ExternalPath / "dependences/texture/0.png");
+        graph->createEmptyTexture();
         graph->bindCameraObject(&cameraObject, &graph == &graphics[0]);
         graph->createGraphics(window, &app.getSurface());
         graph->updateDescriptorSets();

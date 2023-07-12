@@ -48,19 +48,19 @@ VkResult iamge::create(
         stagingBuffer.map = nullptr;
     }
 
-    result = Texture::create(    physicalDevice,
-                        device,
-                        flags,
-                        {static_cast<uint32_t>(texWidth),static_cast<uint32_t>(texHeight),1},
-                        imageCount,
-                        mipLevels,
-                        VK_SAMPLE_COUNT_1_BIT,
-                        format,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | (mipLevels > 1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        &textureImage,
-                        &textureImageMemory);
+    result = Texture::create(   physicalDevice,
+                                device,
+                                flags,
+                                {static_cast<uint32_t>(texWidth),static_cast<uint32_t>(texHeight),1},
+                                imageCount,
+                                mipLevels,
+                                VK_SAMPLE_COUNT_1_BIT,
+                                format,
+                                VK_IMAGE_LAYOUT_UNDEFINED,
+                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | (mipLevels > 1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                &textureImage,
+                                &textureImageMemory);
     debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
 
     Texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
@@ -127,6 +127,25 @@ VkResult texture::createTextureImage(
     result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, imageSize, pixels, 1);
     debug::checkResult(result, "iamge : create result = " + std::to_string(result));
     stbi_image_free(pixels[0]);
+    return result;
+}
+
+VkResult texture::createEmptyTextureImage(
+        VkPhysicalDevice    physicalDevice,
+        VkDevice            device,
+        VkCommandBuffer     commandBuffer,
+        bool                isBlack)
+{
+    VkResult result = VK_SUCCESS;
+    stbi_uc* pixels[1] = {new stbi_uc[4]};
+    for(size_t i = 0; i < 3; i++){
+        pixels[0][i] = (isBlack ? 0 : 255);
+    }
+    pixels[0][3] = 255;
+
+    result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, 1, 1, 4, pixels, 1);
+    debug::checkResult(result, "iamge : create result = " + std::to_string(result));
+    delete[] pixels[0];
     return result;
 }
 

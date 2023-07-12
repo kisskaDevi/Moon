@@ -72,6 +72,11 @@ public:
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer);
+    VkResult createEmptyTextureImage(
+            VkPhysicalDevice    physicalDevice,
+            VkDevice            device,
+            VkCommandBuffer     commandBuffer,
+            bool                isBlack = true);
     VkResult createTextureImageView(VkDevice device);
     VkResult createTextureSampler(VkDevice device, struct textureSampler TextureSampler);
     void setMipLevel(float mipLevel);

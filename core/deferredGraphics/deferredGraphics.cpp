@@ -501,11 +501,11 @@ void deferredGraphics::setExtentAndOffset(VkExtent2D extent, VkOffset2D offset) 
 }
 void deferredGraphics::setFrameBufferExtent(VkExtent2D extent)  {   this->frameBufferExtent = extent;}
 void deferredGraphics::setShadersPath(const std::filesystem::path& path) {   shadersPath = path;}
-void deferredGraphics::setEmptyTexture(const std::filesystem::path& ZERO_TEXTURE){
-    this->emptyTexture = new texture(ZERO_TEXTURE);
+void deferredGraphics::createEmptyTexture(){
+    this->emptyTexture = new texture;
 
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-    emptyTexture->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+    emptyTexture->createEmptyTextureImage(device.instance, device.getLogical(), commandBuffer);
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
     emptyTexture->destroyStagingBuffer(device.getLogical());
 

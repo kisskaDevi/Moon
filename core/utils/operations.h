@@ -18,6 +18,10 @@ namespace debug {
     void checkResult(
             VkResult        result,
             std::string     message);
+
+    bool checkResult(
+            bool            result,
+            std::string     message);
 }
 
 namespace ValidationLayer{

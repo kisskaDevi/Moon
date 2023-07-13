@@ -102,8 +102,9 @@ public:
     void setImageCount(uint32_t imageCount) override;
     void createCommandPool() override;
     void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) override;
-    void updateDescriptorSets() override;
 
+    void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR* surface) override;
+    void updateDescriptorSets() override;
     void createCommandBuffers() override;
     void updateCommandBuffers() override;
     void updateCommandBuffer(uint32_t imageIndex) override;

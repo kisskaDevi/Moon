@@ -129,10 +129,6 @@ void scene::destroyScene()
         }
         delete object;
     }
-
-    for(size_t i = 0; i < graphics.size(); i++){
-        graphics[i]->destroyEmptyTextures();
-    }
 }
 
 void scene::loadModels()

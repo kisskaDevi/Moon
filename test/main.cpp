@@ -25,13 +25,13 @@ std::pair<uint32_t,uint32_t> recreateSwapChain(GLFWwindow* window, graphicsManag
 
 int main()
 {
-    GLFWwindow* window = nullptr;
     float fps = 60.0f;
     bool fpsLock = false;
     uint32_t WIDTH = 800;
     uint32_t HEIGHT = 800;
     const std::filesystem::path ExternalPath = std::filesystem::absolute(std::string(__FILE__) + "/../../");
 
+    GLFWwindow* window = nullptr;
     initializeWindow(window, WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.png");
 
     std::vector<deferredGraphics*> graphics = {
@@ -52,11 +52,9 @@ int main()
         app.setGraphics(graph);
         graph->createCommandPool();
         graph->createEmptyTexture();
-        graph->bindCameraObject(&cameraObject, &graph == &graphics[0]);
+
         graph->createGraphics(window, &app.getSurface());
-        graph->updateDescriptorSets();
-        graph->createCommandBuffers();
-        graph->updateCommandBuffers();
+        graph->bindCameraObject(&cameraObject, &graph == &graphics[0]);
     }
 
     scene testScene(&app, graphics, window, ExternalPath);
@@ -85,14 +83,14 @@ int main()
         }
     }
 
-
     debug::checkResult(app.deviceWaitIdle(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
     testScene.destroyScene();
     for(auto& graph: graphics){
-        graph->removeCameraObject(&cameraObject);
         graph->destroyGraphics();
+        graph->destroyEmptyTextures();
         graph->destroyCommandPool();
+        graph->removeCameraObject(&cameraObject);
         delete graph;
     }
     app.destroySwapChain();
@@ -125,9 +123,6 @@ std::pair<uint32_t,uint32_t> recreateSwapChain(GLFWwindow* window, graphicsManag
     for(auto& graph: graphics){
         graph->destroyGraphics();
         graph->createGraphics(window, &app->getSurface());
-        graph->updateDescriptorSets();
-        graph->createCommandBuffers();
-        graph->updateCommandBuffers();
     }
 
     return std::pair<uint32_t,uint32_t>(width, height);

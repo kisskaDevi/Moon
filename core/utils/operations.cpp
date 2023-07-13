@@ -28,6 +28,18 @@ void debug::checkResult(VkResult result, std::string message){
     }
 }
 
+bool debug::checkResult(bool result, std::string message){
+    if (result){
+#ifndef NDEBUG
+        std::cerr << "ERROR :: " << message << std::endl;
+#endif
+#ifdef THROW_EXEPTION
+        throw std::runtime_error(message);
+#endif
+    }
+    return result;
+}
+
 
 #define ONLYDEVICELOCALHEAP
 

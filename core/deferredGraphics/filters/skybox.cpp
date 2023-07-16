@@ -94,7 +94,7 @@ void skyboxGraphics::createPipelines()
 void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::bufferVertexLayoutBinding(bindings.size(), 1));
+    bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -167,7 +167,7 @@ void skyboxGraphics::createDescriptorSets(){
 
 void skyboxGraphics::updateDescriptorSets(camera* cameraObject)
 {
-    for (size_t i = 0; i < image.Count; i++){
+    for (uint32_t i = 0; i < image.Count; i++){
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
             bufferInfo.offset = 0;

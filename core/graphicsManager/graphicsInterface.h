@@ -4,8 +4,8 @@
 #include <vulkan.h>
 #include <vector>
 
-class GLFWwindow;
-class physicalDevice;
+struct GLFWwindow;
+struct physicalDevice;
 class swapChain;
 
 class graphicsInterface{

@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <filesystem>
 
-class node;
+struct node;
 class model;
 class camera;
 

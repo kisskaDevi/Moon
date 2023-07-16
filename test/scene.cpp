@@ -355,11 +355,11 @@ void scene::mouseEvent(float frameTime)
         angy = sensitivity*(y - yMpos);
         xMpos = x;
         yMpos = y;
-        cameras->rotateX(angy,glm::vec3(1.0f,0.0f,0.0f));
-        cameras->rotateY(angx,glm::vec3(0.0f,0.0f,1.0f));
+        cameras->rotateX(static_cast<float>(angy), glm::vec3(1.0f,0.0f,0.0f));
+        cameras->rotateY(static_cast<float>(angx), glm::vec3(0.0f,0.0f,1.0f));
 
         for(uint32_t i=0; i < app->getImageCount(); i++){
-            graphics[0]->updateStorageBuffer(i, 2.0f*xMpos/WIDTH - 1.0f , 2.0f*yMpos/HEIGHT - 1.0f);
+            graphics[0]->updateStorageBuffer(i, 2.0f * static_cast<float>(xMpos)/WIDTH - 1.0f , 2.0f * static_cast<float>(yMpos)/HEIGHT - 1.0f);
         }
     }
     else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)
@@ -607,9 +607,9 @@ void scrol(GLFWwindow *window, double xoffset, double yoffset)
 {
     static_cast<void>(window);
 
-    spotAngle -= yoffset;
+    spotAngle -= static_cast<float>(yoffset);
     if(yoffset!=0.0) updateLightCone = true;
 
-    cameraAngle -= xoffset;
+    cameraAngle -= static_cast<float>(xoffset);
     if(xoffset!=0.0) updateCamera = true;
 }

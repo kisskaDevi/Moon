@@ -188,7 +188,7 @@ void layersCombiner::createDescriptorSets(){
 
 void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, camera* cameraObject)
 {
-    for (size_t i = 0; i < image.Count; i++)
+    for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo;
             bufferInfo.buffer = cameraObject->getBuffer(i);

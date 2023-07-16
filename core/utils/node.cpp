@@ -12,12 +12,12 @@ stage::stage(   std::vector<VkCommandBuffer> commandBuffers,
 VkResult stage::submit(){
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.waitSemaphoreCount = waitSemaphores.size();
+        submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
         submitInfo.pWaitSemaphores = waitSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
-        submitInfo.commandBufferCount = commandBuffers.size();
+        submitInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
         submitInfo.pCommandBuffers = commandBuffers.data();
-        submitInfo.signalSemaphoreCount = signalSemaphores.size();
+        submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
         submitInfo.pSignalSemaphores = signalSemaphores.data();
     return vkQueueSubmit(queue, 1, &submitInfo, fence);
 }

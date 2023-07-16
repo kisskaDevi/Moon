@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <optional>
 
-class GLFWwindow;
+struct GLFWwindow;
 
 namespace debug {
 

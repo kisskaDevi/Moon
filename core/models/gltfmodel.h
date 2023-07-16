@@ -80,7 +80,7 @@ struct Node {
 
     void update();
     void destroy(VkDevice device);
-    size_t meshCount() const;
+    uint32_t meshCount() const;
     ~Node() = default;
 };
 

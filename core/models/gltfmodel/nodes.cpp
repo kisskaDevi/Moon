@@ -47,7 +47,7 @@ namespace {
             const tinygltf::Accessor &accessor = model.accessors[primitive.attributes.find(attribute)->second];
             const tinygltf::BufferView &view = model.bufferViews[accessor.bufferView];
             buffer.first = reinterpret_cast<const float *>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-            buffer.second = accessor.ByteStride(view) ? (accessor.ByteStride(view) / size) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE);
+            buffer.second = accessor.ByteStride(view) ? (accessor.ByteStride(view) / static_cast<int>(size)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE);
         }
         return buffer;
     }
@@ -114,8 +114,8 @@ void Node::update() {
     }
 }
 
-size_t Node::meshCount() const {
-    return std::accumulate(children.begin(), children.end(), mesh ? 1 : 0, [](const size_t& count, Node* node){
+uint32_t Node::meshCount() const {
+    return std::accumulate(children.begin(), children.end(), mesh ? 1 : 0, [](const uint32_t& count, Node* node){
         return count + node->meshCount();
     });
 }
@@ -152,7 +152,7 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
         {
             const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 
-            uint32_t indexCount = primitive.indices > -1 ? model.accessors[primitive.indices > -1 ? primitive.indices : 0].count : 0;
+            uint32_t indexCount = primitive.indices > -1 ? static_cast<uint32_t>(model.accessors[primitive.indices > -1 ? primitive.indices : 0].count) : 0;
             uint32_t vertexCount = static_cast<uint32_t>(posAccessor.count);
 
             Mesh::Primitive* newPrimitive = new Mesh::Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? &materials[primitive.material] : &materials.back());
@@ -161,7 +161,7 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
             newMesh->primitives.push_back(newPrimitive);
 
             if (primitive.indices > -1){
-                indexStart += model.accessors[primitive.indices > -1 ? primitive.indices : 0].count;
+                indexStart += static_cast<uint32_t>(model.accessors[primitive.indices > -1 ? primitive.indices : 0].count);
             }
         }
     }

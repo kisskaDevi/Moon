@@ -287,7 +287,7 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, textu
 
 isotropicLight::isotropicLight(std::vector<spotLight *>& lightSource)
 {
-    uint32_t number = lightSource.size();
+    uint32_t number = static_cast<uint32_t>(lightSource.size());
     uint32_t index = number;
     lightSource.push_back(new spotLight(true,false,spotType::square));
     lightSource[index]->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));

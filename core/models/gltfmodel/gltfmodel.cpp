@@ -138,7 +138,7 @@ namespace {
             descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = material->descriptorSet;
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -260,7 +260,7 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel){
 
             for (const auto& node: gltfModel.nodes) {
                 if(node.skin == &source - &gltfModel.skins[0]){
-                    nodeFromIndex(&node - &gltfModel.nodes[0], instance.nodes)->skin = newSkin;
+                    nodeFromIndex(static_cast<uint32_t>(&node - &gltfModel.nodes[0]), instance.nodes)->skin = newSkin;
                 }
             }
 

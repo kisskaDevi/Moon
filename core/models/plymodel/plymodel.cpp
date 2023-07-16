@@ -80,14 +80,14 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     file.parse_header(file_stream);
 
     std::shared_ptr<tinyply::PlyData> vertices, normals, texcoords, faces;
-    try { vertices = file.request_properties_from_element("vertex", { "x", "y", "z" });} catch (const std::exception & e) {}
-    try { normals = file.request_properties_from_element("vertex", { "nx", "ny", "nz" });} catch (const std::exception & e) {}
-    try { texcoords = file.request_properties_from_element("vertex", { "u", "v" });} catch (const std::exception & e) {}
-    try { faces = file.request_properties_from_element("face", { "vertex_indices" }, 3);} catch (const std::exception & e) {}
+    try { vertices = file.request_properties_from_element("vertex", { "x", "y", "z" });} catch (const std::exception & e) {static_cast<void>(e);}
+    try { normals = file.request_properties_from_element("vertex", { "nx", "ny", "nz" });} catch (const std::exception & e) {static_cast<void>(e);}
+    try { texcoords = file.request_properties_from_element("vertex", { "u", "v" });} catch (const std::exception & e) {static_cast<void>(e);}
+    try { faces = file.request_properties_from_element("face", { "vertex_indices" }, 3);} catch (const std::exception & e) {static_cast<void>(e);}
 
     file.read(file_stream);
 
-    indexCount = faces ? 3 * faces->count : 0;
+    indexCount = faces ? 3 * static_cast<uint32_t>(faces->count) : 0;
     std::vector<uint32_t> indexBuffer(indexCount);
     std::vector<Vertex> vertexBuffer(vertices? vertices->count : 0,
         Vertex{
@@ -233,7 +233,7 @@ void plyModel::createDescriptorSet(VkDevice device, texture* emptyTexture) {
             descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = material.descriptorSet;
-            descriptorWrites.back().dstBinding = descriptorWrites.size() - 1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;

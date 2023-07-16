@@ -13,7 +13,7 @@ class baseObject;
 class group;
 class baseCamera;
 class skyboxObject;
-class GLFWwindow;
+struct GLFWwindow;
 class plyModel;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);

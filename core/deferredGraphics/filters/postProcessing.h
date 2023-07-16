@@ -6,7 +6,7 @@
 namespace SwapChain{
     struct SupportDetails;
 }
-class GLFWwindow;
+struct GLFWwindow;
 class texture;
 class swapChain;
 

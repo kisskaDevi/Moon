@@ -159,7 +159,7 @@ void SSAOGraphics::createDescriptorSets(){
 
 void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments)
 {
-    for (size_t i = 0; i < image.Count; i++)
+    for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
@@ -190,7 +190,7 @@ void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
@@ -198,7 +198,7 @@ void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -206,7 +206,7 @@ void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -214,7 +214,7 @@ void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
@@ -222,7 +222,7 @@ void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = descriptorWrites.size()-1;
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;

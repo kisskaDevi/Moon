@@ -397,7 +397,7 @@ std::vector<std::vector<VkSemaphore>> deferredGraphics::sibmit(std::vector<std::
 
 void deferredGraphics::updateCommandBuffers()
 {
-    for(size_t imageIndex=0; imageIndex<imageCount; imageIndex++){
+    for(uint32_t imageIndex=0; imageIndex<imageCount; imageIndex++){
         updateCommandBuffer(imageIndex);
     }
 }

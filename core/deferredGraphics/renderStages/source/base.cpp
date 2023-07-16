@@ -163,7 +163,7 @@ void graphics::createBaseDescriptorSets()
 
 void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject)
 {
-    for (size_t i = 0; i < image.Count; i++)
+    for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);

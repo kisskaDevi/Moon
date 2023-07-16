@@ -10,8 +10,8 @@
 #include <gtx/string_cast.hpp>
 #include "tiny_gltf.h"
 
-#include "texture.h"
 #include "model.h"
+#include "texture.h"
 #include "buffer.h"
 
 #include <filesystem>

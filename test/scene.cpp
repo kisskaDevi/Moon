@@ -6,6 +6,7 @@
 #include "baseObject.h"
 #include "group.h"
 #include "baseCamera.h"
+#include "plymodel.h"
 
 #include <glfw3.h>
 
@@ -119,7 +120,7 @@ void scene::destroyScene()
     }
     delete skyboxObject2;
 
-    for (auto& model: gltfModel){
+    for (auto& model: models){
         graphics[0]->destroyModel(model);
     }
 
@@ -133,23 +134,26 @@ void scene::destroyScene()
 
 void scene::loadModels()
 {
-    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Bee.glb", 6));
-    graphics[0]->createModel(gltfModel.back());
+    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Bee.glb", 6));
+    graphics[0]->createModel(models.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Box.glb"));
-    graphics[0]->createModel(gltfModel.back());
+    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Box.glb"));
+    graphics[0]->createModel(models.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
-    graphics[0]->createModel(gltfModel.back());
+    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
+    graphics[0]->createModel(models.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Duck.glb"));
-    graphics[0]->createModel(gltfModel.back());
+    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Duck.glb"));
+    graphics[0]->createModel(models.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb"));
-    graphics[0]->createModel(gltfModel.back());
+    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb"));
+    graphics[0]->createModel(models.back());
 
-    gltfModel.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
-    graphics[0]->createModel(gltfModel.back());
+    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
+    graphics[0]->createModel(models.back());
+
+    models.push_back(new class plyModel(ExternalPath / "dependences/model/pyramid.ply"));
+    graphics[0]->createModel(models.back());
 }
 
 void scene::createLight()
@@ -233,7 +237,7 @@ void scene::createLight()
 
 void scene::createObjects()
 {
-    object3D.push_back( new baseObject(gltfModel[0], 0, 3));
+    object3D.push_back( new baseObject(models.at(0), 0, 3));
     object3D.back()->setOutliningColor(glm::vec4(0.0f,0.5f,0.8f,1.0f));
     object3D.back()->setOutliningWidth(0.05f);
     object3D.back()->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
@@ -244,7 +248,7 @@ void scene::createObjects()
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
 
-    object3D.push_back(new baseObject(gltfModel[0], 3, 3));
+    object3D.push_back(new baseObject(models.at(0), 3, 3));
     object3D.back()->setOutliningColor(glm::vec4(1.0f,0.5f,0.8f,1.0f));
     object3D.back()->setOutliningWidth(0.05f);
     object3D.back()->setConstantColor(glm::vec4(0.0,0.0,0.0,-0.7));
@@ -257,7 +261,7 @@ void scene::createObjects()
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
 
-    object3D.push_back(new baseObject(gltfModel.at(3)));
+    object3D.push_back(new baseObject(models.at(3)));
     object3D.back()->setOutliningColor(glm::vec4(0.7f,0.5f,0.2f,1.0f));
     object3D.back()->setOutliningWidth(0.025f);
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -270,14 +274,14 @@ void scene::createObjects()
     }
     groups.at(1)->addObject(object3D.back());
 
-    object3D.push_back(new baseObject(gltfModel.at(2)));
+    object3D.push_back(new baseObject(models.at(2)));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.back()->scale(glm::vec3(3.0f,3.0f,3.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
 
-    object3D.push_back(new baseObject(gltfModel.at(1)));
+    object3D.push_back(new baseObject(models.at(1)));
     object3D.back()->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
     object3D.back()->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
     for(size_t i = 0; i < graphics.size(); i++){
@@ -285,7 +289,7 @@ void scene::createObjects()
     }
     groups.at(0)->addObject(object3D.back());
 
-    object3D.push_back(new baseObject(gltfModel.at(4)));
+    object3D.push_back(new baseObject(models.at(4)));
     object3D.back()->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,-0.8f));
     object3D.back()->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -294,7 +298,7 @@ void scene::createObjects()
     }
     groups.at(2)->addObject(object3D.back());
 
-    object3D.push_back(new baseObject(gltfModel.at(4)));
+    object3D.push_back(new baseObject(models.at(4)));
     object3D.back()->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,-0.8f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     for(size_t i = 0; i < graphics.size(); i++){
@@ -302,7 +306,7 @@ void scene::createObjects()
     }
     groups.at(3)->addObject(object3D.back());
 
-    object3D.push_back(new baseObject(gltfModel.at(4)));
+    object3D.push_back(new baseObject(models.at(4)));
     object3D.back()->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,-0.8f));
     object3D.back()->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -311,13 +315,21 @@ void scene::createObjects()
     }
     groups.at(4)->addObject(object3D.back());
 
-    object3D.push_back(new baseObject(gltfModel.at(4)));
+    object3D.push_back(new baseObject(models.at(4)));
     object3D.back()->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,-0.8f));
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
     groups.at(5)->addObject(object3D.back());
+
+    object3D.push_back(new baseObject(models.at(6)));
+    object3D.back()->translate(glm::vec3(0.0f,0.0f,15.0f));
+    object3D.back()->setConstantColor(glm::vec4(0.2f,0.8f,1.0f,1.0f));
+    object3D.back()->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,1.0f));
+    for(size_t i = 0; i < graphics.size(); i++){
+        graphics[i]->bindObject(object3D.back(), i == 0);
+    }
 }
 
 void scene::mouseEvent(float frameTime)
@@ -523,7 +535,7 @@ void scene::keyboardEvent(float frameTime)
     if(backNStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_N) == 0)
     {
         size_t index = object3D.size();
-        object3D.push_back(new baseObject(gltfModel.at(4)));
+        object3D.push_back(new baseObject(models.at(4)));
         graphics[0]->bindObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslation());
         object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));

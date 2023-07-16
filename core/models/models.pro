@@ -8,6 +8,7 @@ INCLUDEPATH += \
     $$PWD/../../dependences/libs/glm/glm \
     $$PWD/../../dependences/libs/stb \
     $$PWD/../../dependences/libs/tinygltf \
+    $$PWD/../../dependences/libs/tinyply/source \
     $$PWD/../interfaces \
     $$PWD/../utils \
     $$PWD
@@ -15,10 +16,12 @@ INCLUDEPATH += \
 SOURCES += \
     gltfmodel/nodes.cpp \
     gltfmodel/gltfmodel.cpp \
-    gltfmodel/animation.cpp
+    gltfmodel/animation.cpp \
+    plymodel/plymodel.cpp
 
 HEADERS += \
-    gltfmodel.h
+    gltfmodel.h \
+    plymodel.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

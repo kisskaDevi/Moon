@@ -14,6 +14,7 @@ class group;
 class baseCamera;
 class skyboxObject;
 class GLFWwindow;
+class plyModel;
 
 void scrol(GLFWwindow* window, double xoffset, double yoffset);
 
@@ -46,7 +47,7 @@ private:
     skyboxObject*                                   skyboxObject1;
     skyboxObject*                                   skyboxObject2;
 
-    std::vector<model                   *>          gltfModel;
+    std::vector<model                   *>          models;
     std::vector<baseObject              *>          object3D;
     std::vector<spotLight               *>          lightSources;
     std::vector<isotropicLight          *>          lightPoints;

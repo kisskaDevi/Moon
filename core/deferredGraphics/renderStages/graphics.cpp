@@ -2,9 +2,6 @@
 #include "operations.h"
 #include "object.h"
 
-#include <memory>
-#include <algorithm>
-
 graphics::graphics(){
     outlining.Parent = &base;
     ambientLighting.Parent = &lighting;

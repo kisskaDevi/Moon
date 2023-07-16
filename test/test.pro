@@ -33,6 +33,7 @@ INCLUDEPATH += \
     $$PWD/../dependences/libs/glm/glm \
     $$PWD/../dependences/libs/stb \
     $$PWD/../dependences/libs/tinygltf \
+    $$PWD/../dependences/libs/tinyply/source \
     $$PWD/../core/graphicsManager \
     $$PWD/../core/deferredGraphics \
     $$PWD/../core/deferredGraphics/renderStages \

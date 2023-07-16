@@ -48,7 +48,7 @@ void baseCamera::updateViewMatrix()
     dualQuaternion<float> dQuat = convert(rotation,translation);
     glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
 
-    viewMatrix = glm::inverse(globalTransformation) * glm::inverse(transformMatrix);
+    viewMatrix = glm::inverse(globalTransformation * transformMatrix);
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
@@ -82,6 +82,13 @@ void baseCamera::rotate(const float & ang ,const glm::vec3 & ax)
 void baseCamera::scale(const glm::vec3 &scale)
 {
     static_cast<void>(scale);
+}
+
+
+void baseCamera::rotate(const quaternion<float>& quat)
+{
+    rotation = quat * rotation;
+    updateViewMatrix();
 }
 
 void baseCamera::rotateX(const float & ang ,const glm::vec3 & ax)

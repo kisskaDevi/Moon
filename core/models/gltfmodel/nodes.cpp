@@ -201,8 +201,8 @@ void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
                 Vertex vert{};
                 vert.pos = glm::vec4(glm::make_vec3(&pos.first[index * pos.second]), 1.0f);
                 vert.normal = glm::normalize(glm::vec3(normals.first ? glm::make_vec3(&normals.first[index * normals.second]) : glm::vec3(0.0f)));
-                vert.uv0 = texCoordSet0.first ? glm::make_vec2(&texCoordSet0.first[index * texCoordSet0.second]) : glm::vec3(0.0f);
-                vert.uv1 = texCoordSet1.first ? glm::make_vec2(&texCoordSet1.first[index * texCoordSet1.second]) : glm::vec3(0.0f);
+                vert.uv0 = texCoordSet0.first ? glm::make_vec2(&texCoordSet0.first[index * texCoordSet0.second]) : glm::vec2(0.0f);
+                vert.uv1 = texCoordSet1.first ? glm::make_vec2(&texCoordSet1.first[index * texCoordSet1.second]) : glm::vec2(0.0f);
                 vert.joint0 = glm::vec4(0.0f);
                 vert.weight0 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
 

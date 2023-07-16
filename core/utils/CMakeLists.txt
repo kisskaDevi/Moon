@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.5)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 set(INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS} ${GLFW_DIR}/include/GLFW
-${STB_DIR} ${GLTF_DIR} ${GLM_DIR}/glm)
+${STB_DIR} ${GLTF_DIR} ${GLM_DIR}/glm ${PLY_DIR}/source)
 
 include_directories(${INCLUDE_DIRS})
 

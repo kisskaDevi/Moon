@@ -440,8 +440,8 @@ void gltfModel::createDescriptorPool(VkDevice device)
 
 void gltfModel::createDescriptorSet(VkDevice device, texture* emptyTexture)
 {
-    gltfModel::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
-    gltfModel::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
+    model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
+    model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
 
     for(auto& instance : instances){
         for (auto& node : instance.nodes){

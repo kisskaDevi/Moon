@@ -44,6 +44,7 @@ public:
     void rotate(const float & ang ,const glm::vec3 & ax) override;
     void scale(const glm::vec3 & scale) override;
 
+    void rotate(const quaternion<float>& quat);
     void rotateX(const float & ang ,const glm::vec3 & ax);
     void rotateY(const float & ang ,const glm::vec3 & ax);
 

@@ -16,11 +16,11 @@ struct Material {
     float roughnessFactor{1.0f};
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
     glm::vec4 emissiveFactor = glm::vec4(1.0f);
-    texture*   baseColorTexture;
-    texture*   metallicRoughnessTexture;
-    texture*   normalTexture;
-    texture*   occlusionTexture;
-    texture*   emissiveTexture;
+    texture*   baseColorTexture{nullptr};
+    texture*   metallicRoughnessTexture{nullptr};
+    texture*   normalTexture{nullptr};
+    texture*   occlusionTexture{nullptr};
+    texture*   emissiveTexture{nullptr};
     struct TexCoordSets {
         uint8_t baseColor{0};
         uint8_t metallicRoughness{0};
@@ -30,8 +30,8 @@ struct Material {
         uint8_t emissive{0};
     } texCoordSets;
     struct Extension {
-        texture* specularGlossinessTexture;
-        texture* diffuseTexture;
+        texture* specularGlossinessTexture{nullptr};
+        texture* diffuseTexture{nullptr};
         glm::vec4 diffuseFactor = glm::vec4(1.0f);
         glm::vec3 specularFactor = glm::vec3(0.0f);
     } extension;
@@ -44,20 +44,20 @@ struct Material {
 
 struct MaterialBlock
 {
-    alignas(16) glm::vec4   baseColorFactor;
-    alignas(16) glm::vec4   emissiveFactor;
-    alignas(16) glm::vec4   diffuseFactor;
-    alignas(16) glm::vec4   specularFactor;
-    alignas(4)  float       workflow;
-    alignas(4)  int         colorTextureSet;
-    alignas(4)  int         PhysicalDescriptorTextureSet;
-    alignas(4)  int         normalTextureSet;
-    alignas(4)  int         occlusionTextureSet;
-    alignas(4)  int         emissiveTextureSet;
-    alignas(4)  float       metallicFactor;
-    alignas(4)  float       roughnessFactor;
-    alignas(4)  float       alphaMask;
-    alignas(4)  float       alphaMaskCutoff;
+    alignas(16) glm::vec4   baseColorFactor{0.0f};
+    alignas(16) glm::vec4   emissiveFactor{0.0f};
+    alignas(16) glm::vec4   diffuseFactor{0.0f};
+    alignas(16) glm::vec4   specularFactor{0.0f};
+    alignas(4)  float       workflow{0.0f};
+    alignas(4)  int         colorTextureSet{-1};
+    alignas(4)  int         PhysicalDescriptorTextureSet{-1};
+    alignas(4)  int         normalTextureSet{-1};
+    alignas(4)  int         occlusionTextureSet{-1};
+    alignas(4)  int         emissiveTextureSet{-1};
+    alignas(4)  float       metallicFactor{0.0f};
+    alignas(4)  float       roughnessFactor{0.0f};
+    alignas(4)  float       alphaMask{0.0f};
+    alignas(4)  float       alphaMaskCutoff{0.0f};
     alignas(4)  uint32_t    primitive;
 };
 
@@ -67,14 +67,14 @@ class model
 {
 public:
     struct Vertex{
-        glm::vec3 pos;
-        glm::vec3 normal;
-        glm::vec2 uv0;
-        glm::vec2 uv1;
-        glm::vec4 joint0;
-        glm::vec4 weight0;
-        glm::vec3 tangent;
-        glm::vec3 bitangent;
+        glm::vec3 pos{0.0f};
+        glm::vec3 normal{0.0f};
+        glm::vec2 uv0{0.0f};
+        glm::vec2 uv1{0.0f};
+        glm::vec4 joint0{0.0f};
+        glm::vec4 weight0{0.0f};
+        glm::vec3 tangent{0.0f};
+        glm::vec3 bitangent{0.0f};
 
         static VkVertexInputBindingDescription getBindingDescription();
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();

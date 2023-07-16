@@ -4,7 +4,7 @@ project(kisskaVulkan LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
 set(Vulkan_INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS}/vulkan)
@@ -12,6 +12,7 @@ set(Vulkan_INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS}/vulkan)
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/glfw)
 set(STB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/stb)
 set(GLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinygltf)
+set(PLY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinyply)
 set(GLM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/glm)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")

@@ -315,6 +315,11 @@ public:
         this->mat[1] = v1;
         this->mat[2] = v2;
     }
+    matrix(const type& m) {
+        this->mat[0] = vector<type,n>{m, 0.0f, 0.0f};
+        this->mat[1] = vector<type,n>{0.0f, m, 0.0f};
+        this->mat[2] = vector<type,n>{0.0f, 0.0f, m};
+    }
     matrix(
         const type& m00, const type& m01, const type& m02,
         const type& m10, const type& m11, const type& m12,
@@ -345,6 +350,12 @@ private:
 
 public:
     matrix() : baseMatrix<type,n,n>() {}
+    matrix(const type& m) {
+        this->mat[0] = vector<type,n>{m, 0.0f, 0.0f, 0.0f};
+        this->mat[1] = vector<type,n>{0.0f, m, 0.0f, 0.0f};
+        this->mat[2] = vector<type,n>{0.0f, 0.0f, m, 0.0f};
+        this->mat[3] = vector<type,n>{0.0f, 0.0f, 0.0f, m};
+    }
     matrix(const vector<type, n>& v0, const vector<type, n>& v1, const vector<type, n>& v2, const vector<type, n>& v3) {
         this->mat[0] = v0;
         this->mat[1] = v1;

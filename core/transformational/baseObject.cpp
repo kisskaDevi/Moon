@@ -243,11 +243,11 @@ std::vector<VkDescriptorSet>    &baseObject::getDescriptorSet()                 
 
 void                            baseObject::setOutliningEnable(const bool& enable)          {outlining.Enable = enable;}
 void                            baseObject::setOutliningWidth(const float& width)           {outlining.Width = width;}
-void                            baseObject::setOutliningColor(const glm::vec4& color)       {outlining.Color = color;}
+void                            baseObject::setOutliningColor(const vector<float,4>& color) {outlining.Color = color;}
 
 bool                            baseObject::getOutliningEnable() const                      {return outlining.Enable;}
 float                           baseObject::getOutliningWidth()  const                      {return outlining.Width;}
-glm::vec4                       baseObject::getOutliningColor()  const                      {return outlining.Color;}
+vector<float,4>                 baseObject::getOutliningColor()  const                      {return outlining.Color;}
 
 void                            baseObject::setFirstPrimitive(uint32_t firstPrimitive)      {this->firstPrimitive = firstPrimitive;}
 void                            baseObject::setPrimitiveCount(uint32_t primitiveCount)      {this->primitiveCount = primitiveCount;}

@@ -15,7 +15,7 @@
 #include "device.h"
 #include "buffer.h"
 
-#include <glm.hpp>
+#include "vector.h"
 
 #include <unordered_map>
 #include <filesystem>
@@ -25,9 +25,9 @@ class model;
 class camera;
 
 struct StorageBufferObject{
-    alignas(16) glm::vec4           mousePosition;
-    alignas(4)  int                 number;
-    alignas(4)  float               depth;
+    alignas(16) vector<float,4>    mousePosition;
+    alignas(4)  int                number;
+    alignas(4)  float              depth;
 };
 
 class deferredGraphics: public graphicsInterface

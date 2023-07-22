@@ -46,7 +46,7 @@ private:
     struct Outlining{
         bool                        Enable{false};
         float                       Width{0.0f};
-        glm::vec4                   Color{0.0f};
+        vector<float,4>             Color{0.0f};
     }outlining;
 
     uint32_t                        firstInstance{0};
@@ -106,11 +106,11 @@ public:
 
     void                setOutliningEnable(const bool& enable);
     void                setOutliningWidth(const float& width);
-    void                setOutliningColor(const glm::vec4& color);
+    void                setOutliningColor(const vector<float,4>& color);
 
     bool                getOutliningEnable() const override;
     float               getOutliningWidth() const override;
-    glm::vec4           getOutliningColor() const override;
+    vector<float,4>     getOutliningColor() const override;
 
     void                setFirstPrimitive(uint32_t firstPrimitive) override;
     void                setPrimitiveCount(uint32_t primitiveCount) override;

@@ -3,9 +3,10 @@
 #include "vkdefault.h"
 #include "object.h"
 #include "model.h"
+#include "vector.h"
 
 struct OutliningPushConst{
-    alignas(16) glm::vec4           stencilColor;
+    alignas(16) vector<float,4>     stencilColor;
     alignas(4)  float               width;
 };
 

@@ -242,7 +242,7 @@ void scene::createLight()
 void scene::createObjects()
 {
     object3D.push_back( new baseObject(models.at(0), 0, 3));
-    object3D.back()->setOutliningColor(glm::vec4(0.0f,0.5f,0.8f,1.0f));
+    object3D.back()->setOutliningColor(vector<float,4>(0.0f,0.5f,0.8f,1.0f));
     object3D.back()->setOutliningWidth(0.05f);
     object3D.back()->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
     object3D.back()->translate(glm::vec3(3.0f,0.0f,0.0f));
@@ -253,7 +253,7 @@ void scene::createObjects()
     }
 
     object3D.push_back(new baseObject(models.at(0), 3, 3));
-    object3D.back()->setOutliningColor(glm::vec4(1.0f,0.5f,0.8f,1.0f));
+    object3D.back()->setOutliningColor(vector<float,4>(1.0f,0.5f,0.8f,1.0f));
     object3D.back()->setOutliningWidth(0.05f);
     object3D.back()->setConstantColor(glm::vec4(0.0,0.0,0.0,-0.7));
     object3D.back()->translate(glm::vec3(-3.0f,0.0f,0.0f));
@@ -266,7 +266,7 @@ void scene::createObjects()
     }
 
     object3D.push_back(new baseObject(models.at(3)));
-    object3D.back()->setOutliningColor(glm::vec4(0.7f,0.5f,0.2f,1.0f));
+    object3D.back()->setOutliningColor(vector<float,4>(0.7f,0.5f,0.2f,1.0f));
     object3D.back()->setOutliningWidth(0.025f);
     object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
     object3D.back()->scale(glm::vec3(3.0f));
@@ -521,7 +521,7 @@ void scene::keyboardEvent(float frameTime)
         object3D[0]->setOutliningEnable(!object3D[0]->getOutliningEnable());
         object3D[1]->setOutliningEnable(!object3D[1]->getOutliningEnable());
         object3D[2]->setOutliningEnable(!object3D[2]->getOutliningEnable());
-        object3D[10]->setOutliningEnable(!object3D[10]->getOutliningEnable());
+        //object3D[10]->setOutliningEnable(!object3D[10]->getOutliningEnable());
         graphics[0]->updateCmdFlags();
     }
     backOStage = glfwGetKey(window,GLFW_KEY_O);

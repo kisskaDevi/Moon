@@ -2,7 +2,6 @@
 
 #define TINYPLY_IMPLEMENTATION
 #include "tinyply.h"
-#include <glm.hpp>
 #include "operations.h"
 
 #include <memory>
@@ -26,9 +25,9 @@ namespace {
 
 plyModel::plyModel(
         std::filesystem::path filename,
-        glm::vec4 baseColorFactor,
-        glm::vec4 diffuseFactor,
-        glm::vec4 specularFactor,
+        vector<float, 4> baseColorFactor,
+        vector<float, 4> diffuseFactor,
+        vector<float, 4> specularFactor,
         float metallicFactor,
         float roughnessFactor,
         float workflow) : filename(filename)
@@ -89,14 +88,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
 
     indexCount = faces ? 3 * static_cast<uint32_t>(faces->count) : 0;
     std::vector<uint32_t> indexBuffer(indexCount);
-    std::vector<Vertex> vertexBuffer(vertices? vertices->count : 0,
-        Vertex{
-             glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f),
-             glm::vec2(0.0f), glm::vec2(0.0f),
-             glm::vec4(0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
-             glm::vec3(0.0f), glm::vec3(0.0f)
-        }
-    );
+    std::vector<Vertex> vertexBuffer(vertices? vertices->count : 0, Vertex());
 
     if(vertices){
         for(size_t bufferIndex = 0, vertexIndex = 0; bufferIndex < vertices->buffer.size_bytes(); bufferIndex += 3 * sizeof(float), vertexIndex++){
@@ -114,7 +106,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
         }
     } else {
         for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
-            const glm::vec3 n = glm::normalize(glm::cross(
+            const vector<float, 3> n = normalize(cross(
                 vertexBuffer[indexBuffer[i + 1]].pos - vertexBuffer[indexBuffer[i + 0]].pos,
                 vertexBuffer[indexBuffer[i + 2]].pos - vertexBuffer[indexBuffer[i + 1]].pos
             ));
@@ -124,7 +116,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
             vertexBuffer[indexBuffer[i + 2]].normal += n;
         }
         for(uint32_t i = 0; i < vertexBuffer.size(); i++){
-            vertexBuffer[i].normal = glm::normalize(vertexBuffer[i].normal);
+            vertexBuffer[i].normal = normalize(vertexBuffer[i].normal);
         }
     }
     if(texcoords){
@@ -136,7 +128,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     createBuffer(physicalDevice, device, commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexStaging, this->vertices);
     createBuffer(physicalDevice, device, commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexStaging, indices);
 
-    this->uniformBlock.matrix = glm::mat4x4(1.0f);
+    this->uniformBlock.mat = matrix<float,4,4>(1.0f);
     Buffer::create( physicalDevice,
                     device,
                     sizeof(uniformBlock),

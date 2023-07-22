@@ -39,24 +39,24 @@ namespace {
 
     void calculateNodeTangent(std::vector<model::Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer){
         for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
-            glm::vec3 dv1   = vertexBuffer[indexBuffer[i+1]].pos - vertexBuffer[indexBuffer[i+0]].pos;
-            glm::vec3 dv2   = vertexBuffer[indexBuffer[i+2]].pos - vertexBuffer[indexBuffer[i+0]].pos;
+            vector<float,3> dv1   = vertexBuffer[indexBuffer[i+1]].pos - vertexBuffer[indexBuffer[i+0]].pos;
+            vector<float,3> dv2   = vertexBuffer[indexBuffer[i+2]].pos - vertexBuffer[indexBuffer[i+0]].pos;
 
-            glm::vec2 duv1  = vertexBuffer[indexBuffer[i+1]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
-            glm::vec2 duv2  = vertexBuffer[indexBuffer[i+2]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
+            vector<float,2> duv1  = vertexBuffer[indexBuffer[i+1]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
+            vector<float,2> duv2  = vertexBuffer[indexBuffer[i+2]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
 
-            float det = 1.0f/(duv1.x*duv2.y - duv1.y*duv2.x);
+            float det = 1.0f/(duv1[0]*duv2[1] - duv1[1]*duv2[0]);
 
-            glm::vec3 tangent = glm::normalize( det*(duv2.y*dv1-duv1.y*dv2));
-            glm::vec3 bitangent = glm::normalize( det*(duv1.x*dv2-duv2.x*dv1));
+            vector<float,3> tangent = normalize( det*(duv2[1]*dv1-duv1[1]*dv2));
+            vector<float,3> bitangent = normalize( det*(duv1[0]*dv2-duv2[0]*dv1));
 
-            if(dot(glm::cross(tangent,bitangent),vertexBuffer[indexBuffer[i+0]].normal)<0.0f){
-                tangent = -tangent;
+            if(dot(cross(tangent,bitangent),vertexBuffer[indexBuffer[i+0]].normal)<0.0f){
+                tangent = -1.0f * tangent;
             }
 
             for(uint32_t index = 0; index < 3; index++){
-                vertexBuffer[indexBuffer[i+index]].tangent      = glm::normalize(tangent - vertexBuffer[indexBuffer[i+index]].normal * glm::dot(vertexBuffer[indexBuffer[i+index]].normal, tangent));
-                vertexBuffer[indexBuffer[i+index]].bitangent    = glm::normalize(glm::cross(vertexBuffer[indexBuffer[i+index]].normal, vertexBuffer[indexBuffer[i+index]].tangent));
+                vertexBuffer[indexBuffer[i+index]].tangent      = normalize(tangent - vertexBuffer[indexBuffer[i+index]].normal * dot(vertexBuffer[indexBuffer[i+index]].normal, tangent));
+                vertexBuffer[indexBuffer[i+index]].bitangent    = normalize(cross(vertexBuffer[indexBuffer[i+index]].normal, vertexBuffer[indexBuffer[i+index]].tangent));
             }
         }
     }
@@ -305,7 +305,8 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
             material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
         }
         if (mat.values.find("baseColorFactor") != mat.values.end()) {
-            material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+            auto color = mat.values["baseColorFactor"].ColorFactor();
+            material.baseColorFactor = vector<float, 4>(color[0], color[1], color[2], color[3]);
         }
         if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
             material.normalTexture = &textures[mat.additionalValues["normalTexture"].TextureIndex()];
@@ -333,8 +334,8 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
             material.alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
         }
         if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
-            material.emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
-            material.emissiveFactor = glm::vec4(0.0f);
+            auto color = mat.additionalValues["emissiveFactor"].ColorFactor();
+            material.emissiveFactor = vector<float, 4>(color[0], color[1], color[2], 1.0);
         }
 
         // Extensions
@@ -488,7 +489,11 @@ void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipe
                 material.PhysicalDescriptorTextureSet = primitive->material->extension.specularGlossinessTexture != nullptr ? primitive->material->texCoordSets.specularGlossiness : -1;
                 material.colorTextureSet = primitive->material->extension.diffuseTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
                 material.diffuseFactor = primitive->material->extension.diffuseFactor;
-                material.specularFactor = glm::vec4(primitive->material->extension.specularFactor, 1.0f);
+                material.specularFactor = vector<float, 4>(
+                    primitive->material->extension.specularFactor[0],
+                    primitive->material->extension.specularFactor[1],
+                    primitive->material->extension.specularFactor[2],
+                    1.0f);
             }
             std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &material, sizeof(MaterialBlock));
 

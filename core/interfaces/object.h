@@ -2,8 +2,8 @@
 #define OBJECT_H
 
 #include <vulkan.h>
-#include <glm.hpp>
 #include <vector>
+#include <vector.h>
 
 class model;
 class cubeTexture;
@@ -29,7 +29,7 @@ public:
 
     virtual bool getOutliningEnable() const = 0;
     virtual float getOutliningWidth() const = 0;
-    virtual glm::vec4 getOutliningColor() const = 0;
+    virtual vector<float,4> getOutliningColor() const = 0;
 
     virtual void setFirstPrimitive(uint32_t firstPrimitive) = 0;
     virtual void setPrimitiveCount(uint32_t primitiveCount) = 0;

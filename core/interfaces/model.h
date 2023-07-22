@@ -2,9 +2,8 @@
 #define MODEL_H
 
 #include <vulkan.h>
-#include <glm.hpp>
-
 #include <vector>
+#include <vector.h>
 
 class texture;
 
@@ -14,8 +13,8 @@ struct Material {
     float alphaCutoff{1.0f};
     float metallicFactor{1.0f};
     float roughnessFactor{1.0f};
-    glm::vec4 baseColorFactor = glm::vec4(1.0f);
-    glm::vec4 emissiveFactor = glm::vec4(1.0f);
+    vector<float,4> baseColorFactor{1.0f};
+    vector<float,4> emissiveFactor{1.0f};
     texture*   baseColorTexture{nullptr};
     texture*   metallicRoughnessTexture{nullptr};
     texture*   normalTexture{nullptr};
@@ -32,8 +31,8 @@ struct Material {
     struct Extension {
         texture* specularGlossinessTexture{nullptr};
         texture* diffuseTexture{nullptr};
-        glm::vec4 diffuseFactor = glm::vec4(1.0f);
-        glm::vec3 specularFactor = glm::vec3(0.0f);
+        vector<float,4> diffuseFactor{1.0f};
+        vector<float,3> specularFactor{0.0f};
     } extension;
     struct PbrWorkflows {
         bool metallicRoughness = true;
@@ -44,10 +43,10 @@ struct Material {
 
 struct MaterialBlock
 {
-    alignas(16) glm::vec4   baseColorFactor{0.0f};
-    alignas(16) glm::vec4   emissiveFactor{0.0f};
-    alignas(16) glm::vec4   diffuseFactor{0.0f};
-    alignas(16) glm::vec4   specularFactor{0.0f};
+    alignas(16) vector<float,4>   baseColorFactor{0.0f};
+    alignas(16) vector<float,4>   emissiveFactor{0.0f};
+    alignas(16) vector<float,4>   diffuseFactor{0.0f};
+    alignas(16) vector<float,4>   specularFactor{0.0f};
     alignas(4)  float       workflow{0.0f};
     alignas(4)  int         colorTextureSet{-1};
     alignas(4)  int         PhysicalDescriptorTextureSet{-1};
@@ -67,18 +66,17 @@ class model
 {
 public:
     struct Vertex{
-        glm::vec3 pos{0.0f};
-        glm::vec3 normal{0.0f};
-        glm::vec2 uv0{0.0f};
-        glm::vec2 uv1{0.0f};
-        glm::vec4 joint0{0.0f};
-        glm::vec4 weight0{0.0f};
-        glm::vec3 tangent{0.0f};
-        glm::vec3 bitangent{0.0f};
+        alignas(16) vector<float,3> pos{0.0f};
+        alignas(16) vector<float,3> normal{0.0f};
+        alignas(16) vector<float,2> uv0{0.0f};
+        alignas(16) vector<float,2> uv1{0.0f};
+        alignas(16) vector<float,4> joint0{0.0f};
+        alignas(16) vector<float,4> weight0{0.0f};
+        alignas(16) vector<float,3> tangent{0.0f};
+        alignas(16) vector<float,3> bitangent{0.0f};
 
         static VkVertexInputBindingDescription getBindingDescription();
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
-        bool operator==(const Vertex& other) const {return pos == other.pos;}
     };
 
 

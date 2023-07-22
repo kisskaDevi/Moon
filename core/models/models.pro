@@ -11,6 +11,7 @@ INCLUDEPATH += \
     $$PWD/../../dependences/libs/tinyply/source \
     $$PWD/../interfaces \
     $$PWD/../utils \
+    $$PWD/../math \
     $$PWD
 
 SOURCES += \

@@ -4,6 +4,7 @@
 #include "model.h"
 #include "texture.h"
 #include "buffer.h"
+#include "matrix.h"
 
 #include <filesystem>
 
@@ -32,16 +33,16 @@ private:
     } uniformBuffer;
 
     struct UniformBlock {
-        glm::mat4 matrix;
-        glm::mat4 jointMatrix[MAX_NUM_JOINTS]{};
+        matrix<float,4,4> mat;
+        matrix<float,4,4> jointMatrix[MAX_NUM_JOINTS]{};
         float jointcount{0};
     } uniformBlock;
 
 public:
     plyModel(std::filesystem::path filename,
-             glm::vec4 baseColorFactor = glm::vec4(0.5f,0.5f,0.5f,1.0f),
-             glm::vec4 diffuseFactor = glm::vec4(0.5f),
-             glm::vec4 specularFactor = glm::vec4(0.5f),
+             vector<float, 4> baseColorFactor = vector<float, 4>(0.5f,0.5f,0.5f,1.0f),
+             vector<float, 4> diffuseFactor = vector<float, 4>(0.5f),
+             vector<float, 4> specularFactor = vector<float, 4>(0.5f),
              float metallicFactor = 0.0f,
              float roughnessFactor = 0.5f,
              float workflow = 1.0f);

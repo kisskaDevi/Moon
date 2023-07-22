@@ -27,9 +27,14 @@ namespace {
     }
 
     template <typename type>
-    glm::vec4 loadJoint(const void* bufferJoints, int jointByteStride, size_t vertex){
+    vector<float,4> loadJoint(const void* bufferJoints, int jointByteStride, size_t vertex){
         const type *buf = static_cast<const type*>(bufferJoints);
-        return glm::vec4(glm::make_vec4(&buf[vertex * jointByteStride]));
+        return vector<float,4>(
+            buf[vertex * jointByteStride + 0],
+            buf[vertex * jointByteStride + 1],
+            buf[vertex * jointByteStride + 2],
+            buf[vertex * jointByteStride + 3]
+        );
     }
 
     template <typename type>
@@ -199,12 +204,12 @@ void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
 
             for (uint32_t index = 0; index < vertexCount; index++) {
                 Vertex vert{};
-                vert.pos = glm::vec4(glm::make_vec3(&pos.first[index * pos.second]), 1.0f);
-                vert.normal = glm::normalize(glm::vec3(normals.first ? glm::make_vec3(&normals.first[index * normals.second]) : glm::vec3(0.0f)));
-                vert.uv0 = texCoordSet0.first ? glm::make_vec2(&texCoordSet0.first[index * texCoordSet0.second]) : glm::vec2(0.0f);
-                vert.uv1 = texCoordSet1.first ? glm::make_vec2(&texCoordSet1.first[index * texCoordSet1.second]) : glm::vec2(0.0f);
-                vert.joint0 = glm::vec4(0.0f);
-                vert.weight0 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+                vert.pos = pos.first ? vector<float,3>(pos.first[index * pos.second + 0], pos.first[index * pos.second + 1], pos.first[index * pos.second + 2]) : vector<float,3>(0.0f);
+                vert.normal = normalize(vector<float,3>(normals.first ? vector<float,3>(normals.first[index * normals.second], normals.first[index * normals.second + 1], normals.first[index * normals.second + 2]) : vector<float,3>(0.0f)));
+                vert.uv0 = texCoordSet0.first ? vector<float,2>(texCoordSet0.first[index * texCoordSet0.second], texCoordSet0.first[index * texCoordSet0.second + 1]) : vector<float,2>(0.0f);
+                vert.uv1 = texCoordSet1.first ? vector<float,2>(texCoordSet1.first[index * texCoordSet1.second], texCoordSet1.first[index * texCoordSet1.second + 1]) : vector<float,2>(0.0f);
+                vert.joint0 = vector<float,4>(0.0f);
+                vert.weight0 = vector<float,4>(1.0f, 0.0f, 0.0f, 0.0f);
 
                 if (joints.first && weights.first)
                 {
@@ -219,9 +224,14 @@ void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
                         }
                     }
 
-                    vert.weight0 = glm::make_vec4(&weights.first[index * weights.second]);
-                    if (glm::length(vert.weight0) == 0.0f) {
-                        vert.weight0 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+                    vert.weight0 = vector<float,4>(
+                        weights.first[index * weights.second + 0],
+                        weights.first[index * weights.second + 1],
+                        weights.first[index * weights.second + 2],
+                        weights.first[index * weights.second + 3]
+                    );
+                    if (dot(vert.weight0,vert.weight0) == 0.0f) {
+                        vert.weight0 = vector<float,4>(1.0f, 0.0f, 0.0f, 0.0f);
                     }
                 }
                 vertexBuffer.push_back(vert);

@@ -5,10 +5,10 @@ WARNINGS += -Wall
 
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
-    $$PWD/../../dependences/libs/glm/glm \
     $$PWD/filters \
     $$PWD/renderStages \
     $$PWD/../utils \
+    $$PWD/../math \
     $$PWD/../interfaces \
     $$PWD/../graphicsManager
 

@@ -216,6 +216,7 @@ public:
     baseVector(const baseVector<type, 2>& other);
     baseVector<type, 2>& operator=(const baseVector<type, 2>& other);
     baseVector(const type& x0, const type& x1);
+    baseVector(const type& x);
 
     type& operator[](uint32_t i);
     const type& operator[](uint32_t i) const;
@@ -268,6 +269,10 @@ baseVector<type, 2>& baseVector<type,2>::operator=(const baseVector<type, 2>& ot
 template<typename type>
 baseVector<type,2>::baseVector(const type& x0, const type& x1)
     : x0(x0), x1(x1) {}
+
+template<typename type>
+baseVector<type,2>::baseVector(const type& x)
+    : x0(x), x1(x) {}
 
 template<typename type>
 type& baseVector<type,2>::operator[](uint32_t i) {
@@ -407,9 +412,17 @@ class vector<type, 2> : public baseVector<type, 2>
 {
 public:
     vector() : baseVector<type,2>() {}
+    vector(const baseVector<type,2>& other) : baseVector<type,2>(other) {}
+    vector(const vector<type,2>& other) : baseVector<type,2>(other.x0, other.x1) {}
     vector(const type& x0, const type& x1) {
         this->x0 = x0;
         this->x1 = x1;
+    }
+    vector(const type& x) : baseVector<type,2>(x) {}
+    vector<type,2>& operator=(const vector<type,2> other) {
+        this->x0 = other.x0;
+        this->x1 = other.x1;
+        return *this;
     }
 };
 
@@ -418,9 +431,21 @@ class vector<type, 3> : public baseVector<type, 3>
 {
 public:
     vector() : baseVector<type,3>() {}
+    vector(const baseVector<type,3>& other) : baseVector<type,3>(other) {}
+    vector(const vector<type,3>& other) : baseVector<type,3>(other.vec, other.s) {}
     vector(const type& x0, const type& x1, const type& s) {
         this->vec = baseVector<type, 2>(x0, x1);
         this->s = s;
+    }
+    vector(const type& x) {
+        this->vec[0] = x;
+        this->vec[1] = x;
+        this->s = x;
+    }
+    vector<type,3>& operator=(const vector<type,3> other) {
+        this->vec = other.vec;
+        this->s = other.s;
+        return *this;
     }
 
     template<typename T> friend vector<T,3> cross(const vector<T, 3>& left, const vector<T, 3>& right);
@@ -431,13 +456,34 @@ class vector<type, 4> : public baseVector<type, 4>
 {
 public:
     vector() : baseVector<type,4>() {}
+    vector(const baseVector<type,4>& other) : baseVector<type,4>(other) {}
+    vector(const vector<type,4>& other) : baseVector<type,4>(other.vec, other.s) {}
     vector(const type& x0, const type& x1, const type& x2, const type& s) {
         this->vec = baseVector<type, 3>({x0, x1}, x2);
         this->s = s;
     }
+    vector(const type& x) {
+        this->vec[0] = x;
+        this->vec[1] = x;
+        this->vec[2] = x;
+        this->s = x;
+    }
+    vector<type,4>& operator=(const vector<type,4> other) {
+        this->vec = other.vec;
+        this->s = other.s;
+        return *this;
+    }
 };
 
 template<typename T> vector<T,3> cross(const vector<T, 3>& left, const vector<T, 3>& right){
+    return vector<T,3>(
+        left[1] * right[2] - left[2] * right[1],
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0]
+    );
+}
+
+template<typename T> vector<T,3> cross(const baseVector<T, 3>& left, const baseVector<T, 3>& right){
     return vector<T,3>(
         left[1] * right[2] - left[2] * right[1],
         left[2] * right[0] - left[0] * right[2],

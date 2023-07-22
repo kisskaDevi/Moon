@@ -83,6 +83,7 @@ public:
     void                setGlobalTransform(const glm::mat4& transform) override;
     void                translate(const glm::vec3& translate) override;
     void                rotate(const float& ang, const glm::vec3& ax) override;
+    void                rotate(const quaternion<float>& quat);
     void                scale(const glm::vec3& scale) override;
     void                setPosition(const glm::vec3& translate);
 

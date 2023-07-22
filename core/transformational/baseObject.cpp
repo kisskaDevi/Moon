@@ -76,6 +76,12 @@ void baseObject::rotate(const float & ang ,const glm::vec3 & ax)
     updateModelMatrix();
 }
 
+void baseObject::rotate(const quaternion<float>& quat)
+{
+    rotation = quat * rotation;
+    updateModelMatrix();
+}
+
 void baseObject::scale(const glm::vec3 & scale)
 {
     scaling = scale;

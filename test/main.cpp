@@ -3,7 +3,6 @@
 #endif
 #define STB_IMAGE_IMPLEMENTATION
 
-
 #include "dualQuaternion.h"
 #include "graphicsManager.h"
 #include "deferredGraphics.h"
@@ -19,6 +18,9 @@
 #include <sstream>
 #include <utility>
 #include <filesystem>
+
+#include <vector.h>
+#include <matrix.h>
 
 bool framebufferResized = false;
 
@@ -47,7 +49,7 @@ int main()
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
     baseCamera cameraObject(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-    cameraObject.translate(glm::vec3(0.0f,0.0f,10.0f));
+    cameraObject.translate(glm::vec3(0.0f,0.0f,15.0f));
 
     for(auto& graph: graphics){
         app.setGraphics(graph);

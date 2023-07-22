@@ -7,12 +7,16 @@ INCLUDEPATH += \
     $$PWD/../../dependences/libs/glm/glm
 
 SOURCES += \
+    matrix.cpp \
     quaternion.cpp \
-    dualQuaternion.cpp
+    dualQuaternion.cpp \
+    vector.cpp
 
 HEADERS += \
+    matrix.h \
     quaternion.h \
-    dualQuaternion.h
+    dualQuaternion.h \
+    vector.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

@@ -79,11 +79,7 @@ void baseCamera::rotate(const float & ang ,const glm::vec3 & ax)
     updateViewMatrix();
 }
 
-void baseCamera::scale(const glm::vec3 &scale)
-{
-    static_cast<void>(scale);
-}
-
+void baseCamera::scale(const glm::vec3 &){}
 
 void baseCamera::rotate(const quaternion<float>& quat)
 {

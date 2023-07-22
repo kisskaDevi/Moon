@@ -7,6 +7,7 @@
 #include "group.h"
 #include "baseCamera.h"
 #include "plymodel.h"
+#include "dualQuaternion.h"
 
 #include <glfw3.h>
 
@@ -152,6 +153,9 @@ void scene::loadModels()
     models.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
     graphics[0]->createModel(models.back());
 
+    models.push_back(new class plyModel(ExternalPath / "dependences/model/plytest.ply"));
+    graphics[0]->createModel(models.back());
+
     models.push_back(new class plyModel(ExternalPath / "dependences/model/pyramid.ply"));
     graphics[0]->createModel(models.back());
 }
@@ -163,7 +167,7 @@ void scene::createLight()
     std::filesystem::path LIGHT_TEXTURE2  = ExternalPath / "dependences/texture/light2.jpg";
     std::filesystem::path LIGHT_TEXTURE3  = ExternalPath / "dependences/texture/light3.jpg";
 
-    glm::mat4x4 Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 100.0f);
+    glm::mat4x4 Proj = glm::perspective(glm::radians(91.0f), 1.0f, 0.1f, 100.0f);
     Proj[1][1] *= -1;
 
     int index = 0;
@@ -324,6 +328,7 @@ void scene::createObjects()
     groups.at(5)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(models.at(6)));
+    object3D.back()->scale(glm::vec3(0.002f));
     object3D.back()->translate(glm::vec3(0.0f,0.0f,15.0f));
     object3D.back()->setConstantColor(glm::vec4(0.2f,0.8f,1.0f,1.0f));
     object3D.back()->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,1.0f));
@@ -392,9 +397,7 @@ void scene::mouseEvent(float frameTime)
 
     if(updateCamera){
         if(cameraAngle>0.0f){
-            glm::mat4x4 proj = glm::perspective(glm::radians(cameraAngle), (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-            proj[1][1] *= -1.0f;
-            cameras->setProjMatrix(proj);
+            cameras->recreate(cameraAngle, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
         }
         updateCamera = false;
     }
@@ -518,6 +521,7 @@ void scene::keyboardEvent(float frameTime)
         object3D[0]->setOutliningEnable(!object3D[0]->getOutliningEnable());
         object3D[1]->setOutliningEnable(!object3D[1]->getOutliningEnable());
         object3D[2]->setOutliningEnable(!object3D[2]->getOutliningEnable());
+        object3D[10]->setOutliningEnable(!object3D[10]->getOutliningEnable());
         graphics[0]->updateCmdFlags();
     }
     backOStage = glfwGetKey(window,GLFW_KEY_O);

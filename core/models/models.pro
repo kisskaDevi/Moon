@@ -5,7 +5,6 @@ WARNINGS += -Wall
 
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
-    $$PWD/../../dependences/libs/glm/glm \
     $$PWD/../../dependences/libs/stb \
     $$PWD/../../dependences/libs/tinygltf \
     $$PWD/../../dependences/libs/tinyply/source \

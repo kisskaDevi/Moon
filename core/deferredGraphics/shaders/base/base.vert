@@ -67,7 +67,7 @@ void main()
 	            inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
 	            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
 
-	    model *= skinMat;
+            model = model * skinMat;
             outPosition	    =		     model * vec4(inPosition,	1.0);
 	    outNormal	    = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
 	    outTangent	    = normalize(vec3(model * vec4(inTangent,	0.0)));

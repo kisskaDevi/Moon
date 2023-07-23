@@ -66,14 +66,14 @@ void gltfModel::loadAnimations(tinygltf::Model& gltfModel)
 
                     switch (accessor.type) {
                         case TINYGLTF_TYPE_VEC3: {
-                            const glm::vec3 *buf = static_cast<const glm::vec3*>(dataPtr);
+                            const vector<float,3> *buf = static_cast<const vector<float,3>*>(dataPtr);
                             for (size_t index = 0; index < accessor.count; index++) {
-                                sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+                                sampler.outputsVec4.push_back(vector<float,4>(buf[index][0],buf[index][1],buf[index][2], 0.0f));
                             }
                             break;
                         }
                         case TINYGLTF_TYPE_VEC4: {
-                            const glm::vec4 *buf = static_cast<const glm::vec4*>(dataPtr);
+                            const vector<float,4> *buf = static_cast<const vector<float,4>*>(dataPtr);
                             for (size_t index = 0; index < accessor.count; index++) {
                                 sampler.outputsVec4.push_back(buf[index]);
                             }
@@ -143,27 +143,20 @@ void gltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
                 if (u <= 1.0f) {
                     switch (channel.path) {
                         case Animation::AnimationChannel::PathType::TRANSLATION: {
-                            glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-                            channel.node->translation = glm::vec3(trans);
+                            vector<float,4> trans = mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+                            channel.node->translation = vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::SCALE: {
-                            glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-                            channel.node->scale = glm::vec3(trans);
+                            vector<float,4> trans = mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+                            channel.node->scale = vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::ROTATION: {
-                            glm::quat q1;
-                            q1.x = sampler.outputsVec4[i].x;
-                            q1.y = sampler.outputsVec4[i].y;
-                            q1.z = sampler.outputsVec4[i].z;
-                            q1.w = sampler.outputsVec4[i].w;
-                            glm::quat q2;
-                            q2.x = sampler.outputsVec4[i + 1].x;
-                            q2.y = sampler.outputsVec4[i + 1].y;
-                            q2.z = sampler.outputsVec4[i + 1].z;
-                            q2.w = sampler.outputsVec4[i + 1].w;
-                            channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+                            quaternion<float> q1(sampler.outputsVec4[i + 0][3], {sampler.outputsVec4[i + 0][0], sampler.outputsVec4[i + 0][1], sampler.outputsVec4[i + 0][2]});
+                            quaternion<float> q2(sampler.outputsVec4[i + 1][3], {sampler.outputsVec4[i + 1][0], sampler.outputsVec4[i + 1][1], sampler.outputsVec4[i + 1][2]});
+
+                            channel.node->rotation = normalize(slerp(q1, q2, u));
                             break;
                         }
                     }
@@ -197,27 +190,19 @@ void gltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t
                 if (u <= 1.0f) {
                     switch (channel.path) {
                         case Animation::AnimationChannel::PathType::TRANSLATION: {
-                            glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
-                            channel.node->translation = glm::vec3(trans);
+                            vector<float,4> trans = mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                            channel.node->translation = vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::SCALE: {
-                            glm::vec4 trans = glm::mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
-                            channel.node->scale = glm::vec3(trans);
+                            vector<float,4> trans = mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                            channel.node->scale = vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::ROTATION: {
-                            glm::quat q1;
-                            q1.x = samplerOld.outputsVec4[i].x;
-                            q1.y = samplerOld.outputsVec4[i].y;
-                            q1.z = samplerOld.outputsVec4[i].z;
-                            q1.w = samplerOld.outputsVec4[i].w;
-                            glm::quat q2;
-                            q2.x = samplerNew.outputsVec4[0].x;
-                            q2.y = samplerNew.outputsVec4[0].y;
-                            q2.z = samplerNew.outputsVec4[0].z;
-                            q2.w = samplerNew.outputsVec4[0].w;
-                            channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+                            quaternion<float> q1(samplerOld.outputsVec4[i + 0][3], {samplerOld.outputsVec4[i + 0][0], samplerOld.outputsVec4[i + 0][1], samplerOld.outputsVec4[i + 0][2]});
+                            quaternion<float> q2(samplerNew.outputsVec4[0][3], {samplerNew.outputsVec4[0][0], samplerNew.outputsVec4[0][1], samplerNew.outputsVec4[0][2]});
+                            channel.node->rotation = normalize(slerp(q1, q2, u));
                             break;
                         }
                     }

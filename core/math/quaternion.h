@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "matrix.h"
+#include <math.h>
 
 template<typename type>
 class quaternion
@@ -46,6 +47,7 @@ public:
 
     template<typename T> friend quaternion<T> convert(const matrix<T,3,3>& O3);
     template<typename T> friend matrix<T,3,3> convert(const quaternion<T>& quat);
+    template<typename T> friend matrix<T,4,4> convert4x4(const quaternion<T>& quat);
 
     template<typename T> friend quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
     template<typename T> friend quaternion<T> convert(const T& angle, const ::vector<T,3>& axis);
@@ -273,6 +275,19 @@ matrix<T,3,3> convert(const quaternion<T>& quat)
 }
 
 template<typename T>
+matrix<T,4,4> convert4x4(const quaternion<T>& quat)
+{
+    matrix<T,4,4> R{0.0f};
+
+    R[0][0] = T(1) - T(2)*(quat.y*quat.y + quat.z*quat.z);      R[0][1] = T(2)*(quat.x*quat.y - quat.z*quat.s);         R[0][2] = T(2)*(quat.x*quat.z + quat.y*quat.s);
+    R[1][0] = T(2)*(quat.x*quat.y + quat.z*quat.s);             R[1][1] = T(1) - T(2)*(quat.x*quat.x + quat.z*quat.z);  R[1][2] = T(2)*(quat.y*quat.z - quat.x*quat.s);
+    R[2][0] = T(2)*(quat.x*quat.z - quat.y*quat.s);             R[2][1] = T(2)*(quat.y*quat.z + quat.x*quat.s);         R[2][2] = T(1) - T(2)*(quat.x*quat.x + quat.y*quat.y);
+    R[3][3] = T(1);
+
+    return R;
+}
+
+template<typename T>
 quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
 {
     T cosy = std::cos(yaw*T(0.5));
@@ -317,9 +332,19 @@ quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, cons
     T q1q2 = quat1.s*quat2.s + quat1.x*quat2.x + quat1.y*quat2.y + quat1.z*quat2.z;
     T modq1 = std::sqrt(quat1.s*quat1.s + quat1.x*quat1.x + quat1.y*quat1.y + quat1.z*quat1.z);
     T modq2 = std::sqrt(quat2.s*quat2.s + quat2.x*quat2.x + quat2.y*quat2.y + quat2.z*quat2.z);
-    T theta = std::acos(q1q2/modq1/modq2);
+    T theta = modq1*modq2 == 0.0f ? 0.0f : std::acos(q1q2/modq1/modq2);
+    theta = std::isnan(theta) ? 0.0f : theta;
 
-    return std::sin((T(1)-t)*theta)/std::sin(theta)*quat1 + std::sin(t*theta)/std::sin(theta)*quat2;
+    auto sinRatio = [](const T& theta, const T& t){
+        return theta == T(0) ? t : std::sin(t*theta)/std::sin(theta);
+    };
+
+    return sinRatio(theta, T(1)-t) * quat1 + sinRatio(theta, t) * quat2;
+}
+
+template<typename type>
+matrix<type,4,4> rotate(quaternion<type> qu){
+    return convert4x4(qu);
 }
 
 #endif // QUATERNION_H

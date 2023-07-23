@@ -3,6 +3,9 @@
 #endif
 #define STB_IMAGE_IMPLEMENTATION
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include "dualQuaternion.h"
 #include "graphicsManager.h"
 #include "deferredGraphics.h"

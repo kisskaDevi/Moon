@@ -2,17 +2,13 @@
 #define GLTFMODEL_H
 
 #include <vulkan.h>
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
-#include <gtc/type_ptr.hpp>
-#include <gtx/string_cast.hpp>
 #include "tiny_gltf.h"
 
 #include "model.h"
 #include "texture.h"
 #include "buffer.h"
+#include "matrix.h"
+#include "quaternion.h"
 
 #include <filesystem>
 #include <vector>
@@ -20,13 +16,13 @@
 #define MAX_NUM_JOINTS 128u
 
 struct BoundingBox{
-    glm::vec3 min;
-    glm::vec3 max;
+    vector<float,3> min;
+    vector<float,3> max;
     bool valid{false};
 
     BoundingBox() = default;
-    BoundingBox(glm::vec3 min, glm::vec3 max);
-    BoundingBox getAABB(glm::mat4 m) const;
+    BoundingBox(vector<float,3> min, vector<float,3> max);
+    BoundingBox getAABB(matrix<float,4,4> m) const;
 };
 
 struct Mesh{
@@ -46,14 +42,14 @@ struct Mesh{
     } uniformBuffer;
 
     struct UniformBlock {
-        glm::mat4 matrix;
-        glm::mat4 jointMatrix[MAX_NUM_JOINTS]{};
+        matrix<float,4,4> matrix;
+        ::matrix<float,4,4> jointMatrix[MAX_NUM_JOINTS]{};
         float jointcount{0};
     } uniformBlock;
 
     std::vector<Primitive*> primitives;
 
-    Mesh(VkPhysicalDevice physicalDevice, VkDevice device, glm::mat4 matrix);
+    Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> matrix);
     void destroy(VkDevice device);
     ~Mesh() = default;
 };
@@ -61,7 +57,7 @@ struct Mesh{
 struct Node;
 
 struct Skin {
-    std::vector<glm::mat4> inverseBindMatrices;
+    std::vector<matrix<float,4,4>> inverseBindMatrices;
     std::vector<Node*> joints;
 };
 
@@ -73,10 +69,10 @@ struct Node {
 
     std::vector<Node*> children;
 
-    glm::mat4 matrix;
-    glm::vec3 translation{};
-    glm::vec3 scale{1.0f};
-    glm::quat rotation{};
+    matrix<float,4,4> matrix;
+    vector<float,3> translation{};
+    vector<float,3> scale{1.0f};
+    quaternion<float> rotation{};
 
     void update();
     void destroy(VkDevice device);
@@ -97,7 +93,7 @@ struct Animation
         enum InterpolationType { LINEAR, STEP, CUBICSPLINE };
         InterpolationType interpolation;
         std::vector<float> inputs;
-        std::vector<glm::vec4> outputsVec4;
+        std::vector<vector<float,4>> outputsVec4;
     };
 
     std::vector<AnimationSampler> samplers;

@@ -411,4 +411,22 @@ matrix<type,n,n> inverse(const matrix<type,n,n>& m) {
     return transpose(result) / det(m);
 }
 
+template<typename type>
+matrix<type,4,4> translate(vector<type,3> tr){
+    matrix<float,4,4> m{1.0f};
+    m[0][3] += tr[0];
+    m[1][3] += tr[1];
+    m[2][3] += tr[2];
+    return m;
+}
+
+template<typename type>
+matrix<type,4,4> scale(vector<type,3> sc){
+    matrix<float,4,4> m{1.0f};
+    m[0][0] *= sc[0];
+    m[1][1] *= sc[1];
+    m[2][2] *= sc[2];
+    return m;
+}
+
 #endif // MATRIX_H

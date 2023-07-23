@@ -491,4 +491,8 @@ template<typename T> vector<T,3> cross(const baseVector<T, 3>& left, const baseV
     );
 }
 
+template<typename T, uint32_t N> vector<T,N> mix(const vector<T,N>& left, const vector<T,N>& right, T s){
+    return left + T(s) * (right - left);
+}
+
 #endif // VECTOR_H

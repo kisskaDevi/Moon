@@ -160,19 +160,12 @@ namespace {
     };
 }
 
-BoundingBox::BoundingBox(glm::vec3 min, glm::vec3 max)
+BoundingBox::BoundingBox(vector<float,3> min, vector<float,3> max)
     : min(min), max(max), valid(true)
 {};
 
-BoundingBox BoundingBox::getAABB(glm::mat4 m) const {
-    return BoundingBox(
-        glm::min(glm::vec3(m[0]) * this->min.x, glm::vec3(m[0]) * this->max.x) +
-        glm::min(glm::vec3(m[1]) * this->min.y, glm::vec3(m[1]) * this->max.y) +
-        glm::min(glm::vec3(m[2]) * this->min.z, glm::vec3(m[2]) * this->max.z),
-        glm::max(glm::vec3(m[0]) * this->min.x, glm::vec3(m[0]) * this->max.x) +
-        glm::max(glm::vec3(m[1]) * this->min.y, glm::vec3(m[1]) * this->max.y) +
-        glm::max(glm::vec3(m[2]) * this->min.z, glm::vec3(m[2]) * this->max.z)
-    );
+BoundingBox BoundingBox::getAABB(matrix<float,4,4>) const {
+    return BoundingBox();
 }
 
 gltfModel::gltfModel(std::filesystem::path filename, uint32_t instanceCount)
@@ -255,7 +248,10 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel){
                 const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
 
                 newSkin->inverseBindMatrices.resize(accessor.count);
-                std::memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
+                std::memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(matrix<float,4,4>));
+                for(auto& matrix: newSkin->inverseBindMatrices){
+                    matrix = transpose(matrix);
+                }
             }
 
             for (const auto& node: gltfModel.nodes) {

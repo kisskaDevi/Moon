@@ -5,12 +5,12 @@
 #include <numeric>
 
 namespace {
-    glm::mat4 localMatrix(Node* node){
-        return glm::translate(glm::mat4(1.0f), node->translation) * glm::mat4(node->rotation) * glm::scale(glm::mat4(1.0f), node->scale) * node->matrix;
+    matrix<float,4,4> localMatrix(Node* node){
+        return translate(node->translation) * rotate(node->rotation) * scale(node->scale) * node->matrix;
     }
 
-    glm::mat4 getMatrix(Node* node) {
-        return (node->parent ? getMatrix(node->parent) : glm::mat4(1.0f)) * localMatrix(node);
+    matrix<float,4,4> getMatrix(Node* node) {
+        return (node->parent ? getMatrix(node->parent) : matrix<float,4,4>(1.0f)) * localMatrix(node);
     }
 
     Node* findNodeFromIndex(Node* node, uint32_t index){
@@ -85,7 +85,7 @@ Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t ve
     : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material)
 {}
 
-Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, glm::mat4 matrix)
+Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> matrix)
 {
     this->uniformBlock.matrix = matrix;
     Buffer::create( physicalDevice,
@@ -107,9 +107,10 @@ void Mesh::destroy(VkDevice device){
 
 void Node::update() {
     if (size_t numJoints = skin ? std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS) : 0; mesh){
-        mesh->uniformBlock.matrix = getMatrix(this);
+        mesh->uniformBlock.matrix = transpose(getMatrix(this));
+
         for (size_t i = 0; i < numJoints; i++) {
-            mesh->uniformBlock.jointMatrix[i] = glm::inverse(mesh->uniformBlock.matrix) * getMatrix(skin->joints[i]) * skin->inverseBindMatrices[i];
+            mesh->uniformBlock.jointMatrix[i] = transpose(inverse(getMatrix(this)) * getMatrix(skin->joints[i]) * skin->inverseBindMatrices[i]);
         }
         mesh->uniformBlock.jointcount = static_cast<float>(numJoints);
         std::memcpy(mesh->uniformBuffer.map, &mesh->uniformBlock, sizeof(mesh->uniformBlock));
@@ -130,19 +131,25 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
     Node* newNode = new Node{};
     newNode->index = nodeIndex;
     newNode->parent = parent;
-    newNode->matrix = glm::mat4(1.0f);
+    newNode->matrix = matrix<float,4,4>(1.0f);
 
     if (model.nodes[nodeIndex].translation.size() == 3) {
-        newNode->translation = glm::make_vec3(model.nodes[nodeIndex].translation.data());
+        newNode->translation = vector<float,3>(model.nodes[nodeIndex].translation[0],model.nodes[nodeIndex].translation[1],model.nodes[nodeIndex].translation[2]);
     }
     if (model.nodes[nodeIndex].rotation.size() == 4) {
-        newNode->rotation = glm::mat4(static_cast<glm::quat>(glm::make_quat(model.nodes[nodeIndex].rotation.data())));
+        newNode->rotation = quaternion<float>(model.nodes[nodeIndex].rotation[0],model.nodes[nodeIndex].rotation[1],model.nodes[nodeIndex].rotation[2],model.nodes[nodeIndex].rotation[3]);
     }
     if (model.nodes[nodeIndex].scale.size() == 3) {
-        newNode->scale = glm::make_vec3(model.nodes[nodeIndex].scale.data());
+        newNode->scale = vector<float,3>(model.nodes[nodeIndex].scale[0],model.nodes[nodeIndex].scale[1],model.nodes[nodeIndex].scale[2]);
     }
     if (model.nodes[nodeIndex].matrix.size() == 16) {
-        newNode->matrix = glm::make_mat4x4(model.nodes[nodeIndex].matrix.data());
+        const double* m = model.nodes[nodeIndex].matrix.data();
+        newNode->matrix = matrix<float,4,4>(
+            m[0],m[1],m[2],m[3],
+            m[4],m[5],m[6],m[7],
+            m[8],m[9],m[10],m[11],
+            m[12],m[13],m[14],m[15]
+        );
     }
 
     for (size_t i = 0; i < model.nodes[nodeIndex].children.size(); i++) {
@@ -161,8 +168,8 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
             uint32_t vertexCount = static_cast<uint32_t>(posAccessor.count);
 
             Mesh::Primitive* newPrimitive = new Mesh::Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? &materials[primitive.material] : &materials.back());
-            newPrimitive->bb = BoundingBox( glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]),
-                                            glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]));
+            newPrimitive->bb = BoundingBox( vector<float,3>(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]),
+                                            vector<float,3>(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]));
             newMesh->primitives.push_back(newPrimitive);
 
             if (primitive.indices > -1){
@@ -208,7 +215,7 @@ void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
                 vert.normal = normalize(vector<float,3>(normals.first ? vector<float,3>(normals.first[index * normals.second], normals.first[index * normals.second + 1], normals.first[index * normals.second + 2]) : vector<float,3>(0.0f)));
                 vert.uv0 = texCoordSet0.first ? vector<float,2>(texCoordSet0.first[index * texCoordSet0.second], texCoordSet0.first[index * texCoordSet0.second + 1]) : vector<float,2>(0.0f);
                 vert.uv1 = texCoordSet1.first ? vector<float,2>(texCoordSet1.first[index * texCoordSet1.second], texCoordSet1.first[index * texCoordSet1.second + 1]) : vector<float,2>(0.0f);
-                vert.joint0 = vector<float,4>(0.0f);
+                vert.joint0 = vector<float,4>(0.0f, 0.0f, 0.0f, 0.0f);
                 vert.weight0 = vector<float,4>(1.0f, 0.0f, 0.0f, 0.0f);
 
                 if (joints.first && weights.first)

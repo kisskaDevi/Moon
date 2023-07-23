@@ -1,8 +1,8 @@
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
-#include <glm.hpp>
 #include <iostream>
+#include "matrix.h"
 
 template<typename type>
 class quaternion
@@ -17,12 +17,12 @@ public:
     quaternion();
     quaternion(const quaternion<type>& other);
     quaternion(const type& s,const type& x,const type& y,const type& z);
-    quaternion(const type& s,const glm::vec<3,type,glm::defaultp>& v);
+    quaternion(const type& s,const vector<type, 3>& v);
     quaternion<type>& operator=(const quaternion<type>& other);
     ~quaternion();
 
-    type                                 scalar()const;
-    glm::vec<3,type,glm::defaultp>       vector()const;
+    type                scalar()const;
+    vector<type, 3>    vector()const;
 
     bool                operator==(const quaternion<type>& other)const;
     bool                operator!=(const quaternion<type>& other)const;
@@ -44,13 +44,13 @@ public:
     template<typename T> friend quaternion<T> operator* (const T& c, const quaternion<T>& quat);
     template<typename T> friend std::ostream& operator<< (std::ostream & out, const quaternion<T>& quat);
 
-    template<typename T> friend quaternion<T> convert(const glm::mat<3,3,T,glm::defaultp>& O3);
-    template<typename T> friend glm::mat<3,3,T,glm::defaultp> convert(const quaternion<T>& quat);
+    template<typename T> friend quaternion<T> convert(const matrix<T,3,3>& O3);
+    template<typename T> friend matrix<T,3,3> convert(const quaternion<T>& quat);
 
     template<typename T> friend quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
-    template<typename T> friend quaternion<T> convert(const T& angle, const glm::vec<3,type,glm::defaultp>& axis);
+    template<typename T> friend quaternion<T> convert(const T& angle, const ::vector<T,3>& axis);
 
-    template<typename T> friend glm::vec<3,T,glm::defaultp> convertToEulerAngles(const quaternion<T>& quat);
+    template<typename T> friend ::vector<T,3> convertToEulerAngles(const quaternion<T>& quat);
     template<typename T> friend quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat);
 
     template<typename T> friend quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, const T& t);
@@ -82,11 +82,11 @@ quaternion<type>::quaternion(const type& s,const type& x,const type& y,const typ
 {}
 
 template<typename type>
-quaternion<type>::quaternion(const type& s,const glm::vec<3,type,glm::defaultp>& v):
+quaternion<type>::quaternion(const type& s, const ::vector<type, 3>& v):
     s(s),
-    x(static_cast<type>(v.x)),
-    y(static_cast<type>(v.y)),
-    z(static_cast<type>(v.z))
+    x(static_cast<type>(v[0])),
+    y(static_cast<type>(v[1])),
+    z(static_cast<type>(v[2]))
 {}
 
 template<typename type>
@@ -110,9 +110,9 @@ type                quaternion<type>::scalar()const
 }
 
 template<typename type>
-glm::vec<3,type,glm::defaultp>           quaternion<type>::vector()const
+vector<type, 3>    quaternion<type>::vector()const
 {
-    return glm::vec<3,type,glm::defaultp>(x,y,z);
+    return ::vector<type, 3>(x,y,z);
 }
 
 template<typename type>
@@ -196,7 +196,7 @@ template<typename type>
 quaternion<type>&   quaternion<type>::normalize()
 {
     type norma = s*s+x*x+y*y+z*z;
-    norma = glm::sqrt(norma);
+    norma = std::sqrt(norma);
     s /= norma;
     x /= norma;
     y /= norma;
@@ -218,7 +218,7 @@ quaternion<type>&   quaternion<type>::invert()
 {
     quaternion<type> quat(*this);
     quaternion<type> ivNorma = quat*this->conjugate();
-    ivNorma.s = glm::sqrt(ivNorma.s);
+    ivNorma.s = std::sqrt(ivNorma.s);
     *this = ivNorma*(*this);
     return *this;
 }
@@ -228,7 +228,7 @@ template<typename T>
 quaternion<T>   normalize(const quaternion<T>& quat)
 {
     T norma = quat.s*quat.s+quat.x*quat.x+quat.y*quat.y+quat.z*quat.z;
-    norma = glm::sqrt(norma);
+    norma = std::sqrt(norma);
     return quaternion<T>(quat.s/norma,quat.x/norma,quat.y/norma,quat.z/norma);
 }
 
@@ -242,16 +242,16 @@ template<typename T>
 quaternion<T>   invert(const quaternion<T>& quat)
 {
     quaternion<T> ivNorma = quat*conjugate(quat);
-    ivNorma.s = glm::sqrt(ivNorma.s);
+    ivNorma.s = std::sqrt(ivNorma.s);
     return ivNorma*conjugate(quat);
 }
 
 template<typename T>
-quaternion<T> convert(const glm::mat<3,3,T,glm::defaultp>& O3)
+quaternion<T> convert(const matrix<T,3,3>& O3)
 {
     quaternion<T> quat;
 
-    quat.s = glm::sqrt(1.0f+O3[0][0]+O3[1][1]+O3[2][2])/2.0f;
+    quat.s = std::sqrt(1.0f+O3[0][0]+O3[1][1]+O3[2][2])/2.0f;
 
     quat.z = (O3[1][0]-O3[0][1])/(T(4)*quat.s);
     quat.y = (O3[0][2]-O3[2][0])/(T(4)*quat.s);
@@ -261,9 +261,9 @@ quaternion<T> convert(const glm::mat<3,3,T,glm::defaultp>& O3)
 }
 
 template<typename T>
-glm::mat<3,3,T,glm::defaultp> convert(const quaternion<T>& quat)
+matrix<T,3,3> convert(const quaternion<T>& quat)
 {
-    glm::mat<3,3,T,glm::defaultp> R;
+    matrix<T,3,3> R;
 
     R[0][0] = T(1) - T(2)*(quat.y*quat.y + quat.z*quat.z);      R[0][1] = T(2)*(quat.x*quat.y - quat.z*quat.s);         R[0][2] = T(2)*(quat.x*quat.z + quat.y*quat.s);
     R[1][0] = T(2)*(quat.x*quat.y + quat.z*quat.s);             R[1][1] = T(1) - T(2)*(quat.x*quat.x + quat.z*quat.z);  R[1][2] = T(2)*(quat.y*quat.z - quat.x*quat.s);
@@ -275,12 +275,12 @@ glm::mat<3,3,T,glm::defaultp> convert(const quaternion<T>& quat)
 template<typename T>
 quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
 {
-    T cosy = glm::cos(yaw*T(0.5));
-    T siny = glm::sin(yaw*T(0.5));
-    T cosp = glm::cos(pitch*T(0.5));
-    T sinp = glm::sin(pitch*T(0.5));
-    T cosr = glm::cos(roll*T(0.5));
-    T sinr = glm::sin(roll*T(0.5));
+    T cosy = std::cos(yaw*T(0.5));
+    T siny = std::sin(yaw*T(0.5));
+    T cosp = std::cos(pitch*T(0.5));
+    T sinp = std::sin(pitch*T(0.5));
+    T cosr = std::cos(roll*T(0.5));
+    T sinr = std::sin(roll*T(0.5));
 
     T s = cosy*cosp*cosr + siny*sinp*sinr;
     T x = sinr*cosp*cosy - cosr*sinp*siny;
@@ -291,35 +291,35 @@ quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
 }
 
 template<typename T>
-quaternion<T> convert(const T& angle, const glm::vec<3,T,glm::defaultp>& axis)
+quaternion<T> convert(const T& angle, const vector<T,3>& axis)
 {
-    return quaternion<T>(glm::cos(angle*T(0.5)),glm::sin(angle*T(0.5))*glm::vec<3,T,glm::defaultp>(axis.x,axis.y,axis.z));
+    return quaternion<T>(std::cos(angle*T(0.5)),std::sin(angle*T(0.5))*vector<T,3>(axis[0],axis[1],axis[2]));
 }
 
 template<typename T>
-glm::vec<3,T,glm::defaultp> convertToEulerAngles(const quaternion<T>& quat)
+vector<T,3> convertToEulerAngles(const quaternion<T>& quat)
 {
-    return  glm::vec<3,T,glm::defaultp>(  glm::atan((quat.s*quat.x+quat.y*quat.z)*T(2)/(T(1)-(quat.x*quat.x+quat.y*quat.y)*T(2))),
-                                          glm::asin((quat.s*quat.y-quat.x*quat.z)*T(2)),
-                                          glm::atan((quat.s*quat.z+quat.y*quat.x)*T(2)/(T(1)-(quat.z*quat.z+quat.y*quat.y)*T(2))));
+    return  vector<T,3>(std::atan((quat.s*quat.x+quat.y*quat.z)*T(2)/(T(1)-(quat.x*quat.x+quat.y*quat.y)*T(2))),
+                            std::asin((quat.s*quat.y-quat.x*quat.z)*T(2)),
+                            std::atan((quat.s*quat.z+quat.y*quat.x)*T(2)/(T(1)-(quat.z*quat.z+quat.y*quat.y)*T(2))));
 }
 
 template<typename T>
 quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat)
 {
-    return quaternion<T>(   glm::acos(quat.s)*T(2),
-                            glm::vec<3,T,glm::defaultp>(quat.x,quat.y,quat.z)/glm::sqrt(T(1)-quat.s*quat.s));
+    return quaternion<T>(   std::acos(quat.s)*T(2),
+                            vector<T,3>(quat.x,quat.y,quat.z)/std::sqrt(T(1)-quat.s*quat.s));
 }
 
 template<typename T>
 quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, const T& t)
 {
     T q1q2 = quat1.s*quat2.s + quat1.x*quat2.x + quat1.y*quat2.y + quat1.z*quat2.z;
-    T modq1 = glm::sqrt(quat1.s*quat1.s + quat1.x*quat1.x + quat1.y*quat1.y + quat1.z*quat1.z);
-    T modq2 = glm::sqrt(quat2.s*quat2.s + quat2.x*quat2.x + quat2.y*quat2.y + quat2.z*quat2.z);
-    T theta = glm::acos(q1q2/modq1/modq2);
+    T modq1 = std::sqrt(quat1.s*quat1.s + quat1.x*quat1.x + quat1.y*quat1.y + quat1.z*quat1.z);
+    T modq2 = std::sqrt(quat2.s*quat2.s + quat2.x*quat2.x + quat2.y*quat2.y + quat2.z*quat2.z);
+    T theta = std::acos(q1q2/modq1/modq2);
 
-    return glm::sin((T(1)-t)*theta)/glm::sin(theta)*quat1 + glm::sin(t*theta)/glm::sin(theta)*quat2;
+    return std::sin((T(1)-t)*theta)/std::sin(theta)*quat1 + std::sin(t*theta)/std::sin(theta)*quat2;
 }
 
 #endif // QUATERNION_H

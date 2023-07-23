@@ -41,8 +41,8 @@ public:
 
   template<typename T> friend dualQuaternion<T> convert(const quaternion<T>& rotation, const quaternion<T>& translation);
 
-  template<typename T> friend dualQuaternion<T> convert(const glm::mat<4,4,T,glm::defaultp>& SE3);
-  template<typename T> friend glm::mat<4,4,T,glm::defaultp> convert(const dualQuaternion<T>& quat);
+  template<typename T> friend dualQuaternion<T> convert(const matrix<T,4,4>& SE3);
+  template<typename T> friend matrix<T,4,4> convert(const dualQuaternion<T>& quat);
 
   template<typename T> friend dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>& quat2, const T& t);
 };
@@ -161,11 +161,10 @@ dualQuaternion<T> operator* (const T& c,const dualQuaternion<T>& quat)
 template<typename type>
 dualQuaternion<type>&   dualQuaternion<type>::normalize()
 {
-    if(p.scalar()*q.scalar()+p.vector().x*q.vector().x+p.vector().y*q.vector().y+p.vector().z*q.vector().z==0){
-        type norma = p.scalar()*p.scalar()+p.vector().x*p.vector().x+p.vector().y*p.vector().y+p.vector().z*p.vector().z;
-        norma = glm::sqrt(norma);
-        p = (type(1)/norma) * p;
-        q = (type(1)/norma) * q;
+    if(type norma = p.scalar()*p.scalar()+dot(p.vector(),p.vector()); norma != 0){
+        norma = type(1)/std::sqrt(norma);
+        p = norma * p;
+        q = norma * q;
     }
     return *this;
 }
@@ -193,7 +192,7 @@ dualQuaternion<T>   normalize(const dualQuaternion<T>& quat)
     const dualQuaternion<T>& res(quat);
     if(quat.p.s*quat.q.s+quat.p.x*quat.q.x+quat.p.y*quat.q.y+quat.p.z*quat.q.z==0){
         T norma = quat.p.s*quat.p.s+quat.p.x*quat.p.x+quat.p.y*quat.p.y+quat.p.z*quat.p.z;
-        norma = glm::sqrt(norma);
+        norma = std::sqrt(norma);
 
         res.p.s = quat.p.s / norma;
         res.p.x = quat.p.x / norma;
@@ -231,27 +230,27 @@ dualQuaternion<T>   convert(const quaternion<T>& rotation, const quaternion<T>& 
 }
 
 template<typename T>
-glm::mat<4,4,T,glm::defaultp> convert(const dualQuaternion<T>& quat)
+matrix<T,4,4> convert(const dualQuaternion<T>& quat)
 {
     quaternion<T> rotatrion = quat.rotation();
     quaternion<T> translation = quat.translation();
 
-    glm::mat<3,3,T,glm::defaultp> R = convert(rotatrion);
+    matrix<T,3,3> R = convert(rotatrion);
 
-    glm::mat<4,4,T,glm::defaultp> SE3;
+    matrix<T,4,4> SE3;
 
     SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = T(0);
     SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = T(0);
     SE3[2][0] = R[2][0];    SE3[2][1] = R[2][1];    SE3[2][2] = R[2][2];    SE3[2][3] = T(0);
-    SE3[3][0] = translation.vector().x;       SE3[3][1] = translation.vector().y;       SE3[3][2] = translation.vector().z;       SE3[3][3] = T(1);
+    SE3[3][0] = translation.vector()[0];       SE3[3][1] = translation.vector()[1];       SE3[3][2] = translation.vector()[2];       SE3[3][3] = T(1);
 
     return SE3;
 }
 
 template<typename T>
-dualQuaternion<T> convert(const glm::mat<4,4,T,glm::defaultp>& SE3)
+dualQuaternion<T> convert(const matrix<T,4,4>& SE3)
 {
-    glm::mat<3,3,T,glm::defaultp> R;
+    matrix<T,3,3> R;
 
     R[0][0] = SE3[0][0];    R[0][1] = SE3[0][1];    R[0][2] = SE3[0][2];
     R[1][0] = SE3[1][0];    R[1][1] = SE3[1][1];    R[1][2] = SE3[1][2];
@@ -273,18 +272,18 @@ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>&
     quaternion<T> t2 = quat2.translation();
 
     dualQuaternion<T> dQuat(conjugate(r1)*r2,T(0.5)*conjugate(r1)*(t2-t1)*r2);
-    T theta = T(2)*glm::acos(dQuat.p.scalar());
-    glm::vec<3,T,glm::defaultp> l = glm::normalize(dQuat.p.vector());
+    T theta = T(2)*std::acos(dQuat.p.scalar());
+    vector<T,3> l = normalize(dQuat.p.vector());
 
-    glm::vec<3,T,glm::defaultp> tr = glm::vec<3,T,glm::defaultp>(dQuat.translation().vector());
+    vector<T,3> tr = vector<T,3>(dQuat.translation().vector());
     T d = tr.x*l.x + tr.y*l.y + tr.z*l.z;
-    glm::vec<3,T,glm::defaultp> m = T(0.5)*(glm::cross(tr,l)+(tr-d*l)/glm::tan(T(0.5)*theta));
+    vector<T,3> m = T(0.5)*(cross(tr,l)+(tr-d*l)/std::tan(T(0.5)*theta));
 
     theta *= t;
     d     *= t;
 
-    dualQuaternion<T> sigma(    quaternion<T>(          glm::cos(T(0.5)*theta),             glm::sin(T(0.5)*theta)*l                            ),
-                                quaternion<T>(-T(0.5)*d*glm::sin(T(0.5)*theta),    T(0.5)*d*glm::cos(T(0.5)*theta)*l + glm::sin(T(0.5)*theta)*m));
+    dualQuaternion<T> sigma(    quaternion<T>(          std::cos(T(0.5)*theta),             std::sin(T(0.5)*theta)*l                            ),
+                                quaternion<T>(-T(0.5)*d*std::sin(T(0.5)*theta),    T(0.5)*d*std::cos(T(0.5)*theta)*l + std::sin(T(0.5)*theta)*m));
 
     return quat1*sigma;
 }

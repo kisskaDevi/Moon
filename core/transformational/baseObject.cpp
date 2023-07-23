@@ -43,10 +43,17 @@ uint8_t baseObject::getPipelineBitMask() const
 void baseObject::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
-    glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
+    matrix<float,4,4> transformMatrix = convert(dQuat);
     glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
 
-    modelMatrix = globalTransformation * transformMatrix * scaleMatrix;
+    glm::mat<4,4,float,glm::defaultp> glmTransformMatrix;
+    for(uint32_t i=0;i<4;i++){
+        for(uint32_t j=0;j<4;j++){
+            glmTransformMatrix[i][j] = transformMatrix[i][j];
+        }
+    }
+
+    modelMatrix = globalTransformation * glmTransformMatrix * scaleMatrix;
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
@@ -59,20 +66,20 @@ void baseObject::setGlobalTransform(const glm::mat4x4 & transform)
 
 void baseObject::translate(const glm::vec3 & translate)
 {
-    translation += quaternion<float>(0.0f,translate);
+    translation += quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
 }
 
 void baseObject::setPosition(const glm::vec3& translate)
 {
-    translation = quaternion<float>(0.0f,translate);
+    translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
 }
 
 void baseObject::rotate(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotation = convert(ang,ax)*rotation;
+    rotation = convert(ang,vector<float,3>(ax[0],ax[1],ax[2]))*rotation;
     updateModelMatrix();
 }
 

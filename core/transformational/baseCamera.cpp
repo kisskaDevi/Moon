@@ -46,9 +46,16 @@ void baseCamera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
 void baseCamera::updateViewMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
-    glm::mat<4,4,float,glm::defaultp> transformMatrix = convert(dQuat);
+    matrix<float,4,4> transformMatrix = convert(dQuat);
 
-    viewMatrix = glm::inverse(globalTransformation * transformMatrix);
+    glm::mat<4,4,float,glm::defaultp> glmTransformMatrix;
+    for(uint32_t i=0;i<4;i++){
+        for(uint32_t j=0;j<4;j++){
+            glmTransformMatrix[i][j] = transformMatrix[i][j];
+        }
+    }
+
+    viewMatrix = glm::inverse(globalTransformation * glmTransformMatrix);
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
@@ -68,14 +75,14 @@ void baseCamera::setGlobalTransform(const glm::mat4 & transform)
 
 void baseCamera::translate(const glm::vec3 & translate)
 {
-    translation += quaternion<float>(0.0f,translate);
+    translation += quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateViewMatrix();
 }
 
 void baseCamera::rotate(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotation = convert(ang,ax)*rotation;
+    rotation = convert(ang,vector<float,3>(ax[0],ax[1],ax[2]))*rotation;
     updateViewMatrix();
 }
 
@@ -90,7 +97,7 @@ void baseCamera::rotate(const quaternion<float>& quat)
 void baseCamera::rotateX(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotationX = convert(ang,ax) * rotationX;
+    rotationX = convert(ang,vector<float,3>(ax[0],ax[1],ax[2])) * rotationX;
     rotation = rotationX * rotationY;
     updateViewMatrix();
 }
@@ -98,21 +105,21 @@ void baseCamera::rotateX(const float & ang ,const glm::vec3 & ax)
 void baseCamera::rotateY(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotationY = convert(ang,ax) * rotationY;
+    rotationY = convert(ang,vector<float,3>(ax[0],ax[1],ax[2])) * rotationY;
     rotation = rotationX * rotationY;
     updateViewMatrix();
 }
 
 void baseCamera::setPosition(const glm::vec3 & translate)
 {
-    translation = quaternion<float>(0.0f,translate);
+    translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateViewMatrix();
 }
 
 void baseCamera::setRotation(const float & ang ,const glm::vec3 & ax)
 {
     glm::normalize(ax);
-    rotation = convert(ang,ax);
+    rotation = convert(ang,vector<float,3>(ax[0],ax[1],ax[2]));
     updateViewMatrix();
 }
 
@@ -138,7 +145,7 @@ glm::mat4x4 baseCamera::getViewMatrix() const
     return viewMatrix;
 }
 
-glm::vec3           baseCamera::getTranslation() const  {   return translation.vector();}
+glm::vec3           baseCamera::getTranslation() const  {   return glm::vec3(translation.vector()[0],translation.vector()[1],translation.vector()[2]);}
 quaternion<float>   baseCamera::getRotationX()const     {   return rotationX;}
 quaternion<float>   baseCamera::getRotationY()const     {   return rotationY;}
 
@@ -173,7 +180,7 @@ void baseCamera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t fra
         UniformBufferObject baseUBO{};
             baseUBO.view = viewMatrix;
             baseUBO.proj = projMatrix;
-            baseUBO.eyePosition = glm::vec4(translation.vector(), 1.0);
+            baseUBO.eyePosition = glm::vec4(glm::vec3(translation.vector()[0],translation.vector()[1],translation.vector()[2]), 1.0);
         std::memcpy(uniformBuffersHost[frameNumber].map, &baseUBO, sizeof(baseUBO));
 
         uniformBuffersHost[frameNumber].updateFlag = false;

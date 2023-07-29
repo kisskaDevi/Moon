@@ -283,40 +283,35 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, textu
 
 isotropicLight::isotropicLight(std::vector<spotLight *>& lightSource)
 {
-    uint32_t number = static_cast<uint32_t>(lightSource.size());
-    uint32_t index = number;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    lightSource[index]->setLightColor(vector<float,4>(1.0f,0.0f,0.0f,1.0f));
+    lightSource.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource.back()->setLightColor(vector<float,4>(1.0f,0.0f,0.0f,1.0f));
+    this->lightSource.push_back(lightSource.back());
 
-    index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(radians(-90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    lightSource[index]->setLightColor(vector<float,4>(0.0f,1.0f,0.0f,1.0f));
+    lightSource.back()->rotate(radians(-90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource.back()->setLightColor(vector<float,4>(0.0f,1.0f,0.0f,1.0f));
+    this->lightSource.push_back(lightSource.back());
 
-    index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->setLightColor(vector<float,4>(0.0f,0.0f,1.0f,1.0f));
+    lightSource.back()->rotate(radians(0.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource.back()->setLightColor(vector<float,4>(0.0f,0.0f,1.0f,1.0f));
+    this->lightSource.push_back(lightSource.back());
 
-    index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(radians(90.0f),vector<float,3>(0.0f,1.0f,0.0f));
-    lightSource[index]->setLightColor(vector<float,4>(0.3f,0.6f,0.9f,1.0f));
+    lightSource.back()->rotate(radians(90.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource.back()->setLightColor(vector<float,4>(0.3f,0.6f,0.9f,1.0f));
+    this->lightSource.push_back(lightSource.back());
 
-    index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(radians(-90.0f),vector<float,3>(0.0f,1.0f,0.0f));
-    lightSource[index]->setLightColor(vector<float,4>(0.6f,0.9f,0.3f,1.0f));
+    lightSource.back()->rotate(radians(-90.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource.back()->setLightColor(vector<float,4>(0.6f,0.9f,0.3f,1.0f));
+    this->lightSource.push_back(lightSource.back());
 
-    index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(radians(180.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    lightSource[index]->setLightColor(vector<float,4>(0.9f,0.3f,0.6f,1.0f));
-
-    this->lightSource.resize(6);
-    for(uint32_t i=0;i<6;i++){
-        this->lightSource[i] = lightSource[number + i];
-    }
+    lightSource.back()->rotate(radians(180.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource.back()->setLightColor(vector<float,4>(0.9f,0.3f,0.6f,1.0f));
+    this->lightSource.push_back(lightSource.back());
 }
 
 isotropicLight::~isotropicLight(){}
@@ -327,15 +322,15 @@ vector<float,3>       isotropicLight::getTranslate() const {return vector<float,
 void isotropicLight::setProjectionMatrix(const matrix<float,4,4> & projection)
 {
     projectionMatrix = projection;
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setProjectionMatrix(projectionMatrix);
+    for(auto& source: lightSource)
+        source->setProjectionMatrix(projectionMatrix);
 }
 
 void isotropicLight::setLightColor(const vector<float,4> &color)
 {
     this->lightColor = color;
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setLightColor(color);
+    for(auto& source: lightSource)
+        source->setLightColor(color);
 }
 
 void isotropicLight::updateModelMatrix()
@@ -344,42 +339,33 @@ void isotropicLight::updateModelMatrix()
     matrix<float,4,4> transformMatrix = convert(dQuat);
 
     modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
+
+    for(auto& source: lightSource)
+        source->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
-
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::translate(const vector<float,3> & translate)
 {
     translation += quaternion<float>(0.0f, vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
-
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::rotate(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
-
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
-
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::rotateX(const float & ang ,const vector<float,3> & ax)
@@ -387,9 +373,6 @@ void isotropicLight::rotateX(const float & ang ,const vector<float,3> & ax)
     rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
     updateModelMatrix();
-
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::rotateY(const float & ang ,const vector<float,3> & ax)
@@ -397,18 +380,12 @@ void isotropicLight::rotateY(const float & ang ,const vector<float,3> & ax)
     rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
     updateModelMatrix();
-
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 void isotropicLight::setPosition(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
-
-    for(uint32_t i=0;i<6;i++)
-        lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
 

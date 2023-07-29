@@ -3,10 +3,6 @@
 #endif
 #define STB_IMAGE_IMPLEMENTATION
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
-#include "dualQuaternion.h"
 #include "graphicsManager.h"
 #include "deferredGraphics.h"
 #include "baseCamera.h"
@@ -14,7 +10,6 @@
 
 #include "stb_image.h"
 #include <glfw3.h>
-#include <glm.hpp>
 #include <chrono>
 #include <stdexcept>
 #include <cstdlib>
@@ -52,7 +47,7 @@ int main()
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
     baseCamera cameraObject(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-    cameraObject.translate(glm::vec3(0.0f,0.0f,15.0f));
+    cameraObject.translate(vector<float,3>(0.0f,0.0f,15.0f));
 
     for(auto& graph: graphics){
         app.setGraphics(graph);

@@ -9,7 +9,7 @@ else()
 endif()
 
 set(INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS} ${GLFW_DIR}/include/GLFW
-${STB_DIR} ${GLTF_DIR} ${GLM_DIR}/glm ${PLY_DIR}/source)
+${STB_DIR} ${GLTF_DIR} ${PLY_DIR}/source)
 
 include_directories(${INCLUDE_DIRS})
 

@@ -60,7 +60,7 @@ intersectionOutput findConeIntersection(const in vec4 viewPosition, const in vec
     intersectionOutput outputStatus;
 
     float far = lightProjMatrix[3][2]/(1.0f+lightProjMatrix[2][2]);
-    float height = far/lightProjMatrix[1][1];
+    float height = -far/lightProjMatrix[1][1];
     float width = far/lightProjMatrix[0][0];
 
     float xAxis = width/far;
@@ -157,8 +157,8 @@ intersectionOutput findPyramidIntersection(const in vec4 viewPosition, const in 
     vec3 u =   normalize(vec3(lightViewMatrix[0][0],lightViewMatrix[1][0],lightViewMatrix[2][0]));
     vec3 v =   normalize(vec3(lightViewMatrix[0][1],lightViewMatrix[1][1],lightViewMatrix[2][1]));
 
-    float far  = -lightProjMatrix[3][2]/(-lightProjMatrix[2][2]-1.0f);
-    float h = far/lightProjMatrix[1][1];
+    float far  = lightProjMatrix[3][2]/(lightProjMatrix[2][2]+1.0f);
+    float h = -far/lightProjMatrix[1][1];
     float w = lightProjMatrix[1][1]/lightProjMatrix[0][0]*h;
 
     vec3 v0 = lightPosition.xyz;

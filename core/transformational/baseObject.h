@@ -2,21 +2,22 @@
 #define BASEOBJECT_H
 
 #include <vulkan.h>
+#include <filesystem>
+
 #include "transformational.h"
 #include "quaternion.h"
 #include "texture.h"
 #include "buffer.h"
 #include "object.h"
-
-#include <filesystem>
+#include "matrix.h"
 
 struct UniformBuffer
 {
-    alignas(16) glm::mat4x4 modelMatrix;
-    alignas(16) glm::vec4   constantColor;
-    alignas(16) glm::vec4   colorFactor;
-    alignas(16) glm::vec4   bloomColor;
-    alignas(16) glm::vec4   bloomFactor;
+    alignas(16) matrix<float,4,4> modelMatrix;
+    alignas(16) vector<float,4>   constantColor;
+    alignas(16) vector<float,4>   colorFactor;
+    alignas(16) vector<float,4>   bloomColor;
+    alignas(16) vector<float,4>   bloomFactor;
 };
 
 class model;
@@ -31,14 +32,14 @@ private:
 
     quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>               rotation{1.0f,0.0f,0.0f,0.0f};
-    glm::vec3                       scaling{1.0f,1.0f,1.0f};
-    glm::mat4x4                     globalTransformation{1.0f};
-    glm::mat4x4                     modelMatrix{1.0f};
+    vector<float,3>                 scaling{1.0f,1.0f,1.0f};
+    matrix<float,4,4>               globalTransformation{1.0f};
+    matrix<float,4,4>               modelMatrix{1.0f};
 
-    glm::vec4                       colorFactor{1.0f};
-    glm::vec4                       constantColor{0.0f};
-    glm::vec4                       bloomFactor{1.0f};
-    glm::vec4                       bloomColor{0.0f};
+    vector<float,4>                 colorFactor{1.0f};
+    vector<float,4>                 constantColor{0.0f};
+    vector<float,4>                 bloomFactor{1.0f};
+    vector<float,4>                 bloomColor{0.0f};
 
     uint32_t                        firstPrimitive;
     uint32_t                        primitiveCount{0};
@@ -80,24 +81,24 @@ public:
     void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
     void updateAnimation(uint32_t imageNumber);
 
-    void                setGlobalTransform(const glm::mat4& transform) override;
-    void                translate(const glm::vec3& translate) override;
-    void                rotate(const float& ang, const glm::vec3& ax) override;
+    void                setGlobalTransform(const matrix<float,4,4>& transform) override;
+    void                translate(const vector<float,3>& translate) override;
+    void                rotate(const float& ang, const vector<float,3>& ax) override;
     void                rotate(const quaternion<float>& quat);
-    void                scale(const glm::vec3& scale) override;
-    void                setPosition(const glm::vec3& translate);
+    void                scale(const vector<float,3>& scale) override;
+    void                setPosition(const vector<float,3>& translate);
 
     void                setModel(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    void                setConstantColor(const glm::vec4 & color);
-    void                setColorFactor(const glm::vec4 & color);
-    void                setBloomColor(const glm::vec4 & color);
-    void                setBloomFactor(const glm::vec4 & color);
+    void                setConstantColor(const vector<float,4> & color);
+    void                setColorFactor(const vector<float,4> & color);
+    void                setBloomColor(const vector<float,4> & color);
+    void                setBloomFactor(const vector<float,4> & color);
 
-    glm::mat4x4         getModelMatrix() const;
+    matrix<float,4,4>   getModelMatrix() const;
     model*              getModel() override;
     uint32_t            getInstanceNumber(uint32_t imageNumber) const override;
-    glm::vec4           getConstantColor() const;
-    glm::vec4           getColorFactor() const;
+    vector<float,4>     getConstantColor() const;
+    vector<float,4>     getColorFactor() const;
 
     void                setEnable(const bool& enable);
     void                setEnableShadow(const bool& enable);
@@ -141,7 +142,7 @@ public:
     skyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
     ~skyboxObject();
 
-    void translate(const glm::vec3& translate) override;
+    void translate(const vector<float,3>& translate) override;
 
     uint8_t getPipelineBitMask() const override;
     cubeTexture* getTexture() override;

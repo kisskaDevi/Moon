@@ -11,22 +11,13 @@ void group::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
-    glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
 
-    glm::mat<4,4,float,glm::defaultp> glmTransformMatrix;
-    for(uint32_t i=0;i<4;i++){
-        for(uint32_t j=0;j<4;j++){
-            glmTransformMatrix[i][j] = transformMatrix[i][j];
-        }
-    }
-
-    modelMatrix = globalTransformation * glmTransformMatrix * scaleMatrix;
+    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
 }
 
-void group::rotate(const float & ang ,const glm::vec3 & ax)
+void group::rotate(const float & ang ,const vector<float,3> & ax)
 {
-    glm::normalize(ax);
-    rotation = convert(ang, vector<float,3>(ax[0],ax[1],ax[2]))*rotation;
+    rotation = convert(ang, vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
 
     for(auto& object: objects){
@@ -34,9 +25,9 @@ void group::rotate(const float & ang ,const glm::vec3 & ax)
     }
 }
 
-void group::translate(const glm::vec3 & translate)
+void group::translate(const vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
+    translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
 
     for(auto& object: objects){
@@ -44,7 +35,7 @@ void group::translate(const glm::vec3 & translate)
     }
 }
 
-void group::scale(const glm::vec3 & scale)
+void group::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
@@ -54,7 +45,7 @@ void group::scale(const glm::vec3 & scale)
     }
 }
 
-void group::setGlobalTransform(const glm::mat4 & transform)
+void group::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();

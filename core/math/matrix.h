@@ -1,6 +1,8 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include <math.h>
 
@@ -412,7 +414,7 @@ matrix<type,n,n> inverse(const matrix<type,n,n>& m) {
 }
 
 template<typename type>
-matrix<type,4,4> translate(vector<type,3> tr){
+matrix<type,4,4> translate(vector<type,3> tr) {
     matrix<float,4,4> m{1.0f};
     m[0][3] += tr[0];
     m[1][3] += tr[1];
@@ -421,12 +423,31 @@ matrix<type,4,4> translate(vector<type,3> tr){
 }
 
 template<typename type>
-matrix<type,4,4> scale(vector<type,3> sc){
+matrix<type,4,4> scale(vector<type,3> sc) {
     matrix<float,4,4> m{1.0f};
     m[0][0] *= sc[0];
     m[1][1] *= sc[1];
     m[2][2] *= sc[2];
     return m;
+}
+
+template<typename type>
+matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n, const type& f) {
+    const type a = type(1) / std::tan(fovy / type(2));
+
+    matrix<type,4,4> m(0.0f);
+    m[0][0] = a / aspect;
+    m[1][1] = - a;
+    m[2][2] = - (f + n) / (f - n);
+    m[2][3] = type(2) * f * n / (n - f);
+    m[3][2] = - type(1);
+
+    return m;
+}
+
+template<typename type>
+type radians(const type& angle) {
+    return type(M_PI) * angle / type(180);
 }
 
 #endif // MATRIX_H

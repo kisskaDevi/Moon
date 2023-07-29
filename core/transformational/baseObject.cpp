@@ -44,42 +44,33 @@ void baseObject::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
-    glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
 
-    glm::mat<4,4,float,glm::defaultp> glmTransformMatrix;
-    for(uint32_t i=0;i<4;i++){
-        for(uint32_t j=0;j<4;j++){
-            glmTransformMatrix[i][j] = transformMatrix[i][j];
-        }
-    }
-
-    modelMatrix = globalTransformation * glmTransformMatrix * scaleMatrix;
+    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void baseObject::setGlobalTransform(const glm::mat4x4 & transform)
+void baseObject::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
 }
 
-void baseObject::translate(const glm::vec3 & translate)
+void baseObject::translate(const vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
+    translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
 }
 
-void baseObject::setPosition(const glm::vec3& translate)
+void baseObject::setPosition(const vector<float,3>& translate)
 {
-    translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
+    translation = quaternion<float>(0.0f,translate);
     updateModelMatrix();
 }
 
-void baseObject::rotate(const float & ang ,const glm::vec3 & ax)
+void baseObject::rotate(const float & ang ,const vector<float,3> & ax)
 {
-    glm::normalize(ax);
-    rotation = convert(ang,vector<float,3>(ax[0],ax[1],ax[2]))*rotation;
+    rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
 }
 
@@ -89,7 +80,7 @@ void baseObject::rotate(const quaternion<float>& quat)
     updateModelMatrix();
 }
 
-void baseObject::scale(const glm::vec3 & scale)
+void baseObject::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
@@ -141,7 +132,7 @@ void baseObject::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t fra
 {
     if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBuffer ubo{};
-            ubo.modelMatrix = modelMatrix;
+            ubo.modelMatrix = transpose(modelMatrix);
             ubo.constantColor = constantColor;
             ubo.colorFactor = colorFactor;
             ubo.bloomColor = bloomColor;
@@ -213,19 +204,19 @@ void baseObject::setModel(model* model, uint32_t firstInstance, uint32_t instanc
     this->instanceCount = instanceCount;
 }
 
-void baseObject::setConstantColor(const glm::vec4 &color){
+void baseObject::setConstantColor(const vector<float,4> &color){
     this->constantColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void baseObject::setColorFactor(const glm::vec4 & color){
+void baseObject::setColorFactor(const vector<float,4> & color){
     this->colorFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void baseObject::setBloomColor(const glm::vec4 & color){
+void baseObject::setBloomColor(const vector<float,4> & color){
     this->bloomColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void baseObject::setBloomFactor(const glm::vec4 &color){
+void baseObject::setBloomFactor(const vector<float,4> &color){
     this->bloomFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
@@ -240,10 +231,10 @@ uint32_t baseObject::getInstanceNumber(uint32_t imageNumber) const {
     return firstInstance + (instanceCount > imageNumber ? imageNumber : 0);
 }
 
-glm::vec4                       baseObject::getConstantColor() const                        {return constantColor;}
-glm::vec4                       baseObject::getColorFactor()   const                        {return colorFactor;}
+vector<float,4>                 baseObject::getConstantColor() const                        {return constantColor;}
+vector<float,4>                 baseObject::getColorFactor()   const                        {return colorFactor;}
 
-glm::mat4x4                     baseObject::getModelMatrix()   const                        {return modelMatrix;}
+matrix<float,4,4>               baseObject::getModelMatrix()   const                        {return modelMatrix;}
 
 VkDescriptorPool                &baseObject::getDescriptorPool()                            {return descriptorPool;}
 std::vector<VkDescriptorSet>    &baseObject::getDescriptorSet()                             {return descriptors;}
@@ -271,9 +262,7 @@ skyboxObject::~skyboxObject(){
     delete texture;
 }
 
-void skyboxObject::translate(const glm::vec3 &translate) {
-    static_cast<void>(translate);
-}
+void skyboxObject::translate(const vector<float,3> &) {}
 
 uint8_t skyboxObject::getPipelineBitMask() const {
     return (0<<4)|(0x1);

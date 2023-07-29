@@ -12,7 +12,6 @@ def clone( baseDir, name, url, commit ):
 if __name__ == '__main__':
     externalsDir = dirname(__file__)
 
-    clone(externalsDir, 'glm', 'https://github.com/g-truc/glm.git', '5c46b9c07008ae65cb81ab79cd677ecc1934b903')
     clone(externalsDir, 'stb', 'https://github.com/nothings/stb.git', 'af1a5bc352164740c1cc1354942b1c6b72eacb8a')
     clone(externalsDir, 'tinygltf', 'https://github.com/syoyo/tinygltf.git', 'aaf631c984c6e725573840c193ca2ff0ea216e7b')
     clone(externalsDir, 'tinyply', 'https://github.com/ddiakopoulos/tinyply.git', 'e5d969413b8612de31bf96604c95bf294d406230')

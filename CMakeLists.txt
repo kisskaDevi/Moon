@@ -17,7 +17,6 @@ set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/glfw)
 set(STB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/stb)
 set(GLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinygltf)
 set(PLY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinyply)
-set(GLM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/glm)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(GLFW_LIB

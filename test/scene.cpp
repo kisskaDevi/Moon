@@ -59,14 +59,14 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObjec
     cameras = cameraObject;
 
     skyboxObject1 = new skyboxObject(SKYBOX);
-    skyboxObject1->scale(glm::vec3(200.0f,200.0f,200.0f));
-    skyboxObject1->setColorFactor(glm::vec4(0.5));
+    skyboxObject1->scale(vector<float,3>(200.0f,200.0f,200.0f));
+    skyboxObject1->setColorFactor(vector<float,4>(0.5));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(skyboxObject1, i == 0);
     }
 
     skyboxObject2 = new skyboxObject(SKYBOX1);
-    skyboxObject2->scale(glm::vec3(200.0f,200.0f,200.0f));
+    skyboxObject2->scale(vector<float,3>(200.0f,200.0f,200.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(skyboxObject2, i == 0);
     }
@@ -75,12 +75,12 @@ void scene::createScene(uint32_t WIDTH, uint32_t HEIGHT, baseCamera* cameraObjec
     createLight();
     createObjects();
 
-    groups.at(0)->translate(glm::vec3(0.0f,0.0f,5.0f));
-    groups.at(1)->translate(glm::vec3(0.0f,0.0f,3.0f));
-    groups.at(2)->translate(glm::vec3(5.0f,0.0f,5.0f));
-    groups.at(3)->translate(glm::vec3(-5.0f,0.0f,5.0f));
-    groups.at(4)->translate(glm::vec3(10.0f,0.0f,5.0f));
-    groups.at(5)->translate(glm::vec3(-10.0f,0.0f,5.0f));
+    groups.at(0)->translate(vector<float,3>(0.0f,0.0f,5.0f));
+    groups.at(1)->translate(vector<float,3>(0.0f,0.0f,3.0f));
+    groups.at(2)->translate(vector<float,3>(5.0f,0.0f,5.0f));
+    groups.at(3)->translate(vector<float,3>(-5.0f,0.0f,5.0f));
+    groups.at(4)->translate(vector<float,3>(10.0f,0.0f,5.0f));
+    groups.at(5)->translate(vector<float,3>(-10.0f,0.0f,5.0f));
 }
 
 void scene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
@@ -167,24 +167,21 @@ void scene::createLight()
     std::filesystem::path LIGHT_TEXTURE2  = ExternalPath / "dependences/texture/light2.jpg";
     std::filesystem::path LIGHT_TEXTURE3  = ExternalPath / "dependences/texture/light3.jpg";
 
-    glm::mat4x4 Proj = glm::perspective(glm::radians(91.0f), 1.0f, 0.1f, 100.0f);
-    Proj[1][1] *= -1;
+    matrix<float,4,4> Proj = perspective(radians(91.0f), 1.0f, 0.1f, 100.0f);
 
     int index = 0;
     lightPoints.push_back(new isotropicLight(lightSources));
     lightPoints.at(index)->setProjectionMatrix(Proj);
-    lightPoints.at(index)->setLightColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    lightPoints.at(index)->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
     groups.at(0)->addObject(lightPoints.at(index));
 
     for(int i=index;i<6;i++,index++){
         for(size_t i = 0; i < graphics.size(); i++){
             graphics[i]->bindLightSource(lightSources.at(index), i == 0);
         }
-        //lightSource.at(index)->setScattering(true);
     }
 
-    Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
-    Proj[1][1] *= -1;
+    Proj = perspective(radians(spotAngle), 1.0f, 0.1f, 20.0f);
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE0));
     lightSources.at(index)->setProjectionMatrix(Proj);
@@ -225,7 +222,7 @@ void scene::createLight()
     for(int i=0;i<5;i++){
         lightSources.push_back(new spotLight(LIGHT_TEXTURE0));
         lightSources.at(index)->setProjectionMatrix(Proj);
-        lightSources.at(index)->translate(glm::vec3(20.0f-10.0f*i,10.0f,3.0f));
+        lightSources.at(index)->translate(vector<float,3>(20.0f-10.0f*i,10.0f,3.0f));
         lightSources.at(index)->setScattering(false);
         index++;
     }
@@ -233,7 +230,7 @@ void scene::createLight()
     for(int i=0;i<5;i++){
         lightSources.push_back(new spotLight(LIGHT_TEXTURE0));
         lightSources.at(index)->setProjectionMatrix(Proj);
-        lightSources.at(index)->translate(glm::vec3(20.0f-10.0f*i,-10.0f,3.0f));
+        lightSources.at(index)->translate(vector<float,3>(20.0f-10.0f*i,-10.0f,3.0f));
         lightSources.at(index)->setScattering(false);
         index++;
     }
@@ -244,10 +241,10 @@ void scene::createObjects()
     object3D.push_back( new baseObject(models.at(0), 0, 3));
     object3D.back()->setOutliningColor(vector<float,4>(0.0f,0.5f,0.8f,1.0f));
     object3D.back()->setOutliningWidth(0.05f);
-    object3D.back()->setBloomColor(glm::vec4(1.0,1.0,1.0,1.0));
-    object3D.back()->translate(glm::vec3(3.0f,0.0f,0.0f));
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.back()->scale(glm::vec3(0.2f,0.2f,0.2f));
+    object3D.back()->setBloomColor(vector<float,4>(1.0,1.0,1.0,1.0));
+    object3D.back()->translate(vector<float,3>(3.0f,0.0f,0.0f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    object3D.back()->scale(vector<float,3>(0.2f,0.2f,0.2f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
@@ -255,10 +252,10 @@ void scene::createObjects()
     object3D.push_back(new baseObject(models.at(0), 3, 3));
     object3D.back()->setOutliningColor(vector<float,4>(1.0f,0.5f,0.8f,1.0f));
     object3D.back()->setOutliningWidth(0.05f);
-    object3D.back()->setConstantColor(glm::vec4(0.0,0.0,0.0,-0.7));
-    object3D.back()->translate(glm::vec3(-3.0f,0.0f,0.0f));
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.back()->scale(glm::vec3(0.2f,0.2f,0.2f));
+    object3D.back()->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.7f));
+    object3D.back()->translate(vector<float,3>(-3.0f,0.0f,0.0f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    object3D.back()->scale(vector<float,3>(0.2f,0.2f,0.2f));
     object3D.back()->animationTimer = 1.0f;
     object3D.back()->animationIndex = 1;
     for(size_t i = 0; i < graphics.size(); i++){
@@ -268,9 +265,9 @@ void scene::createObjects()
     object3D.push_back(new baseObject(models.at(3)));
     object3D.back()->setOutliningColor(vector<float,4>(0.7f,0.5f,0.2f,1.0f));
     object3D.back()->setOutliningWidth(0.025f);
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.back()->scale(glm::vec3(3.0f));
-    object3D.back()->setConstantColor(glm::vec4(0.0f,0.0f,0.0f,-0.8f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    object3D.back()->scale(vector<float,3>(3.0f));
+    object3D.back()->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
     object3D.back()->animationTimer = 0.0f;
     object3D.back()->animationIndex = 0;
     for(size_t i = 0; i < graphics.size(); i++){
@@ -279,59 +276,59 @@ void scene::createObjects()
     groups.at(1)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(models.at(2)));
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    object3D.back()->scale(glm::vec3(3.0f,3.0f,3.0f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    object3D.back()->scale(vector<float,3>(3.0f,3.0f,3.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
 
     object3D.push_back(new baseObject(models.at(1)));
-    object3D.back()->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,0.0f));
-    object3D.back()->setBloomColor(glm::vec4(1.0f,1.0f,1.0f,1.0f));
+    object3D.back()->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,0.0f));
+    object3D.back()->setBloomColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
     groups.at(0)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(glm::vec4(0.0f,0.0f,1.0f,-0.8f));
-    object3D.back()->setBloomFactor(glm::vec4(1.0f,0.0f,0.0f,0.0f));
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->setConstantColor(vector<float,4>(0.0f,0.0f,1.0f,-0.8f));
+    object3D.back()->setBloomFactor(vector<float,4>(1.0f,0.0f,0.0f,0.0f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
     groups.at(2)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(glm::vec4(1.0f,0.0f,0.0f,-0.8f));
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->setConstantColor(vector<float,4>(1.0f,0.0f,0.0f,-0.8f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
     groups.at(3)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(glm::vec4(1.0f,1.0f,0.0f,-0.8f));
-    object3D.back()->setBloomFactor(glm::vec4(0.0f,0.0f,1.0f,0.0f));
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->setConstantColor(vector<float,4>(1.0f,1.0f,0.0f,-0.8f));
+    object3D.back()->setBloomFactor(vector<float,4>(0.0f,0.0f,1.0f,0.0f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
     groups.at(4)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(glm::vec4(0.0f,1.0f,1.0f,-0.8f));
-    object3D.back()->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+    object3D.back()->setConstantColor(vector<float,4>(0.0f,1.0f,1.0f,-0.8f));
+    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
     groups.at(5)->addObject(object3D.back());
 
     object3D.push_back(new baseObject(models.at(6)));
-    object3D.back()->scale(glm::vec3(0.002f));
-    object3D.back()->translate(glm::vec3(0.0f,0.0f,15.0f));
-    object3D.back()->setConstantColor(glm::vec4(0.2f,0.8f,1.0f,1.0f));
-    object3D.back()->setColorFactor(glm::vec4(0.0f,0.0f,0.0f,1.0f));
+    object3D.back()->scale(vector<float,3>(0.002f));
+    object3D.back()->translate(vector<float,3>(0.0f,0.0f,15.0f));
+    object3D.back()->setConstantColor(vector<float,4>(0.2f,0.8f,1.0f,1.0f));
+    object3D.back()->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,1.0f));
     for(size_t i = 0; i < graphics.size(); i++){
         graphics[i]->bindObject(object3D.back(), i == 0);
     }
@@ -360,8 +357,8 @@ void scene::mouseEvent(float frameTime)
         angy = sensitivity*(y - yMpos);
         xMpos = x;
         yMpos = y;
-        cameras->rotateX(static_cast<float>(angy), glm::vec3(1.0f,0.0f,0.0f));
-        cameras->rotateY(static_cast<float>(angx), glm::vec3(0.0f,0.0f,1.0f));
+        cameras->rotateX(static_cast<float>(-angy), vector<float,3>(1.0f,0.0f,0.0f));
+        cameras->rotateY(static_cast<float>(angx), vector<float,3>(0.0f,0.0f,1.0f));
 
         for(uint32_t i=0; i < app->getImageCount(); i++){
             graphics[0]->updateStorageBuffer(i, 2.0f * static_cast<float>(xMpos)/WIDTH - 1.0f , 2.0f * static_cast<float>(yMpos)/HEIGHT - 1.0f);
@@ -386,8 +383,8 @@ void scene::mouseEvent(float frameTime)
     if(updateLightCone){
         for(uint32_t index=6;index<lightSources.size();index++){
             if(spotAngle>0.0f){
-                glm::mat4x4 Proj;
-                    Proj = glm::perspective(glm::radians(spotAngle), 1.0f, 0.1f, 20.0f);
+                matrix<float,4,4> Proj;
+                    Proj = perspective(radians(spotAngle), 1.0f, 0.1f, 20.0f);
                     Proj[1][1] *= -1;
                 lightSources.at(index)->setProjectionMatrix(Proj);
             }
@@ -408,93 +405,93 @@ void scene::keyboardEvent(float frameTime)
     float sensitivity = 5.0f*frameTime;
     if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
     {
-        float x = -sensitivity*cameras->getViewMatrix()[0][2];
-        float y = -sensitivity*cameras->getViewMatrix()[1][2];
+        float x = -sensitivity*cameras->getViewMatrix()[2][0];
+        float y = -sensitivity*cameras->getViewMatrix()[2][1];
         float z = -sensitivity*cameras->getViewMatrix()[2][2];
-        cameras->translate(glm::vec3(x,y,z));
+        cameras->translate(vector<float,3>(x,y,z));
     }
     if(glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
     {
-        float x = sensitivity*cameras->getViewMatrix()[0][2];
-        float y = sensitivity*cameras->getViewMatrix()[1][2];
+        float x = sensitivity*cameras->getViewMatrix()[2][0];
+        float y = sensitivity*cameras->getViewMatrix()[2][1];
         float z = sensitivity*cameras->getViewMatrix()[2][2];
-        cameras->translate(glm::vec3(x,y,z));
+        cameras->translate(vector<float,3>(x,y,z));
     }
     if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
     {
         float x = -sensitivity*cameras->getViewMatrix()[0][0];
-        float y = -sensitivity*cameras->getViewMatrix()[1][0];
-        float z = -sensitivity*cameras->getViewMatrix()[2][0];
-        cameras->translate(glm::vec3(x,y,z));
+        float y = -sensitivity*cameras->getViewMatrix()[0][1];
+        float z = -sensitivity*cameras->getViewMatrix()[0][2];
+        cameras->translate(vector<float,3>(x,y,z));
     }
     if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
     {
         float x = sensitivity*cameras->getViewMatrix()[0][0];
-        float y = sensitivity*cameras->getViewMatrix()[1][0];
-        float z = sensitivity*cameras->getViewMatrix()[2][0];
-        cameras->translate(glm::vec3(x,y,z));
+        float y = sensitivity*cameras->getViewMatrix()[0][1];
+        float z = sensitivity*cameras->getViewMatrix()[0][2];
+        cameras->translate(vector<float,3>(x,y,z));
     }
     if(glfwGetKey(window,GLFW_KEY_Z) == GLFW_PRESS)
     {
-        float x = sensitivity*cameras->getViewMatrix()[0][1];
+        float x = sensitivity*cameras->getViewMatrix()[1][0];
         float y = sensitivity*cameras->getViewMatrix()[1][1];
-        float z = sensitivity*cameras->getViewMatrix()[2][1];
-        cameras->translate(glm::vec3(x,y,z));
+        float z = sensitivity*cameras->getViewMatrix()[1][2];
+        cameras->translate(vector<float,3>(x,y,z));
     }
     if(glfwGetKey(window,GLFW_KEY_X) == GLFW_PRESS)
     {
-        float x = -sensitivity*cameras->getViewMatrix()[0][1];
+        float x = -sensitivity*cameras->getViewMatrix()[1][0];
         float y = -sensitivity*cameras->getViewMatrix()[1][1];
-        float z = -sensitivity*cameras->getViewMatrix()[2][1];
-        cameras->translate(glm::vec3(x,y,z));
+        float z = -sensitivity*cameras->getViewMatrix()[1][2];
+        cameras->translate(vector<float,3>(x,y,z));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_4) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(0.0f,0.0f,1.0f));
+        groups.at(controledGroup)->rotate(radians(0.5f),vector<float,3>(0.0f,0.0f,1.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_6) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(0.0f,0.0f,1.0f));
+        groups.at(controledGroup)->rotate(radians(-0.5f),vector<float,3>(0.0f,0.0f,1.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_8) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(1.0f,0.0f,0.0f));
+        groups.at(controledGroup)->rotate(radians(0.5f),vector<float,3>(1.0f,0.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_5) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(1.0f,0.0f,0.0f));
+        groups.at(controledGroup)->rotate(radians(-0.5f),vector<float,3>(1.0f,0.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_7) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->rotate(glm::radians(0.5f),glm::vec3(0.0f,1.0f,0.0f));
+        groups.at(controledGroup)->rotate(radians(0.5f),vector<float,3>(0.0f,1.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_9) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->rotate(glm::radians(-0.5f),glm::vec3(0.0f,1.0f,0.0f));
+        groups.at(controledGroup)->rotate(radians(-0.5f),vector<float,3>(0.0f,1.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->translate(sensitivity*glm::vec3(-1.0f,0.0f,0.0f));
+        groups.at(controledGroup)->translate(sensitivity*vector<float,3>(-1.0f,0.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->translate(sensitivity*glm::vec3(1.0f,0.0f,0.0f));
+        groups.at(controledGroup)->translate(sensitivity*vector<float,3>(1.0f,0.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,1.0f,0.0f));
+        groups.at(controledGroup)->translate(sensitivity*vector<float,3>(0.0f,1.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,-1.0f,0.0f));
+        groups.at(controledGroup)->translate(sensitivity*vector<float,3>(0.0f,-1.0f,0.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_ADD) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,0.0f,1.0f));
+        groups.at(controledGroup)->translate(sensitivity*vector<float,3>(0.0f,0.0f,1.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
     {
-        groups.at(controledGroup)->translate(sensitivity*glm::vec3(0.0f,0.0f,-1.0f));
+        groups.at(controledGroup)->translate(sensitivity*vector<float,3>(0.0f,0.0f,-1.0f));
     }
     if(glfwGetKey(window,GLFW_KEY_1) == GLFW_PRESS)
     {
@@ -542,7 +539,7 @@ void scene::keyboardEvent(float frameTime)
         object3D.push_back(new baseObject(models.at(4)));
         graphics[0]->bindObject(object3D.at(index));
         object3D.at(index)->translate(cameras->getTranslation());
-        object3D.at(index)->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+        object3D.at(index)->rotate(radians(-90.0f),vector<float,3>(1.0f,0.0f,0.0f));
     }
     backNStage = glfwGetKey(window,GLFW_KEY_N);
     if(backBStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_B) == 0)
@@ -604,7 +601,7 @@ void scene::updates(float frameTime)
 {
     globalTime += frameTime;
 
-    skyboxObject2->rotate(0.1f*frameTime,glm::normalize(glm::vec3(1.0f,1.0f,1.0f)));
+    skyboxObject2->rotate(0.1f*frameTime,normalize(vector<float,3>(1.0f,1.0f,1.0f)));
 }
 
 void scrol(GLFWwindow *window, double xoffset, double yoffset)

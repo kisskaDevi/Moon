@@ -63,64 +63,53 @@ void spotLight::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
-    glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
 
-    glm::mat<4,4,float,glm::defaultp> glmTransformMatrix;
-    for(uint32_t i=0;i<4;i++){
-        for(uint32_t j=0;j<4;j++){
-            glmTransformMatrix[i][j] = transformMatrix[i][j];
-        }
-    }
-
-    modelMatrix = globalTransformation * glmTransformMatrix * scaleMatrix;
+    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void spotLight::setGlobalTransform(const glm::mat4 & transform)
+void spotLight::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
 }
 
-void spotLight::translate(const glm::vec3 & translate)
+void spotLight::translate(const vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
+    translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
 }
 
-void spotLight::rotate(const float & ang ,const glm::vec3 & ax)
+void spotLight::rotate(const float & ang ,const vector<float,3> & ax)
 {
-    glm::normalize(ax);
-    rotation = convert(ang,vector<float,3>(ax[0],ax[1],ax[2]))*rotation;
+    rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
 }
 
-void spotLight::scale(const glm::vec3 & scale)
+void spotLight::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
 }
 
-void spotLight::setPosition(const glm::vec3& translate)
+void spotLight::setPosition(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
 }
 
-void spotLight::rotateX(const float & ang ,const glm::vec3 & ax)
+void spotLight::rotateX(const float & ang ,const vector<float,3> & ax)
 {
-    glm::normalize(ax);
-    rotationX = convert(ang,vector<float,3>(ax[0],ax[1],ax[2])) * rotationX;
-    rotation = rotationX * rotationY;
+    rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
+    rotation = rotationY * rotationX;
     updateModelMatrix();
 }
 
-void spotLight::rotateY(const float & ang ,const glm::vec3 & ax)
+void spotLight::rotateY(const float & ang ,const vector<float,3> & ax)
 {
-    glm::normalize(ax);
-    rotationY = convert(ang,vector<float,3>(ax[0],ax[1],ax[2])) * rotationY;
-    rotation = rotationX * rotationY;
+    rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
+    rotation = rotationY * rotationX;
     updateModelMatrix();
 }
 
@@ -128,18 +117,18 @@ void                            spotLight::setShadowExtent(const VkExtent2D & sh
 void                            spotLight::setShadow(bool enable)                               {enableShadow = enable;}
 void                            spotLight::setScattering(bool enable)                           {enableScattering = enable;}
 void                            spotLight::setTexture(texture* tex)                             {this->tex = tex;}
-void                            spotLight::setProjectionMatrix(const glm::mat4x4 & projection)  {
+void                            spotLight::setProjectionMatrix(const matrix<float,4,4> & projection)  {
     projectionMatrix = projection;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
-void                            spotLight::setLightColor(const glm::vec4 &color){
+void                            spotLight::setLightColor(const vector<float,4> &color){
     lightColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-glm::mat4x4                     spotLight::getModelMatrix() const {return modelMatrix;}
-glm::vec3                       spotLight::getTranslate() const {return glm::vec3(translation.vector()[0],translation.vector()[1],translation.vector()[2]);}
-glm::vec4                       spotLight::getLightColor() const {return lightColor;}
+matrix<float,4,4>               spotLight::getModelMatrix() const {return modelMatrix;}
+vector<float,3>                 spotLight::getTranslate() const {return vector<float,3>(translation.vector()[0],translation.vector()[1],translation.vector()[2]);}
+vector<float,4>                 spotLight::getLightColor() const {return lightColor;}
 texture*                        spotLight::getTexture(){return tex;}
 
 attachments* spotLight::getAttachments()
@@ -184,12 +173,12 @@ void spotLight::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t fram
 {
     if(uniformBuffersHost[frameNumber].updateFlag){
         LightBufferObject buffer{};
-            buffer.proj = projectionMatrix;
-            buffer.view = glm::inverse(modelMatrix);
-            buffer.projView = projectionMatrix * buffer.view;
-            buffer.position = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
+            buffer.proj = transpose(projectionMatrix);
+            buffer.view = transpose(inverse(modelMatrix));
+            buffer.projView = transpose(projectionMatrix * inverse(modelMatrix));
+            buffer.position = modelMatrix * vector<float,4>(0.0f,0.0f,0.0f,1.0f);
             buffer.lightColor = lightColor;
-            buffer.lightProp = glm::vec4(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
+            buffer.lightProp = vector<float,4>(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
         std::memcpy(uniformBuffersHost[frameNumber].map, &buffer, sizeof(buffer));
 
         uniformBuffersHost[frameNumber].updateFlag = false;
@@ -297,52 +286,52 @@ isotropicLight::isotropicLight(std::vector<spotLight *>& lightSource)
     uint32_t number = static_cast<uint32_t>(lightSource.size());
     uint32_t index = number;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    lightSource[index]->setLightColor(glm::vec4(1.0f,0.0f,0.0f,1.0f));
+    lightSource[index]->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource[index]->setLightColor(vector<float,4>(1.0f,0.0f,0.0f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
-    lightSource[index]->setLightColor(glm::vec4(0.0f,1.0f,0.0f,1.0f));
+    lightSource[index]->rotate(radians(-90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource[index]->setLightColor(vector<float,4>(0.0f,1.0f,0.0f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->setLightColor(glm::vec4(0.0f,0.0f,1.0f,1.0f));
+    lightSource[index]->setLightColor(vector<float,4>(0.0f,0.0f,1.0f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(glm::radians(90.0f),glm::vec3(0.0f,1.0f,0.0f));
-    lightSource[index]->setLightColor(glm::vec4(0.3f,0.6f,0.9f,1.0f));
+    lightSource[index]->rotate(radians(90.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource[index]->setLightColor(vector<float,4>(0.3f,0.6f,0.9f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
-    lightSource[index]->setLightColor(glm::vec4(0.6f,0.9f,0.3f,1.0f));
+    lightSource[index]->rotate(radians(-90.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource[index]->setLightColor(vector<float,4>(0.6f,0.9f,0.3f,1.0f));
 
     index++;
     lightSource.push_back(new spotLight(true,false,spotType::square));
-    lightSource[index]->rotate(glm::radians(180.0f),glm::vec3(1.0f,0.0f,0.0f));
-    lightSource[index]->setLightColor(glm::vec4(0.9f,0.3f,0.6f,1.0f));
+    lightSource[index]->rotate(radians(180.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource[index]->setLightColor(vector<float,4>(0.9f,0.3f,0.6f,1.0f));
 
     this->lightSource.resize(6);
     for(uint32_t i=0;i<6;i++){
-        this->lightSource[i] = lightSource[number+i];
+        this->lightSource[i] = lightSource[number + i];
     }
 }
 
 isotropicLight::~isotropicLight(){}
 
-glm::vec4       isotropicLight::getLightColor() const {return lightColor;}
-glm::vec3       isotropicLight::getTranslate() const {return glm::vec3(translation.vector()[0],translation.vector()[1],translation.vector()[2]);}
+vector<float,4>       isotropicLight::getLightColor() const {return lightColor;}
+vector<float,3>       isotropicLight::getTranslate() const {return vector<float,3>(translation.vector()[0],translation.vector()[1],translation.vector()[2]);}
 
-void isotropicLight::setProjectionMatrix(const glm::mat4x4 & projection)
+void isotropicLight::setProjectionMatrix(const matrix<float,4,4> & projection)
 {
     projectionMatrix = projection;
     for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setProjectionMatrix(projectionMatrix);
 }
 
-void isotropicLight::setLightColor(const glm::vec4 &color)
+void isotropicLight::setLightColor(const vector<float,4> &color)
 {
     this->lightColor = color;
     for(uint32_t i=0;i<6;i++)
@@ -353,19 +342,11 @@ void isotropicLight::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
-    glm::mat<4,4,float,glm::defaultp> scaleMatrix = glm::scale(glm::mat4x4(1.0f),scaling);
 
-    glm::mat<4,4,float,glm::defaultp> glmTransformMatrix;
-    for(uint32_t i=0;i<4;i++){
-        for(uint32_t j=0;j<4;j++){
-            glmTransformMatrix[i][j] = transformMatrix[i][j];
-        }
-    }
-
-    modelMatrix = globalTransformation * glmTransformMatrix * scaleMatrix;
+    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
 }
 
-void isotropicLight::setGlobalTransform(const glm::mat4 & transform)
+void isotropicLight::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
@@ -374,23 +355,25 @@ void isotropicLight::setGlobalTransform(const glm::mat4 & transform)
         lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
-void isotropicLight::translate(const glm::vec3 & translate)
+void isotropicLight::translate(const vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,-1.0f * vector<float,3>(translate[0],translate[1],translate[2]));
-    updateModelMatrix();
-}
-
-void isotropicLight::rotate(const float & ang ,const glm::vec3 & ax)
-{
-    glm::normalize(ax);
-    rotation = convert(ang,vector<float,3>(ax[0],ax[1],ax[2]))*rotation;
+    translation += quaternion<float>(0.0f, vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
 
     for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
-void isotropicLight::scale(const glm::vec3 & scale)
+void isotropicLight::rotate(const float & ang ,const vector<float,3> & ax)
+{
+    rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
+    updateModelMatrix();
+
+    for(uint32_t i=0;i<6;i++)
+        lightSource.at(i)->setGlobalTransform(modelMatrix);
+}
+
+void isotropicLight::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
@@ -399,29 +382,27 @@ void isotropicLight::scale(const glm::vec3 & scale)
         lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
-void isotropicLight::rotateX(const float & ang ,const glm::vec3 & ax)
+void isotropicLight::rotateX(const float & ang ,const vector<float,3> & ax)
 {
-    glm::normalize(ax);
-    rotationX = convert(ang,vector<float,3>(ax[0],ax[1],ax[2])) * rotationX;
-    rotation = rotationX * rotationY;
+    rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
+    rotation = rotationY * rotationX;
     updateModelMatrix();
 
     for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
-void isotropicLight::rotateY(const float & ang ,const glm::vec3 & ax)
+void isotropicLight::rotateY(const float & ang ,const vector<float,3> & ax)
 {
-    glm::normalize(ax);
-    rotationY = convert(ang,vector<float,3>(ax[0],ax[1],ax[2])) * rotationY;
-    rotation = rotationX * rotationY;
+    rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
+    rotation = rotationY * rotationX;
     updateModelMatrix();
 
     for(uint32_t i=0;i<6;i++)
         lightSource.at(i)->setGlobalTransform(modelMatrix);
 }
 
-void isotropicLight::setPosition(const glm::vec3& translate)
+void isotropicLight::setPosition(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();

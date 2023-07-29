@@ -134,22 +134,34 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
     newNode->matrix = matrix<float,4,4>(1.0f);
 
     if (model.nodes[nodeIndex].translation.size() == 3) {
-        newNode->translation = vector<float,3>(model.nodes[nodeIndex].translation[0],model.nodes[nodeIndex].translation[1],model.nodes[nodeIndex].translation[2]);
+        newNode->translation = vector<float,3>(
+            static_cast<float>(model.nodes[nodeIndex].translation[0]),
+            static_cast<float>(model.nodes[nodeIndex].translation[1]),
+            static_cast<float>(model.nodes[nodeIndex].translation[2])
+        );
     }
     if (model.nodes[nodeIndex].rotation.size() == 4) {
-        newNode->rotation = quaternion<float>(model.nodes[nodeIndex].rotation[0],model.nodes[nodeIndex].rotation[1],model.nodes[nodeIndex].rotation[2],model.nodes[nodeIndex].rotation[3]);
+        newNode->rotation = quaternion<float>(
+            static_cast<float>(model.nodes[nodeIndex].rotation[0]),
+            static_cast<float>(model.nodes[nodeIndex].rotation[1]),
+            static_cast<float>(model.nodes[nodeIndex].rotation[2]),
+            static_cast<float>(model.nodes[nodeIndex].rotation[3])
+        );
     }
     if (model.nodes[nodeIndex].scale.size() == 3) {
-        newNode->scale = vector<float,3>(model.nodes[nodeIndex].scale[0],model.nodes[nodeIndex].scale[1],model.nodes[nodeIndex].scale[2]);
+        newNode->scale = vector<float,3>(
+            static_cast<float>(model.nodes[nodeIndex].scale[0]),
+            static_cast<float>(model.nodes[nodeIndex].scale[1]),
+            static_cast<float>(model.nodes[nodeIndex].scale[2])
+        );
     }
     if (model.nodes[nodeIndex].matrix.size() == 16) {
         const double* m = model.nodes[nodeIndex].matrix.data();
-        newNode->matrix = matrix<float,4,4>(
-            m[0],m[1],m[2],m[3],
-            m[4],m[5],m[6],m[7],
-            m[8],m[9],m[10],m[11],
-            m[12],m[13],m[14],m[15]
-        );
+        newNode->matrix = matrix<float,4,4>(0.0f);
+        for(uint32_t i = 0; i < 4; i++){
+            for(uint32_t j = 0; j < 4; j++)
+            newNode->matrix[i][j] = static_cast<float>(m[4*i + j]);
+        }
     }
 
     for (size_t i = 0; i < model.nodes[nodeIndex].children.size(); i++) {
@@ -168,8 +180,8 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
             uint32_t vertexCount = static_cast<uint32_t>(posAccessor.count);
 
             Mesh::Primitive* newPrimitive = new Mesh::Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? &materials[primitive.material] : &materials.back());
-            newPrimitive->bb = BoundingBox( vector<float,3>(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]),
-                                            vector<float,3>(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]));
+            newPrimitive->bb = BoundingBox( vector<float,3>(static_cast<float>(posAccessor.minValues[0]), static_cast<float>(posAccessor.minValues[1]), static_cast<float>(posAccessor.minValues[2])),
+                                            vector<float,3>(static_cast<float>(posAccessor.maxValues[0]), static_cast<float>(posAccessor.maxValues[1]), static_cast<float>(posAccessor.maxValues[2])));
             newMesh->primitives.push_back(newPrimitive);
 
             if (primitive.indices > -1){

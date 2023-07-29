@@ -302,7 +302,11 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
         }
         if (mat.values.find("baseColorFactor") != mat.values.end()) {
             auto color = mat.values["baseColorFactor"].ColorFactor();
-            material.baseColorFactor = vector<float, 4>(color[0], color[1], color[2], color[3]);
+            material.baseColorFactor = vector<float, 4>(
+                static_cast<float>(color[0]),
+                static_cast<float>(color[1]),
+                static_cast<float>(color[2]),
+                static_cast<float>(color[3]));
         }
         if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
             material.normalTexture = &textures[mat.additionalValues["normalTexture"].TextureIndex()];
@@ -331,7 +335,10 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
         }
         if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
             auto color = mat.additionalValues["emissiveFactor"].ColorFactor();
-            material.emissiveFactor = vector<float, 4>(color[0], color[1], color[2], 1.0);
+            material.emissiveFactor = vector<float, 4>(
+                static_cast<float>(color[0]),
+                static_cast<float>(color[1]),
+                static_cast<float>(color[2]), 1.0f);
         }
 
         // Extensions

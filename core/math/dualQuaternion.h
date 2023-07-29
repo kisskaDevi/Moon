@@ -239,10 +239,10 @@ matrix<T,4,4> convert(const dualQuaternion<T>& quat)
 
     matrix<T,4,4> SE3;
 
-    SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = T(0);
-    SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = T(0);
-    SE3[2][0] = R[2][0];    SE3[2][1] = R[2][1];    SE3[2][2] = R[2][2];    SE3[2][3] = T(0);
-    SE3[3][0] = translation.vector()[0];       SE3[3][1] = translation.vector()[1];       SE3[3][2] = translation.vector()[2];       SE3[3][3] = T(1);
+    SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = translation.vector()[0];
+    SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = translation.vector()[1];
+    SE3[2][0] = R[2][0];    SE3[2][1] = R[2][1];    SE3[2][2] = R[2][2];    SE3[2][3] = translation.vector()[2];
+    SE3[3][0] = T(0);       SE3[3][1] = T(0);       SE3[3][2] = T(0);       SE3[3][3] = T(1);
 
     return SE3;
 }

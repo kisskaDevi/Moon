@@ -12,12 +12,12 @@ class shadowGraphics;
 
 struct LightBufferObject
 {
-    alignas(16) glm::mat4   proj;
-    alignas(16) glm::mat4   view;
-    alignas(16) glm::mat4   projView;
-    alignas(16) glm::vec4   position;
-    alignas(16) glm::vec4   lightColor;
-    alignas(16) glm::vec4   lightProp;
+    alignas(16) matrix<float,4,4>   proj;
+    alignas(16) matrix<float,4,4>   view;
+    alignas(16) matrix<float,4,4>   projView;
+    alignas(16) vector<float,4>     position;
+    alignas(16) vector<float,4>     lightColor;
+    alignas(16) vector<float,4>     lightProp;
 };
 
 enum spotType
@@ -39,16 +39,16 @@ private:
     uint32_t                            type{spotType::circle};
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};
-    glm::vec4                           lightColor{0.0f};
-    glm::mat4x4                         projectionMatrix{1.0f};
+    vector<float,4>                     lightColor{0.0f};
+    matrix<float,4,4>                   projectionMatrix{1.0f};
 
     quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotationX{1.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotationY{1.0f,0.0f,0.0f,0.0f};
-    glm::vec3                           scaling{1.0f,1.0f,1.0f};
-    glm::mat4x4                         globalTransformation{1.0f};
-    glm::mat4x4                         modelMatrix{1.0f};
+    vector<float,3>                     scaling{1.0f,1.0f,1.0f};
+    matrix<float,4,4>                   globalTransformation{1.0f};
+    matrix<float,4,4>                   modelMatrix{1.0f};
 
     VkDescriptorSetLayout               bufferDescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorSetLayout               descriptorSetLayout{VK_NULL_HANDLE};
@@ -68,24 +68,24 @@ public:
     ~spotLight();
     void destroy(VkDevice device) override;
 
-    void                setGlobalTransform(const glm::mat4 & transform) override;
-    void                translate(const glm::vec3 & translate) override;
-    void                rotate(const float & ang,const glm::vec3 & ax) override;
-    void                scale(const glm::vec3 & scale) override;
-    void                rotateX(const float & ang ,const glm::vec3 & ax);
-    void                rotateY(const float & ang ,const glm::vec3 & ax);
-    void                setPosition(const glm::vec3& translate);
+    void                setGlobalTransform(const matrix<float,4,4> & transform) override;
+    void                translate(const vector<float,3> & translate) override;
+    void                rotate(const float & ang,const vector<float,3> & ax) override;
+    void                scale(const vector<float,3> & scale) override;
+    void                rotateX(const float & ang ,const vector<float,3> & ax);
+    void                rotateY(const float & ang ,const vector<float,3> & ax);
+    void                setPosition(const vector<float,3>& translate);
 
-    void                setLightColor(const glm::vec4 & color);
+    void                setLightColor(const vector<float,4> & color);
     void                setShadowExtent(const VkExtent2D & shadowExtent);
     void                setShadow(bool enable);
     void                setScattering(bool enable);
     void                setTexture(texture* tex);
-    void                setProjectionMatrix(const glm::mat4x4 & projection);
+    void                setProjectionMatrix(const matrix<float,4,4> & projection);
 
-    glm::mat4x4         getModelMatrix() const;
-    glm::vec3           getTranslate() const;
-    glm::vec4           getLightColor() const;
+    matrix<float,4,4>   getModelMatrix() const;
+    vector<float,3>     getTranslate() const;
+    vector<float,4>     getLightColor() const;
 
     texture*            getTexture() override;
     attachments*        getAttachments() override;
@@ -108,16 +108,16 @@ public:
 class isotropicLight: public transformational
 {
 private:
-    glm::vec4                           lightColor{0.0f};
-    glm::mat4x4                         projectionMatrix{1.0f};
+    vector<float,4>                     lightColor{0.0f};
+    matrix<float,4,4>                   projectionMatrix{1.0f};
 
     quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotationX{1.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotationY{1.0f,0.0f,0.0f,0.0f};
-    glm::vec3                           scaling{1.0f,1.0f,1.0f};
-    glm::mat4x4                         globalTransformation{1.0f};
-    glm::mat4x4                         modelMatrix{1.0f};
+    vector<float,3>                     scaling{1.0f,1.0f,1.0f};
+    matrix<float,4,4>                   globalTransformation{1.0f};
+    matrix<float,4,4>                   modelMatrix{1.0f};
 
     std::vector<spotLight *> lightSource;
 
@@ -126,20 +126,20 @@ public:
     isotropicLight(std::vector<spotLight *>& lightSource);
     ~isotropicLight();
 
-    void setLightColor(const glm::vec4 & color);
-    void setProjectionMatrix(const glm::mat4x4 & projection);
-    void setPosition(const glm::vec3& translate);
+    void setLightColor(const vector<float,4> & color);
+    void setProjectionMatrix(const matrix<float,4,4> & projection);
+    void setPosition(const vector<float,3>& translate);
 
-    void setGlobalTransform(const glm::mat4& transform);
-    void translate(const glm::vec3& translate);
-    void rotate(const float& ang,const glm::vec3& ax);
-    void scale(const glm::vec3& scale);
+    void setGlobalTransform(const matrix<float,4,4>& transform);
+    void translate(const vector<float,3>& translate);
+    void rotate(const float& ang,const vector<float,3>& ax);
+    void scale(const vector<float,3>& scale);
 
-    void rotateX(const float& ang ,const glm::vec3& ax);
-    void rotateY(const float& ang ,const glm::vec3& ax);
+    void rotateX(const float& ang ,const vector<float,3>& ax);
+    void rotateY(const float& ang ,const vector<float,3>& ax);
 
-    glm::vec3 getTranslate() const;
-    glm::vec4 getLightColor() const;
+    vector<float,3> getTranslate() const;
+    vector<float,4> getLightColor() const;
 };
 
 #endif // SPOTLIGHT_H

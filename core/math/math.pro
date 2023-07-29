@@ -3,9 +3,6 @@ CONFIG += static
 CONFIG += c++17 console
 WARNINGS += -Wall
 
-INCLUDEPATH += \
-    $$PWD/../../dependences/libs/glm/glm
-
 SOURCES += \
     matrix.cpp \
     quaternion.cpp \

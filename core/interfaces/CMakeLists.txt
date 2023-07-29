@@ -19,4 +19,4 @@ object.h)
 
 add_library(interfaces STATIC ${SOURCES} ${HEADERS})
 target_include_directories(interfaces PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(interfaces PUBLIC utils)
+target_link_libraries(interfaces PUBLIC math utils)

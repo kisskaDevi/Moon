@@ -5,7 +5,6 @@ WARNINGS += -Wall
 
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
-    $$PWD/../../dependences/libs/glm/glm \
     $$PWD/../utils \
     $$PWD/../interfaces \
     $$PWD/../math

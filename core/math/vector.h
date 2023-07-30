@@ -21,6 +21,7 @@ public:
     type& operator[](uint32_t i);
     const type& operator[](uint32_t i) const;
     uint32_t size() const;
+    const baseVector<type, n - 1>& dvec() const;
 
     bool operator==(const baseVector<type, n>& other) const;
     bool operator!=(const baseVector<type, n>& other) const;
@@ -87,6 +88,11 @@ const type& baseVector<type,n>::operator[](uint32_t i) const{
 template<typename type, uint32_t n>
 uint32_t baseVector<type,n>::size() const {
     return vec.size() + 1;
+}
+
+template<typename type, uint32_t n>
+const baseVector<type, n - 1>& baseVector<type,n>::dvec() const {
+    return vec;
 }
 
 template<typename type, uint32_t n>

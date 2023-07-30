@@ -40,6 +40,8 @@ plyModel::plyModel(
     materialBlock.workflow = workflow;
 }
 
+plyModel::~plyModel() {}
+
 void plyModel::destroy(VkDevice device) {
     destroyStagingBuffer(device);
 

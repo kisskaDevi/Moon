@@ -105,10 +105,7 @@ public:
     bool                getEnable() const override;
     bool                getEnableShadow() const override;
 
-    void                setOutliningEnable(const bool& enable);
-    void                setOutliningWidth(const float& width);
-    void                setOutliningColor(const vector<float,4>& color);
-
+    void                setOutlining(const bool& enable, const float& width = 0, const vector<float,4>& color = {0.0f});
     bool                getOutliningEnable() const override;
     float               getOutliningWidth() const override;
     vector<float,4>     getOutliningColor() const override;

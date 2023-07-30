@@ -120,7 +120,15 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(0<<4)|0]);
 
-    depthStencil = vkDefault::depthStencilEnable();
+    depthStencil.stencilTestEnable = VK_TRUE;
+    depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    depthStencil.back.failOp = VK_STENCIL_OP_REPLACE;
+    depthStencil.back.depthFailOp = VK_STENCIL_OP_REPLACE;
+    depthStencil.back.passOp = VK_STENCIL_OP_REPLACE;
+    depthStencil.back.compareMask = 0xff;
+    depthStencil.back.writeMask = 0xff;
+    depthStencil.back.reference = 1;
+    depthStencil.front = depthStencil.back;
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[(1<<4)|0]);
     pipelineInfo.back().layout = PipelineLayoutDictionary[(1<<4)|0];
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(1<<4)|0]);

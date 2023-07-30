@@ -1,6 +1,8 @@
 #include "group.h"
 #include "dualQuaternion.h"
 
+#include <numeric>
+
 group::group()
 {}
 
@@ -63,7 +65,18 @@ void group::addObject(transformational* object)
     object->setGlobalTransform(modelMatrix);
 }
 
-void group::delObject(const int &index)
+void group::delObject(transformational* object)
 {
-    objects.erase(objects.begin()+index);
+    for(auto objIt = objects.begin(); objIt != objects.end(); objIt++){
+        if(*objIt == object){
+            objects.erase(objIt);
+        }
+    }
+}
+
+bool group::findObject(transformational* object)
+{
+    return std::accumulate(objects.begin(),objects.end(), false, [&object](const bool& a, const auto& obj){
+        return a + (obj == object);
+    });
 }

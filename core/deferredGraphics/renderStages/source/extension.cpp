@@ -44,6 +44,16 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
     VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
     VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
+    depthStencil.stencilTestEnable = VK_TRUE;
+    depthStencil.back.compareOp = VK_COMPARE_OP_NOT_EQUAL;
+    depthStencil.back.failOp = VK_STENCIL_OP_KEEP;
+    depthStencil.back.depthFailOp = VK_STENCIL_OP_KEEP;
+    depthStencil.back.passOp = VK_STENCIL_OP_REPLACE;
+    depthStencil.back.compareMask = 0xff;
+    depthStencil.back.writeMask = 0xff;
+    depthStencil.back.reference = 1;
+    depthStencil.front = depthStencil.back;
+
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
         vkDefault::colorBlendAttachmentState(VK_FALSE),
         vkDefault::colorBlendAttachmentState(VK_FALSE),
@@ -99,7 +109,7 @@ void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: Parent->objects){
-        if(VkDeviceSize offsets = 0; object->getEnable()&&object->getOutliningEnable()){
+        if(VkDeviceSize offsets = 0; object->getEnable() && object->getOutliningEnable()){
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){

@@ -239,9 +239,11 @@ matrix<float,4,4>               baseObject::getModelMatrix()   const            
 VkDescriptorPool                &baseObject::getDescriptorPool()                            {return descriptorPool;}
 std::vector<VkDescriptorSet>    &baseObject::getDescriptorSet()                             {return descriptors;}
 
-void                            baseObject::setOutliningEnable(const bool& enable)          {outlining.Enable = enable;}
-void                            baseObject::setOutliningWidth(const float& width)           {outlining.Width = width;}
-void                            baseObject::setOutliningColor(const vector<float,4>& color) {outlining.Color = color;}
+void                            baseObject::setOutlining(const bool& enable, const float& width, const vector<float,4>& color){
+    outlining.Enable = enable;
+    outlining.Width = width > 0.0f ? width : outlining.Width;
+    outlining.Color = dot(color,color) > 0.0f ? color : outlining.Color;
+}
 
 bool                            baseObject::getOutliningEnable() const                      {return outlining.Enable;}
 float                           baseObject::getOutliningWidth()  const                      {return outlining.Width;}

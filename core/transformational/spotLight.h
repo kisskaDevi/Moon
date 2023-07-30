@@ -33,14 +33,14 @@ private:
     texture*                            tex{nullptr};
     VkExtent2D                          shadowExtent{1024,1024};
 
-    bool                                enableShadow{false};
-    bool                                enableScattering{false};
-
-    uint32_t                            type{spotType::circle};
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};
     vector<float,4>                     lightColor{0.0f};
+
     matrix<float,4,4>                   projectionMatrix{1.0f};
+    bool                                enableShadow{false};
+    bool                                enableScattering{false};
+    uint32_t                            type{spotType::circle};
 
     quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
@@ -63,8 +63,8 @@ private:
     void destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
-    spotLight(bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
-    spotLight(const std::filesystem::path & TEXTURE_PATH, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
+    spotLight(const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
+    spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     ~spotLight();
     void destroy(VkDevice device) override;
 

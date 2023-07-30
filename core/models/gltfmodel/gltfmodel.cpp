@@ -174,6 +174,8 @@ gltfModel::gltfModel(std::filesystem::path filename, uint32_t instanceCount)
     instances.resize(instanceCount);
 }
 
+gltfModel::~gltfModel() {}
+
 void gltfModel::destroy(VkDevice device)
 {
     destroyStagingBuffer(device);

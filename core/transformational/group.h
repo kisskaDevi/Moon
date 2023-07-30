@@ -28,7 +28,8 @@ public:
     void scale(const vector<float,3> & scale);
 
     void addObject(transformational* object);
-    void delObject(const int& index);
+    void delObject(transformational* object);
+    bool findObject(transformational* object);
 };
 
 #endif // GROUP_H

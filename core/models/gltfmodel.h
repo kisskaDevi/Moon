@@ -134,6 +134,7 @@ private:
     Node* nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes);
 public:
     gltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
+    ~gltfModel() override;
 
     void destroy(VkDevice device) override;
     void destroyStagingBuffer(VkDevice device) override;

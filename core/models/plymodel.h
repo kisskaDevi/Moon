@@ -47,6 +47,7 @@ public:
              float roughnessFactor = 0.5f,
              float workflow = 1.0f);
 
+    ~plyModel() override;
     void destroy(VkDevice device) override;
     void destroyStagingBuffer(VkDevice device) override;
 

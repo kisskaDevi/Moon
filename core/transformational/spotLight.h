@@ -68,15 +68,19 @@ public:
     ~spotLight();
     void destroy(VkDevice device) override;
 
-    void                setGlobalTransform(const matrix<float,4,4> & transform) override;
-    void                translate(const vector<float,3> & translate) override;
-    void                rotate(const float & ang,const vector<float,3> & ax) override;
-    void                scale(const vector<float,3> & scale) override;
-    void                rotateX(const float & ang ,const vector<float,3> & ax);
-    void                rotateY(const float & ang ,const vector<float,3> & ax);
-    void                setPosition(const vector<float,3>& translate);
+    spotLight&          setGlobalTransform(const matrix<float,4,4> & transform) override;
+    spotLight&          translate(const vector<float,3> & translate) override;
+    spotLight&          rotate(const float & ang,const vector<float,3> & ax) override;
+    spotLight&          scale(const vector<float,3> & scale) override;
+    spotLight&          rotateX(const float & ang ,const vector<float,3> & ax);
+    spotLight&          rotateY(const float & ang ,const vector<float,3> & ax);
+    spotLight&          setPosition(const vector<float,3>& translate);
+    spotLight&          setRotation(const quaternion<float>& rotation);
+    spotLight&          setRotation(const float & ang ,const vector<float,3> & ax);
+    spotLight&          rotate(const quaternion<float>& quat);
 
     void                setLightColor(const vector<float,4> & color);
+    void                setLightDropFactor(const float& dropFactor);
     void                setShadowExtent(const VkExtent2D & shadowExtent);
     void                setShadow(bool enable);
     void                setScattering(bool enable);
@@ -110,6 +114,7 @@ class isotropicLight: public transformational
 private:
     vector<float,4>                     lightColor{0.0f};
     matrix<float,4,4>                   projectionMatrix{1.0f};
+    float                               lightDropFactor{1.0f};
 
     quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
@@ -123,17 +128,18 @@ private:
 
     void updateModelMatrix();
 public:
-    isotropicLight(std::vector<spotLight *>& lightSource);
+    isotropicLight(std::vector<spotLight *>& lightSource, float radius = 100.0f);
     ~isotropicLight();
 
     void setLightColor(const vector<float,4> & color);
+    void setLightDropFactor(const float& dropFactor);
     void setProjectionMatrix(const matrix<float,4,4> & projection);
     void setPosition(const vector<float,3>& translate);
 
-    void setGlobalTransform(const matrix<float,4,4>& transform);
-    void translate(const vector<float,3>& translate);
-    void rotate(const float& ang,const vector<float,3>& ax);
-    void scale(const vector<float,3>& scale);
+    isotropicLight& setGlobalTransform(const matrix<float,4,4>& transform);
+    isotropicLight& translate(const vector<float,3>& translate);
+    isotropicLight& rotate(const float& ang,const vector<float,3>& ax);
+    isotropicLight& scale(const vector<float,3>& scale);
 
     void rotateX(const float& ang ,const vector<float,3>& ax);
     void rotateY(const float& ang ,const vector<float,3>& ax);

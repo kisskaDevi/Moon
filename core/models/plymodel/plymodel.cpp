@@ -74,6 +74,9 @@ const VkBuffer* plyModel::getVertices() const {
 const VkBuffer* plyModel::getIndices() const {
     return &indices.instance;
 }
+const vector<float,3> plyModel::getMaxSize() const {
+    return maxSize;
+}
 
 void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) {
     tinyply::PlyFile file;
@@ -119,6 +122,11 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
         }
         for(uint32_t i = 0; i < vertexBuffer.size(); i++){
             vertexBuffer[i].normal = normalize(vertexBuffer[i].normal);
+            maxSize = vector<float,3>(
+                std::max(maxSize[0],std::abs(vertexBuffer[i].pos[0])),
+                std::max(maxSize[1],std::abs(vertexBuffer[i].pos[1])),
+                std::max(maxSize[2],std::abs(vertexBuffer[i].pos[2]))
+            );
         }
     }
     if(texcoords){

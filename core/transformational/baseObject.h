@@ -81,12 +81,12 @@ public:
     void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
     void updateAnimation(uint32_t imageNumber);
 
-    void                setGlobalTransform(const matrix<float,4,4>& transform) override;
-    void                translate(const vector<float,3>& translate) override;
-    void                rotate(const float& ang, const vector<float,3>& ax) override;
-    void                rotate(const quaternion<float>& quat);
-    void                scale(const vector<float,3>& scale) override;
-    void                setPosition(const vector<float,3>& translate);
+    baseObject&         setGlobalTransform(const matrix<float,4,4>& transform) override;
+    baseObject&         translate(const vector<float,3>& translate) override;
+    baseObject&         rotate(const float& ang, const vector<float,3>& ax) override;
+    baseObject&         rotate(const quaternion<float>& quat);
+    baseObject&         scale(const vector<float,3>& scale) override;
+    baseObject&         setPosition(const vector<float,3>& translate);
 
     void                setModel(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
     void                setConstantColor(const vector<float,4> & color);
@@ -139,7 +139,7 @@ public:
     skyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
     ~skyboxObject();
 
-    void translate(const vector<float,3>& translate) override;
+    skyboxObject& translate(const vector<float,3>& translate) override;
 
     uint8_t getPipelineBitMask() const override;
     cubeTexture* getTexture() override;

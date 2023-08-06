@@ -13,19 +13,13 @@ layout(set = 1, binding = 0) uniform LightBufferObject
     mat4 view;
     mat4 projView;
     vec4 position;
-    vec4 lightColor;
-    vec4 lightProp;
+    vec4 color;
+    vec4 prop;
 }light;
 
 layout(location = 0)	out vec4 eyePosition;
-layout(location = 1)	out vec2 fragTexCoord;
-layout(location = 2)	out vec4 glPosition;
-
-layout(location = 3)	out vec3 lightPosition;
-layout(location = 4)	out vec4 lightColor;
-layout(location = 5)	out vec4 lightProp;
-layout(location = 6)	out mat4 lightProjView;
-layout(location = 10)	out mat4 projview;
+layout(location = 1)	out vec4 glPosition;
+layout(location = 2)	out mat4 projview;
 
 vec3 vertex[5];
 int index[18] = int[](
@@ -38,11 +32,6 @@ int index[18] = int[](
 
 void main()
 {
-    lightPosition   = light.position.xyz;
-    lightColor	    = light.lightColor;
-    lightProp	    = light.lightProp;
-    lightProjView   = light.projView;
-
     projview	= global.proj * global.view;
     eyePosition = global.eyePosition;
 
@@ -54,12 +43,12 @@ void main()
     float h = - far/light.proj[1][1];
     float w = light.proj[1][1]/light.proj[0][0]*h;
 
-    vertex[0] = lightPosition;
-    vertex[1] = lightPosition + far*n + w*u + h*v;
-    vertex[2] = lightPosition + far*n + w*u - h*v;
-    vertex[3] = lightPosition + far*n - w*u - h*v;
-    vertex[4] = lightPosition + far*n - w*u + h*v;
+    vertex[0] = light.position.xyz;
+    vertex[1] = light.position.xyz + far*n + w*u + h*v;
+    vertex[2] = light.position.xyz + far*n + w*u - h*v;
+    vertex[3] = light.position.xyz + far*n - w*u - h*v;
+    vertex[4] = light.position.xyz + far*n - w*u + h*v;
 
-    gl_Position = projview * vec4(vertex[index[gl_VertexIndex]],1.0f);
     glPosition = vec4(vertex[index[gl_VertexIndex]],1.0f);
+    gl_Position = projview * glPosition;
 }

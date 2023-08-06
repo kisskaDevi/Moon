@@ -18,6 +18,7 @@ private:
     buffer vertexStaging, indexStaging;
 
     uint32_t indexCount{0};
+    vector<float,3> maxSize{0.0f};
 
     VkDescriptorSetLayout           nodeDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSetLayout           materialDescriptorSetLayout = VK_NULL_HANDLE;
@@ -53,6 +54,7 @@ public:
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
+    const vector<float,3> getMaxSize() const;
 
     void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) override;
 

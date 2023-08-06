@@ -50,40 +50,46 @@ void baseObject::updateModelMatrix()
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void baseObject::setGlobalTransform(const matrix<float,4,4> & transform)
+baseObject& baseObject::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
+    return *this;
 }
 
-void baseObject::translate(const vector<float,3> & translate)
+baseObject& baseObject::translate(const vector<float,3> & translate)
 {
     translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
+    return *this;
 }
 
-void baseObject::setPosition(const vector<float,3>& translate)
+baseObject& baseObject::setPosition(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,translate);
     updateModelMatrix();
+    return *this;
 }
 
-void baseObject::rotate(const float & ang ,const vector<float,3> & ax)
+baseObject& baseObject::rotate(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
+    return *this;
 }
 
-void baseObject::rotate(const quaternion<float>& quat)
+baseObject& baseObject::rotate(const quaternion<float>& quat)
 {
     rotation = quat * rotation;
     updateModelMatrix();
+    return *this;
 }
 
-void baseObject::scale(const vector<float,3> & scale)
+baseObject& baseObject::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
+    return *this;
 }
 
 void baseObject::updateAnimation(uint32_t imageNumber)
@@ -264,7 +270,9 @@ skyboxObject::~skyboxObject(){
     delete texture;
 }
 
-void skyboxObject::translate(const vector<float,3> &) {}
+skyboxObject& skyboxObject::translate(const vector<float,3> &) {
+    return *this;
+}
 
 uint8_t skyboxObject::getPipelineBitMask() const {
     return (0<<4)|(0x1);

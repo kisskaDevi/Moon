@@ -45,12 +45,15 @@ INCLUDEPATH += \
 
 SOURCES += \
     physicalobject.cpp \
-    scene.cpp \
-    main.cpp
+    main.cpp \
+    testScene.cpp \
+    testPos.cpp
 
 HEADERS += \
     physicalobject.h \
-    scene.h
+    scene.h \
+    testScene.h \
+    testPos.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

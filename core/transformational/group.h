@@ -22,10 +22,10 @@ public:
     group();
     ~group();
 
-    void setGlobalTransform(const matrix<float,4,4> & transform);
-    void translate(const vector<float,3> & translate);
-    void rotate(const float & ang ,const vector<float,3> & ax);
-    void scale(const vector<float,3> & scale);
+    group& setGlobalTransform(const matrix<float,4,4> & transform);
+    group& translate(const vector<float,3> & translate);
+    group& rotate(const float & ang ,const vector<float,3> & ax);
+    group& scale(const vector<float,3> & scale);
 
     void addObject(transformational* object);
     void delObject(transformational* object);

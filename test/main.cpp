@@ -4,9 +4,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "graphicsManager.h"
-#include "deferredGraphics.h"
-#include "baseCamera.h"
-#include "scene.h"
+#include "testScene.h"
+#include "testpos.h"
 
 #include "stb_image.h"
 #include <glfw3.h>
@@ -23,7 +22,7 @@
 bool framebufferResized = false;
 
 GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName = "");
-std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, std::vector<deferredGraphics*> graphics, baseCamera* cameraObject);
+std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, scene* testScene);
 
 int main()
 {
@@ -35,31 +34,14 @@ int main()
 
     GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.png");
 
-    std::vector<deferredGraphics*> graphics = {
-          new deferredGraphics{ExternalPath / "core/deferredGraphics/shaders", {WIDTH, HEIGHT}}
-        , new deferredGraphics{ExternalPath / "core/deferredGraphics/shaders", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}}
-    };
-
     graphicsManager app;
     debug::checkResult(app.createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createDevice(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createSwapChain(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
-    baseCamera cameraObject(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-    cameraObject.translate(vector<float,3>(0.0f,0.0f,15.0f));
-
-    for(auto& graph: graphics){
-        app.setGraphics(graph);
-        graph->createCommandPool();
-        graph->createEmptyTexture();
-
-        graph->bindCameraObject(&cameraObject, &graph == &graphics[0]);
-        graph->createGraphics(window, &app.getSurface());
-    }
-
-    scene testScene(&app, graphics, window, ExternalPath);
-    testScene.createScene(WIDTH,HEIGHT,&cameraObject);
+    testScene testScene(&app, window, ExternalPath);
+    testScene.create(WIDTH,HEIGHT);
 
     static auto pastTime = std::chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(window))
@@ -77,7 +59,7 @@ int main()
 
             if (VkResult result = app.drawFrame(); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
                 framebufferResized = false;
-                std::tie(WIDTH, HEIGHT) = resize(window,&app,graphics,&cameraObject);
+                std::tie(WIDTH, HEIGHT) = resize(window,&app,&testScene);
             } else if(result) {
                 throw std::runtime_error("failed to with " + std::to_string(result));
             }
@@ -86,14 +68,7 @@ int main()
 
     debug::checkResult(app.deviceWaitIdle(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
-    testScene.destroyScene();
-    for(auto& graph: graphics){
-        graph->destroyGraphics();
-        graph->destroyEmptyTextures();
-        graph->destroyCommandPool();
-        graph->removeCameraObject(&cameraObject);
-        delete graph;
-    }
+    testScene.destroy();
     app.destroySwapChain();
     app.destroy();
 
@@ -103,7 +78,7 @@ int main()
     return 0;
 }
 
-std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, std::vector<deferredGraphics*> graphics, baseCamera* cameraObject)
+std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, scene* testScene)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
@@ -113,18 +88,11 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, st
         glfwWaitEvents();
     }
 
-    cameraObject->recreate(45.0f, (float) width / (float) height, 0.1f, 500.0f);
-    graphics[0]->setExtentAndOffset({static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
-    graphics[1]->setExtentAndOffset({static_cast<uint32_t>(width / 3), static_cast<uint32_t>(height / 3)}, {static_cast<int32_t>(width / 2), static_cast<int32_t>(height / 2)});
-
     app->deviceWaitIdle();
     app->destroySwapChain();
     app->createSwapChain(window);
 
-    for(auto& graph: graphics){
-        graph->destroyGraphics();
-        graph->createGraphics(window, &app->getSurface());
-    }
+    testScene->resize(width, height);
 
     return std::pair<uint32_t,uint32_t>(width, height);
 }

@@ -53,6 +53,14 @@ public:
 
     template<typename T, uint32_t N> friend T dot(const baseVector<T,N>& left, const baseVector<T,N>& right);
 
+    template<typename T, uint32_t N> friend T max(const baseVector<T,N>& other);
+
+    template<typename T, uint32_t N> friend baseVector<T,N> max(const baseVector<T,N>& left, const baseVector<T,N>& right);
+
+    template<typename T, uint32_t N> friend T maxAbs(const baseVector<T,N>& other);
+
+    template<typename T, uint32_t N> friend baseVector<T,N> maxAbs(const baseVector<T,N>& left, const baseVector<T,N>& right);
+
     template<typename T, uint32_t N> friend std::ostream& operator<<(std::ostream& out, const baseVector<T,N>& other);
 };
 
@@ -191,8 +199,24 @@ template<typename T, uint32_t N> baseVector<T,N> operator*(const baseVector<T, N
     return baseVector<T,N>(other.vec * c, other.s * c);
 }
 
-template<typename T, uint32_t N> T dot(const baseVector<T, N>& left, const baseVector<T, N>& right){
+template<typename T, uint32_t N> T dot(const baseVector<T, N>& left, const baseVector<T, N>& right) {
     return dot(left.vec, right.vec) + left.s * right.s;
+}
+
+template<typename T, uint32_t N> T max(const baseVector<T,N>& other) {
+    return std::max(max(other.vec),other.s);
+}
+
+template<typename T, uint32_t N> baseVector<T,N> max(const baseVector<T,N>& left, const baseVector<T,N>& right) {
+    return baseVector<T,N>(max(left.vec, right.vec),std::max(left.s,right.s));
+}
+
+template<typename T, uint32_t N> T maxAbs(const baseVector<T,N>& other) {
+    return std::max(maxAbs(other.vec),std::abs(other.s));
+}
+
+template<typename T, uint32_t N> baseVector<T,N> maxAbs(const baseVector<T,N>& left, const baseVector<T,N>& right) {
+    return baseVector<T,N>(maxAbs(left.vec, right.vec),std::max(std::abs(left.s),std::abs(right.s)));
 }
 
 template<typename type, uint32_t n>
@@ -257,6 +281,14 @@ public:
     template<typename T> friend baseVector<T,2> normalize(const baseVector<T, 2>& other);
 
     template<typename T> friend T dot(const baseVector<T, 2>& left, const baseVector<T, 2>& right);
+
+    template<typename T> friend T max(const baseVector<T,2>& other);
+
+    template<typename T> friend baseVector<T,2> max(const baseVector<T,2>& left, const baseVector<T,2>& right);
+
+    template<typename T> friend T maxAbs(const baseVector<T,2>& other);
+
+    template<typename T> friend baseVector<T,2> maxAbs(const baseVector<T,2>& left, const baseVector<T,2>& right);
 
     template<typename T> friend std::ostream& operator<<(std::ostream& out, const baseVector<T, 2>& other);
 };
@@ -404,6 +436,22 @@ template<typename T> baseVector<T,2> normalize(const baseVector<T,2>& other) {
 
 template<typename T> T dot(const baseVector<T,2>& left, const baseVector<T,2>& right){
     return left.x0 * right.x0 + left.x1 * right.x1;
+}
+
+template<typename T> T max(const baseVector<T,2>& other) {
+    return std::max(other.x0, other.x1);
+}
+
+template<typename T> baseVector<T,2> max(const baseVector<T,2>& left, const baseVector<T,2>& right) {
+    return baseVector<T,2>(std::max(left.x0, right.x0), std::max(left.x1, right.x1));
+}
+
+template<typename T> T maxAbs(const baseVector<T,2>& other) {
+    return std::max(std::abs(other.x0), std::abs(other.x1));
+}
+
+template<typename T> baseVector<T,2> maxAbs(const baseVector<T,2>& left, const baseVector<T,2>& right) {
+    return baseVector<T,2>(std::max(std::abs(left.x0), std::abs(right.x0)), std::max(std::abs(left.x1), std::abs(right.x1)));
 }
 
 template<typename T> std::ostream& operator<<(std::ostream& out, const baseVector<T,2>& other) {

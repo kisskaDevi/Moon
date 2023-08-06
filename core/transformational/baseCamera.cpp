@@ -7,6 +7,12 @@
 
 baseCamera::baseCamera(){}
 
+baseCamera::baseCamera(float angle, float aspect, float near)
+{
+    matrix<float,4,4> proj = perspective(radians(angle), aspect, near);
+    setProjMatrix(proj);
+}
+
 baseCamera::baseCamera(float angle, float aspect, float near, float far)
 {
     matrix<float,4,4> proj = perspective(radians(angle), aspect, near, far);
@@ -18,6 +24,13 @@ void baseCamera::recreate(float angle, float aspect, float near, float far)
     matrix<float,4,4> proj = perspective(radians(angle), aspect, near, far);
     setProjMatrix(proj);
 }
+
+void baseCamera::recreate(float angle, float aspect, float near)
+{
+    matrix<float,4,4> proj = perspective(radians(angle), aspect, near);
+    setProjMatrix(proj);
+}
+
 
 baseCamera::~baseCamera(){}
 
@@ -44,82 +57,87 @@ void baseCamera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
 
 void baseCamera::updateViewMatrix()
 {
-    dualQuaternion<float> dQuat = convert(rotation,translation);
+    dualQuaternion<float> dQuat = convert(rotation, translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
     viewMatrix = inverse(matrix<float,4,4>(globalTransformation * transformMatrix));
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void baseCamera::setProjMatrix(const matrix<float,4,4> & proj)
+baseCamera& baseCamera::setProjMatrix(const matrix<float,4,4> & proj)
 {
     projMatrix = proj;
-
     updateUniformBuffersFlags(uniformBuffersHost);
+    return *this;
 }
 
-void baseCamera::setGlobalTransform(const matrix<float,4,4> & transform)
+baseCamera& baseCamera::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::translate(const vector<float,3> & translate)
+baseCamera& baseCamera::translate(const vector<float,3> & translate)
 {
     translation += quaternion<float>(0.0f,translate);
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::rotate(const float & ang ,const vector<float,3> & ax)
+baseCamera& baseCamera::rotate(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::scale(const vector<float,3> &){}
+baseCamera& baseCamera::scale(const vector<float,3> &){
+    return *this;
+}
 
-void baseCamera::rotate(const quaternion<float>& quat)
+baseCamera& baseCamera::rotate(const quaternion<float>& quat)
 {
     rotation = quat * rotation;
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::rotateX(const float & ang ,const vector<float,3> & ax)
+baseCamera& baseCamera::rotateX(const float & ang ,const vector<float,3> & ax)
 {
     rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::rotateY(const float & ang ,const vector<float,3> & ax)
+baseCamera& baseCamera::rotateY(const float & ang ,const vector<float,3> & ax)
 {
     rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::setPosition(const vector<float,3> & translate)
+baseCamera& baseCamera::setPosition(const vector<float,3> & translate)
 {
     translation = quaternion<float>(0.0f,translate);
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::setRotation(const float & ang ,const vector<float,3> & ax)
+baseCamera& baseCamera::setRotation(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)));
     updateViewMatrix();
+    return *this;
 }
 
-void baseCamera::setRotation(const quaternion<float>& rotation)
+baseCamera& baseCamera::setRotation(const quaternion<float>& rotation)
 {
     this->rotation = rotation;
     updateViewMatrix();
-}
-
-void baseCamera::setRotations(const quaternion<float>& quatX, const quaternion<float>& quatY)
-{
-    this->rotationX = quatX;
-    this->rotationY = quatY;
+    return *this;
 }
 
 matrix<float,4,4> baseCamera::getProjMatrix() const

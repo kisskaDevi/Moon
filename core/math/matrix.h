@@ -4,6 +4,7 @@
 #define _USE_MATH_DEFINES
 
 #include <iostream>
+#include <fstream>
 #include <math.h>
 
 #include "vector.h"
@@ -352,6 +353,13 @@ private:
 
 public:
     matrix() : baseMatrix<type,n,n>() {}
+    matrix(std::ifstream& file) {
+        for(uint32_t i = 0; i < n; i++){
+            for(uint32_t j = 0; j < n; j++){
+                file >> this->mat[i][j];
+            }
+        }
+    }
     matrix(const type& m) {
         this->mat[0] = vector<type,n>{m, 0.0f, 0.0f, 0.0f};
         this->mat[1] = vector<type,n>{0.0f, m, 0.0f, 0.0f};
@@ -440,6 +448,20 @@ matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n
     m[1][1] = - a;
     m[2][2] = - (f + n) / (f - n);
     m[2][3] = type(2) * f * n / (n - f);
+    m[3][2] = - type(1);
+
+    return m;
+}
+
+template<typename type>
+matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n = type(0)) {
+    const type a = type(1) / std::tan(fovy / type(2));
+
+    matrix<type,4,4> m(0.0f);
+    m[0][0] = a / aspect;
+    m[1][1] = - a;
+    m[2][2] = - type(1);
+    m[2][3] = - type(2) * n;
     m[3][2] = - type(1);
 
     return m;

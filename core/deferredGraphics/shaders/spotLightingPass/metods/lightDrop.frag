@@ -1,10 +1,6 @@
 float lightDrop(float distance)
 {
-    float C = 1.0f;
-    float L = 0.0866f*exp(-0.00144f*distance);
-    float Q = 0.0283f*exp(-0.00289f*distance);
-
-    return C + L * distance + Q * distance * distance;
+    return pow(distance,1);
 }
 
 float lightDistribusion(const in vec3 position, const in vec3 lightPosition, const in mat4 lightProjMatrix, const in vec3 lightDirection){

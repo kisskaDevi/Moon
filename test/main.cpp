@@ -40,7 +40,7 @@ int main()
     debug::checkResult(app.createSwapChain(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
-    testScene testScene(&app, window, ExternalPath);
+    testPos testScene(&app, window, ExternalPath);
     testScene.create(WIDTH,HEIGHT);
 
     static auto pastTime = std::chrono::high_resolution_clock::now();

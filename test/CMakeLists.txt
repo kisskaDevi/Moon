@@ -9,8 +9,8 @@ else()
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
-set(SOURCES main.cpp scene.cpp)
-set(INCLUDES scene.h)
+set(SOURCES main.cpp testScene.cpp)
+set(INCLUDES scene.h testScene.h)
 
 add_executable(test ${INCLUDES} ${SOURCES})
 

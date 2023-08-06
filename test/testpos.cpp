@@ -140,13 +140,13 @@ void testPos::createLight()
     lightSources.push_back(new spotLight(proj, true, true));
     lightSources.back()->setLightColor({1.0f,1.0f,1.0f,1.0f});
     lightSources.back()->setLightDropFactor(1.0f);
-    lightSources.back()->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector()/max(maxSize));
+    lightSources.back()->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector()/maximum(maxSize));
     globalSpaceView->bindLightSource(lightSources.back(), true);
 
     lightSources.push_back(new spotLight(proj));
     lightSources.back()->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
     lightSources.back()->setLightDropFactor(1.0f);
-    lightSources.back()->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector()/max(maxSize));
+    lightSources.back()->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector()/maximum(maxSize));
     localView->bindLightSource(lightSources.back(), true);
 }
 
@@ -194,24 +194,24 @@ void testPos::createObjects()
     staticObject3D["cube"]->setConstantColor(vector<float,4>(0.7f,0.7f,0.7f,1.0f));
 
     selectedObject = cameraObject3D.begin()->second;
-    selectedObject->setOutlining(true, 1.5f / max(maxSize), {0.8f, 0.6f, 0.1f, 1.0f});
+    selectedObject->setOutlining(true, 1.5f / maximum(maxSize), {0.8f, 0.6f, 0.1f, 1.0f});
     for(auto& [view,object]: cameraObject3D){
         auto curview = *view;
-        curview[0][3] /= max(maxSize);
-        curview[1][3] /= max(maxSize);
-        curview[2][3] /= max(maxSize);
+        curview[0][3] /= maximum(maxSize);
+        curview[1][3] /= maximum(maxSize);
+        curview[2][3] /= maximum(maxSize);
         globalSpaceView->bindObject(object, true);
-        object->setGlobalTransform(curview).scale(50.0f/max(maxSize));
+        object->setGlobalTransform(curview).scale(50.0f/maximum(maxSize));
     }
     for(auto& [_,object]: staticObject3D){
         globalSpaceView->bindObject(object, true);
         localView->bindObject(object, false);
-        object->scale(1.0f/max(maxSize));
+        object->scale(1.0f/maximum(maxSize));
     }
 
     staticObject3D["cube"]->scale(2.0f);
     dualQuaternion<float> Q = convert(*cameraObject3D.begin()->first);
-    localCamera->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector()/max(maxSize));
+    localCamera->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector()/maximum(maxSize));
 }
 
 void testPos::mouseEvent(float)
@@ -247,9 +247,9 @@ void testPos::mouseEvent(float)
             if(object->comparePrimitive(primitiveNumber)){
                 selectedObject->setOutlining(false);
                 auto curview = *view;
-                curview[0][3] /= max(maxSize);
-                curview[1][3] /= max(maxSize);
-                curview[2][3] /= max(maxSize);
+                curview[0][3] /= maximum(maxSize);
+                curview[1][3] /= maximum(maxSize);
+                curview[2][3] /= maximum(maxSize);
                 dualQuaternion<float> Q = convert(curview);
 
                 localCamera->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector());
@@ -257,7 +257,7 @@ void testPos::mouseEvent(float)
                 (*(lightSources.rbegin()+0))->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector());
                 (*(lightSources.rbegin()+1))->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setPosition(Q.translation().vector());
 
-                object->setOutlining(true, 1.5f / max(maxSize), {0.8f, 0.6f, 0.1f, 1.0f});
+                object->setOutlining(true, 1.5f / maximum(maxSize), {0.8f, 0.6f, 0.1f, 1.0f});
                 selectedObject = object;
 
                 globalSpaceView->updateCmdFlags();

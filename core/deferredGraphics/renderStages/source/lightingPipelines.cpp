@@ -3,8 +3,23 @@
 #include "vkdefault.h"
 
 #include <filesystem>
+#include <iostream>
 
-void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath, VkPipelineLayout* pipelineLayout, VkPipeline* pipeline){
+void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath, VkBool32 enableShadow, VkBool32 enableScattering){
+    uint8_t key = (static_cast<bool>(enableScattering)<<5)|(static_cast<bool>(enableShadow)<<4)|(0x0);
+
+    struct Props{
+        VkBool32 enableShadow;
+        VkBool32 enableScattering;
+    } props{enableShadow,enableScattering && this->enableScattering};
+
+    std::vector<VkSpecializationMapEntry> specializationMapEntry = {{0,0,sizeof(VkBool32)},{1,sizeof(VkBool32),sizeof(VkBool32)}};
+    VkSpecializationInfo specializationInfo;
+        specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationMapEntry.size());
+        specializationInfo.pMapEntries = specializationMapEntry.data();
+        specializationInfo.dataSize = sizeof(Props);
+        specializationInfo.pData = &props;
+
     auto vertShaderCode = ShaderModule::readFile(vertShadersPath);
     auto fragShaderCode = ShaderModule::readFile(fragShadersPath);
     VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
@@ -13,6 +28,7 @@ void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, V
         vkDefault::vertrxShaderStage(vertShaderModule),
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
+    shaderStages.back().pSpecializationInfo = &specializationInfo;
 
     VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
     VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
@@ -32,14 +48,14 @@ void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, V
 
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         DescriptorSetLayout,
-        bufferDescriptorSetLayoutDictionary[0x0],
+        BufferDescriptorSetLayoutDictionary[0x0],
         DescriptorSetLayoutDictionary[0x0]
     };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipelineLayout);
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[key]);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -53,12 +69,12 @@ void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, V
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = *pipelineLayout;
+        pipelineInfo.back().layout = PipelineLayoutDictionary[key];
         pipelineInfo.back().renderPass = pRenderPass;
         pipelineInfo.back().subpass = 1;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, pipeline);
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelinesDictionary[key]);
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

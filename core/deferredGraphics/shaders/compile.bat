@@ -2,9 +2,6 @@ glslc.exe base/base.vert                                        -o ../spv/base/b
 glslc.exe base/base.frag                                        -o ../spv/base/basefrag.spv
 glslc.exe spotLightingPass/spotLighting.vert                    -o ../spv/spotLightingPass/spotLightingVert.spv
 glslc.exe spotLightingPass/spotLighting.frag                    -o ../spv/spotLightingPass/spotLightingFrag.spv
-glslc.exe spotLightingPass/scatteringSpotLighting.frag          -o ../spv/spotLightingPass/scatteringSpotLightingFrag.spv
-glslc.exe spotLightingPass/shadowSpotLighting.frag              -o ../spv/spotLightingPass/shadowSpotLightingFrag.spv
-glslc.exe spotLightingPass/scatteringShadowSpotLighting.frag    -o ../spv/spotLightingPass/scatteringShadowSpotLightingFrag.spv
 glslc.exe ambientLightingPass/ambientLighting.vert              -o ../spv/ambientLightingPass/ambientLightingVert.spv
 glslc.exe ambientLightingPass/ambientLighting.frag              -o ../spv/ambientLightingPass/ambientLightingFrag.spv
 glslc.exe shadow/shadowMapShader.vert                           -o ../spv/shadow/shad.spv

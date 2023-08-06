@@ -11,7 +11,7 @@ struct lightPassPushConst{
 
 void graphics::Lighting::Destroy(VkDevice device)
 {
-    for(auto& descriptorSetLayout: bufferDescriptorSetLayoutDictionary){
+    for(auto& descriptorSetLayout: BufferDescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
     }
     for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
@@ -44,7 +44,7 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    light::createBufferDescriptorSetLayout(device,&bufferDescriptorSetLayoutDictionary[0x0]);
+    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[0x0]);
     light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
 }
 
@@ -52,13 +52,10 @@ void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
 {
     std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
-    std::filesystem::path shadowSpotFrag = ShadersPath / "spotLightingPass/shadowSpotLightingFrag.spv";
-    std::filesystem::path scatteringSpotFrag = ShadersPath / std::filesystem::path("spotLightingPass") / (enableScattering ? "scatteringSpotLightingFrag.spv" : "spotLightingFrag.spv");
-    std::filesystem::path scatteringShadowSpotFrag = ShadersPath / std::filesystem::path("spotLightingPass") / (enableScattering ? "scatteringShadowSpotLightingFrag.spv": "shadowSpotLightingFrag.spv");
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,&PipelineLayoutDictionary[(false<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(false <<4)|(0x0)]);
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,shadowSpotFrag,&PipelineLayoutDictionary[(false<<5)|(true <<4)|(0x0)],&PipelinesDictionary[(false<<5)|(true <<4)|(0x0)]);
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,scatteringSpotFrag,&PipelineLayoutDictionary[(true<<5)|(false <<4)|(0x0)],&PipelinesDictionary[(true<<5)|(false <<4)|(0x0)]);
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,scatteringShadowSpotFrag,&PipelineLayoutDictionary[(true<<5)|(true <<4)|(0x0)],&PipelinesDictionary[(true<<5)|(true <<4)|(0x0)]);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,false,false);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,true,false);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,false,true);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,true,true);
 }
 
 void graphics::createLightingDescriptorPool()

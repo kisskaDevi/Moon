@@ -74,7 +74,7 @@ public:
     spotLight&          scale(const vector<float,3> & scale) override;
     spotLight&          rotateX(const float & ang ,const vector<float,3> & ax);
     spotLight&          rotateY(const float & ang ,const vector<float,3> & ax);
-    spotLight&          setPosition(const vector<float,3>& translate);
+    spotLight&          setTranslation(const vector<float,3>& translate);
     spotLight&          setRotation(const quaternion<float>& rotation);
     spotLight&          setRotation(const float & ang ,const vector<float,3> & ax);
     spotLight&          rotate(const quaternion<float>& quat);
@@ -134,7 +134,7 @@ public:
     void setLightColor(const vector<float,4> & color);
     void setLightDropFactor(const float& dropFactor);
     void setProjectionMatrix(const matrix<float,4,4> & projection);
-    void setPosition(const vector<float,3>& translate);
+    void setTranslation(const vector<float,3>& translate);
 
     isotropicLight& setGlobalTransform(const matrix<float,4,4>& transform);
     isotropicLight& translate(const vector<float,3>& translate);

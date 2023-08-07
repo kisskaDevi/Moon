@@ -64,7 +64,7 @@ baseObject& baseObject::translate(const vector<float,3> & translate)
     return *this;
 }
 
-baseObject& baseObject::setPosition(const vector<float,3>& translate)
+baseObject& baseObject::setTranslation(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,translate);
     updateModelMatrix();

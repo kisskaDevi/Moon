@@ -86,7 +86,7 @@ public:
     baseObject&         rotate(const float& ang, const vector<float,3>& ax) override;
     baseObject&         rotate(const quaternion<float>& quat);
     baseObject&         scale(const vector<float,3>& scale) override;
-    baseObject&         setPosition(const vector<float,3>& translate);
+    baseObject&         setTranslation(const vector<float,3>& translate);
 
     void                setModel(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
     void                setConstantColor(const vector<float,4> & color);

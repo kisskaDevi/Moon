@@ -53,7 +53,7 @@ public:
     baseCamera& rotateY(const float & ang ,const vector<float,3> & ax);
 
     baseCamera& setProjMatrix(const matrix<float,4,4> & proj);
-    baseCamera& setPosition(const vector<float,3> & translate);
+    baseCamera& setTranslation(const vector<float,3> & translate);
     baseCamera& setRotation(const float & ang ,const vector<float,3> & ax);
     baseCamera& setRotation(const quaternion<float>& rotation);
 

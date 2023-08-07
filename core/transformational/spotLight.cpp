@@ -106,7 +106,7 @@ spotLight& spotLight::scale(const vector<float,3> & scale)
     return *this;
 }
 
-spotLight& spotLight::setPosition(const vector<float,3>& translate)
+spotLight& spotLight::setTranslation(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
@@ -428,7 +428,7 @@ void isotropicLight::rotateY(const float & ang ,const vector<float,3> & ax)
     updateModelMatrix();
 }
 
-void isotropicLight::setPosition(const vector<float,3>& translate)
+void isotropicLight::setTranslation(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();

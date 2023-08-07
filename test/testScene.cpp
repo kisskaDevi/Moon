@@ -6,32 +6,33 @@
 #include "baseObject.h"
 #include "group.h"
 #include "baseCamera.h"
-#include "plymodel.h"
-#include "dualQuaternion.h"
 
-#include <glfw3.h>
 #include <random>
 
-bool updateLightCone = false;
-float spotAngle = 90.0f;
-
 testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath):
+    ExternalPath(ExternalPath),
     window(window),
     app(app),
-    ExternalPath(ExternalPath)
+    mouse(new controler(window, glfwGetMouseButton)),
+    board(new controler(window, glfwGetKey))
 {}
+
+testScene::~testScene(){
+    delete mouse;
+    delete board;
+}
 
 void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
-    this->WIDTH = WIDTH;
-    this->HEIGHT = HEIGHT;
+    extent = {WIDTH, HEIGHT};
 
-    cameras[0]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-    cameras[1]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f);
-    graphics[0]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
-    graphics[1]->setExtentAndOffset({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+    cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
 
-    for(auto& graph: graphics){
+    cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["view"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+
+    for(auto& [_,graph]: graphics){
         graph->destroyGraphics();
         graph->createGraphics(window, &app->getSurface());
     }
@@ -39,98 +40,44 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 
 void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
-    this->WIDTH = WIDTH;
-    this->HEIGHT = HEIGHT;
+    extent = {WIDTH, HEIGHT};
 
-    dualQuaternion<float> Q = convert(matrix<float,4,4>{
-        0.47051267730558044011f, -0.33785010488639749537f,  0.815153437779038925190f, -1814.5555612873565678f * 0.002f,
-       -0.50132129001768421794f, -0.86257417414455406224f, -0.068137788882862232454f, -15.296442244427709056f * 0.002f,
-        0.72615066251415083531f, -0.37659407951677992266f, -0.575223534465662433850f, 1402.22291609757962760f * 0.002f + 15.0f,
-        0.0f, 0.0f, 0.0f, 1.0f
-    });
+    cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
+    app->setGraphics(graphics["base"]);
 
-    cameras.push_back(new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f));
-    cameras.back()->translate(vector<float,3>(0.0f,0.0f,15.0f));
+    cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
+    app->setGraphics(graphics["view"]);
 
-    cameras.push_back(new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 500.0f));
-    cameras.back()->rotate(radians(180.0f),{1.0f,0.0f,0.0f});
-    cameras.back()->rotate(Q.rotation());
-    cameras.back()->translate(Q.translation().vector());
-
-    graphics.push_back(new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}});
-    graphics.push_back(new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}});
-
-    for(auto& graph: graphics){
-        app->setGraphics(graph);
+    for(auto& [key,graph]: graphics){
         graph->createCommandPool();
         graph->createEmptyTexture();
+        graph->bindCameraObject(cameras[key], true);
+        graph->createGraphics(window, &app->getSurface());
     }
-    graphics[0]->bindCameraObject(cameras[0], true);
-    graphics[0]->createGraphics(window, &app->getSurface());
-
-    graphics[1]->bindCameraObject(cameras[1], true);
-    graphics[1]->createGraphics(window, &app->getSurface());
-
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
-    groups.push_back(new group);
-
-    std::vector<std::filesystem::path> SKYBOX = {
-        ExternalPath / "dependences/texture/skybox/left.jpg",
-        ExternalPath / "dependences/texture/skybox/right.jpg",
-        ExternalPath / "dependences/texture/skybox/front.jpg",
-        ExternalPath / "dependences/texture/skybox/back.jpg",
-        ExternalPath / "dependences/texture/skybox/top.jpg",
-        ExternalPath / "dependences/texture/skybox/bottom.jpg"
-    };
-
-    std::vector<std::filesystem::path> SKYBOX1 = {
-        ExternalPath / "dependences/texture/skybox1/left.png",
-        ExternalPath / "dependences/texture/skybox1/right.png",
-        ExternalPath / "dependences/texture/skybox1/front.png",
-        ExternalPath / "dependences/texture/skybox1/back.png",
-        ExternalPath / "dependences/texture/skybox1/top.png",
-        ExternalPath / "dependences/texture/skybox1/bottom.png"
-    };
-
-    skyboxObjects.push_back(new skyboxObject(SKYBOX));
-    skyboxObjects.back()->scale(vector<float,3>(200.0f,200.0f,200.0f));
-    skyboxObjects.push_back(new skyboxObject(SKYBOX1));
-    skyboxObjects.back()->scale(vector<float,3>(200.0f,200.0f,200.0f));
-
-    for(size_t i = 0; i < graphics.size(); i++){
-        for(auto& object: skyboxObjects){
-            graphics[i]->bindObject(object, i == 0);
-        }
-    }
-    skyboxObjects[0]->setColorFactor(vector<float,4>(0.5));
 
     loadModels();
-    createLight();
     createObjects();
+    createLight();
 
-    groups.at(0)->translate(vector<float,3>(0.0f,0.0f,25.0f));
-    groups.at(1)->translate(vector<float,3>(0.0f,0.0f,3.0f));
-    groups.at(2)->translate(vector<float,3>(5.0f,0.0f,5.0f));
-    groups.at(3)->translate(vector<float,3>(-5.0f,0.0f,5.0f));
-    groups.at(4)->translate(vector<float,3>(10.0f,0.0f,5.0f));
-    groups.at(5)->translate(vector<float,3>(-10.0f,0.0f,5.0f));
+    groups["lightBox"]->translate(vector<float,3>(0.0f,0.0f,25.0f));
+    groups["ufo0"]->translate(vector<float,3>(5.0f,0.0f,5.0f));
+    groups["ufo1"]->translate(vector<float,3>(-5.0f,0.0f,5.0f));
+    groups["ufo2"]->translate(vector<float,3>(10.0f,0.0f,5.0f));
+    groups["ufo3"]->translate(vector<float,3>(-10.0f,0.0f,5.0f));
 }
 
 void testScene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
 {
-    this->WIDTH = WIDTH;
-    this->HEIGHT = HEIGHT;
+    extent = {WIDTH, HEIGHT};
 
     glfwPollEvents();
     mouseEvent(frameTime);
     keyboardEvent(frameTime);
     updates(frameTime);
 
-    for(auto& object: object3D){
+    for(auto& [_,object]: objects){
         object->animationTimer += timeScale * frameTime;
         object->updateAnimation(frameNumber);
     }
@@ -138,48 +85,114 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDT
 
 void testScene::destroy()
 {
-    for(auto& graph: graphics){
-        for(auto& lightSource: lightSources)    graph->removeLightSource(lightSource);
-        for (auto& object: skyboxObjects)       graph->removeObject(object);
-        for (auto& object: object3D)            graph->removeObject(object);
-        for (auto& object: staticObject3D)      graph->removeObject(object);
-        for (auto& model: models)               graph->destroyModel(model);
+    for(auto& [_,graph]: graphics){
+        for (auto& [_,object]: objects)            graph->removeObject(object);
+        for (auto& [_,object]: staticObjects)      graph->removeObject(object);
+        for (auto& [_,object]: skyboxObjects)      graph->removeObject(object);
+        for (auto& [_,model]: models)              graph->destroyModel(model);
+        for (auto& light: lightSources)            graph->removeLightSource(light);
     }
-    for(auto& lightPoint: lightPoints) delete lightPoint;
-    lightPoints.clear();
-    for(auto& object: skyboxObjects) delete object;
-    skyboxObjects.clear();
-    for(auto& object: object3D) delete object;
-    object3D.clear();
-    for(auto& object: staticObject3D) delete object;
-    staticObject3D.clear();
-    for(auto& model: models) delete model;
-    models.clear();
+    for(auto& [_,lightPoint]: lightPoints)  delete lightPoint;
+    for(auto& [_,object]: objects)          delete object;
+    for(auto& [_,object]: staticObjects)    delete object;
+    for(auto& [_,object]: skyboxObjects)    delete object;
+    for(auto& [_,model]: models)            delete model;
+    for(auto& light: lightSources)          delete light;
 
-    for(auto& graph: graphics){
+    lightPoints.clear();
+    objects.clear();
+    objects.clear();
+    staticObjects.clear();
+    models.clear();
+    lightSources.clear();
+    skyboxObjects.clear();
+
+    for(auto& [key,graph]: graphics){
         graph->destroyGraphics();
         graph->destroyEmptyTextures();
         graph->destroyCommandPool();
+        graph->removeCameraObject(cameras[key]);
+        delete graph;
     }
-    graphics[0]->removeCameraObject(cameras[0]);
-    delete graphics[0];
-    graphics[1]->removeCameraObject(cameras[1]);
-    delete graphics[1];
 }
 
 void testScene::loadModels()
 {
-    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Bee.glb", 6));
-    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Box.glb"));
-    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
-    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/Duck.glb"));
-    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb"));
-    models.push_back(new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf"));
-    models.push_back(new class plyModel(ExternalPath / "dependences/model/pyramid.ply"));
-    models.push_back(new class plyModel(ExternalPath / "dependences/model/plytest.ply"));
+    models["bee"] = new class gltfModel(ExternalPath / "dependences/model/glb/Bee.glb", 6);
+    models["box"] = new class gltfModel(ExternalPath / "dependences/model/glb/Box.glb");
+    models["sponza"] = new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf");
+    models["duck"] = new class gltfModel(ExternalPath / "dependences/model/glb/Duck.glb");
+    models["ufo"] = new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb");
 
-    for(auto& model: models){
-        graphics[0]->createModel(model);
+    for(auto& [_,model]: models){
+        graphics["base"]->createModel(model);
+    }
+}
+
+void testScene::createObjects()
+{
+    staticObjects["sponza"] = new baseObject(models["sponza"]);
+    staticObjects["sponza"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({3.0f,3.0f,3.0f});
+
+    objects["bee0"] = new baseObject(models["bee"], 0, 3);
+    objects["bee0"]->translate({3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});
+    objects["bee0"]->setBloomColor(vector<float,4>(1.0,1.0,1.0,1.0));
+
+    objects["bee1"] = new baseObject(models["bee"], 3, 3);
+    objects["bee1"]->translate({-3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});
+    objects["bee1"]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.7f));
+    objects["bee1"]->animationTimer = 1.0f;
+    objects["bee1"]->animationIndex = 1;
+
+    objects["duck"] = new baseObject(models["duck"]);
+    objects["duck"]->translate({0.0f,0.0f,3.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({3.0f});
+    objects["duck"]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
+
+    objects["lightBox"] = new baseObject(models["box"]);
+    objects["lightBox"]->setBloomColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    groups["lightBox"] = new group;
+    groups["lightBox"]->addObject(objects["lightBox"]);
+
+    for(; ufoCounter < 4; ufoCounter++){
+        objects["ufo" + std::to_string(ufoCounter)] = new baseObject(models["ufo"]);
+        objects["ufo" + std::to_string(ufoCounter)]->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+        objects["ufo" + std::to_string(ufoCounter)]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
+        groups["ufo" + std::to_string(ufoCounter)] = new group;
+        groups["ufo" + std::to_string(ufoCounter)]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
+    }
+
+    skyboxObjects["lake"] = new skyboxObject({
+        ExternalPath / "dependences/texture/skybox/left.jpg",
+        ExternalPath / "dependences/texture/skybox/right.jpg",
+        ExternalPath / "dependences/texture/skybox/front.jpg",
+        ExternalPath / "dependences/texture/skybox/back.jpg",
+        ExternalPath / "dependences/texture/skybox/top.jpg",
+        ExternalPath / "dependences/texture/skybox/bottom.jpg"
+    });
+    skyboxObjects["lake"]->setColorFactor(vector<float,4>(0.5));
+    skyboxObjects["lake"]->scale(vector<float,3>(200.0f,200.0f,200.0f));
+
+    skyboxObjects["stars"] = new skyboxObject({
+        ExternalPath / "dependences/texture/skybox1/left.png",
+        ExternalPath / "dependences/texture/skybox1/right.png",
+        ExternalPath / "dependences/texture/skybox1/front.png",
+        ExternalPath / "dependences/texture/skybox1/back.png",
+        ExternalPath / "dependences/texture/skybox1/top.png",
+        ExternalPath / "dependences/texture/skybox1/bottom.png"
+    });
+    skyboxObjects["stars"]->scale(vector<float,3>(200.0f,200.0f,200.0f));
+
+    for(auto& [_,object]: objects){
+        graphics["base"]->bindObject(object, true);
+        graphics["view"]->bindObject(object, false);
+    }
+    for(auto& [_,object]: staticObjects){
+        graphics["base"]->bindObject(object, true);
+        graphics["view"]->bindObject(object, false);
+    }
+    for(auto& [_, object]: skyboxObjects){
+        graphics["base"]->bindObject(object, true);
+        graphics["view"]->bindObject(object, false);
     }
 }
 
@@ -190,193 +203,95 @@ void testScene::createLight()
     std::filesystem::path LIGHT_TEXTURE2  = ExternalPath / "dependences/texture/light2.jpg";
     std::filesystem::path LIGHT_TEXTURE3  = ExternalPath / "dependences/texture/light3.jpg";
 
-    lightPoints.push_back(new isotropicLight(lightSources));
-    lightPoints.back()->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
-    groups.at(0)->addObject(lightPoints.back());
+    lightPoints["lightBox"] = new isotropicLight(lightSources);
+    lightPoints["lightBox"]->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    groups["lightBox"]->addObject(lightPoints["lightBox"]);
 
-    matrix<float,4,4> proj = perspective(radians(spotAngle), 1.0f, 0.1f, 20.0f);
+    matrix<float,4,4> proj = perspective(radians(90.0f), 1.0f, 0.1f, 20.0f);
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE0, proj, true, true));
-    groups.at(2)->addObject(lightSources.back());
+    groups["ufo0"]->addObject(lightSources.back());
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE1, proj, true, true));
-    groups.at(3)->addObject(lightSources.back());
+    groups["ufo1"]->addObject(lightSources.back());
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE2, proj, true, true));
-    groups.at(4)->addObject(lightSources.back());
+    groups["ufo2"]->addObject(lightSources.back());
 
     lightSources.push_back(new spotLight(LIGHT_TEXTURE3, proj, true, true));
-    groups.at(5)->addObject(lightSources.back());
+    groups["ufo3"]->addObject(lightSources.back());
 
-    for(auto& graph: graphics){
-        for(auto& source: lightSources){
-            graph->bindLightSource(source, &graph == &graphics[0]);
-            source->setLightDropFactor(0.2f);
-        }
+    for(auto& source: lightSources){
+        graphics["base"]->bindLightSource(source, true);
+        graphics["view"]->bindLightSource(source, false);
+        source->setLightDropFactor(0.2f);
     }
 }
 
-void testScene::createObjects()
+void testScene::mouseEvent(float frameTime)
 {
-    object3D.push_back( new baseObject(models.at(0), 0, 3));
-    object3D.back()->setBloomColor(vector<float,4>(1.0,1.0,1.0,1.0));
-    object3D.back()->translate(vector<float,3>(3.0f,0.0f,0.0f));
-    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    object3D.back()->scale(vector<float,3>(0.2f,0.2f,0.2f));
+    float sensitivity = mouse->sensitivity * frameTime;
 
-    object3D.push_back(new baseObject(models.at(0), 3, 3));
-    object3D.back()->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.7f));
-    object3D.back()->translate(vector<float,3>(-3.0f,0.0f,0.0f));
-    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    object3D.back()->scale(vector<float,3>(0.2f,0.2f,0.2f));
-    object3D.back()->animationTimer = 1.0f;
-    object3D.back()->animationIndex = 1;
-
-    object3D.push_back(new baseObject(models.at(3)));
-    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    object3D.back()->scale(vector<float,3>(3.0f));
-    object3D.back()->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
-    object3D.back()->animationTimer = 0.0f;
-    object3D.back()->animationIndex = 0;
-    groups.at(1)->addObject(object3D.back());
-
-    staticObject3D.push_back(new baseObject(models.at(2)));
-    staticObject3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    staticObject3D.back()->scale(vector<float,3>(3.0f,3.0f,3.0f));
-
-    object3D.push_back(new baseObject(models.at(1)));
-    object3D.back()->setBloomColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
-    groups.at(0)->addObject(object3D.back());
-
-    object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(vector<float,4>(0.0f,0.0f,1.0f,-0.8f));
-    object3D.back()->setBloomFactor(vector<float,4>(1.0f,0.0f,0.0f,0.0f));
-    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    groups.at(2)->addObject(object3D.back());
-
-    object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(vector<float,4>(1.0f,0.0f,0.0f,-0.8f));
-    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    groups.at(3)->addObject(object3D.back());
-
-    object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(vector<float,4>(1.0f,1.0f,0.0f,-0.8f));
-    object3D.back()->setBloomFactor(vector<float,4>(0.0f,0.0f,1.0f,0.0f));
-    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    groups.at(4)->addObject(object3D.back());
-
-    object3D.push_back(new baseObject(models.at(4)));
-    object3D.back()->setConstantColor(vector<float,4>(0.0f,1.0f,1.0f,-0.8f));
-    object3D.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    groups.at(5)->addObject(object3D.back());
-
-    //object3D.push_back(new baseObject(models.at(6)));
-    //object3D.back()->setGlobalTransform(m);
-    //object3D.back()->scale(vector<float,3>(0.2f));
-    //object3D.back()->setConstantColor(vector<float,4>(0.2f,0.8f,1.0f,1.0f));
-    //object3D.back()->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,1.0f));
-
-    object3D.push_back(new baseObject(models.at(7)));
-    object3D.back()->translate(vector<float,3>(0.0f,0.0f,15.0f));
-    object3D.back()->scale(vector<float,3>(0.002f));
-    object3D.back()->setConstantColor(vector<float,4>(0.2f,0.8f,1.0f,1.0f));
-    object3D.back()->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,1.0f));
-
-    for(auto& graph: graphics){
-        for(auto& object: object3D){
-            graph->bindObject(object, &graphics[0] == &graph);
-        }
-        for(auto& object: staticObject3D){
-            graph->bindObject(object, &graphics[0] == &graph);
-        }
-    }
-}
-
-void testScene::mouseEvent(float)
-{
     int primitiveNumber = INT_FAST32_MAX;
     for(uint32_t i=0; i < app->getImageCount(); i++){
-        primitiveNumber = graphics[0]->readStorageBuffer(i);
-        if(primitiveNumber!=INT_FAST32_MAX)
+        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != INT_FAST32_MAX)
             break;
     }
 
-    glfwSetScrollCallback(window,[](GLFWwindow*, double, double yoffset) {
-      spotAngle -= static_cast<float>(yoffset);
-      updateLightCone = yoffset!=0.0;
-    });
+    glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {});
 
-    if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-    {
-        float sensitivity = 0.001;
-
-        double x, y;
+    if(double x = 0, y = 0; mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
         glfwGetCursorPos(window,&x,&y);
-        cameras[0]->rotateX(sensitivity * static_cast<float>(yMpos - y), {1.0f,0.0f,0.0f});
-        cameras[0]->rotateY(sensitivity * static_cast<float>(xMpos - x), {0.0f,0.0f,1.0f});
-        xMpos = x;
-        yMpos = y;
+        cameras["base"]->rotateX(sensitivity * static_cast<float>(mousePos[1] - y), {1.0f,0.0f,0.0f});
+        cameras["base"]->rotateY(sensitivity * static_cast<float>(mousePos[0] - x), {0.0f,0.0f,1.0f});
+        mousePos = {x,y};
 
+        auto scale = [](auto pos, auto ex) -> float { return 2.0 * pos / ex - 1.0;};
         for(uint32_t i=0; i < app->getImageCount(); i++){
-            graphics[0]->updateStorageBuffer(i, 2.0f * static_cast<float>(xMpos)/WIDTH - 1.0f , 2.0f * static_cast<float>(yMpos)/HEIGHT - 1.0f);
+            graphics["base"]->updateStorageBuffer(i, scale(mousePos[0],extent[0]), scale(mousePos[1],extent[1]));
         }
+    }else {
+        glfwGetCursorPos(window,&mousePos[0],&mousePos[1]);
     }
-    else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)
-    {
-        for(auto& object: object3D){
-            if(object->comparePrimitive(primitiveNumber)){
-                controledObject = object;
-                std::cout<< (&object - &object3D[0]) <<std::endl;
-            }
-        }
-    }
-    else
-    {
-        glfwGetCursorPos(window,&xMpos,&yMpos);
-    }
-    mouse1Stage = glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT);
 
-    if(updateLightCone){
-        for(auto& source: lightSources){
-            if(spotAngle>0.0f){
-                source->setProjectionMatrix(perspective(radians(spotAngle), 1.0f, 0.1f, 20.0f));
+    if(mouse->released(GLFW_MOUSE_BUTTON_LEFT)){
+        for(auto& [key, object]: objects){
+            object->setOutlining(false);
+            if(object->comparePrimitive(primitiveNumber)){
+                std::random_device device;
+                std::uniform_real_distribution dist(0.3f, 1.0f);
+
+                object->setOutlining(true, 0.03f, {dist(device), dist(device), dist(device), dist(device)});
+                controledObject = object;
+                std::cout<< key <<std::endl;
+
+                graphics["base"]->updateCmdFlags();
+                graphics["view"]->updateCmdFlags();
             }
         }
-        updateLightCone = false;
+    }
+
+    if(mouse->released(GLFW_MOUSE_BUTTON_RIGHT))
+    {
+        auto q = convert(inverse(cameras["base"]->getViewMatrix()));
+        cameras["view"]->setTranslation(q.translation().vector()).setRotation(q.rotation());
     }
 }
 
 void testScene::keyboardEvent(float frameTime)
 {
     float sensitivity = 5.0f*frameTime;
-    if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
-    {
-        cameras[0]->translate(-sensitivity*cameras[0]->getViewMatrix()[2].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
-    {
-        cameras[0]->translate(sensitivity*cameras[0]->getViewMatrix()[2].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
-    {
-        cameras[0]->translate(-sensitivity*cameras[0]->getViewMatrix()[0].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
-    {
-        cameras[0]->translate(sensitivity*cameras[0]->getViewMatrix()[0].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_Z) == GLFW_PRESS)
-    {
-        cameras[0]->translate(sensitivity*cameras[0]->getViewMatrix()[1].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_X) == GLFW_PRESS)
-    {
-        cameras[0]->translate(-sensitivity*cameras[0]->getViewMatrix()[1].dvec());
-    }
+
+    if(board->pressed(GLFW_KEY_A)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[0].dvec());
+    if(board->pressed(GLFW_KEY_X)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
+    if(board->pressed(GLFW_KEY_W)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
+    if(board->pressed(GLFW_KEY_D)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[0].dvec());
+    if(board->pressed(GLFW_KEY_Z)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
+    if(board->pressed(GLFW_KEY_S)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
 
     auto rotateControled = [this](const float& ang, const vector<float,3>& ax){
         if(bool foundInGroups = false; this->controledObject){
-            for(auto& group: this->groups){
+            for(auto& [_,group]: this->groups){
                 if(group->findObject(this->controledObject)){
                     group->rotate(ang,ax);
                     foundInGroups = true;
@@ -386,9 +301,16 @@ void testScene::keyboardEvent(float frameTime)
         }
     };
 
+    if(board->pressed(GLFW_KEY_KP_4)) rotateControled(radians(0.5f),{0.0f,0.0f,1.0f});
+    if(board->pressed(GLFW_KEY_KP_6)) rotateControled(radians(-0.5f),{0.0f,0.0f,1.0f});
+    if(board->pressed(GLFW_KEY_KP_8)) rotateControled(radians(0.5f),{1.0f,0.0f,0.0f});
+    if(board->pressed(GLFW_KEY_KP_5)) rotateControled(radians(-0.5f),{1.0f,0.0f,0.0f});
+    if(board->pressed(GLFW_KEY_KP_7)) rotateControled(radians(0.5f),{0.0f,1.0f,0.0f});
+    if(board->pressed(GLFW_KEY_KP_9)) rotateControled(radians(-0.5f),{0.0f,1.0f,0.0f});
+
     auto translateControled = [this](const vector<float,3>& tr){
         if(bool foundInGroups = false; this->controledObject){
-            for(auto& group: this->groups){
+            for(auto& [_,group]: this->groups){
                 if(group->findObject(this->controledObject)){
                     group->translate(tr);
                     foundInGroups = true;
@@ -398,130 +320,93 @@ void testScene::keyboardEvent(float frameTime)
         }
     };
 
-    if(glfwGetKey(window,GLFW_KEY_KP_4) == GLFW_PRESS)
-    {
-        rotateControled(radians(0.5f),{0.0f,0.0f,1.0f});
-    }
-    if(glfwGetKey(window,GLFW_KEY_KP_6) == GLFW_PRESS)
-    {
-        rotateControled(radians(-0.5f),{0.0f,0.0f,1.0f});
-    }
-    if(glfwGetKey(window,GLFW_KEY_KP_8) == GLFW_PRESS)
-    {
-        rotateControled(radians(0.5f),{1.0f,0.0f,0.0f});
-    }
-    if(glfwGetKey(window,GLFW_KEY_KP_5) == GLFW_PRESS)
-    {
-        rotateControled(radians(-0.5f),{1.0f,0.0f,0.0f});
-    }
-    if(glfwGetKey(window,GLFW_KEY_KP_7) == GLFW_PRESS)
-    {
-        rotateControled(radians(0.5f),{0.0f,1.0f,0.0f});
-    }
-    if(glfwGetKey(window,GLFW_KEY_KP_9) == GLFW_PRESS)
-    {
-        rotateControled(radians(-0.5f),{0.0f,1.0f,0.0f});
-    }
+    if(board->pressed(GLFW_KEY_LEFT))           translateControled(sensitivity*vector<float,3>(-1.0f, 0.0f, 0.0f));
+    if(board->pressed(GLFW_KEY_RIGHT))          translateControled(sensitivity*vector<float,3>( 1.0f, 0.0f, 0.0f));
+    if(board->pressed(GLFW_KEY_UP))             translateControled(sensitivity*vector<float,3>( 0.0f, 1.0f, 0.0f));
+    if(board->pressed(GLFW_KEY_DOWN))           translateControled(sensitivity*vector<float,3>( 0.0f,-1.0f, 0.0f));
+    if(board->pressed(GLFW_KEY_KP_ADD))         translateControled(sensitivity*vector<float,3>( 0.0f, 0.0f, 1.0f));
+    if(board->pressed(GLFW_KEY_KP_SUBTRACT))    translateControled(sensitivity*vector<float,3>( 0.0f, 0.0f,-1.0f));
 
-    if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS)
-    {
-        translateControled(sensitivity*vector<float,3>(-1.0f,0.0f,0.0f));
-    }
-    if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS)
-    {
-        translateControled(sensitivity*vector<float,3>(1.0f,0.0f,0.0f));
-    }
-    if(glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)
-    {
-        translateControled(sensitivity*vector<float,3>(0.0f,1.0f,0.0f));
-    }
-    if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)
-    {
-        translateControled(sensitivity*vector<float,3>(0.0f,-1.0f,0.0f));
-    }
-    if(glfwGetKey(window,GLFW_KEY_KP_ADD) == GLFW_PRESS)
-    {
-        translateControled(sensitivity*vector<float,3>(0.0f,0.0f,1.0f));
-    }
-    if(glfwGetKey(window,GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
-    {
-        translateControled(sensitivity*vector<float,3>(0.0f,0.0f,-1.0f));
-    }
+    if(board->released(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window,GLFW_TRUE);
 
-    if(glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window,GLFW_TRUE);
-    }
-
-    if(backOStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_O) == 0)
-    {
-        for(auto& object: object3D){
+    if(board->released(GLFW_KEY_O)) {
+        for(auto& [_,object]: objects){
             if(controledObject == object){
                 std::random_device device;
                 std::uniform_real_distribution dist(0.3f, 1.0f);
-
                 object->setOutlining(!object->getOutliningEnable(), 0.03f, {dist(device), dist(device), dist(device), dist(device)});
             }
         }
-        graphics[0]->updateCmdFlags();
+        graphics["base"]->updateCmdFlags();
+        graphics["view"]->updateCmdFlags();
     }
-    backOStage = glfwGetKey(window,GLFW_KEY_O);
 
-    if(backTStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_T) == 0)
-    {
-        object3D[0]->changeAnimationFlag = true;
-        object3D[0]->startTimer = object3D[0]->animationTimer;
-        object3D[0]->changeAnimationTime = 0.5f;
-        if(object3D[0]->animationIndex == 0)
-            object3D[0]->newAnimationIndex = 1;
-        else if(object3D[0]->animationIndex == 1)
-            object3D[0]->newAnimationIndex = 0;
-    }
-    backTStage = glfwGetKey(window,GLFW_KEY_T);
-
-    if(backNStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_N) == 0)
-    {
-        object3D.push_back(new baseObject(models.at(4)));
-        object3D.back()->translate(cameras[0]->getTranslation());
-        object3D.back()->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
-        graphics[0]->bindObject(object3D.back(), true);
-    }
-    backNStage = glfwGetKey(window,GLFW_KEY_N);
-
-    if(backBStage == GLFW_PRESS && glfwGetKey(window,GLFW_KEY_B) == 0)
-    {
-        app->deviceWaitIdle();
-        if(object3D.size() && graphics[0]->removeObject(object3D.back())) {
-            object3D.pop_back();
+    if(board->released(GLFW_KEY_T)) {
+        objects["bee0"]->changeAnimationFlag = true;
+        objects["bee0"]->startTimer = objects["bee0"]->animationTimer;
+        objects["bee0"]->changeAnimationTime = 0.5f;
+        if(objects["bee0"]->animationIndex == 0){
+            objects["bee0"]->newAnimationIndex = 1;
+        } else if(objects["bee0"]->animationIndex == 1){
+            objects["bee0"]->newAnimationIndex = 0;
         }
     }
-    backBStage = glfwGetKey(window,GLFW_KEY_B);
 
-    if(glfwGetKey(window,GLFW_KEY_KP_0) == GLFW_PRESS)
-    {
+    if(board->released(GLFW_KEY_N)) {
+        std::random_device device;
+        std::uniform_real_distribution dist(0.3f, 1.0f);
+
+        lightSources.push_back(new spotLight(perspective(radians(90.0f), 1.0f, 0.1f, 20.0f), true, true));
+        lightSources.back()->setLightColor({dist(device), dist(device), dist(device), 1.0f});
+        lightSources.back()->setLightDropFactor(0.2f);
+
+        objects["ufo" + std::to_string(ufoCounter)] = new baseObject(models["ufo"]);
+        objects["ufo" + std::to_string(ufoCounter)]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
+
+        groups["ufo0" + std::to_string(ufoCounter)] = new group;
+        groups["ufo0" + std::to_string(ufoCounter)]->translate(cameras["base"]->getTranslation());
+        groups["ufo0" + std::to_string(ufoCounter)]->addObject(lightSources.back());
+        groups["ufo0" + std::to_string(ufoCounter)]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
+
+        graphics["base"]->bindLightSource(lightSources.back(), true);
+        graphics["view"]->bindLightSource(lightSources.back(), false);
+        graphics["base"]->bindObject(objects["ufo" + std::to_string(ufoCounter)], true);
+        graphics["view"]->bindObject(objects["ufo" + std::to_string(ufoCounter)], false);
+        ufoCounter++;
+    }
+
+    if(board->released(GLFW_KEY_B)) {
+        app->deviceWaitIdle();
+        if(ufoCounter > 4) {
+            graphics["base"]->removeObject(objects["ufo" + std::to_string(ufoCounter - 1)]);
+            graphics["view"]->removeObject(objects["ufo" + std::to_string(ufoCounter - 1)]);
+            graphics["base"]->removeLightSource(lightSources.back());
+            graphics["view"]->removeLightSource(lightSources.back());
+            lightSources.pop_back();
+            objects.erase("ufo" + std::to_string(ufoCounter));
+            ufoCounter--;
+        }
+    }
+
+    if(board->pressed(GLFW_KEY_KP_0)) {
         minAmbientFactor -= minAmbientFactor > 0.011 ? 0.01f : 0.0f;
-        graphics[0]->setMinAmbientFactor(minAmbientFactor);
+        graphics["base"]->setMinAmbientFactor(minAmbientFactor);
+        graphics["view"]->setMinAmbientFactor(minAmbientFactor);
     }
-    if(glfwGetKey(window,GLFW_KEY_KP_2) == GLFW_PRESS)
-    {
+    if(board->pressed(GLFW_KEY_KP_2)) {
         minAmbientFactor += 0.01f;
-        graphics[0]->setMinAmbientFactor(minAmbientFactor);
+        graphics["base"]->setMinAmbientFactor(minAmbientFactor);
+        graphics["view"]->setMinAmbientFactor(minAmbientFactor);
     }
 
-    if(glfwGetKey(window,GLFW_KEY_LEFT_BRACKET) == GLFW_PRESS)
-    {
-        timeScale -= timeScale > 0.0051f ? 0.005f : 0.0f;
-    }
-    if(glfwGetKey(window,GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS)
-    {
-        timeScale += 0.005f;
-    }
+    if(board->pressed(GLFW_KEY_LEFT_BRACKET))   timeScale -= timeScale > 0.0051f ? 0.005f : 0.0f;
+    if(board->pressed(GLFW_KEY_RIGHT_BRACKET))  timeScale += 0.005f;
 }
 
 void testScene::updates(float frameTime)
 {
     globalTime += frameTime;
 
-    skyboxObjects[1]->rotate(0.1f*frameTime,normalize(vector<float,3>(1.0f,1.0f,1.0f)));
+    skyboxObjects["stars"]->rotate(0.1f*frameTime,normalize(vector<float,3>(1.0f,1.0f,1.0f)));
 }
 

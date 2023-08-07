@@ -271,19 +271,23 @@ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>&
     quaternion<T> t1 = quat1.translation();
     quaternion<T> t2 = quat2.translation();
 
-    dualQuaternion<T> dQuat(conjugate(r1)*r2,T(0.5)*conjugate(r1)*(t2-t1)*r2);
-    T theta = T(2)*std::acos(dQuat.p.scalar());
+    dualQuaternion<T> dQuat(conjugate(r1) * r2, T(0.5) * conjugate(r1) * (t2 - t1) * r2);
+    dQuat.normalize();
+
     vector<T,3> l = normalize(dQuat.p.vector());
+    vector<T,3> tr = T(0.5)* vector<T,3>(dQuat.translation().vector());
 
-    vector<T,3> tr = vector<T,3>(dQuat.translation().vector());
-    T d = tr.x*l.x + tr.y*l.y + tr.z*l.z;
-    vector<T,3> m = T(0.5)*(cross(tr,l)+(tr-d*l)/std::tan(T(0.5)*theta));
+    T d = dot(tr,l);
+    T theta = std::acos(dQuat.p.scalar());
 
-    theta *= t;
-    d     *= t;
+    auto ratio = [](const T& theta, const T& t){
+        return theta == T(0) ? t : std::sin(t * theta)/std::tan(theta);
+    };
 
-    dualQuaternion<T> sigma(    quaternion<T>(          std::cos(T(0.5)*theta),             std::sin(T(0.5)*theta)*l                            ),
-                                quaternion<T>(-T(0.5)*d*std::sin(T(0.5)*theta),    T(0.5)*d*std::cos(T(0.5)*theta)*l + std::sin(T(0.5)*theta)*m));
+    dualQuaternion<T> sigma(
+        quaternion<T>(std::cos(t * theta), std::sin(t * theta) * l),
+        quaternion<T>(std::sin(t * theta) * (- d*t), std::cos(t * theta) * (l * d*t) + std::sin(t * theta) * cross(tr,l) + ratio(theta,t) * (tr - d*l))
+    );
 
     return quat1*sigma;
 }

@@ -31,7 +31,6 @@ void baseCamera::recreate(float angle, float aspect, float near)
     setProjMatrix(proj);
 }
 
-
 baseCamera::~baseCamera(){}
 
 void baseCamera::destroy(VkDevice device)
@@ -119,7 +118,7 @@ baseCamera& baseCamera::rotateY(const float & ang ,const vector<float,3> & ax)
     return *this;
 }
 
-baseCamera& baseCamera::setPosition(const vector<float,3> & translate)
+baseCamera& baseCamera::setTranslation(const vector<float,3> & translate)
 {
     translation = quaternion<float>(0.0f,translate);
     updateViewMatrix();

@@ -110,7 +110,7 @@ public:
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
 
-    std::vector<std::vector<VkSemaphore>> sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
+    std::vector<std::vector<VkSemaphore>> sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 
     void        updateCmdFlags();
 

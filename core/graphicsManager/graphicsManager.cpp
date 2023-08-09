@@ -153,13 +153,11 @@ VkResult graphicsManager::drawFrame()
 
     vkResetFences(devices[0].getLogical(), 1, &fences[imageIndex]);
 
-    std::vector<std::vector<VkFence>> signalFences(graphics.size() - 1);
     std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[semaphorIndex]}};
     for(size_t i = 0; i < graphics.size() - 1; i++){
-        waitSemaphores = graphics[i]->sibmit(waitSemaphores,signalFences[i],imageIndex);
+        waitSemaphores = graphics[i]->sibmit(waitSemaphores,{VK_NULL_HANDLE},imageIndex);
     }
-    signalFences.push_back({fences[imageIndex]});
-    waitSemaphores = graphics.back()->sibmit(waitSemaphores,signalFences.back(),imageIndex);
+    waitSemaphores = graphics.back()->sibmit(waitSemaphores,{fences[imageIndex]},imageIndex);
 
     semaphorIndex = ((semaphorIndex + 1) % getImageCount());
 

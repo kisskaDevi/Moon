@@ -32,7 +32,7 @@ struct node
     node* back();
 
     void setExternalSemaphore(const std::vector<std::vector<VkSemaphore>>& externalSemaphore);
-    void setExternalFence(std::vector<VkFence>& externalFence);
+    void setExternalFence(const std::vector<VkFence>& externalFence);
     std::vector<std::vector<VkSemaphore>> getBackSemaphores();
 
     VkResult createSemaphores(VkDevice device);

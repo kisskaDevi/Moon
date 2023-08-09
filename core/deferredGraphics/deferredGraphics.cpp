@@ -381,7 +381,7 @@ void deferredGraphics::createCommandBuffers()
     }
 }
 
-std::vector<std::vector<VkSemaphore>> deferredGraphics::sibmit(std::vector<std::vector<VkSemaphore>>& externalSemaphore, std::vector<VkFence>& externalFence, uint32_t imageIndex)
+std::vector<std::vector<VkSemaphore>> deferredGraphics::sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex)
 {
     if(externalSemaphore.size()){
         nodes[imageIndex]->setExternalSemaphore(externalSemaphore);

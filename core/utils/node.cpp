@@ -45,7 +45,7 @@ void node::setExternalSemaphore(const std::vector<std::vector<VkSemaphore>>& ext
     }
 }
 
-void node::setExternalFence(std::vector<VkFence>& externalFence){
+void node::setExternalFence(const std::vector<VkFence>& externalFence){
     for(uint32_t i = 0; i < externalFence.size(); i++){
         stages[i].fence = externalFence[i];
     }

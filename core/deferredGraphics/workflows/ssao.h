@@ -1,14 +1,14 @@
 #ifndef SSAO_H
 #define SSAO_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 
 class camera;
 
-class SSAOGraphics : public filterGraphics
+class SSAOGraphics : public workflow
 {
 private:
-    struct SSAO : public filter{
+    struct SSAO : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device)override;
     }ssao;

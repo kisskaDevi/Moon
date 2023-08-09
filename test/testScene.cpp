@@ -153,12 +153,12 @@ void testScene::createObjects()
     groups["lightBox"] = new group;
     groups["lightBox"]->addObject(objects["lightBox"]);
 
-    for(; ufoCounter < 4; ufoCounter++){
-        objects["ufo" + std::to_string(ufoCounter)] = new baseObject(models["ufo"]);
-        objects["ufo" + std::to_string(ufoCounter)]->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-        objects["ufo" + std::to_string(ufoCounter)]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
-        groups["ufo" + std::to_string(ufoCounter)] = new group;
-        groups["ufo" + std::to_string(ufoCounter)]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
+    for(auto key = "ufo" + std::to_string(ufoCounter); ufoCounter < 4; ufoCounter++, key = "ufo" + std::to_string(ufoCounter)){
+        objects[key] = new baseObject(models["ufo"]);
+        objects[key]->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+        objects[key]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
+        groups[key] = new group;
+        groups[key]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
     }
 
     skyboxObjects["lake"] = new skyboxObject({
@@ -246,7 +246,7 @@ void testScene::mouseEvent(float frameTime)
         cameras["base"]->rotateY(sensitivity * static_cast<float>(mousePos[0] - x), {0.0f,0.0f,1.0f});
         mousePos = {x,y};
 
-        auto scale = [](auto pos, auto ex) -> float { return 2.0 * pos / ex - 1.0;};
+        auto scale = [](double pos, double ex) -> float { return static_cast<float>(2.0 * pos / ex - 1.0);};
         for(uint32_t i=0; i < app->getImageCount(); i++){
             graphics["base"]->updateStorageBuffer(i, scale(mousePos[0],extent[0]), scale(mousePos[1],extent[1]));
         }

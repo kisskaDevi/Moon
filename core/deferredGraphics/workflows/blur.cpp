@@ -19,7 +19,7 @@ void gaussianBlur::destroy(){
     xblur.destroy(device);
     yblur.destroy(device);
 
-    filterGraphics::destroy();
+    workflow::destroy();
 
     bufferAttachment.deleteAttachment(device);
     bufferAttachment.deleteSampler(device);
@@ -181,13 +181,13 @@ void gaussianBlur::blur::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
 }
 
 void gaussianBlur::createDescriptorPool(){
-    filterGraphics::createDescriptorPool(device, &xblur, 0, image.Count, image.Count);
-    filterGraphics::createDescriptorPool(device, &yblur, 0, image.Count, image.Count);
+    workflow::createDescriptorPool(device, &xblur, 0, image.Count, image.Count);
+    workflow::createDescriptorPool(device, &yblur, 0, image.Count, image.Count);
 }
 
 void gaussianBlur::createDescriptorSets(){
-    filterGraphics::createDescriptorSets(device, &xblur, image.Count);
-    filterGraphics::createDescriptorSets(device, &yblur, image.Count);
+    workflow::createDescriptorSets(device, &xblur, image.Count);
+    workflow::createDescriptorSets(device, &yblur, image.Count);
 }
 
 void gaussianBlur::updateDescriptorSets(attachments* blurAttachment){

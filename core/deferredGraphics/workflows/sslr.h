@@ -1,14 +1,14 @@
 #ifndef SSLR_H
 #define SSLR_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 
 class camera;
 
-class SSLRGraphics : public filterGraphics
+class SSLRGraphics : public workflow
 {
 private:
-    struct SSLR : public filter{
+    struct SSLR : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }sslr;

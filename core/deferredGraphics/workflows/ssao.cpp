@@ -1,9 +1,9 @@
-#include "sslr.h"
+#include "ssao.h"
 #include "operations.h"
 #include "vkdefault.h"
 #include "camera.h"
 
-void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
+void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
     for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
     {
@@ -13,14 +13,14 @@ void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAt
     }
 }
 
-void SSLRGraphics::destroy()
+void SSAOGraphics::destroy()
 {
-    sslr.destroy(device);
+    ssao.destroy(device);
 
-    filterGraphics::destroy();
+    workflow::destroy();
 }
 
-void SSLRGraphics::createRenderPass()
+void SSAOGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
         attachments::imageDescription(image.Format)
@@ -58,7 +58,7 @@ void SSLRGraphics::createRenderPass()
     vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
 }
 
-void SSLRGraphics::createFramebuffers()
+void SSAOGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
@@ -74,22 +74,18 @@ void SSLRGraphics::createFramebuffers()
     }
 }
 
-void SSLRGraphics::createPipelines()
+void SSAOGraphics::createPipelines()
 {
-    sslr.vertShaderPath = shadersPath / "sslr/sslrVert.spv";
-    sslr.fragShaderPath = shadersPath / "sslr/sslrFrag.spv";
-    sslr.createDescriptorSetLayout(device);
-    sslr.createPipeline(device,&image,renderPass);
+    ssao.vertShaderPath = shadersPath / "ssao/ssaoVert.spv";
+    ssao.fragShaderPath = shadersPath / "ssao/ssaoFrag.spv";
+    ssao.createDescriptorSetLayout(device);
+    ssao.createPipeline(device,&image,renderPass);
 }
 
-void SSLRGraphics::SSLR::createDescriptorSetLayout(VkDevice device)
+void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(vkDefault::bufferFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -102,7 +98,7 @@ void SSLRGraphics::SSLR::createDescriptorSetLayout(VkDevice device)
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 }
 
-void SSLRGraphics::SSLR::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+void SSAOGraphics::SSAO::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
     auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
     auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
@@ -153,15 +149,15 @@ void SSLRGraphics::SSLR::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void SSLRGraphics::createDescriptorPool(){
-    filterGraphics::createDescriptorPool(device, &sslr, image.Count, 8 * image.Count, image.Count);
+void SSAOGraphics::createDescriptorPool(){
+    workflow::createDescriptorPool(device, &ssao, image.Count, 4 * image.Count, image.Count);
 }
 
-void SSLRGraphics::createDescriptorSets(){
-    filterGraphics::createDescriptorSets(device, &sslr, image.Count);
+void SSAOGraphics::createDescriptorSets(){
+    workflow::createDescriptorSets(device, &ssao, image.Count);
 }
 
-void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments, DeferredAttachments firstLayer)
+void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments)
 {
     for (uint32_t i = 0; i < image.Count; i++)
     {
@@ -190,30 +186,10 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
             depthInfo.imageView = deferredAttachments.depth.imageView[i];
             depthInfo.sampler = deferredAttachments.depth.sampler;
 
-        VkDescriptorImageInfo layerPositionInfo{};
-            layerPositionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerPositionInfo.imageView = firstLayer.GBuffer.position.imageView[i];
-            layerPositionInfo.sampler = firstLayer.GBuffer.position.sampler;
-
-        VkDescriptorImageInfo layerNormalInfo{};
-            layerNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerNormalInfo.imageView = firstLayer.GBuffer.normal.imageView[i];
-            layerNormalInfo.sampler = firstLayer.GBuffer.normal.sampler;
-
-        VkDescriptorImageInfo layerImageInfo{};
-            layerImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerImageInfo.imageView = firstLayer.image.imageView[i];
-            layerImageInfo.sampler = firstLayer.image.sampler;
-
-        VkDescriptorImageInfo layerDepthInfo{};
-            layerDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerDepthInfo.imageView = firstLayer.depth.imageView[i];
-            layerDepthInfo.sampler = firstLayer.depth.sampler;
-
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -221,7 +197,7 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
             descriptorWrites.back().pBufferInfo = &bufferInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -229,7 +205,7 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
             descriptorWrites.back().pImageInfo = &positionInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -237,7 +213,7 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
             descriptorWrites.back().pImageInfo = &normalInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -245,49 +221,17 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
             descriptorWrites.back().pImageInfo = &imageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &depthInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &layerPositionInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &layerNormalInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &layerImageInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = sslr.DescriptorSets[i];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &layerDepthInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber)
+void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
     std::vector<VkClearValue> clearValues(attachmentsCount,VkClearValue{});
     for(uint32_t index = 0; index < clearValues.size(); index++){
@@ -305,8 +249,8 @@ void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber)
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, sslr.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, sslr.PipelineLayout, 0, 1, &sslr.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.PipelineLayout, 0, 1, &ssao.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);

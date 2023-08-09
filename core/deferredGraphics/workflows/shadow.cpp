@@ -16,7 +16,7 @@ void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* p
 
 void shadowGraphics::Shadow::destroy(VkDevice device)
 {
-    filter::destroy(device);
+    workbody::destroy(device);
     if(lightUniformBufferSetLayout) {vkDestroyDescriptorSetLayout(device, lightUniformBufferSetLayout, nullptr); lightUniformBufferSetLayout = VK_NULL_HANDLE;}
     if(ObjectDescriptorSetLayout)       {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
     if(PrimitiveDescriptorSetLayout)      {vkDestroyDescriptorSetLayout(device, PrimitiveDescriptorSetLayout, nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
@@ -27,7 +27,7 @@ void shadowGraphics::destroy()
 {
     shadow.destroy(device);
 
-    filterGraphics::destroy();
+    workflow::destroy();
 }
 
 void shadowGraphics::createRenderPass()

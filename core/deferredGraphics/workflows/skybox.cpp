@@ -18,7 +18,7 @@ void skyboxGraphics::createAttachments(uint32_t attachmentsCount, attachments* p
 
 void skyboxGraphics::Skybox::destroy(VkDevice device)
 {
-    filter::destroy(device);
+    workbody::destroy(device);
     if(ObjectDescriptorSetLayout)   {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
@@ -26,7 +26,7 @@ void skyboxGraphics::destroy()
 {
     skybox.destroy(device);
 
-    filterGraphics::destroy();
+    workflow::destroy();
 }
 
 void skyboxGraphics::createRenderPass()
@@ -158,11 +158,11 @@ void skyboxGraphics::Skybox::createPipeline(VkDevice device, imageInfo* pInfo, V
 }
 
 void skyboxGraphics::createDescriptorPool(){
-    filterGraphics::createDescriptorPool(device, &skybox, image.Count, 0, image.Count);
+    workflow::createDescriptorPool(device, &skybox, image.Count, 0, image.Count);
 }
 
 void skyboxGraphics::createDescriptorSets(){
-    filterGraphics::createDescriptorSets(device, &skybox, image.Count);
+    workflow::createDescriptorSets(device, &skybox, image.Count);
 }
 
 void skyboxGraphics::updateDescriptorSets(camera* cameraObject)

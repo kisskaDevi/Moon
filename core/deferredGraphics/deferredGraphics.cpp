@@ -163,14 +163,14 @@ void deferredGraphics::createCommandPool()
 }
 
 namespace {
-    void fastCreateFilterGraphics(filterGraphics* filter, uint32_t attachmentsNumber, attachments* attachments)
+    void fastCreateFilterGraphics(workflow* workflow, uint32_t attachmentsNumber, attachments* attachments)
     {
-        filter->setAttachments(attachmentsNumber,attachments);
-        filter->createRenderPass();
-        filter->createFramebuffers();
-        filter->createPipelines();
-        filter->createDescriptorPool();
-        filter->createDescriptorSets();
+        workflow->setAttachments(attachmentsNumber,attachments);
+        workflow->createRenderPass();
+        workflow->createFramebuffers();
+        workflow->createPipelines();
+        workflow->createDescriptorPool();
+        workflow->createDescriptorSets();
     }
 
     void fastCreateGraphics(graphics* graphics, DeferredAttachments* attachments)

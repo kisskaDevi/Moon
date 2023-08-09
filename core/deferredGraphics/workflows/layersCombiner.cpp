@@ -19,7 +19,7 @@ void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* p
 void layersCombiner::destroy(){
     combiner.destroy(device);
 
-    filterGraphics::destroy();
+    workflow::destroy();
 }
 
 void layersCombiner::createRenderPass(){
@@ -179,11 +179,11 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo,
 }
 
 void layersCombiner::createDescriptorPool(){
-    filterGraphics::createDescriptorPool(device, &combiner, image.Count, (6 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
+    workflow::createDescriptorPool(device, &combiner, image.Count, (6 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
 }
 
 void layersCombiner::createDescriptorSets(){
-    filterGraphics::createDescriptorSets(device, &combiner, image.Count);
+    workflow::createDescriptorSets(device, &combiner, image.Count);
 }
 
 void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, camera* cameraObject)

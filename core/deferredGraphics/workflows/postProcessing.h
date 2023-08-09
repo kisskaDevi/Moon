@@ -1,7 +1,7 @@
 #ifndef POSTPROCESSING_H
 #define POSTPROCESSING_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 
 namespace SwapChain{
     struct SupportDetails;
@@ -14,7 +14,7 @@ struct postProcessingPushConst{
     alignas(4) float                    blitFactor;
 };
 
-class postProcessingGraphics : public filterGraphics
+class postProcessingGraphics : public workflow
 {
 private:
     swapChain*                          swapChainKHR{nullptr};
@@ -24,7 +24,7 @@ private:
     attachments*                        ssaoAttachment{nullptr};
     attachments*                        layersAttachment{nullptr};
 
-    struct PostProcessing : public filter{
+    struct PostProcessing : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 

@@ -1,24 +1,22 @@
-#ifndef BLUR_H
-#define BLUR_H
+#ifndef LAYERSCOMBINER_H
+#define LAYERSCOMBINER_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 
-class gaussianBlur : public filterGraphics
+class camera;
+
+class layersCombiner : public workflow
 {
 private:
-    attachments                         bufferAttachment;
-
-    struct blur : public filter{
+    struct Combiner : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
-        uint32_t                        subpassNumber{0};
-    };
-    blur xblur;
-    blur yblur;
+        uint32_t                        transparentLayersCount{0};
+    }combiner;
 
 public:
-    gaussianBlur() = default;
+    layersCombiner() = default;
     void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
@@ -28,11 +26,11 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(attachments* blurAttachment);
+    void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, camera* cameraObject);
 
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    void createBufferAttachments();
+    void setTransparentLayersCount(uint32_t transparentLayersCount);
 };
 
-#endif // BLUR_H
+#endif // LAYERSCOMBINER_H

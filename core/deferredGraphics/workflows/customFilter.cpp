@@ -1,4 +1,4 @@
-#include "customfilter.h"
+#include "customFilter.h"
 #include "operations.h"
 #include "vkdefault.h"
 
@@ -29,9 +29,9 @@ void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAt
 }
 
 void customFilter::destroy(){
-    customfilter.destroy(device);
+    filter.destroy(device);
 
-    filterGraphics::destroy();
+    workflow::destroy();
 
     bufferAttachment.deleteAttachment(device);
     bufferAttachment.deleteSampler(device);
@@ -92,10 +92,10 @@ void customFilter::createFramebuffers(){
 }
 
 void customFilter::createPipelines(){
-    customfilter.vertShaderPath = shadersPath / "customFilter/customFilterVert.spv";
-    customfilter.fragShaderPath = shadersPath / "customFilter/customFilterFrag.spv";
-    customfilter.createDescriptorSetLayout(device);
-    customfilter.createPipeline(device,&image,renderPass);
+    filter.vertShaderPath = shadersPath / "customFilter/customFilterVert.spv";
+    filter.fragShaderPath = shadersPath / "customFilter/customFilterFrag.spv";
+    filter.createDescriptorSetLayout(device);
+    filter.createPipeline(device,&image,renderPass);
 }
 
 void customFilter::Filter::createDescriptorSetLayout(VkDevice device){
@@ -167,11 +167,11 @@ void customFilter::Filter::createPipeline(VkDevice device, imageInfo* pInfo, VkR
 }
 
 void customFilter::createDescriptorPool(){
-    filterGraphics::createDescriptorPool(device, &customfilter, 0, image.Count, image.Count);
+    workflow::createDescriptorPool(device, &filter, 0, image.Count, image.Count);
 }
 
 void customFilter::createDescriptorSets(){
-    filterGraphics::createDescriptorSets(device, &customfilter, image.Count);
+    workflow::createDescriptorSets(device, &filter, image.Count);
 }
 
 void customFilter::updateDescriptorSets()
@@ -197,7 +197,7 @@ void customFilter::updateDescriptorSets()
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     };
-    updateDescriptorSets(device, bufferAttachment.imageView, bufferAttachment.sampler, customfilter.DescriptorSets);
+    updateDescriptorSets(device, bufferAttachment.imageView, bufferAttachment.sampler, filter.DescriptorSets);
 }
 
 void customFilter::updateCommandBuffer(uint32_t frameNumber)
@@ -256,10 +256,10 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, u
         CustomFilterPushConst pushConst{};
             pushConst.deltax = xSampleStep;
             pushConst.deltay = ySampleStep;
-        vkCmdPushConstants(commandBuffer, customfilter.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(CustomFilterPushConst), &pushConst);
+        vkCmdPushConstants(commandBuffer, filter.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(CustomFilterPushConst), &pushConst);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, customfilter.Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, customfilter.PipelineLayout, 0, 1, &customfilter.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, filter.Pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, filter.PipelineLayout, 0, 1, &filter.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);

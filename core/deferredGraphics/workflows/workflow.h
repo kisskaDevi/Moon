@@ -1,5 +1,5 @@
-#ifndef FILTERGRAPHICS_H
-#define FILTERGRAPHICS_H
+#ifndef WORKFLOW_H
+#define WORKFLOW_H
 
 #include <vulkan.h>
 #include "attachments.h"
@@ -8,7 +8,7 @@
 
 class texture;
 
-class filter{
+class workbody{
 public:
     std::filesystem::path           vertShaderPath;
     std::filesystem::path           fragShaderPath;
@@ -24,7 +24,7 @@ public:
     virtual void createDescriptorSetLayout(VkDevice device) = 0;
 };
 
-class filterGraphics
+class workflow
 {
 protected:
     VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
@@ -40,7 +40,7 @@ protected:
     std::vector<VkFramebuffer>      framebuffers;
     std::vector<VkCommandBuffer>    commandBuffers;
 public:
-    virtual ~filterGraphics(){};
+    virtual ~workflow(){};
     void destroy();
 
     void setEmptyTexture(texture* emptyTexture);
@@ -64,8 +64,8 @@ public:
     VkCommandBuffer& getCommandBuffer(uint32_t frameNumber);
     void freeCommandBuffer(VkCommandPool commandPool);
 
-    static void createDescriptorPool(VkDevice device, filter* filter, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets);
-    static void createDescriptorSets(VkDevice device, filter* filter, const uint32_t& imageCount);
+    static void createDescriptorPool(VkDevice device, workbody* workbody, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets);
+    static void createDescriptorSets(VkDevice device, workbody* workbody, const uint32_t& imageCount);
 };
 
-#endif // FILTERGRAPHICS_H
+#endif // WORKFLOW_H

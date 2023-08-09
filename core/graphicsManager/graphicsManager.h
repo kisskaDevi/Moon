@@ -31,6 +31,18 @@ public:
     VkResult        checkNextFrame();
     VkResult        drawFrame();
 
+public:
+    VkInstance getInstance(){
+        return instance;
+    }
+    physicalDevice getDevice(){
+        return devices[0];
+    }
+    VkSwapchainKHR getSwapChainKHR(){
+        return swapChainKHR();
+    }
+
+
 private:
 
     #ifdef NDEBUG

@@ -30,13 +30,14 @@ INCLUDEPATH += \
     $$PWD/../dependences\libs \
     $$PWD/../dependences/libs/vulkan/include/vulkan \
     $$PWD/../dependences/libs/glfw/include/GLFW \
+    $$PWD/../dependences/libs/glfw/include \
     $$PWD/../dependences/libs/stb \
     $$PWD/../dependences/libs/tinygltf \
     $$PWD/../dependences/libs/tinyply/source \
     $$PWD/../core/graphicsManager \
     $$PWD/../core/deferredGraphics \
     $$PWD/../core/deferredGraphics/renderStages \
-    $$PWD/../core/deferredGraphics/filters \
+    $$PWD/../core/deferredGraphics/workflows \
     $$PWD/../core/utils \
     $$PWD/../core/transformational \
     $$PWD/../core/interfaces \
@@ -47,13 +48,13 @@ SOURCES += \
     physicalobject.cpp \
     main.cpp \
     testScene.cpp \
-    testPos.cpp
+    testPos.cpp \
 
 HEADERS += \
     physicalobject.h \
     scene.h \
     testScene.h \
-    testPos.h
+    testPos.h \
 
 DISTFILES += \
     $$PWD/CMakelists.txt

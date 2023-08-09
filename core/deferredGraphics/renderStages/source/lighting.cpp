@@ -134,13 +134,8 @@ void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuf
     for(auto& lightSource: lightSources)
     {
         vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelinesDictionary[lightSource->getPipelineBitMask()]);
-
-        std::vector<VkDescriptorSet> descriptorSets = {
-            DescriptorSets[frameNumber],
-            lightSource->getBufferDescriptorSets()[frameNumber],
-            lightSource->getDescriptorSets()[frameNumber]};
+        std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber], lightSource->getBufferDescriptorSets()[frameNumber], lightSource->getDescriptorSets()[frameNumber]};
         vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayoutDictionary[lightSource->getPipelineBitMask()], 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
-
         vkCmdDraw(commandBuffers, 18, 1, 0, 0);
     }
 }

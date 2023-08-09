@@ -19,7 +19,7 @@ void graphics::destroy()
     ambientLighting.DestroyPipeline(device);
     pAttachments.clear();
 
-    filterGraphics::destroy();
+    workflow::destroy();
 }
 
 void graphics::setAttachments(DeferredAttachments* attachments)

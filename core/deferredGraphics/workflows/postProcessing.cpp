@@ -35,7 +35,7 @@ void postProcessingGraphics::destroy()
 {
     postProcessing.destroy(device);
 
-    filterGraphics::destroy();
+    workflow::destroy();
 }
 
 void postProcessingGraphics::createRenderPass()
@@ -195,11 +195,11 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, ima
 }
 
 void postProcessingGraphics::createDescriptorPool(){
-    filterGraphics::createDescriptorPool(device, &postProcessing, 0, (postProcessing.blitAttachmentCount + 4) * image.Count, postProcessing.blitAttachmentCount * image.Count);
+    workflow::createDescriptorPool(device, &postProcessing, 0, (postProcessing.blitAttachmentCount + 4) * image.Count, postProcessing.blitAttachmentCount * image.Count);
 }
 
 void postProcessingGraphics::createDescriptorSets(){
-    filterGraphics::createDescriptorSets(device, &postProcessing, image.Count);
+    workflow::createDescriptorSets(device, &postProcessing, image.Count);
 }
 
 void postProcessingGraphics::updateDescriptorSets()

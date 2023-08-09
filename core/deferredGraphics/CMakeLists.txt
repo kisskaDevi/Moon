@@ -8,18 +8,18 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-include_directories(filters renderStages)
+include_directories(workflows renderStages)
 
 set(SOURCES deferredGraphics.cpp
-filters/blur.cpp
-filters/filtergraphics.cpp
-filters/layersCombiner.cpp
-filters/postProcessing.cpp
-filters/shadow.cpp
-filters/skybox.cpp
-filters/customfilter.cpp
-filters/ssao.cpp
-filters/sslr.cpp
+workflows/blur.cpp
+workflows/workflow.cpp
+workflows/layersCombiner.cpp
+workflows/postProcessing.cpp
+workflows/shadow.cpp
+workflows/skybox.cpp
+workflows/customFilter.cpp
+workflows/ssao.cpp
+workflows/sslr.cpp
 renderStages/source/ambientLighting.cpp
 renderStages/source/lighting.cpp
 renderStages/source/lightingPipelines.cpp
@@ -28,19 +28,19 @@ renderStages/source/extension.cpp
 renderStages/graphics.cpp)
 
 set(HEADERS deferredGraphics.h
-filters/blur.h
-filters/filtergraphics.h
-filters/layersCombiner.h
-filters/postProcessing.h
-filters/shadow.h
-filters/skybox.h
-filters/customfilter.h
-filters/ssao.h
-filters/sslr.h
+workflows/blur.h
+workflows/workflow.h
+workflows/layersCombiner.h
+workflows/postProcessing.h
+workflows/shadow.h
+workflows/skybox.h
+workflows/customFilter.h
+workflows/ssao.h
+workflows/sslr.h
 renderStages/graphics.h)
 
 add_library(deferredGraphics STATIC ${SOURCES} ${HEADERS})
 target_include_directories(deferredGraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 ${CMAKE_CURRENT_SOURCE_DIR}/renderStages
-${CMAKE_CURRENT_SOURCE_DIR}/filters)
+${CMAKE_CURRENT_SOURCE_DIR}/workflows)
 target_link_libraries(deferredGraphics PUBLIC graphicsManager interfaces utils)

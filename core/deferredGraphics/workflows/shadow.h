@@ -1,18 +1,18 @@
 #ifndef SHADOW_H
 #define SHADOW_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 #include <unordered_map>
 
 class object;
 class light;
 
-class shadowGraphics : public filterGraphics
+class shadowGraphics : public workflow
 {
 private:
     std::unordered_map<light*,std::vector<VkFramebuffer>>   framebuffers;
 
-    struct Shadow : public filter{
+    struct Shadow : public workbody{
         void destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;

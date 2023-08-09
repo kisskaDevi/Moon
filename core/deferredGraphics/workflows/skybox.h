@@ -1,16 +1,16 @@
 #ifndef SKYBOX_H
 #define SKYBOX_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 #include <filesystem>
 
 class object;
 class camera;
 
-class skyboxGraphics : public filterGraphics
+class skyboxGraphics : public workflow
 {
 private:
-    struct Skybox : public filter{
+    struct Skybox : public workbody{
         std::filesystem::path           vertShaderPath;
         std::filesystem::path           fragShaderPath;
 

@@ -1,14 +1,14 @@
 #ifndef CUSTOMFILTER_H
 #define CUSTOMFILTER_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 
 struct CustomFilterPushConst{
     alignas (4) float               deltax;
     alignas (4) float               deltay;
 };
 
-class customFilter : public filterGraphics
+class customFilter : public workflow
 {
 private:
     attachments                         bufferAttachment;
@@ -17,10 +17,10 @@ private:
     float                               xSampleStep{1.5f};
     float                               ySampleStep{1.5f};
 
-    struct Filter : public filter{
+    struct Filter : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
-    }customfilter;
+    }filter;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
 public:

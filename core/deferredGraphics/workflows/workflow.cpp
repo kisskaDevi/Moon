@@ -1,6 +1,6 @@
-#include "filtergraphics.h"
+#include "workflow.h"
 
-void filter::destroy(VkDevice device){
+void workbody::destroy(VkDevice device){
     if(Pipeline)            {vkDestroyPipeline(device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
     if(PipelineLayout)      {vkDestroyPipelineLayout(device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
     if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
@@ -8,7 +8,7 @@ void filter::destroy(VkDevice device){
     DescriptorSets.clear();
 }
 
-void filterGraphics::destroy(){
+void workflow::destroy(){
     if(renderPass) {vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(auto& framebuffer: framebuffers){
         if(framebuffer) vkDestroyFramebuffer(device, framebuffer,nullptr);
@@ -16,25 +16,25 @@ void filterGraphics::destroy(){
     framebuffers.clear();
 }
 
-void filterGraphics::setEmptyTexture(texture* emptyTexture){
+void workflow::setEmptyTexture(texture* emptyTexture){
     this->emptyTexture = emptyTexture;
 }
-void filterGraphics::setShadersPath(const std::filesystem::path &path){
+void workflow::setShadersPath(const std::filesystem::path &path){
     shadersPath = path;
 }
-void filterGraphics::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
+void workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
     this->physicalDevice = physicalDevice;
     this->device = device;
 }
-void filterGraphics::setImageProp(imageInfo* pInfo){
+void workflow::setImageProp(imageInfo* pInfo){
     this->image = *pInfo;
 }
-void filterGraphics::setAttachments(uint32_t attachmentsCount, attachments* pAttachments){
+void workflow::setAttachments(uint32_t attachmentsCount, attachments* pAttachments){
     this->attachmentsCount = attachmentsCount;
     this->pAttachments = pAttachments;
 }
 
-void filterGraphics::createCommandBuffers(VkCommandPool commandPool)
+void workflow::createCommandBuffers(VkCommandPool commandPool)
 {
     commandBuffers.resize(image.Count);
     VkCommandBufferAllocateInfo allocInfo{};
@@ -45,7 +45,7 @@ void filterGraphics::createCommandBuffers(VkCommandPool commandPool)
     vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data());
 }
 
-void filterGraphics::beginCommandBuffer(uint32_t frameNumber){
+void workflow::beginCommandBuffer(uint32_t frameNumber){
     vkResetCommandBuffer(commandBuffers[frameNumber],0);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -56,23 +56,23 @@ void filterGraphics::beginCommandBuffer(uint32_t frameNumber){
     vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
 }
 
-void filterGraphics::endCommandBuffer(uint32_t frameNumber){
+void workflow::endCommandBuffer(uint32_t frameNumber){
     vkEndCommandBuffer(commandBuffers[frameNumber]);
 }
 
-VkCommandBuffer& filterGraphics::getCommandBuffer(uint32_t frameNumber)
+VkCommandBuffer& workflow::getCommandBuffer(uint32_t frameNumber)
 {
     return commandBuffers[frameNumber];
 }
 
-void filterGraphics::freeCommandBuffer(VkCommandPool commandPool){
+void workflow::freeCommandBuffer(VkCommandPool commandPool){
     if(commandBuffers.data()){
         vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     }
     commandBuffers.resize(0);
 }
 
-void filterGraphics::createDescriptorPool(VkDevice device, filter* filter, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets){
+void workflow::createDescriptorPool(VkDevice device, workbody* workbody, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets){
     std::vector<VkDescriptorPoolSize> poolSizes;
     if(bufferCount){
         poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, bufferCount});
@@ -85,16 +85,16 @@ void filterGraphics::createDescriptorPool(VkDevice device, filter* filter, const
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = maxSets;
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &filter->DescriptorPool);
+    vkCreateDescriptorPool(device, &poolInfo, nullptr, &workbody->DescriptorPool);
 }
 
-void filterGraphics::createDescriptorSets(VkDevice device, filter* filter, const uint32_t& imageCount){
-    filter->DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, filter->DescriptorSetLayout);
+void workflow::createDescriptorSets(VkDevice device, workbody* workbody, const uint32_t& imageCount){
+    workbody->DescriptorSets.resize(imageCount);
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, workbody->DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = filter->DescriptorPool;
+        allocInfo.descriptorPool = workbody->DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(device, &allocInfo, filter->DescriptorSets.data());
+    vkAllocateDescriptorSets(device, &allocInfo, workbody->DescriptorSets.data());
 };

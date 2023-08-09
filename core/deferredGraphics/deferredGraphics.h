@@ -6,7 +6,7 @@
 #include "graphics.h"
 #include "postProcessing.h"
 #include "blur.h"
-#include "customfilter.h"
+#include "customFilter.h"
 #include "sslr.h"
 #include "ssao.h"
 #include "layersCombiner.h"

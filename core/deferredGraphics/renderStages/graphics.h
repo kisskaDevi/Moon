@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#include "filtergraphics.h"
+#include "workflow.h"
 
 #include <filesystem>
 #include <unordered_map>
@@ -15,7 +15,7 @@ struct                              Node;
 struct                              Material;
 struct                              MaterialBlock;
 
-class graphics : public filterGraphics
+class graphics : public workflow
 {
 private:
     uint32_t                        primitiveCount{0};

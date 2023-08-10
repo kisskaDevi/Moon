@@ -9,11 +9,14 @@ INCLUDEPATH += \
     $$PWD/../utils
 
 SOURCES += \
+    graphicsLinker.cpp \
     graphicsManager.cpp
 
 HEADERS += \
     graphicsInterface.h \
-    graphicsManager.h
+    graphicsLinker.h \
+    graphicsManager.h \
+    linkable.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

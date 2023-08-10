@@ -2,6 +2,8 @@
 
 #include <glfw3.h>
 
+#include "linkable.h"
+
 #include <string>
 #ifndef NDEBUG
 #include <iostream>
@@ -101,12 +103,31 @@ VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     return swapChainKHR.create(window, &surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data(), maxImageCount);
 }
 
+VkResult graphicsManager::createLinker()
+{
+    linker.setDevice(devices[0].getLogical());
+    linker.setSwapChain(&swapChainKHR);
+    linker.createRenderPass();
+    linker.createFramebuffers();
+    linker.createCommandPool();
+    linker.createCommandBuffers();
+    linker.createSyncObjects();
+
+    for(auto graphics: graphics){
+        graphics->getLinkable()->setRenderPass(linker.getRenderPass());
+    }
+
+    return VK_SUCCESS;
+}
+
 void graphicsManager::setGraphics(graphicsInterface* graphics)
 {
     this->graphics.push_back(graphics);
     this->graphics.back()->setDevices(static_cast<uint32_t>(devices.size()), devices.data());
     this->graphics.back()->setSwapChain(&swapChainKHR);
     this->graphics.back()->setImageCount(swapChainKHR.getImageCount());
+    this->graphics.back()->getLinkable()->setRenderPass(linker.getRenderPass());
+    linker.addLinkable(this->graphics.back()->getLinkable());
 }
 
 VkResult graphicsManager::createSyncObjects()
@@ -116,13 +137,11 @@ VkResult graphicsManager::createSyncObjects()
     VkResult result = VK_SUCCESS;
 
     availableSemaphores.resize(getImageCount());
-    signalSemaphores.resize(getImageCount());
     fences.resize(getImageCount());
 
     for (size_t imageIndex = 0; imageIndex < getImageCount(); imageIndex++){
         VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        vkCreateSemaphore(devices[0].getLogical(), &semaphoreInfo, nullptr, &signalSemaphores[imageIndex]);
         vkCreateSemaphore(devices[0].getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
 
         VkFenceCreateInfo fenceInfo{};
@@ -150,21 +169,21 @@ VkResult graphicsManager::drawFrame()
         graphics->updateBuffers(imageIndex);
         graphics->updateCommandBuffer(imageIndex);
     }
+    linker.updateCommandBuffer(imageIndex);
 
     vkResetFences(devices[0].getLogical(), 1, &fences[imageIndex]);
 
     std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[semaphorIndex]}};
-    for(size_t i = 0; i < graphics.size() - 1; i++){
-        waitSemaphores = graphics[i]->sibmit(waitSemaphores,{VK_NULL_HANDLE},imageIndex);
+    for(auto& graph: graphics){
+        waitSemaphores = graph->sibmit(waitSemaphores, {VK_NULL_HANDLE},imageIndex);
     }
-    waitSemaphores = graphics.back()->sibmit(waitSemaphores,{fences[imageIndex]},imageIndex);
 
     semaphorIndex = ((semaphorIndex + 1) % getImageCount());
 
     VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.back().size());
-        presentInfo.pWaitSemaphores = waitSemaphores.back().data();
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &linker.submit(imageIndex, waitSemaphores.back(), fences[imageIndex], devices[0].getQueue(0,0));
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &swapChainKHR();
         presentInfo.pImageIndices = &imageIndex;
@@ -176,16 +195,19 @@ void graphicsManager::destroySwapChain()
     swapChainKHR.destroy();
 }
 
+void graphicsManager::destroyLinker()
+{
+    linker.destroy();
+}
+
 void graphicsManager::destroy()
 {
     for (size_t imageIndex = 0; imageIndex < getImageCount(); imageIndex++){
         vkDestroySemaphore(devices[0].getLogical(), availableSemaphores[imageIndex], nullptr);
-        vkDestroySemaphore(devices[0].getLogical(), signalSemaphores[imageIndex], nullptr);
         vkDestroyFence(devices[0].getLogical(), fences[imageIndex], nullptr);
     }
-    availableSemaphores.resize(0);
-    signalSemaphores.resize(0);
-    fences.resize(0);
+    availableSemaphores.clear();
+    fences.clear();
 
     if(devices[0].getLogical())                     {vkDestroyDevice(devices[0].getLogical(), nullptr); devices[0].getLogical() = VK_NULL_HANDLE;}
     if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
@@ -193,7 +215,7 @@ void graphicsManager::destroy()
     if(instance)                                    {vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
 }
 
-VkSurfaceKHR&   graphicsManager::getSurface(){return surface;}
+VkSurfaceKHR    graphicsManager::getSurface(){return surface;}
 uint32_t        graphicsManager::getImageIndex(){return imageIndex;}
 uint32_t        graphicsManager::getImageCount(){return swapChainKHR.getImageCount();}
 VkResult        graphicsManager::deviceWaitIdle(){return vkDeviceWaitIdle(devices[0].getLogical());}

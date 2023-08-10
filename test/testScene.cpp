@@ -34,7 +34,7 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 
     for(auto& [_,graph]: graphics){
         graph->destroyGraphics();
-        graph->createGraphics(window, &app->getSurface());
+        graph->createGraphics(window, app->getSurface());
     }
 }
 
@@ -54,18 +54,18 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
         graph->createCommandPool();
         graph->createEmptyTexture();
         graph->bindCameraObject(cameras[key], true);
-        graph->createGraphics(window, &app->getSurface());
+        graph->createGraphics(window, app->getSurface());
     }
 
     loadModels();
     createObjects();
     createLight();
 
-    groups["lightBox"]->translate(vector<float,3>(0.0f,0.0f,25.0f));
-    groups["ufo0"]->translate(vector<float,3>(5.0f,0.0f,5.0f));
-    groups["ufo1"]->translate(vector<float,3>(-5.0f,0.0f,5.0f));
-    groups["ufo2"]->translate(vector<float,3>(10.0f,0.0f,5.0f));
-    groups["ufo3"]->translate(vector<float,3>(-10.0f,0.0f,5.0f));
+    groups["lightBox"]->translate({0.0f,0.0f,25.0f});
+    groups["ufo0"]->translate({5.0f,0.0f,5.0f});
+    groups["ufo1"]->translate({-5.0f,0.0f,5.0f});
+    groups["ufo2"]->translate({10.0f,0.0f,5.0f});
+    groups["ufo3"]->translate({-10.0f,0.0f,5.0f});
 }
 
 void testScene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
@@ -155,7 +155,7 @@ void testScene::createObjects()
 
     for(auto key = "ufo" + std::to_string(ufoCounter); ufoCounter < 4; ufoCounter++, key = "ufo" + std::to_string(ufoCounter)){
         objects[key] = new baseObject(models["ufo"]);
-        objects[key]->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+        objects[key]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
         objects[key]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
         groups[key] = new group;
         groups[key]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
@@ -170,7 +170,7 @@ void testScene::createObjects()
         ExternalPath / "dependences/texture/skybox/bottom.jpg"
     });
     skyboxObjects["lake"]->setColorFactor(vector<float,4>(0.5));
-    skyboxObjects["lake"]->scale(vector<float,3>(200.0f,200.0f,200.0f));
+    skyboxObjects["lake"]->scale({200.0f,200.0f,200.0f});
 
     skyboxObjects["stars"] = new skyboxObject({
         ExternalPath / "dependences/texture/skybox1/left.png",
@@ -180,7 +180,7 @@ void testScene::createObjects()
         ExternalPath / "dependences/texture/skybox1/top.png",
         ExternalPath / "dependences/texture/skybox1/bottom.png"
     });
-    skyboxObjects["stars"]->scale(vector<float,3>(200.0f,200.0f,200.0f));
+    skyboxObjects["stars"]->scale({200.0f,200.0f,200.0f});
 
     for(auto& [_,object]: objects){
         graphics["base"]->bindObject(object, true);

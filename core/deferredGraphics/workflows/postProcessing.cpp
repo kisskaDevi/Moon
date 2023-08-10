@@ -2,12 +2,7 @@
 #include "operations.h"
 #include "vkdefault.h"
 #include "texture.h"
-#include "swapChain.h"
 
-void postProcessingGraphics::setSwapChain(swapChain* swapChainKHR)
-{
-    this->swapChainKHR = swapChainKHR;
-}
 void postProcessingGraphics::setBlurAttachment(attachments *blurAttachment)
 {
     this->blurAttachment = blurAttachment;
@@ -38,14 +33,22 @@ void postProcessingGraphics::destroy()
     workflow::destroy();
 }
 
+void postProcessingGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
+    for(size_t index=0; index<attachmentsCount; index++){
+        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+        VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
+    }
+}
+
 void postProcessingGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
-    attachmentRef.push_back(std::vector<VkAttachmentReference>());
+        attachmentRef.push_back(std::vector<VkAttachmentReference>());
         attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
 
     std::vector<VkSubpassDescription> subpass;
@@ -85,7 +88,7 @@ void postProcessingGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &swapChainKHR->attachment().imageView[Image];
+            framebufferInfo.pAttachments = &pAttachments->imageView[Image];
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;

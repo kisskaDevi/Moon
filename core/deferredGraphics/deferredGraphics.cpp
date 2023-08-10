@@ -23,6 +23,7 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     Shadow.setShadersPath(shadersPath);
     LayersCombiner.setShadersPath(shadersPath);
     Blur.setShadersPath(shadersPath);
+    Link.setShadersPath(shadersPath);
 
     TransparentLayers.resize(TransparentLayersCount);
     for(auto& layer: TransparentLayers){
@@ -81,6 +82,7 @@ void deferredGraphics::destroyGraphics()
     for(auto& layer: TransparentLayers){
         layer.destroy();
     }
+    Link.destroy();
 
     blurAttachment.deleteAttachment(device.getLogical());
     blurAttachment.deleteSampler(device.getLogical());
@@ -110,6 +112,9 @@ void deferredGraphics::destroyGraphics()
         attachment.deleteAttachment(device.getLogical());
         attachment.deleteSampler(device.getLogical());
     }
+
+    finalAttachment.deleteAttachment(device.getLogical());
+    finalAttachment.deleteSampler(device.getLogical());
 
     for (auto& buffer: storageBuffersHost){
         buffer.destroy(device.getLogical());
@@ -146,6 +151,7 @@ void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices
     for(auto& layer: TransparentLayers){
         layer.setDeviceProp(device.instance, device.getLogical());
     }
+    Link.setDeviceProp(device.getLogical());
 }
 
 void deferredGraphics::setImageCount(uint32_t imageCount)
@@ -185,7 +191,7 @@ namespace {
     }
 }
 
-void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
+void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR surface)
 {
     createGraphicsPasses(window, surface);
     updateDescriptorSets();
@@ -193,7 +199,7 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR* surface)
     updateCommandBuffers();
 }
 
-void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR* surface)
+void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface)
 {
     CHECKERROR(commandPool == VK_NULL_HANDLE,       std::string("[ deferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
     CHECKERROR(surface == VK_NULL_HANDLE,           std::string("[ deferredGraphics::createGraphicsPasses ] VkSurfaceKHR is VK_NULL_HANDLE"));
@@ -201,9 +207,9 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR* su
     CHECKERROR(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
     CHECKERROR(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
-    imageCount = imageCount == 0 ? SwapChain::queryingSupportImageCount(device.instance,*surface) : imageCount;
+    imageCount = imageCount == 0 ? SwapChain::queryingSupportImageCount(device.instance,surface) : imageCount;
 
-    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance,*surface);
+    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance,surface);
 
     frameBufferExtent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
 
@@ -222,6 +228,7 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR* su
     for(auto& layer: TransparentLayers){
         layer.setImageProp(&info);
     }
+    Link.setImageCount(imageCount);
 
     imageInfo swapChainInfo{imageCount, SwapChain::queryingSurfaceFormat(swapChainSupport.formats).format, offset, extent, frameBufferExtent, MSAASamples};
 
@@ -286,13 +293,15 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR* su
     Shadow.createPipelines();
 
     PostProcessing.setLayersAttachment(enableTransparentLayers ? &layersCombinedAttachment[0] : &deferredAttachments.image);
-    PostProcessing.setSwapChain(swapChainKHR);
-    PostProcessing.createRenderPass();
-    PostProcessing.createFramebuffers();
-    PostProcessing.createPipelines();
-    PostProcessing.createDescriptorPool();
-    PostProcessing.createDescriptorSets();
+    PostProcessing.createAttachments(1,&finalAttachment);
+    fastCreateFilterGraphics(&PostProcessing,1,&finalAttachment);
     PostProcessing.updateDescriptorSets();
+
+    Link.createDescriptorSetLayout();
+    Link.createPipeline(&swapChainInfo);
+    Link.createDescriptorPool();
+    Link.createDescriptorSets();
+    Link.updateDescriptorSets(&finalAttachment);
 
     createStorageBuffers(imageCount);
 
@@ -393,6 +402,10 @@ std::vector<std::vector<VkSemaphore>> deferredGraphics::sibmit(const std::vector
     nodes[imageIndex]->submit();
 
     return nodes[imageIndex]->back()->getBackSemaphores();
+}
+
+linkable* deferredGraphics::getLinkable() {
+    return &Link;
 }
 
 void deferredGraphics::updateCommandBuffers()

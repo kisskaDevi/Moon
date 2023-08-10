@@ -79,7 +79,6 @@ public:
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
     };
 
-
     virtual ~model(){};
     virtual void destroy(VkDevice device) = 0;
     virtual void destroyStagingBuffer(VkDevice device) = 0;

@@ -17,7 +17,6 @@ struct postProcessingPushConst{
 class postProcessingGraphics : public workflow
 {
 private:
-    swapChain*                          swapChainKHR{nullptr};
     attachments*                        blurAttachment{nullptr};
     attachments*                        blitAttachments{nullptr};
     attachments*                        sslrAttachment{nullptr};
@@ -36,6 +35,8 @@ public:
     postProcessingGraphics() = default;
     void destroy();
 
+    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
+
     void createRenderPass()override;
     void createFramebuffers()override;
     void createPipelines()override;
@@ -46,7 +47,6 @@ public:
 
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    void setSwapChain(swapChain* swapChainKHR);
     void setBlurAttachment(attachments* blurAttachment);
     void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor);
     void setSSLRAttachment(attachments* sslrAttachment);

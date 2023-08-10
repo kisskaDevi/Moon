@@ -7,6 +7,7 @@
 #include "swapChain.h"
 
 #include "graphicsInterface.h"
+#include "graphicsLinker.h"
 
 //#define NDEBUG
 
@@ -16,8 +17,9 @@ public:
     graphicsManager();
     void destroy();
     void destroySwapChain();
+    void destroyLinker();
 
-    VkSurfaceKHR&   getSurface();
+    VkSurfaceKHR    getSurface();
     uint32_t        getImageIndex();
     uint32_t        getImageCount();
     VkResult        deviceWaitIdle();
@@ -26,25 +28,13 @@ public:
     VkResult        createSurface(GLFWwindow* window);
     VkResult        createDevice();
     VkResult        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
+    VkResult        createLinker();
     void            setGraphics(graphicsInterface* graphics);
     VkResult        createSyncObjects();
     VkResult        checkNextFrame();
     VkResult        drawFrame();
 
-public:
-    VkInstance getInstance(){
-        return instance;
-    }
-    physicalDevice getDevice(){
-        return devices[0];
-    }
-    VkSwapchainKHR getSwapChainKHR(){
-        return swapChainKHR();
-    }
-
-
 private:
-
     #ifdef NDEBUG
         bool                                    enableValidationLayers = false;
     #else
@@ -63,9 +53,9 @@ private:
     swapChain                                   swapChainKHR;
 
     std::vector<graphicsInterface*>             graphics;
+    graphicsLinker                              linker;
 
     std::vector<VkSemaphore>                    availableSemaphores;
-    std::vector<VkSemaphore>                    signalSemaphores;
     std::vector<VkFence>                        fences;
 
     uint32_t                                    imageIndex{0};

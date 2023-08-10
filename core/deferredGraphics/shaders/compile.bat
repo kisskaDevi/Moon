@@ -23,5 +23,7 @@ glslc.exe gaussianBlur/xBlur.vert                               -o ../spv/gaussi
 glslc.exe gaussianBlur/xBlur.frag                               -o ../spv/gaussianBlur/xBlurFrag.spv
 glslc.exe gaussianBlur/yBlur.vert                               -o ../spv/gaussianBlur/yBlurVert.spv
 glslc.exe gaussianBlur/yBlur.frag                               -o ../spv/gaussianBlur/yBlurFrag.spv
+glslc.exe linkable/deferredLinkable.vert                        -o ../spv/linkable/deferredLinkableVert.spv
+glslc.exe linkable/deferredLinkable.frag                        -o ../spv/linkable/deferredLinkableFrag.spv
 
 pause

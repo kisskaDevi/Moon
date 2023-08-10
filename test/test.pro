@@ -34,6 +34,8 @@ INCLUDEPATH += \
     $$PWD/../dependences/libs/stb \
     $$PWD/../dependences/libs/tinygltf \
     $$PWD/../dependences/libs/tinyply/source \
+    $$PWD/../dependences/libs/imgui \
+    $$PWD/../dependences/libs/imgui/backends \
     $$PWD/../core/graphicsManager \
     $$PWD/../core/deferredGraphics \
     $$PWD/../core/deferredGraphics/renderStages \
@@ -49,12 +51,21 @@ SOURCES += \
     main.cpp \
     testScene.cpp \
     testPos.cpp \
+    $$PWD/../dependences/libs/imgui/imgui.cpp \
+    $$PWD/../dependences/libs/imgui/imgui_draw.cpp \
+    $$PWD/../dependences/libs/imgui/imgui_tables.cpp \
+    $$PWD/../dependences/libs/imgui/imgui_widgets.cpp \
+    $$PWD/../dependences/libs/imgui/backends/imgui_impl_vulkan.cpp \
+    $$PWD/../dependences/libs/imgui/backends/imgui_impl_glfw.cpp
 
 HEADERS += \
     physicalobject.h \
     scene.h \
     testScene.h \
     testPos.h \
+    $$PWD/../dependences/libs/imgui/imgui.h \
+    $$PWD/../dependences/libs/imgui/backends/imgui_impl_vulkan.h \
+    $$PWD/../dependences/libs/imgui/backends/imgui_impl_glfw.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

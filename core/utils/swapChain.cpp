@@ -28,14 +28,16 @@ VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t q
 
     imageCount = SwapChain::queryingSupportImageCount(physicalDevice, *surface);
     imageCount = (maxImageCount > 0 && imageCount > static_cast<uint32_t>(maxImageCount)) ? static_cast<uint32_t>(maxImageCount) : imageCount;
+    extent = SwapChain::queryingExtent(window, capabilities);
+    format = surfaceFormat.format;
 
     VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         createInfo.surface = *surface;
         createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = surfaceFormat.format;
+        createInfo.imageFormat = format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = SwapChain::queryingExtent(window, capabilities);
+        createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ;
         createInfo.imageSharingMode = queueFamilyIndexCount > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
@@ -84,4 +86,12 @@ void swapChain::setDevice(VkPhysicalDevice physicalDevice, VkDevice device){
 
 uint32_t swapChain::getImageCount(){
     return imageCount;
+}
+
+VkExtent2D swapChain::getExtent(){
+    return extent;
+}
+
+VkFormat swapChain::getFormat(){
+    return format;
 }

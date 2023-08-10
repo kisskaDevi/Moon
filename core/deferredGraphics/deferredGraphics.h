@@ -5,6 +5,7 @@
 
 #include "graphics.h"
 #include "postProcessing.h"
+#include "link.h"
 #include "blur.h"
 #include "customFilter.h"
 #include "sslr.h"
@@ -54,6 +55,7 @@ private:
     attachments                                 skyboxAttachment;
     std::vector<attachments>                    blitAttachments;
     std::vector<attachments>                    layersCombinedAttachment;
+    attachments                                 finalAttachment;
     float                                       blitFactor{1.5f};
     uint32_t                                    blitAttachmentCount{8};
 
@@ -66,6 +68,7 @@ private:
     shadowGraphics                              Shadow;
     layersCombiner                              LayersCombiner;
     postProcessingGraphics                      PostProcessing;
+    link                                        Link;
     std::vector<graphics>                       TransparentLayers;
     uint32_t                                    TransparentLayersCount{2};
 
@@ -101,9 +104,9 @@ public:
     void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
     void setImageCount(uint32_t imageCount) override;
     void createCommandPool() override;
-    void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) override;
+    void createGraphics(GLFWwindow* window, VkSurfaceKHR surface) override;
 
-    void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR* surface) override;
+    void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface) override;
     void updateDescriptorSets() override;
     void createCommandBuffers() override;
     void updateCommandBuffers() override;
@@ -111,6 +114,8 @@ public:
     void updateBuffers(uint32_t imageIndex) override;
 
     std::vector<std::vector<VkSemaphore>> sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
+
+    linkable* getLinkable() override;
 
     void        updateCmdFlags();
 

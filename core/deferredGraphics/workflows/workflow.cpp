@@ -69,7 +69,7 @@ void workflow::freeCommandBuffer(VkCommandPool commandPool){
     if(commandBuffers.data()){
         vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     }
-    commandBuffers.resize(0);
+    commandBuffers.clear();
 }
 
 void workflow::createDescriptorPool(VkDevice device, workbody* workbody, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets){

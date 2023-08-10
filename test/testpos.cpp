@@ -30,7 +30,7 @@ void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
 
     auto createGraphics = [this](deferredGraphics* graph){
         graph->destroyGraphics();
-        graph->createGraphics(window, &app->getSurface());
+        graph->createGraphics(window, app->getSurface());
     };
 
     createGraphics(globalSpaceView);
@@ -53,7 +53,7 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
         graph->createCommandPool();
         graph->createEmptyTexture();
         graph->bindCameraObject(camera, true);
-        graph->createGraphics(window, &app->getSurface());
+        graph->createGraphics(window, app->getSurface());
         graph->setMinAmbientFactor(minAmbientFactor);
     };
 

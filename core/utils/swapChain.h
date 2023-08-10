@@ -13,6 +13,8 @@ private:
     VkPhysicalDevice    physicalDevice{VK_NULL_HANDLE};
     VkDevice            device{VK_NULL_HANDLE};
     uint32_t            imageCount{0};
+    VkExtent2D          extent{0,0};
+    VkFormat            format{VK_FORMAT_UNDEFINED};
 
     VkSwapchainKHR      swapChainKHR{VK_NULL_HANDLE};
     attachments         swapChainAttachments;
@@ -27,6 +29,8 @@ public:
     attachments& attachment();
     void setDevice(VkPhysicalDevice physicalDevice, VkDevice device);
     uint32_t getImageCount();
+    VkExtent2D getExtent();
+    VkFormat getFormat();
 };
 
 #endif // SWAPCHAIN_H

@@ -7,6 +7,7 @@
 struct GLFWwindow;
 struct physicalDevice;
 class swapChain;
+class linkable;
 
 class graphicsInterface{
 public:
@@ -19,9 +20,9 @@ public:
     virtual void setSwapChain(swapChain* swapChainKHR) = 0;
     virtual void setImageCount(uint32_t imageCount) = 0;
     virtual void createCommandPool() = 0;
-    virtual void createGraphics(GLFWwindow* window, VkSurfaceKHR* surface) = 0;
+    virtual void createGraphics(GLFWwindow* window, VkSurfaceKHR surface) = 0;
 
-    virtual void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR* surface) = 0;
+    virtual void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface) = 0;
     virtual void updateDescriptorSets() = 0;
     virtual void createCommandBuffers() = 0;
     virtual void updateCommandBuffers() = 0;
@@ -30,6 +31,8 @@ public:
     virtual void updateBuffers(uint32_t imageIndex) = 0;
 
     virtual std::vector<std::vector<VkSemaphore>> sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) = 0;
+
+    virtual linkable* getLinkable() = 0;
 };
 
 #endif // GRAPHICSINTERFACE_H

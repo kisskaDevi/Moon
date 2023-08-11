@@ -106,7 +106,7 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)
 
 void main()
 {
-    outColor = vec4(0.0f,0.0f,0.0f,0.0f);
+    outColor = vec4(0.0f,0.0f,0.0f,1.0f);
 
     outColor += texture(Sampler,fragTexCoord);
     outColor += texture(blurSampler,fragTexCoord);

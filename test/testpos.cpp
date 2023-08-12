@@ -65,7 +65,7 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
     createLight();
 }
 
-void testPos::updateFrame(uint32_t, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
+void testPos::updateFrame(uint32_t, float frameTime)
 {
     this->WIDTH = WIDTH;
     this->HEIGHT = HEIGHT;

@@ -59,7 +59,7 @@ int main()
 
         if(app.checkNextFrame() != VK_ERROR_OUT_OF_DATE_KHR)
         {
-            testScene.updateFrame(app.getImageIndex(),frameTime,WIDTH,HEIGHT);
+            testScene.updateFrame(app.getImageIndex(),frameTime);
 
             if (VkResult result = app.drawFrame(); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
                 std::tie(WIDTH, HEIGHT) = resize(window,&app,&testScene);

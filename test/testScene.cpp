@@ -83,13 +83,13 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     groups["ufo3"]->translate({-10.0f,0.0f,5.0f});
 }
 
-void testScene::updateFrame(uint32_t frameNumber, float frameTime, uint32_t WIDTH, uint32_t HEIGHT)
+void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 {
-    extent = {WIDTH, HEIGHT};
-
     glfwPollEvents();
-    mouseEvent(frameTime);
-    keyboardEvent(frameTime);
+
+    ImGuiIO io = ImGui::GetIO();
+    if(!io.WantCaptureMouse)         mouseEvent(frameTime);
+    if(!io.WantCaptureKeyboard)      keyboardEvent(frameTime);
     updates(frameTime);
 
     for(auto& [_,object]: objects){

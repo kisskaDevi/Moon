@@ -1,11 +1,17 @@
 #include "testScene.h"
 #include "deferredGraphics.h"
 #include "graphicsManager.h"
+#include "imguiGraphics.h"
 #include "gltfmodel.h"
 #include "spotLight.h"
 #include "baseObject.h"
 #include "group.h"
 #include "baseCamera.h"
+#include "dualQuaternion.h"
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 #include <random>
 
@@ -36,6 +42,9 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
         graph->destroyGraphics();
         graph->createGraphics(window, app->getSurface());
     }
+
+    gui->destroyGraphics();
+    gui->createGraphics(window, VK_NULL_HANDLE);
 }
 
 void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
@@ -50,12 +59,18 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
     app->setGraphics(graphics["view"]);
 
+    gui = new imguiGraphics;
+    gui->setInstance(app->getInstance());
+    app->setGraphics(gui);
+
     for(auto& [key,graph]: graphics){
         graph->createCommandPool();
         graph->createEmptyTexture();
         graph->bindCameraObject(cameras[key], true);
         graph->createGraphics(window, app->getSurface());
     }
+
+    gui->createGraphics(window, VK_NULL_HANDLE);
 
     loadModels();
     createObjects();
@@ -114,6 +129,8 @@ void testScene::destroy()
         graph->removeCameraObject(cameras[key]);
         delete graph;
     }
+
+    gui->destroyGraphics();
 }
 
 void testScene::loadModels()
@@ -408,5 +425,14 @@ void testScene::updates(float frameTime)
     globalTime += frameTime;
 
     skyboxObjects["stars"]->rotate(0.1f*frameTime,normalize(vector<float,3>(1.0f,1.0f,1.0f)));
+
+    // Start the Dear ImGui frame
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()
+    bool showDemoWindow = true;
+    ImGui::ShowDemoWindow(&showDemoWindow);
 }
 

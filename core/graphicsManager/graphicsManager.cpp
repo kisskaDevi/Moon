@@ -125,7 +125,6 @@ void graphicsManager::setGraphics(graphicsInterface* graphics)
     this->graphics.push_back(graphics);
     this->graphics.back()->setDevices(static_cast<uint32_t>(devices.size()), devices.data());
     this->graphics.back()->setSwapChain(&swapChainKHR);
-    this->graphics.back()->setImageCount(swapChainKHR.getImageCount());
     this->graphics.back()->getLinkable()->setRenderPass(linker.getRenderPass());
     linker.addLinkable(this->graphics.back()->getLinkable());
 }
@@ -169,6 +168,7 @@ VkResult graphicsManager::drawFrame()
         graphics->updateBuffers(imageIndex);
         graphics->updateCommandBuffer(imageIndex);
     }
+    linker.updateCmdFlags();
     linker.updateCommandBuffer(imageIndex);
 
     vkResetFences(devices[0].getLogical(), 1, &fences[imageIndex]);

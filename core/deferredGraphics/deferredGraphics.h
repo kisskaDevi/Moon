@@ -96,20 +96,19 @@ public:
 
     ~deferredGraphics();
     void destroyGraphics() override;
-    void destroyCommandPool() override;
-    void freeCommandBuffers() override;
+    void destroyCommandPool();
+    void freeCommandBuffers();
     void destroyEmptyTextures();
 
     void setSwapChain(swapChain* swapChainKHR) override;
     void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
-    void setImageCount(uint32_t imageCount) override;
-    void createCommandPool() override;
+    void createCommandPool();
     void createGraphics(GLFWwindow* window, VkSurfaceKHR surface) override;
 
-    void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface) override;
-    void updateDescriptorSets() override;
-    void createCommandBuffers() override;
-    void updateCommandBuffers() override;
+    void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface);
+    void updateDescriptorSets();
+    void createCommandBuffers();
+    void updateCommandBuffers();
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
 

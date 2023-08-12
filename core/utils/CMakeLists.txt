@@ -8,7 +8,7 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-set(INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS} ${GLFW_DIR}/include/GLFW
+set(INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS}/vulkan ${GLFW_DIR}/include/GLFW
 ${STB_DIR} ${GLTF_DIR} ${PLY_DIR}/source)
 
 include_directories(${INCLUDE_DIRS})

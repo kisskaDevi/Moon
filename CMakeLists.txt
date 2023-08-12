@@ -11,12 +11,12 @@ else()
 endif()
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
-set(Vulkan_INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS}/vulkan)
 
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/glfw)
 set(STB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/stb)
 set(GLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinygltf)
 set(PLY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinyply)
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/imgui)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(GLFW_LIB
@@ -30,6 +30,7 @@ set(LIBS_DIRS ${Vulkan_LIBRARIES} ${GLFW_LIB})
 
 add_subdirectory(core/utils)
 add_subdirectory(core/graphicsManager)
+add_subdirectory(core/imguiGraphics)
 add_subdirectory(core/interfaces)
 add_subdirectory(core/deferredGraphics)
 add_subdirectory(core/models)

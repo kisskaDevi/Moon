@@ -8,9 +8,10 @@
 #include <glfw3.h>
 
 #include "scene.h"
-#include "dualQuaternion.h"
+#include "vector.h"
 
 class deferredGraphics;
+class imguiGraphics;
 class model;
 class graphicsManager;
 class spotLight;
@@ -66,6 +67,7 @@ private:
 
     std::unordered_map<std::string, baseCamera*>        cameras;
     std::unordered_map<std::string, deferredGraphics*>  graphics;
+    imguiGraphics*                                      gui;
 
     std::unordered_map<std::string, model*>             models;
     std::unordered_map<std::string, baseObject*>        objects;

@@ -6,6 +6,7 @@
 #include "light.h"
 #include "object.h"
 #include "camera.h"
+#include "swapChain.h"
 
 #include <cstring>
 
@@ -130,6 +131,7 @@ void deferredGraphics::destroyCommandPool()
 void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
 {
     this->swapChainKHR = swapChainKHR;
+    this->imageCount = swapChainKHR->getImageCount();
 }
 
 void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices)
@@ -152,11 +154,6 @@ void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices
         layer.setDeviceProp(device.instance, device.getLogical());
     }
     Link.setDeviceProp(device.getLogical());
-}
-
-void deferredGraphics::setImageCount(uint32_t imageCount)
-{
-    this->imageCount = imageCount;
 }
 
 void deferredGraphics::createCommandPool()

@@ -11,6 +11,7 @@ Debug:GLFW_BIN_DIR = Debug
 win32: LIBS += \
     -L$$OUT_PWD/../core/graphicsManager/$$DESTDIR \
     -L$$OUT_PWD/../core/deferredGraphics/$$DESTDIR \
+    -L$$OUT_PWD/../core/imguiGraphics/$$DESTDIR \
     -L$$OUT_PWD/../core/models/$$DESTDIR \
     -L$$OUT_PWD/../core/transformational/$$DESTDIR \
     -L$$OUT_PWD/../core/interfaces/$$DESTDIR \
@@ -18,6 +19,7 @@ win32: LIBS += \
     -L$$PWD/../dependences/libs/vulkan_runtime/x64 \
     -L$$PWD/../dependences/libs/glfw/build/src/$$GLFW_BIN_DIR \
     -lgraphicsManager \
+    -limguiGraphics\
     -ldeferredGraphics \
     -lmodels \
     -ltransformational \
@@ -40,6 +42,7 @@ INCLUDEPATH += \
     $$PWD/../core/deferredGraphics \
     $$PWD/../core/deferredGraphics/renderStages \
     $$PWD/../core/deferredGraphics/workflows \
+    $$PWD/../core/imguiGraphics \
     $$PWD/../core/utils \
     $$PWD/../core/transformational \
     $$PWD/../core/interfaces \
@@ -50,22 +53,13 @@ SOURCES += \
     physicalobject.cpp \
     main.cpp \
     testScene.cpp \
-    testPos.cpp \
-    $$PWD/../dependences/libs/imgui/imgui.cpp \
-    $$PWD/../dependences/libs/imgui/imgui_draw.cpp \
-    $$PWD/../dependences/libs/imgui/imgui_tables.cpp \
-    $$PWD/../dependences/libs/imgui/imgui_widgets.cpp \
-    $$PWD/../dependences/libs/imgui/backends/imgui_impl_vulkan.cpp \
-    $$PWD/../dependences/libs/imgui/backends/imgui_impl_glfw.cpp
+    testPos.cpp
 
 HEADERS += \
     physicalobject.h \
     scene.h \
     testScene.h \
-    testPos.h \
-    $$PWD/../dependences/libs/imgui/imgui.h \
-    $$PWD/../dependences/libs/imgui/backends/imgui_impl_vulkan.h \
-    $$PWD/../dependences/libs/imgui/backends/imgui_impl_glfw.h
+    testPos.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

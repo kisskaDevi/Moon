@@ -40,7 +40,6 @@ bool debug::checkResult(bool result, std::string message){
     return result;
 }
 
-
 #define ONLYDEVICELOCALHEAP
 
 bool ValidationLayer::checkSupport(const std::vector<const char*> validationLayers)

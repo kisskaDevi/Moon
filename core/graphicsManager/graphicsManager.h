@@ -19,6 +19,10 @@ public:
     void destroySwapChain();
     void destroyLinker();
 
+    VkInstance getInstance(){
+        return instance;
+    }
+
     VkSurfaceKHR    getSurface();
     uint32_t        getImageIndex();
     uint32_t        getImageCount();

@@ -52,7 +52,7 @@ private:
     attachments                                 blurAttachment;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
-    attachments                                 skyboxAttachment;
+    std::vector<attachments>                    skyboxAttachment;
     std::vector<attachments>                    blitAttachments;
     std::vector<attachments>                    layersCombinedAttachment;
     attachments                                 finalAttachment;

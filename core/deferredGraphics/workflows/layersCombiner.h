@@ -26,7 +26,7 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, camera* cameraObject);
+    void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, attachments* skyboxBloom, camera* cameraObject);
 
     void updateCommandBuffer(uint32_t frameNumber) override;
 

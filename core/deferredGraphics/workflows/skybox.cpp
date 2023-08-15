@@ -32,12 +32,14 @@ void skyboxGraphics::destroy()
 void skyboxGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
+        attachments::imageDescription(image.Format),
         attachments::imageDescription(image.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
     attachmentRef.push_back(std::vector<VkAttachmentReference>());
-        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{static_cast<uint32_t>(attachmentRef.back().size()), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{static_cast<uint32_t>(attachmentRef.back().size()), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
 
     std::vector<VkSubpassDescription> subpass;
     for(auto refIt = attachmentRef.begin(); refIt != attachmentRef.end(); refIt++){
@@ -71,11 +73,15 @@ void skyboxGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
+        std::vector<VkImageView> pAttachments(attachmentsCount);
+        for(auto& pAttachment: pAttachments){
+            pAttachment = this->pAttachments[&pAttachment - &pAttachments[0]].imageView[i];
+        }
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
-            framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->imageView[i];
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
+            framebufferInfo.pAttachments = pAttachments.data();
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -124,7 +130,7 @@ void skyboxGraphics::Skybox::createPipeline(VkDevice device, imageInfo* pInfo, V
     VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
     VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_TRUE)};
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_TRUE), vkDefault::colorBlendAttachmentState(VK_TRUE)};
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkDescriptorSetLayout> SetLayouts = {DescriptorSetLayout, ObjectDescriptorSetLayout};

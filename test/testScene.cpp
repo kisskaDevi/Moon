@@ -186,7 +186,7 @@ void testScene::createObjects()
         ExternalPath / "dependences/texture/skybox/top.jpg",
         ExternalPath / "dependences/texture/skybox/bottom.jpg"
     });
-    skyboxObjects["lake"]->setColorFactor(vector<float,4>(0.5));
+    // skyboxObjects["lake"]->setColorFactor(vector<float,4>(0.5));
     skyboxObjects["lake"]->scale({200.0f,200.0f,200.0f});
 
     skyboxObjects["stars"] = new skyboxObject({

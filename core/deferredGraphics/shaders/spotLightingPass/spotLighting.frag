@@ -21,7 +21,7 @@ layout(set = 2, binding = 0) uniform sampler2D shadowMap;
 layout(set = 2, binding = 1) uniform sampler2D lightTexture;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outBlur;
+layout(location = 1) out vec4 outScattering;
 layout(location = 2) out vec4 outBloom;
 
 #include "metods/scattering.frag"
@@ -38,7 +38,7 @@ void main()
     outColor = ao * calcLight(position, normal, baseColorTexture, eyePosition, shadowMap, lightTexture, enbaleShadow);
     outBloom = SRGBtoLINEAR(emissiveTexture) + (checkBrightness(outColor) ? outColor : vec4(0.0f));
     
-    outBlur = enableScattering ? (enbaleShadow 
+    outScattering = enableScattering ? (enbaleShadow 
         ? LightScattering(
             50, 
             light.view, 

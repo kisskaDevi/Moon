@@ -99,8 +99,10 @@ void deferredGraphics::destroyGraphics()
     sslrAttachment.deleteAttachment(device.getLogical());
     sslrAttachment.deleteSampler(device.getLogical());
 
-    skyboxAttachment.deleteAttachment(device.getLogical());
-    skyboxAttachment.deleteSampler(device.getLogical());
+    for(auto& attachment: skyboxAttachment){
+        attachment.deleteAttachment(device.getLogical());
+        attachment.deleteSampler(device.getLogical());
+    }
 
     for(auto& attachment: layersCombinedAttachment){
         attachment.deleteAttachment(device.getLogical());
@@ -232,8 +234,9 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
     PostProcessing.setImageProp(&swapChainInfo);
 
     if(enableSkybox){
-        Skybox.createAttachments(1,&skyboxAttachment);
-        fastCreateFilterGraphics(&Skybox,1,&skyboxAttachment);
+        skyboxAttachment.resize(2);
+        Skybox.createAttachments(2,skyboxAttachment.data());
+        fastCreateFilterGraphics(&Skybox,2,skyboxAttachment.data());
         Skybox.updateDescriptorSets(cameraObject);
     }
 
@@ -251,7 +254,7 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         LayersCombiner.setTransparentLayersCount(TransparentLayersCount);
         LayersCombiner.createAttachments(static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
         fastCreateFilterGraphics(&LayersCombiner,static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
-        LayersCombiner.updateDescriptorSets(deferredAttachments,transparentLayersAttachments.data(),&skyboxAttachment,cameraObject);
+        LayersCombiner.updateDescriptorSets(deferredAttachments,transparentLayersAttachments.data(),&skyboxAttachment[0],&skyboxAttachment[1],cameraObject);
     }
 
     if(enableBloom){

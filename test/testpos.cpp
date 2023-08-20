@@ -15,50 +15,47 @@
 testPos::testPos(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath):
     ExternalPath(ExternalPath),
     window(window),
-    app(app)
-{}
+    app(app),
+    mouse(new controller(window, glfwGetMouseButton)),
+    board(new controller(window, glfwGetKey))
+{
+    mouse->sensitivity = 0.4f;
+}
 
 void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
-    this->WIDTH = WIDTH;
-    this->HEIGHT = HEIGHT;
+    extent = {WIDTH, HEIGHT};
 
-    globalCamera->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    localCamera->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    globalSpaceView->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
-    localView->setExtentAndOffset({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+    cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
 
-    auto createGraphics = [this](deferredGraphics* graph){
+    cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["view"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+
+    for(auto& [_,graph]: graphics){
         graph->destroyGraphics();
         graph->createGraphics(window, app->getSurface());
-    };
-
-    createGraphics(globalSpaceView);
-    createGraphics(localView);
+    }
 }
 
 void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
-    this->WIDTH = WIDTH;
-    this->HEIGHT = HEIGHT;
+    extent = {WIDTH, HEIGHT};
 
-    globalCamera = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    localCamera = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
+    app->setGraphics(graphics["base"]);
 
-    globalSpaceView = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
-    localView = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
+    cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
+    app->setGraphics(graphics["view"]);
 
-    auto createGraphics = [this](deferredGraphics* graph, camera* camera){
-        app->setGraphics(graph);
+    for(auto& [key,graph]: graphics){
         graph->createCommandPool();
         graph->createEmptyTexture();
-        graph->bindCameraObject(camera, true);
+        graph->bindCameraObject(cameras[key], true);
         graph->createGraphics(window, app->getSurface());
-        graph->setMinAmbientFactor(minAmbientFactor);
-    };
-
-    createGraphics(globalSpaceView, globalCamera);
-    createGraphics(localView, localCamera);
+    }
 
     loadModels();
     createObjects();
@@ -75,39 +72,38 @@ void testPos::updateFrame(uint32_t, float frameTime)
 
 void testPos::destroy()
 {
-    auto destroyObjects = [this](deferredGraphics* graph){
-        for (auto& [_,model]: models)           graph->destroyModel(model);
-        for (auto& [_,object]: cameraObject3D)  graph->removeObject(object);
-        for (auto& [_,object]: staticObject3D)  graph->removeObject(object);
-        for (auto& lightSource: lightSources)   graph->removeLightSource(lightSource);
-        for (auto& object: skyboxObjects)       graph->removeObject(object);
-    };
-
-    destroyObjects(globalSpaceView);
-    destroyObjects(localView);
-
-    for(auto& lightPoint: lightPoints) delete lightPoint;
-    lightPoints.clear();
-    for(auto& object: skyboxObjects) delete object;
-    skyboxObjects.clear();
-    for(auto& [_,object]: staticObject3D) delete object;
-    staticObject3D.clear();
-    for(auto& [_, model]: models) delete model;
-    models.clear();
-    for(auto& [view, object]: cameraObject3D){
-        delete view; delete object;
+    for(auto& [_,graph]: graphics){
+        for (auto& [_,object]: cameraObjects)       graph->removeObject(object);
+        for (auto& [_,object]: staticObjects)      graph->removeObject(object);
+        for (auto& [_,object]: skyboxObjects)      graph->removeObject(object);
+        for (auto& [_,model]: models)              graph->destroyModel(model);
+        for (auto& [_,light]: lights)              graph->removeLightSource(light);
+        for (auto& light: lightSources)            graph->removeLightSource(light);
     }
-    cameraObject3D.clear();
+    for (auto& [_,lightPoint]: lightPoints)  delete lightPoint;
+    for (auto& [view,object]: cameraObjects)  { delete object; delete view;}
+    for (auto& [_,object]: staticObjects)    delete object;
+    for (auto& [_,object]: skyboxObjects)    delete object;
+    for (auto& [_,model]: models)            delete model;
+    for (auto& [_,light]: lights)            delete light;
+    for (auto& light: lightSources)          delete light;
 
-    auto destroyGraphics = [](deferredGraphics* graph, camera* camera){
+    lightPoints.clear();
+    cameraObjects.clear();
+    cameraNames.clear();
+    staticObjects.clear();
+    skyboxObjects.clear();
+    models.clear();
+    lights.clear();
+    lightSources.clear();
+
+    for(auto& [key,graph]: graphics){
         graph->destroyGraphics();
         graph->destroyEmptyTextures();
         graph->destroyCommandPool();
-        graph->removeCameraObject(camera);
+        graph->removeCameraObject(cameras[key]);
         delete graph;
-    };
-    destroyGraphics(globalSpaceView, globalCamera);
-    destroyGraphics(localView, localCamera);
+    }
 }
 
 void testPos::loadModels()
@@ -116,35 +112,35 @@ void testPos::loadModels()
     models["ojectModel"] = new class plyModel(ExternalPath / "dependences/model/plytest.ply");
     models["cubeModel"] = new class plyModel(ExternalPath / "dependences/model/cube.ply");
 
-    for(auto& [_, model]: models){
-        globalSpaceView->createModel(model);
+    for(auto& [_,model]: models){
+        graphics["base"]->createModel(model);
     }
 }
 
 void testPos::createLight()
 {
-    lightPoints.push_back(new isotropicLight(lightSources, 10.0f));
-    lightPoints.back()->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
-    lightPoints.back()->setLightDropFactor(1.0f);
+    lightPoints["lightBox"] = new isotropicLight(lightSources, 10.0f);
+    lightPoints["lightBox"]->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    lightPoints["lightBox"]->setLightDropFactor(1.0f);
 
     for(auto& source: lightSources){
-        globalSpaceView->bindLightSource(source, true);
+        graphics["base"]->bindLightSource(source, true);
     }
 
     matrix<float,4,4> proj = perspective(radians(90.0f), 1.0f, 0.01f, 10.0f);
-    dualQuaternion<float> Q = convert(*cameraObject3D.begin()->first);
+    dualQuaternion<float> Q = convert(*cameraObjects.begin()->first);
 
-    lightSources.push_back(new spotLight(proj));
-    lightSources.back()->setLightColor({1.0f,1.0f,1.0f,1.0f});
-    lightSources.back()->setLightDropFactor(1.0f);
-    lightSources.back()->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
-    globalSpaceView->bindLightSource(lightSources.back(), true);
+    lights["base"] = new spotLight(proj, true, true);
+    lights["base"]->setLightColor({1.0f,1.0f,1.0f,1.0f});
+    lights["base"]->setLightDropFactor(1.0f);
+    lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
+    graphics["base"]->bindLightSource(lights["base"], true);
 
-    lightSources.push_back(new spotLight(proj));
-    lightSources.back()->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
-    lightSources.back()->setLightDropFactor(1.0f);
-    lightSources.back()->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
-    localView->bindLightSource(lightSources.back(), true);
+    lights["view"] = new spotLight(proj);
+    lights["view"]->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    lights["view"]->setLightDropFactor(1.0f);
+    lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
+    graphics["view"]->bindLightSource(lights["view"], true);
 }
 
 void testPos::createObjects()
@@ -158,167 +154,138 @@ void testPos::createObjects()
         ExternalPath / "dependences/texture/skybox/bottom.jpg"
     };
 
-    skyboxObjects.push_back(new skyboxObject(SKYBOX));
-    skyboxObjects.back()->scale(vector<float,3>(20000.0f,20000.0f,20000.0f));
-    skyboxObjects.back()->getTexture()->setMipLevel(0.85f);
+    skyboxObjects["lake"] = new skyboxObject(SKYBOX);
+    skyboxObjects["lake"]->scale(vector<float,3>(100.0f,100.0f,100.0f));
+    skyboxObjects["lake"]->getTexture()->setMipLevel(0.85f);
 
-    for(auto& object: skyboxObjects){
-        globalSpaceView->bindObject(object, true);
-        localView->bindObject(object, false);
+    for(auto& [_, object]: skyboxObjects){
+        graphics["base"]->bindObject(object, true);
+        graphics["view"]->bindObject(object, false);
     }
-    skyboxObjects.back()->setColorFactor(vector<float,4>(0.25));
 
     for (auto &entry : std::filesystem::directory_iterator(ExternalPath / "dependences/texture_HD")){
         if(std::ifstream file(entry.path()); entry.path().extension() == ".xf"){
             matrix<float,4,4>* view = new matrix<float,4,4>(file);
 
-            cameraObject3D[view] = new baseObject(models.at("cameraModel"));
-            cameraObject3D[view]->rotate(radians(180.0f),{1.0f,0.0f,0.0f});
-            cameraObject3D[view]->setConstantColor(vector<float,4>(0.9f,0.3f,0.3f,-0.2f));
-            cameraObject3D[view]->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,0.0f));
+            cameraNames[view] = entry.path().string();
+            cameraObjects[view] = new baseObject(models.at("cameraModel"));
+            cameraObjects[view]->rotate(radians(180.0f),{1.0f,0.0f,0.0f});
+            cameraObjects[view]->setConstantColor(vector<float,4>(0.9f,0.3f,0.3f,-0.2f));
+            cameraObjects[view]->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,0.0f));
             maxSize = maxAbs(maxSize, vector<float,4>(*view * vector<float,4>(0.0f,0.0f,0.0f,1.0f)).dvec());
         }
     }
 
-    staticObject3D["object"] = new baseObject(models.at("ojectModel"));
-    staticObject3D["object"]->setConstantColor(vector<float,4>(0.2f,0.8f,1.0f,1.0f));
-    staticObject3D["object"]->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,1.0f));
+    staticObjects["object"] = new baseObject(models.at("ojectModel"));
+    staticObjects["object"]->setConstantColor(vector<float,4>(0.2f,0.8f,1.0f,1.0f));
+    staticObjects["object"]->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,1.0f));
 
-    vector<float,3> maxObjectSize = static_cast<plyModel*>(staticObject3D["object"]->getModel())->getMaxSize();
-    maxSize = maxAbs(maxObjectSize, maxSize);
+    maxSize = maxAbs(static_cast<plyModel*>(staticObjects["object"]->getModel())->getMaxSize(), maxSize);
+    staticObjects["object"]->scale(1.0f/maximum(maxSize));
 
-    staticObject3D["cube"] = new baseObject(models.at("cubeModel"));
-    staticObject3D["cube"]->setConstantColor(vector<float,4>(0.7f,0.7f,0.7f,1.0f));
+    staticObjects["cube"] = new baseObject(models.at("cubeModel"));
+    staticObjects["cube"]->setConstantColor(vector<float,4>(0.7f,0.7f,0.7f,1.0f));
+    staticObjects["cube"]->scale(3.0f);
 
-    selectedObject = cameraObject3D.begin()->second;
+    selectedObject = cameraObjects.begin()->second;
     selectedObject->setOutlining(true, 1.5f / maximum(maxSize), {0.8f, 0.6f, 0.1f, 1.0f});
-    for(auto& [view,object]: cameraObject3D){
+
+    for(auto [view,object]: cameraObjects){
         auto curview = *view;
-        curview[0][3] /= maximum(maxSize);
-        curview[1][3] /= maximum(maxSize);
-        curview[2][3] /= maximum(maxSize);
-        globalSpaceView->bindObject(object, true);
+        curview[0][3] /= maximum(maxSize); curview[1][3] /= maximum(maxSize); curview[2][3] /= maximum(maxSize);
+        graphics["base"]->bindObject(object, true);
         object->setGlobalTransform(curview).scale(50.0f/maximum(maxSize));
     }
-    for(auto& [_,object]: staticObject3D){
-        globalSpaceView->bindObject(object, true);
-        localView->bindObject(object, false);
-        object->scale(1.0f/maximum(maxSize));
+    for(auto& [_,object]: staticObjects){
+        graphics["base"]->bindObject(object, true);
+        graphics["view"]->bindObject(object, false);
     }
 
-    staticObject3D["cube"]->scale(2.0f);
-    dualQuaternion<float> Q = convert(*cameraObject3D.begin()->first);
-    localCamera->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
+    dualQuaternion<float> Q = convert(*cameraObjects.begin()->first);
+    cameras["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
 }
 
-void testPos::mouseEvent(float)
+void testPos::mouseEvent(float frameTime)
 {
+    float sensitivity = mouse->sensitivity * frameTime;
+
     int primitiveNumber = INT_FAST32_MAX;
     for(uint32_t i=0; i < app->getImageCount(); i++){
-        primitiveNumber = globalSpaceView->readStorageBuffer(i);
-        if(primitiveNumber!=INT_FAST32_MAX)
+        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != INT_FAST32_MAX)
             break;
     }
 
-    glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {
-    });
+    glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {});
 
-    if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-    {
-        float sensitivity = 0.001;
-
-        double x, y;
+    if(double x = 0, y = 0; mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
         glfwGetCursorPos(window,&x,&y);
-        globalCamera->rotateX(sensitivity * static_cast<float>(yMpos - y), {1.0f,0.0f,0.0f});
-        globalCamera->rotateY(sensitivity * static_cast<float>(xMpos - x), {0.0f,0.0f,1.0f});
-        xMpos = x;
-        yMpos = y;
+        cameras["base"]->rotateX(sensitivity * static_cast<float>(mousePos[1] - y), {1.0f,0.0f,0.0f});
+        cameras["base"]->rotateY(sensitivity * static_cast<float>(mousePos[0] - x), {0.0f,0.0f,1.0f});
+        mousePos = {x,y};
 
+        auto scale = [](double pos, double ex) -> float { return static_cast<float>(2.0 * pos / ex - 1.0);};
         for(uint32_t i=0; i < app->getImageCount(); i++){
-            globalSpaceView->updateStorageBuffer(i, 2.0f * static_cast<float>(xMpos)/WIDTH - 1.0f , 2.0f * static_cast<float>(yMpos)/HEIGHT - 1.0f);
+            graphics["base"]->updateStorageBuffer(i, scale(mousePos[0],extent[0]), scale(mousePos[1],extent[1]));
         }
+    } else {
+        glfwGetCursorPos(window,&mousePos[0],&mousePos[1]);
     }
-    else if(mouse1Stage == GLFW_PRESS && glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT) == 0)
-    {
-        for(auto& [view, object]: cameraObject3D){
+
+    if(mouse->released(GLFW_MOUSE_BUTTON_LEFT)){
+        for(auto& [view, object]: cameraObjects){
             if(object->comparePrimitive(primitiveNumber)){
+                std::cout << cameraNames[view] << std::endl;
+
                 selectedObject->setOutlining(false);
                 auto curview = *view;
-                curview[0][3] /= maximum(maxSize);
-                curview[1][3] /= maximum(maxSize);
-                curview[2][3] /= maximum(maxSize);
+                curview[0][3] /= maximum(maxSize); curview[1][3] /= maximum(maxSize); curview[2][3] /= maximum(maxSize);
                 dualQuaternion<float> Q = convert(curview);
-
-                localCamera->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
-
-                (*(lightSources.rbegin()+0))->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
-                (*(lightSources.rbegin()+1))->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
 
                 object->setOutlining(true, 1.5f / maximum(maxSize), {0.8f, 0.6f, 0.1f, 1.0f});
                 selectedObject = object;
 
-                globalSpaceView->updateCmdFlags();
-                localView->updateCmdFlags();
+                cameras["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
+
+                graphics["base"]->updateCmdFlags();
+                graphics["view"]->updateCmdFlags();
+
+                lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
+                lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
             }
         }
     }
-    else
-    {
-        glfwGetCursorPos(window,&xMpos,&yMpos);
-    }
-    mouse1Stage = glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT);
 }
 
 void testPos::keyboardEvent(float frameTime)
 {
     float sensitivity = 1.0f*frameTime;
-    if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
-    {
-        lightPoints.back()->translate(-sensitivity*globalCamera->getViewMatrix()[2].dvec());
-        globalCamera->translate(-sensitivity*globalCamera->getViewMatrix()[2].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
-    {
-        lightPoints.back()->translate(sensitivity*globalCamera->getViewMatrix()[2].dvec());
-        globalCamera->translate(sensitivity*globalCamera->getViewMatrix()[2].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
-    {
-        lightPoints.back()->translate(-sensitivity*globalCamera->getViewMatrix()[0].dvec());
-        globalCamera->translate(-sensitivity*globalCamera->getViewMatrix()[0].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
-    {
-        lightPoints.back()->translate(sensitivity*globalCamera->getViewMatrix()[0].dvec());
-        globalCamera->translate(sensitivity*globalCamera->getViewMatrix()[0].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_Z) == GLFW_PRESS)
-    {
-        lightPoints.back()->translate(sensitivity*globalCamera->getViewMatrix()[1].dvec());
-        globalCamera->translate(sensitivity*globalCamera->getViewMatrix()[1].dvec());
-    }
-    if(glfwGetKey(window,GLFW_KEY_X) == GLFW_PRESS)
-    {
-        lightPoints.back()->translate(-sensitivity*globalCamera->getViewMatrix()[1].dvec());
-        globalCamera->translate(-sensitivity*globalCamera->getViewMatrix()[1].dvec());
-    }
 
-    if(glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window,GLFW_TRUE);
-    }
+    auto translate = [this](const vector<float,3>& tr){
+        const auto& curTr = cameras["base"]->getTranslation();
+        vector<float,3> resTr{0.0f};
+        for(uint32_t i = 0; i < 3; i++) resTr[i] += std::abs(curTr[i] + tr[i]) < 2.5f ? tr[i] : 0.0f;
+        lightPoints["lightBox"]->translate(resTr);
+        cameras["base"]->translate(resTr);
+    };
 
-    if(glfwGetKey(window,GLFW_KEY_KP_0) == GLFW_PRESS)
-    {
+    if(board->pressed(GLFW_KEY_W)) translate(-sensitivity * cameras["base"]->getViewMatrix()[2].dvec());
+    if(board->pressed(GLFW_KEY_S)) translate( sensitivity * cameras["base"]->getViewMatrix()[2].dvec());
+    if(board->pressed(GLFW_KEY_A)) translate(-sensitivity * cameras["base"]->getViewMatrix()[0].dvec());
+    if(board->pressed(GLFW_KEY_D)) translate( sensitivity * cameras["base"]->getViewMatrix()[0].dvec());
+    if(board->pressed(GLFW_KEY_X)) translate(-sensitivity * cameras["base"]->getViewMatrix()[1].dvec());
+    if(board->pressed(GLFW_KEY_Z)) translate( sensitivity * cameras["base"]->getViewMatrix()[1].dvec());
+
+    if(board->released(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window,GLFW_TRUE);
+
+    if(board->pressed(GLFW_KEY_KP_0)){
         minAmbientFactor -= minAmbientFactor > 0.011 ? 0.01f : 0.0f;
-        globalSpaceView->setMinAmbientFactor(minAmbientFactor);
-        localView->setMinAmbientFactor(minAmbientFactor);
+        graphics["base"]->setMinAmbientFactor(minAmbientFactor);
+        graphics["view"]->setMinAmbientFactor(minAmbientFactor);
     }
-    if(glfwGetKey(window,GLFW_KEY_KP_2) == GLFW_PRESS)
-    {
+    if(board->pressed(GLFW_KEY_KP_2)) {
         minAmbientFactor += 0.01f;
-        globalSpaceView->setMinAmbientFactor(minAmbientFactor);
-        localView->setMinAmbientFactor(minAmbientFactor);
+        graphics["base"]->setMinAmbientFactor(minAmbientFactor);
+        graphics["view"]->setMinAmbientFactor(minAmbientFactor);
     }
 }
 

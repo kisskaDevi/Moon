@@ -50,12 +50,14 @@ INCLUDEPATH += \
     $$PWD/../core/math
 
 SOURCES += \
+    controller.cpp \
     physicalobject.cpp \
     main.cpp \
     testScene.cpp \
     testPos.cpp
 
 HEADERS += \
+    controller.h \
     physicalobject.h \
     scene.h \
     testScene.h \

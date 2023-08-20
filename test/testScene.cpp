@@ -19,8 +19,8 @@ testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesy
     ExternalPath(ExternalPath),
     window(window),
     app(app),
-    mouse(new controler(window, glfwGetMouseButton)),
-    board(new controler(window, glfwGetKey))
+    mouse(new controller(window, glfwGetMouseButton)),
+    board(new controller(window, glfwGetKey))
 {}
 
 testScene::~testScene(){
@@ -32,7 +32,7 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
-    cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+    cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
 
     cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
@@ -51,7 +51,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
-    cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
+    cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
     app->setGraphics(graphics["base"]);
 
@@ -267,7 +267,7 @@ void testScene::mouseEvent(float frameTime)
         for(uint32_t i=0; i < app->getImageCount(); i++){
             graphics["base"]->updateStorageBuffer(i, scale(mousePos[0],extent[0]), scale(mousePos[1],extent[1]));
         }
-    }else {
+    } else {
         glfwGetCursorPos(window,&mousePos[0],&mousePos[1]);
     }
 

@@ -10,6 +10,8 @@
 #include "scene.h"
 #include "vector.h"
 
+#include "controller.h"
+
 class deferredGraphics;
 class imguiGraphics;
 class model;
@@ -22,32 +24,6 @@ class baseCamera;
 class skyboxObject;
 class plyModel;
 class transformational;
-
-class controler
-{
-private:
-    std::unordered_map<uint32_t, bool> keysMap;
-    GLFWwindow* window{nullptr};
-    int (*glfwGetFunction)(GLFWwindow*,int){nullptr};
-
-public:
-    float sensitivity{0.1f};
-
-public:
-    controler() = default;
-    controler(GLFWwindow* window, int (*glfwGetFunction)(GLFWwindow*,int)) : window(window), glfwGetFunction(glfwGetFunction){}
-
-    bool pressed(uint32_t key){
-        bool res = glfwGetFunction(window,key) == GLFW_PRESS;
-        return res;
-    }
-
-    bool released(uint32_t key){
-        bool res = keysMap.count(key) > 0 && keysMap[key] == GLFW_PRESS && glfwGetFunction(window,key) == GLFW_RELEASE;
-        keysMap[key] = glfwGetFunction(window,key);
-        return res;
-    }
-};
 
 class testScene : public scene
 {
@@ -64,8 +40,8 @@ private:
     transformational*                                   controledObject{nullptr};
     GLFWwindow*                                         window{nullptr};
     graphicsManager*                                    app{nullptr};
-    controler*                                          mouse{nullptr};
-    controler*                                          board{nullptr};
+    controller*                                         mouse{nullptr};
+    controller*                                         board{nullptr};
 
     std::unordered_map<std::string, baseCamera*>        cameras;
     std::unordered_map<std::string, deferredGraphics*>  graphics;

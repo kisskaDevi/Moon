@@ -20,7 +20,7 @@ float shadowFactor(sampler2D Sampler, vec4 coordinates) {
     // return 1.0 - result / (maxNoise * n);
 
     // simple
-    return lightSpaceNDC.z >= texture(Sampler, coord.xy).x ? 0.0f : 1.0f;
+    return lightSpaceNDC.z - texture(Sampler, coord.xy).x > 0.0001f ? 0.0f : 1.0f;
 }
 
 #endif

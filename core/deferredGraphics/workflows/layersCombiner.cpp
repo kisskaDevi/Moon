@@ -4,8 +4,14 @@
 #include "texture.h"
 #include "camera.h"
 
+#include <iostream>
+
 void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
     combiner.transparentLayersCount = transparentLayersCount;
+}
+
+void layersCombiner::setScatteringRefraction(bool enable){
+    combiner.enableScatteringRefraction = enable;
 }
 
 void layersCombiner::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
@@ -102,6 +108,7 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -151,10 +158,17 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo,
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment(2,vkDefault::colorBlendAttachmentState(VK_FALSE));
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
+    std::vector<VkPushConstantRange> pushConstantRange;
+    pushConstantRange.push_back(VkPushConstantRange{});
+        pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange.back().offset = 0;
+        pushConstantRange.back().size = sizeof(layersCombinerPushConst);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
+        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -180,14 +194,14 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo,
 }
 
 void layersCombiner::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &combiner, image.Count, (7 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
+    workflow::createDescriptorPool(device, &combiner, image.Count, (8 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
 }
 
 void layersCombiner::createDescriptorSets(){
     workflow::createDescriptorSets(device, &combiner, image.Count);
 }
 
-void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, attachments* skyboxBloom, camera* cameraObject)
+void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, attachments* skyboxBloom, attachments* scattering, camera* cameraObject)
 {
     for (uint32_t i = 0; i < image.Count; i++)
     {
@@ -230,6 +244,11 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
             skyboxBloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             skyboxBloomImageInfo.imageView = skyboxBloom->imageView.size() ? skyboxBloom->imageView[i] : *emptyTexture->getTextureImageView();
             skyboxBloomImageInfo.sampler = skyboxBloom->sampler ? skyboxBloom->sampler : *emptyTexture->getTextureSampler();
+
+        VkDescriptorImageInfo scatteringImageInfo;
+            scatteringImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            scatteringImageInfo.imageView = scattering->imageView.size() ? scattering->imageView[i] : *emptyTexture->getTextureImageView();
+            scatteringImageInfo.sampler = scattering->sampler ? scattering->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);
@@ -364,6 +383,14 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &skyboxBloomImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &scatteringImageInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
@@ -385,6 +412,10 @@ void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
         renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        layersCombinerPushConst pushConst{};
+            pushConst.enableScatteringRefraction = static_cast<int>(combiner.enableScatteringRefraction);
+        vkCmdPushConstants(commandBuffers[frameNumber], combiner.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(layersCombinerPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.Pipeline);
         vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.PipelineLayout, 0, 1, &combiner.DescriptorSets[frameNumber], 0, nullptr);

@@ -1,8 +1,8 @@
 #version 450
 
-#define MANUAL_SRGB
+#include "../__methods__/defines.glsl"
+#include "../__methods__/colorFunctions.glsl"
 
-const float pi = 3.141592653589793f;
 const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;
 const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;
 const float c_MinRoughness = 0.04;
@@ -68,7 +68,6 @@ layout(location = 2) out vec4 outBaseColor;
 layout(location = 3) out vec4 outEmissiveTexture;
 
 vec3 getNormal();
-vec4 SRGBtoLINEAR(vec4 srgbIn);
 float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular);
 
 void main()
@@ -170,21 +169,6 @@ vec3 getNormal()
     vec3 tangentNormal = normalize(texture(normalTexture, pushConstants.material.normalTextureSet == 0 ? UV0 : UV1).xyz * 2.0f - 1.0f);
     mat3 TBN = mat3(tangent, bitangent, normal);
     return normalize(TBN * tangentNormal);
-}
-
-vec4 SRGBtoLINEAR(vec4 srgbIn)
-{
-        #ifdef MANUAL_SRGB
-            #ifdef SRGB_FAST_APPROXIMATION
-                vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-            #else //SRGB_FAST_APPROXIMATION
-                vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-		vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-            #endif //SRGB_FAST_APPROXIMATION
-	    return vec4(linOut,srgbIn.w);
-        #else //MANUAL_SRGB
-        return srgbIn;
-        #endif //MANUAL_SRGB
 }
 
 float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular)

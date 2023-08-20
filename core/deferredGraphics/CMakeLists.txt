@@ -20,6 +20,7 @@ workflows/skybox.cpp
 workflows/customFilter.cpp
 workflows/ssao.cpp
 workflows/sslr.cpp
+workflows/scattering.cpp
 renderStages/source/ambientLighting.cpp
 renderStages/source/lighting.cpp
 renderStages/source/lightingPipelines.cpp
@@ -38,6 +39,7 @@ workflows/skybox.h
 workflows/customFilter.h
 workflows/ssao.h
 workflows/sslr.h
+workflows/scattering.h
 renderStages/graphics.h
 renderStages/link.h)
 

@@ -1,5 +1,7 @@
 #version 450
 
+#include "../__methods__/defines.glsl"
+
 layout (set = 0, binding = 0) uniform UniformBuffer
 {
     mat4 view;

@@ -134,7 +134,7 @@ void testPos::createLight()
     matrix<float,4,4> proj = perspective(radians(90.0f), 1.0f, 0.01f, 10.0f);
     dualQuaternion<float> Q = convert(*cameraObject3D.begin()->first);
 
-    lightSources.push_back(new spotLight(proj, true, true));
+    lightSources.push_back(new spotLight(proj));
     lightSources.back()->setLightColor({1.0f,1.0f,1.0f,1.0f});
     lightSources.back()->setLightDropFactor(1.0f);
     lightSources.back()->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));

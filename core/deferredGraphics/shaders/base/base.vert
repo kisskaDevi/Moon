@@ -1,4 +1,6 @@
 #version 450
+
+#include "../__methods__/defines.glsl"
 #define MAX_NUM_JOINTS 128
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer

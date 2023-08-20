@@ -5,20 +5,8 @@
 #include <filesystem>
 #include <iostream>
 
-void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath, VkBool32 enableShadow, VkBool32 enableScattering){
-    uint8_t key = (static_cast<bool>(enableScattering)<<5)|(static_cast<bool>(enableShadow)<<4)|(0x0);
-
-    struct Props{
-        VkBool32 enableShadow;
-        VkBool32 enableScattering;
-    } props{enableShadow,enableScattering && this->enableScattering};
-
-    std::vector<VkSpecializationMapEntry> specializationMapEntry = {{0,0,sizeof(VkBool32)},{1,sizeof(VkBool32),sizeof(VkBool32)}};
-    VkSpecializationInfo specializationInfo;
-        specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationMapEntry.size());
-        specializationInfo.pMapEntries = specializationMapEntry.data();
-        specializationInfo.dataSize = sizeof(Props);
-        specializationInfo.pData = &props;
+void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
+    uint8_t key = (0x0);
 
     auto vertShaderCode = ShaderModule::readFile(vertShadersPath);
     auto fragShaderCode = ShaderModule::readFile(fragShadersPath);
@@ -28,7 +16,6 @@ void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, V
         vkDefault::vertrxShaderStage(vertShaderModule),
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
-    shaderStages.back().pSpecializationInfo = &specializationInfo;
 
     VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
     VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
@@ -39,9 +26,19 @@ void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, V
     VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
     VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
+    VkPipelineColorBlendAttachmentState customBlendAttachment{};
+        customBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        customBlendAttachment.blendEnable = VK_TRUE;
+        customBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        customBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        customBlendAttachment.colorBlendOp = VK_BLEND_OP_MAX;
+        customBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        customBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        customBlendAttachment.alphaBlendOp = VK_BLEND_OP_MIN;
+
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment ={
         vkDefault::colorBlendAttachmentState(VK_TRUE),
-        vkDefault::colorBlendAttachmentState(VK_TRUE),
+        customBlendAttachment,
         vkDefault::colorBlendAttachmentState(VK_TRUE)
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());

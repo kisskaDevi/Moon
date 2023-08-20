@@ -24,6 +24,7 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     Shadow.setShadersPath(shadersPath);
     LayersCombiner.setShadersPath(shadersPath);
     Blur.setShadersPath(shadersPath);
+    Scattering.setShadersPath(shadersPath);
     Link.setShadersPath(shadersPath);
 
     TransparentLayers.resize(TransparentLayersCount);
@@ -37,9 +38,13 @@ deferredGraphics::~deferredGraphics()
 
 void deferredGraphics::destroyEmptyTextures()
 {
-    if(emptyTexture){
-        emptyTexture->destroy(device.getLogical());
-        emptyTexture = nullptr;
+    if(emptyTextureBlack){
+        emptyTextureBlack->destroy(device.getLogical());
+        emptyTextureBlack = nullptr;
+    }
+    if(emptyTextureWhite){
+        emptyTextureWhite->destroy(device.getLogical());
+        emptyTextureWhite = nullptr;
     }
 }
 
@@ -55,6 +60,7 @@ void deferredGraphics::freeCommandBuffers()
     Skybox.freeCommandBuffer(commandPool);
     SSAO.freeCommandBuffer(commandPool);
     SSLR.freeCommandBuffer(commandPool);
+    Scattering.freeCommandBuffer(commandPool);
     DeferredGraphics.freeCommandBuffer(commandPool);
     for(auto& layer: TransparentLayers){
         layer.freeCommandBuffer(commandPool);
@@ -80,6 +86,7 @@ void deferredGraphics::destroyGraphics()
     PostProcessing.destroy();
     LayersCombiner.destroy();
     Blur.destroy();
+    Scattering.destroy();
     for(auto& layer: TransparentLayers){
         layer.destroy();
     }
@@ -98,6 +105,9 @@ void deferredGraphics::destroyGraphics()
 
     sslrAttachment.deleteAttachment(device.getLogical());
     sslrAttachment.deleteSampler(device.getLogical());
+
+    scatteringAttachment.deleteAttachment(device.getLogical());
+    scatteringAttachment.deleteSampler(device.getLogical());
 
     for(auto& attachment: skyboxAttachment){
         attachment.deleteAttachment(device.getLogical());
@@ -152,6 +162,7 @@ void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices
     Shadow.setDeviceProp(device.instance, device.getLogical());
     LayersCombiner.setDeviceProp(device.instance, device.getLogical());
     Blur.setDeviceProp(device.instance, device.getLogical());
+    Scattering.setDeviceProp(device.instance, device.getLogical());
     for(auto& layer: TransparentLayers){
         layer.setDeviceProp(device.instance, device.getLogical());
     }
@@ -195,7 +206,6 @@ void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR surface)
     createGraphicsPasses(window, surface);
     updateDescriptorSets();
     createCommandBuffers();
-    updateCommandBuffers();
 }
 
 void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface)
@@ -224,6 +234,7 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
     SSLR.setImageProp(&info);
     SSAO.setImageProp(&info);
     Skybox.setImageProp(&info);
+    Scattering.setImageProp(&info);
     for(auto& layer: TransparentLayers){
         layer.setImageProp(&info);
     }
@@ -242,6 +253,12 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
 
     fastCreateGraphics(&DeferredGraphics, &deferredAttachments);
 
+    if(enableScattering){
+        Scattering.createAttachments(1,&scatteringAttachment);
+        fastCreateFilterGraphics(&Scattering,1,&scatteringAttachment);
+        Scattering.updateDescriptorSets(cameraObject,&deferredAttachments.depth);
+    }
+
     if(enableTransparentLayers){
         transparentLayersAttachments.resize(TransparentLayersCount);
         for(uint32_t i=0;i<transparentLayersAttachments.size();i++){
@@ -254,7 +271,7 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         LayersCombiner.setTransparentLayersCount(TransparentLayersCount);
         LayersCombiner.createAttachments(static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
         fastCreateFilterGraphics(&LayersCombiner,static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
-        LayersCombiner.updateDescriptorSets(deferredAttachments,transparentLayersAttachments.data(),&skyboxAttachment[0],&skyboxAttachment[1],cameraObject);
+        LayersCombiner.updateDescriptorSets(deferredAttachments,transparentLayersAttachments.data(),&skyboxAttachment[0],&skyboxAttachment[1], &scatteringAttachment, cameraObject);
     }
 
     if(enableBloom){
@@ -339,6 +356,7 @@ void deferredGraphics::createCommandBuffers()
     Blur.createCommandBuffers(commandPool);
     SSLR.createCommandBuffers(commandPool);
     SSAO.createCommandBuffers(commandPool);
+    Scattering.createCommandBuffers(commandPool);
     LayersCombiner.createCommandBuffers(commandPool);
     Filter.createCommandBuffers(commandPool);
     PostProcessing.createCommandBuffers(commandPool);
@@ -375,8 +393,12 @@ void deferredGraphics::createCommandBuffers()
                     {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
                     device.getQueue(0,0))
         }, new node({
-            stage(  {LayersCombiner.getCommandBuffer(imageIndex)},
+            stage(  {Scattering.getCommandBuffer(imageIndex)},
                     {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    device.getQueue(0,0))
+        }, new node({
+            stage(  {LayersCombiner.getCommandBuffer(imageIndex)},
+                    {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
                     device.getQueue(0,0))
         }, new node({
             stage(  {SSLR.getCommandBuffer(imageIndex), SSAO.getCommandBuffer(imageIndex),
@@ -384,7 +406,7 @@ void deferredGraphics::createCommandBuffers()
                      PostProcessing.getCommandBuffer(imageIndex)},
                     {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
                     device.getQueue(0,0))
-        }, nullptr)))));
+        }, nullptr))))));
 
         nodes[imageIndex]->createSemaphores(device.getLogical());
     }
@@ -435,6 +457,10 @@ void deferredGraphics::updateCommandBuffer(uint32_t imageIndex)
                 if(enableTransparentLayers){ layer.updateCommandBuffer(imageIndex);}
             layer.endCommandBuffer(imageIndex);
         }
+
+        Scattering.beginCommandBuffer(imageIndex);
+            if(enableScattering){ Scattering.updateCommandBuffer(imageIndex);}
+        Scattering.endCommandBuffer(imageIndex);
 
         Blur.beginCommandBuffer(imageIndex);
             if(enableBlur){ Blur.updateCommandBuffer(imageIndex);}
@@ -535,37 +561,45 @@ void deferredGraphics::setExtentAndOffset(VkExtent2D extent, VkOffset2D offset) 
     this->offset = offset;
     this->extent = extent;
 }
-void deferredGraphics::setFrameBufferExtent(VkExtent2D extent)  {   this->frameBufferExtent = extent;}
-void deferredGraphics::setShadersPath(const std::filesystem::path& path) {   shadersPath = path;}
+void deferredGraphics::setFrameBufferExtent(VkExtent2D extent)              {   frameBufferExtent = extent;}
+void deferredGraphics::setShadersPath(const std::filesystem::path& path)    {   shadersPath = path;}
 void deferredGraphics::createEmptyTexture()
 {
     CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createEmptyTexture ] VkCommandPool is VK_NULL_HANDLE"));
     CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createEmptyTexture ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createEmptyTexture ] VkDevice is VK_NULL_HANDLE"));
 
-    this->emptyTexture = new texture;
+    auto create = [this](bool isBlack = true) -> texture*{
+        texture* tex = new texture;
 
-    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-    emptyTexture->createEmptyTextureImage(device.instance, device.getLogical(), commandBuffer);
-    SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-    emptyTexture->destroyStagingBuffer(device.getLogical());
+        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+        tex->createEmptyTextureImage(device.instance, device.getLogical(), commandBuffer, isBlack);
+        SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+        tex->destroyStagingBuffer(device.getLogical());
 
-    emptyTexture->createTextureImageView(device.getLogical());
-    emptyTexture->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        tex->createTextureImageView(device.getLogical());
+        tex->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
 
-    DeferredGraphics.setEmptyTexture(emptyTexture);
+        return tex;
+    };
+
+    emptyTextureBlack = create();
+    emptyTextureWhite = create(false);
+
+    DeferredGraphics.setEmptyTexture(emptyTextureBlack);
     for(auto& layer: TransparentLayers){
-        layer.setEmptyTexture(emptyTexture);
+        layer.setEmptyTexture(emptyTextureBlack);
     }
 
-    Blur.setEmptyTexture(emptyTexture);
-    Filter.setEmptyTexture(emptyTexture);
-    LayersCombiner.setEmptyTexture(emptyTexture);
-    Skybox.setEmptyTexture(emptyTexture);
-    SSAO.setEmptyTexture(emptyTexture);
-    SSLR.setEmptyTexture(emptyTexture);
-    Shadow.setEmptyTexture(emptyTexture);
-    PostProcessing.setEmptyTexture(emptyTexture);
+    Blur.setEmptyTexture(emptyTextureBlack);
+    Filter.setEmptyTexture(emptyTextureBlack);
+    LayersCombiner.setEmptyTexture(emptyTextureBlack);
+    Skybox.setEmptyTexture(emptyTextureBlack);
+    SSAO.setEmptyTexture(emptyTextureBlack);
+    Scattering.setEmptyTexture(emptyTextureBlack);
+    SSLR.setEmptyTexture(emptyTextureBlack);
+    Shadow.setEmptyTexture(emptyTextureBlack);
+    PostProcessing.setEmptyTexture(emptyTextureBlack);
 }
 
 void deferredGraphics::createModel(model *pModel)
@@ -573,14 +607,14 @@ void deferredGraphics::createModel(model *pModel)
     CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
     CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
-    CHECKERROR(emptyTexture == nullptr, std::string("[ deferredGraphics::createModel ] emptyTexture is nullptr"));
+    CHECKERROR(emptyTextureBlack == nullptr, std::string("[ deferredGraphics::createModel ] emptyTextureBlack is nullptr"));
 
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
     pModel->loadFromFile(device.instance, device.getLogical(), commandBuffer);
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
     pModel->destroyStagingBuffer(device.getLogical());
     pModel->createDescriptorPool(device.getLogical());
-    pModel->createDescriptorSet(device.getLogical(), emptyTexture);
+    pModel->createDescriptorSet(device.getLogical(), emptyTextureBlack);
 }
 
 void deferredGraphics::destroyModel(model* pModel){
@@ -607,7 +641,8 @@ void deferredGraphics::bindLightSource(light* lightSource, bool create)
         CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkCommandPool is VK_NULL_HANDLE"));
         CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkPhysicalDevice is VK_NULL_HANDLE"));
         CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkDevice is VK_NULL_HANDLE"));
-        CHECKERROR(emptyTexture == nullptr, std::string("[ deferredGraphics::bindLightSource ] emptyTexture is nullptr"));
+        CHECKERROR(emptyTextureBlack == nullptr, std::string("[ deferredGraphics::bindLightSource ] emptyTextureBlack is nullptr"));
+        CHECKERROR(emptyTextureWhite == nullptr, std::string("[ deferredGraphics::bindLightSource ] emptyTextureWhite is nullptr"));
 
         if(lightSource->getTexture()){
             VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
@@ -628,13 +663,14 @@ void deferredGraphics::bindLightSource(light* lightSource, bool create)
 
         lightSource->createDescriptorPool(device.getLogical(), imageCount);
         lightSource->createDescriptorSets(device.getLogical(), imageCount);
-        lightSource->updateDescriptorSets(device.getLogical(), imageCount, emptyTexture);
+        lightSource->updateDescriptorSets(device.getLogical(), imageCount, emptyTextureBlack, emptyTextureWhite);
     }
 
     DeferredGraphics.bindLightSource(lightSource);
     for(auto& TransparentLayer: TransparentLayers){
         TransparentLayer.bindLightSource(lightSource);
     }
+    Scattering.bindLightSource(lightSource);
 
     updateCmdFlags();
 }
@@ -650,6 +686,7 @@ void deferredGraphics::removeLightSource(light* lightSource){
     for(auto& TransparentLayer: TransparentLayers){
         TransparentLayer.removeLightSource(lightSource);
     }
+    Scattering.removeLightSource(lightSource);
 
     if(lightSource->getTexture()){
         lightSource->getTexture()->destroy(device.getLogical());
@@ -727,6 +764,12 @@ void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
     for(auto& layer: TransparentLayers){
         layer.setMinAmbientFactor(minAmbientFactor);
     }
+
+    updateCmdFlags();
+}
+
+void deferredGraphics::setScatteringRefraction(bool enable){
+    LayersCombiner.setScatteringRefraction(enable);
 
     updateCmdFlags();
 }

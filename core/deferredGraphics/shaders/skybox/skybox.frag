@@ -1,5 +1,8 @@
 #version 450
 
+#include "../__methods__/defines.glsl"
+#include "../__methods__/colorFunctions.glsl"
+
 layout(set = 1, binding = 1)	uniform samplerCube samplerCubeMap;
 
 layout(location = 0)	in vec3 inUVW;
@@ -13,5 +16,5 @@ layout(location = 1) out vec4 outBloomColor;
 void main()
 {
     outBaseColor = colorFactor * texture(samplerCubeMap, inUVW) + constColor;
-    outBloomColor = (outBaseColor.x > 0.95f && outBaseColor.y > 0.95f && outBaseColor.z > 0.95f) ? outBaseColor : vec4(0.0f);
+    outBloomColor = (checkBrightness(outBaseColor)) ? outBaseColor : vec4(0.0f);
 }

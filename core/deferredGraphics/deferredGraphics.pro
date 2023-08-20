@@ -18,6 +18,7 @@ SOURCES += \
     workflows/blur.cpp \
     workflows/layersCombiner.cpp \
     workflows/postProcessing.cpp \
+    workflows/scattering.cpp \
     workflows/shadow.cpp \
     workflows/skybox.cpp \
     workflows/customFilter.cpp \
@@ -37,6 +38,7 @@ HEADERS += \
     workflows/blur.h \
     workflows/layersCombiner.h \
     workflows/postProcessing.h \
+    workflows/scattering.h \
     workflows/shadow.h \
     workflows/skybox.h \
     workflows/customFilter.h \

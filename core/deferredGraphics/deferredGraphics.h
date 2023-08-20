@@ -11,6 +11,7 @@
 #include "sslr.h"
 #include "ssao.h"
 #include "layersCombiner.h"
+#include "scattering.h"
 #include "skybox.h"
 #include "shadow.h"
 #include "device.h"
@@ -52,6 +53,7 @@ private:
     attachments                                 blurAttachment;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
+    attachments                                 scatteringAttachment;
     std::vector<attachments>                    skyboxAttachment;
     std::vector<attachments>                    blitAttachments;
     std::vector<attachments>                    layersCombinedAttachment;
@@ -67,6 +69,7 @@ private:
     skyboxGraphics                              Skybox;
     shadowGraphics                              Shadow;
     layersCombiner                              LayersCombiner;
+    scattering                                  Scattering;
     postProcessingGraphics                      PostProcessing;
     link                                        Link;
     std::vector<graphics>                       TransparentLayers;
@@ -78,6 +81,7 @@ private:
     bool                                        enableBloom{true};
     bool                                        enableSSLR{true};
     bool                                        enableSSAO{true};
+    bool                                        enableScattering{true};
 
     std::vector<buffer>                         storageBuffersHost;
 
@@ -87,7 +91,8 @@ private:
     std::vector<node*>                          nodes;
 
     camera*                                     cameraObject{nullptr};
-    texture*                                    emptyTexture{nullptr};
+    texture*                                    emptyTextureBlack{nullptr};
+    texture*                                    emptyTextureWhite{nullptr};
 
     std::vector<VkCommandBuffer> getTransparentLayersCommandBuffers(uint32_t imageIndex);
     void createStorageBuffers(uint32_t imageCount);
@@ -123,6 +128,7 @@ public:
     void        setShadersPath(const std::filesystem::path& shadersPath);
     void        createEmptyTexture();
     void        setMinAmbientFactor(const float& minAmbientFactor);
+    void        setScatteringRefraction(bool enable);
 
     void        createModel(model* pModel);
     void        destroyModel(model* pModel);

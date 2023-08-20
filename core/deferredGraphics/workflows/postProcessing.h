@@ -11,7 +11,7 @@ class texture;
 class swapChain;
 
 struct postProcessingPushConst{
-    alignas(4) float                    blitFactor;
+    alignas(4) float blitFactor;
 };
 
 class postProcessingGraphics : public workflow

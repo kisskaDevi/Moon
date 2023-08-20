@@ -446,7 +446,7 @@ matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n
     matrix<type,4,4> m(0.0f);
     m[0][0] = a / aspect;
     m[1][1] = - a;
-    m[2][2] = - (f + n) / (f - n);
+    m[2][2] = (f + n) / (n - f);
     m[2][3] = type(2) * f * n / (n - f);
     m[3][2] = - type(1);
 

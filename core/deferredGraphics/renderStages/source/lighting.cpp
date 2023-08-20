@@ -52,10 +52,7 @@ void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
 {
     std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,false,false);
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,true,false);
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,false,true);
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag,true,true);
+    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag);
 }
 
 void graphics::createLightingDescriptorPool()

@@ -5,6 +5,10 @@
 
 class camera;
 
+struct layersCombinerPushConst{
+    alignas(4) int enableScatteringRefraction{true};
+};
+
 class layersCombiner : public workflow
 {
 private:
@@ -12,7 +16,8 @@ private:
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
-        uint32_t                        transparentLayersCount{0};
+        uint32_t transparentLayersCount{0};
+        bool enableScatteringRefraction{true};
     }combiner;
 
 public:
@@ -26,11 +31,12 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, attachments* skyboxBloom, camera* cameraObject);
+    void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, attachments* skyboxBloom, attachments* scattering, camera* cameraObject);
 
     void updateCommandBuffer(uint32_t frameNumber) override;
 
     void setTransparentLayersCount(uint32_t transparentLayersCount);
+    void setScatteringRefraction(bool enable);
 };
 
 #endif // LAYERSCOMBINER_H

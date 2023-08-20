@@ -1,11 +1,10 @@
 #version 450
 
-const float pi = 3.141592653589793f;
+#include "../__methods__/defines.glsl"
 
-layout (constant_id = 0) const int transparentLayersCount = 1;
+layout(constant_id = 0) const int transparentLayersCount = 1;
 
-layout(set = 0, binding = 0) uniform GlobalUniformBuffer
-{
+layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
     mat4 view;
     mat4 proj;
     vec4 eyePosition;
@@ -22,6 +21,11 @@ layout(set = 0, binding = 9) uniform sampler2D layersNormal[transparentLayersCou
 layout(set = 0, binding = 10) uniform sampler2D layersDepth[transparentLayersCount];
 layout(set = 0, binding = 11) uniform sampler2D skybox;
 layout(set = 0, binding = 12) uniform sampler2D skyboxBloom;
+layout(set = 0, binding = 13) uniform sampler2D scattering;
+
+layout(push_constant) uniform PC {
+    int enableScatteringRefraction;
+} pc;
 
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
@@ -30,104 +34,105 @@ layout(location = 1) out vec4 outBloom;
 mat4 projview = global.proj * global.view;
 vec3 eyePosition = global.eyePosition.xyz;
 
-float h = 0.6f;
-float nbegin = 1.33f;
-float nend = nbegin + 2.0f;
-float reflectionProbability = 0.04f;
+float h = 0.6;
+float nbegin = 1.33;
+float nend = nbegin + 2.0;
+float reflectionProbability = 0.04;
 
-vec3 findRefrCoords(const in vec3 startPos, const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n){
+vec3 findRefrCoords(const in vec3 startPos, const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n) {
     vec3 beamDirection = normalize(layerPointPosition - startPos);
-    float cosAlpha = - dot(layerPointNormal,beamDirection);
-    float sinAlpha = sqrt(1.0f - cosAlpha * cosAlpha);
+    float cosAlpha = -dot(layerPointNormal, beamDirection);
+    float sinAlpha = sqrt(1.0 - cosAlpha * cosAlpha);
 
-    float deviation = h * sinAlpha * (1.0f - cosAlpha / sqrt(n*n - sinAlpha*sinAlpha));
-    vec3 direction = - normalize(layerPointNormal + beamDirection * cosAlpha);
-    vec4 position = projview * vec4(layerPointPosition + deviation * direction, 1.0f);
+    float deviation = h * sinAlpha * (1.0 - cosAlpha / sqrt(n * n - sinAlpha * sinAlpha));
+    vec3 direction = -normalize(layerPointNormal + beamDirection * cosAlpha);
+    vec4 position = projview * vec4(layerPointPosition + deviation * direction, 1.0);
 
-    return vec3(position.xy/position.w * 0.5f + 0.5f, position.z/position.w);
+    return vec3(position.xy / position.w * 0.5 + 0.5, position.z / position.w);
 }
 
-vec3 layerPointPosition(const in int i, const in vec2 coord){
+vec3 layerPointPosition(const in int i, const in vec2 coord) {
     return texture(layersPosition[i], coord).xyz;
 }
 
-vec3 layerPointNormal(const in int i, const in vec2 coord){
-    return normalize(texture(layersNormal[i],coord).xyz);
+vec3 layerPointNormal(const in int i, const in vec2 coord) {
+    return normalize(texture(layersNormal[i], coord).xyz);
 }
 
-float layerDepth(const in int i, const in vec2 coord){
-    return texture(layersDepth[i],coord).r;
+float layerDepth(const in int i, const in vec2 coord) {
+    return texture(layersDepth[i], coord).r;
 }
 
-bool insideCond(const in vec2 coords){
-    return (coords.x <= 1.0f) && (coords.y <= 1.0f) && (coords.x >= 0.0f) && (coords.y >= 0.0f);
+bool insideCond(const in vec2 coords) {
+    return (coords.x <= 1.0) && (coords.y <= 1.0) && (coords.x >= 0.0) && (coords.y >= 0.0);
 }
 
-bool depthCond(float z, vec2 coords){
-    return z <= texture(depth,coords.xy).r;
+bool depthCond(float z, vec2 coords) {
+    return z <= texture(depth, coords.xy).r;
 }
 
-void findRefr(const int i, const float n, inout vec3 startPos, inout vec3 coords)
-{
-    if(insideCond(coords.xy) && depthCond(layerDepth(i,coords.xy),coords.xy))
-    {
+void findRefr(const int i, const float n, inout vec3 startPos, inout vec3 coords) {
+    if(insideCond(coords.xy) && depthCond(layerDepth(i, coords.xy), coords.xy)) {
         vec3 start = startPos;
-        startPos = layerPointPosition(i,coords.xy);
-        if(layerDepth(i,coords.xy)!=1.0f){
-            coords  = findRefrCoords(start, layerPointPosition(i,coords.xy), layerPointNormal(i,coords.xy), n);
+        startPos = layerPointPosition(i, coords.xy);
+        if(layerDepth(i, coords.xy) != 1.0) {
+            coords = findRefrCoords(start, layerPointPosition(i, coords.xy), layerPointNormal(i, coords.xy), n);
         }
     }
 }
 
-vec4 findColor(const in vec3 coord, sampler2D Sampler, sampler2D skybox, bool enableSkybox){
-    vec4 skyboxColor = enableSkybox && texture(depth,coord.xy).r == 1.0f ? texture(skybox,coord.xy) : vec4(0.0f);
-    return (insideCond(coord.xy) ? texture(Sampler,coord.xy) + skyboxColor : vec4(0.0f));
+vec4 findColor(const in vec3 coord, sampler2D Sampler, sampler2D skybox, bool enableSkybox) {
+    vec4 skyboxColor = enableSkybox && texture(depth, coord.xy).r == 1.0 ? texture(skybox, coord.xy) : vec4(0.0);
+    return (insideCond(coord.xy) ? texture(Sampler, coord.xy) + skyboxColor : vec4(0.0));
 }
 
-vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sampler, sampler2D Depth, sampler2D skybox, bool enableSkybox){
-    vec4 color = vec4(0.0f);
-    for(float t = 0.0f; t < 1.0f; t += step){
+vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sampler, sampler2D Depth, sampler2D skybox, bool enableSkybox, bool enableScattering) {
+    vec4 color = vec4(0.0);
+    vec4 scat = vec4(0.0);
+    for(float t = 0.0; t < 1.0; t += step) {
         vec3 coords = beginCoords + (endCoords - beginCoords) * t;
-        vec4 factor = vec4(4.0f * abs(t - 0.5) - 2.0f / 3.0f,
-                           1.0f - abs(2.0f * t - 2.0f / 3.0f),
-                           1.0f - abs(2.0f * t - 4.0f / 3.0f), 
-                           1.0f);
-        float layDepth = texture(Depth,coords.xy).r;
-        if(depthCond(layDepth,coords.xy) && coords.z <= layDepth)
-        {
-            color += (beginCoords != vec3(fragTexCoord,0.0f) ? factor : vec4(1.0f)) * findColor(coords, Sampler, skybox, enableSkybox);
+        vec4 factor = vec4(4.0 * abs(t - 0.5) - 2.0 / 3.0, 1.0 - abs(2.0 * t - 2.0 / 3.0), 1.0 - abs(2.0 * t - 4.0 / 3.0), 1.0);
+        float layDepth = texture(Depth, coords.xy).r;
+        if(depthCond(layDepth, coords.xy) && coords.z <= layDepth) {
+            factor = (beginCoords != vec3(fragTexCoord, 0.0) ? factor : vec4(1.0));
+            color += factor * findColor(coords, Sampler, skybox, enableSkybox);
+            if(enableScattering && layDepth > texture(scattering, coords.xy).a) {
+                scat += factor * vec4(texture(scattering, coords.xy).xyz, 0.0);
+            }
         }
     }
-    return color;
+    return color + scat;
 }
 
-void main()
-{
-    bool check = (texture(layersSampler[0],fragTexCoord.xy).a == 0.0f);
+void main() {
+    bool transparentFrags = (texture(layersSampler[0], fragTexCoord.xy).a != 0.0);
+    bool enableScatteringRefraction = pc.enableScatteringRefraction == 1;
 
-    float step = check ? 1.0f : 0.02f ;
-    float incrementStep = 2.0f;
+    float step = transparentFrags ? 0.02 : 1.0;
+    float incrementStep = 2.0;
 
-    vec3 beginCoords = vec3(fragTexCoord,0.0f), beginStartPos = eyePosition;
-    vec3 endCoords = vec3(fragTexCoord,0.0f), endStartPos = eyePosition;
-    vec4 layerColor = vec4(0.0f), layerBloom = vec4(0.0f);
+    vec3 beginCoords = vec3(fragTexCoord, 0.0), beginStartPos = eyePosition;
+    vec3 endCoords = vec3(fragTexCoord, 0.0), endStartPos = eyePosition;
+    vec4 layerColor = vec4(0.0), layerBloom = vec4(0.0);
 
-    for(int i = 0; i < (check ? 0 : transparentLayersCount); i++)
-    {
-        float layerStep = step * (pow(incrementStep,i));
-        vec4 color = (i==0 ? reflectionProbability : 1.0f) * accumulateColor(beginCoords,endCoords,layerStep,layersSampler[i],layersDepth[i], skybox, false);
-        layerColor = max(layerColor, 2.0f * layerStep * color);
+    for(int i = 0; i < (transparentFrags ? transparentLayersCount : 0); i++) {
+        float layerStep = step * (pow(incrementStep, i));
+        vec4 color = (i == 0 ? reflectionProbability : 1.0) * accumulateColor(beginCoords, endCoords, layerStep, layersSampler[i], layersDepth[i], skybox, false, enableScatteringRefraction);
+        layerColor = max(layerColor, 2.0 * layerStep * color);
 
-        vec4 bloom = (i==0 ? reflectionProbability : 1.0f) * accumulateColor(beginCoords,endCoords,layerStep,layersBloomSampler[i],layersDepth[i], skybox, false);
-        layerBloom = max(layerBloom, 2.0f * layerStep * bloom);
+        vec4 bloom = (i == 0 ? reflectionProbability : 1.0) * accumulateColor(beginCoords, endCoords, layerStep, layersBloomSampler[i], layersDepth[i], skybox, false, false);
+        layerBloom = max(layerBloom, 2.0 * layerStep * bloom);
 
-        findRefr(i,nbegin,beginStartPos,beginCoords);
-        findRefr(i,nend,endStartPos,endCoords);
+        findRefr(i, nbegin, beginStartPos, beginCoords);
+        findRefr(i, nend, endStartPos, endCoords);
     }
 
-    outColor = accumulateColor(beginCoords,endCoords,step, Sampler, depth, skybox, true);
-    outColor = max(layerColor, step * outColor);
+    bool layerBehindScattering = transparentFrags && texture(layersDepth[0], fragTexCoord.xy).r > texture(scattering, fragTexCoord.xy).a;
+    vec4 frontScatteringColor = layerBehindScattering || !enableScatteringRefraction ? vec4(texture(scattering, fragTexCoord.xy).xyz, 0.0) : vec4(0.0);
 
-    outBloom = accumulateColor(beginCoords,endCoords,step, bloomSampler, depth, skyboxBloom, true);
+    outColor = accumulateColor(beginCoords, endCoords, step, Sampler, depth, skybox, true, enableScatteringRefraction);
+    outColor = max(layerColor, step * outColor + frontScatteringColor);
+
+    outBloom = accumulateColor(beginCoords, endCoords, step, bloomSampler, depth, skyboxBloom, true, false);
     outBloom = max(layerBloom, step * outBloom);
 }

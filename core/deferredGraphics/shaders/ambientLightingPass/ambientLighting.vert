@@ -1,15 +1,13 @@
 #version 450
 
+#include "../__methods__/defines.glsl"
+
 layout(set = 0, binding = 5) uniform GlobalUniformBuffer
 {
     mat4 view;
     mat4 proj;
     vec4 eyePosition;
 } global;
-
-layout(location = 0)	out vec4 eyePosition;
-layout(location = 1)	out vec2 fragTexCoord;
-layout(location = 2)	out vec4 glPosition;
 
 vec2 step[6] = vec2[](
     vec2(0.0f, 0.0f),
@@ -22,8 +20,6 @@ vec2 step[6] = vec2[](
 
 void main()
 {
-    eyePosition = global.eyePosition;
-
     int xsteps = 1;
     int ysteps = 1;
 
@@ -31,11 +27,6 @@ void main()
     float y0 = -1.0f;
     float dx = 2.0f/float(xsteps);
     float dy = 2.0f/float(ysteps);
-
-    float fx0 = 0.0f;
-    float fy0 = 0.0f;
-    float fdx = 1.0f/float(xsteps);
-    float fdy = 1.0f/float(ysteps);
 
     int arrayIndex = gl_VertexIndex % 6;
     int tileNumber = (gl_VertexIndex - arrayIndex)/6;
@@ -45,11 +36,5 @@ void main()
     float x = x0 + tileX*dx + step[arrayIndex].x * dx;
     float y = y0 + tileY*dy + step[arrayIndex].y * dy;
 
-    float fx = fx0 + tileX*fdx + step[arrayIndex].x * fdx;
-    float fy = fy0 + tileY*fdy + step[arrayIndex].y * fdy;
-
-    fragTexCoord = vec2(fx,fy);
-
-    glPosition = vec4(vec2(x,y),0.0, 1.0);
     gl_Position = vec4(vec2(x,y),0.0, 1.0);
 }

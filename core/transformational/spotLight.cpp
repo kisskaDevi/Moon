@@ -164,16 +164,11 @@ matrix<float,4,4>               spotLight::getModelMatrix() const {return modelM
 vector<float,3>                 spotLight::getTranslate() const {return vector<float,3>(translation.vector()[0],translation.vector()[1],translation.vector()[2]);}
 vector<float,4>                 spotLight::getLightColor() const {return lightColor;}
 texture*                        spotLight::getTexture(){return tex;}
+attachments*                    spotLight::getAttachments(){return shadow;}
+uint8_t                         spotLight::getPipelineBitMask() const {return (0x0);}
 
-attachments* spotLight::getAttachments()
-{
-    return shadow;
-}
-
-uint8_t                         spotLight::getPipelineBitMask()     {return (enableScattering<<5)|(isShadowEnable()<<4)|(0x0);}
-
-bool                            spotLight::isShadowEnable() const{return enableShadow;}
-bool                            spotLight::isScatteringEnable() const{return enableScattering;}
+bool                            spotLight::isShadowEnable() const {return enableShadow;}
+bool                            spotLight::isScatteringEnable() const {return enableScattering;}
 
 VkDescriptorSet*                spotLight::getDescriptorSets(){return descriptorSets.data();}
 VkDescriptorSet*                spotLight::getBufferDescriptorSets() {return bufferDescriptorSets.data();}
@@ -264,7 +259,7 @@ void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
     vkAllocateDescriptorSets(device, &shadowAllocInfo, bufferDescriptorSets.data());
 }
 
-void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTexture)
+void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite)
 {
     for (size_t i=0; i<imageCount; i++)
     {
@@ -274,12 +269,12 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, textu
             lightBufferInfo.range = sizeof(LightBufferObject);
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView       = isShadowEnable() ? shadow->imageView[i] : *emptyTexture->getTextureImageView();
-            shadowImageInfo.sampler         = isShadowEnable() ? shadow->sampler : *emptyTexture->getTextureSampler();
+            shadowImageInfo.imageView       = isShadowEnable() ? shadow->imageView[i] : *emptyTextureWhite->getTextureImageView();
+            shadowImageInfo.sampler         = isShadowEnable() ? shadow->sampler : *emptyTextureWhite->getTextureSampler();
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            lightTexture.imageView          = tex ? *tex->getTextureImageView() : *emptyTexture->getTextureImageView();
-            lightTexture.sampler            = tex ? *tex->getTextureSampler() : *emptyTexture->getTextureSampler();
+            lightTexture.imageView          = tex ? *tex->getTextureImageView() : *emptyTextureBlack->getTextureImageView();
+            lightTexture.sampler            = tex ? *tex->getTextureSampler() : *emptyTextureBlack->getTextureSampler();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

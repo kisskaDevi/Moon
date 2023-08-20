@@ -93,10 +93,10 @@ public:
 
     texture*            getTexture() override;
     attachments*        getAttachments() override;
-    uint8_t             getPipelineBitMask() override;
+    uint8_t             getPipelineBitMask() const override;
 
     bool                isShadowEnable() const override;
-    bool                isScatteringEnable() const;
+    bool                isScatteringEnable() const override;
 
     VkDescriptorSet*    getDescriptorSets() override;
     VkDescriptorSet*    getBufferDescriptorSets() override;
@@ -106,7 +106,7 @@ public:
 
     void                createDescriptorPool(VkDevice device, uint32_t imageCount) override;
     void                createDescriptorSets(VkDevice device, uint32_t imageCount) override;
-    void                updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTexture) override;
+    void                updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite) override;
 };
 
 class isotropicLight: public transformational

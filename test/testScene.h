@@ -55,9 +55,11 @@ private:
     std::filesystem::path   ExternalPath;
     vector<uint32_t,2>      extent{0};
     vector<double,2>        mousePos{0.0};
-    float                   globalTime = 0.0f, timeScale = 1.0f;
-    float                   minAmbientFactor = 0.05f;
-    int                     ufoCounter = 0;
+    float                   globalTime{0.0f};
+    float                   timeScale{1.0f};
+    float                   minAmbientFactor{0.05f};
+    bool                    enableScatteringRefraction{true};
+    int                     ufoCounter{0};
 
     transformational*                                   controledObject{nullptr};
     GLFWwindow*                                         window{nullptr};

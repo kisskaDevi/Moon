@@ -1,3 +1,8 @@
+#include "../__methods__/lightDrop.glsl"
+
+#ifndef SCATTERING_BASE
+#define SCATTERING_BASE
+
 float maxDist = 1e7f;
 
 struct intersectionOutput{
@@ -265,7 +270,8 @@ vec4 LightScattering(
         const float dropFactor,
         const float type)
 {
-    vec4 outScatteringColor = vec4(0.0f);
+    vec4 outScatteringColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    float minDepth = 1.0f;
 
     vec4 direction = normalize(fragPosition - position);
     vec4 lightDirection = findLightDirection(lightViewMatrix);
@@ -288,58 +294,15 @@ vec4 LightScattering(
             vec4 lightDir = directionToLight1 + (directionToLight2 - directionToLight1) * distance;
             float t = findPropagationFactor(start, direction, lightPosition, - normalize(lightDir));
             vec4 pointOfScattering = start + direction * t;
-            if((depthMap - findDepth(projView,pointOfScattering) > 0.0f) && (t > 0)){
+            float depthOfScattering = findDepth(projView,pointOfScattering);
+            if((depthMap > depthOfScattering) && (t > 0)){
                 outScatteringColor = type == 0.0f ? outScatteringColor + step * findConePointColor(pointOfScattering.xyz,shadowMap,lightTexture,lightColor,lightProjViewMatrix,lightProjMatrix,lightPosition.xyz,lightDirection.xyz, dropFactor)
                                                   : max(outScatteringColor, 0.5f * findPyramidPointColor(pointOfScattering.xyz,shadowMap,lightTexture,lightColor,lightProjViewMatrix,lightProjMatrix,lightPosition.xyz,lightDirection.xyz, dropFactor));
+                minDepth = min(minDepth, depthOfScattering);
             }
         }
     }
-    return outScatteringColor;
+    return vec4(outScatteringColor.xyz, minDepth);
 }
 
-vec4 LightScattering(
-        const int steps,
-        const in mat4 lightViewMatrix,
-        const in mat4 lightProjMatrix,
-        const in mat4 lightProjViewMatrix,
-        const in vec4 lightPosition,
-        const in vec4 lightColor,
-        const in mat4 projView,
-        const in vec4 position,
-        const in vec4 fragPosition,
-        sampler2D lightTexture,
-        const float depthMap,
-        const float dropFactor,
-        const float type)
-{
-    vec4 outScatteringColor = vec4(0.0f);
-
-    vec4 direction = normalize(fragPosition - position);
-    vec4 lightDirection = findLightDirection(lightViewMatrix);
-
-    intersectionOutput outputStatus = type == 0.0f ? findConeIntersection(position,direction,lightProjMatrix,lightViewMatrix)
-                                                   : findPyramidIntersection(position,direction,lightPosition,lightProjMatrix,lightViewMatrix);
-
-    if(outputStatus.intersectionCondition){
-        if(type == 1.0f){
-            mat4x4 Proj = lightProjMatrix; Proj[0][0] *= sqrt(0.5f); Proj[1][1] *= sqrt(0.5f);
-            outputStatus = findConeIntersection(position,direction,Proj,lightViewMatrix);
-        }
-        vec4 start = findStartPositionCone(outputStatus,position,direction,lightPosition,lightDirection);
-        direction *= findDirectionCone(outputStatus,position,lightPosition,lightDirection);
-
-        vec4 directionToLight1 = normalize(lightPosition - start);
-        vec4 directionToLight2 = findOpositeDir(directionToLight1.xyz,direction.xyz,lightDirection.xyz);
-
-        for(float distance = 0.0f, step = 1.0f/(steps-1); distance < 1.0f; distance += step){
-            vec4 lightDir = directionToLight1 + (directionToLight2 - directionToLight1) * distance;
-            float t = findPropagationFactor(start, direction, lightPosition, - normalize(lightDir));
-            vec4 pointOfScattering = start + direction * t;
-            if((depthMap - findDepth(projView,pointOfScattering) > 0.0f) && (t > 0)){
-                outScatteringColor = type == 0.0f ? outScatteringColor + step * findConePointColor(pointOfScattering.xyz,lightTexture,lightColor,lightProjViewMatrix,lightProjMatrix,lightPosition.xyz,lightDirection.xyz, dropFactor)
-                                                  : max(outScatteringColor, 0.5f * findPyramidPointColor(pointOfScattering.xyz,lightTexture,lightColor,lightProjViewMatrix,lightProjMatrix,lightPosition.xyz,lightDirection.xyz, dropFactor));
-            }
-        }
-    }
-    return outScatteringColor;
-}
+#endif

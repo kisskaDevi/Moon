@@ -32,7 +32,7 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
-    cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
     graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
 
     cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
@@ -51,7 +51,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
-    cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f, 1000.0f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
     app->setGraphics(graphics["base"]);
 
@@ -414,6 +414,12 @@ void testScene::keyboardEvent(float frameTime)
         minAmbientFactor += 0.01f;
         graphics["base"]->setMinAmbientFactor(minAmbientFactor);
         graphics["view"]->setMinAmbientFactor(minAmbientFactor);
+    }
+
+    if(board->released(GLFW_KEY_G)){
+        enableScatteringRefraction = !enableScatteringRefraction;
+        graphics["base"]->setScatteringRefraction(enableScatteringRefraction);
+        graphics["view"]->setScatteringRefraction(enableScatteringRefraction);
     }
 
     if(board->pressed(GLFW_KEY_LEFT_BRACKET))   timeScale -= timeScale > 0.0051f ? 0.005f : 0.0f;

@@ -1,11 +1,12 @@
 #version 450
 
+#include "../__methods__/defines.glsl"
+
 layout(set = 0, binding = 1) uniform sampler2D position;
 layout(set = 0, binding = 2) uniform sampler2D normal;
 layout(set = 0, binding = 3) uniform sampler2D Sampler;
 layout(set = 0, binding = 4) uniform sampler2D depth;
-layout(set = 0, binding = 0) uniform GlobalUniformBuffer
-{
+layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
     mat4 view;
     mat4 proj;
     vec4 eyePosition;
@@ -14,7 +15,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 
-const float pi = 3.141592653589793f;
 vec3 pointPosition	= texture(position, fragTexCoord).xyz;
 vec3 pointNormal	= texture(normal,   fragTexCoord).xyz;
 vec3 pointOfView	= global.eyePosition.xyz;

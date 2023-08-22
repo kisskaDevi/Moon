@@ -12,6 +12,29 @@
 #include <glfw3.h>
 #include <fstream>
 
+namespace {
+VkExtent2D getSmallWindowExent(uint32_t WIDTH, uint32_t HEIGHT, float aspect){
+    uint32_t HEIGHT_2 = std::min(WIDTH / 2, HEIGHT / 2);
+    uint32_t WIDTH_2 = static_cast<uint32_t>(aspect * (float)HEIGHT_2);
+
+    if(WIDTH_2 > WIDTH / 2) {
+        float a = (float)WIDTH / 2.0f / (float)WIDTH_2;
+        WIDTH_2 = static_cast<uint32_t>(a * (float)WIDTH_2);
+        HEIGHT_2 = static_cast<uint32_t>(a * (float)HEIGHT_2);
+    }
+    return {WIDTH_2, HEIGHT_2};
+}
+
+matrix<float,4,4>& correctMatrix(matrix<float,4,4>& m){
+    m[1][1] *= - 1.0f;
+    m[1][2] *= - 1.0f;
+    m[2][2] *= - 1.0f;
+    m[3][2] = - 1.0f;
+    m[2][3] = - 0.01f; // - 2 * near
+    return m;
+}
+}
+
 testPos::testPos(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath):
     ExternalPath(ExternalPath),
     window(window),
@@ -26,11 +49,15 @@ void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
+    matrix<float,4,4> m(0.0f);
+    if(std::ifstream file(ExternalPath / "dependences/texture_HD/camera_matrix.txt"); file.is_open()){
+        m = matrix<float,4,4>(file);
+        cameras["view"]->setProjMatrix(correctMatrix(m));
+    }
+
     cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
-
-    cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["view"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+    graphics["view"]->setExtentAndOffset(getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4, static_cast<int32_t>(HEIGHT / 2) - 4});
 
     for(auto& [_,graph]: graphics){
         graph->destroyGraphics();
@@ -42,12 +69,18 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
+    cameras["view"] = new baseCamera();
+    matrix<float,4,4> m(0.0f);
+    if(std::ifstream file(ExternalPath / "dependences/texture_HD/camera_matrix.txt"); file.is_open()){
+        m = matrix<float,4,4>(file);
+        cameras["view"]->setProjMatrix(correctMatrix(m));
+    }
+
     cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
-    app->setGraphics(graphics["base"]);
+    graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4 , static_cast<int32_t>(HEIGHT / 2) - 4}};
 
-    cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
+    app->setGraphics(graphics["base"]);
     app->setGraphics(graphics["view"]);
 
     for(auto& [key,graph]: graphics){
@@ -184,7 +217,7 @@ void testPos::createObjects()
     staticObjects["object"]->scale(1.0f/maximum(maxSize));
 
     staticObjects["cube"] = new baseObject(models.at("cubeModel"));
-    staticObjects["cube"]->setConstantColor(vector<float,4>(0.7f,0.7f,0.7f,1.0f));
+    staticObjects["cube"]->setConstantColor(vector<float,4>(0.94f,0.94f,0.94f,1.0f));
     staticObjects["cube"]->scale(3.0f);
 
     selectedObject = cameraObjects.begin()->second;

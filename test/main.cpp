@@ -18,8 +18,13 @@
 #include <vector.h>
 #include <matrix.h>
 
-#include "testScene.h"
-// #include "testPos.h"
+#define TESTPOS
+
+#ifdef TESTPOS
+    #include "testPos.h"
+#else
+    #include "testScene.h"
+#endif
 
 bool framebufferResized = false;
 
@@ -44,7 +49,11 @@ int main()
     debug::checkResult(app.createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
+#ifdef TESTPOS
+    testPos testScene(&app, window, ExternalPath);
+#else
     testScene testScene(&app, window, ExternalPath);
+#endif
     testScene.create(WIDTH,HEIGHT);
 
     static auto pastTime = std::chrono::high_resolution_clock::now();

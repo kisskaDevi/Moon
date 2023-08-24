@@ -11,14 +11,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <stb_image.h>
-#include <vulkan.h>
 #include <glfw3.h>
 
 #include <graphicsManager.h>
-#include <vector.h>
-#include <matrix.h>
 
-#define TESTPOS
+//#define TESTPOS
 
 #ifdef TESTPOS
     #include "testPos.h"
@@ -27,7 +24,6 @@
 #endif
 
 bool framebufferResized = false;
-
 
 GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName = "");
 std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, scene* testScene);

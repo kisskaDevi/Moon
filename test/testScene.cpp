@@ -153,7 +153,6 @@ void testScene::createObjects()
 
     objects["bee0"] = new baseObject(models["bee"], 0, 3);
     objects["bee0"]->translate({3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});
-    objects["bee0"]->setBloomColor(vector<float,4>(1.0,1.0,1.0,1.0));
 
     objects["bee1"] = new baseObject(models["bee"], 3, 3);
     objects["bee1"]->translate({-3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});

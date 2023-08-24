@@ -25,7 +25,7 @@ void main() {
     vec4 normal = subpassLoad(inNormalTexture);
     vec4 baseColorTexture = subpassLoad(inBaseColorTexture);
     vec4 emissiveTexture = subpassLoad(inEmissiveTexture);
-    float ao = emissiveTexture.a;
+    float ao = decodeParameter(0x00ff0000, 16, position.a) / 255.0f;
 
     outColor = ao * calcLight(position, normal, baseColorTexture, eyePosition, shadowMap, lightTexture);
     outBloom = SRGBtoLINEAR(emissiveTexture) + (checkBrightness(outColor) ? outColor : vec4(0.0));

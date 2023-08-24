@@ -41,7 +41,7 @@ private:
     vector<float,4>                 bloomFactor{1.0f};
     vector<float,4>                 bloomColor{0.0f};
 
-    uint32_t                        firstPrimitive;
+    uint32_t                        firstPrimitive{0};
     uint32_t                        primitiveCount{0};
 
     struct Outlining{

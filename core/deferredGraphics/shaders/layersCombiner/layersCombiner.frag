@@ -131,7 +131,7 @@ void main() {
     vec4 frontScatteringColor = layerBehindScattering || !enableScatteringRefraction ? vec4(texture(scattering, fragTexCoord.xy).xyz, 0.0) : vec4(0.0);
 
     outColor = accumulateColor(beginCoords, endCoords, step, Sampler, depth, skybox, true, enableScatteringRefraction);
-    outColor = max(layerColor, step * outColor + frontScatteringColor);
+    outColor = max(layerColor, max(step *outColor, frontScatteringColor));
 
     outBloom = accumulateColor(beginCoords, endCoords, step, bloomSampler, depth, skyboxBloom, true, false);
     outBloom = max(layerBloom, step * outBloom);

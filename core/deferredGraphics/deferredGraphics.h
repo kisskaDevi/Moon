@@ -58,8 +58,6 @@ private:
     std::vector<attachments>                    blitAttachments;
     std::vector<attachments>                    layersCombinedAttachment;
     attachments                                 finalAttachment;
-    float                                       blitFactor{1.5f};
-    uint32_t                                    blitAttachmentCount{8};
 
     graphics                                    DeferredGraphics;
     gaussianBlur                                Blur;
@@ -73,8 +71,6 @@ private:
     postProcessingGraphics                      PostProcessing;
     link                                        Link;
     std::vector<graphics>                       TransparentLayers;
-    uint32_t                                    TransparentLayersCount{2};
-
     bool                                        enableTransparentLayers{true};
     bool                                        enableSkybox{true};
     bool                                        enableBlur{true};
@@ -89,6 +85,10 @@ private:
     std::vector<VkCommandBuffer>                copyCommandBuffers;
     std::vector<bool>                           updateCommandBufferFlags;
     std::vector<node*>                          nodes;
+
+    float                                       blitFactor{1.5f};
+    uint32_t                                    blitAttachmentCount{8};
+    uint32_t                                    TransparentLayersCount{2};
 
     camera*                                     cameraObject{nullptr};
     texture*                                    emptyTextureBlack{nullptr};
@@ -126,9 +126,10 @@ public:
     void        setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
     void        setFrameBufferExtent(VkExtent2D extent);
     void        setShadersPath(const std::filesystem::path& shadersPath);
-    void        createEmptyTexture();
     void        setMinAmbientFactor(const float& minAmbientFactor);
     void        setScatteringRefraction(bool enable);
+
+    void        createEmptyTexture();
 
     void        createModel(model* pModel);
     void        destroyModel(model* pModel);

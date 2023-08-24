@@ -356,7 +356,11 @@ public:
     matrix(std::ifstream& file) {
         for(uint32_t i = 0; i < n; i++){
             for(uint32_t j = 0; j < n; j++){
-                file >> this->mat[i][j];
+                if(file.peek()!=EOF){
+                    file >> this->mat[i][j];
+                } else {
+                    this->mat[i][j] = type(0);
+                }
             }
         }
     }

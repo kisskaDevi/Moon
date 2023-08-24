@@ -39,8 +39,8 @@ vec4 pbr(
     vec3 H              = normalize(Direction + LightDirection);
     vec4 BaseColor      = SRGBtoLINEAR(baseColorTexture);
 
-    float metallic = normal.a;
-    float perceptualRoughness = position.a;
+    float perceptualRoughness = decodeParameter(0x000000ff, 0, position.a) / 255.0f;
+    float metallic = decodeParameter(0x0000ff00, 8, position.a) / 255.0f;
 
     vec3 f0 = vec3(0.04);
 

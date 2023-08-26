@@ -8,9 +8,8 @@ graphics::graphics(){
     ambientLighting.Parent = &lighting;
 }
 
-void graphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor;}
-void graphics::setScattering(const bool &enableScattering)           { lighting.enableScattering = enableScattering;}
-void graphics::setTransparencyPass(const bool& transparencyPass)     { base.transparencyPass = transparencyPass;}
+graphics& graphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor; return *this;}
+graphics& graphics::setTransparencyPass(const bool& transparencyPass)     { base.transparencyPass = transparencyPass; return *this;}
 
 void graphics::destroy()
 {

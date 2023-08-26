@@ -6,15 +6,15 @@
 #include <filesystem>
 #include <unordered_map>
 
-class                               texture;
-class                               cubeTexture;
-class                               object;
-class                               camera;
-class                               light;
-class                               DeferredAttachments;
-struct                              Node;
-struct                              Material;
-struct                              MaterialBlock;
+class   texture;
+class   cubeTexture;
+class   object;
+class   camera;
+class   light;
+struct  DeferredAttachments;
+struct  Node;
+struct  Material;
+struct  MaterialBlock;
 
 class graphics : public workflow
 {
@@ -126,9 +126,8 @@ public:
     void bindLightSource(light* lightSource);
     bool removeLightSource(light* lightSource);
 
-    void setMinAmbientFactor(const float& minAmbientFactor);
-    void setScattering(const bool& enableScattering);
-    void setTransparencyPass(const bool& transparencyPass);
+    graphics& setMinAmbientFactor(const float& minAmbientFactor);
+    graphics& setTransparencyPass(const bool& transparencyPass);
 };
 
 #endif // GRAPHICS_H

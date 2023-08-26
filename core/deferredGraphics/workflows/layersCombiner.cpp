@@ -237,18 +237,18 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
 
         VkDescriptorImageInfo skyboxImageInfo;
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = skybox->imageView.size() ? skybox->imageView[i] : *emptyTexture->getTextureImageView();
-            skyboxImageInfo.sampler = skybox->sampler ? skybox->sampler : *emptyTexture->getTextureSampler();
+            skyboxImageInfo.imageView = skybox ? skybox->imageView[i] : *emptyTexture->getTextureImageView();
+            skyboxImageInfo.sampler = skybox ? skybox->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo skyboxBloomImageInfo;
             skyboxBloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxBloomImageInfo.imageView = skyboxBloom->imageView.size() ? skyboxBloom->imageView[i] : *emptyTexture->getTextureImageView();
-            skyboxBloomImageInfo.sampler = skyboxBloom->sampler ? skyboxBloom->sampler : *emptyTexture->getTextureSampler();
+            skyboxBloomImageInfo.imageView = skyboxBloom ? skyboxBloom->imageView[i] : *emptyTexture->getTextureImageView();
+            skyboxBloomImageInfo.sampler = skyboxBloom ? skyboxBloom->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo scatteringImageInfo;
             scatteringImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            scatteringImageInfo.imageView = scattering->imageView.size() ? scattering->imageView[i] : *emptyTexture->getTextureImageView();
-            scatteringImageInfo.sampler = scattering->sampler ? scattering->sampler : *emptyTexture->getTextureSampler();
+            scatteringImageInfo.imageView = scattering ? scattering->imageView[i] : *emptyTexture->getTextureImageView();
+            scatteringImageInfo.sampler = scattering ? scattering->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);

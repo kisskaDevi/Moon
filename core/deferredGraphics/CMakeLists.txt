@@ -27,7 +27,8 @@ renderStages/source/lightingPipelines.cpp
 renderStages/source/base.cpp
 renderStages/source/extension.cpp
 renderStages/graphics.cpp
-renderStages/link.cpp)
+renderStages/link.cpp
+renderStages/deferredAttachments.cpp)
 
 set(HEADERS deferredGraphics.h
 workflows/blur.h
@@ -41,7 +42,8 @@ workflows/ssao.h
 workflows/sslr.h
 workflows/scattering.h
 renderStages/graphics.h
-renderStages/link.h)
+renderStages/link.h
+renderStages/deferredAttachments.h)
 
 add_library(deferredGraphics STATIC ${SOURCES} ${HEADERS})
 target_include_directories(deferredGraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

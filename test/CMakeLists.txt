@@ -19,7 +19,7 @@ target_link_libraries(test PRIVATE deferredGraphics imguiGraphics models transfo
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_custom_command(TARGET test POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<$<CONFIG:Debug>:${GLFW_DIR}/build/src/DebugRelease/glfw3.dll>
+    $<$<CONFIG:Debug>:${GLFW_DIR}/build/src/Debug/glfw3.dll>
     $<$<CONFIG:Release>:${GLFW_DIR}/build/src/Release/glfw3.dll>
     $<TARGET_FILE_DIR:test>)
 endif()

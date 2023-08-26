@@ -16,22 +16,27 @@ void workflow::destroy(){
     framebuffers.clear();
 }
 
-void workflow::setEmptyTexture(texture* emptyTexture){
+workflow& workflow::setEmptyTexture(texture* emptyTexture){
     this->emptyTexture = emptyTexture;
+    return *this;
 }
-void workflow::setShadersPath(const std::filesystem::path &path){
+workflow& workflow::setShadersPath(const std::filesystem::path &path){
     shadersPath = path;
+    return *this;
 }
-void workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
+workflow& workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
     this->physicalDevice = physicalDevice;
     this->device = device;
+    return *this;
 }
-void workflow::setImageProp(imageInfo* pInfo){
+workflow& workflow::setImageProp(imageInfo* pInfo){
     this->image = *pInfo;
+    return *this;
 }
-void workflow::setAttachments(uint32_t attachmentsCount, attachments* pAttachments){
+workflow& workflow::setAttachments(uint32_t attachmentsCount, attachments* pAttachments){
     this->attachmentsCount = attachmentsCount;
     this->pAttachments = pAttachments;
+    return *this;
 }
 
 void workflow::createCommandBuffers(VkCommandPool commandPool)

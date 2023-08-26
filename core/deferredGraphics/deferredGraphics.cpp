@@ -16,16 +16,17 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     shadersPath(shadersPath), extent(extent), offset(offset), MSAASamples(MSAASamples)
 {
     DeferredGraphics.setShadersPath(shadersPath);
+    LayersCombiner.setShadersPath(shadersPath);
     PostProcessing.setShadersPath(shadersPath);
+    Link.setShadersPath(shadersPath);
+
     Filter.setShadersPath(shadersPath);
     SSLR.setShadersPath(shadersPath);
     SSAO.setShadersPath(shadersPath);
     Skybox.setShadersPath(shadersPath);
-    Shadow.setShadersPath(shadersPath);
-    LayersCombiner.setShadersPath(shadersPath);
     Blur.setShadersPath(shadersPath);
     Scattering.setShadersPath(shadersPath);
-    Link.setShadersPath(shadersPath);
+    Shadow.setShadersPath(shadersPath);
 
     TransparentLayers.resize(TransparentLayersCount);
     for(auto& layer: TransparentLayers){
@@ -256,14 +257,16 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
     if(enableScattering){
         Scattering.createAttachments(1,&scatteringAttachment);
         fastCreateFilterGraphics(&Scattering,1,&scatteringAttachment);
-        Scattering.updateDescriptorSets(cameraObject,&deferredAttachments.GBuffer.depth);
+        Scattering.updateDescriptorSets(
+            cameraObject,
+            &deferredAttachments.GBuffer.depth
+        );
     }
 
     if(enableTransparentLayers){
         transparentLayersAttachments.resize(TransparentLayersCount);
         for(uint32_t i=0;i<transparentLayersAttachments.size();i++){
             TransparentLayers[i].setTransparencyPass(true);
-            TransparentLayers[i].setScattering(false);
             fastCreateGraphics(&TransparentLayers[i], &transparentLayersAttachments[i]);
         }
 
@@ -271,7 +274,14 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         LayersCombiner.setTransparentLayersCount(TransparentLayersCount);
         LayersCombiner.createAttachments(static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
         fastCreateFilterGraphics(&LayersCombiner,static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
-        LayersCombiner.updateDescriptorSets(deferredAttachments,transparentLayersAttachments.data(),&skyboxAttachment[0],&skyboxAttachment[1], &scatteringAttachment, cameraObject);
+        LayersCombiner.updateDescriptorSets(
+            deferredAttachments,
+            transparentLayersAttachments.data(),
+            enableSkybox ? &skyboxAttachment[0] : nullptr,
+            enableSkybox ? &skyboxAttachment[1] : nullptr,
+            enableScattering ? &scatteringAttachment : nullptr,
+            cameraObject
+        );
     }
 
     if(enableBloom){
@@ -306,8 +316,10 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         PostProcessing.setSSLRAttachment(&sslrAttachment);
     }
 
-    Shadow.createRenderPass();
-    Shadow.createPipelines();
+    if(enableShadow){
+        Shadow.createRenderPass();
+        Shadow.createPipelines();
+    }
 
     PostProcessing.setLayersAttachment(enableTransparentLayers ? &layersCombinedAttachment[0] : &deferredAttachments.image);
     PostProcessing.createAttachments(1,&finalAttachment);
@@ -338,7 +350,12 @@ void deferredGraphics::updateDescriptorSets()
     if(enableTransparentLayers){
         TransparentLayers[0].updateDescriptorSets(nullptr, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
         for(uint32_t i=1;i<TransparentLayers.size();i++){
-            TransparentLayers[i].updateDescriptorSets(&transparentLayersAttachments[i-1].GBuffer.depth, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
+            TransparentLayers[i].updateDescriptorSets(
+                &transparentLayersAttachments[i-1].GBuffer.depth,
+                storageBuffers.data(),
+                sizeof(StorageBufferObject),
+                cameraObject
+            );
         }
     }
 }
@@ -370,6 +387,14 @@ void deferredGraphics::createCommandBuffers()
     vkAllocateCommandBuffers(device.getLogical(), &allocInfo, copyCommandBuffers.data());
 
     updateCmdFlags();
+
+    auto getTransparentLayersCommandBuffers = [this](uint32_t imageIndex) -> std::vector<VkCommandBuffer>{
+        std::vector<VkCommandBuffer> commandBuffers;
+        for(auto& transparentLayer: TransparentLayers){
+            commandBuffers.push_back(transparentLayer.getCommandBuffer(imageIndex));
+        }
+        return commandBuffers;
+    };
 
     nodes.resize(imageCount);
     for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
@@ -441,7 +466,7 @@ void deferredGraphics::updateCommandBuffer(uint32_t imageIndex)
 {
     if(updateCommandBufferFlags[imageIndex]){
         Shadow.beginCommandBuffer(imageIndex);
-            Shadow.updateCommandBuffer(imageIndex);
+            if(enableShadow) Shadow.updateCommandBuffer(imageIndex);
         Shadow.endCommandBuffer(imageIndex);
 
         Skybox.beginCommandBuffer(imageIndex);
@@ -512,20 +537,11 @@ void deferredGraphics::updateBuffers(uint32_t imageIndex)
     vkBeginCommandBuffer(copyCommandBuffers[imageIndex], &beginInfo);
 
     cameraObject->updateUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
-    Skybox.updateObjectUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
+    if(enableSkybox) Skybox.updateObjectUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
     DeferredGraphics.updateObjectUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
     DeferredGraphics.updateLightSourcesUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
 
     vkEndCommandBuffer(copyCommandBuffers[imageIndex]);
-}
-
-std::vector<VkCommandBuffer> deferredGraphics::getTransparentLayersCommandBuffers(uint32_t imageIndex)
-{
-    std::vector<VkCommandBuffer> commandBuffers;
-    for(auto& transparentLayer: TransparentLayers){
-        commandBuffers.push_back(transparentLayer.getCommandBuffer(imageIndex));
-    }
-    return commandBuffers;
 }
 
 void deferredGraphics::createStorageBuffers(uint32_t imageCount)
@@ -587,19 +603,21 @@ void deferredGraphics::createEmptyTexture()
     emptyTextureWhite = create(false);
 
     DeferredGraphics.setEmptyTexture(emptyTextureBlack);
-    for(auto& layer: TransparentLayers){
-        layer.setEmptyTexture(emptyTextureBlack);
-    }
-
-    Blur.setEmptyTexture(emptyTextureBlack);
-    Filter.setEmptyTexture(emptyTextureBlack);
     LayersCombiner.setEmptyTexture(emptyTextureBlack);
-    Skybox.setEmptyTexture(emptyTextureBlack);
-    SSAO.setEmptyTexture(emptyTextureBlack);
-    Scattering.setEmptyTexture(emptyTextureBlack);
-    SSLR.setEmptyTexture(emptyTextureBlack);
-    Shadow.setEmptyTexture(emptyTextureBlack);
     PostProcessing.setEmptyTexture(emptyTextureBlack);
+
+    if(enableTransparentLayers){
+        for(auto& layer: TransparentLayers){
+            layer.setEmptyTexture(emptyTextureBlack);
+        }
+    }
+    if(enableBlur)          Blur.setEmptyTexture(emptyTextureBlack);
+    if(enableBloom)         Filter.setEmptyTexture(emptyTextureBlack);
+    if(enableSkybox)        Skybox.setEmptyTexture(emptyTextureBlack);
+    if(enableSSAO)          SSAO.setEmptyTexture(emptyTextureBlack);
+    if(enableScattering)    Scattering.setEmptyTexture(emptyTextureBlack);
+    if(enableSSLR)          SSLR.setEmptyTexture(emptyTextureBlack);
+    if(enableShadow)        Shadow.setEmptyTexture(emptyTextureBlack);
 }
 
 void deferredGraphics::createModel(model *pModel)
@@ -652,10 +670,9 @@ void deferredGraphics::bindLightSource(light* lightSource, bool create)
             lightSource->getTexture()->createTextureImageView(device.getLogical());
             lightSource->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
         }
-        if(lightSource->isShadowEnable()){
-            Shadow.addLightSource(lightSource);
+        if(lightSource->isShadowEnable() && enableShadow){
+            Shadow.bindLightSource(lightSource);
             Shadow.createAttachments(1,lightSource->getAttachments());
-            Shadow.setAttachments(1,lightSource->getAttachments());
             Shadow.createFramebuffers(lightSource);
         }
 
@@ -775,7 +792,14 @@ void deferredGraphics::setScatteringRefraction(bool enable){
 }
 
 void deferredGraphics::updateCmdFlags(){
-    for(auto flag: updateCommandBufferFlags){
-        flag = true;
-    }
+    std::fill(updateCommandBufferFlags.begin(), updateCommandBufferFlags.end(), true);
 }
+
+deferredGraphics& deferredGraphics::setEnableTransparentLayers(bool enable) {enableTransparentLayers = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableSkybox(bool enable)            {enableSkybox = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableBlur(bool enable)              {enableBlur = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableBloom(bool enable)             {enableBloom = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableSSLR(bool enable)              {enableSSLR = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableSSAO(bool enable)              {enableSSAO = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableScattering(bool enable)        {enableScattering = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableShadow(bool enable)            {enableShadow = enable; return *this;}

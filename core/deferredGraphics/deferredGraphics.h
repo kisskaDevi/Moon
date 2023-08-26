@@ -71,13 +71,15 @@ private:
     postProcessingGraphics                      PostProcessing;
     link                                        Link;
     std::vector<graphics>                       TransparentLayers;
-    bool                                        enableTransparentLayers{true};
-    bool                                        enableSkybox{true};
-    bool                                        enableBlur{true};
-    bool                                        enableBloom{true};
-    bool                                        enableSSLR{true};
-    bool                                        enableSSAO{true};
-    bool                                        enableScattering{true};
+
+    bool                                        enableTransparentLayers{false};
+    bool                                        enableSkybox{false};
+    bool                                        enableBlur{false};
+    bool                                        enableBloom{false};
+    bool                                        enableSSLR{false};
+    bool                                        enableSSAO{false};
+    bool                                        enableScattering{false};
+    bool                                        enableShadow{false};
 
     std::vector<buffer>                         storageBuffersHost;
 
@@ -94,7 +96,6 @@ private:
     texture*                                    emptyTextureBlack{nullptr};
     texture*                                    emptyTextureWhite{nullptr};
 
-    std::vector<VkCommandBuffer> getTransparentLayersCommandBuffers(uint32_t imageIndex);
     void createStorageBuffers(uint32_t imageCount);
 public:
     deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
@@ -145,6 +146,15 @@ public:
 
     void        updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
     uint32_t    readStorageBuffer(uint32_t currentImage);
+
+    deferredGraphics& setEnableTransparentLayers(bool enable);
+    deferredGraphics& setEnableSkybox(bool enable);
+    deferredGraphics& setEnableBlur(bool enable);
+    deferredGraphics& setEnableBloom(bool enable);
+    deferredGraphics& setEnableSSLR(bool enable);
+    deferredGraphics& setEnableSSAO(bool enable);
+    deferredGraphics& setEnableScattering(bool enable);
+    deferredGraphics& setEnableShadow(bool enable);
 };
 
 #endif // DEFERREDGRAPHICS_H

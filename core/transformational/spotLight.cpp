@@ -49,9 +49,9 @@ void spotLight::destroy(VkDevice device)
     destroyUniformBuffers(device, uniformBuffersHost);
     destroyUniformBuffers(device, uniformBuffersDevice);
 
-    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
-    if(bufferDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, bufferDescriptorSetLayout,  nullptr); bufferDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(descriptorPool)      {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
+    if(descriptorSetLayout)         {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
+    if(bufferDescriptorSetLayout)   {vkDestroyDescriptorSetLayout(device, bufferDescriptorSetLayout,  nullptr); bufferDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(descriptorPool)              {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 }
 
 void spotLight::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
@@ -269,8 +269,8 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, textu
             lightBufferInfo.range = sizeof(LightBufferObject);
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView       = isShadowEnable() ? shadow->imageView[i] : *emptyTextureWhite->getTextureImageView();
-            shadowImageInfo.sampler         = isShadowEnable() ? shadow->sampler : *emptyTextureWhite->getTextureSampler();
+            shadowImageInfo.imageView       = isShadowEnable() && shadow->imageView.size() > 0 ? shadow->imageView[i] : *emptyTextureWhite->getTextureImageView();
+            shadowImageInfo.sampler         = isShadowEnable() && shadow->sampler ? shadow->sampler : *emptyTextureWhite->getTextureSampler();
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             lightTexture.imageView          = tex ? *tex->getTextureImageView() : *emptyTextureBlack->getTextureImageView();

@@ -17,10 +17,10 @@ void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* p
 void shadowGraphics::Shadow::destroy(VkDevice device)
 {
     workbody::destroy(device);
-    if(lightUniformBufferSetLayout) {vkDestroyDescriptorSetLayout(device, lightUniformBufferSetLayout, nullptr); lightUniformBufferSetLayout = VK_NULL_HANDLE;}
+    if(lightUniformBufferSetLayout)     {vkDestroyDescriptorSetLayout(device, lightUniformBufferSetLayout, nullptr); lightUniformBufferSetLayout = VK_NULL_HANDLE;}
     if(ObjectDescriptorSetLayout)       {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(PrimitiveDescriptorSetLayout)      {vkDestroyDescriptorSetLayout(device, PrimitiveDescriptorSetLayout, nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(MaterialDescriptorSetLayout)      {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(PrimitiveDescriptorSetLayout)    {vkDestroyDescriptorSetLayout(device, PrimitiveDescriptorSetLayout, nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
 void shadowGraphics::destroy()
@@ -167,7 +167,7 @@ void shadowGraphics::createFramebuffers(light* lightSource)
     }
 }
 
-void shadowGraphics::addLightSource(light* lightSource)
+void shadowGraphics::bindLightSource(light* lightSource)
 {
     shadow.lightSources.push_back(lightSource);
 }

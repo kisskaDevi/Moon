@@ -31,7 +31,7 @@ protected:
     VkDevice                        device{VK_NULL_HANDLE};
     std::filesystem::path           shadersPath;
     imageInfo                       image;
-    texture*                        emptyTexture;
+    texture*                        emptyTexture{nullptr};
 
     uint32_t                        attachmentsCount{0};
     attachments*                    pAttachments{nullptr};
@@ -43,11 +43,11 @@ public:
     virtual ~workflow(){};
     void destroy();
 
-    void setEmptyTexture(texture* emptyTexture);
-    void setShadersPath(const std::filesystem::path &path);
-    void setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
-    void setImageProp(imageInfo* pInfo);
-    void setAttachments(uint32_t attachmentsCount, attachments* pAttachments);
+    workflow& setEmptyTexture(texture* emptyTexture);
+    workflow& setShadersPath(const std::filesystem::path &path);
+    workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
+    workflow& setImageProp(imageInfo* pInfo);
+    workflow& setAttachments(uint32_t attachmentsCount, attachments* pAttachments);
 
     virtual void createRenderPass() = 0;
     virtual void createFramebuffers() = 0;

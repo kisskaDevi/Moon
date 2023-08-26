@@ -43,7 +43,7 @@ public:
 
     void createFramebuffers(light* lightSource);
 
-    void addLightSource(light* lightSource);
+    void bindLightSource(light* lightSource);
     void removeLightSource(light* lightSource);
 
     void bindBaseObject(object* newObject);

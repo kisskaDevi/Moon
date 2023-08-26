@@ -232,8 +232,8 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
 
         VkDescriptorImageInfo depthImageInfo;
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = deferredAttachments.depth.imageView[i];
-            depthImageInfo.sampler = deferredAttachments.depth.sampler;
+            depthImageInfo.imageView = deferredAttachments.GBuffer.depth.imageView[i];
+            depthImageInfo.sampler = deferredAttachments.GBuffer.depth.sampler;
 
         VkDescriptorImageInfo skyboxImageInfo;
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -274,8 +274,8 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
             normalLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.normal.sampler;
 
             depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthLayersImageInfo[index].imageView = transparencyLayers[index].depth.imageView[i];
-            depthLayersImageInfo[index].sampler = transparencyLayers[index].depth.sampler;
+            depthLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.depth.imageView[i];
+            depthLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.depth.sampler;
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

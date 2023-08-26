@@ -256,7 +256,7 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
     if(enableScattering){
         Scattering.createAttachments(1,&scatteringAttachment);
         fastCreateFilterGraphics(&Scattering,1,&scatteringAttachment);
-        Scattering.updateDescriptorSets(cameraObject,&deferredAttachments.depth);
+        Scattering.updateDescriptorSets(cameraObject,&deferredAttachments.GBuffer.depth);
     }
 
     if(enableTransparentLayers){
@@ -338,7 +338,7 @@ void deferredGraphics::updateDescriptorSets()
     if(enableTransparentLayers){
         TransparentLayers[0].updateDescriptorSets(nullptr, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
         for(uint32_t i=1;i<TransparentLayers.size();i++){
-            TransparentLayers[i].updateDescriptorSets(&transparentLayersAttachments[i-1].depth, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
+            TransparentLayers[i].updateDescriptorSets(&transparentLayersAttachments[i-1].GBuffer.depth, storageBuffers.data(), sizeof(StorageBufferObject), cameraObject);
         }
     }
 }

@@ -11,6 +11,7 @@ class                               cubeTexture;
 class                               object;
 class                               camera;
 class                               light;
+class                               DeferredAttachments;
 struct                              Node;
 struct                              Material;
 struct                              MaterialBlock;

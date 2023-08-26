@@ -2,7 +2,7 @@
 
 #include "../__methods__/defines.glsl"
 
-layout(set = 0, binding = 5) uniform GlobalUniformBuffer {
+layout(set = 0, binding = 4) uniform GlobalUniformBuffer {
     mat4 view;
     mat4 proj;
     vec4 eyePosition;

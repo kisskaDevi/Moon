@@ -1,6 +1,7 @@
 #version 450
 
 #include "../__methods__/defines.glsl"
+#include "../__methods__/colorFunctions.glsl"
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D metallicRoughnessTexture;
@@ -16,7 +17,6 @@ layout(location = 3) in vec2 UV1;
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outBaseColor;
-layout(location = 3) out vec4 outEmissiveTexture;
 
 layout(push_constant) uniform Stencil {
     vec4 color;
@@ -27,5 +27,5 @@ void main() {
     outPosition = position;
     outBaseColor = vec4(0.0, 0.0, 0.0, 0.0);
     outNormal = vec4(0.0, 0.0, 0.0, 0.0);
-    outEmissiveTexture = stencil.color;
+    outNormal.a = codeToFloat(stencil.color);
 }

@@ -76,7 +76,6 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
         vkDefault::colorBlendAttachmentState(VK_FALSE),
         vkDefault::colorBlendAttachmentState(VK_FALSE),
-        vkDefault::colorBlendAttachmentState(VK_FALSE),
         vkDefault::colorBlendAttachmentState(VK_FALSE)
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());

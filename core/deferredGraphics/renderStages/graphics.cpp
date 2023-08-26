@@ -1,6 +1,7 @@
 #include "graphics.h"
 #include "operations.h"
 #include "object.h"
+#include "deferredAttachments.h"
 
 graphics::graphics(){
     outlining.Parent = &base;
@@ -27,11 +28,10 @@ void graphics::setAttachments(DeferredAttachments* attachments)
     pAttachments.push_back(&attachments->image);
     pAttachments.push_back(&attachments->blur);
     pAttachments.push_back(&attachments->bloom);
-    pAttachments.push_back(&attachments->depth);
     pAttachments.push_back(&attachments->GBuffer.position);
     pAttachments.push_back(&attachments->GBuffer.normal);
     pAttachments.push_back(&attachments->GBuffer.color);
-    pAttachments.push_back(&attachments->GBuffer.emission);
+    pAttachments.push_back(&attachments->GBuffer.depth);
 }
 
 void graphics::createAttachments(DeferredAttachments* pAttachments)
@@ -40,22 +40,20 @@ void graphics::createAttachments(DeferredAttachments* pAttachments)
     pAttachments->image.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
     pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
     pAttachments->bloom.create(physicalDevice, device, image.Format, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, image.frameBufferExtent, image.Count);
-    pAttachments->depth.createDepth(physicalDevice, device, Image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.frameBufferExtent, image.Count);
     pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
     pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
     pAttachments->GBuffer.color.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
-    pAttachments->GBuffer.emission.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
+    pAttachments->GBuffer.depth.createDepth(physicalDevice, device, Image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.frameBufferExtent, image.Count);
 
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->image.sampler);
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->blur.sampler);
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->bloom.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->depth.sampler);
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.position.sampler);
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.normal.sampler);
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.color.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.emission.sampler);
+    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.depth.sampler);
 }
 
 void graphics::createRenderPass()
@@ -64,38 +62,38 @@ void graphics::createRenderPass()
     attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
     attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
     attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
+    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
+    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
+    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
     attachments.push_back(attachments::depthStencilDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
+
+    uint32_t gOffset = DeferredAttachments::GBufferOffset();
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
     attachmentRef.push_back(std::vector<VkAttachmentReference>());
-    for(size_t index = 0; index < pAttachments.size() - DeferredAttachments::getGBufferOffset(); index++){
-        attachmentRef.back().push_back(VkAttachmentReference{static_cast<uint32_t>(DeferredAttachments::getGBufferOffset() + index), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    }
+        attachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::positionIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::normalIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::colorIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
     attachmentRef.push_back(std::vector<VkAttachmentReference>());
-    for(size_t index = 0; index < DeferredAttachments::getGBufferOffset() - 1; index++){
-        attachmentRef.back().push_back(VkAttachmentReference{static_cast<uint32_t>(index), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    }
+        attachmentRef.back().push_back(VkAttachmentReference{DeferredAttachments::imageIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{DeferredAttachments::blurIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{DeferredAttachments::bloomIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
 
     std::vector<std::vector<VkAttachmentReference>> inAttachmentRef;
     inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
     inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-    for(size_t index = 0; index < pAttachments.size() - DeferredAttachments::getGBufferOffset() + 1; index++){
-        inAttachmentRef.back().push_back(VkAttachmentReference{static_cast<uint32_t>(DeferredAttachments::getGBufferOffset() - 1 + index), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
-    }
+        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::positionIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::normalIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::colorIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::depthIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
 
-    std::vector<std::unique_ptr<VkAttachmentReference>> depthAttachmentRef;
-    depthAttachmentRef.push_back(
-        std::make_unique<VkAttachmentReference>(VkAttachmentReference{static_cast<uint32_t>(DeferredAttachments::getGBufferOffset() - 1), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL}));
-    depthAttachmentRef.push_back(nullptr);
+    std::vector<std::vector<VkAttachmentReference>> depthAttachmentRef;
+    depthAttachmentRef.push_back(std::vector<VkAttachmentReference>());
+        depthAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::depthIndex(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL});
+    depthAttachmentRef.push_back(std::vector<VkAttachmentReference>());
 
+    auto refIt = attachmentRef.begin(), inRefIt = inAttachmentRef.begin(), depthIt = depthAttachmentRef.begin();
     std::vector<VkSubpassDescription> subpass;
-    auto refIt = attachmentRef.begin();
-    auto inRefIt = inAttachmentRef.begin();
-    auto depthIt = depthAttachmentRef.begin();
     for(;refIt != attachmentRef.end() && inRefIt != inAttachmentRef.end() && depthIt != depthAttachmentRef.end(); refIt++, inRefIt++, depthIt++){
         subpass.push_back(VkSubpassDescription{});
             subpass.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -103,7 +101,7 @@ void graphics::createRenderPass()
             subpass.back().pColorAttachments = refIt->data();
             subpass.back().inputAttachmentCount = static_cast<uint32_t>(inRefIt->size());
             subpass.back().pInputAttachments = inRefIt->data();
-            subpass.back().pDepthStencilAttachment = depthIt->get();
+            subpass.back().pDepthStencilAttachment = depthIt->data();
     }
 
     std::vector<VkSubpassDependency> dependency;

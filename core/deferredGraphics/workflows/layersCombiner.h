@@ -2,6 +2,7 @@
 #define LAYERSCOMBINER_H
 
 #include "workflow.h"
+#include "deferredAttachments.h"
 
 class camera;
 

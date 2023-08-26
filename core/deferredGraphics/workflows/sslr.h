@@ -2,6 +2,7 @@
 #define SSLR_H
 
 #include "workflow.h"
+#include "deferredAttachments.h"
 
 class camera;
 

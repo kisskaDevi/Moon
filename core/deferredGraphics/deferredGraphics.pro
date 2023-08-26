@@ -14,6 +14,7 @@ INCLUDEPATH += \
 
 SOURCES += \
     deferredGraphics.cpp \
+    renderStages/deferredAttachments.cpp \
     renderStages/link.cpp \
     workflows/blur.cpp \
     workflows/layersCombiner.cpp \
@@ -34,6 +35,7 @@ SOURCES += \
 
 HEADERS += \
     deferredGraphics.h \
+    renderStages/deferredAttachments.h \
     renderStages/link.h \
     workflows/blur.h \
     workflows/layersCombiner.h \

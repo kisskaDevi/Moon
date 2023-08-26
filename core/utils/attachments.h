@@ -57,32 +57,4 @@ public:
     static VkAttachmentDescription depthDescription(VkFormat format);
 };
 
-struct GBufferAttachments{
-    attachments        position;
-    attachments        normal;
-    attachments        color;
-    attachments        emission;
-
-    GBufferAttachments();
-    GBufferAttachments(const GBufferAttachments& other);
-    GBufferAttachments& operator=(const GBufferAttachments& other);
-};
-
-struct DeferredAttachments{
-    attachments         image;
-    attachments         blur;
-    attachments         bloom;
-    attachments         depth;
-    GBufferAttachments  GBuffer;
-
-    DeferredAttachments();
-    DeferredAttachments(const DeferredAttachments& other);
-    DeferredAttachments& operator=(const DeferredAttachments& other);
-
-    void deleteAttachment(VkDevice device);
-    void deleteSampler(VkDevice device);
-
-    static size_t getGBufferOffset() {return 4;}
-};
-
 #endif // ATTACHMENTS_H

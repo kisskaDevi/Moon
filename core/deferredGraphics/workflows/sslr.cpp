@@ -187,8 +187,8 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
 
         VkDescriptorImageInfo depthInfo{};
             depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = deferredAttachments.depth.imageView[i];
-            depthInfo.sampler = deferredAttachments.depth.sampler;
+            depthInfo.imageView = deferredAttachments.GBuffer.depth.imageView[i];
+            depthInfo.sampler = deferredAttachments.GBuffer.depth.sampler;
 
         VkDescriptorImageInfo layerPositionInfo{};
             layerPositionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -207,8 +207,8 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
 
         VkDescriptorImageInfo layerDepthInfo{};
             layerDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerDepthInfo.imageView = firstLayer.depth.imageView[i];
-            layerDepthInfo.sampler = firstLayer.depth.sampler;
+            layerDepthInfo.imageView = firstLayer.GBuffer.depth.imageView[i];
+            layerDepthInfo.sampler = firstLayer.GBuffer.depth.sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

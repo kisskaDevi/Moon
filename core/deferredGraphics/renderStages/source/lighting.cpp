@@ -2,6 +2,7 @@
 #include "vkdefault.h"
 #include "camera.h"
 #include "light.h"
+#include "deferredAttachments.h"
 
 #include <iostream>
 
@@ -31,7 +32,6 @@ void graphics::Lighting::Destroy(VkDevice device)
 void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -86,16 +86,21 @@ void graphics::updateLightingDescriptorSets(camera* cameraObject)
     for (uint32_t i = 0; i < image.Count; i++)
     {
         std::vector<VkDescriptorImageInfo> imageInfos;
-        for(uint32_t index = 0; index < 4;index++)
-        {
-            imageInfos.push_back(VkDescriptorImageInfo{});
+        imageInfos.push_back(VkDescriptorImageInfo{});
             imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::getGBufferOffset() + index]->imageView[i];
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::positionIndex()]->imageView[i];
             imageInfos.back().sampler = VK_NULL_HANDLE;
-        }
-            imageInfos.push_back(VkDescriptorImageInfo{});
+        imageInfos.push_back(VkDescriptorImageInfo{});
             imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = this->pAttachments[DeferredAttachments::getGBufferOffset() - 1]->imageView[i];
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::normalIndex()]->imageView[i];
+            imageInfos.back().sampler = VK_NULL_HANDLE;
+        imageInfos.push_back(VkDescriptorImageInfo{});
+            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::colorIndex()]->imageView[i];
+            imageInfos.back().sampler = VK_NULL_HANDLE;
+        imageInfos.push_back(VkDescriptorImageInfo{});
+            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::depthIndex()]->imageView[i];
             imageInfos.back().sampler = VK_NULL_HANDLE;
 
         VkDescriptorBufferInfo bufferInfo{};

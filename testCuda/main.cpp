@@ -15,10 +15,9 @@
 #ifdef TEST_CUDA
 #include "testCuda.h"
 #include "rayTracingGraphics.h"
-#endif
-
 #include "graphicsManager.h"
 #include "hitableArray.h"
+#endif
 
 class controller
 {
@@ -52,15 +51,18 @@ bool controller::released(uint32_t key){
 
 bool framebufferResized = false;
 double mousePosX = 0, mousePosY = 0;
+#ifdef TEST_CUDA
 ray viewRay = ray(vec4(2.0f, 0.0f, 2.0f, 1.0f), vec4(-1.0f, 0.0f, -1.0f, 0.0f));
 
 GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName = "");
 std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, rayTracingGraphics* graphics, cuda::camera* cam);
 void keyboardEvent(controller& board, GLFWwindow* window, rayTracingGraphics* graphics, cuda::camera* cam);
 void mouseEvent(controller& mouse, GLFWwindow* window, rayTracingGraphics* graphics, cuda::camera* cam);
+#endif
 
 int main()
 {
+#ifdef TEST_CUDA
     uint32_t width = 800, height = 800;
     const std::filesystem::path ExternalPath = std::filesystem::absolute(std::string(__FILE__) + "/../../");
 
@@ -75,8 +77,6 @@ int main()
     debug::checkResult(app.createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
-
-#ifdef TEST_CUDA
     cuda::camera* cam = cuda::camera::create(viewRay, float(width) / float(height));
     hitableArray* array = hitableArray::create();
 
@@ -91,7 +91,6 @@ int main()
     graphics.setCamera(cam);
     graphics.createGraphics();
     graphics.setList(array);
-#endif
 
     static auto pastTime = std::chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(window))
@@ -127,10 +126,12 @@ int main()
 
     glfwDestroyWindow(window);
     glfwTerminate();
+#endif
 
     return 0;
 }
 
+#ifdef TEST_CUDA
 std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, rayTracingGraphics* graphics, cuda::camera* cam)
 {
     int width = 0, height = 0;
@@ -242,4 +243,4 @@ void keyboardEvent(controller& board, GLFWwindow* window, rayTracingGraphics* gr
 
     if(board.released(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window,GLFW_TRUE);
 }
-
+#endif

@@ -2,6 +2,23 @@ TEMPLATE = app
 CONFIG += c++17 console
 WARNINGS += -Wall
 
+INCLUDEPATH += \
+    $$PWD/../dependences\libs \
+    $$PWD/../dependences/libs/vulkan/include/vulkan \
+    $$PWD/../dependences/libs/glfw/include/GLFW \
+    $$PWD/../dependences/libs/glfw/include \
+    $$PWD/../dependences/libs/stb \
+    $$PWD/../core/cudaRayTracing/hitable \
+    $$PWD/../core/cudaRayTracing/interfaces \
+    $$PWD/../core/cudaRayTracing/materials \
+    $$PWD/../core/cudaRayTracing/math \
+    $$PWD/../core/cudaRayTracing/rayTracingGraphics \
+    $$PWD/../core/cudaRayTracing/transformational \
+    $$PWD/../core/cudaRayTracing/utils \
+    $$PWD/../core/graphicsManager \
+    $$PWD/../core/utils \
+    $$PWD/..
+
 equals(QMAKE_CXX,cl){
     DEFINES += TEST_CUDA
 
@@ -30,22 +47,7 @@ equals(QMAKE_CXX,cl){
         -lcuda -lcudart -lcudadevrt -lcudart_static
 
     INCLUDEPATH += \
-        $$PWD/../dependences\libs \
-        $$PWD/../dependences/libs/vulkan/include/vulkan \
-        $$PWD/../dependences/libs/glfw/include/GLFW \
-        $$PWD/../dependences/libs/glfw/include \
-        $$PWD/../dependences/libs/stb \
         $$CUDA_INCLUDE_DIR\
-        $$PWD/../core/cudaRayTracing/hitable \
-        $$PWD/../core/cudaRayTracing/interfaces \
-        $$PWD/../core/cudaRayTracing/materials \
-        $$PWD/../core/cudaRayTracing/math \
-        $$PWD/../core/cudaRayTracing/rayTracingGraphics \
-        $$PWD/../core/cudaRayTracing/transformational \
-        $$PWD/../core/cudaRayTracing/utils \
-        $$PWD/../core/graphicsManager \
-        $$PWD/../core/utils \
-        $$PWD/..
 
     HEADERS += testCuda.h
 }

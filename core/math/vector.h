@@ -3,6 +3,9 @@
 
 #include <iostream>
 #include <math.h>
+#include <algorithm>
+
+#undef max
 
 template<typename type, uint32_t n>
 class baseVector

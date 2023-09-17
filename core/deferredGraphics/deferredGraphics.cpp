@@ -141,12 +141,6 @@ void deferredGraphics::destroyCommandPool()
     if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
 }
 
-void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
-{
-    this->swapChainKHR = swapChainKHR;
-    this->imageCount = swapChainKHR->getImageCount();
-}
-
 void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices)
 {
     for(uint32_t i=0;i<devicesCount;i++){
@@ -202,26 +196,30 @@ namespace {
     }
 }
 
-void deferredGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR surface)
+void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
 {
-    createGraphicsPasses(window, surface);
-    updateDescriptorSets();
+    this->swapChainKHR = swapChainKHR;
+    this->imageCount = swapChainKHR->getImageCount();
+}
+
+void deferredGraphics::createGraphics()
+{
+    createGraphicsPasses();
     createCommandBuffers();
 }
 
-void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface)
+void deferredGraphics::createGraphicsPasses()
 {
     CHECKERROR(commandPool == VK_NULL_HANDLE,       std::string("[ deferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
-    CHECKERROR(surface == VK_NULL_HANDLE,           std::string("[ deferredGraphics::createGraphicsPasses ] VkSurfaceKHR is VK_NULL_HANDLE"));
     CHECKERROR(device.instance == VK_NULL_HANDLE,   std::string("[ deferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECKERROR(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
     CHECKERROR(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
-    imageCount = imageCount == 0 ? SwapChain::queryingSupportImageCount(device.instance,surface) : imageCount;
+    imageCount = imageCount == 0 ? SwapChain::queryingSupportImageCount(device.instance, swapChainKHR->getSurface()) : imageCount;
 
-    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance,surface);
+    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(device.instance, swapChainKHR->getSurface());
 
-    frameBufferExtent = SwapChain::queryingExtent(window, swapChainSupport.capabilities);
+    frameBufferExtent = swapChainKHR->getExtent();
 
     imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkOffset2D{0,0},VkExtent2D{1024,1024},VkExtent2D{1024,1024},MSAASamples};
     Shadow.setImageProp(&shadowsInfo);
@@ -249,7 +247,6 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         skyboxAttachment.resize(2);
         Skybox.createAttachments(2,skyboxAttachment.data());
         fastCreateFilterGraphics(&Skybox,2,skyboxAttachment.data());
-        Skybox.updateDescriptorSets(cameraObject);
     }
 
     fastCreateGraphics(&DeferredGraphics, &deferredAttachments);
@@ -257,10 +254,6 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
     if(enableScattering){
         Scattering.createAttachments(1,&scatteringAttachment);
         fastCreateFilterGraphics(&Scattering,1,&scatteringAttachment);
-        Scattering.updateDescriptorSets(
-            cameraObject,
-            &deferredAttachments.GBuffer.depth
-        );
     }
 
     if(enableTransparentLayers){
@@ -274,14 +267,6 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         LayersCombiner.setTransparentLayersCount(TransparentLayersCount);
         LayersCombiner.createAttachments(static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
         fastCreateFilterGraphics(&LayersCombiner,static_cast<uint32_t>(layersCombinedAttachment.size()),layersCombinedAttachment.data());
-        LayersCombiner.updateDescriptorSets(
-            deferredAttachments,
-            transparentLayersAttachments.data(),
-            enableSkybox ? &skyboxAttachment[0] : nullptr,
-            enableSkybox ? &skyboxAttachment[1] : nullptr,
-            enableScattering ? &scatteringAttachment : nullptr,
-            cameraObject
-        );
     }
 
     if(enableBloom){
@@ -291,7 +276,6 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         Filter.setSrcAttachment(enableTransparentLayers ? &layersCombinedAttachment[1] : &deferredAttachments.bloom);
         Filter.createAttachments(blitAttachmentCount,blitAttachments.data());
         fastCreateFilterGraphics(&Filter,blitAttachmentCount,blitAttachments.data());
-        Filter.updateDescriptorSets();
         PostProcessing.setBlitAttachments(blitAttachmentCount,blitAttachments.data(),blitFactor);
     }else{
         PostProcessing.setBlitAttachments(blitAttachmentCount,nullptr,blitFactor);
@@ -300,19 +284,16 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
         Blur.createBufferAttachments();
         Blur.createAttachments(1,&blurAttachment);
         fastCreateFilterGraphics(&Blur,1,&blurAttachment);
-        Blur.updateDescriptorSets(&deferredAttachments.blur);
         PostProcessing.setBlurAttachment(&blurAttachment);
     }
     if(enableSSAO){
         SSAO.createAttachments(1,&ssaoAttachment);
         fastCreateFilterGraphics(&SSAO,1,&ssaoAttachment);
-        SSAO.updateDescriptorSets(cameraObject, deferredAttachments);
         PostProcessing.setSSAOAttachment(&ssaoAttachment);
     }
     if(enableSSLR){
         SSLR.createAttachments(1,&sslrAttachment);
         fastCreateFilterGraphics(&SSLR,1,&sslrAttachment);
-        SSLR.updateDescriptorSets(cameraObject,deferredAttachments, enableTransparentLayers ? transparentLayersAttachments[0] : deferredAttachments);
         PostProcessing.setSSLRAttachment(&sslrAttachment);
     }
 
@@ -324,13 +305,11 @@ void deferredGraphics::createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR sur
     PostProcessing.setLayersAttachment(enableTransparentLayers ? &layersCombinedAttachment[0] : &deferredAttachments.image);
     PostProcessing.createAttachments(1,&finalAttachment);
     fastCreateFilterGraphics(&PostProcessing,1,&finalAttachment);
-    PostProcessing.updateDescriptorSets();
 
     Link.createDescriptorSetLayout();
     Link.createPipeline(&swapChainInfo);
     Link.createDescriptorPool();
     Link.createDescriptorSets();
-    Link.updateDescriptorSets(&finalAttachment);
 
     createStorageBuffers(imageCount);
 
@@ -358,6 +337,37 @@ void deferredGraphics::updateDescriptorSets()
             );
         }
     }
+
+    if(enableSkybox){
+        Skybox.updateDescriptorSets(cameraObject);
+    }
+    if(enableScattering){
+        Scattering.updateDescriptorSets(cameraObject, &deferredAttachments.GBuffer.depth);
+    }
+    if(enableTransparentLayers){
+        LayersCombiner.updateDescriptorSets(
+            deferredAttachments,
+            transparentLayersAttachments.data(),
+            enableSkybox ? &skyboxAttachment[0] : nullptr,
+            enableSkybox ? &skyboxAttachment[1] : nullptr,
+            enableScattering ? &scatteringAttachment : nullptr,
+            cameraObject
+        );
+    }
+    if(enableBloom){
+        Filter.updateDescriptorSets();
+    }
+    if(enableBlur){
+        Blur.updateDescriptorSets(&deferredAttachments.blur);
+    }
+    if(enableSSAO){
+        SSAO.updateDescriptorSets(cameraObject, deferredAttachments);
+    }
+    if(enableSSLR){
+        SSLR.updateDescriptorSets(cameraObject,deferredAttachments, enableTransparentLayers ? transparentLayersAttachments[0] : deferredAttachments);
+    }
+    PostProcessing.updateDescriptorSets();
+    Link.updateDescriptorSets(&finalAttachment);
 }
 
 void deferredGraphics::createCommandBuffers()
@@ -437,7 +447,7 @@ void deferredGraphics::createCommandBuffers()
     }
 }
 
-std::vector<std::vector<VkSemaphore>> deferredGraphics::sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex)
+std::vector<std::vector<VkSemaphore>> deferredGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex)
 {
     if(externalSemaphore.size()){
         nodes[imageIndex]->setExternalSemaphore(externalSemaphore);

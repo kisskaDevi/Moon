@@ -168,7 +168,7 @@ const VkSemaphore& graphicsLinker::submit(uint32_t frameNumber, const std::vecto
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
-        submitInfo.pWaitSemaphores = waitSemaphores.data();
+        submitInfo.pWaitSemaphores = submitInfo.waitSemaphoreCount > 0 ? waitSemaphores.data() : VK_NULL_HANDLE;
         submitInfo.pWaitDstStageMask = &waitStages;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffers[frameNumber];

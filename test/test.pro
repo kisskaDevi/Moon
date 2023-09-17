@@ -26,7 +26,7 @@ win32: LIBS += \
     -linterfaces \
     -lutils \
     -lvulkan-1 \
-    -lglfw3
+    -lglfw3dll
 
 INCLUDEPATH += \
     $$PWD/../dependences\libs \
@@ -47,21 +47,22 @@ INCLUDEPATH += \
     $$PWD/../core/transformational \
     $$PWD/../core/interfaces \
     $$PWD/../core/models \
-    $$PWD/../core/math
+    $$PWD/../core/math \
+    $$PWD/scenes
 
 SOURCES += \
     controller.cpp \
     physicalobject.cpp \
     main.cpp \
-    testScene.cpp \
-    testPos.cpp
+    scenes/testScene.cpp \
+    scenes/testPos.cpp
 
 HEADERS += \
     controller.h \
     physicalobject.h \
     scene.h \
-    testScene.h \
-    testPos.h
+    scenes/testScene.h \
+    scenes/testPos.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

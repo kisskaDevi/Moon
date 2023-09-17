@@ -34,11 +34,6 @@ void imguiGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices) {
     Link.setDeviceProp(device.getLogical());
 }
 
-void imguiGraphics::setSwapChain(swapChain* swapChainKHR) {
-    this->swapChainKHR = swapChainKHR;
-    this->imageCount = swapChainKHR->getImageCount();
-}
-
 void imguiGraphics::setupImguiContext(){
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -76,13 +71,18 @@ void imguiGraphics::uploadFonts()
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void imguiGraphics::createGraphics(GLFWwindow* window, VkSurfaceKHR) {
+void imguiGraphics::setSwapChain(swapChain* swapChainKHR) {
+    this->swapChainKHR = swapChainKHR;
+    imageCount = swapChainKHR->getImageCount();
+}
+
+void imguiGraphics::createGraphics() {
     setupImguiContext();
     createDescriptorPool();
     createCommandPool();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForVulkan(window, true);
+    ImGui_ImplGlfw_InitForVulkan(swapChainKHR->getWindow(), true);
     ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = instance;
         initInfo.PhysicalDevice = device.instance;
@@ -106,7 +106,7 @@ void imguiGraphics::updateCommandBuffer(uint32_t) {}
 
 void imguiGraphics::updateBuffers(uint32_t) {}
 
-std::vector<std::vector<VkSemaphore>> imguiGraphics::sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>&, uint32_t){
+std::vector<std::vector<VkSemaphore>> imguiGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>&, uint32_t){
     return externalSemaphore;
 }
 

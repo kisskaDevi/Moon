@@ -1,6 +1,10 @@
 #ifndef GRAPHICSMANAGER_H
 #define GRAPHICSMANAGER_H
 
+#ifdef WIN32
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+
 #include <vulkan.h>
 #include "operations.h"
 #include "device.h"
@@ -19,13 +23,10 @@ public:
     void destroySwapChain();
     void destroyLinker();
 
-    VkInstance getInstance(){
-        return instance;
-    }
-
+    VkInstance      getInstance();
     VkSurfaceKHR    getSurface();
     uint32_t        getImageIndex();
-    uint32_t        getImageCount();
+    swapChain*      getSwapChain();
     VkResult        deviceWaitIdle();
 
     VkResult        createInstance();
@@ -39,11 +40,7 @@ public:
     VkResult        drawFrame();
 
 private:
-    #ifdef NDEBUG
-        bool                                    enableValidationLayers = false;
-    #else
-        bool                                    enableValidationLayers = true;
-    #endif
+    bool                                        enableValidationLayers = true;
 
     const std::vector<const char*>              validationLayers = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*>              deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};

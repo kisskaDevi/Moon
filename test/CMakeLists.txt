@@ -9,8 +9,10 @@ else()
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
-set(SOURCES main.cpp testScene.cpp controller.cpp)
-set(INCLUDES scene.h testScene.h controller.h)
+include_directories(scenes ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(SOURCES main.cpp scenes/testScene.cpp controller.cpp)
+set(INCLUDES scene.h scenes/testScene.h controller.h)
 
 add_executable(test ${INCLUDES} ${SOURCES})
 

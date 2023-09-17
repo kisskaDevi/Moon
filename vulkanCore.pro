@@ -8,8 +8,9 @@ SUBDIRS += \
     imguiGraphics \
     models \
     transformational \
+    math \
     test \
-    math
+    testCuda
 
 utils.subdir = core/utils
 graphicsManager.subdir = core/graphicsManager
@@ -28,6 +29,14 @@ transformational.depends = utils interfaces math
 imguiGraphics.depends = utils graphicsManager
 deferredGraphics.depends = utils interfaces graphicsManager
 test.depends = graphicsManager imguiGraphics deferredGraphics models transformational
+
+equals(QMAKE_CXX,cl){
+    SUBDIRS += cudaRayTracing
+
+    cudaRayTracing.subdir = core/cudaRayTracing
+    cudaRayTracing.depends = utils graphicsManager
+    testCuda.depends = graphicsManager cudaRayTracing
+}
 
 DISTFILES += \
     $$PWD/CMakelists.txt

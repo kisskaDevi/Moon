@@ -19,21 +19,24 @@ void swapChain::destroy(){
     if(swapChainKHR) {vkDestroySwapchainKHR(device, swapChainKHR, nullptr); swapChainKHR = VK_NULL_HANDLE;}
 }
 
-VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount){
+VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount){
     VkResult result = VK_SUCCESS;
 
-    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(physicalDevice, *surface);
-    VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
-    VkSurfaceCapabilitiesKHR capabilities = SwapChain::queryingSupport(physicalDevice, *surface).capabilities;
+    this->window = window;
+    this->surface = surface;
 
-    imageCount = SwapChain::queryingSupportImageCount(physicalDevice, *surface);
+    SwapChain::SupportDetails swapChainSupport = SwapChain::queryingSupport(physicalDevice, surface);
+    VkSurfaceFormatKHR surfaceFormat = SwapChain::queryingSurfaceFormat(swapChainSupport.formats);
+    VkSurfaceCapabilitiesKHR capabilities = SwapChain::queryingSupport(physicalDevice, surface).capabilities;
+
+    imageCount = SwapChain::queryingSupportImageCount(physicalDevice, surface);
     imageCount = (maxImageCount > 0 && imageCount > static_cast<uint32_t>(maxImageCount)) ? static_cast<uint32_t>(maxImageCount) : imageCount;
     extent = SwapChain::queryingExtent(window, capabilities);
     format = surfaceFormat.format;
 
     VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = *surface;
+        createInfo.surface = surface;
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -94,4 +97,12 @@ VkExtent2D swapChain::getExtent(){
 
 VkFormat swapChain::getFormat(){
     return format;
+}
+
+GLFWwindow* swapChain::getWindow(){
+    return window;
+}
+
+VkSurfaceKHR swapChain::getSurface(){
+    return surface;
 }

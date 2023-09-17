@@ -27,6 +27,7 @@ private:
     VkCommandPool                               commandPool{VK_NULL_HANDLE};
 
     imguiLink                                   Link;
+
 public:
     imguiGraphics() = default;
     ~imguiGraphics();
@@ -35,7 +36,7 @@ public:
     void setInstance(VkInstance instance);
     void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
     void setSwapChain(swapChain* swapChainKHR) override;
-    void createGraphics(GLFWwindow* window, VkSurfaceKHR surface) override;
+    void createGraphics() override;
 
     void setupImguiContext();
     void createDescriptorPool();
@@ -45,7 +46,7 @@ public:
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
 
-    std::vector<std::vector<VkSemaphore>> sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
+    std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 
     linkable* getLinkable() override;
 };

@@ -19,18 +19,25 @@ private:
     VkSwapchainKHR      swapChainKHR{VK_NULL_HANDLE};
     attachments         swapChainAttachments;
 
+    GLFWwindow*         window{nullptr};
+    VkSurfaceKHR        surface{VK_NULL_HANDLE};
+
 public:
     swapChain();
     void destroy();
 
-    VkResult create(GLFWwindow* window, VkSurfaceKHR* surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);
+    VkResult create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);
 
     VkSwapchainKHR& operator()();
     attachments& attachment();
+
     void setDevice(VkPhysicalDevice physicalDevice, VkDevice device);
+
     uint32_t getImageCount();
     VkExtent2D getExtent();
     VkFormat getFormat();
+    GLFWwindow* getWindow();
+    VkSurfaceKHR getSurface();
 };
 
 #endif // SWAPCHAIN_H

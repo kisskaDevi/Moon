@@ -106,19 +106,19 @@ public:
     void freeCommandBuffers();
     void destroyEmptyTextures();
 
-    void setSwapChain(swapChain* swapChainKHR) override;
     void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
+    void setSwapChain(swapChain* swapChainKHR) override;
     void createCommandPool();
-    void createGraphics(GLFWwindow* window, VkSurfaceKHR surface) override;
+    void createGraphics() override;
 
-    void createGraphicsPasses(GLFWwindow* window, VkSurfaceKHR surface);
+    void createGraphicsPasses();
     void updateDescriptorSets();
     void createCommandBuffers();
     void updateCommandBuffers();
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
 
-    std::vector<std::vector<VkSemaphore>> sibmit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
+    std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 
     linkable* getLinkable() override;
 

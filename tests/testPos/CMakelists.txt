@@ -9,20 +9,25 @@ else()
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
-include_directories(scenes ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-set(SOURCES main.cpp scenes/testScene.cpp controller.cpp)
-set(INCLUDES scene.h scenes/testScene.h controller.h)
+set(SOURCES testPos.cpp
+    ../controller.cpp
+    ../main.cpp)
+set(INCLUDES testPos.h
+    ../scene.h
+    ../controller.h)
 
-add_executable(test ${INCLUDES} ${SOURCES})
+add_executable(testPos ${INCLUDES} ${SOURCES})
+add_definitions(-DTESTPOS)
 
-target_link_libraries(test PRIVATE deferredGraphics imguiGraphics models transformational ${LIBS_DIRS})
+target_link_libraries(testPos PRIVATE deferredGraphics imguiGraphics models transformational ${LIBS_DIRS})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    add_custom_command(TARGET test POST_BUILD
+    add_custom_command(TARGET testPos POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<$<CONFIG:Debug>:${GLFW_DIR}/build/src/Debug/glfw3.dll>
     $<$<CONFIG:Release>:${GLFW_DIR}/build/src/Release/glfw3.dll>
-    $<TARGET_FILE_DIR:test>)
+    $<TARGET_FILE_DIR:testPos>)
 endif()
 

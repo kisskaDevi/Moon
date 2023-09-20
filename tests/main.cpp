@@ -5,9 +5,6 @@
 #include <utility>
 #include <filesystem>
 
-#ifdef WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
-#endif
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <stb_image.h>
@@ -15,12 +12,12 @@
 
 #include <graphicsManager.h>
 
-//#define TESTPOS
-
-#ifdef TESTPOS
-    #include "testPos.h"
+#if defined(TESTPOS)
+    #include "testPos/testPos.h"
+#elif defined(TESTCUDA)
+    #include "testCuda/testCuda.h"
 #else
-    #include "testScene.h"
+    #include "testScene/testScene.h"
 #endif
 
 bool framebufferResized = false;
@@ -45,8 +42,10 @@ int main()
     debug::checkResult(app.createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
-#ifdef TESTPOS
+#if defined(TESTPOS)
     testPos testScene(&app, window, ExternalPath);
+#elif defined(TESTCUDA)
+    testCuda testScene(&app, window, ExternalPath);
 #else
     testScene testScene(&app, window, ExternalPath);
 #endif

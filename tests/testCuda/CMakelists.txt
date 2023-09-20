@@ -9,12 +9,18 @@ else()
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
-set(SOURCES main.cpp)
-set(INCLUDES testCuda.h)
+set(SOURCES testCuda.cpp
+../main.cpp
+../controller.cpp)
+set(INCLUDES testCuda.h
+../scene.h
+../controller.h)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..
+${CMAKE_CURRENT_SOURCE_DIR}/../..)
+
 add_executable(testCuda ${INCLUDES} ${SOURCES})
-add_definitions(-DTEST_CUDA)
+add_definitions(-DTESTCUDA)
 
 target_link_libraries(testCuda PRIVATE cudaRayTracing ${LIBS_DIRS})
 

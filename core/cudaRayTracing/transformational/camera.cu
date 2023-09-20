@@ -43,6 +43,10 @@ __host__ __device__ void cuda::camera::setViewRay(const ray& viewRay){
     vertical = vec4::getVertical(viewRay.getDirection());
 }
 
+__host__ __device__ void cuda::camera::setFocus(const float& focus){
+    this->focus = focus;
+}
+
 cuda::camera* cuda::camera::create(const ray& viewRay, float aspect) {
     cuda::camera* cam;
     cuda::camera hostcam(viewRay, aspect);
@@ -50,6 +54,12 @@ cuda::camera* cuda::camera::create(const ray& viewRay, float aspect) {
     cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice);
     checkCudaErrors(cudaGetLastError());
     return cam;
+}
+
+void cuda::camera::reset(camera* cam, const ray& viewRay, float aspect) {
+    cuda::camera hostcam(viewRay, aspect);
+    cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice);
+    checkCudaErrors(cudaGetLastError());
 }
 
 void cuda::camera::destroy(camera* cam) {
@@ -62,6 +72,16 @@ __global__ void setViewRayKernel(cuda::camera* cam, const ray viewRay){
 
 void cuda::camera::setViewRay(camera* cam, const ray& viewRay){
     setViewRayKernel<<<1,1>>>(cam, viewRay);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+__global__ void setFocusKernel(cuda::camera* cam, const float focus){
+    cam->setFocus(focus);
+}
+
+void cuda::camera::setFocus(camera* cam, const float& focus){
+    setFocusKernel<<<1,1>>>(cam, focus);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }

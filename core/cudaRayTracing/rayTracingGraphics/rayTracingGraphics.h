@@ -35,8 +35,8 @@ private:
     uint32_t* hostFrameBuffer{nullptr};
 
     std::vector<physicalDevice*> devices;
-    physicalDevice* device{ nullptr };
-    swapChain* swapChainKHR;
+    physicalDevice* device{nullptr};
+    swapChain* swapChainKHR{nullptr};
 
     rayTracingLink Link;
     attachments finalAttachment;

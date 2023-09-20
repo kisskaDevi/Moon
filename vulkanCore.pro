@@ -9,8 +9,8 @@ SUBDIRS += \
     models \
     transformational \
     math \
-    test \
-    testCuda
+    testScene \
+    testPos
 
 utils.subdir = core/utils
 graphicsManager.subdir = core/graphicsManager
@@ -20,7 +20,8 @@ imguiGraphics.subdir = core/imguiGraphics
 models.subdir = core/models
 transformational.subdir = core/transformational
 math.subdir = core/math
-test.subdir = test
+testScene.subdir = tests/testScene
+testPos.subdir = tests/testPos
 
 graphicsManager.depends = utils
 interfaces.depends = utils
@@ -28,13 +29,17 @@ models.depends = utils interfaces
 transformational.depends = utils interfaces math
 imguiGraphics.depends = utils graphicsManager
 deferredGraphics.depends = utils interfaces graphicsManager
-test.depends = graphicsManager imguiGraphics deferredGraphics models transformational
+testScene.depends = graphicsManager imguiGraphics deferredGraphics models transformational
+testPos.depends = graphicsManager imguiGraphics deferredGraphics models transformational
 
 equals(QMAKE_CXX,cl){
-    SUBDIRS += cudaRayTracing
+    SUBDIRS += \
+        cudaRayTracing \
+        testCuda
 
     cudaRayTracing.subdir = core/cudaRayTracing
     cudaRayTracing.depends = utils graphicsManager
+    testCuda.subdir = tests/testCuda
     testCuda.depends = graphicsManager cudaRayTracing
 }
 

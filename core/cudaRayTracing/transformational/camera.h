@@ -32,11 +32,14 @@ namespace cuda {
         __device__ ray getPixelRay(float u, float v);
 
         __host__ __device__ void setViewRay(const ray& viewRay);
+        __host__ __device__ void setFocus(const float& focus);
 
         static camera* create(const ray& viewRay, float aspect);
         static void destroy(camera* cam);
 
+        static void reset(camera* cam, const ray& viewRay, float aspect);
         static void setViewRay(camera* cam, const ray& viewRay);
+        static void setFocus(camera* cam, const float& focus);
     };
 }
 #endif

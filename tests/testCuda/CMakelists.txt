@@ -10,13 +10,14 @@ endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
 set(SOURCES testCuda.cpp
-../main.cpp
-../controller.cpp)
+../common/main.cpp
+../common/controller.cpp)
 set(INCLUDES testCuda.h
-../scene.h
-../controller.h)
+../common/scene.h
+../common/controller.h)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}
+${CMAKE_CURRENT_SOURCE_DIR}/../common
 ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 add_executable(testCuda ${INCLUDES} ${SOURCES})

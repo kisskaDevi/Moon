@@ -50,16 +50,17 @@ INCLUDEPATH += \
     $$PWD/../../core/interfaces \
     $$PWD/../../core/models \
     $$PWD/../../core/math \
-    $$PWD/..
+    $$PWD/../common \
+    $$PWD
 
 SOURCES += \
-    ../controller.cpp \
-    ../main.cpp \
+    ../common/controller.cpp \
+    ../common/main.cpp \
     testPos.cpp
 
 HEADERS += \
-    ../controller.h \
-    ../scene.h \
+    ../common/controller.h \
+    ../common/scene.h \
     testPos.h
 
 DISTFILES += \

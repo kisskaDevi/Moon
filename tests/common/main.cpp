@@ -13,11 +13,11 @@
 #include <graphicsManager.h>
 
 #if defined(TESTPOS)
-    #include "testPos/testPos.h"
+    #include "testPos.h"
 #elif defined(TESTCUDA)
-    #include "testCuda/testCuda.h"
+    #include "testCuda.h"
 #else
-    #include "testScene/testScene.h"
+    #include "testScene.h"
 #endif
 
 bool framebufferResized = false;
@@ -31,7 +31,7 @@ int main()
     bool fpsLock = false;
     uint32_t WIDTH = 800;
     uint32_t HEIGHT = 800;
-    const std::filesystem::path ExternalPath = std::filesystem::absolute(std::string(__FILE__) + "/../../");
+    const std::filesystem::path ExternalPath = std::filesystem::absolute(std::string(__FILE__) + "/../../../");
 
     GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.png");
 

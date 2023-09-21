@@ -8,6 +8,7 @@
 
 #include "scene.h"
 #include "controller.h"
+#include "object.h"
 
 #include "ray.h"
 
@@ -36,6 +37,8 @@ private:
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);
+
+    std::vector<primitive> primitives;
 
 public:
     testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath);

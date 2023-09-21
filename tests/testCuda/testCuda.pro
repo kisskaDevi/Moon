@@ -18,7 +18,8 @@ INCLUDEPATH += \
     $$PWD/../../core/graphicsManager \
     $$PWD/../../core/utils \
     $$PWD/../.. \
-    $$PWD/..
+    $$PWD/../common \
+    $$PWD
 
 equals(QMAKE_CXX,cl){
     DEFINES += TESTCUDA
@@ -51,13 +52,13 @@ equals(QMAKE_CXX,cl){
         $$CUDA_INCLUDE_DIR\
 
     HEADERS += \
-        ../scene.h \
-        ../controller.h \
+        ../common/scene.h \
+        ../common/controller.h \
         testCuda.h
 }
 SOURCES += \
-    ../main.cpp \
-    ../controller.cpp \
+    ../common/main.cpp \
+    ../common/controller.cpp \
     testCuda.cpp
 
 DISTFILES += \

@@ -56,52 +56,57 @@ std::vector<uint32_t> createBoxIndexBuffer() {
     };
 }
 
-void createWorld(hitableContainer* container) {
-    add(container,
-        {
-            sphere::create( vec4( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f}),
-            sphere::create( vec4( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f }),
-            sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f }),
-            sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f }),
-            sphere::create( vec4(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-            sphere::create( vec4( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})
-        }
-        );
+void createWorld(std::vector<primitive>& primitives, hitableContainer* container) {
+    add(container, {
+           sphere::create( vec4( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f}),
+           sphere::create( vec4( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f }),
+           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f }),
+           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f }),
+           sphere::create( vec4(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})
+       });
 
-    std::vector<primitive> primitives;
     primitives.emplace_back(
-        createBoxVertexBuffer(vec4(3.0f, 3.0f, 1.5f, 1.0f), vec4(0.0f, 0.0f, 1.5f, 0.0f), sign::minus, { 1.0f, 0.0f, 0.0f, pi, 0.0f },
-                              { vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.8f, 0.4f, 0.8f, 1.0f), vec4(0.4f, 0.4f, 0.4f, 1.0f), vec4(0.9f, 0.5f, 0.0f, 1.0f), vec4(0.1f, 0.4f, 0.9f, 1.0f) }),
-        createBoxIndexBuffer(),
-        0
-        );
+        createBoxVertexBuffer(
+            vec4(3.0f, 3.0f, 1.5f, 1.0f),
+            vec4(0.0f, 0.0f, 1.5f, 0.0f),
+            sign::minus, { 1.0f, 0.0f, 0.0f, pi, 0.0f },
+            { vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.8f, 0.4f, 0.8f, 1.0f), vec4(0.4f, 0.4f, 0.4f, 1.0f), vec4(0.9f, 0.5f, 0.0f, 1.0f), vec4(0.1f, 0.4f, 0.9f, 1.0f) }),
+            createBoxIndexBuffer(),
+            0);
     primitives.back().moveToContainer(container);
 
     primitives.emplace_back(
-        createBoxVertexBuffer(vec4(0.4f, 0.4f, 0.4f, 1.0f), vec4(1.5f, 0.0f, 0.4f, 0.0f), sign::plus, { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f },
-                              std::vector<vec4>(6, vec4(1.0f))),
-        createBoxIndexBuffer(),
-        0
-        );
+        createBoxVertexBuffer(
+            vec4(0.4f, 0.4f, 0.4f, 1.0f),
+            vec4(1.5f, 0.0f, 0.4f, 0.0f),
+            sign::plus,
+            { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f },
+            std::vector<vec4>(6, vec4(1.0f))),
+            createBoxIndexBuffer(),
+            0);
     primitives.back().moveToContainer(container);
 
     primitives.emplace_back(
-        createBoxVertexBuffer(vec4(0.3f, 0.3f, 0.3f, 1.0f), vec4(1.5f, 0.0f, 0.4f, 0.0f), sign::plus, { 1.0f / 1.5f, 0.96f, 0.01f, 0.01f * pi, 0.0f },
-                              std::vector<vec4>(6, vec4(1.0f))),
-        createBoxIndexBuffer(),
-        0
-        );
+        createBoxVertexBuffer(
+            vec4(0.3f, 0.3f, 0.3f, 1.0f),
+            vec4(1.5f, 0.0f, 0.4f, 0.0f),
+            sign::plus,
+            { 1.0f / 1.5f, 0.96f, 0.01f, 0.01f * pi, 0.0f },
+            std::vector<vec4>(6, vec4(1.0f))),
+            createBoxIndexBuffer(),
+            0);
     primitives.back().moveToContainer(container);
 
     for (int i = 0; i < 0; i++) {
@@ -120,16 +125,18 @@ testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesyst
     ExternalPath(ExternalPath),
     app(app),
     window(window),
-    cam(cuda::camera::create(viewRay, float(width) / float(height))),
-    array(hitableArray::create()),
-    graphics(new rayTracingGraphics(ExternalPath / "core/cudaRayTracing/rayTracingGraphics/spv",{width,height},{0,0})),
     mouse(new controller(window, glfwGetMouseButton)),
     board(new controller(window, glfwGetKey))
-{}
+{
+
+    array = hitableArray::create();
+    cam = cuda::camera::create(viewRay, float(width) / float(height));
+    graphics = new rayTracingGraphics(ExternalPath / "core/cudaRayTracing/rayTracingGraphics/spv",{width,height},{0,0});
+}
 
 void testCuda::create(uint32_t, uint32_t)
 {
-    createWorld(array);
+    createWorld(primitives, array);
 
     app->setGraphics(graphics);
     graphics->setCamera(cam);
@@ -142,7 +149,8 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
     width = WIDTH;
     height = HEIGHT;
 
-    cuda::camera::reset(cam, viewRay, float(width) / float(height));
+    cuda::camera::destroy(cam);
+    cam = cuda::camera::create(viewRay, float(width) / float(height));
 
     graphics->destroyGraphics();
     graphics->createGraphics();

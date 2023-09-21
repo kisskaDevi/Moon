@@ -53,6 +53,7 @@ cuda::camera* cuda::camera::create(const ray& viewRay, float aspect) {
     checkCudaErrors(cudaMalloc((void**)&cam, sizeof(cuda::camera)));
     cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice);
     checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
     return cam;
 }
 
@@ -60,10 +61,14 @@ void cuda::camera::reset(camera* cam, const ray& viewRay, float aspect) {
     cuda::camera hostcam(viewRay, aspect);
     cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice);
     checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 void cuda::camera::destroy(camera* cam) {
     checkCudaErrors(cudaFree(cam));
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 __global__ void setViewRayKernel(cuda::camera* cam, const ray viewRay){

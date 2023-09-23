@@ -46,8 +46,7 @@ layout(location = 7)	out vec4 outColorFactor;
 layout(location = 8)	out vec4 outBloomColor;
 layout(location = 9)	out vec4 outBloomFactor;
 layout(location = 10)	out vec4 outEyePosition;
-layout(location = 11)	out float depth;
-layout(location = 12)	out vec4 glPosition;
+layout(location = 11)	out vec4 glPosition;
 
 void main()
 {
@@ -59,32 +58,20 @@ void main()
     outBloomFactor = local.bloomFactor;
     outEyePosition = global.eyePosition;
 
-    mat4x4 model = local.matrix*node.matrix;
-    if (node.jointCount > 0.0)
-    {
-	    // Mesh is skinned
-	    mat4 skinMat =
-	            inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
-	            inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
-	            inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
-	            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
+    mat4 skinMat = node.jointCount > 0.0 ?
+        inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
+        inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
+        inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
+        inWeight0.w * node.jointMatrix[int(inJoint0.w)] : mat4(1.0f);
 
-            model = model * skinMat;
-            outPosition	    =		     model * vec4(inPosition,	1.0);
-	    outNormal	    = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
-	    outTangent	    = normalize(vec3(model * vec4(inTangent,	0.0)));
-	    outBitangent    = normalize(vec3(model * vec4(inBitangent,	0.0)));
-    } else
-    {
-	    outPosition	    =		     model * vec4(inPosition,	1.0);
-	    outNormal	    = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
-	    outTangent	    = normalize(vec3(model * vec4(inTangent,	0.0)));
-	    outBitangent    = normalize(vec3(model * vec4(inBitangent,	0.0)));
-    }
+    mat4x4 model = local.matrix * node.matrix * skinMat;
+
+    outPosition  = model * vec4(inPosition,	1.0);
+    outNormal	 = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
+    outTangent	 = normalize(vec3(model * vec4(inTangent,	0.0)));
+    outBitangent = normalize(vec3(model * vec4(inBitangent,	0.0)));
 
     gl_Position = global.proj * global.view * outPosition;
     glPosition = gl_Position;
     glPosition /= glPosition.w;
-
-    depth = gl_Position.z;
 }

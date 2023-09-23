@@ -37,20 +37,13 @@ layout(location = 7)	in  vec3 inBitangent;
 
 void main()
 {
-    vec3 outPosition;
-    if (node.jointCount > 0.0)
-    {
-	    // Mesh is skinned
-	    mat4 skinMat =
-	            inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
-	            inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
-	            inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
-	            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
+    mat4 model = local.matrix * node.matrix;
+    
+    mat4 skinMat = node.jointCount > 0.0 ?
+        inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
+        inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
+        inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
+        inWeight0.w * node.jointMatrix[int(inJoint0.w)] : mat4(1.0f);
 
-	    outPosition = vec3(local.matrix*node.matrix * skinMat* vec4(inPosition,1.0));
-    } else {
-	    outPosition = vec3(local.matrix*node.matrix * vec4(inPosition,1.0));
-    }
-
-    gl_Position = light.projView * vec4(outPosition,1.0f);
+    gl_Position = light.projView * model * skinMat* vec4(inPosition, 1.0);
 }

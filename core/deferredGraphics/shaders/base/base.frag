@@ -7,7 +7,7 @@ const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;
 const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;
 const float c_MinRoughness = 0.04;
 
-layout(set = 0, binding = 1)	uniform samplerCube samplerCubeMap;
+layout(set = 0, binding = 1) uniform samplerCube samplerCubeMap;
 
 layout(set = 0, binding = 2) buffer StorageBuffer
 {
@@ -59,8 +59,7 @@ layout(location = 7)	in vec4 colorFactor;
 layout(location = 8)	in vec4 bloomColor;
 layout(location = 9)	in vec4 bloomFactor;
 layout(location = 10)	in vec4 eyePosition;
-layout(location = 11)	in float depth;
-layout(location = 12)	in vec4 glPosition;
+layout(location = 11)	in vec4 glPosition;
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -91,14 +90,12 @@ void main()
     float metallic;
     vec4 baseColor = SRGBtoLINEAR(vec4(colorFactor.x,colorFactor.y,colorFactor.z,1.0f) * texture(baseColorTexture, UV0) + constColor);
 
-    if(pushConstants.enableTransparencyPass == 0.0){
-        if(baseColor.a<1.0f){
+    if(pushConstants.enableTransparencyPass == 0.0 && baseColor.a < 1.0f){
+        discard;
+    }
+    if(pushConstants.enableTransparencyPass == 1.0 &&
+        (baseColor.a >= 1.0f || baseColor.a <= 0.0f || glPosition.z < 1.001f * texture(depthMap , glPosition.xy * 0.5f + 0.5f).r)){
             discard;
-        }
-    }else{
-        if(baseColor.a>=1.0f || baseColor.a<=0.1f || glPosition.z / texture(depthMap , glPosition.xy * 0.5f + 0.5f).r < 1.001){
-            discard;
-        }
     }
 
 //    vec3 I = normalize(position.xyz - eyePosition.xyz);

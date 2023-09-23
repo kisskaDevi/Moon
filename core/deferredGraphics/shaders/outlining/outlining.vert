@@ -34,31 +34,20 @@ layout(push_constant) uniform Stencil {
 } stencil;
 
 layout(location = 0) out vec4 outPosition;
-layout(location = 1) out float depth;
-layout(location = 2) out vec2 outUV0;
-layout(location = 3) out vec2 outUV1;
 
 void main() {
     outPosition = vec4(inPosition.xyz, 1.0);
 
-    mat4x4 model = local.matrix * node.matrix;
-    if(node.jointCount > 0.0) {
-	    // Mesh is skinned
-        mat4 skinMat = inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
-            inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
-            inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
-            inWeight0.w * node.jointMatrix[int(inJoint0.w)];
+    mat4 skinMat =  node.jointCount > 0.0 ?  
+                    inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
+                    inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
+                    inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
+                    inWeight0.w * node.jointMatrix[int(inJoint0.w)] : mat4(1.0f);
+    mat4x4 model = local.matrix * node.matrix * skinMat;
 
-        model = model * skinMat;
-        outPosition = model * outPosition;
-    } else {
-        outPosition = model * outPosition;
-    }
-
+    outPosition = model * outPosition;
     vec3 Normal = normalize(vec3(inverse(transpose(model)) * vec4(inNormal, 0.0)));
     outPosition = vec4(outPosition.xyz + Normal * stencil.width, 1.0);
 
     gl_Position = global.proj * global.view * outPosition;
-
-    depth = gl_Position.z;
 }

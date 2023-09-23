@@ -50,7 +50,7 @@ void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
 
     matrix<float,4,4> m(0.0f);
-    if(std::ifstream file(ExternalPath / "dependences/texture_HD/camera_matrix.txt"); file.is_open()){
+    if(std::ifstream file(ExternalPath / "dependences/matrixData/camera_matrix.txt"); file.is_open()){
         m = matrix<float,4,4>(file);
         cameras["view"]->setProjMatrix(correctMatrix(m));
     }
@@ -72,13 +72,15 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     cameras["view"] = new baseCamera();
     matrix<float,4,4> m(0.0f);
-    if(std::ifstream file(ExternalPath / "dependences/texture_HD/camera_matrix.txt"); file.is_open()){
+    if(std::ifstream file(ExternalPath / "dependences/matrixData/camera_matrix.txt"); file.is_open()){
         m = matrix<float,4,4>(file);
         cameras["view"]->setProjMatrix(correctMatrix(m));
     }
 
     cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
+    graphics["base"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true);
+
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4 , static_cast<int32_t>(HEIGHT / 2) - 4}};
 
     app->setGraphics(graphics["base"]);
@@ -198,7 +200,7 @@ void testPos::createObjects()
         graphics["view"]->bindObject(object, false);
     }
 
-    for (auto &entry : std::filesystem::directory_iterator(ExternalPath / "dependences/texture_HD")){
+    for (auto &entry : std::filesystem::directory_iterator(ExternalPath / "dependences/matrixData")){
         if(std::ifstream file(entry.path()); entry.path().extension() == ".xf"){
             matrix<float,4,4>* view = new matrix<float,4,4>(file);
 

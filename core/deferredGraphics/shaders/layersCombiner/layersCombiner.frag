@@ -34,10 +34,10 @@ layout(location = 1) out vec4 outBloom;
 mat4 projview = global.proj * global.view;
 vec3 eyePosition = global.eyePosition.xyz;
 
-float h = 0.6;
-float nbegin = 1.33;
-float nend = nbegin + 2.0;
-float reflectionProbability = 0.04;
+float h = 1.0f;
+float nbegin = 1.33f;
+float nend = nbegin + 2.0f;
+float reflectionProbability = 0.04f;
 
 vec3 findRefrCoords(const in vec3 startPos, const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n) {
     vec3 beamDirection = normalize(layerPointPosition - startPos);

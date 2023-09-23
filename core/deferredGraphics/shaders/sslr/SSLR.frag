@@ -88,6 +88,6 @@ vec4 SSLR(int steps, float incrementFactor, float resolution) {
 void main() {
     outColor = vec4(0.0);
 
-    float roug = 1.0 - texture(position, fragTexCoord).a;
+    //float roug = 1.0 - texture(position, fragTexCoord).a;
     //outColor += SSLR(20, 0.2f, 0.9995);
 }

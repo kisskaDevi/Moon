@@ -32,19 +32,23 @@ int index[18] = int[](
 void main() {
     eyePosition = global.eyePosition;
 
-    vec3 u = normalize(vec3(light.view[0][0], light.view[1][0], light.view[2][0]));
-    vec3 v = normalize(vec3(light.view[0][1], light.view[1][1], light.view[2][1]));
-    vec3 n = -normalize(vec3(light.view[0][2], light.view[1][2], light.view[2][2]));
+    vec3 u =   normalize(vec3(light.view[0][0], light.view[1][0], light.view[2][0]));
+    vec3 v =   normalize(vec3(light.view[0][1], light.view[1][1], light.view[2][1]));
+    vec3 n = - normalize(vec3(light.view[0][2], light.view[1][2], light.view[2][2]));
 
     float far = light.proj[3][2] / (light.proj[2][2] + 1.0);
-    float h = -far / light.proj[1][1];
-    float w = light.proj[1][1] / light.proj[0][0] * h;
+    float h = - far / light.proj[1][1];
+    float w = - far / light.proj[0][0];
+
+    vec3 center = light.position.xyz + far * n;
+    vec3 x = w * u;
+    vec3 y = h * v;
 
     vertex[0] = light.position.xyz;
-    vertex[1] = light.position.xyz + far * n + w * u + h * v;
-    vertex[2] = light.position.xyz + far * n + w * u - h * v;
-    vertex[3] = light.position.xyz + far * n - w * u - h * v;
-    vertex[4] = light.position.xyz + far * n - w * u + h * v;
+    vertex[1] = center + x + y;
+    vertex[2] = center + x - y;
+    vertex[3] = center - x - y;
+    vertex[4] = center - x + y;
 
     gl_Position = global.proj * global.view * vec4(vertex[index[gl_VertexIndex]], 1.0);
 }

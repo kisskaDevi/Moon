@@ -24,7 +24,6 @@ vec4 ambient(vec4 baseColorTexture, float minAmbientFactor) {
 }
 
 void main() {
-    vec4 position = subpassLoad(inPositionTexture);
     vec4 normal = subpassLoad(inNormalTexture);
     vec4 baseColorTexture = subpassLoad(inBaseColorTexture);
     vec4 emissiveTexture = decodeFromFloat(normal.a);

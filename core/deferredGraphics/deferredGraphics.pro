@@ -5,8 +5,8 @@ WARNINGS += -Wall
 
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
-    $$PWD/workflows \
     $$PWD/renderStages \
+    $$PWD/../workflows \
     $$PWD/../utils \
     $$PWD/../math \
     $$PWD/../interfaces \
@@ -16,38 +16,20 @@ SOURCES += \
     deferredGraphics.cpp \
     renderStages/deferredAttachments.cpp \
     renderStages/link.cpp \
-    workflows/blur.cpp \
-    workflows/layersCombiner.cpp \
-    workflows/postProcessing.cpp \
-    workflows/scattering.cpp \
-    workflows/shadow.cpp \
-    workflows/skybox.cpp \
-    workflows/customFilter.cpp \
-    workflows/ssao.cpp \
-    workflows/sslr.cpp \
-    workflows/workflow.cpp \
     renderStages/source/ambientLighting.cpp \
     renderStages/source/lighting.cpp \
     renderStages/source/lightingPipelines.cpp \
     renderStages/source/base.cpp \
     renderStages/source/extension.cpp \
     renderStages/graphics.cpp \
+    renderStages/layersCombiner.cpp
 
 HEADERS += \
     deferredGraphics.h \
     renderStages/deferredAttachments.h \
     renderStages/link.h \
-    workflows/blur.h \
-    workflows/layersCombiner.h \
-    workflows/postProcessing.h \
-    workflows/scattering.h \
-    workflows/shadow.h \
-    workflows/skybox.h \
-    workflows/customFilter.h \
-    workflows/ssao.h \
-    workflows/sslr.h \
-    workflows/workflow.h \
     renderStages/graphics.h \
+    renderStages/layersCombiner.h
 
 DISTFILES += \
     $$PWD/CMakelists.txt

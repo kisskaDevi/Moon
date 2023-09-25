@@ -1,21 +1,24 @@
-#ifndef SSLR_H
-#define SSLR_H
+#ifndef BLUR_H
+#define BLUR_H
 
 #include "workflow.h"
-#include "deferredAttachments.h"
 
-class camera;
-
-class SSLRGraphics : public workflow
+class gaussianBlur : public workflow
 {
 private:
-    struct SSLR : public workbody{
+    attachments bufferAttachment;
+
+    struct blur : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
-    }sslr;
+
+        uint32_t subpassNumber{0};
+    };
+    blur xblur;
+    blur yblur;
 
 public:
-    SSLRGraphics() = default;
+    gaussianBlur() = default;
     void destroy();
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
@@ -25,9 +28,11 @@ public:
 
     void createDescriptorPool() override;
     void createDescriptorSets() override;
-    void updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments, DeferredAttachments firstLayer);
+    void updateDescriptorSets(attachments* blurAttachment);
 
     void updateCommandBuffer(uint32_t frameNumber) override;
+
+    void createBufferAttachments();
 };
 
-#endif // SSLR_H
+#endif // BLUR_H

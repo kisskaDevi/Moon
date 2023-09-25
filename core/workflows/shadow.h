@@ -17,13 +17,13 @@ private:
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
-        VkDescriptorSetLayout           lightUniformBufferSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout           ObjectDescriptorSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout           PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout           MaterialDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout   lightUniformBufferSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout   MaterialDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>            objects;
-        std::vector<light*>             lightSources;
+        std::vector<object*>    objects;
+        std::vector<light*>     lightSources;
     }shadow;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);

@@ -11,12 +11,12 @@ class skyboxGraphics : public workflow
 {
 private:
     struct Skybox : public workbody{
-        std::filesystem::path           vertShaderPath;
-        std::filesystem::path           fragShaderPath;
+        std::filesystem::path   vertShaderPath;
+        std::filesystem::path   fragShaderPath;
 
-        VkDescriptorSetLayout           ObjectDescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>            objects;
+        std::vector<object*>    objects;
 
         void destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;

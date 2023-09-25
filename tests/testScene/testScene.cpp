@@ -68,7 +68,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     gui->setInstance(app->getInstance());
     app->setGraphics(gui);
 
-    for(auto& [key,graph]: graphics){
+    for(auto& [_,graph]: graphics){
         graph->createCommandPool();
         graph->createEmptyTexture();
         graph->createGraphics();
@@ -93,8 +93,18 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     glfwPollEvents();
 
     ImGuiIO io = ImGui::GetIO();
-    if(!io.WantCaptureMouse)         mouseEvent(frameTime);
-    if(!io.WantCaptureKeyboard)      keyboardEvent(frameTime);
+    if(!io.WantCaptureMouse)    mouseEvent(frameTime);
+    if(!io.WantCaptureKeyboard) keyboardEvent(frameTime);
+
+    // Start the Dear ImGui frame
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()
+    bool showDemoWindow = true;
+    ImGui::ShowDemoWindow(&showDemoWindow);
+
     updates(frameTime);
 
     for(auto& [_,object]: objects){
@@ -436,14 +446,5 @@ void testScene::updates(float frameTime)
     globalTime += frameTime;
 
     skyboxObjects["stars"]->rotate(0.1f*frameTime,normalize(vector<float,3>(1.0f,1.0f,1.0f)));
-
-    // Start the Dear ImGui frame
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    // Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()
-    bool showDemoWindow = true;
-    ImGui::ShowDemoWindow(&showDemoWindow);
 }
 

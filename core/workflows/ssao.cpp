@@ -157,9 +157,14 @@ void SSAOGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &ssao, image.Count);
 }
 
-void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments)
+void SSAOGraphics::updateDescriptorSets(
+    camera* cameraObject,
+    attachments* position,
+    attachments* normal,
+    attachments* image,
+    attachments* depth)
 {
-    for (uint32_t i = 0; i < image.Count; i++)
+    for (uint32_t i = 0; i < this->image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
@@ -168,23 +173,23 @@ void SSAOGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
 
         VkDescriptorImageInfo positionInfo{};
             positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionInfo.imageView = deferredAttachments.GBuffer.position.imageView[i];
-            positionInfo.sampler = deferredAttachments.GBuffer.position.sampler;
+        positionInfo.imageView = position->imageView[i];
+            positionInfo.sampler = position->sampler;
 
         VkDescriptorImageInfo normalInfo{};
             normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalInfo.imageView = deferredAttachments.GBuffer.normal.imageView[i];
-            normalInfo.sampler = deferredAttachments.GBuffer.normal.sampler;
+        normalInfo.imageView = normal->imageView[i];
+            normalInfo.sampler = normal->sampler;
 
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = deferredAttachments.image.imageView[i];
-            imageInfo.sampler = deferredAttachments.image.sampler;
+            imageInfo.imageView = image->imageView[i];
+            imageInfo.sampler = image->sampler;
 
         VkDescriptorImageInfo depthInfo{};
             depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = deferredAttachments.GBuffer.depth.imageView[i];
-            depthInfo.sampler = deferredAttachments.GBuffer.depth.sampler;
+            depthInfo.imageView = depth->imageView[i];
+            depthInfo.sampler = depth->sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

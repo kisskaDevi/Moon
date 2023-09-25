@@ -4,18 +4,18 @@
 #include "workflow.h"
 
 struct CustomFilterPushConst{
-    alignas (4) float               deltax;
-    alignas (4) float               deltay;
+    alignas (4) float   deltax;
+    alignas (4) float   deltay;
 };
 
 class customFilter : public workflow
 {
 private:
-    attachments                         bufferAttachment;
-    attachments*                        srcAttachment{nullptr};
-    float                               blitFactor{0.0f};
-    float                               xSampleStep{1.5f};
-    float                               ySampleStep{1.5f};
+    attachments     bufferAttachment;
+    attachments*    srcAttachment{nullptr};
+    float           blitFactor{0.0f};
+    float           xSampleStep{1.5f};
+    float           ySampleStep{1.5f};
 
     struct Filter : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;

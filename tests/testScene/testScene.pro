@@ -16,11 +16,13 @@ win32: LIBS += \
     -L$$OUT_PWD/../../core/transformational/$$DESTDIR \
     -L$$OUT_PWD/../../core/interfaces/$$DESTDIR \
     -L$$OUT_PWD/../../core/utils/$$DESTDIR \
+    -L$$OUT_PWD/../../core/workflows/$$DESTDIR \
     -L$$PWD/../../dependences/libs/vulkan_runtime/x64 \
     -L$$PWD/../../dependences/libs/glfw/build/src/$$GLFW_BIN_DIR \
     -lgraphicsManager \
     -limguiGraphics\
     -ldeferredGraphics \
+    -lworkflows \
     -lmodels \
     -ltransformational \
     -linterfaces \
@@ -41,7 +43,7 @@ INCLUDEPATH += \
     $$PWD/../../core/graphicsManager \
     $$PWD/../../core/deferredGraphics \
     $$PWD/../../core/deferredGraphics/renderStages \
-    $$PWD/../../core/deferredGraphics/workflows \
+    $$PWD/../../core/workflows \
     $$PWD/../../core/imguiGraphics \
     $$PWD/../../core/utils \
     $$PWD/../../core/transformational \

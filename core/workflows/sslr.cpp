@@ -161,9 +161,18 @@ void SSLRGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &sslr, image.Count);
 }
 
-void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachments deferredAttachments, DeferredAttachments firstLayer)
+void SSLRGraphics::updateDescriptorSets(
+    camera* cameraObject,
+    attachments* position,
+    attachments* normal,
+    attachments* image,
+    attachments* depth,
+    attachments* layerPosition,
+    attachments* layerNormal,
+    attachments* layerImage,
+    attachments* layerDepth)
 {
-    for (uint32_t i = 0; i < image.Count; i++)
+    for (uint32_t i = 0; i < this->image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = cameraObject->getBuffer(i);
@@ -172,43 +181,43 @@ void SSLRGraphics::updateDescriptorSets(camera* cameraObject, DeferredAttachment
 
         VkDescriptorImageInfo positionInfo{};
             positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionInfo.imageView = deferredAttachments.GBuffer.position.imageView[i];
-            positionInfo.sampler = deferredAttachments.GBuffer.position.sampler;
+        positionInfo.imageView = position->imageView[i];
+            positionInfo.sampler = position->sampler;
 
         VkDescriptorImageInfo normalInfo{};
             normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalInfo.imageView = deferredAttachments.GBuffer.normal.imageView[i];
-            normalInfo.sampler = deferredAttachments.GBuffer.normal.sampler;
+            normalInfo.imageView = normal->imageView[i];
+            normalInfo.sampler = normal->sampler;
 
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = deferredAttachments.image.imageView[i];
-            imageInfo.sampler = deferredAttachments.image.sampler;
+            imageInfo.imageView = image->imageView[i];
+            imageInfo.sampler = image->sampler;
 
         VkDescriptorImageInfo depthInfo{};
             depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = deferredAttachments.GBuffer.depth.imageView[i];
-            depthInfo.sampler = deferredAttachments.GBuffer.depth.sampler;
+            depthInfo.imageView = depth->imageView[i];
+            depthInfo.sampler = depth->sampler;
 
         VkDescriptorImageInfo layerPositionInfo{};
             layerPositionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerPositionInfo.imageView = firstLayer.GBuffer.position.imageView[i];
-            layerPositionInfo.sampler = firstLayer.GBuffer.position.sampler;
+            layerPositionInfo.imageView = layerPosition->imageView[i];
+            layerPositionInfo.sampler = layerPosition->sampler;
 
         VkDescriptorImageInfo layerNormalInfo{};
             layerNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerNormalInfo.imageView = firstLayer.GBuffer.normal.imageView[i];
-            layerNormalInfo.sampler = firstLayer.GBuffer.normal.sampler;
+            layerNormalInfo.imageView = layerNormal->imageView[i];
+            layerNormalInfo.sampler = layerNormal->sampler;
 
         VkDescriptorImageInfo layerImageInfo{};
             layerImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerImageInfo.imageView = firstLayer.image.imageView[i];
-            layerImageInfo.sampler = firstLayer.image.sampler;
+            layerImageInfo.imageView = layerImage->imageView[i];
+            layerImageInfo.sampler = layerImage->sampler;
 
         VkDescriptorImageInfo layerDepthInfo{};
             layerDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerDepthInfo.imageView = firstLayer.GBuffer.depth.imageView[i];
-            layerDepthInfo.sampler = firstLayer.GBuffer.depth.sampler;
+            layerDepthInfo.imageView = layerDepth->imageView[i];
+            layerDepthInfo.sampler = layerDepth->sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

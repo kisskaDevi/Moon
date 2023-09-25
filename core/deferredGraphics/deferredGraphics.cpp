@@ -361,10 +361,12 @@ void deferredGraphics::updateDescriptorSets()
         Blur.updateDescriptorSets(&deferredAttachments.blur);
     }
     if(enableSSAO){
-        SSAO.updateDescriptorSets(cameraObject, deferredAttachments);
+        SSAO.updateDescriptorSets(cameraObject, &deferredAttachments.GBuffer.position, &deferredAttachments.GBuffer.normal, &deferredAttachments.image, &deferredAttachments.GBuffer.depth);
     }
     if(enableSSLR){
-        SSLR.updateDescriptorSets(cameraObject,deferredAttachments, enableTransparentLayers ? transparentLayersAttachments[0] : deferredAttachments);
+        auto layer = enableTransparentLayers ? transparentLayersAttachments[0] : deferredAttachments;
+        SSLR.updateDescriptorSets(cameraObject, &deferredAttachments.GBuffer.position, &deferredAttachments.GBuffer.normal, &deferredAttachments.image, &deferredAttachments.GBuffer.depth,
+        &layer.GBuffer.position, &layer.GBuffer.normal, &layer.image, &layer.GBuffer.depth);
     }
     PostProcessing.updateDescriptorSets();
     Link.updateDescriptorSets(&finalAttachment);

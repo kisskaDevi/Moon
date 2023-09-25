@@ -7,18 +7,17 @@ class light;
 class camera;
 
 struct scatteringPushConst{
-    alignas(4) int width{0};
-    alignas(4) int height{0};
+    alignas(4) int  width{0};
+    alignas(4) int  height{0};
 };
 
 class scattering : public workflow
 {
 private:
     struct Lighting : workbody{
-        VkDescriptorSetLayout  BufferDescriptorSetLayoutDictionary;
-        VkDescriptorSetLayout  DescriptorSetLayoutDictionary;
-
-        std::vector<light*> lightSources;
+        VkDescriptorSetLayout   BufferDescriptorSetLayoutDictionary;
+        VkDescriptorSetLayout   DescriptorSetLayoutDictionary;
+        std::vector<light*>     lightSources;
 
         void destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;

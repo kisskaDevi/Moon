@@ -2,6 +2,7 @@ TEMPLATE = subdirs
 
 SUBDIRS += \
     utils \
+    workflows \
     graphicsManager \
     interfaces \
     deferredGraphics \
@@ -13,6 +14,7 @@ SUBDIRS += \
     testPos
 
 utils.subdir = core/utils
+workflows.subdir = core/workflows
 graphicsManager.subdir = core/graphicsManager
 interfaces.subdir = core/interfaces
 deferredGraphics.subdir = core/deferredGraphics
@@ -25,12 +27,13 @@ testPos.subdir = tests/testPos
 
 graphicsManager.depends = utils
 interfaces.depends = utils
-models.depends = utils interfaces
+models.depends = utils interfaces math
 transformational.depends = utils interfaces math
 imguiGraphics.depends = utils graphicsManager
-deferredGraphics.depends = utils interfaces graphicsManager
-testScene.depends = graphicsManager imguiGraphics deferredGraphics models transformational
-testPos.depends = graphicsManager imguiGraphics deferredGraphics models transformational
+workflows.depends = utils interfaces math
+deferredGraphics.depends = utils interfaces workflows graphicsManager math
+testScene.depends = graphicsManager imguiGraphics deferredGraphics models transformational math
+testPos.depends = graphicsManager imguiGraphics deferredGraphics models transformational math
 
 equals(QMAKE_CXX,cl){
     SUBDIRS += \

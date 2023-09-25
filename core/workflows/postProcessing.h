@@ -17,18 +17,18 @@ struct postProcessingPushConst{
 class postProcessingGraphics : public workflow
 {
 private:
-    attachments*                        blurAttachment{nullptr};
-    attachments*                        blitAttachments{nullptr};
-    attachments*                        sslrAttachment{nullptr};
-    attachments*                        ssaoAttachment{nullptr};
-    attachments*                        layersAttachment{nullptr};
+    attachments*    blurAttachment{nullptr};
+    attachments*    blitAttachments{nullptr};
+    attachments*    sslrAttachment{nullptr};
+    attachments*    ssaoAttachment{nullptr};
+    attachments*    layersAttachment{nullptr};
 
     struct PostProcessing : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
-        float                           blitFactor;
-        uint32_t                        blitAttachmentCount;
+        float       blitFactor;
+        uint32_t    blitAttachmentCount;
     }postProcessing;
 
 public:

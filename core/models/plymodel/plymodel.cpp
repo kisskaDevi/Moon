@@ -99,6 +99,23 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
         for(size_t bufferIndex = 0, vertexIndex = 0; bufferIndex < vertices->buffer.size_bytes(); bufferIndex += 3 * sizeof(float), vertexIndex++){
             std::memcpy(&vertexBuffer[vertexIndex].pos, &vertices->buffer.get()[bufferIndex], 3 * sizeof(float));
         }
+        for(uint32_t i = 0; i < vertexBuffer.size(); i++){
+            maxSize = vector<float,3>(
+                std::max(maxSize[0],std::abs(vertexBuffer[i].pos[0])),
+                std::max(maxSize[1],std::abs(vertexBuffer[i].pos[1])),
+                std::max(maxSize[2],std::abs(vertexBuffer[i].pos[2]))
+                );
+            bb.max = vector<float,3>(
+                std::max(bb.max[0],vertexBuffer[i].pos[0]),
+                std::max(bb.max[1],vertexBuffer[i].pos[1]),
+                std::max(bb.max[2],vertexBuffer[i].pos[2])
+            );
+            bb.min = vector<float,3>(
+                std::min(bb.min[0],vertexBuffer[i].pos[0]),
+                std::min(bb.min[1],vertexBuffer[i].pos[1]),
+                std::min(bb.min[2],vertexBuffer[i].pos[2])
+            );
+        }
     }
     if(faces){
         for(size_t bufferIndex = 0, index = 0; bufferIndex < faces->buffer.size_bytes(); bufferIndex += sizeof(uint32_t), index++){
@@ -109,7 +126,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
         for(size_t bufferIndex = 0, vertexIndex = 0; bufferIndex < normals->buffer.size_bytes(); bufferIndex += 3 * sizeof(float), vertexIndex++){
             std::memcpy(&vertexBuffer[vertexIndex].normal, &normals->buffer.get()[bufferIndex], 3 * sizeof(float));
         }
-    } else {
+    } else if(vertices) {
         for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
             const vector<float, 3> n = normalize(cross(
                 vertexBuffer[indexBuffer[i + 1]].pos - vertexBuffer[indexBuffer[i + 0]].pos,
@@ -122,11 +139,6 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
         }
         for(uint32_t i = 0; i < vertexBuffer.size(); i++){
             vertexBuffer[i].normal = normalize(vertexBuffer[i].normal);
-            maxSize = vector<float,3>(
-                std::max(maxSize[0],std::abs(vertexBuffer[i].pos[0])),
-                std::max(maxSize[1],std::abs(vertexBuffer[i].pos[1])),
-                std::max(maxSize[2],std::abs(vertexBuffer[i].pos[2]))
-            );
         }
     }
     if(texcoords){
@@ -262,4 +274,23 @@ void plyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipe
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
-void plyModel::renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {}
+void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {
+
+    std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+    std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
+    nodeDescriptorSets.push_back(uniformBuffer.descriptorSet);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);
+
+    struct {
+        alignas(16) vector<float,3> min;
+        alignas(16) vector<float,3> max;
+    }BB;
+    BB.min = bb.min;
+    BB.max = bb.max;
+
+    std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &BB, sizeof(BB));
+
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
+
+    vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+}

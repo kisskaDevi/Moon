@@ -18,7 +18,6 @@ private:
     buffer vertexStaging, indexStaging;
 
     uint32_t indexCount{0};
-    vector<float,3> maxSize{0.0f};
 
     VkDescriptorSetLayout           nodeDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSetLayout           materialDescriptorSetLayout = VK_NULL_HANDLE;
@@ -38,6 +37,13 @@ private:
         matrix<float,4,4> jointMatrix[MAX_NUM_JOINTS]{};
         float jointcount{0};
     } uniformBlock;
+
+    BoundingBox bb{
+        vector<float,3>(std::numeric_limits<float>::max()),
+        vector<float,3>(std::numeric_limits<float>::min())
+    };
+
+    vector<float,3> maxSize{0.0f};
 
 public:
     plyModel(std::filesystem::path filename,

@@ -160,9 +160,6 @@ namespace {
     };
 }
 
-BoundingBox::BoundingBox(vector<float,3> min, vector<float,3> max)
-    : min(min), max(max), valid(true) {};
-
 gltfModel::gltfModel(std::filesystem::path filename, uint32_t instanceCount)
     : filename(filename){
     instances.resize(instanceCount);

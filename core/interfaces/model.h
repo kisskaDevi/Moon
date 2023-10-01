@@ -7,6 +7,15 @@
 
 class texture;
 
+struct BoundingBox{
+    vector<float,3> min;
+    vector<float,3> max;
+    bool valid{false};
+
+    BoundingBox() = default;
+    BoundingBox(vector<float,3> min, vector<float,3> max);
+};
+
 struct Material {
     enum AlphaMode{ ALPHAMODE_OPAQUE, ALPHAMODE_MASK, ALPHAMODE_BLEND };
     AlphaMode alphaMode = ALPHAMODE_OPAQUE;

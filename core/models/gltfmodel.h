@@ -15,15 +15,6 @@
 
 #define MAX_NUM_JOINTS 128u
 
-struct BoundingBox{
-    vector<float,3> min;
-    vector<float,3> max;
-    bool valid{false};
-
-    BoundingBox() = default;
-    BoundingBox(vector<float,3> min, vector<float,3> max);
-};
-
 struct Mesh{
     struct Primitive{
         uint32_t firstIndex{0};

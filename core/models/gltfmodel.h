@@ -22,7 +22,6 @@ struct BoundingBox{
 
     BoundingBox() = default;
     BoundingBox(vector<float,3> min, vector<float,3> max);
-    BoundingBox getAABB(matrix<float,4,4> m) const;
 };
 
 struct Mesh{
@@ -32,7 +31,7 @@ struct Mesh{
         uint32_t vertexCount{0};
         Material* material{nullptr};
         BoundingBox bb;
-        Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material);
+        Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material, BoundingBox bb);
     };
 
     class UniformBuffer : public buffer {
@@ -65,7 +64,7 @@ struct Node {
     uint32_t index;
     Node* parent{nullptr};
     Mesh* mesh{nullptr};
-    Skin* skin;
+    Skin* skin{nullptr};
 
     std::vector<Node*> children;
 
@@ -110,19 +109,19 @@ private:
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
 
-    VkDescriptorSetLayout           nodeDescriptorSetLayout = VK_NULL_HANDLE;
-    VkDescriptorSetLayout           materialDescriptorSetLayout = VK_NULL_HANDLE;
-    VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSetLayout        nodeDescriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout        materialDescriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorPool             descriptorPool = VK_NULL_HANDLE;
 
     struct instance{
-        std::vector<Node*> nodes;
-        std::vector<Skin*> skins;
-        std::vector<Animation> animations;
+        std::vector<Node*>      nodes;
+        std::vector<Skin*>      skins;
+        std::vector<Animation>  animations;
     };
 
-    std::vector<instance>           instances;
-    std::vector<texture>            textures;
-    std::vector<Material>           materials;
+    std::vector<instance>       instances;
+    std::vector<texture>        textures;
+    std::vector<Material>       materials;
 
     void loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);
     void loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
@@ -154,6 +153,7 @@ public:
     void createDescriptorSet(VkDevice device, texture* emptyTexture) override;
 
     void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
+    void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
 };
 
 #endif // GLTFMODEL_H

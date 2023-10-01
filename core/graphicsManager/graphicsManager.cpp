@@ -78,6 +78,7 @@ VkResult graphicsManager::createDevice()
         deviceFeatures.sampleRateShading = VK_TRUE;
         deviceFeatures.imageCubeArray = VK_TRUE;
         deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
+        deviceFeatures.fillModeNonSolid = VK_TRUE;
 
     device logical(deviceFeatures);
     result = devices[0].createDevice(logical,{{0,2}});

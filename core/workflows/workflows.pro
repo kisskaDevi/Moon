@@ -11,6 +11,7 @@ INCLUDEPATH += \
 
 SOURCES += \
     blur.cpp \
+    boundingBox.cpp \
     postProcessing.cpp \
     scattering.cpp \
     shadow.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
 
 HEADERS += \
     blur.h \
+    boundingBox.h \
     postProcessing.h \
     scattering.h \
     shadow.h \

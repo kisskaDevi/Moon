@@ -257,10 +257,10 @@ vector<float,4>                 baseObject::getOutliningColor()  const          
 
 void                            baseObject::setFirstPrimitive(uint32_t firstPrimitive)      {this->firstPrimitive = firstPrimitive;}
 void                            baseObject::setPrimitiveCount(uint32_t primitiveCount)      {this->primitiveCount = primitiveCount;}
-void                            baseObject::resetPrimitiveCount()                           {primitiveCount=0;}
+void                            baseObject::resetPrimitiveCount()                           {primitiveCount = 0;}
 void                            baseObject::increasePrimitiveCount()                        {primitiveCount++;}
 
-bool                            baseObject::comparePrimitive(uint32_t primitive)            {return primitive>=firstPrimitive&&primitive<firstPrimitive+primitiveCount;}
+bool                            baseObject::comparePrimitive(uint32_t primitive)            {return !(primitive < firstPrimitive) && (primitive < firstPrimitive + primitiveCount);}
 uint32_t                        baseObject::getFirstPrimitive() const                       {return firstPrimitive;}
 uint32_t                        baseObject::getPrimitiveCount() const                       {return primitiveCount;}
 

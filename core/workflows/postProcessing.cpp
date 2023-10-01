@@ -25,6 +25,10 @@ void postProcessingGraphics::setLayersAttachment(attachments* layersAttachment)
 {
     this->layersAttachment = layersAttachment;
 }
+void postProcessingGraphics::setBoundingBoxbAttachment(attachments* boundingBoxbAttachment)
+{
+    this->boundingBoxbAttachment = boundingBoxbAttachment;
+}
 
 void postProcessingGraphics::destroy()
 {
@@ -110,6 +114,7 @@ void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice 
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentCount));
+    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
@@ -198,7 +203,7 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, ima
 }
 
 void postProcessingGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &postProcessing, 0, (postProcessing.blitAttachmentCount + 4) * image.Count, postProcessing.blitAttachmentCount * image.Count);
+    workflow::createDescriptorPool(device, &postProcessing, 0, (postProcessing.blitAttachmentCount + 5) * image.Count, postProcessing.blitAttachmentCount * image.Count);
 }
 
 void postProcessingGraphics::createDescriptorSets(){
@@ -228,6 +233,11 @@ void postProcessingGraphics::updateDescriptorSets()
             ssaoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             ssaoImageInfo.imageView = ssaoAttachment ? ssaoAttachment->imageView[image] : *emptyTexture->getTextureImageView();
             ssaoImageInfo.sampler = ssaoAttachment ? ssaoAttachment->sampler : *emptyTexture->getTextureSampler();
+
+        VkDescriptorImageInfo bbImageInfo;
+            bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            bbImageInfo.imageView = boundingBoxbAttachment ? boundingBoxbAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            bbImageInfo.sampler = boundingBoxbAttachment ? boundingBoxbAttachment->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> blitImageInfo(postProcessing.blitAttachmentCount);
         for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
@@ -277,6 +287,14 @@ void postProcessingGraphics::updateDescriptorSets()
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &ssaoImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &bbImageInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

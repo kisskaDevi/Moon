@@ -27,5 +27,7 @@ glslc.exe linkable/deferredLinkable.vert                        -o ../spv/linkab
 glslc.exe linkable/deferredLinkable.frag                        -o ../spv/linkable/deferredLinkableFrag.spv
 glslc.exe scattering/scattering.vert                            -o ../spv/scattering/scatteringVert.spv
 glslc.exe scattering/scattering.frag                            -o ../spv/scattering/scatteringFrag.spv
+glslc.exe boundingBox/boundingBox.vert                          -o ../spv/boundingBox/boundingBoxVert.spv
+glslc.exe boundingBox/boundingBox.frag                          -o ../spv/boundingBox/boundingBoxFrag.spv
 
 pause

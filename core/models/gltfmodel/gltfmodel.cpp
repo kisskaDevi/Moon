@@ -161,16 +161,10 @@ namespace {
 }
 
 BoundingBox::BoundingBox(vector<float,3> min, vector<float,3> max)
-    : min(min), max(max), valid(true)
-{};
-
-BoundingBox BoundingBox::getAABB(matrix<float,4,4>) const {
-    return BoundingBox();
-}
+    : min(min), max(max), valid(true) {};
 
 gltfModel::gltfModel(std::filesystem::path filename, uint32_t instanceCount)
-    : filename(filename)
-{
+    : filename(filename){
     instances.resize(instanceCount);
 }
 
@@ -519,6 +513,44 @@ void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipe
 void gltfModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t &primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant){
     for (auto node: instances[frameIndex].nodes){
         renderNode(node, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets, primitiveCount, pushConstantSize, pushConstantOffset, pushConstant);
+    }
+}
+
+void renderNodeBB(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant)
+{
+    if (node->mesh)
+    {
+        for (Mesh::Primitive* primitive : node->mesh->primitives)
+        {
+            if(primitive->bb.valid){
+                std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+                std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
+                nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);
+
+                struct {
+                    alignas(16) vector<float,3> min;
+                    alignas(16) vector<float,3> max;
+                }BB;
+                BB.min = primitive->bb.min;
+                BB.max = primitive->bb.max;
+
+                std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &BB, sizeof(BB));
+
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
+
+                vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+            }
+        }
+    }
+    for (auto child : node->children){
+        renderNodeBB(child, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets, primitiveCount, pushConstantSize, pushConstantOffset, pushConstant);
+    }
+}
+
+void gltfModel::renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t &primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant){
+    for (auto node: instances[frameIndex].nodes){
+        renderNodeBB(node, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets, primitiveCount, pushConstantSize, pushConstantOffset, pushConstant);
     }
 }
 

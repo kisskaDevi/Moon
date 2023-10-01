@@ -71,9 +71,7 @@ Node* gltfModel::nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes)
 void Node::destroy(VkDevice device)
 {
     if (mesh) {
-        mesh->destroy(device);
-        delete mesh;
-        mesh = nullptr;
+        mesh->destroy(device); delete mesh; mesh = nullptr;
     }
     for (auto& child : children) {
         child->destroy(device);
@@ -81,8 +79,8 @@ void Node::destroy(VkDevice device)
     }
 }
 
-Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material)
-    : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material)
+Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material, BoundingBox bb)
+    : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material), bb(bb)
 {}
 
 Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> matrix)
@@ -164,25 +162,27 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
         }
     }
 
-    for (size_t i = 0; i < model.nodes[nodeIndex].children.size(); i++) {
-        loadNode(instance, physicalDevice, device, newNode, model.nodes[nodeIndex].children[i], model, indexStart);
+    for (const auto& children: model.nodes[nodeIndex].children) {
+        loadNode(instance, physicalDevice, device, newNode, children, model, indexStart);
     }
 
     if (model.nodes[nodeIndex].mesh > -1) {
-        const tinygltf::Mesh mesh = model.meshes[model.nodes[nodeIndex].mesh];
-        Mesh* newMesh = new Mesh(physicalDevice,device,newNode->matrix);
-        newNode->mesh = newMesh;
-        for (const tinygltf::Primitive &primitive: mesh.primitives)
+        newNode->mesh = new Mesh(physicalDevice,device,newNode->matrix);
+        for (const tinygltf::Primitive &primitive: model.meshes[model.nodes[nodeIndex].mesh].primitives)
         {
             const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 
             uint32_t indexCount = primitive.indices > -1 ? static_cast<uint32_t>(model.accessors[primitive.indices > -1 ? primitive.indices : 0].count) : 0;
             uint32_t vertexCount = static_cast<uint32_t>(posAccessor.count);
 
-            Mesh::Primitive* newPrimitive = new Mesh::Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? &materials[primitive.material] : &materials.back());
-            newPrimitive->bb = BoundingBox( vector<float,3>(static_cast<float>(posAccessor.minValues[0]), static_cast<float>(posAccessor.minValues[1]), static_cast<float>(posAccessor.minValues[2])),
-                                            vector<float,3>(static_cast<float>(posAccessor.maxValues[0]), static_cast<float>(posAccessor.maxValues[1]), static_cast<float>(posAccessor.maxValues[2])));
-            newMesh->primitives.push_back(newPrimitive);
+            newNode->mesh->primitives.push_back(
+                new Mesh::Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? &materials[primitive.material] : &materials.back(),
+                    BoundingBox(
+                        vector<float,3>(static_cast<float>(posAccessor.minValues[0]), static_cast<float>(posAccessor.minValues[1]), static_cast<float>(posAccessor.minValues[2])),
+                        vector<float,3>(static_cast<float>(posAccessor.maxValues[0]), static_cast<float>(posAccessor.maxValues[1]), static_cast<float>(posAccessor.maxValues[2]))
+                    )
+                )
+            );
 
             if (primitive.indices > -1){
                 indexStart += static_cast<uint32_t>(model.accessors[primitive.indices > -1 ? primitive.indices : 0].count);
@@ -198,8 +198,8 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
 
 void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer)
 {
-    for (size_t i = 0; i < node.children.size(); i++) {
-        loadVertexBuffer(model.nodes[node.children[i]], model, indexBuffer, vertexBuffer);
+    for (const auto& children: node.children) {
+        loadVertexBuffer(model.nodes[children], model, indexBuffer, vertexBuffer);
     }
 
     if (node.mesh > -1) {

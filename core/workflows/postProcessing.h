@@ -22,6 +22,7 @@ private:
     attachments*    sslrAttachment{nullptr};
     attachments*    ssaoAttachment{nullptr};
     attachments*    layersAttachment{nullptr};
+    attachments*    boundingBoxbAttachment{nullptr};
 
     struct PostProcessing : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
@@ -52,6 +53,7 @@ public:
     void setSSLRAttachment(attachments* sslrAttachment);
     void setSSAOAttachment(attachments* ssaoAttachment);
     void setLayersAttachment(attachments* layersAttachment);
+    void setBoundingBoxbAttachment(attachments* boundingBoxbAttachment);
 };
 
 #endif // POSTPROCESSING_H

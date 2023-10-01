@@ -9,6 +9,7 @@ layout(set = 0, binding = 1) uniform sampler2D blurSampler;
 layout(set = 0, binding = 2) uniform sampler2D bloomSampler[bloomCount];
 layout(set = 0, binding = 3) uniform sampler2D sslrSampler;
 layout(set = 0, binding = 4) uniform sampler2D ssaoSampler;
+layout(set = 0, binding = 5) uniform sampler2D bbSampler;
 
 //vec4 colorBloomFactor[bloomCount] = vec4[](
 //    vec4(1.0f,0.0f,0.0f,1.0f),
@@ -89,5 +90,6 @@ void main() {
     outColor += texture(blurSampler,fragTexCoord);
     outColor += bloom();
     outColor += texture(sslrSampler,fragTexCoord);
+    outColor += texture(bbSampler,fragTexCoord);
     //outColor += vec4(texture(ssaoSampler,fragTexCoord).xyz,0.0f);
 }

@@ -27,6 +27,7 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     Blur.setShadersPath(shadersPath);
     Scattering.setShadersPath(shadersPath);
     Shadow.setShadersPath(shadersPath);
+    BoundingBox.setShadersPath(shadersPath);
 
     TransparentLayers.resize(TransparentLayersCount);
     for(auto& layer: TransparentLayers){
@@ -62,6 +63,7 @@ void deferredGraphics::freeCommandBuffers()
     SSAO.freeCommandBuffer(commandPool);
     SSLR.freeCommandBuffer(commandPool);
     Scattering.freeCommandBuffer(commandPool);
+    BoundingBox.freeCommandBuffer(commandPool);
     DeferredGraphics.freeCommandBuffer(commandPool);
     for(auto& layer: TransparentLayers){
         layer.freeCommandBuffer(commandPool);
@@ -88,6 +90,7 @@ void deferredGraphics::destroyGraphics()
     LayersCombiner.destroy();
     Blur.destroy();
     Scattering.destroy();
+    BoundingBox.destroy();
     for(auto& layer: TransparentLayers){
         layer.destroy();
     }
@@ -130,6 +133,9 @@ void deferredGraphics::destroyGraphics()
     finalAttachment.deleteAttachment(device.getLogical());
     finalAttachment.deleteSampler(device.getLogical());
 
+    boundingBoxAttachment.deleteAttachment(device.getLogical());
+    boundingBoxAttachment.deleteSampler(device.getLogical());
+
     for (auto& buffer: storageBuffersHost){
         buffer.destroy(device.getLogical());
     }
@@ -158,6 +164,7 @@ void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices
     LayersCombiner.setDeviceProp(device.instance, device.getLogical());
     Blur.setDeviceProp(device.instance, device.getLogical());
     Scattering.setDeviceProp(device.instance, device.getLogical());
+    BoundingBox.setDeviceProp(device.instance, device.getLogical());
     for(auto& layer: TransparentLayers){
         layer.setDeviceProp(device.instance, device.getLogical());
     }
@@ -234,6 +241,7 @@ void deferredGraphics::createGraphicsPasses()
     SSAO.setImageProp(&info);
     Skybox.setImageProp(&info);
     Scattering.setImageProp(&info);
+    BoundingBox.setImageProp(&info);
     for(auto& layer: TransparentLayers){
         layer.setImageProp(&info);
     }
@@ -302,6 +310,12 @@ void deferredGraphics::createGraphicsPasses()
         Shadow.createPipelines();
     }
 
+    if(enableBoundingBox){
+        BoundingBox.createAttachments(1,&boundingBoxAttachment);
+        fastCreateFilterGraphics(&BoundingBox,1,&boundingBoxAttachment);
+        PostProcessing.setBoundingBoxbAttachment(&boundingBoxAttachment);
+    }
+
     PostProcessing.setLayersAttachment(enableTransparentLayers ? &layersCombinedAttachment[0] : &deferredAttachments.image);
     PostProcessing.createAttachments(1,&finalAttachment);
     fastCreateFilterGraphics(&PostProcessing,1,&finalAttachment);
@@ -368,6 +382,9 @@ void deferredGraphics::updateDescriptorSets()
         SSLR.updateDescriptorSets(cameraObject, &deferredAttachments.GBuffer.position, &deferredAttachments.GBuffer.normal, &deferredAttachments.image, &deferredAttachments.GBuffer.depth,
         &layer.GBuffer.position, &layer.GBuffer.normal, &layer.image, &layer.GBuffer.depth);
     }
+    if(enableBoundingBox){
+        BoundingBox.updateDescriptorSets(cameraObject);
+    }
     PostProcessing.updateDescriptorSets();
     Link.updateDescriptorSets(&finalAttachment);
 }
@@ -388,6 +405,7 @@ void deferredGraphics::createCommandBuffers()
     Scattering.createCommandBuffers(commandPool);
     LayersCombiner.createCommandBuffers(commandPool);
     Filter.createCommandBuffers(commandPool);
+    BoundingBox.createCommandBuffers(commandPool);
     PostProcessing.createCommandBuffers(commandPool);
 
     copyCommandBuffers.resize(imageCount);
@@ -440,7 +458,7 @@ void deferredGraphics::createCommandBuffers()
         }, new node({
             stage(  {SSLR.getCommandBuffer(imageIndex), SSAO.getCommandBuffer(imageIndex),
                      Filter.getCommandBuffer(imageIndex), Blur.getCommandBuffer(imageIndex),
-                     PostProcessing.getCommandBuffer(imageIndex)},
+                     BoundingBox.getCommandBuffer(imageIndex), PostProcessing.getCommandBuffer(imageIndex)},
                     {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
                     device.getQueue(0,0))
         }, nullptr))))));
@@ -528,6 +546,10 @@ void deferredGraphics::updateCommandBuffer(uint32_t imageIndex)
         Filter.beginCommandBuffer(imageIndex);
             if(enableBloom){ Filter.updateCommandBuffer(imageIndex);}
         Filter.endCommandBuffer(imageIndex);
+
+        BoundingBox.beginCommandBuffer(imageIndex);
+            if(enableBoundingBox){ BoundingBox.updateCommandBuffer(imageIndex);}
+        BoundingBox.endCommandBuffer(imageIndex);
 
         PostProcessing.beginCommandBuffer(imageIndex);
             PostProcessing.updateCommandBuffer(imageIndex);
@@ -630,6 +652,7 @@ void deferredGraphics::createEmptyTexture()
     if(enableScattering)    Scattering.setEmptyTexture(emptyTextureBlack);
     if(enableSSLR)          SSLR.setEmptyTexture(emptyTextureBlack);
     if(enableShadow)        Shadow.setEmptyTexture(emptyTextureBlack);
+    if(enableBoundingBox)   BoundingBox.setEmptyTexture(emptyTextureBlack);
 }
 
 void deferredGraphics::createModel(model *pModel)
@@ -753,6 +776,7 @@ void deferredGraphics::bindObject(object* object, bool create)
             for(auto& layer: TransparentLayers){
                 layer.bindBaseObject(object);
             }
+            BoundingBox.bindObject(object);
             break;
         case (0<<4)|0x1:
             Skybox.bindObject(object);
@@ -773,7 +797,7 @@ bool deferredGraphics::removeObject(object* object){
     switch (object->getPipelineBitMask()) {
         case (0<<4)|0x0:
         case (1<<4)|0x0:
-            res = res && Shadow.removeBaseObject(object) && DeferredGraphics.removeBaseObject(object);
+            res = res && Shadow.removeBaseObject(object) && DeferredGraphics.removeBaseObject(object) && BoundingBox.removeObject(object);
             for(auto& layer: TransparentLayers){
                 res = res && layer.removeBaseObject(object);
             }
@@ -815,3 +839,4 @@ deferredGraphics& deferredGraphics::setEnableSSLR(bool enable)              {ena
 deferredGraphics& deferredGraphics::setEnableSSAO(bool enable)              {enableSSAO = enable; return *this;}
 deferredGraphics& deferredGraphics::setEnableScattering(bool enable)        {enableScattering = enable; return *this;}
 deferredGraphics& deferredGraphics::setEnableShadow(bool enable)            {enableShadow = enable; return *this;}
+deferredGraphics& deferredGraphics::setEnableBoundingBox(bool enable)       {enableBoundingBox = enable; return *this;}

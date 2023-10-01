@@ -243,7 +243,7 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
             object->resetPrimitiveCount();
             object->setFirstPrimitive(primitiveCount);
 
-            std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber],object->getDescriptorSet()[frameNumber]};
+            std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
 
             struct PushConstBlock{
                 float transparencyPass;

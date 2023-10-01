@@ -19,9 +19,8 @@ layout (set = 1, binding = 0) uniform LocalUniformBuffer
 } local;
 
 layout(location = 0)	out vec3 outUVW;
-layout(location = 1)	out float depth;
-layout(location = 2)	out vec4 constColor;
-layout(location = 3)	out vec4 colorFactor;
+layout(location = 1)	out vec4 constColor;
+layout(location = 2)	out vec4 colorFactor;
 
 vec3 vertex[36] = vec3[](
     vec3(-1.0f,-1.0f,-1.0f),
@@ -75,6 +74,4 @@ void main()
     vec3 Position = vertex[gl_VertexIndex];
     outUVW = vec4(vec4(Position,1.0f)).xyz;
     gl_Position = camera.proj * camera.view * cameraModel * local.matrix * vec4(Position,1.0f);
-
-    depth = gl_Position.z;
 }

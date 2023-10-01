@@ -1,7 +1,6 @@
 #version 450
 
 #include "../__methods__/defines.glsl"
-#define MAX_NUM_JOINTS 128
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
@@ -67,7 +66,7 @@ void main()
     mat4x4 model = local.matrix * node.matrix * skinMat;
 
     outPosition  = model * vec4(inPosition,	1.0);
-    outNormal	 = normalize(vec3(inverse(transpose(model)) * vec4(inNormal,	0.0)));
+    outNormal	 = normalize(vec3(transpose(inverse(model)) * vec4(inNormal,	0.0)));
     outTangent	 = normalize(vec3(model * vec4(inTangent,	0.0)));
     outBitangent = normalize(vec3(model * vec4(inBitangent,	0.0)));
 

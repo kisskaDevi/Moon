@@ -14,6 +14,8 @@
 #include "scattering.h"
 #include "skybox.h"
 #include "shadow.h"
+#include "boundingBox.h"
+
 #include "device.h"
 #include "buffer.h"
 
@@ -54,6 +56,7 @@ private:
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
     attachments                                 scatteringAttachment;
+    attachments                                 boundingBoxAttachment;
     std::vector<attachments>                    skyboxAttachment;
     std::vector<attachments>                    blitAttachments;
     std::vector<attachments>                    layersCombinedAttachment;
@@ -69,6 +72,8 @@ private:
     layersCombiner                              LayersCombiner;
     scattering                                  Scattering;
     postProcessingGraphics                      PostProcessing;
+    boundingBoxGraphics                         BoundingBox;
+
     link                                        Link;
     std::vector<graphics>                       TransparentLayers;
 
@@ -80,6 +85,7 @@ private:
     bool                                        enableSSAO{false};
     bool                                        enableScattering{false};
     bool                                        enableShadow{false};
+    bool                                        enableBoundingBox{false};
 
     std::vector<buffer>                         storageBuffersHost;
 
@@ -155,6 +161,7 @@ public:
     deferredGraphics& setEnableSSAO(bool enable);
     deferredGraphics& setEnableScattering(bool enable);
     deferredGraphics& setEnableShadow(bool enable);
+    deferredGraphics& setEnableBoundingBox(bool enable);
 };
 
 #endif // DEFERREDGRAPHICS_H

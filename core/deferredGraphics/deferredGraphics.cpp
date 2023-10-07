@@ -534,7 +534,7 @@ void deferredGraphics::updateCommandBuffer(uint32_t imageIndex)
                 LayersCombiner.updateCommandBuffer(imageIndex);
             } else {
                 Texture::transitionLayout( LayersCombiner.getCommandBuffer(imageIndex),
-                                           deferredAttachments.bloom.image[imageIndex],
+                                           deferredAttachments.bloom.instances[imageIndex].image,
                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                            VK_REMAINING_MIP_LEVELS,
@@ -590,6 +590,7 @@ void deferredGraphics::createStorageBuffers(uint32_t imageCount)
                         &buffer.instance,
                         &buffer.memory);
         vkMapMemory(device.getLogical(), buffer.memory, 0, sizeof(StorageBufferObject), 0, &buffer.map);
+        Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", deferredGraphics::createStorageBuffers, storageBuffersHost " + std::to_string(&buffer - &storageBuffersHost[0]));
     }
 }
 

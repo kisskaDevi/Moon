@@ -66,7 +66,7 @@ void SSLRGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->imageView[i];
+            framebufferInfo.pAttachments = &pAttachments->instances[i].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -181,42 +181,42 @@ void SSLRGraphics::updateDescriptorSets(
 
         VkDescriptorImageInfo positionInfo{};
             positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        positionInfo.imageView = position->imageView[i];
+            positionInfo.imageView = position->instances[i].imageView;
             positionInfo.sampler = position->sampler;
 
         VkDescriptorImageInfo normalInfo{};
             normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalInfo.imageView = normal->imageView[i];
+            normalInfo.imageView = normal->instances[i].imageView;
             normalInfo.sampler = normal->sampler;
 
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = image->imageView[i];
+            imageInfo.imageView = image->instances[i].imageView;
             imageInfo.sampler = image->sampler;
 
         VkDescriptorImageInfo depthInfo{};
             depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = depth->imageView[i];
+            depthInfo.imageView = depth->instances[i].imageView;
             depthInfo.sampler = depth->sampler;
 
         VkDescriptorImageInfo layerPositionInfo{};
             layerPositionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerPositionInfo.imageView = layerPosition->imageView[i];
+            layerPositionInfo.imageView = layerPosition->instances[i].imageView;
             layerPositionInfo.sampler = layerPosition->sampler;
 
         VkDescriptorImageInfo layerNormalInfo{};
             layerNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerNormalInfo.imageView = layerNormal->imageView[i];
+            layerNormalInfo.imageView = layerNormal->instances[i].imageView;
             layerNormalInfo.sampler = layerNormal->sampler;
 
         VkDescriptorImageInfo layerImageInfo{};
             layerImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerImageInfo.imageView = layerImage->imageView[i];
+            layerImageInfo.imageView = layerImage->instances[i].imageView;
             layerImageInfo.sampler = layerImage->sampler;
 
         VkDescriptorImageInfo layerDepthInfo{};
             layerDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerDepthInfo.imageView = layerDepth->imageView[i];
+            layerDepthInfo.imageView = layerDepth->instances[i].imageView;
             layerDepthInfo.sampler = layerDepth->sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

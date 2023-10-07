@@ -5,18 +5,14 @@
 
 attachments::attachments(const attachments &other)
 {
-    std::copy(other.image.begin(), other.image.end(), std::back_inserter(image));
-    std::copy(other.imageMemory.begin(), other.imageMemory.end(), std::back_inserter(imageMemory));
-    std::copy(other.imageView.begin(), other.imageView.end(), std::back_inserter(imageView));
+    std::copy(other.instances.begin(), other.instances.end(), std::back_inserter(instances));
     sampler = other.sampler;
     format = other.format;
 }
 
 attachments& attachments::operator=(const attachments& other)
 {
-    std::copy(other.image.begin(), other.image.end(), std::back_inserter(image));
-    std::copy(other.imageMemory.begin(), other.imageMemory.end(), std::back_inserter(imageMemory));
-    std::copy(other.imageView.begin(), other.imageView.end(), std::back_inserter(imageView));
+    std::copy(other.instances.begin(), other.instances.end(), std::back_inserter(instances));
     sampler = other.sampler;
     format = other.format;
 
@@ -27,17 +23,12 @@ VkResult attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, V
 {
     VkResult result = VK_SUCCESS;
 
-    image.resize(count);
-    imageMemory.resize(count);
-    imageView.resize(count);
+    instances.resize(count);
 
     this->format = format;
     clearValue.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
 
-    auto instance = image.begin();
-    auto memory = imageMemory.begin();
-    auto view = imageView.begin();
-    for(; instance != image.end() || memory != imageMemory.end() || view != imageView.end(); instance++, memory++, view++){
+    for(auto& instance : instances){
         result = Texture::create(   physicalDevice,
                                     device,
                                     0,
@@ -49,9 +40,11 @@ VkResult attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, V
                                     VK_IMAGE_LAYOUT_UNDEFINED,
                                     usage,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    &(*instance),
-                                    &(*memory));
+                                    &(instance.image),
+                                    &(instance.imageMemory));
         debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
+
+        Memory::nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
 
         result = Texture::createView(   device,
                                         VK_IMAGE_VIEW_TYPE_2D,
@@ -60,8 +53,8 @@ VkResult attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, V
                                         1,
                                         0,
                                         1,
-                                        *instance,
-                                        &(*view));
+                                        instance.image,
+                                        &(instance.imageView));
         debug::checkResult(result, "VkImageView : Texture::createView result = " + std::to_string(result));
     }
     return result;
@@ -71,17 +64,12 @@ VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
 {
     VkResult result = VK_SUCCESS;
 
-    image.resize(count);
-    imageMemory.resize(count);
-    imageView.resize(count);
+    instances.resize(count);
 
     this->format = format;
     clearValue.depthStencil = {1.0f, 0};
 
-    auto instance = image.begin();
-    auto memory = imageMemory.begin();
-    auto view = imageView.begin();
-    for(; instance != image.end() || memory != imageMemory.end() || view != imageView.end(); instance++, memory++, view++){
+    for(auto& instance : instances){
         result = Texture::create(   physicalDevice,
                                     device,
                                     0,
@@ -93,9 +81,11 @@ VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
                                     VK_IMAGE_LAYOUT_UNDEFINED,
                                     usage,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    &(*instance),
-                                    &(*memory));
+                                    &(instance.image),
+                                    &(instance.imageMemory));
         debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
+
+        Memory::nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, instance " + std::to_string(&instance - &instances[0]));
 
         result = Texture::createView(   device,
                                         VK_IMAGE_VIEW_TYPE_2D,
@@ -104,8 +94,8 @@ VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
                                         1,
                                         0,
                                         1,
-                                        *instance,
-                                        &(*view));
+                                        instance.image,
+                                        &(instance.imageView));
         debug::checkResult(result, "VkImageView : Texture::createView result = " + std::to_string(result));
     }
     return result;
@@ -113,17 +103,20 @@ VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
 
 void attachments::deleteAttachment(VkDevice device)
 {
-    std::for_each(image.begin(), image.end(), [&device](VkImage& image){ vkDestroyImage(device, image, nullptr); image = VK_NULL_HANDLE;});
-    std::for_each(imageMemory.begin(), imageMemory.end(), [&device](VkDeviceMemory& memory){ vkFreeMemory(device, memory, nullptr); memory = VK_NULL_HANDLE;});
-    std::for_each(imageView.begin(), imageView.end(), [&device](VkImageView& view){ vkDestroyImageView(device, view, nullptr); view = VK_NULL_HANDLE;});
-    image.clear();
-    imageMemory.clear();
-    imageView.clear();
+    std::for_each(instances.begin(), instances.end(), [&device](attachment& instance){
+        Texture::destroy(device, instance.image, instance.imageMemory);
+        vkDestroyImageView(device, instance.imageView, nullptr);
+        instance.imageView = VK_NULL_HANDLE;
+    });
+    instances.clear();
 }
 
 void attachments::deleteSampler(VkDevice device)
 {
-    if(sampler){ vkDestroySampler(device,sampler,nullptr); sampler = VK_NULL_HANDLE;}
+    if(sampler){
+        vkDestroySampler(device,sampler,nullptr);
+        sampler = VK_NULL_HANDLE;
+    }
 }
 
 VkAttachmentDescription attachments::imageDescription(VkFormat format)
@@ -180,4 +173,12 @@ VkAttachmentDescription attachments::depthStencilDescription(VkFormat format)
         description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     return description;
+}
+
+std::vector<VkImage> attachments::getImages() const {
+    std::vector<VkImage> images;
+    for (auto& instance: instances){
+        images.push_back(instance.image);
+    }
+    return images;
 }

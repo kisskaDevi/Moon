@@ -1,14 +1,12 @@
 #include "operations.h"
 #include <glfw3.h>
 
-#include <unordered_map>
 #include <set>
 #include <utility>
 #include <fstream>
 #include <algorithm>
 #include <iostream>
 #include <string.h>
-
 
 VkResult debug::errorResult(const std::string& message){
 #ifndef NDEBUG
@@ -38,6 +36,50 @@ bool debug::checkResult(bool result, std::string message){
 #endif
     }
     return result;
+}
+
+uint64_t Memory::totalMemoryUsed = 0;
+std::vector<VkDeviceMemory> Memory::memoryKeys = {};
+std::unordered_map<VkDeviceMemory, Memory::Description> Memory::memoryMap = {};
+std::unordered_map<VkDeviceMemory, std::string> Memory::nameMap = {};
+
+VkResult Memory::allocate(VkPhysicalDevice physicalDevice, VkDevice device, VkMemoryRequirements requirements, VkMemoryPropertyFlags properties, VkDeviceMemory* memory)
+{
+    VkMemoryAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = requirements.size;
+        allocInfo.memoryTypeIndex = PhysicalDevice::findMemoryTypeIndex(physicalDevice, requirements.memoryTypeBits, properties);
+    VkResult result = vkAllocateMemory(device, &allocInfo, nullptr, memory);
+
+    memoryMap[*memory] = Description{requirements.alignment, requirements.size};
+    memoryKeys.push_back(*memory);
+    totalMemoryUsed += requirements.alignment + requirements.size;
+
+    return result;
+}
+
+void Memory::nameMemory(VkDeviceMemory memory, const std::string& name)
+{
+    nameMap[memory] = name;
+}
+
+void Memory::free(VkDeviceMemory memory)
+{
+    totalMemoryUsed -= memoryMap[memory].alignment + memoryMap[memory].size;
+    memoryMap.erase(memory);
+    nameMap.erase(memory);
+    memoryKeys.erase(std::remove(memoryKeys.begin(), memoryKeys.end(), memory), memoryKeys.end());
+}
+
+void Memory::status()
+{
+    for(const auto& memory : memoryKeys){
+        std::cout << nameMap[memory] << std::endl;
+        std::cout << memory << "\t" << memoryMap[memory].alignment << "\t" << memoryMap[memory].size << std::endl << std::endl;
+    }
+
+    std::cout << "Total allocations : " << memoryMap.size() << std::endl;
+    std::cout << "Total memory used : " << totalMemoryUsed << std::endl;
 }
 
 #define ONLYDEVICELOCALHEAP
@@ -292,14 +334,11 @@ VkResult Buffer::create(VkPhysicalDevice physicalDevice, VkDevice device, VkDevi
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
 
-    VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memoryRequirements.size;
-        allocInfo.memoryTypeIndex = PhysicalDevice::findMemoryTypeIndex(physicalDevice, memoryRequirements.memoryTypeBits, properties);
-    result = vkAllocateMemory(device, &allocInfo, nullptr, bufferMemory);
+    result = Memory::allocate(physicalDevice, device, memoryRequirements, properties, bufferMemory);
     debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
 
-    vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
+    result = vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
+    debug::checkResult(result, "VkImage : vkBindBufferMemory result = " + std::to_string(result));
 
     return result;
 }
@@ -309,6 +348,19 @@ void Buffer::copy(VkCommandBuffer commandBuffer, VkDeviceSize size, VkBuffer src
     VkBufferCopy copyRegion{};
         copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+}
+
+void Buffer::destroy(VkDevice device, VkBuffer& buffer, VkDeviceMemory& memory)
+{
+    if(buffer){
+        vkDestroyBuffer(device, buffer, nullptr);
+        buffer = VK_NULL_HANDLE;
+    }
+    if(memory){
+        Memory::free(memory);
+        vkFreeMemory(device, memory, nullptr);
+        memory = VK_NULL_HANDLE;
+    }
 }
 
 VkCommandBuffer SingleCommandBuffer::create(VkDevice device, VkCommandPool commandPool)
@@ -414,17 +466,26 @@ VkResult Texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkIma
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device, *image, &memRequirements);
 
-    VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = PhysicalDevice::findMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits, properties);
-    result = vkAllocateMemory(device, &allocInfo, nullptr, imageMemory);
+    result = Memory::allocate(physicalDevice, device, memRequirements, properties, imageMemory);
     debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
 
     result = vkBindImageMemory(device, *image, *imageMemory, 0);
     debug::checkResult(result, "VkImage : vkBindImageMemory result = " + std::to_string(result));
 
     return result;
+}
+
+void Texture::destroy(VkDevice device, VkImage& image, VkDeviceMemory& memory)
+{
+    if(image){
+        vkDestroyImage(device, image, nullptr);
+        image = VK_NULL_HANDLE;
+    }
+    if(memory){
+        Memory::free(memory);
+        vkFreeMemory(device, memory, nullptr);
+        memory = VK_NULL_HANDLE;
+    }
 }
 
 VkResult Texture::createView(VkDevice device, VkImageViewType type, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t baseArrayLayer, uint32_t layerCount, VkImage image, VkImageView* imageView)

@@ -23,7 +23,7 @@ private:
     VkSurfaceKHR        surface{VK_NULL_HANDLE};
 
 public:
-    swapChain();
+    swapChain() = default;
     void destroy();
 
     VkResult create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);

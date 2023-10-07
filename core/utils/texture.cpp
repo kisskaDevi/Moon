@@ -9,8 +9,7 @@
 
 void iamge::destroy(VkDevice device){
     destroyStagingBuffer(device);
-    if(textureImage)        {vkDestroyImage(device, textureImage, nullptr); textureImage = VK_NULL_HANDLE;}
-    if(textureImageMemory)  {vkFreeMemory(device, textureImageMemory, nullptr); textureImageMemory = VK_NULL_HANDLE;}
+    Texture::destroy(device, textureImage, textureImageMemory);
     if(textureImageView)    {vkDestroyImageView(device, textureImageView, nullptr); textureImageView = VK_NULL_HANDLE;}
     if(textureSampler)      {vkDestroySampler(device,textureSampler,nullptr); textureSampler = VK_NULL_HANDLE;}
 }
@@ -38,6 +37,7 @@ VkResult iamge::create(
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
     Buffer::create(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
+    Memory::nameMemory(stagingBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", iamge::create, stagingBuffer");
 
     for(uint32_t i = 0, singleImageSize = static_cast<uint32_t>(imageSize/imageCount); i< imageCount; i++)
     {
@@ -62,6 +62,8 @@ VkResult iamge::create(
                                 &textureImage,
                                 &textureImageMemory);
     debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
+
+    Memory::nameMemory(textureImageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, textureImageMemory");
 
     Texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
     Texture::copyFromBuffer(commandBuffer, stagingBuffer.instance, textureImage, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),1},imageCount);

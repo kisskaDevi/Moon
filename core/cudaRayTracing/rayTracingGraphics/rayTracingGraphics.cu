@@ -225,9 +225,9 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
     std::memcpy(stagingBuffer.map, hostFrameBuffer, sizeof(uint32_t) * width * height);
 
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device->getLogical(),commandPool);
-    Texture::transitionLayout(commandBuffer, finalAttachment.image[imageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
-    Texture::copyFromBuffer(commandBuffer, stagingBuffer.instance, finalAttachment.image[imageIndex], {width, height, 1}, 1);
-    Texture::transitionLayout(commandBuffer, finalAttachment.image[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
+    Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
+    Texture::copyFromBuffer(commandBuffer, stagingBuffer.instance, finalAttachment.instances[imageIndex].image, {width, height, 1}, 1);
+    Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
     SingleCommandBuffer::submit(device->getLogical(),device->getQueue(0,0),commandPool, &commandBuffer);
 
     return std::vector<std::vector<VkSemaphore>>();

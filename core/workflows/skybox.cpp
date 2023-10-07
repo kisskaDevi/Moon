@@ -75,7 +75,7 @@ void skyboxGraphics::createFramebuffers()
     for(size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> pAttachments(attachmentsCount);
         for(auto& pAttachment: pAttachments){
-            pAttachment = this->pAttachments[&pAttachment - &pAttachments[0]].imageView[i];
+            pAttachment = this->pAttachments[&pAttachment - &pAttachments[0]].instances[i].imageView;
         }
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

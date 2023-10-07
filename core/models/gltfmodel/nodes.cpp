@@ -94,6 +94,8 @@ Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> m
                     &uniformBuffer.instance,
                     &uniformBuffer.memory);
     vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map);
+
+    Memory::nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Mesh::Mesh, uniformBuffer");
 };
 
 void Mesh::destroy(VkDevice device){

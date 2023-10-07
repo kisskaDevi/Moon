@@ -199,7 +199,7 @@ void graphicsManager::destroyLinker()
     linker.destroy();
 }
 
-void graphicsManager::destroy()
+void graphicsManager::destroySyncObjects()
 {
     for (size_t imageIndex = 0; imageIndex < swapChainKHR.getImageCount(); imageIndex++){
         vkDestroySemaphore(devices[0].getLogical(), availableSemaphores[imageIndex], nullptr);
@@ -207,7 +207,10 @@ void graphicsManager::destroy()
     }
     availableSemaphores.clear();
     fences.clear();
+}
 
+void graphicsManager::destroy()
+{
     if(devices[0].getLogical())                     {vkDestroyDevice(devices[0].getLogical(), nullptr); devices[0].getLogical() = VK_NULL_HANDLE;}
     if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
     if(surface)                                     {vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}

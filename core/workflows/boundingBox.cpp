@@ -71,7 +71,7 @@ void boundingBoxGraphics::createRenderPass(){
 void boundingBoxGraphics::createFramebuffers(){
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
-        std::vector<VkImageView> pAttachments = {this->pAttachments->imageView[i]};
+        std::vector<VkImageView> pAttachments = {this->pAttachments->instances[i].imageView};
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;

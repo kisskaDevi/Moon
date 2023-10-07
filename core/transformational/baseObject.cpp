@@ -11,18 +11,10 @@ baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCo
     instanceCount(instanceCount)
 {}
 
-void baseObject::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
-{
-    for(auto& buffer: uniformBuffers){
-        buffer.destroy(device);
-    }
-    uniformBuffers.clear();
-}
-
 void baseObject::destroy(VkDevice device)
 {
-    destroyUniformBuffers(device, uniformBuffersHost);
-    destroyUniformBuffers(device, uniformBuffersDevice);
+    destroyBuffers(device, uniformBuffersHost);
+    destroyBuffers(device, uniformBuffersDevice);
 
     if(descriptorPool )     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
@@ -121,6 +113,8 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.instance,
                         &buffer.memory);
       vkMapMemory(device, buffer.memory, 0, sizeof(UniformBuffer), 0, &buffer.map);
+
+      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost" + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
@@ -131,6 +125,8 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         &buffer.instance,
                         &buffer.memory);
+
+      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice" + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 

@@ -9,20 +9,6 @@
 #include <iostream>
 #include <vector>
 
-namespace {
-    void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, size_t bufferSize, void* data, VkBufferUsageFlagBits usage, buffer& staging, buffer& deviceLocal){
-        Buffer::create(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging.instance, &staging.memory);
-        Buffer::create(physicalDevice, device, bufferSize, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &deviceLocal.instance, &deviceLocal.memory);
-
-        vkMapMemory(device, staging.memory, 0, bufferSize, 0, &staging.map);
-            std::memcpy(staging.map, data, bufferSize);
-        vkUnmapMemory(device, staging.memory);
-        staging.map = nullptr;
-
-        Buffer::copy(commandBuffer, bufferSize, staging.instance, deviceLocal.instance);
-    };
-}
-
 plyModel::plyModel(
         std::filesystem::path filename,
         vector<float, 4> baseColorFactor,
@@ -160,6 +146,8 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
                     &uniformBuffer.memory);
     vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map);
     std::memcpy(uniformBuffer.map, &uniformBlock, sizeof(uniformBlock));
+
+    Memory::nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
 }
 
 void plyModel::createDescriptorPool(VkDevice device) {
@@ -274,8 +262,7 @@ void plyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipe
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
-void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {
-
+void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t&, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {
     std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
     std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
     nodeDescriptorSets.push_back(uniformBuffer.descriptorSet);

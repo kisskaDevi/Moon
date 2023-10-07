@@ -60,7 +60,6 @@ private:
     std::vector<buffer> uniformBuffersDevice;
 
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
-    void destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
     spotLight(const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);

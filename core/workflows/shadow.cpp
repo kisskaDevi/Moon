@@ -159,7 +159,7 @@ void shadowGraphics::createFramebuffers(light* lightSource)
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &lightSource->getAttachments()->imageView[j];
+            framebufferInfo.pAttachments = &lightSource->getAttachments()->instances[j].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;

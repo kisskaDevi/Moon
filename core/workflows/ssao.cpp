@@ -66,7 +66,7 @@ void SSAOGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->imageView[i];
+            framebufferInfo.pAttachments = &pAttachments->instances[i].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -173,22 +173,22 @@ void SSAOGraphics::updateDescriptorSets(
 
         VkDescriptorImageInfo positionInfo{};
             positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        positionInfo.imageView = position->imageView[i];
+        positionInfo.imageView = position->instances[i].imageView;
             positionInfo.sampler = position->sampler;
 
         VkDescriptorImageInfo normalInfo{};
             normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        normalInfo.imageView = normal->imageView[i];
+        normalInfo.imageView = normal->instances[i].imageView;
             normalInfo.sampler = normal->sampler;
 
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = image->imageView[i];
+            imageInfo.imageView = image->instances[i].imageView;
             imageInfo.sampler = image->sampler;
 
         VkDescriptorImageInfo depthInfo{};
             depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = depth->imageView[i];
+            depthInfo.imageView = depth->instances[i].imageView;
             depthInfo.sampler = depth->sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

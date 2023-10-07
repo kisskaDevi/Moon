@@ -36,18 +36,10 @@ spotLight::~spotLight(){
     }
 }
 
-void spotLight::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
-{
-    for(auto& buffer: uniformBuffers){
-        buffer.destroy(device);
-    }
-    uniformBuffers.clear();
-}
-
 void spotLight::destroy(VkDevice device)
 {
-    destroyUniformBuffers(device, uniformBuffersHost);
-    destroyUniformBuffers(device, uniformBuffersDevice);
+    destroyBuffers(device, uniformBuffersHost);
+    destroyBuffers(device, uniformBuffersDevice);
 
     if(descriptorSetLayout)         {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(bufferDescriptorSetLayout)   {vkDestroyDescriptorSetLayout(device, bufferDescriptorSetLayout,  nullptr); bufferDescriptorSetLayout = VK_NULL_HANDLE;}
@@ -185,6 +177,8 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
                         &buffer.instance,
                         &buffer.memory);
        vkMapMemory(device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map);
+
+       Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost" + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
@@ -195,6 +189,8 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         &buffer.instance,
                         &buffer.memory);
+
+       Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
@@ -269,7 +265,7 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, textu
             lightBufferInfo.range = sizeof(LightBufferObject);
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView       = isShadowEnable() && shadow->imageView.size() > 0 ? shadow->imageView[i] : *emptyTextureWhite->getTextureImageView();
+            shadowImageInfo.imageView       = isShadowEnable() && shadow->instances.size() > 0 ? shadow->instances[i].imageView : *emptyTextureWhite->getTextureImageView();
             shadowImageInfo.sampler         = isShadowEnable() && shadow->sampler ? shadow->sampler : *emptyTextureWhite->getTextureSampler();
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

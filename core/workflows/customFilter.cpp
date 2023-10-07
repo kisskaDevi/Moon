@@ -82,7 +82,7 @@ void customFilter::createFramebuffers(){
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
-                framebufferInfo.pAttachments = &pAttachments[i].imageView[j];
+                framebufferInfo.pAttachments = &pAttachments[i].instances[j].imageView;
                 framebufferInfo.width = image.frameBufferExtent.width;
                 framebufferInfo.height = image.frameBufferExtent.height;
                 framebufferInfo.layers = 1;
@@ -176,13 +176,13 @@ void customFilter::createDescriptorSets(){
 
 void customFilter::updateDescriptorSets()
 {
-    auto updateDescriptorSets = [](VkDevice device, const std::vector<VkImageView>& imageViews, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
-        auto imageIt = imageViews.begin();
+    auto updateDescriptorSets = [](VkDevice device, attachments* image, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
+        auto imageIt = image->instances.begin();
         auto setIt = descriptorSets.begin();
-        for (;imageIt != imageViews.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
+        for (;imageIt != image->instances.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
             VkDescriptorImageInfo imageInfo{};
                 imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = *imageIt;
+                imageInfo.imageView = imageIt->imageView;
                 imageInfo.sampler = sampler;
 
             std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -197,7 +197,7 @@ void customFilter::updateDescriptorSets()
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     };
-    updateDescriptorSets(device, bufferAttachment.imageView, bufferAttachment.sampler, filter.DescriptorSets);
+    updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, filter.DescriptorSets);
 }
 
 void customFilter::updateCommandBuffer(uint32_t frameNumber)
@@ -215,11 +215,11 @@ void customFilter::updateCommandBuffer(uint32_t frameNumber)
             clearColorValue.uint32[3] = 0;
 
         std::vector<VkImage> blitImages(attachmentsCount);
-        blitImages[0] = srcAttachment->image[frameNumber];
+            blitImages[0] = srcAttachment->instances[frameNumber].image;
         for(size_t i=1;i<attachmentsCount;i++){
-            blitImages[i] = pAttachments[i-1].image[frameNumber];
+            blitImages[i] = pAttachments[i-1].instances[frameNumber].image;
         }
-        VkImage blitBufferImage = bufferAttachment.image[frameNumber];
+        VkImage blitBufferImage = bufferAttachment.instances[frameNumber].image;
         uint32_t width = image.frameBufferExtent.width;
         uint32_t height = image.frameBufferExtent.height;
 
@@ -231,7 +231,7 @@ void customFilter::updateCommandBuffer(uint32_t frameNumber)
             render(frameNumber,commandBuffers[frameNumber],k);
         }
         for(uint32_t k=0;k<attachmentsCount;k++){
-            Texture::transitionLayout(commandBuffers[frameNumber],pAttachments[k].image[frameNumber],VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
+            Texture::transitionLayout(commandBuffers[frameNumber],pAttachments[k].instances[frameNumber].image,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
         }
 }
 

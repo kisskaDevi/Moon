@@ -6,9 +6,39 @@
 #include <vector>
 #include <string>
 #include <filesystem>
-#include <optional>
+#include <unordered_map>
 
 struct GLFWwindow;
+
+class Memory {
+private:
+    struct Description{
+        uint64_t    alignment{0};
+        uint64_t    size{0};
+    };
+
+    static uint64_t totalMemoryUsed;
+    static std::vector<VkDeviceMemory> memoryKeys;
+    static std::unordered_map<VkDeviceMemory, Description> memoryMap;
+    static std::unordered_map<VkDeviceMemory, std::string> nameMap;
+
+public:
+    static VkResult allocate(
+            VkPhysicalDevice physicalDevice,
+            VkDevice device,
+            VkMemoryRequirements requirements,
+            VkMemoryPropertyFlags properties,
+            VkDeviceMemory* memory);
+
+    static void nameMemory(
+            VkDeviceMemory memory,
+            const std::string& name);
+
+    static void free(
+            VkDeviceMemory memory);
+
+    static void status();
+};
 
 namespace debug {
 
@@ -102,6 +132,11 @@ namespace Buffer{
             VkDeviceSize                    size,
             VkBuffer                        srcBuffer,
             VkBuffer                        dstBuffer);
+
+    void destroy(
+            VkDevice                        device,
+            VkBuffer&                       buffer,
+            VkDeviceMemory&                 memory);
 }
 
 namespace Texture {
@@ -136,6 +171,11 @@ namespace Texture {
             VkMemoryPropertyFlags           properties,
             VkImage*                        image,
             VkDeviceMemory*                 imageMemory);
+
+    void destroy(
+        VkDevice                            device,
+        VkImage&                            image,
+        VkDeviceMemory&                     memory);
 
     VkResult createView(
             VkDevice                        device,

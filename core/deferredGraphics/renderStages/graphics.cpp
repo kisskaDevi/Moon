@@ -151,7 +151,7 @@ void graphics::createFramebuffers()
     for (size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> attachments;
         for(size_t j = 0; j < pAttachments.size(); j++){
-            attachments.push_back(pAttachments[j]->imageView[i]);
+            attachments.push_back(pAttachments[j]->instances[i].imageView);
         }
 
         VkFramebufferCreateInfo framebufferInfo{};

@@ -51,6 +51,8 @@ int main()
 #endif
     testScene.create(WIDTH,HEIGHT);
 
+    Memory::status();
+
     static auto pastTime = std::chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(window))
     {
@@ -78,6 +80,7 @@ int main()
     testScene.destroy();
     app.destroySwapChain();
     app.destroyLinker();
+    app.destroySyncObjects();
     app.destroy();
 
     glfwDestroyWindow(window);
@@ -99,10 +102,15 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, sc
     app->deviceWaitIdle();
     app->destroySwapChain();
     app->destroyLinker();
+    app->destroySyncObjects();
+
     app->createSwapChain(window);
     app->createLinker();
+    app->createSyncObjects();
 
     testScene->resize(width, height);
+
+    Memory::status();
 
     framebufferResized = false;
 

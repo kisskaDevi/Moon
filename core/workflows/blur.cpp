@@ -88,9 +88,9 @@ void gaussianBlur::createRenderPass(){
 }
 
 void gaussianBlur::createFramebuffers(){
-    for (auto attIt = pAttachments->imageView.begin(), buffIt = bufferAttachment.imageView.begin();
-         attIt != pAttachments->imageView.end() && buffIt != bufferAttachment.imageView.end(); attIt++, buffIt++){
-        std::vector<VkImageView> attachments = {*attIt, *buffIt};
+    for (auto attIt = pAttachments->instances.begin(), buffIt = bufferAttachment.instances.begin();
+         attIt != pAttachments->instances.end() && buffIt != bufferAttachment.instances.end(); attIt++, buffIt++){
+        std::vector<VkImageView> attachments = {attIt->imageView, buffIt->imageView};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -191,13 +191,13 @@ void gaussianBlur::createDescriptorSets(){
 }
 
 void gaussianBlur::updateDescriptorSets(attachments* blurAttachment){
-    auto updateDescriptorSets = [](VkDevice device, const std::vector<VkImageView>& imageViews, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
-        auto imageIt = imageViews.begin();
+    auto updateDescriptorSets = [](VkDevice device, attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
+        auto imageIt = attachment->instances.begin();
         auto setIt = descriptorSets.begin();
-        for (;imageIt != imageViews.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
+        for (;imageIt != attachment->instances.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
             VkDescriptorImageInfo imageInfo{};
                 imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = *imageIt;
+                imageInfo.imageView = imageIt->imageView;
                 imageInfo.sampler = sampler;
 
             std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -213,8 +213,8 @@ void gaussianBlur::updateDescriptorSets(attachments* blurAttachment){
         }
     };
 
-    updateDescriptorSets(device, blurAttachment->imageView, blurAttachment->sampler, xblur.DescriptorSets);
-    updateDescriptorSets(device, bufferAttachment.imageView, bufferAttachment.sampler, yblur.DescriptorSets);
+    updateDescriptorSets(device, blurAttachment, blurAttachment->sampler, xblur.DescriptorSets);
+    updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, yblur.DescriptorSets);
 }
 
 void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){

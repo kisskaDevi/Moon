@@ -74,7 +74,7 @@ void scattering::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->imageView[i];
+            framebufferInfo.pAttachments = &pAttachments->instances[i].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -191,7 +191,7 @@ void scattering::updateDescriptorSets(camera* cameraObject, attachments* depth)
     {
         VkDescriptorImageInfo depthInfos;
         depthInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        depthInfos.imageView = depth->imageView[i];
+        depthInfos.imageView = depth->instances[i].imageView;
         depthInfos.sampler = depth->sampler;
 
         VkDescriptorBufferInfo bufferInfo{};

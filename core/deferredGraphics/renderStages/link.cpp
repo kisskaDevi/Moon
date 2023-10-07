@@ -113,7 +113,7 @@ void link::updateDescriptorSets(attachments* attachment) {
     {
         VkDescriptorImageInfo imageInfo;
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = attachment->imageView[image];
+            imageInfo.imageView = attachment->instances[image].imageView;
             imageInfo.sampler = attachment->sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

@@ -32,7 +32,6 @@ protected:
     std::vector<buffer>     uniformBuffersDevice;
 
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
-    void destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers);
     void updateViewMatrix();
 public:
     baseCamera();

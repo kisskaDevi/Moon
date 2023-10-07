@@ -13,29 +13,16 @@ struct imageInfo{
     VkSampleCountFlagBits           Samples;
 };
 
-struct attachment
-{
-    VkImage image{VK_NULL_HANDLE};
-    VkDeviceMemory imageMemory{VK_NULL_HANDLE};
-    VkImageView imageView{VK_NULL_HANDLE};
-    VkSampler sampler{VK_NULL_HANDLE};
-
-    void deleteAttachment(VkDevice* device){
-        if(image)       {vkDestroyImage(*device, image, nullptr); image = VK_NULL_HANDLE;}
-        if(imageMemory) {vkFreeMemory(*device, imageMemory, nullptr); imageMemory = VK_NULL_HANDLE;}
-        if(imageView)   {vkDestroyImageView(*device, imageView, nullptr);  imageView = VK_NULL_HANDLE;}
-    }
-    void deleteSampler(VkDevice *device){
-        if(sampler) {vkDestroySampler(*device,sampler,nullptr); sampler = VK_NULL_HANDLE;}
-    }
-};
-
 class attachments
 {
 public:
-    std::vector<VkImage> image;
-    std::vector<VkDeviceMemory> imageMemory;
-    std::vector<VkImageView> imageView;
+    struct attachment{
+        VkImage image{VK_NULL_HANDLE};
+        VkDeviceMemory imageMemory{VK_NULL_HANDLE};
+        VkImageView imageView{VK_NULL_HANDLE};
+    };
+
+    std::vector<attachment> instances;
     VkSampler sampler{VK_NULL_HANDLE};
     VkFormat format{VK_FORMAT_UNDEFINED};
     VkClearValue clearValue{};
@@ -55,6 +42,8 @@ public:
     static VkAttachmentDescription imageDescription(VkFormat format, VkImageLayout layout);
     static VkAttachmentDescription depthStencilDescription(VkFormat format);
     static VkAttachmentDescription depthDescription(VkFormat format);
+
+    std::vector<VkImage> getImages() const;
 };
 
 #endif // ATTACHMENTS_H

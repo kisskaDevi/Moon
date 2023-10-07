@@ -189,7 +189,7 @@ void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* 
 
         VkDescriptorImageInfo depthImageInfo{};
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = depthAttachment ? depthAttachment->imageView[i] : *emptyTexture->getTextureImageView();
+            depthImageInfo.imageView = depthAttachment ? depthAttachment->instances[i].imageView : *emptyTexture->getTextureImageView();
             depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

@@ -94,8 +94,8 @@ public:
         return &Link;
     }
 
-    void updateCommandBuffer(uint32_t imageIndex) override {}
-    void updateBuffers(uint32_t imageIndex) override {}
+    void updateCommandBuffer(uint32_t) override {}
+    void updateBuffers(uint32_t) override {}
 };
 
 #endif // !RAYTRACINGGRAPHICS

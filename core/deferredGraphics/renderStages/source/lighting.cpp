@@ -88,19 +88,19 @@ void graphics::updateLightingDescriptorSets(camera* cameraObject)
         std::vector<VkDescriptorImageInfo> imageInfos;
         imageInfos.push_back(VkDescriptorImageInfo{});
             imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::positionIndex()]->imageView[i];
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::positionIndex()]->instances[i].imageView;
             imageInfos.back().sampler = VK_NULL_HANDLE;
         imageInfos.push_back(VkDescriptorImageInfo{});
             imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::normalIndex()]->imageView[i];
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::normalIndex()]->instances[i].imageView;
             imageInfos.back().sampler = VK_NULL_HANDLE;
         imageInfos.push_back(VkDescriptorImageInfo{});
             imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::colorIndex()]->imageView[i];
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::colorIndex()]->instances[i].imageView;
             imageInfos.back().sampler = VK_NULL_HANDLE;
         imageInfos.push_back(VkDescriptorImageInfo{});
             imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::depthIndex()]->imageView[i];
+            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::depthIndex()]->instances[i].imageView;
             imageInfos.back().sampler = VK_NULL_HANDLE;
 
         VkDescriptorBufferInfo bufferInfo{};

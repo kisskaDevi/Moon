@@ -92,7 +92,7 @@ void postProcessingGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->imageView[Image];
+            framebufferInfo.pAttachments = &pAttachments->instances[Image].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -216,33 +216,33 @@ void postProcessingGraphics::updateDescriptorSets()
     {
         VkDescriptorImageInfo layersImageInfo;
             layersImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layersImageInfo.imageView = layersAttachment->imageView[image];
+        layersImageInfo.imageView = layersAttachment->instances[image].imageView;
             layersImageInfo.sampler = layersAttachment->sampler;
 
         VkDescriptorImageInfo blurImageInfo;
             blurImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blurImageInfo.imageView = blurAttachment ? blurAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            blurImageInfo.imageView = blurAttachment ? blurAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
             blurImageInfo.sampler = blurAttachment ? blurAttachment->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo sslrImageInfo;
             sslrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
             sslrImageInfo.sampler = sslrAttachment ? sslrAttachment->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo ssaoImageInfo;
             ssaoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            ssaoImageInfo.imageView = ssaoAttachment ? ssaoAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            ssaoImageInfo.imageView = ssaoAttachment ? ssaoAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
             ssaoImageInfo.sampler = ssaoAttachment ? ssaoAttachment->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo bbImageInfo;
             bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bbImageInfo.imageView = boundingBoxbAttachment ? boundingBoxbAttachment->imageView[image] : *emptyTexture->getTextureImageView();
+            bbImageInfo.imageView = boundingBoxbAttachment ? boundingBoxbAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
             bbImageInfo.sampler = boundingBoxbAttachment ? boundingBoxbAttachment->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> blitImageInfo(postProcessing.blitAttachmentCount);
         for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
             blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blitImageInfo[index].imageView = blitAttachments ? blitAttachments[i].imageView[image] : *emptyTexture->getTextureImageView();
+            blitImageInfo[index].imageView = blitAttachments ? blitAttachments[i].instances[image].imageView : *emptyTexture->getTextureImageView();
             blitImageInfo[index].sampler = blitAttachments ? blitAttachments[i].sampler : *emptyTexture->getTextureSampler();
         }
 

@@ -35,16 +35,8 @@ baseCamera::~baseCamera(){}
 
 void baseCamera::destroy(VkDevice device)
 {
-    destroyUniformBuffers(device, uniformBuffersHost);
-    destroyUniformBuffers(device, uniformBuffersDevice);
-}
-
-void baseCamera::destroyUniformBuffers(VkDevice device, std::vector<buffer>& uniformBuffers)
-{
-    for(auto& buffer: uniformBuffers){
-        buffer.destroy(device);
-    }
-    uniformBuffers.clear();
+    destroyBuffers(device, uniformBuffersHost);
+    destroyBuffers(device, uniformBuffersDevice);
 }
 
 void baseCamera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
@@ -165,6 +157,8 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.instance,
                         &buffer.memory);
       vkMapMemory(device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map);
+
+      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
@@ -175,6 +169,8 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                         &buffer.instance,
                         &buffer.memory);
+
+      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 

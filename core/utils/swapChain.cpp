@@ -6,17 +6,18 @@
 #include <iostream>
 #endif
 
-swapChain::swapChain()
-{}
-
 void swapChain::destroy(){
-    for(size_t i=0; i < imageCount; i++){
-        if(swapChainAttachments.imageView[i]){
-            vkDestroyImageView(device, swapChainAttachments.imageView[i], nullptr);
+    for (auto& instance: swapChainAttachments.instances){
+        if(instance.imageView){
+            vkDestroyImageView(device, instance.imageView, nullptr);
+            instance.imageView = VK_NULL_HANDLE;
         }
     }
 
-    if(swapChainKHR) {vkDestroySwapchainKHR(device, swapChainKHR, nullptr); swapChainKHR = VK_NULL_HANDLE;}
+    if(swapChainKHR) {
+        vkDestroySwapchainKHR(device, swapChainKHR, nullptr);
+        swapChainKHR = VK_NULL_HANDLE;
+    }
 }
 
 VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount){
@@ -54,12 +55,13 @@ VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t qu
     result = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChainKHR);
     debug::checkResult(result, "VkSwapchainKHR : vkCreateSwapchainKHR result = " + std::to_string(result));
 
-    swapChainAttachments.image.resize(imageCount);
-    swapChainAttachments.imageView.resize(imageCount);
-    result = vkGetSwapchainImagesKHR(device, swapChainKHR, &imageCount, swapChainAttachments.image.data());
+    swapChainAttachments.instances.resize(imageCount);
+    std::vector<VkImage> images = swapChainAttachments.getImages();
+    result = vkGetSwapchainImagesKHR(device, swapChainKHR, &imageCount, images.data());
     debug::checkResult(result, "VkSwapchainKHR : vkGetSwapchainImagesKHR result = " + std::to_string(result));
 
-    for (size_t size = 0; size < swapChainAttachments.imageView.size(); size++){
+    for (auto& instance: swapChainAttachments.instances){
+        instance.image = images[&instance - &swapChainAttachments.instances[0]];
         result = Texture::createView(   device,
                                         VK_IMAGE_VIEW_TYPE_2D,
                                         surfaceFormat.format,
@@ -67,8 +69,8 @@ VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t qu
                                         1,
                                         0,
                                         1,
-                                        swapChainAttachments.image[size],
-                                        &swapChainAttachments.imageView[size]);
+                                        instance.image,
+                                        &instance.imageView);
         debug::checkResult(result, "attachments::image : Texture::createView result = " + std::to_string(result));
     }
     return result;

@@ -72,7 +72,7 @@ void layersCombiner::createFramebuffers(){
     for(size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> attachments(attachmentsCount);
         for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
-            attachments[attachmentNumber] = pAttachments[attachmentNumber].imageView[i];
+            attachments[attachmentNumber] = pAttachments[attachmentNumber].instances[i].imageView;
         }
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -212,42 +212,42 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
 
         VkDescriptorImageInfo colorImageInfo;
             colorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            colorImageInfo.imageView = deferredAttachments.image.imageView[i];
+            colorImageInfo.imageView = deferredAttachments.image.instances[i].imageView;
             colorImageInfo.sampler = deferredAttachments.image.sampler;
 
         VkDescriptorImageInfo bloomImageInfo;
             bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bloomImageInfo.imageView = deferredAttachments.bloom.imageView[i];
+            bloomImageInfo.imageView = deferredAttachments.bloom.instances[i].imageView;
             bloomImageInfo.sampler = deferredAttachments.bloom.sampler;
 
         VkDescriptorImageInfo positionImageInfo;
             positionImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionImageInfo.imageView = deferredAttachments.GBuffer.position.imageView[i];
+            positionImageInfo.imageView = deferredAttachments.GBuffer.position.instances[i].imageView;
             positionImageInfo.sampler = deferredAttachments.GBuffer.position.sampler;
 
         VkDescriptorImageInfo normalImageInfo;
             normalImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalImageInfo.imageView = deferredAttachments.GBuffer.normal.imageView[i];
+            normalImageInfo.imageView = deferredAttachments.GBuffer.normal.instances[i].imageView;
             normalImageInfo.sampler = deferredAttachments.GBuffer.normal.sampler;
 
         VkDescriptorImageInfo depthImageInfo;
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = deferredAttachments.GBuffer.depth.imageView[i];
+            depthImageInfo.imageView = deferredAttachments.GBuffer.depth.instances[i].imageView;
             depthImageInfo.sampler = deferredAttachments.GBuffer.depth.sampler;
 
         VkDescriptorImageInfo skyboxImageInfo;
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = skybox ? skybox->imageView[i] : *emptyTexture->getTextureImageView();
+            skyboxImageInfo.imageView = skybox ? skybox->instances[i].imageView : *emptyTexture->getTextureImageView();
             skyboxImageInfo.sampler = skybox ? skybox->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo skyboxBloomImageInfo;
             skyboxBloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxBloomImageInfo.imageView = skyboxBloom ? skyboxBloom->imageView[i] : *emptyTexture->getTextureImageView();
+            skyboxBloomImageInfo.imageView = skyboxBloom ? skyboxBloom->instances[i].imageView : *emptyTexture->getTextureImageView();
             skyboxBloomImageInfo.sampler = skyboxBloom ? skyboxBloom->sampler : *emptyTexture->getTextureSampler();
 
         VkDescriptorImageInfo scatteringImageInfo;
             scatteringImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            scatteringImageInfo.imageView = scattering ? scattering->imageView[i] : *emptyTexture->getTextureImageView();
+            scatteringImageInfo.imageView = scattering ? scattering->instances[i].imageView : *emptyTexture->getTextureImageView();
             scatteringImageInfo.sampler = scattering ? scattering->sampler : *emptyTexture->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
@@ -258,23 +258,23 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
 
         for(uint32_t index = 0; index < combiner.transparentLayersCount; index++){
             colorLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            colorLayersImageInfo[index].imageView = transparencyLayers[index].image.imageView[i];
+            colorLayersImageInfo[index].imageView = transparencyLayers[index].image.instances[i].imageView;
             colorLayersImageInfo[index].sampler = transparencyLayers[index].image.sampler;
 
             bloomLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bloomLayersImageInfo[index].imageView = transparencyLayers[index].bloom.imageView[i];
+            bloomLayersImageInfo[index].imageView = transparencyLayers[index].bloom.instances[i].imageView;
             bloomLayersImageInfo[index].sampler = transparencyLayers[index].bloom.sampler;
 
             positionLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.position.imageView[i];
+            positionLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.position.instances[i].imageView;
             positionLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.position.sampler;
 
             normalLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.normal.imageView[i];
+            normalLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.normal.instances[i].imageView;
             normalLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.normal.sampler;
 
             depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.depth.imageView[i];
+            depthLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.depth.instances[i].imageView;
             depthLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.depth.sampler;
         }
 

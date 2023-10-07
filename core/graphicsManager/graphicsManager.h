@@ -22,6 +22,7 @@ public:
     void destroy();
     void destroySwapChain();
     void destroyLinker();
+    void destroySyncObjects();
 
     VkInstance      getInstance();
     VkSurfaceKHR    getSurface();

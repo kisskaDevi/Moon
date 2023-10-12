@@ -54,6 +54,8 @@ private:
     uint32_t                        instanceCount{1};
 
 protected:
+    bool                            created{false};
+
     VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptors;
@@ -76,7 +78,7 @@ public:
     VkDescriptorPool&               getDescriptorPool();
     std::vector<VkDescriptorSet>&   getDescriptorSet() override;
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) override;
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
     void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
     void updateAnimation(uint32_t imageNumber);
 
@@ -118,10 +120,13 @@ public:
     uint32_t            getFirstPrimitive() const override;
     uint32_t            getPrimitiveCount() const;
 
-    void                createDescriptorPool(VkDevice device, uint32_t imageCount) override;
-    void                createDescriptorSet(VkDevice device, uint32_t imageCount) override;
+    void                createDescriptorPool(VkDevice device, uint32_t imageCount);
+    void                createDescriptorSet(VkDevice device, uint32_t imageCount);
 
-    cubeTexture* getTexture() override {return nullptr;};
+    void create(
+        physicalDevice device,
+        VkCommandPool commandPool,
+        uint32_t imageCount) override;
 
     float animationTimer{0.0f};
     uint32_t animationIndex{0};
@@ -138,13 +143,20 @@ public:
     skyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
     ~skyboxObject();
 
+    void destroy(VkDevice device) override;
+
     skyboxObject& translate(const vector<float,3>& translate) override;
 
     uint8_t getPipelineBitMask() const override;
-    cubeTexture* getTexture() override;
+    cubeTexture* getTexture();
 
-    void createDescriptorPool(VkDevice device, uint32_t imageCount) override;
-    void createDescriptorSet(VkDevice device, uint32_t imageCount) override;
+    void create(
+        physicalDevice device,
+        VkCommandPool commandPool,
+        uint32_t imageCount) override;
+
+    void createDescriptorPool(VkDevice device, uint32_t imageCount);
+    void createDescriptorSet(VkDevice device, uint32_t imageCount);
 };
 
 #endif // BASEOBJECT_H

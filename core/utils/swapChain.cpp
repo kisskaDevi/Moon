@@ -2,10 +2,6 @@
 
 #include <glfw3.h>
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 void swapChain::destroy(){
     for (auto& instance: swapChainAttachments.instances){
         if(instance.imageView){

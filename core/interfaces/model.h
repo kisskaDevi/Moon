@@ -6,6 +6,7 @@
 #include <vector.h>
 
 class texture;
+struct physicalDevice;
 
 struct BoundingBox{
     vector<float,3> min;
@@ -90,7 +91,6 @@ public:
 
     virtual ~model(){};
     virtual void destroy(VkDevice device) = 0;
-    virtual void destroyStagingBuffer(VkDevice device) = 0;
 
     virtual const VkBuffer* getVertices() const = 0;
     virtual const VkBuffer* getIndices() const = 0;
@@ -103,8 +103,11 @@ public:
     virtual void updateAnimation(uint32_t frameIndex, uint32_t index, float time) = 0;
     virtual void changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) = 0;
 
-    virtual void createDescriptorPool(VkDevice device) = 0;
-    virtual void createDescriptorSet(VkDevice device, texture* emptyTexture) = 0;
+    virtual void create(
+        physicalDevice device,
+        VkCommandPool commandPool,
+        uint32_t imageCount,
+        texture* emptyTextureBlack = nullptr) = 0;
 
     virtual void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;
     virtual void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;

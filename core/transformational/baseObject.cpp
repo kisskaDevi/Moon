@@ -2,6 +2,7 @@
 #include "operations.h"
 #include "model.h"
 #include "dualQuaternion.h"
+#include "device.h"
 
 #include <cstring>
 
@@ -18,6 +19,7 @@ void baseObject::destroy(VkDevice device)
 
     if(descriptorPool )     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
+    created = false;
 }
 
 void baseObject::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
@@ -114,7 +116,7 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.memory);
       vkMapMemory(device, buffer.memory, 0, sizeof(UniformBuffer), 0, &buffer.map);
 
-      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost" + std::to_string(&buffer - &uniformBuffersHost[0]));
+      Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
@@ -126,7 +128,7 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.instance,
                         &buffer.memory);
 
-      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice" + std::to_string(&buffer - &uniformBuffersDevice[0]));
+      Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
@@ -189,6 +191,23 @@ void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pBufferInfo = &bufferInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+}
+
+void baseObject::create(
+    physicalDevice device,
+    VkCommandPool commandPool,
+    uint32_t imageCount)
+{
+    if(!created){
+        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
+        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
+
+        createUniformBuffers(device.instance,device.getLogical(),imageCount);
+        createDescriptorPool(device.getLogical(),imageCount);
+        createDescriptorSet(device.getLogical(),imageCount);
+        created = true;
     }
 }
 
@@ -334,4 +353,39 @@ void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
             descriptorWrites.back().pImageInfo = &imageInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+}
+
+void skyboxObject::create(
+    physicalDevice device,
+    VkCommandPool commandPool,
+    uint32_t imageCount)
+{
+    if(!created){
+        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
+        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
+
+        if(getTexture()){
+            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+            getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+            getTexture()->createTextureImageView(device.getLogical());
+            getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+            getTexture()->destroyStagingBuffer(device.getLogical());
+        }
+        createUniformBuffers(device.instance,device.getLogical(),imageCount);
+        createDescriptorPool(device.getLogical(),imageCount);
+        createDescriptorSet(device.getLogical(),imageCount);
+        created = true;
+    }
+}
+
+void skyboxObject::destroy(VkDevice device)
+{
+    if(getTexture()){
+        getTexture()->destroy(device);
+    }
+
+    baseObject::destroy(device);
+    created = false;
 }

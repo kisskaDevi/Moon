@@ -40,6 +40,7 @@ private:
     matrix<float,4,4>                   projectionMatrix{1.0f};
     bool                                enableShadow{false};
     bool                                enableScattering{false};
+    bool                                created{false};
     uint32_t                            type{spotType::circle};
 
     quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
@@ -100,12 +101,19 @@ public:
     VkDescriptorSet*    getDescriptorSets() override;
     VkDescriptorSet*    getBufferDescriptorSets() override;
 
-    void                createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) override;
+    void create(
+            physicalDevice device,
+            VkCommandPool commandPool,
+            uint32_t imageCount,
+            texture* emptyTextureBlack = nullptr,
+            texture* emptyTextureWhite = nullptr) override;
+
     void                updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 
-    void                createDescriptorPool(VkDevice device, uint32_t imageCount) override;
-    void                createDescriptorSets(VkDevice device, uint32_t imageCount) override;
-    void                updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite) override;
+    void                createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
+    void                createDescriptorPool(VkDevice device, uint32_t imageCount);
+    void                createDescriptorSets(VkDevice device, uint32_t imageCount);
+    void                updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite);
 };
 
 class isotropicLight: public transformational

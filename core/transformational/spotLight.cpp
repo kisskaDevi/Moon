@@ -3,6 +3,7 @@
 #include "operations.h"
 #include "texture.h"
 #include "dualQuaternion.h"
+#include "device.h"
 
 #include <cstring>
 
@@ -44,6 +45,8 @@ void spotLight::destroy(VkDevice device)
     if(descriptorSetLayout)         {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(bufferDescriptorSetLayout)   {vkDestroyDescriptorSetLayout(device, bufferDescriptorSetLayout,  nullptr); bufferDescriptorSetLayout = VK_NULL_HANDLE;}
     if(descriptorPool)              {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
+
+    created = false;
 }
 
 void spotLight::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
@@ -165,6 +168,37 @@ bool                            spotLight::isScatteringEnable() const {return en
 VkDescriptorSet*                spotLight::getDescriptorSets(){return descriptorSets.data();}
 VkDescriptorSet*                spotLight::getBufferDescriptorSets() {return bufferDescriptorSets.data();}
 
+
+void spotLight::create(
+    physicalDevice device,
+    VkCommandPool commandPool,
+    uint32_t imageCount,
+    texture* emptyTextureBlack,
+    texture* emptyTextureWhite)
+{
+    if(!created){
+        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkDevice is VK_NULL_HANDLE"));
+        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECKERROR(emptyTextureBlack == nullptr, std::string("[ deferredGraphics::bindLightSource ] emptyTextureBlack is nullptr"));
+        CHECKERROR(emptyTextureWhite == nullptr, std::string("[ deferredGraphics::bindLightSource ] emptyTextureWhite is nullptr"));
+
+        if(getTexture()){
+            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+            getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+            getTexture()->destroyStagingBuffer(device.getLogical());
+            getTexture()->createTextureImageView(device.getLogical());
+            getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+        }
+        createUniformBuffers(device.instance,device.getLogical(),imageCount);
+        createDescriptorPool(device.getLogical(), imageCount);
+        createDescriptorSets(device.getLogical(), imageCount);
+        updateDescriptorSets(device.getLogical(), imageCount, emptyTextureBlack, emptyTextureWhite);
+        created = true;
+    }
+}
+
 void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
@@ -178,7 +212,7 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
                         &buffer.memory);
        vkMapMemory(device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map);
 
-       Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost" + std::to_string(&buffer - &uniformBuffersHost[0]));
+       Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
@@ -190,7 +224,7 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
                         &buffer.instance,
                         &buffer.memory);
 
-       Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+       Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 

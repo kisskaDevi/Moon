@@ -44,7 +44,7 @@ VkResult attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, V
                                     &(instance.imageMemory));
         debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
 
-        Memory::nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
+        Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
 
         result = Texture::createView(   device,
                                         VK_IMAGE_VIEW_TYPE_2D,
@@ -85,7 +85,7 @@ VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
                                     &(instance.imageMemory));
         debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
 
-        Memory::nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, instance " + std::to_string(&instance - &instances[0]));
+        Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, instance " + std::to_string(&instance - &instances[0]));
 
         result = Texture::createView(   device,
                                         VK_IMAGE_VIEW_TYPE_2D,

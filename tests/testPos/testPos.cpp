@@ -89,7 +89,7 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
     for(auto& [key,graph]: graphics){
         graph->createCommandPool();
         graph->createEmptyTexture();
-        graph->bindCameraObject(cameras[key], true);
+        graph->bind(cameras[key]);
         graph->createGraphics();
         graph->updateDescriptorSets();
     }
@@ -110,12 +110,12 @@ void testPos::updateFrame(uint32_t, float frameTime)
 void testPos::destroy()
 {
     for(auto& [_,graph]: graphics){
-        for (auto& [_,object]: cameraObjects)       graph->removeObject(object);
-        for (auto& [_,object]: staticObjects)      graph->removeObject(object);
-        for (auto& [_,object]: skyboxObjects)      graph->removeObject(object);
-        for (auto& [_,model]: models)              graph->destroyModel(model);
-        for (auto& [_,light]: lights)              graph->removeLightSource(light);
-        for (auto& light: lightSources)            graph->removeLightSource(light);
+        for (auto& [_,object]: cameraObjects)      graph->remove(object);
+        for (auto& [_,object]: staticObjects)      graph->remove(object);
+        for (auto& [_,object]: skyboxObjects)      graph->remove(object);
+        for (auto& [_,model]: models)              graph->destroy(model);
+        for (auto& [_,light]: lights)              graph->remove(light);
+        for (auto& light: lightSources)            graph->remove(light);
     }
     for (auto& [_,lightPoint]: lightPoints)  delete lightPoint;
     for (auto& [view,object]: cameraObjects)  { delete object; delete view;}
@@ -138,7 +138,7 @@ void testPos::destroy()
         graph->destroyGraphics();
         graph->destroyEmptyTextures();
         graph->destroyCommandPool();
-        graph->removeCameraObject(cameras[key]);
+        graph->remove(cameras[key]);
         delete graph;
     }
 }
@@ -150,7 +150,7 @@ void testPos::loadModels()
     models["cubeModel"] = new class plyModel(ExternalPath / "dependences/model/cube.ply");
 
     for(auto& [_,model]: models){
-        graphics["base"]->createModel(model);
+        graphics["base"]->create(model);
     }
 }
 
@@ -161,7 +161,7 @@ void testPos::createLight()
     lightPoints["lightBox"]->setLightDropFactor(1.0f);
 
     for(auto& source: lightSources){
-        graphics["base"]->bindLightSource(source, true);
+        graphics["base"]->bind(source);
     }
 
     matrix<float,4,4> proj = perspective(radians(90.0f), 1.0f, 0.01f, 10.0f);
@@ -171,13 +171,13 @@ void testPos::createLight()
     lights["base"]->setLightColor({1.0f,1.0f,1.0f,1.0f});
     lights["base"]->setLightDropFactor(1.0f);
     lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
-    graphics["base"]->bindLightSource(lights["base"], true);
+    graphics["base"]->bind(lights["base"]);
 
     lights["view"] = new spotLight(proj);
     lights["view"]->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
     lights["view"]->setLightDropFactor(1.0f);
     lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
-    graphics["view"]->bindLightSource(lights["view"], true);
+    graphics["view"]->bind(lights["view"]);
 }
 
 void testPos::createObjects()
@@ -196,8 +196,8 @@ void testPos::createObjects()
     skyboxObjects["lake"]->getTexture()->setMipLevel(0.85f);
 
     for(auto& [_, object]: skyboxObjects){
-        graphics["base"]->bindObject(object, true);
-        graphics["view"]->bindObject(object, false);
+        graphics["base"]->bind(object);
+        graphics["view"]->bind(object);
     }
 
     for (auto &entry : std::filesystem::directory_iterator(ExternalPath / "dependences/matrixData")){
@@ -230,12 +230,12 @@ void testPos::createObjects()
     for(auto [view,object]: cameraObjects){
         auto curview = *view;
         curview[0][3] /= maximum(maxSize); curview[1][3] /= maximum(maxSize); curview[2][3] /= maximum(maxSize);
-        graphics["base"]->bindObject(object, true);
+        graphics["base"]->bind(object);
         object->setGlobalTransform(curview).scale(50.0f/maximum(maxSize));
     }
     for(auto& [_,object]: staticObjects){
-        graphics["base"]->bindObject(object, true);
-        graphics["view"]->bindObject(object, false);
+        graphics["base"]->bind(object);
+        graphics["view"]->bind(object);
     }
 
     dualQuaternion<float> Q = convert(*cameraObjects.begin()->first);

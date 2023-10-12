@@ -38,10 +38,11 @@ bool debug::checkResult(bool result, std::string message){
     return result;
 }
 
-uint64_t Memory::totalMemoryUsed = 0;
-std::vector<VkDeviceMemory> Memory::memoryKeys = {};
-std::unordered_map<VkDeviceMemory, Memory::Description> Memory::memoryMap = {};
-std::unordered_map<VkDeviceMemory, std::string> Memory::nameMap = {};
+Memory& Memory::instance()
+{
+    static Memory s;
+    return s;
+}
 
 VkResult Memory::allocate(VkPhysicalDevice physicalDevice, VkDevice device, VkMemoryRequirements requirements, VkMemoryPropertyFlags properties, VkDeviceMemory* memory)
 {
@@ -334,7 +335,7 @@ VkResult Buffer::create(VkPhysicalDevice physicalDevice, VkDevice device, VkDevi
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
 
-    result = Memory::allocate(physicalDevice, device, memoryRequirements, properties, bufferMemory);
+    result = Memory::instance().allocate(physicalDevice, device, memoryRequirements, properties, bufferMemory);
     debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
 
     result = vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
@@ -357,7 +358,7 @@ void Buffer::destroy(VkDevice device, VkBuffer& buffer, VkDeviceMemory& memory)
         buffer = VK_NULL_HANDLE;
     }
     if(memory){
-        Memory::free(memory);
+        Memory::instance().free(memory);
         vkFreeMemory(device, memory, nullptr);
         memory = VK_NULL_HANDLE;
     }
@@ -466,7 +467,7 @@ VkResult Texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkIma
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device, *image, &memRequirements);
 
-    result = Memory::allocate(physicalDevice, device, memRequirements, properties, imageMemory);
+    result = Memory::instance().allocate(physicalDevice, device, memRequirements, properties, imageMemory);
     debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
 
     result = vkBindImageMemory(device, *image, *imageMemory, 0);
@@ -482,7 +483,7 @@ void Texture::destroy(VkDevice device, VkImage& image, VkDeviceMemory& memory)
         image = VK_NULL_HANDLE;
     }
     if(memory){
-        Memory::free(memory);
+        Memory::instance().free(memory);
         vkFreeMemory(device, memory, nullptr);
         memory = VK_NULL_HANDLE;
     }

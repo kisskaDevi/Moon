@@ -237,12 +237,12 @@ void graphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t
     }
 }
 
-void graphics::bindBaseObject(object *newObject)
+void graphics::bind(object *newObject)
 {
     base.objects.push_back(newObject);
 }
 
-bool graphics::removeBaseObject(object* object)
+bool graphics::remove(object* object)
 {
     auto& objects = base.objects;
     size_t size = objects.size();
@@ -250,12 +250,12 @@ bool graphics::removeBaseObject(object* object)
     return size - objects.size() > 0;
 }
 
-void graphics::bindLightSource(light* lightSource)
+void graphics::bind(light* lightSource)
 {
     lighting.lightSources.push_back(lightSource);
 }
 
-bool graphics::removeLightSource(light* lightSource)
+bool graphics::remove(light* lightSource)
 {
     auto& objects = lighting.lightSources;
     size_t size = objects.size();

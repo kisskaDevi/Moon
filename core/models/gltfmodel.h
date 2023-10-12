@@ -96,6 +96,7 @@ class gltfModel : public model
 {
 private:
     std::filesystem::path filename;
+    bool created{false};
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
@@ -127,7 +128,7 @@ public:
     ~gltfModel() override;
 
     void destroy(VkDevice device) override;
-    void destroyStagingBuffer(VkDevice device) override;
+    void destroyStagingBuffer(VkDevice device);
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
@@ -140,8 +141,14 @@ public:
     void updateAnimation(uint32_t frameIndex, uint32_t index, float time) override;
     void changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) override;
 
-    void createDescriptorPool(VkDevice device) override;
-    void createDescriptorSet(VkDevice device, texture* emptyTexture) override;
+    void createDescriptorPool(VkDevice device);
+    void createDescriptorSet(VkDevice device, texture* emptyTexture);
+
+    void create(
+        physicalDevice device,
+        VkCommandPool commandPool,
+        uint32_t imageCount,
+        texture* emptyTextureBlack = nullptr) override;
 
     void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
     void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;

@@ -3,6 +3,7 @@
 #define TINYPLY_IMPLEMENTATION
 #include "tinyply.h"
 #include "operations.h"
+#include "device.h"
 
 #include <memory>
 #include <fstream>
@@ -48,6 +49,8 @@ void plyModel::destroy(VkDevice device) {
     }
 
     uniformBuffer.destroy(device);
+
+    created = false;
 }
 void plyModel::destroyStagingBuffer(VkDevice device) {
     vertexStaging.destroy(device);
@@ -147,7 +150,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map);
     std::memcpy(uniformBuffer.map, &uniformBlock, sizeof(uniformBlock));
 
-    Memory::nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
+    Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
 }
 
 void plyModel::createDescriptorPool(VkDevice device) {
@@ -242,6 +245,29 @@ void plyModel::createDescriptorSet(VkDevice device, texture* emptyTexture) {
             descriptorWrites.back().pImageInfo = &info;
         }
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+}
+
+void plyModel::create(
+    physicalDevice device,
+    VkCommandPool commandPool,
+    uint32_t imageCount,
+    texture* emptyTextureBlack)
+{
+    if(!created)
+    {
+        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
+        CHECKERROR(emptyTextureBlack == nullptr, std::string("[ deferredGraphics::createModel ] emptyTextureBlack is nullptr"));
+
+        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+        loadFromFile(device.instance, device.getLogical(), commandBuffer);
+        SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
+        destroyStagingBuffer(device.getLogical());
+        createDescriptorPool(device.getLogical());
+        createDescriptorSet(device.getLogical(), emptyTextureBlack);
+        created = true;
     }
 }
 

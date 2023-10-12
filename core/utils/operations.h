@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <unordered_map>
 
+#define CHECKERROR(res, message) if(debug::checkResult(res, message + " in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__))) return;
+
 struct GLFWwindow;
 
 class Memory {
@@ -17,27 +19,35 @@ private:
         uint64_t    size{0};
     };
 
-    static uint64_t totalMemoryUsed;
-    static std::vector<VkDeviceMemory> memoryKeys;
-    static std::unordered_map<VkDeviceMemory, Description> memoryMap;
-    static std::unordered_map<VkDeviceMemory, std::string> nameMap;
+    uint64_t totalMemoryUsed{0};
+    std::vector<VkDeviceMemory> memoryKeys;
+    std::unordered_map<VkDeviceMemory, Description> memoryMap;
+    std::unordered_map<VkDeviceMemory, std::string> nameMap;
 
+    Memory() = default;
+    ~Memory() = default;
 public:
-    static VkResult allocate(
+
+    Memory(const Memory&) = delete;
+    Memory& operator=(const Memory&) = delete;
+
+    static Memory& instance();
+
+    VkResult allocate(
             VkPhysicalDevice physicalDevice,
             VkDevice device,
             VkMemoryRequirements requirements,
             VkMemoryPropertyFlags properties,
             VkDeviceMemory* memory);
 
-    static void nameMemory(
+    void nameMemory(
             VkDeviceMemory memory,
             const std::string& name);
 
-    static void free(
+    void free(
             VkDeviceMemory memory);
 
-    static void status();
+    void status();
 };
 
 namespace debug {

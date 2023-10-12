@@ -120,11 +120,11 @@ public:
     void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
     void updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-    void bindBaseObject(object* newObject);
-    bool removeBaseObject(object* object);
+    void bind(object* newObject);
+    bool remove(object* object);
 
-    void bindLightSource(light* lightSource);
-    bool removeLightSource(light* lightSource);
+    void bind(light* lightSource);
+    bool remove(light* lightSource);
 
     graphics& setMinAmbientFactor(const float& minAmbientFactor);
     graphics& setTransparencyPass(const bool& transparencyPass);

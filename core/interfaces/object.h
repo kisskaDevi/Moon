@@ -6,7 +6,7 @@
 #include <vector.h>
 
 class model;
-class cubeTexture;
+struct physicalDevice;
 
 class object
 {
@@ -18,7 +18,6 @@ public:
 
     virtual std::vector<VkDescriptorSet>&   getDescriptorSet() = 0;
 
-    virtual void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) = 0;
     virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
 
     virtual model* getModel() = 0;
@@ -37,10 +36,10 @@ public:
 
     virtual uint32_t getFirstPrimitive() const = 0;
 
-    virtual void createDescriptorPool(VkDevice device, uint32_t imageCount) = 0;
-    virtual void createDescriptorSet(VkDevice device, uint32_t imageCount) = 0;
-
-    virtual cubeTexture* getTexture() = 0;
+    virtual void create(
+        physicalDevice device,
+        VkCommandPool commandPool,
+        uint32_t imageCount) = 0;
 
     static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
     static void createSkyboxDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);

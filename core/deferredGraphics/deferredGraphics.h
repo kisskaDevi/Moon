@@ -34,8 +34,7 @@ struct StorageBufferObject{
     alignas(4)  float              depth;
 };
 
-class deferredGraphics: public graphicsInterface
-{
+class deferredGraphics: public graphicsInterface{
 private:
     std::filesystem::path                       shadersPath;
     uint32_t                                    imageCount{0};
@@ -105,8 +104,8 @@ private:
     void createStorageBuffers(uint32_t imageCount);
 public:
     deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    ~deferredGraphics() = default;
 
-    ~deferredGraphics();
     void destroyGraphics() override;
     void destroyCommandPool();
     void freeCommandBuffers();
@@ -138,17 +137,17 @@ public:
 
     void        createEmptyTexture();
 
-    void        createModel(model* pModel);
-    void        destroyModel(model* pModel);
+    void        create(model* pModel);
+    void        destroy(model* pModel);
 
-    void        bindCameraObject(camera* cameraObject, bool create = false);
-    void        removeCameraObject(camera* cameraObject);
+    void        bind(camera* cameraObject);
+    void        remove(camera* cameraObject);
 
-    void        bindObject(object* object, bool create = false);
-    bool        removeObject(object* object);
+    void        bind(object* object);
+    bool        remove(object* object);
 
-    void        bindLightSource(light* lightSource, bool create = false);
-    void        removeLightSource(light* lightSource);
+    void        bind(light* lightSource);
+    void        remove(light* lightSource);
 
     void        updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
     uint32_t    readStorageBuffer(uint32_t currentImage);

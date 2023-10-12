@@ -5,6 +5,7 @@
 
 class texture;
 class attachments;
+struct physicalDevice;
 
 class light
 {
@@ -23,12 +24,14 @@ public:
     virtual VkDescriptorSet* getDescriptorSets() = 0;
     virtual VkDescriptorSet* getBufferDescriptorSets() = 0;
 
-    virtual void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) = 0;
-    virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
+    virtual void create(
+            physicalDevice device,
+            VkCommandPool commandPool,
+            uint32_t imageCount,
+            texture* emptyTextureBlack = nullptr,
+            texture* emptyTextureWhite = nullptr) = 0;
 
-    virtual void createDescriptorPool(VkDevice device, uint32_t imageCount) = 0;
-    virtual void createDescriptorSets(VkDevice device, uint32_t imageCount) = 0;
-    virtual void updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite) = 0;
+    virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
 
     static void createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
     static void createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);

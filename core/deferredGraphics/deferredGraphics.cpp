@@ -10,8 +10,6 @@
 
 #include <cstring>
 
-#define CHECKERROR(res, message) if(debug::checkResult(res, message + " in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__))) return;
-
 deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset, VkSampleCountFlagBits MSAASamples):
     shadersPath(shadersPath), extent(extent), offset(offset), MSAASamples(MSAASamples)
 {
@@ -35,11 +33,7 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     }
 }
 
-deferredGraphics::~deferredGraphics()
-{}
-
-void deferredGraphics::destroyEmptyTextures()
-{
+void deferredGraphics::destroyEmptyTextures(){
     if(emptyTextureBlack){
         emptyTextureBlack->destroy(device.getLogical());
         emptyTextureBlack = nullptr;
@@ -50,8 +44,7 @@ void deferredGraphics::destroyEmptyTextures()
     }
 }
 
-void deferredGraphics::freeCommandBuffers()
-{
+void deferredGraphics::freeCommandBuffers(){
     CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] commandPool is VK_NULL_HANDLE"));
     CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] VkDevice is VK_NULL_HANDLE"));
 
@@ -76,8 +69,7 @@ void deferredGraphics::freeCommandBuffers()
     nodes.clear();
 }
 
-void deferredGraphics::destroyGraphics()
-{
+void deferredGraphics::destroyGraphics(){
     freeCommandBuffers();
 
     DeferredGraphics.destroy();
@@ -142,9 +134,11 @@ void deferredGraphics::destroyGraphics()
     storageBuffersHost.clear();
 }
 
-void deferredGraphics::destroyCommandPool()
-{
-    if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
+void deferredGraphics::destroyCommandPool(){
+    if(commandPool){
+        vkDestroyCommandPool(device.getLogical(), commandPool, nullptr);
+        commandPool = VK_NULL_HANDLE;
+    }
 }
 
 void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices)
@@ -180,6 +174,18 @@ void deferredGraphics::createCommandPool()
     vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
 }
 
+void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
+{
+    this->swapChainKHR = swapChainKHR;
+    this->imageCount = swapChainKHR->getImageCount();
+}
+
+void deferredGraphics::createGraphics()
+{
+    createGraphicsPasses();
+    createCommandBuffers();
+}
+
 namespace {
     void fastCreateFilterGraphics(workflow* workflow, uint32_t attachmentsNumber, attachments* attachments)
     {
@@ -203,20 +209,7 @@ namespace {
     }
 }
 
-void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
-{
-    this->swapChainKHR = swapChainKHR;
-    this->imageCount = swapChainKHR->getImageCount();
-}
-
-void deferredGraphics::createGraphics()
-{
-    createGraphicsPasses();
-    createCommandBuffers();
-}
-
-void deferredGraphics::createGraphicsPasses()
-{
+void deferredGraphics::createGraphicsPasses(){
     CHECKERROR(commandPool == VK_NULL_HANDLE,       std::string("[ deferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
     CHECKERROR(device.instance == VK_NULL_HANDLE,   std::string("[ deferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECKERROR(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
@@ -330,8 +323,7 @@ void deferredGraphics::createGraphicsPasses()
     updateCommandBufferFlags.resize(imageCount, true);
 }
 
-void deferredGraphics::updateDescriptorSets()
-{
+void deferredGraphics::updateDescriptorSets(){
     CHECKERROR(cameraObject == nullptr, std::string("[ deferredGraphics::updateDescriptorSets ] camera is nullptr"));
 
     std::vector<VkBuffer> storageBuffers;
@@ -389,8 +381,7 @@ void deferredGraphics::updateDescriptorSets()
     Link.updateDescriptorSets(&finalAttachment);
 }
 
-void deferredGraphics::createCommandBuffers()
-{
+void deferredGraphics::createCommandBuffers(){
     CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createCommandBuffers ] VkCommandPool is VK_NULL_HANDLE"));
 
     Shadow.createCommandBuffers(commandPool);
@@ -467,8 +458,7 @@ void deferredGraphics::createCommandBuffers()
     }
 }
 
-std::vector<std::vector<VkSemaphore>> deferredGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex)
-{
+std::vector<std::vector<VkSemaphore>> deferredGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex){
     if(externalSemaphore.size()){
         nodes[imageIndex]->setExternalSemaphore(externalSemaphore);
     }
@@ -485,15 +475,13 @@ linkable* deferredGraphics::getLinkable() {
     return &Link;
 }
 
-void deferredGraphics::updateCommandBuffers()
-{
+void deferredGraphics::updateCommandBuffers(){
     for(uint32_t imageIndex=0; imageIndex<imageCount; imageIndex++){
         updateCommandBuffer(imageIndex);
     }
 }
 
-void deferredGraphics::updateCommandBuffer(uint32_t imageIndex)
-{
+void deferredGraphics::updateCommandBuffer(uint32_t imageIndex){
     if(updateCommandBufferFlags[imageIndex]){
         Shadow.beginCommandBuffer(imageIndex);
             if(enableShadow) Shadow.updateCommandBuffer(imageIndex);
@@ -559,8 +547,7 @@ void deferredGraphics::updateCommandBuffer(uint32_t imageIndex)
     }
 }
 
-void deferredGraphics::updateBuffers(uint32_t imageIndex)
-{
+void deferredGraphics::updateBuffers(uint32_t imageIndex){
     vkResetCommandBuffer(copyCommandBuffers[imageIndex],0);
 
      VkCommandBufferBeginInfo beginInfo{};
@@ -578,8 +565,7 @@ void deferredGraphics::updateBuffers(uint32_t imageIndex)
     vkEndCommandBuffer(copyCommandBuffers[imageIndex]);
 }
 
-void deferredGraphics::createStorageBuffers(uint32_t imageCount)
-{
+void deferredGraphics::createStorageBuffers(uint32_t imageCount){
     storageBuffersHost.resize(imageCount);
     for (auto& buffer: storageBuffersHost){
         Buffer::create( device.instance,
@@ -590,7 +576,7 @@ void deferredGraphics::createStorageBuffers(uint32_t imageCount)
                         &buffer.instance,
                         &buffer.memory);
         vkMapMemory(device.getLogical(), buffer.memory, 0, sizeof(StorageBufferObject), 0, &buffer.map);
-        Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", deferredGraphics::createStorageBuffers, storageBuffersHost " + std::to_string(&buffer - &storageBuffersHost[0]));
+        Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", deferredGraphics::createStorageBuffers, storageBuffersHost " + std::to_string(&buffer - &storageBuffersHost[0]));
     }
 }
 
@@ -612,8 +598,13 @@ void deferredGraphics::setExtentAndOffset(VkExtent2D extent, VkOffset2D offset) 
     this->offset = offset;
     this->extent = extent;
 }
-void deferredGraphics::setFrameBufferExtent(VkExtent2D extent)              {   frameBufferExtent = extent;}
-void deferredGraphics::setShadersPath(const std::filesystem::path& path)    {   shadersPath = path;}
+void deferredGraphics::setFrameBufferExtent(VkExtent2D extent){
+    frameBufferExtent = extent;
+}
+void deferredGraphics::setShadersPath(const std::filesystem::path& path){
+    shadersPath = path;
+}
+
 void deferredGraphics::createEmptyTexture()
 {
     CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createEmptyTexture ] VkCommandPool is VK_NULL_HANDLE"));
@@ -656,88 +647,55 @@ void deferredGraphics::createEmptyTexture()
     if(enableBoundingBox)   BoundingBox.setEmptyTexture(emptyTextureBlack);
 }
 
-void deferredGraphics::createModel(model *pModel)
-{
-    CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
-    CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
-    CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
-    CHECKERROR(emptyTextureBlack == nullptr, std::string("[ deferredGraphics::createModel ] emptyTextureBlack is nullptr"));
-
-    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-    pModel->loadFromFile(device.instance, device.getLogical(), commandBuffer);
-    SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
-    pModel->destroyStagingBuffer(device.getLogical());
-    pModel->createDescriptorPool(device.getLogical());
-    pModel->createDescriptorSet(device.getLogical(), emptyTextureBlack);
+void deferredGraphics::create(model *pModel){
+    pModel->create(device, commandPool, imageCount, emptyTextureBlack);
 }
 
-void deferredGraphics::destroyModel(model* pModel){
+void deferredGraphics::destroy(model* pModel){
     pModel->destroy(device.getLogical());
 }
 
-void deferredGraphics::bindCameraObject(camera* cameraObject, bool create){
+void deferredGraphics::bind(camera* cameraObject){
     this->cameraObject = cameraObject;
-    if(create){
-        cameraObject->createUniformBuffers(device.instance,device.getLogical(),imageCount);
-    }
+    cameraObject->create(device, imageCount);
 }
 
-void deferredGraphics::removeCameraObject(camera* cameraObject){
+void deferredGraphics::remove(camera* cameraObject){
     if(this->cameraObject == cameraObject){
         this->cameraObject->destroy(device.getLogical());
         this->cameraObject = nullptr;
     }
 }
 
-void deferredGraphics::bindLightSource(light* lightSource, bool create)
-{
-    if(create){
-        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkCommandPool is VK_NULL_HANDLE"));
-        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkDevice is VK_NULL_HANDLE"));
-        CHECKERROR(emptyTextureBlack == nullptr, std::string("[ deferredGraphics::bindLightSource ] emptyTextureBlack is nullptr"));
-        CHECKERROR(emptyTextureWhite == nullptr, std::string("[ deferredGraphics::bindLightSource ] emptyTextureWhite is nullptr"));
-
-        if(lightSource->getTexture()){
-            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-            lightSource->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
-            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-            lightSource->getTexture()->destroyStagingBuffer(device.getLogical());
-            lightSource->getTexture()->createTextureImageView(device.getLogical());
-            lightSource->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-        }
-        if(lightSource->isShadowEnable() && enableShadow){
-            Shadow.bindLightSource(lightSource);
+void deferredGraphics::bind(light* lightSource){
+    if(lightSource->isShadowEnable() && enableShadow){
+        if(lightSource->getAttachments()->instances.empty()){
             Shadow.createAttachments(1,lightSource->getAttachments());
-            Shadow.createFramebuffers(lightSource);
         }
-
-        lightSource->createUniformBuffers(device.instance,device.getLogical(),imageCount);
-
-        lightSource->createDescriptorPool(device.getLogical(), imageCount);
-        lightSource->createDescriptorSets(device.getLogical(), imageCount);
-        lightSource->updateDescriptorSets(device.getLogical(), imageCount, emptyTextureBlack, emptyTextureWhite);
+        Shadow.bindLightSource(lightSource);
+        Shadow.createFramebuffers(lightSource);
     }
+    lightSource->create(device, commandPool, imageCount, emptyTextureBlack, emptyTextureWhite);
 
-    DeferredGraphics.bindLightSource(lightSource);
+    DeferredGraphics.bind(lightSource);
     for(auto& TransparentLayer: TransparentLayers){
-        TransparentLayer.bindLightSource(lightSource);
+        TransparentLayer.bind(lightSource);
     }
     Scattering.bindLightSource(lightSource);
 
     updateCmdFlags();
 }
 
-void deferredGraphics::removeLightSource(light* lightSource){
+void deferredGraphics::remove(light* lightSource){
     if(lightSource->getAttachments()){
         lightSource->getAttachments()->deleteAttachment(device.getLogical());
         lightSource->getAttachments()->deleteSampler(device.getLogical());
     }
     lightSource->destroy(device.getLogical());
 
-    DeferredGraphics.removeLightSource(lightSource);
+    DeferredGraphics.remove(lightSource);
     for(auto& TransparentLayer: TransparentLayers){
-        TransparentLayer.removeLightSource(lightSource);
+        TransparentLayer.remove(lightSource);
     }
     Scattering.removeLightSource(lightSource);
 
@@ -749,33 +707,16 @@ void deferredGraphics::removeLightSource(light* lightSource){
     updateCmdFlags();
 }
 
-void deferredGraphics::bindObject(object* object, bool create)
-{
-    if(create){
-        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
-        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
-
-        if(object->getTexture() && (object->getPipelineBitMask() & (0x1))){
-            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-            object->getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
-            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-            object->getTexture()->createTextureImageView(device.getLogical());
-            object->getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-            object->getTexture()->destroyStagingBuffer(device.getLogical());
-        }
-        object->createUniformBuffers(device.instance,device.getLogical(),imageCount);
-        object->createDescriptorPool(device.getLogical(),imageCount);
-        object->createDescriptorSet(device.getLogical(),imageCount);
-    }
+void deferredGraphics::bind(object* object){
+    object->create(device, commandPool, imageCount);
 
     switch (object->getPipelineBitMask()) {
         case (0<<4)|0x0:
         case (1<<4)|0x0:
             Shadow.bindBaseObject(object);
-            DeferredGraphics.bindBaseObject(object);
+            DeferredGraphics.bind(object);
             for(auto& layer: TransparentLayers){
-                layer.bindBaseObject(object);
+                layer.bind(object);
             }
             BoundingBox.bindObject(object);
             break;
@@ -787,20 +728,17 @@ void deferredGraphics::bindObject(object* object, bool create)
     updateCmdFlags();
 }
 
-bool deferredGraphics::removeObject(object* object){
+bool deferredGraphics::remove(object* object){
     object->destroy(device.getLogical());
-    if(object->getTexture() && (object->getPipelineBitMask() & (0x1))){
-        object->getTexture()->destroy(device.getLogical());
-    }
 
     bool res = true;
 
     switch (object->getPipelineBitMask()) {
         case (0<<4)|0x0:
         case (1<<4)|0x0:
-            res = res && Shadow.removeBaseObject(object) && DeferredGraphics.removeBaseObject(object) && BoundingBox.removeObject(object);
+            res = res && Shadow.removeBaseObject(object) && DeferredGraphics.remove(object) && BoundingBox.removeObject(object);
             for(auto& layer: TransparentLayers){
-                res = res && layer.removeBaseObject(object);
+                res = res && layer.remove(object);
             }
             break;
         case (0<<4)|0x1:

@@ -38,7 +38,7 @@ int main()
     graphicsManager app;
     debug::checkResult(app.createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createDevice(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(app.createSwapChain(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(app.createSwapChain(window, 2), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
@@ -51,7 +51,7 @@ int main()
 #endif
     testScene.create(WIDTH,HEIGHT);
 
-    Memory::status();
+    Memory::instance().status();
 
     static auto pastTime = std::chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(window))
@@ -86,6 +86,7 @@ int main()
     glfwDestroyWindow(window);
     glfwTerminate();
 
+    Memory::instance().status();
     return 0;
 }
 
@@ -104,13 +105,13 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, sc
     app->destroyLinker();
     app->destroySyncObjects();
 
-    app->createSwapChain(window);
+    app->createSwapChain(window, 2);
     app->createLinker();
     app->createSyncObjects();
 
     testScene->resize(width, height);
 
-    Memory::status();
+    Memory::instance().status();
 
     framebufferResized = false;
 

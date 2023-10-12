@@ -1,6 +1,7 @@
 #include "baseCamera.h"
 #include "operations.h"
 #include "dualQuaternion.h"
+#include "device.h"
 
 #include <cstring>
 
@@ -37,6 +38,7 @@ void baseCamera::destroy(VkDevice device)
 {
     destroyBuffers(device, uniformBuffersHost);
     destroyBuffers(device, uniformBuffersDevice);
+    created = false;
 }
 
 void baseCamera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
@@ -158,7 +160,7 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.memory);
       vkMapMemory(device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map);
 
-      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
+      Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
@@ -170,7 +172,7 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.instance,
                         &buffer.memory);
 
-      Memory::nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+      Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
@@ -186,6 +188,14 @@ void baseCamera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t fra
         uniformBuffersHost[frameNumber].updateFlag = false;
 
         Buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+    }
+}
+
+void baseCamera::create(physicalDevice device, uint32_t imageCount)
+{
+    if(!created){
+        createUniformBuffers(device.instance,device.getLogical(),imageCount);
+        created = true;
     }
 }
 

@@ -3,6 +3,7 @@
 
 #include <vulkan.h>
 #include <vector>
+#include <string>
 
 struct imageInfo{
     uint32_t                        Count;

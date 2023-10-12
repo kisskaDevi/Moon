@@ -55,14 +55,14 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
     app->setGraphics(graphics["base"]);
-    graphics["base"]->bindCameraObject(cameras["base"], true);
-    graphics["base"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true).setEnableBoundingBox(true);
+    graphics["base"]->bind(cameras["base"]);
+    graphics["base"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true);
 
     cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
     app->setGraphics(graphics["view"]);
-    graphics["view"]->bindCameraObject(cameras["view"], true);
-    graphics["view"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true).setEnableBoundingBox(true);
+    graphics["view"]->bind(cameras["view"]);
+    graphics["view"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true);
 
     gui = new imguiGraphics;
     gui->setInstance(app->getInstance());
@@ -116,11 +116,11 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 void testScene::destroy()
 {
     for(auto& [_,graph]: graphics){
-        for (auto& [_,object]: objects)            graph->removeObject(object);
-        for (auto& [_,object]: staticObjects)      graph->removeObject(object);
-        for (auto& [_,object]: skyboxObjects)      graph->removeObject(object);
-        for (auto& [_,model]: models)              graph->destroyModel(model);
-        for (auto& light: lightSources)            graph->removeLightSource(light);
+        for (auto& [_,object]: objects)            graph->remove(object);
+        for (auto& [_,object]: staticObjects)      graph->remove(object);
+        for (auto& [_,object]: skyboxObjects)      graph->remove(object);
+        for (auto& [_,model]: models)              graph->destroy(model);
+        for (auto& light: lightSources)            graph->remove(light);
     }
     for(auto& [_,lightPoint]: lightPoints)  delete lightPoint;
     for(auto& [_,object]: objects)          delete object;
@@ -141,7 +141,7 @@ void testScene::destroy()
         graph->destroyGraphics();
         graph->destroyEmptyTextures();
         graph->destroyCommandPool();
-        graph->removeCameraObject(cameras[key]);
+        graph->remove(cameras[key]);
         delete graph;
     }
 
@@ -157,7 +157,7 @@ void testScene::loadModels()
     models["ufo"] = new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb");
 
     for(auto& [_,model]: models){
-        graphics["base"]->createModel(model);
+        graphics["base"]->create(model);
     }
 }
 
@@ -213,17 +213,16 @@ void testScene::createObjects()
     });
     skyboxObjects["stars"]->scale({200.0f,200.0f,200.0f});
 
-    for(auto& [_,object]: objects){
-        graphics["base"]->bindObject(object, true);
-        graphics["view"]->bindObject(object, false);
-    }
-    for(auto& [_,object]: staticObjects){
-        graphics["base"]->bindObject(object, true);
-        graphics["view"]->bindObject(object, false);
-    }
-    for(auto& [_, object]: skyboxObjects){
-        graphics["base"]->bindObject(object, true);
-        graphics["view"]->bindObject(object, false);
+    for(auto& [_,graph]: graphics){
+        for(auto& [_,object]: objects){
+            graph->bind(object);
+        }
+        for(auto& [_,object]: staticObjects){
+            graph->bind(object);
+        }
+        for(auto& [_, object]: skyboxObjects){
+            graph->bind(object);
+        }
     }
 }
 
@@ -253,8 +252,9 @@ void testScene::createLight()
     groups["ufo3"]->addObject(lightSources.back());
 
     for(auto& source: lightSources){
-        graphics["base"]->bindLightSource(source, true);
-        graphics["view"]->bindLightSource(source, false);
+        for(auto& [_,graph]: graphics){
+            graph->bind(source);
+        }
         source->setLightDropFactor(0.2f);
     }
 }
@@ -297,16 +297,18 @@ void testScene::mouseEvent(float frameTime)
                 controledObject = object;
                 std::cout<< key <<std::endl;
 
-                graphics["base"]->updateCmdFlags();
-                graphics["view"]->updateCmdFlags();
+                for(auto& [_,graph]: graphics){
+                    graph->updateCmdFlags();
+                }
             }
         }
     }
 
     if(mouse->released(GLFW_MOUSE_BUTTON_RIGHT))
     {
-        auto q = convert(inverse(cameras["base"]->getViewMatrix()));
-        cameras["view"]->setTranslation(q.translation().vector()).setRotation(q.rotation());
+        if(auto q = convert(inverse(cameras["base"]->getViewMatrix())); cameras.count("view") > 0){
+            cameras["view"]->setTranslation(q.translation().vector()).setRotation(q.rotation());
+        }
     }
 }
 
@@ -369,8 +371,9 @@ void testScene::keyboardEvent(float frameTime)
                 object->setOutlining(!object->getOutliningEnable(), 0.03f, {dist(device), dist(device), dist(device), dist(device)});
             }
         }
-        graphics["base"]->updateCmdFlags();
-        graphics["view"]->updateCmdFlags();
+        for(auto& [_,graph]: graphics){
+            graph->updateCmdFlags();
+        }
     }
 
     if(board->released(GLFW_KEY_T)) {
@@ -400,20 +403,20 @@ void testScene::keyboardEvent(float frameTime)
         groups["ufo0" + std::to_string(ufoCounter)]->addObject(lightSources.back());
         groups["ufo0" + std::to_string(ufoCounter)]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
 
-        graphics["base"]->bindLightSource(lightSources.back(), true);
-        graphics["view"]->bindLightSource(lightSources.back(), false);
-        graphics["base"]->bindObject(objects["ufo" + std::to_string(ufoCounter)], true);
-        graphics["view"]->bindObject(objects["ufo" + std::to_string(ufoCounter)], false);
+        for(auto& [_,graph]: graphics){
+            graph->bind(lightSources.back());
+            graph->bind(objects["ufo" + std::to_string(ufoCounter)]);
+        }
         ufoCounter++;
     }
 
     if(board->released(GLFW_KEY_B)) {
         app->deviceWaitIdle();
         if(ufoCounter > 4) {
-            graphics["base"]->removeObject(objects["ufo" + std::to_string(ufoCounter - 1)]);
-            graphics["view"]->removeObject(objects["ufo" + std::to_string(ufoCounter - 1)]);
-            graphics["base"]->removeLightSource(lightSources.back());
-            graphics["view"]->removeLightSource(lightSources.back());
+            for(auto& [_,graph]: graphics){
+                graph->remove(objects["ufo" + std::to_string(ufoCounter - 1)]);
+                graph->remove(lightSources.back());
+            }
             lightSources.pop_back();
             objects.erase("ufo" + std::to_string(ufoCounter));
             ufoCounter--;
@@ -422,19 +425,22 @@ void testScene::keyboardEvent(float frameTime)
 
     if(board->pressed(GLFW_KEY_KP_0)) {
         minAmbientFactor -= minAmbientFactor > 0.011 ? 0.01f : 0.0f;
-        graphics["base"]->setMinAmbientFactor(minAmbientFactor);
-        graphics["view"]->setMinAmbientFactor(minAmbientFactor);
+        for(auto& [_,graph]: graphics){
+            graph->setMinAmbientFactor(minAmbientFactor);
+        }
     }
     if(board->pressed(GLFW_KEY_KP_2)) {
         minAmbientFactor += 0.01f;
-        graphics["base"]->setMinAmbientFactor(minAmbientFactor);
-        graphics["view"]->setMinAmbientFactor(minAmbientFactor);
+        for(auto& [_,graph]: graphics){
+            graph->setMinAmbientFactor(minAmbientFactor);
+        }
     }
 
     if(board->released(GLFW_KEY_G)){
         enableScatteringRefraction = !enableScatteringRefraction;
-        graphics["base"]->setScatteringRefraction(enableScatteringRefraction);
-        graphics["view"]->setScatteringRefraction(enableScatteringRefraction);
+        for(auto& [_,graph]: graphics){
+            graph->setScatteringRefraction(enableScatteringRefraction);
+        }
     }
 
     if(board->pressed(GLFW_KEY_LEFT_BRACKET))   timeScale -= timeScale > 0.0051f ? 0.005f : 0.0f;

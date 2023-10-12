@@ -21,8 +21,8 @@ void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuf
     Buffer::create(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging.instance, &staging.memory);
     Buffer::create(physicalDevice, device, bufferSize, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &deviceLocal.instance, &deviceLocal.memory);
 
-    Memory::nameMemory(staging.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, staging");
-    Memory::nameMemory(deviceLocal.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, deviceLocal");
+    Memory::instance().nameMemory(staging.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, staging");
+    Memory::instance().nameMemory(deviceLocal.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, deviceLocal");
 
     vkMapMemory(device, staging.memory, 0, bufferSize, 0, &staging.map);
         std::memcpy(staging.map, data, bufferSize);

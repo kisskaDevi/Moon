@@ -4,6 +4,7 @@
 
 #include "gltfmodel.h"
 #include "operations.h"
+#include "device.h"
 
 #include <iostream>
 #include <fstream>
@@ -192,6 +193,8 @@ void gltfModel::destroy(VkDevice device)
     }
     textures.clear();
     materials.clear();
+
+    created = false;
 };
 
 void gltfModel::destroyStagingBuffer(VkDevice device)
@@ -436,6 +439,29 @@ void gltfModel::createDescriptorSet(VkDevice device, texture* emptyTexture)
 
     for (auto &material : materials){
         createMaterialDescriptorSet(device, &material, emptyTexture, descriptorPool, materialDescriptorSetLayout);
+    }
+}
+
+void gltfModel::create(
+    physicalDevice device,
+    VkCommandPool commandPool,
+    uint32_t imageCount,
+    texture* emptyTextureBlack)
+{
+    if(!created)
+    {
+        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
+        CHECKERROR(emptyTextureBlack == nullptr, std::string("[ deferredGraphics::createModel ] emptyTextureBlack is nullptr"));
+
+        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+        loadFromFile(device.instance, device.getLogical(), commandBuffer);
+        SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
+        destroyStagingBuffer(device.getLogical());
+        createDescriptorPool(device.getLogical());
+        createDescriptorSet(device.getLogical(), emptyTextureBlack);
+        created = true;
     }
 }
 

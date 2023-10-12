@@ -28,6 +28,8 @@ private:
     quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
 
 protected:
+    bool                    created{false};
+
     std::vector<buffer>     uniformBuffersHost;
     std::vector<buffer>     uniformBuffersDevice;
 
@@ -56,8 +58,10 @@ public:
     baseCamera& setRotation(const float & ang ,const vector<float,3> & ax);
     baseCamera& setRotation(const quaternion<float>& rotation);
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount) override;
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
     void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
+
+    void create(physicalDevice device, uint32_t imageCount) override;
 
     VkBuffer                getBuffer(uint32_t index) const override;
     VkDeviceSize            getBufferRange() const override;

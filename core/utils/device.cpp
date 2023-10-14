@@ -22,7 +22,7 @@ queueFamily& queueFamily::operator=(const queueFamily& other){
     return *this;
 }
 
-bool queueFamily::availableQueueFlag(VkQueueFlags flag){
+bool queueFamily::availableQueueFlag(VkQueueFlags flag) const {
     return (flag & flags) == flag;
 }
 
@@ -86,7 +86,11 @@ VkDevice& physicalDevice::getLogical(){
     return logical.back().instance;
 }
 
-bool physicalDevice::createdLogical(){
+const VkDevice& physicalDevice::getLogical() const{
+    return logical.back().instance;
+}
+
+bool physicalDevice::createdLogical() const {
     return !logical.empty();
 }
 
@@ -105,6 +109,6 @@ physicalDevice::physicalDevice(const physicalDevice& other):
     deviceExtensions(other.deviceExtensions)
 {}
 
-VkQueue physicalDevice::getQueue(uint32_t familyIndex, uint32_t queueIndex){
-    return logical.back().queueMap[familyIndex][queueIndex];
+VkQueue physicalDevice::getQueue(uint32_t familyIndex, uint32_t queueIndex) const {
+    return logical.back().queueMap.at(familyIndex)[queueIndex];
 }

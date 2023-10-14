@@ -21,7 +21,10 @@ public:
     virtual void updateCommandBuffer(uint32_t imageIndex) = 0;
     virtual void updateBuffers(uint32_t imageIndex) = 0;
 
-    virtual std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) = 0;
+    virtual std::vector<std::vector<VkSemaphore>> submit(
+        const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
+        const std::vector<VkFence>& externalFence,
+        uint32_t imageIndex) = 0;
 
     virtual linkable* getLinkable() = 0;
 };

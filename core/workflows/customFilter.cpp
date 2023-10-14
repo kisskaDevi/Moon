@@ -215,23 +215,26 @@ void customFilter::updateCommandBuffer(uint32_t frameNumber)
             clearColorValue.uint32[3] = 0;
 
         std::vector<VkImage> blitImages(attachmentsCount);
-            blitImages[0] = srcAttachment->instances[frameNumber].image;
+        blitImages[0] = srcAttachment->instances[frameNumber].image;
+        Texture::transitionLayout(commandBuffers[frameNumber], blitImages[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+
         for(size_t i=1;i<attachmentsCount;i++){
             blitImages[i] = pAttachments[i-1].instances[frameNumber].image;
         }
+
         VkImage blitBufferImage = bufferAttachment.instances[frameNumber].image;
         uint32_t width = image.frameBufferExtent.width;
         uint32_t height = image.frameBufferExtent.height;
 
         for(uint32_t k=0;k<attachmentsCount;k++){
-            Texture::transitionLayout(commandBuffers[frameNumber],blitBufferImage, k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
-            vkCmdClearColorImage(commandBuffers[frameNumber],blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ,&clearColorValue,1,&ImageSubresourceRange);
-            Texture::blitDown(commandBuffers[frameNumber],blitImages[k],0,blitBufferImage,0,width,height,0,1,blitFactor);
-            Texture::transitionLayout(commandBuffers[frameNumber],blitBufferImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
-            render(frameNumber,commandBuffers[frameNumber],k);
+            Texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, (k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+            vkCmdClearColorImage(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &ImageSubresourceRange);
+            Texture::blitDown(commandBuffers[frameNumber], blitImages[k], 0, blitBufferImage, 0, width, height, 0, 1, blitFactor);
+            Texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+            render(frameNumber, commandBuffers[frameNumber], k);
         }
         for(uint32_t k=0;k<attachmentsCount;k++){
-            Texture::transitionLayout(commandBuffers[frameNumber],pAttachments[k].instances[frameNumber].image,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_REMAINING_MIP_LEVELS, 0, 1);
+            Texture::transitionLayout(commandBuffers[frameNumber],pAttachments[k].instances[frameNumber].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
         }
 }
 

@@ -7,6 +7,27 @@
 class object;
 class camera;
 
+struct skyboxAttachments
+{
+    attachments color;
+    attachments bloom;
+
+    inline const uint32_t size() const{
+        return 2;
+    }
+    inline attachments* operator&(){
+        return &color;
+    }
+    void deleteAttachment(VkDevice device){
+        color.deleteAttachment(device);
+        bloom.deleteAttachment(device);
+    }
+    void deleteSampler(VkDevice device){
+        color.deleteSampler(device);
+        bloom.deleteSampler(device);
+    }
+};
+
 class skyboxGraphics : public workflow
 {
 private:

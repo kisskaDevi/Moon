@@ -97,6 +97,7 @@ class gltfModel : public model
 private:
     std::filesystem::path filename;
     bool created{false};
+    texture* emptyTexture{nullptr};
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
@@ -144,11 +145,7 @@ public:
     void createDescriptorPool(VkDevice device);
     void createDescriptorSet(VkDevice device, texture* emptyTexture);
 
-    void create(
-        physicalDevice device,
-        VkCommandPool commandPool,
-        uint32_t imageCount,
-        texture* emptyTextureBlack = nullptr) override;
+    void create(physicalDevice device, VkCommandPool commandPool) override;
 
     void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
     void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;

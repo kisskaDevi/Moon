@@ -28,8 +28,8 @@ private:
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
-        float       blitFactor;
-        uint32_t    blitAttachmentCount;
+        float       blitFactor{0.0f};
+        uint32_t    blitAttachmentCount{1};
     }postProcessing;
 
 public:

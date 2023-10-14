@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <vector>
 
+struct physicalDevice;
+
 namespace tinygltf{
     struct Image;
 };
@@ -100,5 +102,10 @@ public:
             VkCommandBuffer     commandBuffer);
     void createTextureImageView(VkDevice device);
 };
+
+texture* createEmptyTexture(
+        const physicalDevice& device,
+        VkCommandPool,
+        bool isBlack = true);
 
 #endif // TEXTURE_H

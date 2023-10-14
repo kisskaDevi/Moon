@@ -1,5 +1,6 @@
 #include "texture.h"
 #include "operations.h"
+#include "device.h"
 
 #include <stb_image.h>
 #include "tiny_gltf.h"
@@ -145,7 +146,7 @@ VkResult texture::createEmptyTextureImage(
     }
     pixels[0][3] = 255;
 
-    result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, 1, 1, 4, pixels, 1);
+    result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, 1, 1, 4, pixels, 1);
     debug::checkResult(result, "iamge : create result = " + std::to_string(result));
     delete[] pixels[0];
     return result;
@@ -234,3 +235,16 @@ void cubeTexture::createTextureImageView(VkDevice device)
                             image.textureImage,
                             &image.textureImageView);
 }
+
+texture* createEmptyTexture(const physicalDevice& device, VkCommandPool commandPool, bool isBlack){
+    texture* tex = new texture;
+
+    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+    tex->createEmptyTextureImage(device.instance, device.getLogical(), commandBuffer, isBlack);
+    SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+    tex->destroyStagingBuffer(device.getLogical());
+    tex->createTextureImageView(device.getLogical());
+    tex->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+
+    return tex;
+};

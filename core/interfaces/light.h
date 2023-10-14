@@ -27,9 +27,7 @@ public:
     virtual void create(
             physicalDevice device,
             VkCommandPool commandPool,
-            uint32_t imageCount,
-            texture* emptyTextureBlack = nullptr,
-            texture* emptyTextureWhite = nullptr) = 0;
+            uint32_t imageCount) = 0;
 
     virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
 

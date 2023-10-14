@@ -176,7 +176,6 @@ void shadowGraphics::removeLightSource(light* lightSource)
 {
     for(uint32_t index = 0; index<shadow.lightSources.size(); index++){
         if(lightSource==shadow.lightSources[index]){
-
             for(uint32_t i=0;i<image.Count;i++){
                 if(framebuffers[shadow.lightSources[index]][i]){
                     vkDestroyFramebuffer(device, framebuffers[shadow.lightSources[index]][i],nullptr);

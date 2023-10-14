@@ -50,15 +50,14 @@ private:
 
     DeferredAttachments                         deferredAttachments;
     std::vector<DeferredAttachments>            transparentLayersAttachments;
-
     attachments                                 blurAttachment;
     attachments                                 sslrAttachment;
     attachments                                 ssaoAttachment;
     attachments                                 scatteringAttachment;
     attachments                                 boundingBoxAttachment;
-    std::vector<attachments>                    skyboxAttachment;
     std::vector<attachments>                    blitAttachments;
-    std::vector<attachments>                    layersCombinedAttachment;
+    skyboxAttachments                           skyboxAttachment;
+    layersCombinerAttachments                   combinedAttachment;
     attachments                                 finalAttachment;
 
     graphics                                    DeferredGraphics;
@@ -102,28 +101,33 @@ private:
     texture*                                    emptyTextureWhite{nullptr};
 
     void createStorageBuffers(uint32_t imageCount);
+    void createGraphicsPasses();
+    void createCommandBuffers();
+    void createCommandPool();
+    void createEmptyTexture();
+
+    void freeCommandBuffers();
+    void destroyCommandPool();
+    void destroyEmptyTextures();
 public:
     deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
     ~deferredGraphics() = default;
 
     void destroyGraphics() override;
-    void destroyCommandPool();
-    void freeCommandBuffers();
-    void destroyEmptyTextures();
 
     void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
     void setSwapChain(swapChain* swapChainKHR) override;
-    void createCommandPool();
+
     void createGraphics() override;
 
-    void createGraphicsPasses();
     void updateDescriptorSets();
-    void createCommandBuffers();
-    void updateCommandBuffers();
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
 
-    std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
+    std::vector<std::vector<VkSemaphore>> submit(
+        const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
+        const std::vector<VkFence>& externalFence,
+        uint32_t imageIndex) override;
 
     linkable* getLinkable() override;
 
@@ -134,8 +138,6 @@ public:
     void        setShadersPath(const std::filesystem::path& shadersPath);
     void        setMinAmbientFactor(const float& minAmbientFactor);
     void        setScatteringRefraction(bool enable);
-
-    void        createEmptyTexture();
 
     void        create(model* pModel);
     void        destroy(model* pModel);

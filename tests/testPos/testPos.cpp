@@ -87,8 +87,6 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
     app->setGraphics(graphics["view"]);
 
     for(auto& [key,graph]: graphics){
-        graph->createCommandPool();
-        graph->createEmptyTexture();
         graph->bind(cameras[key]);
         graph->createGraphics();
         graph->updateDescriptorSets();
@@ -136,8 +134,6 @@ void testPos::destroy()
 
     for(auto& [key,graph]: graphics){
         graph->destroyGraphics();
-        graph->destroyEmptyTextures();
-        graph->destroyCommandPool();
         graph->remove(cameras[key]);
         delete graph;
     }

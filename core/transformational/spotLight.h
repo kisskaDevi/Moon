@@ -31,7 +31,8 @@ class spotLight : public transformational, public light
 private:
     attachments*                        shadow{nullptr};
     texture*                            tex{nullptr};
-    VkExtent2D                          shadowExtent{1024,1024};
+    texture*                            emptyTextureBlack{nullptr};
+    texture*                            emptyTextureWhite{nullptr};
 
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};
@@ -104,9 +105,7 @@ public:
     void create(
             physicalDevice device,
             VkCommandPool commandPool,
-            uint32_t imageCount,
-            texture* emptyTextureBlack = nullptr,
-            texture* emptyTextureWhite = nullptr) override;
+            uint32_t imageCount) override;
 
     void                updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 

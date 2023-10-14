@@ -79,7 +79,10 @@ public:
     void createGraphics() override;
     void destroyGraphics() override;
 
-    std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
+    std::vector<std::vector<VkSemaphore>> submit(
+        const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
+        const std::vector<VkFence>& externalFence,
+        uint32_t imageIndex) override;
 
     inline uint32_t* getSwapChain() {
         return swapChainImage.get();

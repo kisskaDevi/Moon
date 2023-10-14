@@ -6,6 +6,10 @@
 
 #include <iostream>
 
+void layersCombiner::setEmptyTextureWhite(texture* emptyTextureWhite){
+    this->emptyTextureWhite = emptyTextureWhite;
+}
+
 void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
     combiner.transparentLayersCount = transparentLayersCount;
 }
@@ -31,7 +35,7 @@ void layersCombiner::destroy(){
 void layersCombiner::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
         attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-        attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+        attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -258,24 +262,24 @@ void layersCombiner::updateDescriptorSets(DeferredAttachments deferredAttachment
 
         for(uint32_t index = 0; index < combiner.transparentLayersCount; index++){
             colorLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            colorLayersImageInfo[index].imageView = transparencyLayers[index].image.instances[i].imageView;
-            colorLayersImageInfo[index].sampler = transparencyLayers[index].image.sampler;
+            colorLayersImageInfo[index].imageView = transparencyLayers ? transparencyLayers[index].image.instances[i].imageView : *emptyTexture->getTextureImageView();
+            colorLayersImageInfo[index].sampler = transparencyLayers ? transparencyLayers[index].image.sampler : *emptyTexture->getTextureSampler();
 
             bloomLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bloomLayersImageInfo[index].imageView = transparencyLayers[index].bloom.instances[i].imageView;
-            bloomLayersImageInfo[index].sampler = transparencyLayers[index].bloom.sampler;
+            bloomLayersImageInfo[index].imageView = transparencyLayers ? transparencyLayers[index].bloom.instances[i].imageView : *emptyTexture->getTextureImageView();
+            bloomLayersImageInfo[index].sampler = transparencyLayers ? transparencyLayers[index].bloom.sampler : *emptyTexture->getTextureSampler();
 
             positionLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.position.instances[i].imageView;
-            positionLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.position.sampler;
+            positionLayersImageInfo[index].imageView = transparencyLayers ? transparencyLayers[index].GBuffer.position.instances[i].imageView : *emptyTexture->getTextureImageView();
+            positionLayersImageInfo[index].sampler = transparencyLayers ? transparencyLayers[index].GBuffer.position.sampler : *emptyTexture->getTextureSampler();
 
             normalLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.normal.instances[i].imageView;
-            normalLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.normal.sampler;
+            normalLayersImageInfo[index].imageView = transparencyLayers ? transparencyLayers[index].GBuffer.normal.instances[i].imageView : *emptyTexture->getTextureImageView();
+            normalLayersImageInfo[index].sampler = transparencyLayers ? transparencyLayers[index].GBuffer.normal.sampler : *emptyTexture->getTextureSampler();
 
             depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthLayersImageInfo[index].imageView = transparencyLayers[index].GBuffer.depth.instances[i].imageView;
-            depthLayersImageInfo[index].sampler = transparencyLayers[index].GBuffer.depth.sampler;
+            depthLayersImageInfo[index].imageView = transparencyLayers ? transparencyLayers[index].GBuffer.depth.instances[i].imageView : *emptyTextureWhite->getTextureImageView();
+            depthLayersImageInfo[index].sampler = transparencyLayers ? transparencyLayers[index].GBuffer.depth.sampler : *emptyTextureWhite->getTextureSampler();
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

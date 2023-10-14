@@ -20,7 +20,7 @@ struct queueFamily{
 
     queueFamily& operator=(const queueFamily& other);
 
-    bool availableQueueFlag(VkQueueFlags flag);
+    bool availableQueueFlag(VkQueueFlags flag) const;
 };
 
 struct device
@@ -58,8 +58,9 @@ struct physicalDevice
 
     VkResult createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap);
     VkDevice& getLogical();
-    VkQueue getQueue(uint32_t familyIndex, uint32_t queueIndex);
-    bool createdLogical();
+    const VkDevice& getLogical() const;
+    VkQueue getQueue(uint32_t familyIndex, uint32_t queueIndex) const;
+    bool createdLogical() const;
 };
 
 #endif // DEVICE_H

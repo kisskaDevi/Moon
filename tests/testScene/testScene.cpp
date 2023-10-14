@@ -69,8 +69,6 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     app->setGraphics(gui);
 
     for(auto& [_,graph]: graphics){
-        graph->createCommandPool();
-        graph->createEmptyTexture();
         graph->createGraphics();
         graph->updateDescriptorSets();
     }
@@ -139,8 +137,6 @@ void testScene::destroy()
 
     for(auto& [key,graph]: graphics){
         graph->destroyGraphics();
-        graph->destroyEmptyTextures();
-        graph->destroyCommandPool();
         graph->remove(cameras[key]);
         delete graph;
     }

@@ -34,13 +34,11 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
 }
 
 void deferredGraphics::destroyEmptyTextures(){
-    if(emptyTextureBlack){
-        emptyTextureBlack->destroy(device.getLogical());
-        emptyTextureBlack = nullptr;
-    }
-    if(emptyTextureWhite){
-        emptyTextureWhite->destroy(device.getLogical());
-        emptyTextureWhite = nullptr;
+    for(auto& [_,texture] : emptyTextures){
+        if(texture){
+            texture->destroy(device.getLogical());
+            texture = nullptr;
+        }
     }
 }
 
@@ -249,7 +247,7 @@ void deferredGraphics::createGraphicsPasses(){
     if(enableTransparentLayers){
         LayersCombiner.setTransparentLayersCount(TransparentLayersCount);
     }
-    LayersCombiner.setEmptyTextureWhite(emptyTextureWhite);
+    LayersCombiner.setEmptyTextureWhite(emptyTextures["white"]);
     LayersCombiner.createAttachments(combinedAttachment.size(),&combinedAttachment);
     fastCreateFilterGraphics(&LayersCombiner,combinedAttachment.size(),&combinedAttachment);
     PostProcessing.setLayersAttachment(&combinedAttachment.color);
@@ -626,26 +624,26 @@ void deferredGraphics::createEmptyTexture()
     CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createEmptyTexture ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createEmptyTexture ] VkDevice is VK_NULL_HANDLE"));
 
-    emptyTextureBlack = ::createEmptyTexture(device, commandPool);
-    emptyTextureWhite = ::createEmptyTexture(device, commandPool, false);
+    emptyTextures["black"] = ::createEmptyTexture(device, commandPool);
+    emptyTextures["white"] = ::createEmptyTexture(device, commandPool, false);
 
-    DeferredGraphics.setEmptyTexture(emptyTextureBlack);
-    LayersCombiner.setEmptyTexture(emptyTextureBlack);
-    PostProcessing.setEmptyTexture(emptyTextureBlack);
+    DeferredGraphics.setEmptyTexture(emptyTextures["black"]);
+    LayersCombiner.setEmptyTexture(emptyTextures["black"]);
+    PostProcessing.setEmptyTexture(emptyTextures["black"]);
 
     if(enableTransparentLayers){
         for(auto& layer: TransparentLayers){
-            layer.setEmptyTexture(emptyTextureBlack);
+            layer.setEmptyTexture(emptyTextures["black"]);
         }
     }
-    if(enableBlur)          Blur.setEmptyTexture(emptyTextureBlack);
-    if(enableBloom)         Filter.setEmptyTexture(emptyTextureBlack);
-    if(enableSkybox)        Skybox.setEmptyTexture(emptyTextureBlack);
-    if(enableSSAO)          SSAO.setEmptyTexture(emptyTextureBlack);
-    if(enableScattering)    Scattering.setEmptyTexture(emptyTextureBlack);
-    if(enableSSLR)          SSLR.setEmptyTexture(emptyTextureBlack);
-    if(enableShadow)        Shadow.setEmptyTexture(emptyTextureBlack);
-    if(enableBoundingBox)   BoundingBox.setEmptyTexture(emptyTextureBlack);
+    if(enableBlur)          Blur.setEmptyTexture(emptyTextures["black"]);
+    if(enableBloom)         Filter.setEmptyTexture(emptyTextures["black"]);
+    if(enableSkybox)        Skybox.setEmptyTexture(emptyTextures["black"]);
+    if(enableSSAO)          SSAO.setEmptyTexture(emptyTextures["black"]);
+    if(enableScattering)    Scattering.setEmptyTexture(emptyTextures["black"]);
+    if(enableSSLR)          SSLR.setEmptyTexture(emptyTextures["black"]);
+    if(enableShadow)        Shadow.setEmptyTexture(emptyTextures["black"]);
+    if(enableBoundingBox)   BoundingBox.setEmptyTexture(emptyTextures["black"]);
 }
 
 void deferredGraphics::create(model *pModel){

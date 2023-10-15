@@ -97,8 +97,7 @@ private:
     uint32_t                                    TransparentLayersCount{2};
 
     camera*                                     cameraObject{nullptr};
-    texture*                                    emptyTextureBlack{nullptr};
-    texture*                                    emptyTextureWhite{nullptr};
+    std::unordered_map<std::string, texture*>   emptyTextures;
 
     void createStorageBuffers(uint32_t imageCount);
     void createGraphicsPasses();

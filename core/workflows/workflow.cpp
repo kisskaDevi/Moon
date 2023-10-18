@@ -16,7 +16,7 @@ void workflow::destroy(){
     framebuffers.clear();
 }
 
-workflow& workflow::setEmptyTexture(texture* emptyTexture){
+workflow& workflow::setEmptyTexture(std::unordered_map<std::string, texture*> emptyTexture){
     this->emptyTexture = emptyTexture;
     return *this;
 }
@@ -31,11 +31,6 @@ workflow& workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice devi
 }
 workflow& workflow::setImageProp(imageInfo* pInfo){
     this->image = *pInfo;
-    return *this;
-}
-workflow& workflow::setAttachments(uint32_t attachmentsCount, attachments* pAttachments){
-    this->attachmentsCount = attachmentsCount;
-    this->pAttachments = pAttachments;
     return *this;
 }
 

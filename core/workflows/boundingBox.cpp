@@ -4,7 +4,6 @@
 
 #include "object.h"
 #include "model.h"
-#include "camera.h"
 
 namespace {
     struct PushConstBlock {
@@ -12,6 +11,10 @@ namespace {
         alignas(16) vector<float,3> max;
     };
 }
+
+boundingBoxGraphics::boundingBoxGraphics(bool enable) :
+    enable(enable)
+{}
 
 void boundingBoxGraphics::boundingBox::destroy(VkDevice device){
     workbody::destroy(device);
@@ -22,13 +25,24 @@ void boundingBoxGraphics::boundingBox::destroy(VkDevice device){
 void boundingBoxGraphics::destroy(){
     box.destroy(device);
     workflow::destroy();
+
+    frame.deleteAttachment(device);
+    frame.deleteSampler(device);
 }
 
-void boundingBoxGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
-    for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
-        pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
+namespace{
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments){
+        for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
+            pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
+        }
     }
+}
+
+void boundingBoxGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    attachmentsMap["boundingBox"] = {enable,{&frame}};
 }
 
 void boundingBoxGraphics::createRenderPass(){
@@ -71,7 +85,7 @@ void boundingBoxGraphics::createRenderPass(){
 void boundingBoxGraphics::createFramebuffers(){
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
-        std::vector<VkImageView> pAttachments = {this->pAttachments->instances[i].imageView};
+        std::vector<VkImageView> pAttachments = {frame.instances[i].imageView};
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
@@ -204,13 +218,28 @@ void boundingBoxGraphics::createDescriptorSets(){
     vkAllocateDescriptorSets(device, &allocInfo, box.DescriptorSets.data());
 }
 
-void boundingBoxGraphics::updateDescriptorSets(camera* cameraObject){
+void boundingBoxGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
+void boundingBoxGraphics::updateDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&)
+{
     for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = cameraObject->getBuffer(i);
+        bufferInfo.buffer = bufferMap.at("camera").second[i];
         bufferInfo.offset = 0;
-        bufferInfo.range = cameraObject->getBufferRange();
+        bufferInfo.range = bufferMap.at("camera").first;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -226,10 +255,7 @@ void boundingBoxGraphics::updateDescriptorSets(camera* cameraObject){
 }
 
 void boundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
-    std::vector<VkClearValue> clearValues(attachmentsCount,VkClearValue{});
-    for(uint32_t index = 0; index < clearValues.size(); index++){
-        clearValues[index].color = pAttachments[index].clearValue.color;
-    }
+    std::vector<VkClearValue> clearValues = {frame.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

@@ -2,23 +2,11 @@
 #define DEFERREDGRAPHICS_H
 
 #include "graphicsInterface.h"
-
-#include "graphics.h"
-#include "postProcessing.h"
 #include "link.h"
-#include "blur.h"
-#include "customFilter.h"
-#include "sslr.h"
-#include "ssao.h"
-#include "layersCombiner.h"
-#include "scattering.h"
-#include "skybox.h"
-#include "shadow.h"
-#include "boundingBox.h"
+#include "workflow.h"
 
 #include "device.h"
 #include "buffer.h"
-
 #include "vector.h"
 
 #include <unordered_map>
@@ -27,6 +15,9 @@
 struct node;
 class model;
 class camera;
+class object;
+class light;
+class workflow;
 
 struct StorageBufferObject{
     alignas(16) vector<float,4>    mousePosition;
@@ -46,44 +37,12 @@ private:
     std::vector<physicalDevice>                 devices;
     physicalDevice                              device;
 
-    swapChain*                                  swapChainKHR{nullptr};
+    std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>> bufferMap;
+    std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>> attachmentsMap;
 
-    DeferredAttachments                         deferredAttachments;
-    std::vector<DeferredAttachments>            transparentLayersAttachments;
-    attachments                                 blurAttachment;
-    attachments                                 sslrAttachment;
-    attachments                                 ssaoAttachment;
-    attachments                                 scatteringAttachment;
-    attachments                                 boundingBoxAttachment;
-    std::vector<attachments>                    blitAttachments;
-    skyboxAttachments                           skyboxAttachment;
-    layersCombinerAttachments                   combinedAttachment;
-    attachments                                 finalAttachment;
-
-    graphics                                    DeferredGraphics;
-    gaussianBlur                                Blur;
-    customFilter                                Filter;
-    SSLRGraphics                                SSLR;
-    SSAOGraphics                                SSAO;
-    skyboxGraphics                              Skybox;
-    shadowGraphics                              Shadow;
-    layersCombiner                              LayersCombiner;
-    scattering                                  Scattering;
-    postProcessingGraphics                      PostProcessing;
-    boundingBoxGraphics                         BoundingBox;
-
+    std::unordered_map<std::string, workflow*>  workflows;
+    std::unordered_map<std::string, bool>       enable;
     link                                        Link;
-    std::vector<graphics>                       TransparentLayers;
-
-    bool                                        enableTransparentLayers{false};
-    bool                                        enableSkybox{false};
-    bool                                        enableBlur{false};
-    bool                                        enableBloom{false};
-    bool                                        enableSSLR{false};
-    bool                                        enableSSAO{false};
-    bool                                        enableScattering{false};
-    bool                                        enableShadow{false};
-    bool                                        enableBoundingBox{false};
 
     std::vector<buffer>                         storageBuffersHost;
 
@@ -96,14 +55,16 @@ private:
     uint32_t                                    blitAttachmentCount{8};
     uint32_t                                    TransparentLayersCount{2};
 
+    swapChain*                                  swapChainKHR{nullptr};
     camera*                                     cameraObject{nullptr};
+    std::vector<object*>                        objects;
+    std::vector<light*>                         lights;
     std::unordered_map<std::string, texture*>   emptyTextures;
 
     void createStorageBuffers(uint32_t imageCount);
     void createGraphicsPasses();
     void createCommandBuffers();
     void createCommandPool();
-    void createEmptyTexture();
 
     void freeCommandBuffers();
     void destroyCommandPool();
@@ -128,12 +89,11 @@ public:
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
 
-    linkable* getLinkable() override;
+    linkable*   getLinkable() override;
 
     void        updateCmdFlags();
 
     void        setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
-    void        setFrameBufferExtent(VkExtent2D extent);
     void        setShadersPath(const std::filesystem::path& shadersPath);
     void        setMinAmbientFactor(const float& minAmbientFactor);
     void        setScatteringRefraction(bool enable);
@@ -153,15 +113,7 @@ public:
     void        updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
     uint32_t    readStorageBuffer(uint32_t currentImage);
 
-    deferredGraphics& setEnableTransparentLayers(bool enable);
-    deferredGraphics& setEnableSkybox(bool enable);
-    deferredGraphics& setEnableBlur(bool enable);
-    deferredGraphics& setEnableBloom(bool enable);
-    deferredGraphics& setEnableSSLR(bool enable);
-    deferredGraphics& setEnableSSAO(bool enable);
-    deferredGraphics& setEnableScattering(bool enable);
-    deferredGraphics& setEnableShadow(bool enable);
-    deferredGraphics& setEnableBoundingBox(bool enable);
+    deferredGraphics& setEnable(const std::string& name, bool enable);
 };
 
 #endif // DEFERREDGRAPHICS_H

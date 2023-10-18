@@ -3,46 +3,36 @@
 #include "vkdefault.h"
 #include "texture.h"
 
-void postProcessingGraphics::setBlurAttachment(attachments *blurAttachment)
-{
-    this->blurAttachment = blurAttachment;
-}
-void postProcessingGraphics::setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor)
+postProcessingGraphics::postProcessingGraphics(bool enable, float blitFactor, uint32_t blitAttachmentCount) :
+    enable{enable}
 {
     postProcessing.blitFactor = blitFactor;
     postProcessing.blitAttachmentCount = blitAttachmentCount;
-    this->blitAttachments = blitAttachments;
-}
-void postProcessingGraphics::setSSLRAttachment(attachments* sslrAttachment)
-{
-    this->sslrAttachment = sslrAttachment;
-}
-void postProcessingGraphics::setSSAOAttachment(attachments* ssaoAttachment)
-{
-    this->ssaoAttachment = ssaoAttachment;
-}
-void postProcessingGraphics::setLayersAttachment(attachments* layersAttachment)
-{
-    this->layersAttachment = layersAttachment;
-}
-void postProcessingGraphics::setBoundingBoxbAttachment(attachments* boundingBoxbAttachment)
-{
-    this->boundingBoxbAttachment = boundingBoxbAttachment;
 }
 
 void postProcessingGraphics::destroy()
 {
     postProcessing.destroy(device);
-
     workflow::destroy();
+
+    frame.deleteAttachment(device);
+    frame.deleteSampler(device);
 }
 
-void postProcessingGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
-    for(size_t index=0; index<attachmentsCount; index++){
-        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-        VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
+namespace{
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments){
+        for(size_t index=0; index<attachmentsCount; index++){
+            pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+            VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
+            vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
+        }
     }
+}
+
+void postProcessingGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    attachmentsMap["final"] = {enable, {&frame}};
 }
 
 void postProcessingGraphics::createRenderPass()
@@ -92,7 +82,7 @@ void postProcessingGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->instances[Image].imageView;
+            framebufferInfo.pAttachments = &frame.instances[Image].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -210,40 +200,60 @@ void postProcessingGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &postProcessing, image.Count);
 }
 
-void postProcessingGraphics::updateDescriptorSets()
+void postProcessingGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
+void postProcessingGraphics::updateDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     for (size_t image = 0; image < this->image.Count; image++)
     {
+        const auto layersAttachment = attachmentsMap.at("combined.color").second.front();
         VkDescriptorImageInfo layersImageInfo;
             layersImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        layersImageInfo.imageView = layersAttachment->instances[image].imageView;
+            layersImageInfo.imageView = layersAttachment->instances[image].imageView;
             layersImageInfo.sampler = layersAttachment->sampler;
 
+        const auto blurAttachment = attachmentsMap.count("blured") > 0 && attachmentsMap.at("blured").first ? attachmentsMap.at("blured").second.front() : nullptr;
         VkDescriptorImageInfo blurImageInfo;
             blurImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blurImageInfo.imageView = blurAttachment ? blurAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
-            blurImageInfo.sampler = blurAttachment ? blurAttachment->sampler : *emptyTexture->getTextureSampler();
+            blurImageInfo.imageView = blurAttachment ? blurAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
+            blurImageInfo.sampler = blurAttachment ? blurAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
+        const auto sslrAttachment = attachmentsMap.count("sslr") > 0 && attachmentsMap.at("sslr").first ? attachmentsMap.at("sslr").second.front() : nullptr;
         VkDescriptorImageInfo sslrImageInfo;
             sslrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
-            sslrImageInfo.sampler = sslrAttachment ? sslrAttachment->sampler : *emptyTexture->getTextureSampler();
+            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
+            sslrImageInfo.sampler = sslrAttachment ? sslrAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
+        const auto ssaoAttachment = attachmentsMap.count("ssao") > 0 && attachmentsMap.at("ssao").first ? attachmentsMap.at("ssao").second.front() : nullptr;
         VkDescriptorImageInfo ssaoImageInfo;
             ssaoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            ssaoImageInfo.imageView = ssaoAttachment ? ssaoAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
-            ssaoImageInfo.sampler = ssaoAttachment ? ssaoAttachment->sampler : *emptyTexture->getTextureSampler();
+            ssaoImageInfo.imageView = ssaoAttachment ? ssaoAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
+            ssaoImageInfo.sampler = ssaoAttachment ? ssaoAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
+        const auto boundingBoxbAttachment = attachmentsMap.count("boundingBox") > 0 && attachmentsMap.at("boundingBox").first ? attachmentsMap.at("boundingBox").second.front() : nullptr;
         VkDescriptorImageInfo bbImageInfo;
             bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bbImageInfo.imageView = boundingBoxbAttachment ? boundingBoxbAttachment->instances[image].imageView : *emptyTexture->getTextureImageView();
-            bbImageInfo.sampler = boundingBoxbAttachment ? boundingBoxbAttachment->sampler : *emptyTexture->getTextureSampler();
+            bbImageInfo.imageView = boundingBoxbAttachment ? boundingBoxbAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
+            bbImageInfo.sampler = boundingBoxbAttachment ? boundingBoxbAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
+        const auto blitAttachments = attachmentsMap.count("blit") > 0 && attachmentsMap.at("blit").first ? attachmentsMap.at("blit").second : std::vector<attachments*>(postProcessing.blitAttachmentCount,nullptr);
         std::vector<VkDescriptorImageInfo> blitImageInfo(postProcessing.blitAttachmentCount);
         for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
             blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blitImageInfo[index].imageView = blitAttachments ? blitAttachments[i].instances[image].imageView : *emptyTexture->getTextureImageView();
-            blitImageInfo[index].sampler = blitAttachments ? blitAttachments[i].sampler : *emptyTexture->getTextureSampler();
+            blitImageInfo[index].imageView = blitAttachments[i] ? blitAttachments[i]->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
+            blitImageInfo[index].sampler = blitAttachments[i] ? blitAttachments[i]->sampler : *emptyTexture["black"]->getTextureSampler();
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

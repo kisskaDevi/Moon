@@ -1,31 +1,42 @@
 #include "scattering.h"
 #include "vkdefault.h"
 #include "light.h"
-#include "camera.h"
 #include "operations.h"
 
-void scattering::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
-{
-    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
-    {
-        pAttachments[attachmentNumber].create(physicalDevice,device,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-        VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
-        pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
+scattering::scattering(bool enable) :
+    enable(enable)
+{}
+
+namespace {
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments){
+        for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+            pAttachments[attachmentNumber].create(physicalDevice,device,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+            VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+            pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
+        }
     }
 }
 
-void scattering::Lighting::destroy(VkDevice device)
-{
+void scattering::Lighting::destroy(VkDevice device){
     workbody::destroy(device);
     if(BufferDescriptorSetLayoutDictionary) {vkDestroyDescriptorSetLayout(device, BufferDescriptorSetLayoutDictionary, nullptr); BufferDescriptorSetLayoutDictionary = VK_NULL_HANDLE;}
     if(DescriptorSetLayoutDictionary) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayoutDictionary, nullptr); DescriptorSetLayoutDictionary = VK_NULL_HANDLE;}
+}
+
+void scattering::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    attachmentsMap["scattering"] = {enable,{&frame}};
 }
 
 void scattering::destroy()
 {
     lighting.destroy(device);
     workflow::destroy();
+
+    frame.deleteAttachment(device);
+    frame.deleteSampler(device);
 }
 
 void scattering::createRenderPass()
@@ -74,7 +85,7 @@ void scattering::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->instances[i].imageView;
+            framebufferInfo.pAttachments = &frame.instances[i].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -185,19 +196,34 @@ void scattering::createDescriptorSets(){
     workflow::createDescriptorSets(device, &lighting, image.Count);
 }
 
-void scattering::updateDescriptorSets(camera* cameraObject, attachments* depth)
+void scattering::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
+void scattering::updateDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     for (uint32_t i = 0; i < image.Count; i++)
     {
+        const auto depthAttachment = attachmentsMap.at("GBuffer.depth").second.front();
         VkDescriptorImageInfo depthInfos;
-        depthInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        depthInfos.imageView = depth->instances[i].imageView;
-        depthInfos.sampler = depth->sampler;
+            depthInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthInfos.imageView = depthAttachment->instances[i].imageView;
+            depthInfos.sampler = depthAttachment->sampler;
 
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cameraObject->getBuffer(i);
+            bufferInfo.buffer = bufferMap.at("camera").second[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = cameraObject->getBufferRange();
+            bufferInfo.range = bufferMap.at("camera").first;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -222,10 +248,7 @@ void scattering::updateDescriptorSets(camera* cameraObject, attachments* depth)
 
 void scattering::updateCommandBuffer(uint32_t frameNumber)
 {
-    std::vector<VkClearValue> clearValues(attachmentsCount);
-    for(uint32_t index = 0; index < clearValues.size(); index++){
-        clearValues[index] = pAttachments[index].clearValue;
-    }
+    std::vector<VkClearValue> clearValues = {frame.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

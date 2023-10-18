@@ -31,6 +31,9 @@ struct skyboxAttachments
 class skyboxGraphics : public workflow
 {
 private:
+    skyboxAttachments frame;
+    bool enable;
+
     struct Skybox : public workbody{
         VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
 
@@ -41,25 +44,24 @@ private:
         void createDescriptorSetLayout(VkDevice device) override;
     }skybox;
 
+    void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
+    void createRenderPass();
+    void createFramebuffers();
+    void createPipelines();
+    void createDescriptorPool();
+    void createDescriptorSets();
 public:
-    skyboxGraphics() = default;
-    void destroy();
+    skyboxGraphics(bool enable);
 
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
-    void createRenderPass() override;
-    void createFramebuffers() override;
-    void createPipelines() override;
-
-    void createDescriptorPool() override;
-    void createDescriptorSets() override;
-    void updateDescriptorSets(camera* cameraObject);
-
+    void destroy() override;
+    void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+    void updateDescriptorSets(
+        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
     void bindObject(object* newObject);
     bool removeObject(object* object);
-
-    void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
 };
 
 #endif // SKYBOX_H

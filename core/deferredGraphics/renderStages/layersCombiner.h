@@ -2,7 +2,6 @@
 #define LAYERSCOMBINER_H
 
 #include "workflow.h"
-#include "deferredAttachments.h"
 
 class camera;
 
@@ -33,7 +32,8 @@ struct layersCombinerAttachments{
 class layersCombiner : public workflow
 {
 private:
-    texture* emptyTextureWhite{nullptr};
+    layersCombinerAttachments frame;
+    bool enable{true};
 
     struct Combiner : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
@@ -43,22 +43,22 @@ private:
         bool enableScatteringRefraction{true};
     }combiner;
 
+    void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
+    void createRenderPass();
+    void createFramebuffers();
+    void createPipelines();
+    void createDescriptorPool();
+    void createDescriptorSets();
 public:
-    layersCombiner() = default;
-    void destroy();
+    layersCombiner(bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction);
 
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
-    void createRenderPass() override;
-    void createFramebuffers() override;
-    void createPipelines() override;
-
-    void createDescriptorPool() override;
-    void createDescriptorSets() override;
-    void updateDescriptorSets(DeferredAttachments deferredAttachments, DeferredAttachments* transparencyLayers, attachments* skybox, attachments* skyboxBloom, attachments* scattering, camera* cameraObject);
-
+    void destroy() override;
+    void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+    void updateDescriptorSets(
+        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    void setEmptyTextureWhite(texture* emptyTextureWhite);
     void setTransparentLayersCount(uint32_t transparentLayersCount);
     void setScatteringRefraction(bool enable);
 };

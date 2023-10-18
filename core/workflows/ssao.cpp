@@ -1,23 +1,35 @@
 #include "ssao.h"
 #include "operations.h"
 #include "vkdefault.h"
-#include "camera.h"
 
-void SSAOGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
-{
-    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
+SSAOGraphics::SSAOGraphics(bool enable) :
+    enable(enable)
+{}
+
+namespace {
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments)
     {
-        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-        VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+            pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+            VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        }
     }
+}
+
+void SSAOGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    attachmentsMap["ssao"] = {enable,{&frame}};
 }
 
 void SSAOGraphics::destroy()
 {
     ssao.destroy(device);
-
     workflow::destroy();
+
+    frame.deleteAttachment(device);
+    frame.deleteSampler(device);
 }
 
 void SSAOGraphics::createRenderPass()
@@ -66,7 +78,7 @@ void SSAOGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->instances[i].imageView;
+            framebufferInfo.pAttachments = &frame.instances[i].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -157,35 +169,48 @@ void SSAOGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &ssao, image.Count);
 }
 
+void SSAOGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
 void SSAOGraphics::updateDescriptorSets(
-    camera* cameraObject,
-    attachments* position,
-    attachments* normal,
-    attachments* image,
-    attachments* depth)
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     for (uint32_t i = 0; i < this->image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cameraObject->getBuffer(i);
+        bufferInfo.buffer = bufferMap.at("camera").second[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = cameraObject->getBufferRange();
+            bufferInfo.range = bufferMap.at("camera").first;
 
+        const auto position = attachmentsMap.at("GBuffer.position").second.front();
         VkDescriptorImageInfo positionInfo{};
             positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        positionInfo.imageView = position->instances[i].imageView;
+            positionInfo.imageView = position->instances[i].imageView;
             positionInfo.sampler = position->sampler;
 
+        const auto normal = attachmentsMap.at("GBuffer.normal").second.front();
         VkDescriptorImageInfo normalInfo{};
             normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        normalInfo.imageView = normal->instances[i].imageView;
+            normalInfo.imageView = normal->instances[i].imageView;
             normalInfo.sampler = normal->sampler;
 
+        const auto image = attachmentsMap.at("image").second.front();
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = image->instances[i].imageView;
             imageInfo.sampler = image->sampler;
 
+        const auto depth = attachmentsMap.at("GBuffer.depth").second.front();
         VkDescriptorImageInfo depthInfo{};
             depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             depthInfo.imageView = depth->instances[i].imageView;
@@ -238,10 +263,7 @@ void SSAOGraphics::updateDescriptorSets(
 
 void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
-    std::vector<VkClearValue> clearValues(attachmentsCount,VkClearValue{});
-    for(uint32_t index = 0; index < clearValues.size(); index++){
-        clearValues[index].color = pAttachments[index].clearValue.color;
-    }
+    std::vector<VkClearValue> clearValues = {frame.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

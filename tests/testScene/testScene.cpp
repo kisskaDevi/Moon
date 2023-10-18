@@ -56,13 +56,13 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
     app->setGraphics(graphics["base"]);
     graphics["base"]->bind(cameras["base"]);
-    graphics["base"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true);
+    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
 
     cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
     app->setGraphics(graphics["view"]);
     graphics["view"]->bind(cameras["view"]);
-    graphics["view"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true);
+    graphics["view"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
 
     gui = new imguiGraphics;
     gui->setInstance(app->getInstance());

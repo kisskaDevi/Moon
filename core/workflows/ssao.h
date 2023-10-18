@@ -7,25 +7,29 @@ class camera;
 
 class SSAOGraphics : public workflow
 {
+    attachments frame;
+    bool enable{true};
+
 private:
     struct SSAO : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device)override;
     }ssao;
 
+    void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
+    void createRenderPass();
+    void createFramebuffers();
+    void createPipelines();
+    void createDescriptorPool();
+    void createDescriptorSets();
 public:
-    SSAOGraphics() = default;
-    void destroy();
+    SSAOGraphics(bool enable);
 
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
-    void createRenderPass() override;
-    void createFramebuffers() override;
-    void createPipelines() override;
-
-    void createDescriptorPool() override;
-    void createDescriptorSets() override;
-    void updateDescriptorSets(camera* cameraObject, attachments* position, attachments* normal, attachments* image, attachments* depth);
-
+    void destroy() override;
+    void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+    void updateDescriptorSets(
+        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 #endif // SSAO_H

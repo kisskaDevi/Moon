@@ -81,7 +81,7 @@ void graphics::createLightingDescriptorSets()
     vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data());
 }
 
-void graphics::updateLightingDescriptorSets(camera* cameraObject)
+void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap)
 {
     for (uint32_t i = 0; i < image.Count; i++)
     {
@@ -104,9 +104,9 @@ void graphics::updateLightingDescriptorSets(camera* cameraObject)
             imageInfos.back().sampler = VK_NULL_HANDLE;
 
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cameraObject->getBuffer(i);
+            bufferInfo.buffer = bufferMap.at("camera").second[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = cameraObject->getBufferRange();
+            bufferInfo.range = bufferMap.at("camera").first;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for(auto& imageInfo: imageInfos){
@@ -141,10 +141,3 @@ void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuf
         vkCmdDraw(commandBuffers, 18, 1, 0, 0);
     }
 }
-
-void graphics::updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    for(auto lightSource: lighting.lightSources)
-        lightSource->updateUniformBuffer(commandBuffer,imageIndex);
-}
-

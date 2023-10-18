@@ -2,18 +2,29 @@
 #include "operations.h"
 #include "vkdefault.h"
 #include "object.h"
-#include "camera.h"
 
 #include <algorithm>
 
-void skyboxGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
-{
-    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
+skyboxGraphics::skyboxGraphics(bool enable) :
+    enable(enable)
+{}
+
+namespace {
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments)
     {
-        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-        VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+            pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+            VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        }
     }
+}
+
+void skyboxGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    ::createAttachments(physicalDevice, device, image, 2, &frame);
+    attachmentsMap["skybox.color"] = {enable,{&frame.color}};
+    attachmentsMap["skybox.bloom"] = {enable,{&frame.bloom}};
 }
 
 void skyboxGraphics::Skybox::destroy(VkDevice device)
@@ -24,6 +35,9 @@ void skyboxGraphics::Skybox::destroy(VkDevice device)
 
 void skyboxGraphics::destroy()
 {
+    frame.deleteAttachment(device);
+    frame.deleteSampler(device);
+
     skybox.destroy(device);
 
     workflow::destroy();
@@ -73,10 +87,10 @@ void skyboxGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
-        std::vector<VkImageView> pAttachments(attachmentsCount);
-        for(auto& pAttachment: pAttachments){
-            pAttachment = this->pAttachments[&pAttachment - &pAttachments[0]].instances[i].imageView;
-        }
+        std::vector<VkImageView> pAttachments = {
+            frame.color.instances[i].imageView,
+            frame.bloom.instances[i].imageView
+        };
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -171,13 +185,27 @@ void skyboxGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &skybox, image.Count);
 }
 
-void skyboxGraphics::updateDescriptorSets(camera* cameraObject)
+void skyboxGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
+void skyboxGraphics::updateDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&)
 {
     for (uint32_t i = 0; i < image.Count; i++){
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cameraObject->getBuffer(i);
+            bufferInfo.buffer = bufferMap.at("camera").second[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = cameraObject->getBufferRange();
+            bufferInfo.range = bufferMap.at("camera").first;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -194,10 +222,7 @@ void skyboxGraphics::updateDescriptorSets(camera* cameraObject)
 
 void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
-    std::vector<VkClearValue> clearValues(attachmentsCount,VkClearValue{});
-    for(uint32_t index = 0; index < clearValues.size(); index++){
-        clearValues[index].color = pAttachments[index].clearValue.color;
-    }
+    std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -234,11 +259,4 @@ bool skyboxGraphics::removeObject(object* object)
     size_t size = objects.size();
     objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
     return size - objects.size() > 0;
-}
-
-void skyboxGraphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)
-{
-    for(auto& object: skybox.objects){
-        object->updateUniformBuffer(commandBuffer, currentImage);
-    }
 }

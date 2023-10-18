@@ -4,7 +4,6 @@
 #include "texture.h"
 #include "model.h"
 #include "object.h"
-#include "camera.h"
 
 void graphics::Base::Destroy(VkDevice device)
 {
@@ -168,29 +167,33 @@ void graphics::createBaseDescriptorSets()
     vkAllocateDescriptorSets(device, &allocInfo, base.DescriptorSets.data());
 }
 
-void graphics::updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject)
+void graphics::updateBaseDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cameraObject->getBuffer(i);
+            bufferInfo.buffer = bufferMap.at("camera").second[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = cameraObject->getBufferRange();
+            bufferInfo.range = bufferMap.at("camera").first;
 
         VkDescriptorImageInfo skyboxImageInfo{};
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = *emptyTexture->getTextureImageView();
-            skyboxImageInfo.sampler   = *emptyTexture->getTextureSampler();
+            skyboxImageInfo.imageView = *emptyTexture["black"]->getTextureImageView();
+            skyboxImageInfo.sampler   = *emptyTexture["black"]->getTextureSampler();
 
         VkDescriptorBufferInfo StorageBufferInfo{};
-            StorageBufferInfo.buffer = storageBuffers[i];
+            StorageBufferInfo.buffer = bufferMap.at("storage").second[i];
             StorageBufferInfo.offset = 0;
-            StorageBufferInfo.range = sizeOfStorageBuffers;
+            StorageBufferInfo.range = bufferMap.at("storage").first;
 
+        attachments* depthAttachment = !base.transparencyPass || base.transparencyNumber == 0 ? nullptr :
+            attachmentsMap.at(("transparency" + std::to_string(base.transparencyNumber - 1) + ".") + "GBuffer.depth").second.front();
         VkDescriptorImageInfo depthImageInfo{};
             depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = depthAttachment ? depthAttachment->instances[i].imageView : *emptyTexture->getTextureImageView();
-            depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : *emptyTexture->getTextureSampler();
+            depthImageInfo.imageView = depthAttachment ? depthAttachment->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
+            depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

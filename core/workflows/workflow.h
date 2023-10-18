@@ -5,6 +5,7 @@
 #include "attachments.h"
 
 #include <filesystem>
+#include <unordered_map>
 
 class texture;
 
@@ -31,31 +32,24 @@ protected:
     VkDevice                        device{VK_NULL_HANDLE};
     std::filesystem::path           shadersPath;
     imageInfo                       image;
-    texture*                        emptyTexture{nullptr};
-
-    uint32_t                        attachmentsCount{0};
-    attachments*                    pAttachments{nullptr};
+    std::unordered_map<std::string, texture*> emptyTexture;
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
     std::vector<VkCommandBuffer>    commandBuffers;
 public:
     virtual ~workflow(){};
-    void destroy();
+    virtual void destroy();
 
-    workflow& setEmptyTexture(texture* emptyTexture);
+    workflow& setEmptyTexture(std::unordered_map<std::string, texture*> emptyTexture);
     workflow& setShadersPath(const std::filesystem::path &path);
     workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
     workflow& setImageProp(imageInfo* pInfo);
-    workflow& setAttachments(uint32_t attachmentsCount, attachments* pAttachments);
 
-    virtual void createRenderPass() = 0;
-    virtual void createFramebuffers() = 0;
-    virtual void createPipelines() = 0;
-
-    virtual void createDescriptorPool() = 0;
-    virtual void createDescriptorSets() = 0;
-
+    virtual void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) = 0;
+    virtual void updateDescriptorSets(
+        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) = 0;
     virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
 
     void createCommandBuffers(VkCommandPool commandPool);

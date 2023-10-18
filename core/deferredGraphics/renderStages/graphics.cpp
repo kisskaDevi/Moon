@@ -3,7 +3,12 @@
 #include "object.h"
 #include "deferredAttachments.h"
 
-graphics::graphics(){
+graphics::graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber) :
+    enable(enable)
+{
+    base.transparencyPass = transparencyPass;
+    base.transparencyNumber = transparencyNumber;
+
     outlining.Parent = &base;
     ambientLighting.Parent = &lighting;
 }
@@ -20,20 +25,24 @@ void graphics::destroy()
     pAttachments.clear();
 
     workflow::destroy();
+
+    deferredAttachments.deleteAttachment(device);
+    deferredAttachments.deleteSampler(device);
 }
 
-void graphics::setAttachments(DeferredAttachments* attachments)
+void graphics::setAttachments()
 {
-    pAttachments.push_back(&attachments->image);
-    pAttachments.push_back(&attachments->blur);
-    pAttachments.push_back(&attachments->bloom);
-    pAttachments.push_back(&attachments->GBuffer.position);
-    pAttachments.push_back(&attachments->GBuffer.normal);
-    pAttachments.push_back(&attachments->GBuffer.color);
-    pAttachments.push_back(&attachments->GBuffer.depth);
+    pAttachments.push_back(&deferredAttachments.image);
+    pAttachments.push_back(&deferredAttachments.blur);
+    pAttachments.push_back(&deferredAttachments.bloom);
+    pAttachments.push_back(&deferredAttachments.GBuffer.position);
+    pAttachments.push_back(&deferredAttachments.GBuffer.normal);
+    pAttachments.push_back(&deferredAttachments.GBuffer.color);
+    pAttachments.push_back(&deferredAttachments.GBuffer.depth);
 }
 
-void graphics::createAttachments(DeferredAttachments* pAttachments)
+namespace {
+void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, DeferredAttachments* pAttachments)
 {
     VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     pAttachments->image.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
@@ -53,6 +62,21 @@ void graphics::createAttachments(DeferredAttachments* pAttachments)
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.normal.sampler);
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.color.sampler);
     vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.depth.sampler);
+}
+}
+
+void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    ::createAttachments(physicalDevice, device, image, &deferredAttachments);
+    setAttachments();
+
+    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "image"] = {enable, {&deferredAttachments.image}};
+    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "blur"] = {enable, {&deferredAttachments.blur}};
+    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "bloom"] = {enable, {&deferredAttachments.bloom}};
+    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.position"] = {enable, {&deferredAttachments.GBuffer.position}};
+    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.normal"] = {enable, {&deferredAttachments.GBuffer.normal}};
+    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.color"] = {enable, {&deferredAttachments.GBuffer.color}};
+    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.depth"] = {enable, {&deferredAttachments.GBuffer.depth}};
 }
 
 void graphics::createRenderPass()
@@ -193,10 +217,24 @@ void graphics::createDescriptorSets()
     createLightingDescriptorSets();
 }
 
-void graphics::updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject)
+void graphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
-    updateBaseDescriptorSets(depthAttachment, storageBuffers, sizeOfStorageBuffer, cameraObject);
-    updateLightingDescriptorSets(cameraObject);
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
+void graphics::updateDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    updateBaseDescriptorSets(bufferMap, attachmentsMap);
+    updateLightingDescriptorSets(bufferMap);
 }
 
 void graphics::updateCommandBuffer(uint32_t frameNumber)
@@ -228,13 +266,6 @@ void graphics::updateCommandBuffer(uint32_t frameNumber)
         ambientLighting.render(frameNumber,commandBuffers[frameNumber]);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
-}
-
-void graphics::updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage)
-{
-    for(auto& object: base.objects){
-        object->updateUniformBuffer(commandBuffer, currentImage);
-    }
 }
 
 void graphics::bind(object *newObject)

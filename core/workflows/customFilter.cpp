@@ -2,12 +2,16 @@
 #include "operations.h"
 #include "vkdefault.h"
 
+customFilter::customFilter(bool enable, float blitFactor, float xSampleStep, float ySampleStep, uint32_t blitAttachmentsCount):
+    enable(enable),
+    blitFactor(blitFactor),
+    xSampleStep(xSampleStep),
+    ySampleStep(ySampleStep),
+    blitAttachmentsCount(blitAttachmentsCount)
+{}
+
 void customFilter::setSampleStep(const float& deltaX, const float& deltaY){
     xSampleStep = deltaX; ySampleStep = deltaY;
-}
-
-void customFilter::setSrcAttachment(attachments *srcAttachment){
-    this->srcAttachment = srcAttachment;
 }
 
 void customFilter::setBlitFactor(const float &blitFactor){
@@ -20,18 +24,36 @@ void customFilter::createBufferAttachments(){
     vkCreateSampler(device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
-void customFilter::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
-    for(size_t index=0; index<attachmentsCount; index++){
-        pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
-        VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
+namespace {
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments){
+        for(size_t index=0; index<attachmentsCount; index++){
+            pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
+            VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
+            vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
+        }
+    }
+}
+
+void customFilter::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    createBufferAttachments();
+
+    frames.resize(blitAttachmentsCount);
+    ::createAttachments(physicalDevice, device, image, blitAttachmentsCount, frames.data());
+    attachmentsMap["blit"] = {enable,{}};
+    for(auto& frame: frames){
+        attachmentsMap["blit"].second.push_back(&frame);
     }
 }
 
 void customFilter::destroy(){
     filter.destroy(device);
-
     workflow::destroy();
+
+    for(auto& attachment: frames){
+        attachment.deleteAttachment(device);
+        attachment.deleteSampler(device);
+    }
 
     bufferAttachment.deleteAttachment(device);
     bufferAttachment.deleteSampler(device);
@@ -75,14 +97,14 @@ void customFilter::createRenderPass(){
 }
 
 void customFilter::createFramebuffers(){
-    framebuffers.resize(image.Count*attachmentsCount);
-    for(size_t i = 0; i < attachmentsCount; i++){
+    framebuffers.resize(image.Count * frames.size());
+    for(size_t i = 0; i < frames.size(); i++){
         for (size_t j = 0; j < image.Count; j++){
             VkFramebufferCreateInfo framebufferInfo{};
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
-                framebufferInfo.pAttachments = &pAttachments[i].instances[j].imageView;
+                framebufferInfo.pAttachments = &frames[i].instances[j].imageView;
                 framebufferInfo.width = image.frameBufferExtent.width;
                 framebufferInfo.height = image.frameBufferExtent.height;
                 framebufferInfo.layers = 1;
@@ -174,8 +196,24 @@ void customFilter::createDescriptorSets(){
     workflow::createDescriptorSets(device, &filter, image.Count);
 }
 
-void customFilter::updateDescriptorSets()
+void customFilter::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
+void customFilter::updateDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    srcAttachment = attachmentsMap.at("combined.bloom").second.front();
+
     auto updateDescriptorSets = [](VkDevice device, attachments* image, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
         auto imageIt = image->instances.begin();
         auto setIt = descriptorSets.begin();
@@ -214,27 +252,27 @@ void customFilter::updateCommandBuffer(uint32_t frameNumber)
             clearColorValue.uint32[2] = 0;
             clearColorValue.uint32[3] = 0;
 
-        std::vector<VkImage> blitImages(attachmentsCount);
+        std::vector<VkImage> blitImages(frames.size());
         blitImages[0] = srcAttachment->instances[frameNumber].image;
         Texture::transitionLayout(commandBuffers[frameNumber], blitImages[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 
-        for(size_t i=1;i<attachmentsCount;i++){
-            blitImages[i] = pAttachments[i-1].instances[frameNumber].image;
+        for(size_t i=1;i<frames.size();i++){
+            blitImages[i] = frames[i-1].instances[frameNumber].image;
         }
 
         VkImage blitBufferImage = bufferAttachment.instances[frameNumber].image;
         uint32_t width = image.frameBufferExtent.width;
         uint32_t height = image.frameBufferExtent.height;
 
-        for(uint32_t k=0;k<attachmentsCount;k++){
+        for(uint32_t k=0;k<frames.size();k++){
             Texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, (k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
             vkCmdClearColorImage(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &ImageSubresourceRange);
             Texture::blitDown(commandBuffers[frameNumber], blitImages[k], 0, blitBufferImage, 0, width, height, 0, 1, blitFactor);
             Texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
             render(frameNumber, commandBuffers[frameNumber], k);
         }
-        for(uint32_t k=0;k<attachmentsCount;k++){
-            Texture::transitionLayout(commandBuffers[frameNumber],pAttachments[k].instances[frameNumber].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+        for(uint32_t k=0;k<frames.size();k++){
+            Texture::transitionLayout(commandBuffers[frameNumber],frames[k].instances[frameNumber].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
         }
 }
 
@@ -242,7 +280,7 @@ void customFilter::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, u
 {
     std::vector<VkClearValue> clearValues(1,VkClearValue{});
     for(uint32_t index = 0; index < clearValues.size(); index++){
-        clearValues[index].color = pAttachments[attachmentNumber].clearValue.color;
+        clearValues[index].color = frames[attachmentNumber].clearValue.color;
     }
 
     VkRenderPassBeginInfo renderPassInfo{};

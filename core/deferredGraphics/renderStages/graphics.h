@@ -2,6 +2,7 @@
 #define GRAPHICS_H
 
 #include "workflow.h"
+#include "deferredAttachments.h"
 
 #include <filesystem>
 #include <unordered_map>
@@ -11,7 +12,6 @@ class   cubeTexture;
 class   object;
 class   camera;
 class   light;
-struct  DeferredAttachments;
 struct  Node;
 struct  Material;
 struct  MaterialBlock;
@@ -21,10 +21,13 @@ class graphics : public workflow
 private:
     uint32_t                        primitiveCount{0};
     std::vector<attachments*>       pAttachments;
+    DeferredAttachments             deferredAttachments;
+    bool                            enable{true};
 
     struct Base{
         std::filesystem::path                           ShadersPath;
         bool                                            transparencyPass{false};
+        uint32_t                                        transparencyNumber{0};
 
         std::unordered_map<uint8_t, VkPipelineLayout>   PipelineLayoutDictionary;
         std::unordered_map<uint8_t, VkPipeline>         PipelineDictionary;
@@ -96,29 +99,31 @@ private:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-    void updateBaseDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffers, camera* cameraObject);
+    void updateBaseDescriptorSets(
+        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
 
     void createLightingDescriptorPool();
     void createLightingDescriptorSets();
-    void updateLightingDescriptorSets(camera* cameraObject);
+    void updateLightingDescriptorSets(const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap);
+
+    void setAttachments();
+
+    void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
+    void createRenderPass();
+    void createFramebuffers();
+    void createPipelines();
+    void createDescriptorPool();
+    void createDescriptorSets();
 public:
-    graphics();
-    void destroy();
+    graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber);
 
-    void setAttachments(DeferredAttachments* pAttachments);
-    void createAttachments(DeferredAttachments* pAttachments);
-    void createRenderPass()override;
-    void createFramebuffers()override;
-    void createPipelines()override;
-
-    void createDescriptorPool()override;
-    void createDescriptorSets()override;
-    void updateDescriptorSets(attachments* depthAttachment, VkBuffer* storageBuffers, size_t sizeOfStorageBuffer, camera* cameraObject);
-
+    void destroy()override;
+    void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+    void updateDescriptorSets(
+        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    void updateObjectUniformBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage);
-    void updateLightSourcesUniformBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     void bind(object* newObject);
     bool remove(object* object);

@@ -79,7 +79,7 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
-    graphics["base"]->setEnableTransparentLayers(true).setEnableSkybox(true).setEnableBlur(true).setEnableBloom(true).setEnableSSAO(true).setEnableSSLR(true).setEnableScattering(true).setEnableShadow(true).setEnableBoundingBox(true);
+    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
 
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4 , static_cast<int32_t>(HEIGHT / 2) - 4}};
 

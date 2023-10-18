@@ -2,17 +2,30 @@
 #include "operations.h"
 #include "vkdefault.h"
 
+gaussianBlur::gaussianBlur(bool enable) :
+    enable(enable)
+{}
+
 void gaussianBlur::createBufferAttachments(){
     bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
     VkSamplerCreateInfo samplerInfo = vkDefault::samler();
     vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
-void gaussianBlur::createAttachments(uint32_t attachmentsCount, attachments* pAttachments){
-    for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
-        pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
+namespace {
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments){
+        for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
+            pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
+        }
     }
+}
+
+void gaussianBlur::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    createBufferAttachments();
+    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    attachmentsMap["blured"] = {enable, {&frame}};
 }
 
 void gaussianBlur::destroy(){
@@ -20,6 +33,9 @@ void gaussianBlur::destroy(){
     yblur.destroy(device);
 
     workflow::destroy();
+
+    frame.deleteAttachment(device);
+    frame.deleteSampler(device);
 
     bufferAttachment.deleteAttachment(device);
     bufferAttachment.deleteSampler(device);
@@ -88,8 +104,10 @@ void gaussianBlur::createRenderPass(){
 }
 
 void gaussianBlur::createFramebuffers(){
-    for (auto attIt = pAttachments->instances.begin(), buffIt = bufferAttachment.instances.begin();
-         attIt != pAttachments->instances.end() && buffIt != bufferAttachment.instances.end(); attIt++, buffIt++){
+    for (auto attIt = frame.instances.begin(), buffIt = bufferAttachment.instances.begin();
+         attIt != frame.instances.end() && buffIt != bufferAttachment.instances.end();
+         attIt++, buffIt++)
+    {
         std::vector<VkImageView> attachments = {attIt->imageView, buffIt->imageView};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -190,7 +208,22 @@ void gaussianBlur::createDescriptorSets(){
     workflow::createDescriptorSets(device, &yblur, image.Count);
 }
 
-void gaussianBlur::updateDescriptorSets(attachments* blurAttachment){
+void gaussianBlur::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
+void gaussianBlur::updateDescriptorSets(
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
     auto updateDescriptorSets = [](VkDevice device, attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
         auto imageIt = attachment->instances.begin();
         auto setIt = descriptorSets.begin();
@@ -213,12 +246,13 @@ void gaussianBlur::updateDescriptorSets(attachments* blurAttachment){
         }
     };
 
+    const auto blurAttachment = attachmentsMap.at("blur").second.front();
     updateDescriptorSets(device, blurAttachment, blurAttachment->sampler, xblur.DescriptorSets);
     updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, yblur.DescriptorSets);
 }
 
 void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
-    std::vector<VkClearValue> clearValues(2, VkClearValue{pAttachments->clearValue.color});
+    std::vector<VkClearValue> clearValues(2, VkClearValue{frame.clearValue.color});
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

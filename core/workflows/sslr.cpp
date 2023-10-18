@@ -1,23 +1,35 @@
 #include "sslr.h"
 #include "operations.h"
 #include "vkdefault.h"
-#include "camera.h"
 
-void SSLRGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
-{
-    for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++)
+SSLRGraphics::SSLRGraphics(bool enable) :
+    enable(enable)
+{}
+
+namespace {
+    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments)
     {
-        pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-        VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
+            pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+            VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
+        }
     }
+}
+
+void SSLRGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    attachmentsMap["sslr"] = {enable,{&frame}};
 }
 
 void SSLRGraphics::destroy()
 {
     sslr.destroy(device);
-
     workflow::destroy();
+
+    frame.deleteAttachment(device);
+    frame.deleteSampler(device);
 }
 
 void SSLRGraphics::createRenderPass()
@@ -66,7 +78,7 @@ void SSLRGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &pAttachments->instances[i].imageView;
+            framebufferInfo.pAttachments = &frame.instances[i].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -161,59 +173,76 @@ void SSLRGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &sslr, image.Count);
 }
 
+void SSLRGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+{
+    if(enable){
+        createAttachments(attachmentsMap);
+        createRenderPass();
+        createFramebuffers();
+        createPipelines();
+        createDescriptorPool();
+        createDescriptorSets();
+    }
+}
+
 void SSLRGraphics::updateDescriptorSets(
-    camera* cameraObject,
-    attachments* position,
-    attachments* normal,
-    attachments* image,
-    attachments* depth,
-    attachments* layerPosition,
-    attachments* layerNormal,
-    attachments* layerImage,
-    attachments* layerDepth)
+    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     for (uint32_t i = 0; i < this->image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = cameraObject->getBuffer(i);
+            bufferInfo.buffer = bufferMap.at("camera").second[i];
             bufferInfo.offset = 0;
-            bufferInfo.range = cameraObject->getBufferRange();
+            bufferInfo.range = bufferMap.at("camera").first;
 
+        const auto position = attachmentsMap.at("GBuffer.position").second.front();
         VkDescriptorImageInfo positionInfo{};
             positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             positionInfo.imageView = position->instances[i].imageView;
             positionInfo.sampler = position->sampler;
 
+        const auto normal = attachmentsMap.at("GBuffer.normal").second.front();
         VkDescriptorImageInfo normalInfo{};
             normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             normalInfo.imageView = normal->instances[i].imageView;
             normalInfo.sampler = normal->sampler;
 
+        const auto image = attachmentsMap.at("image").second.front();
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = image->instances[i].imageView;
             imageInfo.sampler = image->sampler;
 
+        const auto depth = attachmentsMap.at("GBuffer.depth").second.front();
         VkDescriptorImageInfo depthInfo{};
             depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             depthInfo.imageView = depth->instances[i].imageView;
             depthInfo.sampler = depth->sampler;
 
+        const auto layerPosition = attachmentsMap.count("transparency0.GBuffer.position") > 0 && attachmentsMap.at("transparency0.GBuffer.position").first ?
+                                    attachmentsMap.at("transparency0.GBuffer.position").second.front() : attachmentsMap.at("GBuffer.position").second.front();
         VkDescriptorImageInfo layerPositionInfo{};
             layerPositionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             layerPositionInfo.imageView = layerPosition->instances[i].imageView;
             layerPositionInfo.sampler = layerPosition->sampler;
 
+        const auto layerNormal = attachmentsMap.count("transparency0.GBuffer.normal") > 0 && attachmentsMap.at("transparency0.GBuffer.normal").first ?
+                                    attachmentsMap.at("transparency0.GBuffer.normal").second.front() : attachmentsMap.at("GBuffer.normal").second.front();
         VkDescriptorImageInfo layerNormalInfo{};
             layerNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             layerNormalInfo.imageView = layerNormal->instances[i].imageView;
             layerNormalInfo.sampler = layerNormal->sampler;
 
+        const auto layerImage = attachmentsMap.count("transparency0.image") > 0 && attachmentsMap.at("transparency0.image").first ?
+                                    attachmentsMap.at("transparency0.image").second.front() : attachmentsMap.at("image").second.front();
         VkDescriptorImageInfo layerImageInfo{};
             layerImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             layerImageInfo.imageView = layerImage->instances[i].imageView;
             layerImageInfo.sampler = layerImage->sampler;
 
+        const auto layerDepth = attachmentsMap.count("transparency0.GBuffer.depth") > 0 && attachmentsMap.at("transparency0.GBuffer.depth").first ?
+                                    attachmentsMap.at("transparency0.GBuffer.depth").second.front() : attachmentsMap.at("GBuffer.depth").second.front();
         VkDescriptorImageInfo layerDepthInfo{};
             layerDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             layerDepthInfo.imageView = layerDepth->instances[i].imageView;
@@ -298,10 +327,7 @@ void SSLRGraphics::updateDescriptorSets(
 
 void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
-    std::vector<VkClearValue> clearValues(attachmentsCount,VkClearValue{});
-    for(uint32_t index = 0; index < clearValues.size(); index++){
-        clearValues[index].color = pAttachments[index].clearValue.color;
-    }
+    std::vector<VkClearValue> clearValues = {frame.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

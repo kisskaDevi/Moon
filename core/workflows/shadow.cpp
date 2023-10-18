@@ -23,10 +23,13 @@ void shadowGraphics::Shadow::destroy(VkDevice device)
     if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
+shadowGraphics::shadowGraphics(bool enable) :
+    enable(enable)
+{}
+
 void shadowGraphics::destroy()
 {
     shadow.destroy(device);
-
     workflow::destroy();
 }
 
@@ -186,6 +189,14 @@ void shadowGraphics::removeLightSource(light* lightSource)
             shadow.lightSources.erase(shadow.lightSources.begin()+index);
             break;
         }
+    }
+}
+
+void shadowGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&)
+{
+    if(enable){
+        createRenderPass();
+        createPipelines();
     }
 }
 

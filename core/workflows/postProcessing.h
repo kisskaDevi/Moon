@@ -17,12 +17,8 @@ struct postProcessingPushConst{
 class postProcessingGraphics : public workflow
 {
 private:
-    attachments*    blurAttachment{nullptr};
-    attachments*    blitAttachments{nullptr};
-    attachments*    sslrAttachment{nullptr};
-    attachments*    ssaoAttachment{nullptr};
-    attachments*    layersAttachment{nullptr};
-    attachments*    boundingBoxbAttachment{nullptr};
+    attachments frame;
+    bool enable{true};
 
     struct PostProcessing : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
@@ -32,28 +28,21 @@ private:
         uint32_t    blitAttachmentCount{1};
     }postProcessing;
 
+    void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
+    void createRenderPass();
+    void createFramebuffers();
+    void createPipelines();
+    void createDescriptorPool();
+    void createDescriptorSets();
 public:
-    postProcessingGraphics() = default;
-    void destroy();
+    postProcessingGraphics(bool enable, float blitFactor, uint32_t blitAttachmentCount);
 
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
-
-    void createRenderPass()override;
-    void createFramebuffers()override;
-    void createPipelines()override;
-
-    void createDescriptorPool()override;
-    void createDescriptorSets()override;
-    void updateDescriptorSets();
-
+    void destroy() override;
+    void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+    void updateDescriptorSets(
+        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    void setBlurAttachment(attachments* blurAttachment);
-    void setBlitAttachments(uint32_t blitAttachmentCount, attachments* blitAttachments, float blitFactor);
-    void setSSLRAttachment(attachments* sslrAttachment);
-    void setSSAOAttachment(attachments* ssaoAttachment);
-    void setLayersAttachment(attachments* layersAttachment);
-    void setBoundingBoxbAttachment(attachments* boundingBoxbAttachment);
 };
 
 #endif // POSTPROCESSING_H

@@ -41,7 +41,6 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
     for(auto& [_,graph]: graphics){
         graph->destroyGraphics();
         graph->createGraphics();
-        graph->updateDescriptorSets();
     }
 
     gui->destroyGraphics();
@@ -70,7 +69,6 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     for(auto& [_,graph]: graphics){
         graph->createGraphics();
-        graph->updateDescriptorSets();
     }
 
     gui->createGraphics();

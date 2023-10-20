@@ -6,7 +6,7 @@ WARNINGS += -Wall
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
     $$PWD/renderStages \
-    $$PWD/../workflows \
+    $$PWD/workflows \
     $$PWD/../utils \
     $$PWD/../math \
     $$PWD/../interfaces \

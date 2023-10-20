@@ -14,7 +14,7 @@ SUBDIRS += \
     testPos
 
 utils.subdir = core/utils
-workflows.subdir = core/workflows
+workflows.subdir = core/deferredGraphics/workflows
 graphicsManager.subdir = core/graphicsManager
 interfaces.subdir = core/interfaces
 deferredGraphics.subdir = core/deferredGraphics

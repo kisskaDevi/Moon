@@ -62,7 +62,6 @@ void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
     for(auto& [_,graph]: graphics){
         graph->destroyGraphics();
         graph->createGraphics();
-        graph->updateDescriptorSets();
     }
 }
 
@@ -89,7 +88,6 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
     for(auto& [key,graph]: graphics){
         graph->bind(cameras[key]);
         graph->createGraphics();
-        graph->updateDescriptorSets();
     }
 
     loadModels();

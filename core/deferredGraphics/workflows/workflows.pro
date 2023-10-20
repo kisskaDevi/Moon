@@ -4,10 +4,10 @@ CONFIG += c++17 console
 WARNINGS += -Wall
 
 INCLUDEPATH += \
-    $$PWD/../../dependences/libs/vulkan/include/vulkan \
-    $$PWD/../utils \
-    $$PWD/../math \
-    $$PWD/../interfaces
+    $$PWD/../../../dependences/libs/vulkan/include/vulkan \
+    $$PWD/../../utils \
+    $$PWD/../../math \
+    $$PWD/../../interfaces
 
 SOURCES += \
     blur.cpp \

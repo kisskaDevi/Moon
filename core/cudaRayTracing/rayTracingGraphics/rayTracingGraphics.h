@@ -2,8 +2,6 @@
 #define RAYTRACINGGRAPHICS
 
 #include "graphicsInterface.h"
-#include "core/utils/device.h"
-#include "core/utils/swapChain.h"
 #include "core/utils/attachments.h"
 #include "core/utils/buffer.h"
 
@@ -34,10 +32,6 @@ private:
     hitableContainer* container{nullptr};
     uint32_t* hostFrameBuffer{nullptr};
 
-    std::vector<physicalDevice*> devices;
-    physicalDevice* device{nullptr};
-    swapChain* swapChainKHR{nullptr};
-
     rayTracingLink Link;
     attachments finalAttachment;
 
@@ -50,22 +44,12 @@ private:
 
 public:
     rayTracingGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset)
-        : shadersPath(shadersPath), extent(extent), offset(offset), cam(cam){
+        : shadersPath(shadersPath), extent(extent), offset(offset), cam(cam)
+    {
         Link.setShadersPath(shadersPath);
+        link = &Link;
     }
 
-    void setDevices(uint32_t devicesCount, physicalDevice* devices) override {
-        this->devices.resize(devicesCount);
-        for(uint32_t i = 0 ; i < devicesCount; i++){
-            this->devices[i] = &devices[i];
-        }
-        device = this->devices.front();
-        Link.setDeviceProp(device->getLogical());
-    }
-    void setSwapChain(swapChain* swapChainKHR) override {
-        this->swapChainKHR = swapChainKHR;
-        Link.setImageCount(swapChainKHR->getImageCount());
-    }
     void setList(hitableContainer* container) {
         this->container = container;
     }
@@ -92,9 +76,6 @@ public:
 	}
 	size_t getHeight() const {
         return swapChainKHR->getExtent().height;
-	}
-    linkable* getLinkable() override {
-        return &Link;
     }
 
     void updateCommandBuffer(uint32_t) override {}

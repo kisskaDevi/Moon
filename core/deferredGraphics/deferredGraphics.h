@@ -5,7 +5,6 @@
 #include "link.h"
 #include "workflow.h"
 
-#include "device.h"
 #include "buffer.h"
 #include "vector.h"
 
@@ -28,21 +27,16 @@ struct StorageBufferObject{
 class deferredGraphics: public graphicsInterface{
 private:
     std::filesystem::path                       shadersPath;
-    uint32_t                                    imageCount{0};
     VkExtent2D                                  extent{0,0};
     VkOffset2D                                  offset{0,0};
     VkExtent2D                                  frameBufferExtent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
-    std::vector<physicalDevice>                 devices;
-    physicalDevice                              device;
-
     std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>> bufferMap;
     std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>> attachmentsMap;
-
     std::unordered_map<std::string, workflow*>  workflows;
     std::unordered_map<std::string, bool>       enable;
-    link                                        Link;
+    class link                                  Link;
 
     std::vector<buffer>                         storageBuffersHost;
 
@@ -55,7 +49,6 @@ private:
     uint32_t                                    blitAttachmentCount{8};
     uint32_t                                    TransparentLayersCount{2};
 
-    swapChain*                                  swapChainKHR{nullptr};
     camera*                                     cameraObject{nullptr};
     std::vector<object*>                        objects;
     std::vector<light*>                         lights;
@@ -65,6 +58,7 @@ private:
     void createGraphicsPasses();
     void createCommandBuffers();
     void createCommandPool();
+    void updateDescriptorSets();
 
     void freeCommandBuffers();
     void destroyCommandPool();
@@ -74,13 +68,8 @@ public:
     ~deferredGraphics() = default;
 
     void destroyGraphics() override;
-
-    void setDevices(uint32_t devicesCount, physicalDevice* devices) override;
-    void setSwapChain(swapChain* swapChainKHR) override;
-
     void createGraphics() override;
 
-    void updateDescriptorSets();
     void updateCommandBuffer(uint32_t imageIndex) override;
     void updateBuffers(uint32_t imageIndex) override;
 
@@ -89,31 +78,28 @@ public:
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
 
-    linkable*   getLinkable() override;
-
-    void        updateCmdFlags();
-
-    void        setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
-    void        setShadersPath(const std::filesystem::path& shadersPath);
-    void        setMinAmbientFactor(const float& minAmbientFactor);
-    void        setScatteringRefraction(bool enable);
-
-    void        create(model* pModel);
-    void        destroy(model* pModel);
-
-    void        bind(camera* cameraObject);
-    void        remove(camera* cameraObject);
-
-    void        bind(object* object);
-    bool        remove(object* object);
-
-    void        bind(light* lightSource);
-    void        remove(light* lightSource);
-
-    void        updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
-    uint32_t    readStorageBuffer(uint32_t currentImage);
+    void updateCmdFlags();
 
     deferredGraphics& setEnable(const std::string& name, bool enable);
+    deferredGraphics& setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
+    deferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
+    deferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
+    deferredGraphics& setScatteringRefraction(bool enable);
+
+    void create(model* pModel);
+    void destroy(model* pModel);
+
+    void bind(camera* cameraObject);
+    void remove(camera* cameraObject);
+
+    void bind(object* object);
+    bool remove(object* object);
+
+    void bind(light* lightSource);
+    void remove(light* lightSource);
+
+    void updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
+    uint32_t readStorageBuffer(uint32_t currentImage);
 };
 
 #endif // DEFERREDGRAPHICS_H

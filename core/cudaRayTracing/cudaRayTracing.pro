@@ -6,7 +6,8 @@ WARNINGS += -Wall
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
     $$PWD/../graphicsManager \
-    $$PWD/../..
+    $$PWD/../.. \
+    $$PWD/../utils
 
 HEADERS += \
     $$PWD/hitable/sphere.h \
@@ -65,7 +66,8 @@ CUDA_INCLUDEPATH += \
     -I$$PWD/utils \
     -I$$PWD/../../dependences/libs/vulkan/include/vulkan \
     -I$$PWD/../graphicsManager \
-    -I$$PWD/../..
+    -I$$PWD/../.. \
+    -I$$PWD/../utils
 
 QMAKE_LIBDIR += -L$$CUDA_LIBS_DIR
 LIBS += $$QMAKE_LIBDIR -lcuda -lcudart -lcudadevrt -lcudart_static

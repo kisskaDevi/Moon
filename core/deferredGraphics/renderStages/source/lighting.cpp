@@ -1,6 +1,5 @@
 #include "graphics.h"
 #include "vkdefault.h"
-#include "camera.h"
 #include "light.h"
 #include "deferredAttachments.h"
 

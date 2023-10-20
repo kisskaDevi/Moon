@@ -29,7 +29,7 @@ endif()
 set(LIBS_DIRS ${Vulkan_LIBRARIES} ${GLFW_LIB})
 
 add_subdirectory(core/utils)
-add_subdirectory(core/workflows)
+add_subdirectory(core/deferredGraphics/workflows)
 add_subdirectory(core/graphicsManager)
 add_subdirectory(core/imguiGraphics)
 add_subdirectory(core/interfaces)

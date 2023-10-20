@@ -37,6 +37,8 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     enable["Scattering"] = false;
     enable["BoundingBox"] = false;
     enable["TransparentLayer"] = false;
+
+    link = &Link;
 }
 
 void deferredGraphics::freeCommandBuffers(){
@@ -103,6 +105,7 @@ void deferredGraphics::createGraphics()
 
     createGraphicsPasses();
     createCommandBuffers();
+    updateDescriptorSets();
 }
 
 void deferredGraphics::createGraphicsPasses(){
@@ -253,10 +256,6 @@ std::vector<std::vector<VkSemaphore>> deferredGraphics::submit(const std::vector
     nodes[imageIndex]->submit();
 
     return nodes[imageIndex]->back()->getBackSemaphores();
-}
-
-linkable* deferredGraphics::getLinkable() {
-    return &Link;
 }
 
 void deferredGraphics::updateCommandBuffer(uint32_t imageIndex){
@@ -442,45 +441,35 @@ void deferredGraphics::updateCmdFlags(){
     std::fill(updateCommandBufferFlags.begin(), updateCommandBufferFlags.end(), true);
 }
 
-void deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
-    static_cast<graphics*>(workflows["DeferredGraphics"])->setMinAmbientFactor(minAmbientFactor);
-    for(uint32_t i = 0; i < TransparentLayersCount; i++){
-            static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->setMinAmbientFactor(minAmbientFactor);
-    }
-
-    updateCmdFlags();
-}
-
-void deferredGraphics::setScatteringRefraction(bool enable){
-    static_cast<layersCombiner*>(workflows["LayersCombiner"])->setScatteringRefraction(enable);
-
-    updateCmdFlags();
-}
-
 deferredGraphics& deferredGraphics::setEnable(const std::string& name, bool enable){
     this->enable[name] = enable;
     return *this;
 }
 
-void deferredGraphics::setSwapChain(swapChain* swapChainKHR)
-{
-    this->swapChainKHR = swapChainKHR;
-    this->imageCount = swapChainKHR->getImageCount();
-}
-
-void deferredGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices)
-{
-    for(uint32_t i=0;i<devicesCount;i++){
-            this->devices.push_back(devices[i]);
+deferredGraphics& deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
+    static_cast<graphics*>(workflows["DeferredGraphics"])->setMinAmbientFactor(minAmbientFactor);
+    for(uint32_t i = 0; i < TransparentLayersCount; i++){
+        static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->setMinAmbientFactor(minAmbientFactor);
     }
-    device = this->devices.front();
+
+    updateCmdFlags();
+    return *this;
 }
 
-void deferredGraphics::setExtentAndOffset(VkExtent2D extent, VkOffset2D offset) {
+deferredGraphics& deferredGraphics::setScatteringRefraction(bool enable){
+    static_cast<layersCombiner*>(workflows["LayersCombiner"])->setScatteringRefraction(enable);
+
+    updateCmdFlags();
+    return *this;
+}
+
+deferredGraphics& deferredGraphics::setExtentAndOffset(VkExtent2D extent, VkOffset2D offset) {
     this->offset = offset;
     this->extent = extent;
+    return *this;
 }
 
-void deferredGraphics::setShadersPath(const std::filesystem::path& path){
+deferredGraphics& deferredGraphics::setShadersPath(const std::filesystem::path& path){
     shadersPath = path;
+    return *this;
 }

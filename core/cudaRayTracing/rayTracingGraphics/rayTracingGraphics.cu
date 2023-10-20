@@ -32,18 +32,18 @@ void rayTracingGraphics::createGraphics()
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = 0;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool);
+    vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
 
     finalAttachment.create(
-        device->instance,
-        device->getLogical(),
+        device.instance,
+        device.getLogical(),
         swapChainKHR->getFormat(),
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         swapChainKHR->getExtent(),
         swapChainKHR->getImageCount()
     );
     VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
-    vkCreateSampler(device->getLogical(), &SamplerInfo, nullptr, &finalAttachment.sampler);
+    vkCreateSampler(device.getLogical(), &SamplerInfo, nullptr, &finalAttachment.sampler);
 
     imageInfo swapChainInfo{
         swapChainKHR->getImageCount(),
@@ -54,6 +54,8 @@ void rayTracingGraphics::createGraphics()
         VK_SAMPLE_COUNT_1_BIT
     };
 
+    Link.setImageCount(imageCount);
+    Link.setDeviceProp(device.getLogical());
     Link.setShadersPath(shadersPath);
     Link.createDescriptorSetLayout();
     Link.createPipeline(&swapChainInfo);
@@ -68,8 +70,8 @@ void rayTracingGraphics::createGraphics()
     checkCudaErrors(cudaMalloc((void**)&randState, width * height * sizeof(curandState)));
 
     Buffer::create(
-        device->instance,
-        device->getLogical(),
+        device.instance,
+        device.getLogical(),
         sizeof(uint32_t) * width * height,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -78,16 +80,16 @@ void rayTracingGraphics::createGraphics()
     );
 
     hostFrameBuffer = new uint32_t[width * height];
-    vkMapMemory(device->getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * width * height, 0, &stagingBuffer.map);
+    vkMapMemory(device.getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * width * height, 0, &stagingBuffer.map);
 }
 
 void rayTracingGraphics::destroyGraphics() {
     delete[] hostFrameBuffer;
 
-    stagingBuffer.destroy(device->getLogical());
-    if(commandPool) {vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
-    finalAttachment.deleteAttachment(device->getLogical());
-    finalAttachment.deleteSampler(device->getLogical());
+    stagingBuffer.destroy(device.getLogical());
+    if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
+    finalAttachment.deleteAttachment(device.getLogical());
+    finalAttachment.deleteSampler(device.getLogical());
     Link.destroy();
     checkCudaErrors(cudaFree(randState));
     colorImage.destroy();
@@ -224,11 +226,11 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
     cudaMemcpy(hostFrameBuffer, swapChainImage.get(), sizeof(uint32_t) * width * height, cudaMemcpyDeviceToHost);
     std::memcpy(stagingBuffer.map, hostFrameBuffer, sizeof(uint32_t) * width * height);
 
-    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device->getLogical(),commandPool);
+    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
     Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
     Texture::copyFromBuffer(commandBuffer, stagingBuffer.instance, finalAttachment.instances[imageIndex].image, {width, height, 1}, 1);
     Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
-    SingleCommandBuffer::submit(device->getLogical(),device->getQueue(0,0),commandPool, &commandBuffer);
+    SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool, &commandBuffer);
 
     return std::vector<std::vector<VkSemaphore>>();
 }

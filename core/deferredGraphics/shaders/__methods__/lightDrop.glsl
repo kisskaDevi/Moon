@@ -2,7 +2,7 @@
 #define LIGHT_DROP_GLSL
 
 float lightDrop(float distance) {
-    return pow(distance, 1);
+    return pow(distance, 2);
 }
 
 float lightDistribusion(const in vec3 position, const in vec3 lightPosition, const in mat4 lightProjMatrix, const in vec3 lightDirection) {

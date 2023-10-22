@@ -34,9 +34,9 @@ layout(location = 1) out vec4 outBloom;
 mat4 projview = global.proj * global.view;
 vec3 eyePosition = global.eyePosition.xyz;
 
-float h = 1.0f;
+float h = 0.5f;
 float nbegin = 1.33f;
-float nend = nbegin + 2.0f;
+float nend = nbegin + 1.5f;
 float reflectionProbability = 0.04f;
 
 vec3 findRefrCoords(const in vec3 startPos, const in vec3 layerPointPosition, const in vec3 layerPointNormal, float n) {

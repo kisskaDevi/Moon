@@ -88,7 +88,7 @@ void main()
 {
     float perceptualRoughness;
     float metallic;
-    vec4 baseColor = SRGBtoLINEAR(vec4(colorFactor.x,colorFactor.y,colorFactor.z,1.0f) * texture(baseColorTexture, UV0) + constColor);
+    vec4 baseColor = SRGBtoLINEAR(vec4(colorFactor.xyz, 1.0f) * texture(baseColorTexture, UV0) + constColor);
 
     if(pushConstants.enableTransparencyPass == 0.0 && baseColor.a < 1.0f){
         discard;

@@ -142,10 +142,10 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
     }
     if (model.nodes[nodeIndex].rotation.size() == 4) {
         newNode->rotation = quaternion<float>(
+            static_cast<float>(model.nodes[nodeIndex].rotation[3]),
             static_cast<float>(model.nodes[nodeIndex].rotation[0]),
             static_cast<float>(model.nodes[nodeIndex].rotation[1]),
-            static_cast<float>(model.nodes[nodeIndex].rotation[2]),
-            static_cast<float>(model.nodes[nodeIndex].rotation[3])
+            static_cast<float>(model.nodes[nodeIndex].rotation[2])
         );
     }
     if (model.nodes[nodeIndex].scale.size() == 3) {

@@ -211,6 +211,13 @@ void baseObject::create(
     }
 }
 
+void baseObject::printStatus() const
+{
+    std::cout << "translation\t" << translation.vector()[0] << '\t' << translation.vector()[1] << '\t' << translation.vector()[2] << '\n';
+    std::cout << "rotation\t" << rotation.scalar() << '\t' << rotation.vector()[0] << '\t' << rotation.vector()[1] << '\t' << rotation.vector()[2] << '\n';
+    std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
+}
+
 void baseObject::setEnable(const bool& enable) {
     this->enable = enable;
 }

@@ -40,7 +40,7 @@ vec4 calcLight(
     vec4 lightTextureColor = distribusion * texture(lightTexture, (lightProjView.xy / lightProjView.w) * 0.5 + 0.5);
     vec4 sumLightColor = vec4(max(light.color.x, lightTextureColor.x), max(light.color.y, lightTextureColor.y), max(light.color.z, lightTextureColor.z), 1.0);
 
-    vec4 baseColor = SRGBtoLINEAR(baseColorTexture);
+    vec4 baseColor = baseColorTexture;
     if(!checkZeroNormal(normal.xyz)) {
         baseColor = pbr(position, normal, baseColorTexture, eyePosition, sumLightColor, light.position.xyz);
         float lightDrop = lightDropFactor * lightDrop(length(light.position.xyz - position.xyz));

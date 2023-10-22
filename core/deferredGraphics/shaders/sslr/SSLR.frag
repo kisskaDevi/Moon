@@ -89,5 +89,5 @@ void main() {
     outColor = vec4(0.0);
 
     //float roug = 1.0 - texture(position, fragTexCoord).a;
-    //outColor += SSLR(20, 0.2f, 0.9995);
+    //outColor += SSLR(40, 0.1f, 0.9995);
 }

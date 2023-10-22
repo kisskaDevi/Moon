@@ -347,6 +347,13 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, textu
     }
 }
 
+void spotLight::printStatus() const
+{
+    std::cout << "translation\t" << translation.vector()[0] << '\t' << translation.vector()[1] << '\t' << translation.vector()[2] << '\n';
+    std::cout << "rotation\t" << rotation.scalar() << '\t' << rotation.vector()[0] << '\t' << rotation.vector()[1] << '\t' << rotation.vector()[2] << '\n';
+    std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
+}
+
 //isotropicLight
 
 isotropicLight::isotropicLight(std::vector<spotLight *>& lightSource, float radius)

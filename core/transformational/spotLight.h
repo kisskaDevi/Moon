@@ -113,6 +113,8 @@ public:
     void                createDescriptorPool(VkDevice device, uint32_t imageCount);
     void                createDescriptorSets(VkDevice device, uint32_t imageCount);
     void                updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite);
+
+    void printStatus() const;
 };
 
 class isotropicLight: public transformational

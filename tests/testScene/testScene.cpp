@@ -145,10 +145,12 @@ void testScene::destroy()
 void testScene::loadModels()
 {
     models["bee"] = new class gltfModel(ExternalPath / "dependences/model/glb/Bee.glb", 6);
-    models["box"] = new class gltfModel(ExternalPath / "dependences/model/glb/Box.glb");
-    models["sponza"] = new class gltfModel(ExternalPath / "dependences/model/glTF/Sponza/Sponza.gltf");
-    models["duck"] = new class gltfModel(ExternalPath / "dependences/model/glb/Duck.glb");
     models["ufo"] = new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb");
+    models["box"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Box/glTF-Binary/Box.glb");
+    models["sponza"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf");
+    models["duck"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Duck/glTF-Binary/Duck.glb");
+    models["DragonAttenuation"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
+    models["DamagedHelmet"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
 
     for(auto& [_,model]: models){
         graphics["base"]->create(model);
@@ -178,6 +180,24 @@ void testScene::createObjects()
     groups["lightBox"] = new group;
     groups["lightBox"]->addObject(objects["lightBox"]);
 
+    objects["dragon"] = new baseObject(models["DragonAttenuation"]);
+    objects["dragon"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(26.0f, 11.0f, 11.0f));
+
+    objects["DamagedHelmet"] = new baseObject(models["DamagedHelmet"]);
+    objects["DamagedHelmet"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(27.0f, -10.0f, 14.0f));
+
+    objects["ufo_light_0"] = new baseObject(models["ufo"]);
+    objects["ufo_light_0"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
+    groups["ufo_light_0"] = new group;
+    groups["ufo_light_0"]->rotate(radians(45.0f),vector<float,3>(1.0f,0.0f,0.0f)).rotate(radians(45.0f),vector<float,3>(0.0f,0.0f,-1.0f)).translate(vector<float,3>(24.0f, 7.5f, 18.0f));
+    groups["ufo_light_0"]->addObject(objects["ufo_light_0"]);
+
+    objects["ufo_light_1"] = new baseObject(models["ufo"]);
+    objects["ufo_light_1"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
+    groups["ufo_light_1"] = new group;
+    groups["ufo_light_1"]->rotate(radians(45.0f),vector<float,3>(-1.0f,0.0f,0.0f)).rotate(radians(45.0f),vector<float,3>(0.0f,0.0f,1.0f)).translate(vector<float,3>(24.0f, -7.5f, 18.0f));
+    groups["ufo_light_1"]->addObject(objects["ufo_light_1"]);
+
     for(auto key = "ufo" + std::to_string(ufoCounter); ufoCounter < 4; ufoCounter++, key = "ufo" + std::to_string(ufoCounter)){
         objects[key] = new baseObject(models["ufo"]);
         objects[key]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
@@ -194,7 +214,6 @@ void testScene::createObjects()
         ExternalPath / "dependences/texture/skybox/top.jpg",
         ExternalPath / "dependences/texture/skybox/bottom.jpg"
     });
-    // skyboxObjects["lake"]->setColorFactor(vector<float,4>(0.5));
     skyboxObjects["lake"]->scale({200.0f,200.0f,200.0f});
 
     skyboxObjects["stars"] = new skyboxObject({
@@ -245,11 +264,19 @@ void testScene::createLight()
     lightSources.push_back(new spotLight(LIGHT_TEXTURE3, proj, true, true));
     groups["ufo3"]->addObject(lightSources.back());
 
+    lightSources.push_back(new spotLight(proj, true, true));
+    lightSources.back()->setLightColor(vector<float,4>(1.0f,0.65f,0.2f,1.0f));
+    groups["ufo_light_0"]->addObject(lightSources.back());
+
+    lightSources.push_back(new spotLight(proj, true, false));
+    lightSources.back()->setLightColor(vector<float,4>(0.9f,0.85f,0.95f,1.0f));
+    groups["ufo_light_1"]->addObject(lightSources.back());
+
     for(auto& source: lightSources){
         for(auto& [_,graph]: graphics){
             graph->bind(source);
         }
-        source->setLightDropFactor(0.2f);
+        source->setLightDropFactor(0.05f);
     }
 }
 
@@ -289,7 +316,8 @@ void testScene::mouseEvent(float frameTime)
 
                 object->setOutlining(true, 0.03f, {dist(device), dist(device), dist(device), dist(device)});
                 controledObject = object;
-                std::cout<< key <<std::endl;
+                std::cout<< key << " : primitive " << primitiveNumber <<std::endl;
+                object->printStatus();
 
                 for(auto& [_,graph]: graphics){
                     graph->updateCmdFlags();

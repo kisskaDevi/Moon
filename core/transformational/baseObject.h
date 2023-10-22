@@ -134,6 +134,8 @@ public:
     bool changeAnimationFlag{false};
     float startTimer;
     float changeAnimationTime;
+
+    void printStatus() const;
 };
 
 class skyboxObject : public baseObject{

@@ -110,9 +110,7 @@ public:
         std::unordered_map<uint8_t, VkPipelineLayout> PipelineLayoutDictionary,
         std::unordered_map<uint8_t, VkPipeline> PipelinesDictionary) override;
 
-    void update(
-        uint32_t frameNumber,
-        VkCommandBuffer commandBuffer) override;
+    void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) override;
 
     void printStatus() const;
 };

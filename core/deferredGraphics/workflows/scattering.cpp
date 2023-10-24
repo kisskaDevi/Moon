@@ -20,8 +20,22 @@ namespace {
 
 void scattering::Lighting::destroy(VkDevice device){
     workbody::destroy(device);
-    if(BufferDescriptorSetLayoutDictionary) {vkDestroyDescriptorSetLayout(device, BufferDescriptorSetLayoutDictionary, nullptr); BufferDescriptorSetLayoutDictionary = VK_NULL_HANDLE;}
-    if(DescriptorSetLayoutDictionary) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayoutDictionary, nullptr); DescriptorSetLayoutDictionary = VK_NULL_HANDLE;}
+    for(auto& descriptorSetLayout: BufferDescriptorSetLayoutDictionary){
+        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
+    }
+    for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
+        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
+    }
+    for(auto& PipelineLayout: PipelineLayoutDictionary){
+        if(PipelineLayout.second) {
+            vkDestroyPipelineLayout(device, PipelineLayout.second, nullptr);
+            PipelineLayout.second = VK_NULL_HANDLE;}
+    }
+    for(auto& Pipeline: PipelinesDictionary){
+        if(Pipeline.second) {
+            vkDestroyPipeline(device, Pipeline.second, nullptr);
+            Pipeline.second = VK_NULL_HANDLE;}
+    }
 }
 
 void scattering::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
@@ -113,11 +127,16 @@ void scattering::Lighting::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary);
-    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary);
+    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[0x0]);
+    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
 }
 
 void scattering::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+{
+    createPipeline(0x0, device, pInfo, pRenderPass);
+}
+
+void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
     auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
     auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
@@ -155,8 +174,8 @@ void scattering::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkR
         pushConstantRange.back().size = sizeof(scatteringPushConst);
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         DescriptorSetLayout,
-        BufferDescriptorSetLayoutDictionary,
-        DescriptorSetLayoutDictionary
+        BufferDescriptorSetLayoutDictionary[mask],
+        DescriptorSetLayoutDictionary[mask]
     };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -164,7 +183,7 @@ void scattering::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkR
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[mask]);
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -177,12 +196,12 @@ void scattering::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkR
         pipelineInfo.pRasterizationState = &rasterizer;
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = PipelineLayout;
+        pipelineInfo.layout = PipelineLayoutDictionary[mask];
         pipelineInfo.renderPass = pRenderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &PipelinesDictionary[mask]);
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -261,19 +280,13 @@ void scattering::updateCommandBuffer(uint32_t frameNumber)
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, lighting.Pipeline);
-
-    scatteringPushConst pushConst{};
-        pushConst.width = image.Extent.width;
-        pushConst.height = image.Extent.height;
-    vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(scatteringPushConst), &pushConst);
-
     for(auto& lightSource: lighting.lightSources){
-        if(lightSource->isScatteringEnable()){
-            std::vector<VkDescriptorSet> descriptorSets = {lighting.DescriptorSets[frameNumber], lightSource->getBufferDescriptorSets()[frameNumber], lightSource->getDescriptorSets()[frameNumber]};
-            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, lighting.PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
-            vkCmdDraw(commandBuffers[frameNumber], 18, 1, 0, 0);
-        }
+        scatteringPushConst pushConst{};
+            pushConst.width = image.Extent.width;
+            pushConst.height = image.Extent.height;
+        vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(scatteringPushConst), &pushConst);
+
+        lightSource->render(frameNumber, commandBuffers[frameNumber], lighting.DescriptorSets[frameNumber], lighting.PipelineLayoutDictionary, lighting.PipelinesDictionary);
     }
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);

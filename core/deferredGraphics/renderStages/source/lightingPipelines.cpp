@@ -5,8 +5,8 @@
 #include <filesystem>
 #include <iostream>
 
-void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
-    uint8_t key = (0x0);
+void graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
+    uint8_t key = mask;
 
     auto vertShaderCode = ShaderModule::readFile(vertShadersPath);
     auto fragShaderCode = ShaderModule::readFile(fragShadersPath);
@@ -45,8 +45,8 @@ void graphics::Lighting::createSpotPipeline(VkDevice device, imageInfo* pInfo, V
 
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         DescriptorSetLayout,
-        BufferDescriptorSetLayoutDictionary[0x0],
-        DescriptorSetLayoutDictionary[0x0]
+        BufferDescriptorSetLayoutDictionary[key],
+        DescriptorSetLayoutDictionary[key]
     };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

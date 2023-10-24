@@ -18,11 +18,14 @@ private:
     bool enable{true};
 
     struct Lighting : workbody{
-        VkDescriptorSetLayout   BufferDescriptorSetLayoutDictionary;
-        VkDescriptorSetLayout   DescriptorSetLayoutDictionary;
+        std::unordered_map<uint8_t, VkDescriptorSetLayout> BufferDescriptorSetLayoutDictionary;
+        std::unordered_map<uint8_t, VkDescriptorSetLayout> DescriptorSetLayoutDictionary;
+        std::unordered_map<uint8_t, VkPipelineLayout>      PipelineLayoutDictionary;
+        std::unordered_map<uint8_t, VkPipeline>            PipelinesDictionary;
         std::vector<light*>     lightSources;
 
         void destroy(VkDevice device);
+        void createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);

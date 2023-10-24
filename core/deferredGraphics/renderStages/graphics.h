@@ -78,9 +78,9 @@ private:
 
         void Destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
-        void createSpotPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
+        void createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
         void createDescriptorSetLayout(VkDevice device);
-        void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
+        void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
     }lighting;
 
     struct AmbientLighting{

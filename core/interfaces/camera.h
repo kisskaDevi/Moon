@@ -13,7 +13,7 @@ public:
     virtual VkDeviceSize getBufferRange() const = 0;
 
     virtual void create(physicalDevice device, uint32_t imageCount) = 0;
-    virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
+    virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
 };
 
 #endif // CAMERA_H

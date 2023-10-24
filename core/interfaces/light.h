@@ -2,6 +2,7 @@
 #define LIGHT_H
 
 #include <vulkan.h>
+#include <unordered_map>
 
 class texture;
 class attachments;
@@ -9,27 +10,40 @@ struct physicalDevice;
 
 class light
 {
+protected:
+    bool enableShadow{false};
+    bool enableScattering{false};
+
 public:
     virtual ~light(){};
 
+    void setEnableShadow(bool enable);
+    void setEnableScattering(bool enable);
+
+    bool isShadowEnable() const;
+    bool isScatteringEnable() const;
+
     virtual void destroy(VkDevice device) = 0;
 
-    virtual texture* getTexture() = 0;
     virtual attachments* getAttachments() = 0;
+    virtual const std::vector<VkDescriptorSet>& getDescriptorSets() const = 0;
     virtual uint8_t getPipelineBitMask() const = 0;
-
-    virtual bool isShadowEnable() const = 0;
-    virtual bool isScatteringEnable() const = 0;
-
-    virtual VkDescriptorSet* getDescriptorSets() = 0;
-    virtual VkDescriptorSet* getBufferDescriptorSets() = 0;
 
     virtual void create(
             physicalDevice device,
             VkCommandPool commandPool,
             uint32_t imageCount) = 0;
 
-    virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
+    virtual void render(
+        uint32_t frameNumber,
+        VkCommandBuffer commandBuffer,
+        VkDescriptorSet descriptorSet,
+        std::unordered_map<uint8_t, VkPipelineLayout> PipelineLayoutDictionary,
+        std::unordered_map<uint8_t, VkPipeline> PipelinesDictionary) = 0;
+
+    virtual void update(
+        uint32_t frameNumber,
+        VkCommandBuffer commandBuffer) = 0;
 
     static void createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
     static void createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);

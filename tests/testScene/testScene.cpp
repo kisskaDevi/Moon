@@ -151,6 +151,7 @@ void testScene::loadModels()
     models["duck"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Duck/glTF-Binary/Duck.glb");
     models["DragonAttenuation"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
     models["DamagedHelmet"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    models["robot"] = new class gltfModel(ExternalPath / "dependences/model/glb/Robot.glb");
 
     for(auto& [_,model]: models){
         graphics["base"]->create(model);
@@ -183,8 +184,11 @@ void testScene::createObjects()
     objects["dragon"] = new baseObject(models["DragonAttenuation"]);
     objects["dragon"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(26.0f, 11.0f, 11.0f));
 
-    objects["DamagedHelmet"] = new baseObject(models["DamagedHelmet"]);
-    objects["DamagedHelmet"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(27.0f, -10.0f, 14.0f));
+    objects["helmet"] = new baseObject(models["DamagedHelmet"]);
+    objects["helmet"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(27.0f, -10.0f, 14.0f));
+
+    objects["robot"] = new baseObject(models["robot"]);
+    objects["robot"]->scale(25.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).rotate(radians(180.0f), {0.0f, 0.0f, 1.0f}).translate(vector<float,3>(-30.0f, 11.0f, 10.0f));
 
     objects["ufo_light_0"] = new baseObject(models["ufo"]);
     objects["ufo_light_0"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
@@ -197,6 +201,24 @@ void testScene::createObjects()
     groups["ufo_light_1"] = new group;
     groups["ufo_light_1"]->rotate(radians(45.0f),vector<float,3>(-1.0f,0.0f,0.0f)).rotate(radians(45.0f),vector<float,3>(0.0f,0.0f,1.0f)).translate(vector<float,3>(24.0f, -7.5f, 18.0f));
     groups["ufo_light_1"]->addObject(objects["ufo_light_1"]);
+
+    objects["ufo_light_2"] = new baseObject(models["ufo"]);
+    objects["ufo_light_2"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
+    groups["ufo_light_2"] = new group;
+    groups["ufo_light_2"]->rotate(radians(30.0f),vector<float,3>(-1.0f,0.0f,0.0f)).rotate(radians(30.0f),vector<float,3>(0.0f,0.0f,1.0f)).translate(vector<float,3>(-32.0f, 13.0f, 19.0f));
+    groups["ufo_light_2"]->addObject(objects["ufo_light_2"]);
+
+    objects["ufo_light_3"] = new baseObject(models["ufo"]);
+    objects["ufo_light_3"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
+    groups["ufo_light_3"] = new group;
+    groups["ufo_light_3"]->rotate(radians(30.0f),vector<float,3>(1.0f,0.0f,0.0f)).rotate(radians(30.0f),vector<float,3>(0.0f,0.0f,-1.0f)).translate(vector<float,3>(-32.0f, 7.0f, 19.0f));
+    groups["ufo_light_3"]->addObject(objects["ufo_light_3"]);
+
+    objects["ufo_light_4"] = new baseObject(models["ufo"]);
+    objects["ufo_light_4"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
+    groups["ufo_light_4"] = new group;
+    groups["ufo_light_4"]->rotate(radians(30.0f),vector<float,3>(-1.0f,0.0f,0.0f)).rotate(radians(30.0f),vector<float,3>(0.0f,0.0f,-1.0f)).translate(vector<float,3>(-26.0f, 13.0f, 19.0f));
+    groups["ufo_light_4"]->addObject(objects["ufo_light_4"]);
 
     for(auto key = "ufo" + std::to_string(ufoCounter); ufoCounter < 4; ufoCounter++, key = "ufo" + std::to_string(ufoCounter)){
         objects[key] = new baseObject(models["ufo"]);
@@ -271,6 +293,18 @@ void testScene::createLight()
     lightSources.push_back(new spotLight(proj, true, false));
     lightSources.back()->setLightColor(vector<float,4>(0.9f,0.85f,0.95f,1.0f));
     groups["ufo_light_1"]->addObject(lightSources.back());
+
+    lightSources.push_back(new spotLight(proj, true, true));
+    lightSources.back()->setLightColor(vector<float,4>(0.9f,0.85f,0.75f,1.0f));
+    groups["ufo_light_2"]->addObject(lightSources.back());
+
+    lightSources.push_back(new spotLight(proj, true, true));
+    lightSources.back()->setLightColor(vector<float,4>(0.9f,0.3f,0.4f,1.0f));
+    groups["ufo_light_3"]->addObject(lightSources.back());
+
+    lightSources.push_back(new spotLight(proj, true, true));
+    lightSources.back()->setLightColor(vector<float,4>(0.2f,0.5f,0.95f,1.0f));
+    groups["ufo_light_4"]->addObject(lightSources.back());
 
     for(auto& source: lightSources){
         for(auto& [_,graph]: graphics){
@@ -474,5 +508,7 @@ void testScene::updates(float frameTime)
     globalTime += frameTime;
 
     skyboxObjects["stars"]->rotate(0.1f*frameTime,normalize(vector<float,3>(1.0f,1.0f,1.0f)));
+    objects["helmet"]->rotate(0.5f*frameTime,normalize(vector<float,3>(0.0f,0.0f,1.0f)));
+    objects["helmet"]->translate(vector<float,3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
 }
 

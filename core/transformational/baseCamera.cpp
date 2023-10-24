@@ -176,7 +176,7 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
     }
 }
 
-void baseCamera::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
+void baseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBufferObject baseUBO{};

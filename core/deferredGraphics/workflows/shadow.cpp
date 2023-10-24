@@ -231,7 +231,10 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
                     vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
                 }
 
-                std::vector<VkDescriptorSet> descriptorSets = {shadow.lightSources[attachmentNumber]->getBufferDescriptorSets()[frameNumber],object->getDescriptorSet()[frameNumber]};
+                std::vector<VkDescriptorSet> descriptorSets = {
+                    shadow.lightSources[attachmentNumber]->getDescriptorSets()[frameNumber],
+                    object->getDescriptorSet()[frameNumber]
+                };
 
                 MaterialBlock material{};
 

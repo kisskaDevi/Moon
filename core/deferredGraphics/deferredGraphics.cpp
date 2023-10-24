@@ -280,12 +280,14 @@ void deferredGraphics::updateBuffers(uint32_t imageIndex){
          beginInfo.pInheritanceInfo = nullptr;
     vkBeginCommandBuffer(copyCommandBuffers[imageIndex], &beginInfo);
 
-    cameraObject->updateUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
+    if(cameraObject){
+        cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
+    }
     for(auto& object: objects){
         object->updateUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
     }
     for(auto& light: lights){
-        light->updateUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
+        light->update(imageIndex, copyCommandBuffers[imageIndex]);
     }
 
     vkEndCommandBuffer(copyCommandBuffers[imageIndex]);
@@ -349,11 +351,16 @@ void deferredGraphics::remove(camera* cameraObject){
 
 void deferredGraphics::bind(light* lightSource){
     if(lightSource->isShadowEnable() && enable["Shadow"]){
+        auto Shadow = static_cast<shadowGraphics*>(workflows["Shadow"]);
         if(lightSource->getAttachments()->instances.empty()){
-            static_cast<shadowGraphics*>(workflows["Shadow"])->createAttachments(1,lightSource->getAttachments());
+            Shadow->createAttachments(1,lightSource->getAttachments());
         }
-        static_cast<shadowGraphics*>(workflows["Shadow"])->bindLightSource(lightSource);
-        static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(lightSource);
+        Shadow->bindLightSource(lightSource);
+        Shadow->createFramebuffers(lightSource);
+    }
+    if(lightSource->isScatteringEnable() && enable["Scattering"]){
+        auto Scattering = static_cast<scattering*>(workflows["Scattering"]);
+        Scattering->bindLightSource(lightSource);
     }
     lightSource->create(device, commandPool, imageCount);
     lights.push_back(lightSource);
@@ -362,7 +369,6 @@ void deferredGraphics::bind(light* lightSource){
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
         static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->bind(lightSource);
     }
-    static_cast<scattering*>(workflows["Scattering"])->bindLightSource(lightSource);
 
     updateCmdFlags();
 }
@@ -380,10 +386,6 @@ void deferredGraphics::remove(light* lightSource){
         static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->remove(lightSource);
     }
     static_cast<scattering*>(workflows["Scattering"])->removeLightSource(lightSource);
-
-    if(lightSource->getTexture()){
-        lightSource->getTexture()->destroy(device.getLogical());
-    }
     static_cast<shadowGraphics*>(workflows["Shadow"])->removeLightSource(lightSource);
 
     updateCmdFlags();

@@ -21,10 +21,14 @@ void graphics::Lighting::Destroy(VkDevice device)
     if(DescriptorPool)      {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 
     for(auto& PipelineLayout: PipelineLayoutDictionary){
-        if(PipelineLayout.second) {vkDestroyPipelineLayout(device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
+        if(PipelineLayout.second) {
+            vkDestroyPipelineLayout(device, PipelineLayout.second, nullptr);
+            PipelineLayout.second = VK_NULL_HANDLE;}
     }
     for(auto& Pipeline: PipelinesDictionary){
-        if(Pipeline.second) {vkDestroyPipeline(device, Pipeline.second, nullptr);  Pipeline.second = VK_NULL_HANDLE;}
+        if(Pipeline.second) {
+            vkDestroyPipeline(device, Pipeline.second, nullptr);
+            Pipeline.second = VK_NULL_HANDLE;}
     }
 }
 
@@ -51,7 +55,7 @@ void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
 {
     std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
-    createSpotPipeline(device,pInfo,pRenderPass,spotVert,spotFrag);
+    createPipeline(0x0, device, pInfo, pRenderPass, spotVert, spotFrag);
 }
 
 void graphics::createLightingDescriptorPool()
@@ -130,13 +134,9 @@ void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string
     }
 }
 
-void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
-    for(auto& lightSource: lightSources)
-    {
-        vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelinesDictionary[lightSource->getPipelineBitMask()]);
-        std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber], lightSource->getBufferDescriptorSets()[frameNumber], lightSource->getDescriptorSets()[frameNumber]};
-        vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayoutDictionary[lightSource->getPipelineBitMask()], 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
-        vkCmdDraw(commandBuffers, 18, 1, 0, 0);
+    for(auto& lightSource: lightSources){
+        lightSource->render(frameNumber, commandBuffer, DescriptorSets[frameNumber], PipelineLayoutDictionary, PipelinesDictionary);
     }
 }

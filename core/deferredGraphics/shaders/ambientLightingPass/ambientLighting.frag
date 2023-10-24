@@ -24,11 +24,13 @@ vec4 ambient(vec4 baseColorTexture, float minAmbientFactor) {
 }
 
 void main() {
+    vec4 position = subpassLoad(inPositionTexture);
     vec4 normal = subpassLoad(inNormalTexture);
     vec4 baseColorTexture = subpassLoad(inBaseColorTexture);
     vec4 emissiveTexture = decodeFromFloat(normal.a);
 
-    outColor = SRGBtoLINEAR(emissiveTexture) + (checkZeroNormal(normal.xyz) ? SRGBtoLINEAR(baseColorTexture) : ambient(baseColorTexture, pc.minAmbientFactor));
+    float ao = decodeParameter(0x000ff0000, 16, position.a) / 255.0f;
+    outColor = ao * SRGBtoLINEAR(emissiveTexture) + (checkZeroNormal(normal.xyz) ? SRGBtoLINEAR(baseColorTexture) : ambient(baseColorTexture, pc.minAmbientFactor));
     outBloom = SRGBtoLINEAR(emissiveTexture) + (checkBrightness(outColor) ? outColor : vec4(0.0, 0.0, 0.0, 1.0));
     outBlur = vec4(0.0, 0.0, 0.0, 0.0);
 }

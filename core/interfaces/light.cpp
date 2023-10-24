@@ -2,6 +2,22 @@
 #include "vkdefault.h"
 #include <vector>
 
+void light::setEnableShadow(bool enable){
+    enableShadow = enable;
+}
+
+void light::setEnableScattering(bool enable){
+    enableScattering = enable;
+}
+
+bool light::isShadowEnable() const{
+    return enableShadow;
+}
+
+bool light::isScatteringEnable() const{
+    return enableScattering;
+}
+
 void light::createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));

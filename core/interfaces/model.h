@@ -70,7 +70,10 @@ struct MaterialBlock
     alignas(4)  uint32_t    primitive;
 };
 
-enum PBRWorkflows{ PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };
+enum PBRWorkflows{
+    PBR_WORKFLOW_METALLIC_ROUGHNESS = 0,
+    PBR_WORKFLOW_SPECULAR_GLOSINESS = 1
+};
 
 class model
 {
@@ -94,8 +97,6 @@ public:
 
     virtual const VkBuffer* getVertices() const = 0;
     virtual const VkBuffer* getIndices() const = 0;
-
-    virtual void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) = 0;
 
     virtual bool hasAnimation(uint32_t frameIndex) const = 0;
     virtual float animationStart(uint32_t frameIndex, uint32_t index) const = 0;

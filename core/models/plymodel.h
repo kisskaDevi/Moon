@@ -47,6 +47,7 @@ private:
 
     vector<float,3> maxSize{0.0f};
 
+    void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
 public:
     plyModel(std::filesystem::path filename,
              vector<float, 4> baseColorFactor = vector<float, 4>(0.5f,0.5f,0.5f,1.0f),
@@ -63,8 +64,6 @@ public:
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
     const vector<float,3> getMaxSize() const;
-
-    void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) override;
 
     bool hasAnimation(uint32_t) const override {return false;}
     float animationStart(uint32_t, uint32_t) const override {return 0.0f;}

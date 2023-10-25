@@ -116,6 +116,7 @@ private:
     std::vector<texture>        textures;
     std::vector<Material>       materials;
 
+    void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
     void loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);
     void loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
     void loadSkins(tinygltf::Model& gltfModel);
@@ -135,8 +136,6 @@ public:
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
-
-    void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) override;
 
     bool hasAnimation(uint32_t frameIndex) const override;
     float animationStart(uint32_t frameIndex, uint32_t index) const override;

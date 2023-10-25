@@ -13,9 +13,6 @@ spotLight::spotLight(const matrix<float,4,4> & projection, bool enableShadow, bo
 {
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
-    if(enableShadow){
-        shadow = new attachments;
-    }
 }
 
 spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, uint32_t type):
@@ -25,16 +22,10 @@ spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<fl
 {
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
-    if(enableShadow){
-        shadow = new attachments;
-    }
 }
 
 spotLight::~spotLight(){
     delete tex;
-    if(enableShadow){
-        delete shadow;
-    }
 }
 
 void spotLight::destroy(VkDevice device)
@@ -172,10 +163,6 @@ matrix<float,4,4>   spotLight::getModelMatrix() const {return modelMatrix;}
 vector<float,3>     spotLight::getTranslate() const {return vector<float,3>(translation.vector()[0],translation.vector()[1],translation.vector()[2]);}
 vector<float,4>     spotLight::getLightColor() const {return lightColor;}
 
-
-attachments* spotLight::getAttachments(){
-    return shadow;
-}
 const std::vector<VkDescriptorSet>& spotLight::getDescriptorSets() const {
     return bufferDescriptorSets;
 }
@@ -320,6 +307,7 @@ void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
 
 void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite)
 {
+    const auto& shadow = shadowMaps.front();
     for (size_t i=0; i<imageCount; i++)
     {
         VkDescriptorImageInfo shadowImageInfo{};

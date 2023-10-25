@@ -10,6 +10,10 @@ void light::setEnableScattering(bool enable){
     enableScattering = enable;
 }
 
+std::vector<attachments*>& light::getShadowMaps(){
+    return shadowMaps;
+}
+
 bool light::isShadowEnable() const{
     return enableShadow;
 }

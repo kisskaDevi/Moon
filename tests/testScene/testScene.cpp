@@ -104,8 +104,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     updates(frameTime);
 
     for(auto& [_,object]: objects){
-        object->animationTimer += timeScale * frameTime;
-        object->updateAnimation(frameNumber);
+        object->updateAnimation(frameNumber, timeScale * frameTime);
     }
 }
 
@@ -169,8 +168,7 @@ void testScene::createObjects()
     objects["bee1"] = new baseObject(models["bee"], 3, 3);
     objects["bee1"]->translate({-3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});
     objects["bee1"]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.7f));
-    objects["bee1"]->animationTimer = 1.0f;
-    objects["bee1"]->animationIndex = 1;
+    objects["bee1"]->setAnimation(1, 1.0f);
 
     objects["duck"] = new baseObject(models["duck"]);
     objects["duck"]->translate({0.0f,0.0f,3.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({3.0f});
@@ -433,14 +431,7 @@ void testScene::keyboardEvent(float frameTime)
     }
 
     if(board->released(GLFW_KEY_T)) {
-        objects["bee0"]->changeAnimationFlag = true;
-        objects["bee0"]->startTimer = objects["bee0"]->animationTimer;
-        objects["bee0"]->changeAnimationTime = 0.5f;
-        if(objects["bee0"]->animationIndex == 0){
-            objects["bee0"]->newAnimationIndex = 1;
-        } else if(objects["bee0"]->animationIndex == 1){
-            objects["bee0"]->newAnimationIndex = 0;
-        }
+        objects["bee0"]->changeAnimation(objects["bee0"]->getAnimationIndex() == 0 ? 1 : 0, 0.5f);
     }
 
     if(board->released(GLFW_KEY_N)) {

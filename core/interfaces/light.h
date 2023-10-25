@@ -2,6 +2,7 @@
 #define LIGHT_H
 
 #include <vulkan.h>
+#include <vector>
 #include <unordered_map>
 
 class texture;
@@ -13,19 +14,20 @@ class light
 protected:
     bool enableShadow{false};
     bool enableScattering{false};
+    std::vector<attachments*> shadowMaps;
 
 public:
     virtual ~light(){};
 
     void setEnableShadow(bool enable);
     void setEnableScattering(bool enable);
+    std::vector<attachments*>& getShadowMaps();
 
     bool isShadowEnable() const;
     bool isScatteringEnable() const;
 
     virtual void destroy(VkDevice device) = 0;
 
-    virtual attachments* getAttachments() = 0;
     virtual const std::vector<VkDescriptorSet>& getDescriptorSets() const = 0;
     virtual uint8_t getPipelineBitMask() const = 0;
 

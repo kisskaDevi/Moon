@@ -124,6 +124,8 @@ private:
     void loadAnimations(tinygltf::Model& gltfModel);
 
     Node* nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes);
+    void createDescriptorPool(VkDevice device);
+    void createDescriptorSet(VkDevice device, texture* emptyTexture);
 public:
     gltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
     ~gltfModel() override;
@@ -141,9 +143,6 @@ public:
     float animationEnd(uint32_t frameIndex, uint32_t index) const override;
     void updateAnimation(uint32_t frameIndex, uint32_t index, float time) override;
     void changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) override;
-
-    void createDescriptorPool(VkDevice device);
-    void createDescriptorSet(VkDevice device, texture* emptyTexture);
 
     void create(physicalDevice device, VkCommandPool commandPool) override;
 

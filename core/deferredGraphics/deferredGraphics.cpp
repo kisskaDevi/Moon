@@ -284,7 +284,7 @@ void deferredGraphics::updateBuffers(uint32_t imageIndex){
         cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
     }
     for(auto& object: objects){
-        object->updateUniformBuffer(copyCommandBuffers[imageIndex], imageIndex);
+        object->update(imageIndex, copyCommandBuffers[imageIndex]);
     }
     for(auto& light: lights){
         light->update(imageIndex, copyCommandBuffers[imageIndex]);
@@ -352,9 +352,6 @@ void deferredGraphics::remove(camera* cameraObject){
 void deferredGraphics::bind(light* lightSource){
     if(lightSource->isShadowEnable() && enable["Shadow"]){
         auto Shadow = static_cast<shadowGraphics*>(workflows["Shadow"]);
-        if(lightSource->getAttachments()->instances.empty()){
-            Shadow->createAttachments(1,lightSource->getAttachments());
-        }
         Shadow->bindLightSource(lightSource);
         Shadow->createFramebuffers(lightSource);
     }
@@ -374,10 +371,6 @@ void deferredGraphics::bind(light* lightSource){
 }
 
 void deferredGraphics::remove(light* lightSource){
-    if(lightSource->getAttachments()){
-        lightSource->getAttachments()->deleteAttachment(device.getLogical());
-        lightSource->getAttachments()->deleteSampler(device.getLogical());
-    }
     lightSource->destroy(device.getLogical());
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 

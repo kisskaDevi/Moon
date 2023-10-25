@@ -187,7 +187,7 @@ void testPos::createObjects()
 
     skyboxObjects["lake"] = new skyboxObject(SKYBOX);
     skyboxObjects["lake"]->scale(vector<float,3>(100.0f,100.0f,100.0f));
-    skyboxObjects["lake"]->getTexture()->setMipLevel(0.85f);
+    skyboxObjects["lake"]->setMipLevel(0.85f);
 
     for(auto& [_, object]: skyboxObjects){
         graphics["base"]->bind(object);

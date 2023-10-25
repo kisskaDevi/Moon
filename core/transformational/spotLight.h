@@ -29,7 +29,6 @@ enum spotType
 class spotLight : public transformational, public light
 {
 private:
-    attachments*                        shadow{nullptr};
     texture*                            tex{nullptr};
     texture*                            emptyTextureBlack{nullptr};
     texture*                            emptyTextureWhite{nullptr};
@@ -94,7 +93,6 @@ public:
     vector<float,4>     getLightColor() const;
 
     void destroy(VkDevice device) override;
-    attachments* getAttachments() override;
     const std::vector<VkDescriptorSet>& getDescriptorSets() const override;
     uint8_t getPipelineBitMask() const override;
 

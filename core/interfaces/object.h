@@ -10,36 +10,63 @@ struct physicalDevice;
 
 class object
 {
+protected:
+    bool enable{true};
+    bool enableShadow{true};
+
+    uint32_t firstPrimitive{0};
+    uint32_t primitiveCount{0};
+
+    struct Outlining{
+        bool Enable{false};
+        float Width{0.0f};
+        vector<float,4> Color{0.0f};
+    }outlining;
+
+    model* pModel{nullptr};
+    uint32_t firstInstance{0};
+    uint32_t instanceCount{1};
+
 public:
     virtual ~object(){};
-    virtual void destroy(VkDevice device) = 0;
 
-    virtual uint8_t getPipelineBitMask() const = 0;
+    void setModel(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
+    model* getModel();
+    uint32_t getInstanceNumber(uint32_t imageNumber) const;
 
-    virtual std::vector<VkDescriptorSet>&   getDescriptorSet() = 0;
+    void setEnable(const bool& enable);
+    void setEnableShadow(const bool& enable);
+    bool getEnable() const;
+    bool getEnableShadow() const;
 
-    virtual void updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber) = 0;
+    void setOutlining(
+        const bool& enable,
+        const float& width = 0,
+        const vector<float,4>& color = {0.0f});
+    bool getOutliningEnable() const;
+    float getOutliningWidth() const;
+    vector<float,4> getOutliningColor() const;
 
-    virtual model* getModel() = 0;
-    virtual uint32_t getInstanceNumber(uint32_t imageNumber) const = 0;
+    bool comparePrimitive(uint32_t primitive);
+    void setFirstPrimitive(uint32_t firstPrimitive);
+    void setPrimitiveCount(uint32_t primitiveCount);
+    uint32_t getFirstPrimitive() const;
+    uint32_t getPrimitiveCount() const;
 
-    virtual bool getEnable() const = 0;
-    virtual bool getEnableShadow() const = 0;
-
-    virtual bool getOutliningEnable() const = 0;
-    virtual float getOutliningWidth() const = 0;
-    virtual vector<float,4> getOutliningColor() const = 0;
-
-    virtual void setFirstPrimitive(uint32_t firstPrimitive) = 0;
-    virtual void setPrimitiveCount(uint32_t primitiveCount) = 0;
-    virtual void resetPrimitiveCount() = 0;
-
-    virtual uint32_t getFirstPrimitive() const = 0;
+    virtual void destroy(
+        VkDevice device) = 0;
 
     virtual void create(
         physicalDevice device,
         VkCommandPool commandPool,
         uint32_t imageCount) = 0;
+
+    virtual void update(
+        uint32_t frameNumber,
+        VkCommandBuffer commandBuffer) = 0;
+
+    virtual uint8_t getPipelineBitMask() const = 0;
+    virtual std::vector<VkDescriptorSet>& getDescriptorSet() = 0;
 
     static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
     static void createSkyboxDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);

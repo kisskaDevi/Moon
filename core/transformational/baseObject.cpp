@@ -6,11 +6,12 @@
 
 #include <cstring>
 
-baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCount) :
-    pModel(model),
-    firstInstance(firstInstance),
-    instanceCount(instanceCount)
-{}
+baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCount)
+{
+    pModel = model;
+    this->firstInstance = firstInstance;
+    this->instanceCount = instanceCount;
+}
 
 void baseObject::destroy(VkDevice device)
 {
@@ -20,6 +21,10 @@ void baseObject::destroy(VkDevice device)
     if(descriptorPool )     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     created = false;
+}
+
+std::vector<VkDescriptorSet> &baseObject::getDescriptorSet() {
+    return descriptors;
 }
 
 void baseObject::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
@@ -86,8 +91,29 @@ baseObject& baseObject::scale(const vector<float,3> & scale)
     return *this;
 }
 
-void baseObject::updateAnimation(uint32_t imageNumber)
-{
+baseObject& baseObject::setConstantColor(const vector<float,4> &color){
+    this->constantColor = color;
+    updateUniformBuffersFlags(uniformBuffersHost);
+    return *this;
+}
+baseObject& baseObject::setColorFactor(const vector<float,4> & color){
+    this->colorFactor = color;
+    updateUniformBuffersFlags(uniformBuffersHost);
+    return *this;
+}
+baseObject& baseObject::setBloomColor(const vector<float,4> & color){
+    this->bloomColor = color;
+    updateUniformBuffersFlags(uniformBuffersHost);
+    return *this;
+}
+baseObject& baseObject::setBloomFactor(const vector<float,4> &color){
+    this->bloomFactor = color;
+    updateUniformBuffersFlags(uniformBuffersHost);
+    return *this;
+}
+
+void baseObject::updateAnimation(uint32_t imageNumber, float frameTime){
+    animationTimer += frameTime;
     if(uint32_t index = getInstanceNumber(imageNumber); pModel->hasAnimation(index)){
         if(float end = pModel->animationEnd(index, animationIndex); !changeAnimationFlag){
             animationTimer -= animationTimer > end ? end : 0;
@@ -101,6 +127,22 @@ void baseObject::updateAnimation(uint32_t imageNumber)
             }
         }
     }
+}
+
+void baseObject::changeAnimation(uint32_t newAnimationIndex, float changeAnimationTime){
+    changeAnimationFlag = true;
+    startTimer = animationTimer;
+    this->changeAnimationTime = changeAnimationTime;
+    this->newAnimationIndex = newAnimationIndex;
+}
+
+void baseObject::setAnimation(uint32_t animationIndex, float animationTime){
+    this->animationIndex = animationIndex;
+    this->animationTimer = animationTime;
+}
+
+uint32_t baseObject::getAnimationIndex(){
+    return animationIndex;
 }
 
 void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
@@ -132,7 +174,7 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
     }
 }
 
-void baseObject::updateUniformBuffer(VkCommandBuffer commandBuffer, uint32_t frameNumber)
+void baseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBuffer ubo{};
@@ -218,78 +260,15 @@ void baseObject::printStatus() const
     std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
 }
 
-void baseObject::setEnable(const bool& enable) {
-    this->enable = enable;
-}
-
-void baseObject::setEnableShadow(const bool& enable) {
-    this->enableShadow = enable;
-}
-
-void baseObject::setModel(model* model, uint32_t firstInstance, uint32_t instanceCount){
-    this->pModel = model;
-    this->firstInstance = firstInstance;
-    this->instanceCount = instanceCount;
-}
-
-void baseObject::setConstantColor(const vector<float,4> &color){
-    this->constantColor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
-}
-void baseObject::setColorFactor(const vector<float,4> & color){
-    this->colorFactor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
-}
-void baseObject::setBloomColor(const vector<float,4> & color){
-    this->bloomColor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
-}
-void baseObject::setBloomFactor(const vector<float,4> &color){
-    this->bloomFactor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
-}
-
-bool baseObject::getEnable() const {return enable;}
-bool baseObject::getEnableShadow() const {return enableShadow;}
-model* baseObject::getModel() {
-    return pModel;
-}
-
-uint32_t baseObject::getInstanceNumber(uint32_t imageNumber) const {
-    return firstInstance + (instanceCount > imageNumber ? imageNumber : 0);
-}
-
-vector<float,4>                 baseObject::getConstantColor() const                        {return constantColor;}
-vector<float,4>                 baseObject::getColorFactor()   const                        {return colorFactor;}
-
-matrix<float,4,4>               baseObject::getModelMatrix()   const                        {return modelMatrix;}
-
-VkDescriptorPool                &baseObject::getDescriptorPool()                            {return descriptorPool;}
-std::vector<VkDescriptorSet>    &baseObject::getDescriptorSet()                             {return descriptors;}
-
-void                            baseObject::setOutlining(const bool& enable, const float& width, const vector<float,4>& color){
-    outlining.Enable = enable;
-    outlining.Width = width > 0.0f ? width : outlining.Width;
-    outlining.Color = dot(color,color) > 0.0f ? color : outlining.Color;
-}
-
-bool                            baseObject::getOutliningEnable() const                      {return outlining.Enable;}
-float                           baseObject::getOutliningWidth()  const                      {return outlining.Width;}
-vector<float,4>                 baseObject::getOutliningColor()  const                      {return outlining.Color;}
-
-void                            baseObject::setFirstPrimitive(uint32_t firstPrimitive)      {this->firstPrimitive = firstPrimitive;}
-void                            baseObject::setPrimitiveCount(uint32_t primitiveCount)      {this->primitiveCount = primitiveCount;}
-void                            baseObject::resetPrimitiveCount()                           {primitiveCount = 0;}
-void                            baseObject::increasePrimitiveCount()                        {primitiveCount++;}
-
-bool                            baseObject::comparePrimitive(uint32_t primitive)            {return !(primitive < firstPrimitive) && (primitive < firstPrimitive + primitiveCount);}
-uint32_t                        baseObject::getFirstPrimitive() const                       {return firstPrimitive;}
-uint32_t                        baseObject::getPrimitiveCount() const                       {return primitiveCount;}
-
 skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){}
 
 skyboxObject::~skyboxObject(){
     delete texture;
+}
+
+skyboxObject& skyboxObject::setMipLevel(float mipLevel){
+    texture->setMipLevel(mipLevel);
+    return *this;
 }
 
 skyboxObject& skyboxObject::translate(const vector<float,3> &) {
@@ -298,10 +277,6 @@ skyboxObject& skyboxObject::translate(const vector<float,3> &) {
 
 uint8_t skyboxObject::getPipelineBitMask() const {
     return (0<<4)|(0x1);
-}
-
-cubeTexture *skyboxObject::getTexture(){
-    return texture;
 }
 
 void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
@@ -372,13 +347,13 @@ void skyboxObject::create(
         CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
         CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
 
-        if(getTexture()){
+        if(texture){
             VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-            getTexture()->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+            texture->createTextureImage(device.instance, device.getLogical(), commandBuffer);
             SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-            getTexture()->createTextureImageView(device.getLogical());
-            getTexture()->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-            getTexture()->destroyStagingBuffer(device.getLogical());
+            texture->createTextureImageView(device.getLogical());
+            texture->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+            texture->destroyStagingBuffer(device.getLogical());
         }
         createUniformBuffers(device.instance,device.getLogical(),imageCount);
         createDescriptorPool(device.getLogical(),imageCount);
@@ -389,8 +364,8 @@ void skyboxObject::create(
 
 void skyboxObject::destroy(VkDevice device)
 {
-    if(getTexture()){
-        getTexture()->destroy(device);
+    if(texture){
+        texture->destroy(device);
     }
 
     baseObject::destroy(device);

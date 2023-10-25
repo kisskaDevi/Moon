@@ -162,7 +162,7 @@ void shadowGraphics::createFramebuffers(light* lightSource)
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &lightSource->getAttachments()->instances[j].imageView;
+            framebufferInfo.pAttachments = &lightSource->getShadowMaps().back()->instances[j].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -173,12 +173,25 @@ void shadowGraphics::createFramebuffers(light* lightSource)
 void shadowGraphics::bindLightSource(light* lightSource)
 {
     shadow.lightSources.push_back(lightSource);
+    if(lightSource->getShadowMaps().empty()){
+        lightSource->getShadowMaps().push_back(new attachments());
+        createAttachments(1, lightSource->getShadowMaps().back());
+    }
 }
 
 void shadowGraphics::removeLightSource(light* lightSource)
 {
     for(uint32_t index = 0; index<shadow.lightSources.size(); index++){
         if(lightSource==shadow.lightSources[index]){
+            for(auto shadowMap : lightSource->getShadowMaps()){
+                if(shadowMap){
+                    shadowMap->deleteAttachment(device);
+                    shadowMap->deleteSampler(device);
+                    delete shadowMap;
+                }
+            }
+            lightSource->getShadowMaps().clear();
+
             for(uint32_t i=0;i<image.Count;i++){
                 if(framebuffers[shadow.lightSources[index]][i]){
                     vkDestroyFramebuffer(device, framebuffers[shadow.lightSources[index]][i],nullptr);
@@ -210,7 +223,7 @@ void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
 void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber)
 {
     std::vector<VkClearValue> clearValues;
-    clearValues.push_back(VkClearValue{shadow.lightSources[attachmentNumber]->getAttachments()->clearValue.color});
+    clearValues.push_back(VkClearValue{shadow.lightSources[attachmentNumber]->getShadowMaps().back()->clearValue.color});
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

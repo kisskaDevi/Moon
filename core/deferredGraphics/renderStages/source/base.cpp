@@ -243,9 +243,6 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            object->resetPrimitiveCount();
-            object->setFirstPrimitive(primitiveCount);
-
             std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
 
             struct PushConstBlock{
@@ -254,6 +251,7 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
             } pushConstBlock;
             pushConstBlock.transparencyPass = transparencyPass ? 1.0f : 0.0f;
 
+            object->setFirstPrimitive(primitiveCount);
             object->getModel()->render(
                         object->getInstanceNumber(frameNumber),
                         commandBuffers,

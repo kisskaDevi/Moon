@@ -174,6 +174,19 @@ void gltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
 
 void gltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime)
 {
+    if (instances[frameIndex].animations.empty()) {
+        std::cout << ".glTF does not contain animation." << std::endl;
+        return;
+    }
+    if (oldIndex > static_cast<uint32_t>(instances[frameIndex].animations.size()) - 1) {
+        std::cout << "No animation with index " << oldIndex << std::endl;
+        return;
+    }
+    if (newIndex > static_cast<uint32_t>(instances[frameIndex].animations.size()) - 1) {
+        std::cout << "No animation with index " << newIndex << std::endl;
+        return;
+    }
+
     Animation &animationOld = instances[frameIndex].animations[oldIndex];
     Animation &animationNew = instances[frameIndex].animations[newIndex];
 

@@ -243,7 +243,10 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
+            std::vector<VkDescriptorSet> descriptorSets = {
+                DescriptorSets[frameNumber],
+                object->getDescriptorSet()[frameNumber]
+            };
 
             struct PushConstBlock{
                 float transparencyPass;

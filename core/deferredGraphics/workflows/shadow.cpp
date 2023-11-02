@@ -9,9 +9,8 @@ void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* p
 {
     static_cast<void>(attachmentsCount);
     pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
-    VkSamplerCreateInfo SamplerInfo{};
-        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->sampler);
+    VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+    vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments->sampler);
 }
 
 void shadowGraphics::Shadow::destroy(VkDevice device)

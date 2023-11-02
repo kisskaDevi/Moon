@@ -139,9 +139,9 @@ void testPos::destroy()
 
 void testPos::loadModels()
 {
-    models["cameraModel"] = new class plyModel(ExternalPath / "dependences/model/pyramid.ply");
-    models["ojectModel"] = new class plyModel(ExternalPath / "dependences/model/plytest.ply");
-    models["cubeModel"] = new class plyModel(ExternalPath / "dependences/model/cube.ply");
+    models["cameraModel"] = new class plyModel(ExternalPath / "dependences/model/ply/pyramid.ply");
+    models["ojectModel"] = new class plyModel(ExternalPath / "dependences/model/ply/plytest.ply");
+    models["cubeModel"] = new class plyModel(ExternalPath / "dependences/model/ply/cube.ply");
 
     for(auto& [_,model]: models){
         graphics["base"]->create(model);
@@ -150,8 +150,7 @@ void testPos::loadModels()
 
 void testPos::createLight()
 {
-    lightPoints["lightBox"] = new isotropicLight(lightSources, 10.0f);
-    lightPoints["lightBox"]->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    lightPoints["lightBox"] = new isotropicLight(vector<float,4>(1.0f,1.0f,1.0f,1.0f), lightSources, 10.0f);
     lightPoints["lightBox"]->setLightDropFactor(1.0f);
 
     for(auto& source: lightSources){
@@ -161,14 +160,12 @@ void testPos::createLight()
     matrix<float,4,4> proj = perspective(radians(90.0f), 1.0f, 0.01f, 10.0f);
     dualQuaternion<float> Q = convert(*cameraObjects.begin()->first);
 
-    lights["base"] = new spotLight(proj, true, true);
-    lights["base"]->setLightColor({1.0f,1.0f,1.0f,1.0f});
+    lights["base"] = new spotLight({1.0f,1.0f,1.0f,1.0f}, proj, true, true);
     lights["base"]->setLightDropFactor(1.0f);
     lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
     graphics["base"]->bind(lights["base"]);
 
-    lights["view"] = new spotLight(proj);
-    lights["view"]->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    lights["view"] = new spotLight(vector<float,4>(1.0f,1.0f,1.0f,1.0f), proj);
     lights["view"]->setLightDropFactor(1.0f);
     lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
     graphics["view"]->bind(lights["view"]);

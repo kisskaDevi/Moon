@@ -472,6 +472,26 @@ matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n
 }
 
 template<typename type>
+matrix<type,4,4> orthographic(const type left, const type right, const type bottom, const type top, const type n, const type f) {
+    matrix<type,4,4> m(0.0f);
+    m[0][0] = type(2) / (right - left);
+    m[1][1] = - type(2) / (top - bottom);
+    m[2][2] = - type(2) / (f - n);
+    m[3][3] = type(1);
+
+    m[0][3] = - (right + left) / (right - left);
+    m[1][3] = - (top + bottom) / (top - bottom);
+    m[2][3] = - (f + n) / (f - n);
+
+    return m;
+}
+
+template<typename type>
+matrix<type,4,4> orthographic(const type& width, const type& height, const type& n, const type& f) {
+    return orthographic(- width / type(2), width / type(2), - height / type(2), height / type(2), n, f);
+}
+
+template<typename type>
 type radians(const type& angle) {
     return type(M_PI) * angle / type(180);
 }

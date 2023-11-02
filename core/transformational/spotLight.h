@@ -66,7 +66,7 @@ private:
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
-    spotLight(const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
+    spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
     ~spotLight();
 
@@ -134,7 +134,7 @@ private:
 
     void updateModelMatrix();
 public:
-    isotropicLight(std::vector<spotLight *>& lightSource, float radius = 100.0f);
+    isotropicLight(const vector<float,4>& color, std::vector<spotLight *>& lightSource, float radius = 100.0f);
     ~isotropicLight();
 
     void setLightColor(const vector<float,4> & color);

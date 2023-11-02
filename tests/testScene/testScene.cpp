@@ -266,8 +266,7 @@ void testScene::createLight()
     std::filesystem::path LIGHT_TEXTURE2  = ExternalPath / "dependences/texture/light2.jpg";
     std::filesystem::path LIGHT_TEXTURE3  = ExternalPath / "dependences/texture/light3.jpg";
 
-    lightPoints["lightBox"] = new isotropicLight(lightSources);
-    lightPoints["lightBox"]->setLightColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    lightPoints["lightBox"] = new isotropicLight(vector<float,4>(1.0f,1.0f,1.0f,1.0f), lightSources);
     groups["lightBox"]->addObject(lightPoints["lightBox"]);
 
     matrix<float,4,4> proj = perspective(radians(90.0f), 1.0f, 0.1f, 20.0f);
@@ -284,24 +283,20 @@ void testScene::createLight()
     lightSources.push_back(new spotLight(LIGHT_TEXTURE3, proj, true, true));
     groups["ufo3"]->addObject(lightSources.back());
 
-    lightSources.push_back(new spotLight(proj, true, true));
-    lightSources.back()->setLightColor(vector<float,4>(1.0f,0.65f,0.2f,1.0f));
+    lightSources.push_back(new spotLight(vector<float,4>(1.0f,0.65f,0.2f,1.0f), proj, true, true));
     groups["ufo_light_0"]->addObject(lightSources.back());
 
-    lightSources.push_back(new spotLight(proj, true, false));
-    lightSources.back()->setLightColor(vector<float,4>(0.9f,0.85f,0.95f,1.0f));
+    lightSources.push_back(new spotLight(vector<float,4>(0.9f,0.85f,0.95f,1.0f), proj, true, false));
     groups["ufo_light_1"]->addObject(lightSources.back());
 
-    lightSources.push_back(new spotLight(proj, true, true));
+    lightSources.push_back(new spotLight(vector<float,4>(0.9f,0.85f,0.75f,1.0f), proj, true, true));
     lightSources.back()->setLightColor(vector<float,4>(0.9f,0.85f,0.75f,1.0f));
     groups["ufo_light_2"]->addObject(lightSources.back());
 
-    lightSources.push_back(new spotLight(proj, true, true));
-    lightSources.back()->setLightColor(vector<float,4>(0.9f,0.3f,0.4f,1.0f));
+    lightSources.push_back(new spotLight(vector<float,4>(0.9f,0.3f,0.4f,1.0f), proj, true, true));
     groups["ufo_light_3"]->addObject(lightSources.back());
 
-    lightSources.push_back(new spotLight(proj, true, true));
-    lightSources.back()->setLightColor(vector<float,4>(0.2f,0.5f,0.95f,1.0f));
+    lightSources.push_back(new spotLight(vector<float,4>(0.2f,0.5f,0.95f,1.0f), proj, true, true));
     groups["ufo_light_4"]->addObject(lightSources.back());
 
     for(auto& source: lightSources){
@@ -438,8 +433,7 @@ void testScene::keyboardEvent(float frameTime)
         std::random_device device;
         std::uniform_real_distribution dist(0.3f, 1.0f);
 
-        lightSources.push_back(new spotLight(perspective(radians(90.0f), 1.0f, 0.1f, 20.0f), true, true));
-        lightSources.back()->setLightColor({dist(device), dist(device), dist(device), 1.0f});
+        lightSources.push_back(new spotLight({dist(device), dist(device), dist(device), 1.0f}, perspective(radians(90.0f), 1.0f, 0.1f, 20.0f), true, true));
         lightSources.back()->setLightDropFactor(0.2f);
 
         objects["ufo" + std::to_string(ufoCounter)] = new baseObject(models["ufo"]);

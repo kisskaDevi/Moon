@@ -1,5 +1,7 @@
 # Vulkan C++ application
 
+<img src="./screenshots/screenshot_1.PNG" width="1000px">
+
 ## About
 
 This application makes render of scene by Vulkan API and contains some modern graphics effects, which I will give below.

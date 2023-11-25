@@ -22,14 +22,14 @@ public:
     quaternion<type>& operator=(const quaternion<type>& other);
     ~quaternion();
 
-    type                scalar()const;
-    vector<type, 3>    vector()const;
+    type                re() const;
+    vector<type, 3>     im() const;
 
-    bool                operator==(const quaternion<type>& other)const;
-    bool                operator!=(const quaternion<type>& other)const;
-    quaternion<type>    operator+ (const quaternion<type>& other)const;
-    quaternion<type>    operator- (const quaternion<type>& other)const;
-    quaternion<type>    operator* (const quaternion<type>& other)const;
+    bool                operator==(const quaternion<type>& other) const;
+    bool                operator!=(const quaternion<type>& other) const;
+    quaternion<type>    operator+ (const quaternion<type>& other) const;
+    quaternion<type>    operator- (const quaternion<type>& other) const;
+    quaternion<type>    operator* (const quaternion<type>& other) const;
     quaternion<type>&   operator+=(const quaternion<type>& other);
     quaternion<type>&   operator-=(const quaternion<type>& other);
     quaternion<type>&   operator*=(const quaternion<type>& other);
@@ -106,13 +106,13 @@ quaternion<type>::~quaternion()
 {}
 
 template<typename type>
-type                quaternion<type>::scalar()const
+type                quaternion<type>::re()const
 {
     return s;
 }
 
 template<typename type>
-vector<type, 3>    quaternion<type>::vector()const
+vector<type, 3>    quaternion<type>::im()const
 {
     return ::vector<type, 3>(x,y,z);
 }

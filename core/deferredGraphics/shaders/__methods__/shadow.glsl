@@ -8,11 +8,11 @@ float getDepthFromMap(const in mat4 proj, sampler2D Sampler, vec2 uv){
 }
 
 bool inShadow(sampler2D Sampler, vec2 uv, float pointDepth) {
-    return texture(Sampler, uv.xy).x < pointDepth;
+    return texture(Sampler, uv.xy).x - pointDepth < 0.0f;
 }
 
 bool inLight(sampler2D Sampler, vec2 uv, float pointDepth) {
-    return texture(Sampler, uv.xy).x > pointDepth;
+    return texture(Sampler, uv.xy).x - pointDepth >= -0.00001f;
 }
 
 vec2 center(const in vec2 left, const in vec2 right){
@@ -29,7 +29,7 @@ float shadowBlur(sampler2D Sampler, vec4 coordinates, vec2 delta) {
     float pointDepth = coordinates.z / coordinates.w;
     if(inLight(Sampler, left, pointDepth)){
         return 1.0f;
-    } else if(inShadow(Sampler, right, pointDepth)){
+    } else if(!inLight(Sampler, right, pointDepth)){
         return 0.0f;
     }
 

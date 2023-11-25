@@ -162,12 +162,12 @@ void testPos::createLight()
 
     lights["base"] = new spotLight({1.0f,1.0f,1.0f,1.0f}, proj, true, true);
     lights["base"]->setLightDropFactor(1.0f);
-    lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
+    lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().im()/maximum(maxSize));
     graphics["base"]->bind(lights["base"]);
 
     lights["view"] = new spotLight(vector<float,4>(1.0f,1.0f,1.0f,1.0f), proj);
     lights["view"]->setLightDropFactor(1.0f);
-    lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
+    lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().im()/maximum(maxSize));
     graphics["view"]->bind(lights["view"]);
 }
 
@@ -230,7 +230,7 @@ void testPos::createObjects()
     }
 
     dualQuaternion<float> Q = convert(*cameraObjects.begin()->first);
-    cameras["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector()/maximum(maxSize));
+    cameras["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().im()/maximum(maxSize));
 }
 
 void testPos::mouseEvent(float frameTime)
@@ -273,13 +273,13 @@ void testPos::mouseEvent(float frameTime)
                 object->setOutlining(true, 1.5f / maximum(maxSize), {0.8f, 0.6f, 0.1f, 1.0f});
                 selectedObject = object;
 
-                cameras["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
+                cameras["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().im());
 
                 graphics["base"]->updateCmdFlags();
                 graphics["view"]->updateCmdFlags();
 
-                lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
-                lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().vector());
+                lights["base"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().im());
+                lights["view"]->setRotation(radians(180.0f),{1.0f,0.0f,0.0f}).rotate(Q.rotation()).setTranslation(Q.translation().im());
             }
         }
     }

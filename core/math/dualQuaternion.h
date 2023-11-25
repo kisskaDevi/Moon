@@ -161,7 +161,7 @@ dualQuaternion<T> operator* (const T& c,const dualQuaternion<T>& quat)
 template<typename type>
 dualQuaternion<type>&   dualQuaternion<type>::normalize()
 {
-    if(type norma = p.scalar()*p.scalar()+dot(p.vector(),p.vector()); norma != 0){
+    if(type norma = p.re()*p.re()+dot(p.im(),p.im()); norma != 0){
         norma = type(1)/std::sqrt(norma);
         p = norma * p;
         q = norma * q;
@@ -239,9 +239,9 @@ matrix<T,4,4> convert(const dualQuaternion<T>& quat)
 
     matrix<T,4,4> SE3;
 
-    SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = translation.vector()[0];
-    SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = translation.vector()[1];
-    SE3[2][0] = R[2][0];    SE3[2][1] = R[2][1];    SE3[2][2] = R[2][2];    SE3[2][3] = translation.vector()[2];
+    SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = translation.im()[0];
+    SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = translation.im()[1];
+    SE3[2][0] = R[2][0];    SE3[2][1] = R[2][1];    SE3[2][2] = R[2][2];    SE3[2][3] = translation.im()[2];
     SE3[3][0] = T(0);       SE3[3][1] = T(0);       SE3[3][2] = T(0);       SE3[3][3] = T(1);
 
     return SE3;
@@ -274,11 +274,11 @@ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>&
     dualQuaternion<T> dQuat(conjugate(r1) * r2, T(0.5) * conjugate(r1) * (t2 - t1) * r2);
     dQuat.normalize();
 
-    vector<T,3> l = normalize(dQuat.p.vector());
-    vector<T,3> tr = T(0.5)* vector<T,3>(dQuat.translation().vector());
+    vector<T,3> l = normalize(dQuat.p.im());
+    vector<T,3> tr = T(0.5)* vector<T,3>(dQuat.translation().im());
 
     T d = dot(tr,l);
-    T theta = std::acos(dQuat.p.scalar());
+    T theta = std::acos(dQuat.p.re());
 
     auto ratio = [](const T& theta, const T& t){
         return theta == T(0) ? t : std::sin(t * theta)/std::tan(theta);

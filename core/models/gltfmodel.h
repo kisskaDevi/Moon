@@ -32,14 +32,14 @@ struct Mesh{
     } uniformBuffer;
 
     struct UniformBlock {
-        matrix<float,4,4> matrix;
+        ::matrix<float,4,4> matrix;
         ::matrix<float,4,4> jointMatrix[MAX_NUM_JOINTS]{};
         float jointcount{0};
     } uniformBlock;
 
     std::vector<Primitive*> primitives;
 
-    Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> matrix);
+    Mesh(VkPhysicalDevice physicalDevice, VkDevice device, ::matrix<float,4,4> matrix);
     void destroy(VkDevice device);
     ~Mesh() = default;
 };
@@ -59,7 +59,7 @@ struct Node {
 
     std::vector<Node*> children;
 
-    matrix<float,4,4> matrix;
+    ::matrix<float,4,4> matrix;
     vector<float,3> translation{};
     vector<float,3> scale{1.0f};
     quaternion<float> rotation{};

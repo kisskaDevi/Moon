@@ -3,6 +3,8 @@
 #include "light.h"
 #include "operations.h"
 
+#include <algorithm>
+
 scattering::scattering(bool enable) :
     enable(enable)
 {}

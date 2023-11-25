@@ -170,7 +170,7 @@ matrix<float,4,4> spotLight::getModelMatrix() const {
 }
 
 vector<float,3> spotLight::getTranslate() const {
-    return translation.vector();
+    return translation.im();
 }
 
 vector<float,4> spotLight::getLightColor() const {
@@ -370,8 +370,8 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount, textu
 
 void spotLight::printStatus() const
 {
-    std::cout << "translation\t" << translation.vector()[0] << '\t' << translation.vector()[1] << '\t' << translation.vector()[2] << '\n';
-    std::cout << "rotation\t" << rotation.scalar() << '\t' << rotation.vector()[0] << '\t' << rotation.vector()[1] << '\t' << rotation.vector()[2] << '\n';
+    std::cout << "translation\t" << translation.im()[0] << '\t' << translation.im()[1] << '\t' << translation.im()[2] << '\n';
+    std::cout << "rotation\t" << rotation.re() << '\t' << rotation.im()[0] << '\t' << rotation.im()[1] << '\t' << rotation.im()[2] << '\n';
     std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
 }
 
@@ -423,7 +423,7 @@ vector<float,4> isotropicLight::getLightColor() const {
 }
 
 vector<float,3> isotropicLight::getTranslate() const {
-    return translation.vector();
+    return translation.im();
 }
 
 void isotropicLight:: setProjectionMatrix(const matrix<float,4,4> & projection)

@@ -143,7 +143,7 @@ matrix<float,4,4> baseCamera::getViewMatrix() const
     return viewMatrix;
 }
 
-vector<float,3>     baseCamera::getTranslation() const  {   return translation.vector();}
+vector<float,3>     baseCamera::getTranslation() const  {   return translation.im();}
 quaternion<float>   baseCamera::getRotationX()const     {   return rotationX;}
 quaternion<float>   baseCamera::getRotationY()const     {   return rotationY;}
 
@@ -182,7 +182,7 @@ void baseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
         UniformBufferObject baseUBO{};
             baseUBO.view = transpose(viewMatrix);
             baseUBO.proj = transpose(projMatrix);
-            baseUBO.eyePosition = vector<float,4>(translation.vector()[0], translation.vector()[1], translation.vector()[2], 1.0);
+            baseUBO.eyePosition = vector<float,4>(translation.im()[0], translation.im()[1], translation.im()[2], 1.0);
         std::memcpy(uniformBuffersHost[frameNumber].map, &baseUBO, sizeof(baseUBO));
 
         uniformBuffersHost[frameNumber].updateFlag = false;

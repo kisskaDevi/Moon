@@ -22,11 +22,11 @@ if __name__ == '__main__':
     print("========== build glfw ==========")
     osname = platform.platform()
     if osname.startswith('Windows'):
-        subprocess.run( 'mkdir .\\glfw\\build', shell=True)
-        subprocess.run( 'cmake -B glfw\\build -S glfw -DBUILD_SHARED_LIBS=ON', shell=True)
-        subprocess.run( 'cmake --build glfw\\build --config Release', shell=True)
-        subprocess.run( 'cmake --build glfw\\build --config Debug', shell=True)
+        subprocess.run( 'mkdir ' + externalsDir + '\\glfw\\build', shell=True)
+        subprocess.run( 'cmake -B ' + externalsDir + '\\glfw\\build -S ' + externalsDir + '\\glfw -DBUILD_SHARED_LIBS=ON', shell=True)
+        subprocess.run( 'cmake --build ' + externalsDir + '\\glfw\\build --config Release', shell=True)
+        subprocess.run( 'cmake --build ' + externalsDir + '\\glfw\\build --config Debug', shell=True)
     elif osname.startswith('Linux'):
-        subprocess.run( 'mkdir ./glfw/build', shell=True)
-        subprocess.run( 'cmake -B ./glfw/build -S ./glfw -DBUILD_SHARED_LIBS=ON', shell=True)
-        subprocess.run( 'make -C ./glfw/build', shell=True)
+        subprocess.run( 'mkdir ' + externalsDir + '/glfw/build', shell=True)
+        subprocess.run( 'cmake -B ' + externalsDir + '/glfw/build -S ' + externalsDir + '/glfw -DBUILD_SHARED_LIBS=ON', shell=True)
+        subprocess.run( 'make -C ' + externalsDir + '/glfw/build', shell=True)

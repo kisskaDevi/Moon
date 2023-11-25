@@ -2,7 +2,7 @@
 #define OPERATIONS_H
 
 #include <vulkan.h>
-
+#include <cstring>
 #include <vector>
 #include <string>
 #include <filesystem>

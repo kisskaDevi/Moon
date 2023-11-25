@@ -14,6 +14,7 @@
 #include <imgui_impl_vulkan.h>
 
 #include <random>
+#include <limits>
 
 testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath):
     ExternalPath(ExternalPath),
@@ -312,9 +313,9 @@ void testScene::mouseEvent(float frameTime)
     float sensitivity = mouse->sensitivity * frameTime;
     uint32_t imageCount = app->getSwapChain()->getImageCount();
 
-    int primitiveNumber = INT_FAST32_MAX;
+    uint32_t primitiveNumber = std::numeric_limits<uint32_t>::max();
     for(uint32_t i=0; i < imageCount; i++){
-        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != INT_FAST32_MAX)
+        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != std::numeric_limits<uint32_t>::max())
             break;
     }
 
@@ -356,7 +357,7 @@ void testScene::mouseEvent(float frameTime)
     if(mouse->released(GLFW_MOUSE_BUTTON_RIGHT))
     {
         if(auto q = convert(inverse(cameras["base"]->getViewMatrix())); cameras.count("view") > 0){
-            cameras["view"]->setTranslation(q.translation().vector()).setRotation(q.rotation());
+            cameras["view"]->setTranslation(q.translation().im()).setRotation(q.rotation());
         }
     }
 }

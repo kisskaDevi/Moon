@@ -1,48 +1,49 @@
-# Vulkan C++ application
+# Vulkan render
 
 <img src="./screenshots/screenshot_1.PNG" width="1000px">
 
 ## About
 
-This application makes render of scene by Vulkan API and contains some modern graphics effects, which I will give below.
+This repository contains a number of modules, that makes 3D render using [Vulkan API](https://www.vulkan.org/). All render moduls are implemented as static libraries and located in [core](core) directory, check READMEs in modules directories for more detailed information. Tests are located in [tests](tests) directory and implemented as executable applications, that demonstrate rendering functionality. Almost all build dependences could be cloning by [clone script](dependences/libs/clone.py), for more build informations check [requirements](#Requirements) and [build](#Build-tests-applications) paragraphs.
 
-## Content
+## Build tests applications
 
-* Base render of 3D geometry and texturing.
-* Spot light sources with shadows.
-* Reneder in several attachments.
-* Two pass render - first pass draw and shade scene, second pass is post processing.
-* glTF models render based on [repository of Sascha Willems](https://github.com/SaschaWillems/Vulkan-glTF-PBR), redesigned for this implementation of the Vulkan application.
-* Animations and linear interpolation between Animations
-* Groups of objects, light sources, camera and groups manipulations.
-* Using three frame buffers.
-* MSAA.
-* MIP-maps.
-* Skybox
-* Bloom by bliting of source image
-* Deferred render by subpasses
-* Volumetric light
-* Screen Space Local Reflections
-* Using stencil buffer for highlighting objects
-* Store buffer, which can be readen by CPU, for example, I used it for detect object under cursor
+From working directory:
 
-## Optimization
-
-I use a single vkCmdDraw for each light sources, in which every single pass draw inside surface of piramid, corresponded projection and view matrixes of light source. Fragment shader works only with pyramid fragments of this light point. We do not shade points out of light volume by this way. Results of every light pass is blended in attachment using function of maximum. We have image with lighted fragments of pyramids. For normal result I do final pass of ambient light. It fills fragments which outs of light pyramids.
-Eventually we have same image of deferred render, but calculations are more fast. Also differentiation of light sources calculations lets using various pipelines and shaders for every light source. It lets us render variose effects without performance drop. In fact performance depends on count of shaded fragments and do not depend on light sources count.
-
-## Clone dependences
-
+* Clone dependences:
 ```
-cd dependences/libs
-python clone.py
+python ./dependences/libs/clone.py
 ```
-
-## Build
-
+* Build:
 ```
 mkdir build
 cd build
 cmake .. -DCUDA_RAY_TRACING=ON
 cmake --build . --config Release
 ```
+
+Use `CUDA_RAY_TRACING` flag for build `cudaRayTracing` module and `testCuda` test, make shure you have installed `CUDA`, it is not installed with dependences by `clone.py` script.
+
+## Requirements
+
+A number of dependences that could be cloning by [clone script](dependences/libs/clone.py):
+* [stb](https://github.com/nothings/stb.git) - image loader
+* [tinygltf](https://github.com/syoyo/tinygltf.git) - gltf model loader
+* [tinyply](https://github.com/ddiakopoulos/tinyply.git) - ply model loader
+* [vulkan headers](https://github.com/KhronosGroup/Vulkan-Headers.git) - Vulkan header files 
+* [ImGui](https://github.com/ocornut/imgui.git) - open GUI library
+* [glfw](https://github.com/glfw/glfw.git) - window API, automatically builded by script
+
+Also you need installed `Vulkan API` and optional `CUDA`.
+
+## Decription
+
+At the moment, only deferred render (`deferredGraphics`) has been implemented. It's a stand-alone module that can be replaced with another implementation of render. In the future, it is planned to implement a simpler forward rendering as modul. Current implementation requires around 1.5-2 Gb of device memory for initialization and supporting all functionality.
+
+All renders, for example `deferredGraphics`, `cudaRayTracing` or `imguiGraphics`, host by graphics manager (`graphicsManager`), that creates and supports all necessary stuff. Manager and render moduls communicats by linker classes, all instance of render moduls must implement oun linker class inherited from the linker interface.
+
+`cudaRayTracing` is simpliest implementation of ray tracing, it has low perfomance. Possible in the future this modul will be improved. In current state it shows simultaneos `CUDA` and `Vulkan` work.
+
+[ImGui](https://github.com/ocornut/imgui.git) was integrated as graphics modul `imguiGraphics`, and could be launched with other graphics modul. Generally speaking all graphics moduls could be launched simultaneosly, and show in different parts of window. Also, for example, two instance of graphics could be launched by single manager for multi-view presentation (`testPos`).
+
+Supported models formats: gltf, glb, ply.

@@ -53,7 +53,7 @@ VkResult graphicsManager::createInstance()
     return result;
 }
 
-VkResult graphicsManager::createDevice()
+VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFeatures)
 {
     if(surface == VK_NULL_HANDLE)   return debug::errorResult("[ createDevice ] surface is VK_NULL_HANDLE");
     if(instance == VK_NULL_HANDLE)  return debug::errorResult("[ createDevice ] instance is VK_NULL_HANDLE");
@@ -72,14 +72,6 @@ VkResult graphicsManager::createDevice()
         devices.emplace_back(physicalDevice(device,surface,deviceExtensions));
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
-        deviceFeatures.independentBlend = VK_TRUE;
-        deviceFeatures.sampleRateShading = VK_TRUE;
-        deviceFeatures.imageCubeArray = VK_TRUE;
-        deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
-        deviceFeatures.fillModeNonSolid = VK_TRUE;
-
     device logical(deviceFeatures);
     result = devices[0].createDevice(logical,{{0,2}});
     return result;
@@ -95,7 +87,7 @@ VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
 {
     if(window == nullptr)           return debug::errorResult("[ createSwapChain ] Window is nullptr");
     if(surface == VK_NULL_HANDLE)   return debug::errorResult("[ createSwapChain ] surface is VK_NULL_HANDLE");
-    if(devices.empty())   return debug::errorResult("[ createSyncObjects ] device is VK_NULL_HANDLE");
+    if(devices.empty())             return debug::errorResult("[ createSwapChain ] device is VK_NULL_HANDLE");
 
     std::vector<uint32_t> queueIndices = {0};
     swapChainKHR.setDevice(devices[0].instance, devices[0].getLogical());

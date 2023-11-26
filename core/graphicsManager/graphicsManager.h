@@ -32,7 +32,7 @@ public:
 
     VkResult        createInstance();
     VkResult        createSurface(GLFWwindow* window);
-    VkResult        createDevice();
+    VkResult        createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
     VkResult        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
     VkResult        createLinker();
     void            setGraphics(graphicsInterface* graphics);

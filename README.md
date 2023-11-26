@@ -1,4 +1,6 @@
-<img src="./screenshots/screenshot_1.PNG" width="1000px">
+<p align="center">
+    <img src="./screenshots/screenshot_1.PNG" width="1000px">
+</p>
 
 # Vulkan render
 

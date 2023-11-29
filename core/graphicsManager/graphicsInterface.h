@@ -17,7 +17,7 @@ protected:
     swapChain*                  swapChainKHR{nullptr};
     std::vector<physicalDevice> devices;
     physicalDevice              device;
-    linkable* link{nullptr};
+    linkable*                   link{nullptr};
 
 public:
     virtual ~graphicsInterface(){};

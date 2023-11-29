@@ -7,9 +7,31 @@
 #include <string>
 #include <iostream>
 
-graphicsManager::graphicsManager()
+graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures)
 {
     debug::checkResult(createInstance(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+}
+
+graphicsManager::graphicsManager(GLFWwindow* window, int32_t maxImageCount, const VkPhysicalDeviceFeatures& deviceFeatures) : graphicsManager(deviceFeatures)
+{
+    create(window, maxImageCount);
+}
+
+graphicsManager::~graphicsManager()
+{
+    if(devices[0].getLogical())                     { vkDestroyDevice(devices[0].getLogical(), nullptr); devices[0].getLogical() = VK_NULL_HANDLE;}
+    if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
+    if(surface)                                     { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
+    if(instance)                                    { vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
+}
+
+void graphicsManager::create(GLFWwindow* window, int32_t maxImageCount)
+{
+    debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(createSwapChain(window, maxImageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
 
 VkResult graphicsManager::createInstance()
@@ -55,7 +77,6 @@ VkResult graphicsManager::createInstance()
 
 VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFeatures)
 {
-    if(surface == VK_NULL_HANDLE)   return debug::errorResult("[ createDevice ] surface is VK_NULL_HANDLE");
     if(instance == VK_NULL_HANDLE)  return debug::errorResult("[ createDevice ] instance is VK_NULL_HANDLE");
 
     VkResult result = VK_SUCCESS;
@@ -69,7 +90,7 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
     debug::checkResult(result, "VkInstance : vkEnumeratePhysicalDevices result = " + std::to_string(result));
 
     for (const auto device : phDevices){
-        devices.emplace_back(physicalDevice(device,surface,deviceExtensions));
+        devices.emplace_back(physicalDevice(device, deviceExtensions));
     }
 
     device logical(deviceFeatures);
@@ -80,7 +101,13 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
 VkResult graphicsManager::createSurface(GLFWwindow* window)
 {
     if(instance == VK_NULL_HANDLE)  return debug::errorResult("[ createSurface ] instance is VK_NULL_HANDLE");
-    return window ? glfwCreateWindowSurface(instance, window, nullptr, &surface) : debug::errorResult("[ createSurface ] Window is nullptr");
+    if(devices.empty())             return debug::errorResult("[ createSwapChain ] device is VK_NULL_HANDLE");
+
+    VkResult result = window ? glfwCreateWindowSurface(instance, window, nullptr, &surface) : debug::errorResult("[ createSurface ] Window is nullptr");
+    if(!devices[0].presentSupport(surface)){
+        result = debug::errorResult("[ createSurface ] device doesn't support present");
+    }
+    return result;
 }
 
 VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCount)
@@ -201,16 +228,21 @@ void graphicsManager::destroySyncObjects()
     fences.clear();
 }
 
+void graphicsManager::destroySurface()
+{
+    if(surface) { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
+}
+
 void graphicsManager::destroy()
 {
-    if(devices[0].getLogical())                     { vkDestroyDevice(devices[0].getLogical(), nullptr); devices[0].getLogical() = VK_NULL_HANDLE;}
-    if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
-    if(surface)                                     { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
-    if(instance)                                    { vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
+    destroySwapChain();
+    destroyLinker();
+    destroySyncObjects();
+    destroySurface();
 }
 
 VkInstance      graphicsManager::getInstance()      {return instance;}
 VkSurfaceKHR    graphicsManager::getSurface()       {return surface;}
 uint32_t        graphicsManager::getImageIndex()    {return imageIndex;}
-swapChain*       graphicsManager::getSwapChain()    {return &swapChainKHR;}
+swapChain*      graphicsManager::getSwapChain()    {return &swapChainKHR;}
 VkResult        graphicsManager::deviceWaitIdle()   {return vkDeviceWaitIdle(devices[0].getLogical());}

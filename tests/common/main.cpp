@@ -21,6 +21,18 @@
 #endif
 
 bool framebufferResized = false;
+uint32_t imageCount = 2;
+
+VkPhysicalDeviceFeatures physicalDeviceFeatures(){
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.independentBlend = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE;
+    deviceFeatures.imageCubeArray = VK_TRUE;
+    deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
+    return deviceFeatures;
+}
 
 GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName = "");
 std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, scene* testScene);
@@ -35,20 +47,7 @@ int main()
 
     GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.png");
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
-    deviceFeatures.samplerAnisotropy = VK_TRUE;
-    deviceFeatures.independentBlend = VK_TRUE;
-    deviceFeatures.sampleRateShading = VK_TRUE;
-    deviceFeatures.imageCubeArray = VK_TRUE;
-    deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
-    deviceFeatures.fillModeNonSolid = VK_TRUE;
-
-    graphicsManager app;
-    debug::checkResult(app.createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(app.createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(app.createSwapChain(window, 2), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(app.createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(app.createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    graphicsManager app(window, imageCount, physicalDeviceFeatures());
 
 #if defined(TESTPOS)
     testPos testScene(&app, window, ExternalPath);
@@ -59,7 +58,7 @@ int main()
 #endif
     testScene.create(WIDTH,HEIGHT);
 
-    Memory::instance().status();
+    //Memory::instance().status();
 
     static auto pastTime = std::chrono::high_resolution_clock::now();
     while (!glfwWindowShouldClose(window))
@@ -86,9 +85,6 @@ int main()
     debug::checkResult(app.deviceWaitIdle(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
     testScene.destroy();
-    app.destroySwapChain();
-    app.destroyLinker();
-    app.destroySyncObjects();
     app.destroy();
 
     glfwDestroyWindow(window);
@@ -109,17 +105,13 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, sc
     }
 
     app->deviceWaitIdle();
-    app->destroySwapChain();
-    app->destroyLinker();
-    app->destroySyncObjects();
+    app->destroy();
 
-    app->createSwapChain(window, 2);
-    app->createLinker();
-    app->createSyncObjects();
+    app->create(window, imageCount);
 
     testScene->resize(width, height);
 
-    Memory::instance().status();
+    //Memory::instance().status();
 
     framebufferResized = false;
 

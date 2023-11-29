@@ -51,11 +51,12 @@ struct physicalDevice
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
     physicalDevice() = default;
-    physicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface = VK_NULL_HANDLE, std::vector<const char*> deviceExtensions = {});
+    physicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions = {});
 
     physicalDevice& operator=(const physicalDevice& other);
     physicalDevice(const physicalDevice& other);
 
+    bool presentSupport(VkSurfaceKHR surface);
     VkResult createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap);
     VkDevice& getLogical();
     const VkDevice& getLogical() const;

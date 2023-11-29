@@ -18,25 +18,20 @@
 class graphicsManager
 {
 public:
-    graphicsManager();
+    graphicsManager(GLFWwindow* window, int32_t maxImageCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    ~graphicsManager();
+
     void destroy();
-    void destroySwapChain();
-    void destroyLinker();
-    void destroySyncObjects();
 
     VkInstance      getInstance();
     VkSurfaceKHR    getSurface();
     uint32_t        getImageIndex();
     swapChain*      getSwapChain();
     VkResult        deviceWaitIdle();
-
-    VkResult        createInstance();
-    VkResult        createSurface(GLFWwindow* window);
-    VkResult        createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    VkResult        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
-    VkResult        createLinker();
     void            setGraphics(graphicsInterface* graphics);
-    VkResult        createSyncObjects();
+
+    void            create(GLFWwindow* window, int32_t maxImageCount = -1);
     VkResult        checkNextFrame();
     VkResult        drawFrame();
 
@@ -62,6 +57,18 @@ private:
 
     uint32_t                                    imageIndex{0};
     uint32_t                                    semaphorIndex{0};
+
+    VkResult        createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    VkResult        createInstance();
+    VkResult        createSurface(GLFWwindow* window);
+    VkResult        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
+    VkResult        createLinker();
+    VkResult        createSyncObjects();
+
+    void destroySurface();
+    void destroySwapChain();
+    void destroyLinker();
+    void destroySyncObjects();
 };
 
 #endif // GRAPHICSMANAGER_H

@@ -26,24 +26,34 @@ bool queueFamily::availableQueueFlag(VkQueueFlags flag) const {
     return (flag & flags) == flag;
 }
 
-physicalDevice::physicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char*> deviceExtensions):
+physicalDevice::physicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions):
     instance(physicalDevice),
     deviceExtensions(deviceExtensions)
 {
     uint32_t queueFamilyPropertyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
 
-    std::vector<VkQueueFamilyProperties> aueueFamilyProperties(queueFamilyPropertyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, aueueFamilyProperties.data());
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
     for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
-        VkBool32 presentSupport = surface ? false : true;
-        if(surface){
-            VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, surface, &presentSupport);
-            debug::checkResult(result, "VkPhysicalDevice : vkGetPhysicalDeviceSurfaceSupportKHR result = " + std::to_string(result));
-        }
-        queueFamilies[index] = queueFamily{index,aueueFamilyProperties[index].queueFlags,aueueFamilyProperties[index].queueCount, presentSupport};
+        queueFamilies[index] = queueFamily{index,queueFamilyProperties[index].queueFlags,queueFamilyProperties[index].queueCount, false};
     }
+}
+
+bool physicalDevice::presentSupport(VkSurfaceKHR surface)
+{
+    VkBool32 presentSupport = false;
+    if(surface){
+        for (const auto& [index, _] : queueFamilies){
+            VkBool32 support = false;
+            VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(instance, index, surface, &support);
+            debug::checkResult(result, "VkPhysicalDevice : vkGetPhysicalDeviceSurfaceSupportKHR result = " + std::to_string(result));
+            presentSupport |= support;
+            queueFamilies[index].presentSupport = support;
+        }
+    }
+    return presentSupport;
 }
 
 VkResult physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap)

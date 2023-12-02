@@ -206,29 +206,29 @@ void deferredGraphics::createCommandBuffers(){
         nodes[imageIndex]
          = new node({
             stage(  {   copyCommandBuffers[imageIndex]},
-                    {   VK_PIPELINE_STAGE_TRANSFER_BIT},
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
                     device.getQueue(0,0))
         }, new node({
             stage(  {   workflows["Shadow"]->getCommandBuffer(imageIndex)},
-                    {   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
+                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                     device.getQueue(0,0)),
             stage(  {   workflows["Skybox"]->getCommandBuffer(imageIndex)},
-                    {   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
+                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                     device.getQueue(0,0))
         }, new node({
             stage(  {   workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)},
-                    {   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     device.getQueue(0,0)),
             stage(  getTransparentLayersCommandBuffers(imageIndex),
-                    {   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     device.getQueue(0,0))
         }, new node({
             stage(  {   workflows["Scattering"]->getCommandBuffer(imageIndex)},
-                    {   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     device.getQueue(0,0))
         }, new node({
             stage(  {   workflows["LayersCombiner"]->getCommandBuffer(imageIndex)},
-                    {   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT},
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     device.getQueue(0,0))
         }, new node({
             stage(  {   workflows["SSLR"]->getCommandBuffer(imageIndex),
@@ -237,7 +237,7 @@ void deferredGraphics::createCommandBuffers(){
                         workflows["Blur"]->getCommandBuffer(imageIndex),
                         workflows["BoundingBox"]->getCommandBuffer(imageIndex),
                         workflows["PostProcessing"]->getCommandBuffer(imageIndex)},
-                    {   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     device.getQueue(0,0))
         }, nullptr))))));
 

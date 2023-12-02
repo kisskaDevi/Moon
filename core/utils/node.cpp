@@ -2,14 +2,15 @@
 #include "operations.h"
 
 stage::stage(   std::vector<VkCommandBuffer> commandBuffers,
-                std::vector<VkPipelineStageFlags> waitStages,
+                VkPipelineStageFlags waitStage,
                 VkQueue queue) :
     commandBuffers(commandBuffers),
-    waitStages(waitStages),
+    waitStage(waitStage),
     queue(queue)
 {}
 
 VkResult stage::submit(){
+    std::vector<VkPipelineStageFlags> waitStages(waitSemaphores.size(), waitStage);
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());

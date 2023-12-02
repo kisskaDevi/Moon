@@ -37,7 +37,7 @@ Begin
 │   ├── Deferred Graphics
 │   ├── Transparent Layers
 ├───┘
-├── stage 4\
+├── stage 4
 │   ├── Scattering
 ├───┘
 ├── stage 5

@@ -7,14 +7,14 @@
 struct stage
 {
     std::vector<VkCommandBuffer> commandBuffers;
-    std::vector<VkPipelineStageFlags> waitStages;
     std::vector<VkSemaphore> waitSemaphores;
     std::vector<VkSemaphore> signalSemaphores;
+    VkPipelineStageFlags waitStage;
     VkQueue queue{VK_NULL_HANDLE};
     VkFence fence{VK_NULL_HANDLE};
 
     stage(  std::vector<VkCommandBuffer> commandBuffers,
-            std::vector<VkPipelineStageFlags> waitStages,
+            VkPipelineStageFlags waitStages,
             VkQueue queue);
 
     VkResult submit();

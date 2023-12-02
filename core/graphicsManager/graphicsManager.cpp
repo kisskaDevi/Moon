@@ -172,10 +172,14 @@ VkResult graphicsManager::createSyncObjects()
 
 VkResult graphicsManager::checkNextFrame()
 {
-    VkResult result = vkAcquireNextImageKHR(devices[0].getLogical(), swapChainKHR(), UINT64_MAX, availableSemaphores[semaphorIndex], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkWaitForFences(devices[0].getLogical(), 1, &fences[semaphorIndex], VK_TRUE, UINT64_MAX);
+    debug::checkResult(result, "VkFence : vkWaitForFences result = " + std::to_string(result));
 
-    if (result != VK_ERROR_OUT_OF_DATE_KHR)
-        result = vkWaitForFences(devices[0].getLogical(), 1, &fences[imageIndex], VK_TRUE, UINT64_MAX);
+    result = vkResetFences(devices[0].getLogical(), 1, &fences[semaphorIndex]);
+    debug::checkResult(result, "VkFence : vkResetFences result = " + std::to_string(result));
+
+    result = vkAcquireNextImageKHR(devices[0].getLogical(), swapChainKHR(), UINT64_MAX, availableSemaphores[semaphorIndex], VK_NULL_HANDLE, &imageIndex);
+    debug::checkResult(result, "VkFence : vkResetFences result = " + std::to_string(result));
 
     return result;
 }
@@ -183,28 +187,26 @@ VkResult graphicsManager::checkNextFrame()
 VkResult graphicsManager::drawFrame()
 {
     for(auto graphics: graphics){
-        graphics->updateBuffers(imageIndex);
-        graphics->updateCommandBuffer(imageIndex);
+        graphics->updateBuffers(semaphorIndex);
+        graphics->updateCommandBuffer(semaphorIndex);
     }
     linker.updateCmdFlags();
     linker.updateCommandBuffer(imageIndex);
 
-    vkResetFences(devices[0].getLogical(), 1, &fences[imageIndex]);
-
     std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[semaphorIndex]}};
     for(auto& graph: graphics){
-        waitSemaphores = graph->submit(waitSemaphores, {VK_NULL_HANDLE},imageIndex);
+        waitSemaphores = graph->submit(waitSemaphores, {VK_NULL_HANDLE}, semaphorIndex);
     }
-
-    semaphorIndex = ((semaphorIndex + 1) % swapChainKHR.getImageCount());
-
     VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &linker.submit(imageIndex, waitSemaphores.size() > 0 ? waitSemaphores.back() : std::vector<VkSemaphore>(), fences[imageIndex], devices[0].getQueue(0,0));
+        presentInfo.pWaitSemaphores = &linker.submit(imageIndex, waitSemaphores.size() > 0 ? waitSemaphores.back() : std::vector<VkSemaphore>(), fences[semaphorIndex], devices[0].getQueue(0,0));
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &swapChainKHR();
         presentInfo.pImageIndices = &imageIndex;
+
+    semaphorIndex = ((semaphorIndex + 1) % swapChainKHR.getImageCount());
+
     return vkQueuePresentKHR(devices[0].getQueue(0,0), &presentInfo);
 }
 
@@ -244,5 +246,5 @@ void graphicsManager::destroy()
 VkInstance      graphicsManager::getInstance()      {return instance;}
 VkSurfaceKHR    graphicsManager::getSurface()       {return surface;}
 uint32_t        graphicsManager::getImageIndex()    {return imageIndex;}
-swapChain*      graphicsManager::getSwapChain()    {return &swapChainKHR;}
+swapChain*      graphicsManager::getSwapChain()     {return &swapChainKHR;}
 VkResult        graphicsManager::deviceWaitIdle()   {return vkDeviceWaitIdle(devices[0].getLogical());}

@@ -3,8 +3,6 @@
 
 #include "workflow.h"
 
-class camera;
-
 class SSLRGraphics : public workflow
 {
 private:

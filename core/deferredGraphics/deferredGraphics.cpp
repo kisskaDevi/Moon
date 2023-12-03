@@ -313,8 +313,8 @@ void deferredGraphics::createStorageBuffers(uint32_t imageCount){
 void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
     StorageBufferObject StorageUBO{};
         StorageUBO.mousePosition = vector<float,4>(mousex,mousey,0.0f,0.0f);
-        StorageUBO.number = INT_FAST32_MAX;
-        StorageUBO.depth = 1.0f;
+        StorageUBO.number = std::numeric_limits<int>::max();
+        StorageUBO.depth = std::numeric_limits<float>::max();
     std::memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
 }
 

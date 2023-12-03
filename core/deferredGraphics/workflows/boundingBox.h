@@ -4,7 +4,6 @@
 #include "workflow.h"
 
 class object;
-class camera;
 
 class boundingBoxGraphics : public workflow
 {

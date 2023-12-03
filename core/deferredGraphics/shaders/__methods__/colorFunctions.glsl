@@ -31,6 +31,14 @@ float codeToFloat(vec4 val){
         uint(255.0f * val.a) << 24 );
 }
 
+float codeToFloat(vec3 val, float a){
+    return uintBitsToFloat(
+        uint(255.0f * val.r) << 0  |
+        uint(255.0f * val.g) << 8  |
+        uint(255.0f * val.b) << 16 |
+        uint(255.0f * a    ) << 24 );
+}
+
 vec4 decodeFromFloat(float val){
     return vec4(
         decodeParameter(0x000000ff, 0, val) / 255.0f,

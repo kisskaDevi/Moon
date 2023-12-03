@@ -4,8 +4,8 @@
 #include "workflow.h"
 
 struct CustomFilterPushConst{
-    alignas (4) float   deltax;
-    alignas (4) float   deltay;
+    alignas (4) float deltax;
+    alignas (4) float deltay;
 };
 
 class customFilter : public workflow

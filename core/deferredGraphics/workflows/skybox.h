@@ -5,7 +5,6 @@
 #include <filesystem>
 
 class object;
-class camera;
 
 struct skyboxAttachments
 {

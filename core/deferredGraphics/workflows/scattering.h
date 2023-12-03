@@ -4,7 +4,6 @@
 #include "workflow.h"
 
 class light;
-class camera;
 
 struct scatteringPushConst{
     alignas(4) int  width{0};

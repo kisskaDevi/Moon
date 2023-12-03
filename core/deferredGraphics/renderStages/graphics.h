@@ -10,7 +10,6 @@
 class   texture;
 class   cubeTexture;
 class   object;
-class   camera;
 class   light;
 struct  Node;
 struct  Material;

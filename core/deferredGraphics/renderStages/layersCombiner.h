@@ -3,8 +3,6 @@
 
 #include "workflow.h"
 
-class camera;
-
 struct layersCombinerPushConst{
     alignas(4) int enableScatteringRefraction{true};
 };

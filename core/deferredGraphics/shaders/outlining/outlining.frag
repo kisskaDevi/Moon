@@ -21,7 +21,7 @@ layout(push_constant) uniform Stencil {
 } stencil;
 
 void main() {
-    outPosition = position;
+    outPosition = vec4(position.xyz, 1.0f);
     outBaseColor = vec4(0.0, 0.0, 0.0, 0.0);
     outNormal = vec4(0.0, 0.0, 0.0, codeToFloat(stencil.color));
 }

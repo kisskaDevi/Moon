@@ -14,7 +14,6 @@ graphics::graphics(bool enable, bool transparencyPass, uint32_t transparencyNumb
 }
 
 graphics& graphics::setMinAmbientFactor(const float& minAmbientFactor)    { ambientLighting.minAmbientFactor = minAmbientFactor; return *this;}
-graphics& graphics::setTransparencyPass(const bool& transparencyPass)     { base.transparencyPass = transparencyPass; return *this;}
 
 void graphics::destroy()
 {

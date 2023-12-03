@@ -9,6 +9,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
     mat4 proj;
     vec4 eyePosition;
 } global;
+
 layout(set = 0, binding = 1) uniform sampler2D Sampler;
 layout(set = 0, binding = 2) uniform sampler2D bloomSampler;
 layout(set = 0, binding = 3) uniform sampler2D position;

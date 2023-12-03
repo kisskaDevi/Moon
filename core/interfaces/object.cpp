@@ -72,6 +72,7 @@ uint32_t object::getPrimitiveCount() const {
 void object::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+    binding.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutCreateInfo uniformBufferLayoutInfo{};
         uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());

@@ -41,7 +41,7 @@ public:
 
     void createCommandPool();
     void createCommandBuffers();
-    void updateCommandBuffer(uint32_t frameNumber);
+    void updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber);
 
     void createSyncObjects();
     const VkSemaphore& submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue);

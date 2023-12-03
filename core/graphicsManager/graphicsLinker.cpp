@@ -117,39 +117,39 @@ void graphicsLinker::createCommandBuffers(){
     updateCommandBufferFlags.resize(imageCount, true);
 }
 
-void graphicsLinker::updateCommandBuffer(uint32_t frameNumber){
-    if(updateCommandBufferFlags[frameNumber])
+void graphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber){
+    if(updateCommandBufferFlags[resourceNumber])
     {
-        vkResetCommandBuffer(commandBuffers[frameNumber],0);
+        vkResetCommandBuffer(commandBuffers[resourceNumber],0);
 
         VkCommandBufferBeginInfo beginInfo{};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = 0;
             beginInfo.pInheritanceInfo = nullptr;
-        vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+        vkBeginCommandBuffer(commandBuffers[resourceNumber], &beginInfo);
 
             std::vector<VkClearValue> clearValues = {VkClearValue{}};
 
             VkRenderPassBeginInfo renderPassInfo{};
                 renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
                 renderPassInfo.renderPass = renderPass;
-                renderPassInfo.framebuffer = framebuffers[frameNumber];
+                renderPassInfo.framebuffer = framebuffers[imageNumber];
                 renderPassInfo.renderArea.offset = {0,0};
                 renderPassInfo.renderArea.extent = imageExtent;
                 renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
                 renderPassInfo.pClearValues = clearValues.data();
 
-            vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBeginRenderPass(commandBuffers[resourceNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                 for(const auto& link: linkables){
-                    link->draw(commandBuffers[frameNumber], frameNumber);
+                    link->draw(commandBuffers[resourceNumber], resourceNumber);
                 }
 
-            vkCmdEndRenderPass(commandBuffers[frameNumber]);
+            vkCmdEndRenderPass(commandBuffers[resourceNumber]);
 
-        vkEndCommandBuffer(commandBuffers[frameNumber]);
+        vkEndCommandBuffer(commandBuffers[resourceNumber]);
 
-        updateCommandBufferFlags[frameNumber] = false;
+        updateCommandBufferFlags[resourceNumber] = false;
     }
 }
 

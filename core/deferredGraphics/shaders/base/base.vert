@@ -40,21 +40,13 @@ layout(location = 2)	out vec2 outUV0;
 layout(location = 3)	out vec2 outUV1;
 layout(location = 4)	out vec3 outTangent;
 layout(location = 5)	out vec3 outBitangent;
-layout(location = 6)	out vec4 outConstColor;
-layout(location = 7)	out vec4 outColorFactor;
-layout(location = 8)	out vec4 outBloomColor;
-layout(location = 9)	out vec4 outBloomFactor;
-layout(location = 10)	out vec4 outEyePosition;
-layout(location = 11)	out vec4 glPosition;
+layout(location = 6)	out vec4 outEyePosition;
+layout(location = 7)	out vec4 glPosition;
 
 void main()
 {
     outUV0 = inUV0;
     outUV1 = inUV1;
-    outConstColor = local.constColor;
-    outColorFactor = local.colorFactor;
-    outBloomColor = local.bloomColor;
-    outBloomFactor = local.bloomFactor;
     outEyePosition = global.eyePosition;
 
     mat4 skinMat = node.jointCount > 0.0 ?
@@ -72,5 +64,4 @@ void main()
 
     gl_Position = global.proj * global.view * outPosition;
     glPosition = gl_Position;
-    glPosition /= glPosition.w;
 }

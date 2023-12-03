@@ -132,7 +132,6 @@ public:
     bool remove(light* lightSource);
 
     graphics& setMinAmbientFactor(const float& minAmbientFactor);
-    graphics& setTransparencyPass(const bool& transparencyPass);
 };
 
 #endif // GRAPHICS_H

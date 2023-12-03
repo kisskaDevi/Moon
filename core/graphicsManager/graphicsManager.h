@@ -56,7 +56,7 @@ private:
     std::vector<VkFence>                        fences;
 
     uint32_t                                    imageIndex{0};
-    uint32_t                                    semaphorIndex{0};
+    uint32_t                                    resourceIndex{0};
 
     VkResult        createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
     VkResult        createInstance();

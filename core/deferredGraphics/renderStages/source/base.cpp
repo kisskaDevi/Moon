@@ -46,6 +46,17 @@ void graphics::Base::createDescriptorSetLayout(VkDevice device)
 
 void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
+    VkBool32 transparencyPass = static_cast<VkBool32>(this->transparencyPass);
+    VkSpecializationMapEntry specializationMapEntry{};
+        specializationMapEntry.constantID = 0;
+        specializationMapEntry.offset = 0;
+        specializationMapEntry.size = sizeof(VkBool32);
+    VkSpecializationInfo specializationInfo;
+        specializationInfo.mapEntryCount = 1;
+        specializationInfo.pMapEntries = &specializationMapEntry;
+        specializationInfo.dataSize = sizeof(VkBool32);
+        specializationInfo.pData = &transparencyPass;
+
     auto vertShaderCode = ShaderModule::readFile(ShadersPath / "base/basevert.spv");
     auto fragShaderCode = ShaderModule::readFile(ShadersPath / "base/basefrag.spv");
     VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
@@ -54,6 +65,7 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         vkDefault::vertrxShaderStage(vertShaderModule),
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
+    shaderStages.back().pSpecializationInfo = &specializationInfo;
 
     auto bindingDescription = model::Vertex::getBindingDescription();
     auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
@@ -79,12 +91,11 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    struct PushConstBlock {float transparencyPass; MaterialBlock material;};
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(PushConstBlock);
+        pushConstantRange.back().size = sizeof(MaterialBlock);
     std::vector<VkDescriptorSetLayout> setLayouts = {
         SceneDescriptorSetLayout,
         ObjectDescriptorSetLayout,
@@ -248,11 +259,7 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                 object->getDescriptorSet()[frameNumber]
             };
 
-            struct PushConstBlock{
-                float transparencyPass;
-                MaterialBlock material;
-            } pushConstBlock;
-            pushConstBlock.transparencyPass = transparencyPass ? 1.0f : 0.0f;
+            MaterialBlock material;
 
             object->setFirstPrimitive(primitiveCount);
             object->getModel()->render(
@@ -262,9 +269,9 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                         static_cast<uint32_t>(descriptorSets.size()),
                         descriptorSets.data(),
                         primitiveCount,
-                        sizeof(PushConstBlock),
-                        offsetof(PushConstBlock, material),
-                        &pushConstBlock);
+                        sizeof(MaterialBlock),
+                        0,
+                        &material);
             object->setPrimitiveCount(primitiveCount - object->getFirstPrimitive());
         }
     }

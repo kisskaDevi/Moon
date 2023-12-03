@@ -38,7 +38,7 @@ void postProcessingGraphics::createAttachments(std::unordered_map<std::string, s
 void postProcessingGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        attachments::imageDescription(image.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;

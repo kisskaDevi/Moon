@@ -23,7 +23,7 @@ private:
     uint32_t height{0};
     uint32_t xThreads{ 8 };
     uint32_t yThreads{ 8 };
-    uint32_t rayDepth{ 8 };
+    uint32_t rayDepth{ 12 };
 
     bool clear{false};
 

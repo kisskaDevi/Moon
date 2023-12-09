@@ -18,8 +18,8 @@
 class graphicsManager
 {
 public:
-    graphicsManager(GLFWwindow* window, int32_t maxImageCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    graphicsManager(GLFWwindow* window, int32_t maxImageCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {}, size_t deviceIndex = 0);
+    graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {}, size_t deviceIndex = 0);
     ~graphicsManager();
 
     void destroy();
@@ -46,6 +46,7 @@ private:
     VkSurfaceKHR                                surface{VK_NULL_HANDLE};
 
     std::vector<physicalDevice>                 devices;
+    size_t                                      deviceIndex{0};
 
     swapChain                                   swapChainKHR;
 

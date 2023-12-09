@@ -7,14 +7,6 @@ const VkRenderPass &imguiLink::getRenderPass(){
     return renderPass;
 }
 
-void imguiLink::setDeviceProp(VkDevice device){
-    this->device = device;
-}
-
-void imguiLink::setImageCount(const uint32_t& count){
-    imageCount = count;
-}
-
 void imguiLink::draw(VkCommandBuffer commandBuffer, uint32_t) const {
     // Rendering
     ImGui::Render();

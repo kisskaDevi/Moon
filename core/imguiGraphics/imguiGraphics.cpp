@@ -9,6 +9,10 @@
 #include "operations.h"
 #include "swapChain.h"
 
+imguiGraphics::imguiGraphics(){
+    link = &Link;
+}
+
 imguiGraphics::~imguiGraphics(){}
 
 void imguiGraphics::destroyGraphics() {
@@ -23,15 +27,6 @@ void imguiGraphics::destroyGraphics() {
 
 void imguiGraphics::setInstance(VkInstance instance){
     this->instance = instance;
-}
-
-void imguiGraphics::setDevices(uint32_t devicesCount, physicalDevice* devices) {
-    for(uint32_t i=0;i<devicesCount;i++){
-        this->devices.push_back(devices[i]);
-    }
-    device = this->devices[0];
-
-    Link.setDeviceProp(device.getLogical());
 }
 
 void imguiGraphics::setupImguiContext(){
@@ -71,11 +66,6 @@ void imguiGraphics::uploadFonts()
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void imguiGraphics::setSwapChain(swapChain* swapChainKHR) {
-    this->swapChainKHR = swapChainKHR;
-    imageCount = swapChainKHR->getImageCount();
-}
-
 void imguiGraphics::createGraphics() {
     setupImguiContext();
     createDescriptorPool();
@@ -103,13 +93,8 @@ void imguiGraphics::createGraphics() {
 }
 
 void imguiGraphics::updateCommandBuffer(uint32_t) {}
-
 void imguiGraphics::updateBuffers(uint32_t) {}
 
 std::vector<std::vector<VkSemaphore>> imguiGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>&, uint32_t){
     return externalSemaphore;
-}
-
-linkable* imguiGraphics::getLinkable() {
-    return &Link;
 }

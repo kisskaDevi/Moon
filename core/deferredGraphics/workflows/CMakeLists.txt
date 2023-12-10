@@ -17,7 +17,8 @@ customFilter.cpp
 ssao.cpp
 sslr.cpp
 scattering.cpp
-boundingBox.cpp)
+boundingBox.cpp
+selector.cpp)
 
 set(HEADERS blur.h
 workflow.h
@@ -28,7 +29,8 @@ customFilter.h
 ssao.h
 sslr.h
 scattering.h
-boundingBox.h)
+boundingBox.h
+selector.h)
 
 add_library(workflows STATIC ${SOURCES} ${HEADERS})
 target_include_directories(workflows PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

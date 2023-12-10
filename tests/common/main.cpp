@@ -21,7 +21,7 @@
 #endif
 
 bool framebufferResized = false;
-uint32_t imageCount = 2;
+uint32_t imageCount = 3;
 
 VkPhysicalDeviceFeatures physicalDeviceFeatures(){
     VkPhysicalDeviceFeatures deviceFeatures{};
@@ -45,9 +45,9 @@ int main()
     uint32_t HEIGHT = 800;
     const std::filesystem::path ExternalPath = std::filesystem::absolute(std::filesystem::path(__FILE__).replace_filename("../../"));
 
-    GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.png");
+    GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.PNG");
 
-    graphicsManager app(window, imageCount, physicalDeviceFeatures());
+    graphicsManager app(window, imageCount, physicalDeviceFeatures(), 1);
 
 #if defined(TESTPOS)
     testPos testScene(&app, window, ExternalPath);

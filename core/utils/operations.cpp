@@ -8,6 +8,8 @@
 #include <iostream>
 #include <string.h>
 
+#define ONLYDEVICELOCALHEAP
+
 VkResult debug::errorResult(const std::string& message){
 #ifndef NDEBUG
     std::cerr << "ERROR : " << message << std::endl;
@@ -82,8 +84,6 @@ void Memory::status()
     std::cout << "Total allocations : " << memoryMap.size() << std::endl;
     std::cout << "Total memory used : " << totalMemoryUsed << std::endl;
 }
-
-#define ONLYDEVICELOCALHEAP
 
 bool ValidationLayer::checkSupport(const std::vector<const char*> validationLayers)
 {
@@ -162,14 +162,24 @@ uint32_t PhysicalDevice::findMemoryTypeIndex(VkPhysicalDevice physicalDevice, ui
 #endif
 
     std::vector<uint32_t> memoryTypeIndex;
+    
+#ifdef ONLYDEVICELOCALHEAP
     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++){
         if ((memoryTypeBits & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties){
-#ifdef ONLYDEVICELOCALHEAP
-            if(memoryProperties.memoryTypes[i].heapIndex == deviceLocalHeapIndex)
-#endif
+            if(memoryProperties.memoryTypes[i].heapIndex == deviceLocalHeapIndex){
                 memoryTypeIndex.push_back(i);
+			}
         }
     }
+#endif
+    
+    if(memoryTypeIndex.size() == 0){
+		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++){
+		    if ((memoryTypeBits & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties){
+				memoryTypeIndex.push_back(i);
+		    }
+    	}
+	}
     return memoryTypeIndex.size() != 0 ? memoryTypeIndex[0] : UINT32_MAX;
 }
 

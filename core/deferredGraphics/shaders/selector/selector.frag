@@ -7,7 +7,6 @@ layout(constant_id = 0) const int transparentLayersCount = 1;
 layout(set = 0, binding = 0) buffer StorageBuffer {
     vec4 mousePosition;
     uint number;
-    float depth;
 } storage;
 layout(set = 0, binding = 1) uniform sampler2D Position;
 layout(set = 0, binding = 2) uniform sampler2D Depth;

@@ -14,9 +14,8 @@ void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const i
 }
 }
 
-selectorGraphics::selectorGraphics(bool enable, size_t transparentLayersCount) :
-    enable(enable)
-{
+selectorGraphics::selectorGraphics(bool enable, uint32_t transparentLayersCount) :
+    enable(enable) {
     selector.transparentLayersCount = transparentLayersCount;
 }
 
@@ -226,33 +225,33 @@ void selectorGraphics::updateDescriptorSets(
             StorageBufferInfo.offset = 0;
             StorageBufferInfo.range = bufferMap.at("storage").first;
 
-            const auto deferredAttachmentsGPos = attachmentsMap.at("GBuffer.position").second.front();
-            VkDescriptorImageInfo positionImageInfo;
-                positionImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                positionImageInfo.imageView = deferredAttachmentsGPos->instances[i].imageView;
-                positionImageInfo.sampler = deferredAttachmentsGPos->sampler;
+        const auto deferredAttachmentsGPos = attachmentsMap.at("GBuffer.position").second.front();
+        VkDescriptorImageInfo positionImageInfo;
+            positionImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            positionImageInfo.imageView = deferredAttachmentsGPos->instances[i].imageView;
+            positionImageInfo.sampler = deferredAttachmentsGPos->sampler;
 
-            const auto deferredAttachmentsGDepth = attachmentsMap.at("GBuffer.depth").second.front();
-            VkDescriptorImageInfo depthImageInfo;
-                depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                depthImageInfo.imageView = deferredAttachmentsGDepth->instances[i].imageView;
-                depthImageInfo.sampler = deferredAttachmentsGDepth->sampler;
+        const auto deferredAttachmentsGDepth = attachmentsMap.at("GBuffer.depth").second.front();
+        VkDescriptorImageInfo depthImageInfo;
+            depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthImageInfo.imageView = deferredAttachmentsGDepth->instances[i].imageView;
+            depthImageInfo.sampler = deferredAttachmentsGDepth->sampler;
 
-            std::vector<VkDescriptorImageInfo> positionLayersImageInfo(selector.transparentLayersCount);
-            std::vector<VkDescriptorImageInfo> depthLayersImageInfo(selector.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> positionLayersImageInfo(selector.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> depthLayersImageInfo(selector.transparentLayersCount);
 
-            for(uint32_t index = 0; index < selector.transparentLayersCount; index++){
-                std::string key = "transparency" + std::to_string(index) + ".";
-                const auto transparencyLayersGPos = attachmentsMap.count(key + "GBuffer.position") > 0 && attachmentsMap.at(key + "GBuffer.position").first ? attachmentsMap.at(key + "GBuffer.position").second.front() : nullptr;
-                positionLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                positionLayersImageInfo[index].imageView = transparencyLayersGPos ? transparencyLayersGPos->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-                positionLayersImageInfo[index].sampler = transparencyLayersGPos ? transparencyLayersGPos->sampler : *emptyTexture["black"]->getTextureSampler();
+        for(uint32_t index = 0; index < selector.transparentLayersCount; index++){
+            std::string key = "transparency" + std::to_string(index) + ".";
+            const auto transparencyLayersGPos = attachmentsMap.count(key + "GBuffer.position") > 0 && attachmentsMap.at(key + "GBuffer.position").first ? attachmentsMap.at(key + "GBuffer.position").second.front() : nullptr;
+            positionLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            positionLayersImageInfo[index].imageView = transparencyLayersGPos ? transparencyLayersGPos->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
+            positionLayersImageInfo[index].sampler = transparencyLayersGPos ? transparencyLayersGPos->sampler : *emptyTexture["black"]->getTextureSampler();
 
-                const auto transparencyLayersGDepth = attachmentsMap.count(key + "GBuffer.depth") > 0 && attachmentsMap.at(key + "GBuffer.depth").first ? attachmentsMap.at(key + "GBuffer.depth").second.front() : nullptr;
-                depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                depthLayersImageInfo[index].imageView = transparencyLayersGDepth ? transparencyLayersGDepth->instances[i].imageView : *emptyTexture["white"]->getTextureImageView();
-                depthLayersImageInfo[index].sampler = transparencyLayersGDepth ? transparencyLayersGDepth->sampler : *emptyTexture["white"]->getTextureSampler();
-            }
+            const auto transparencyLayersGDepth = attachmentsMap.count(key + "GBuffer.depth") > 0 && attachmentsMap.at(key + "GBuffer.depth").first ? attachmentsMap.at(key + "GBuffer.depth").second.front() : nullptr;
+            depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthLayersImageInfo[index].imageView = transparencyLayersGDepth ? transparencyLayersGDepth->instances[i].imageView : *emptyTexture["white"]->getTextureImageView();
+            depthLayersImageInfo[index].sampler = transparencyLayersGDepth ? transparencyLayersGDepth->sampler : *emptyTexture["white"]->getTextureSampler();
+        }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

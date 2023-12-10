@@ -23,7 +23,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    selectorGraphics(bool enable, size_t transparentLayersCount = 1);
+    selectorGraphics(bool enable, uint32_t transparentLayersCount = 1);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;

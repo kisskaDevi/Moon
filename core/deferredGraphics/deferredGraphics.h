@@ -21,7 +21,6 @@ class workflow;
 struct StorageBufferObject{
     alignas(16) vector<float,4>    mousePosition;
     alignas(4)  uint32_t           number;
-    alignas(4)  float              depth;
 };
 
 class deferredGraphics: public graphicsInterface{

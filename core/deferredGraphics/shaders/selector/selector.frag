@@ -18,6 +18,7 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
+    vec2 texSize = vec2(1.0f) / textureSize(Position, 0);
     uint number = 0xffffffff; 
 
     uint primitiveNumber[transparentLayersCount + 1];
@@ -31,8 +32,8 @@ void main()
     layerDepth[transparentLayersCount] = texture(Depth, fragTexCoord.xy).r;
 
     float depth = layerDepth[0];
-    if(abs(fragTexCoord.x - storage.mousePosition.x) < 0.002 && 
-        abs(fragTexCoord.y - storage.mousePosition.y) < 0.002){
+    if(abs(fragTexCoord.x - storage.mousePosition.x) < texSize.x && 
+        abs(fragTexCoord.y - storage.mousePosition.y) < texSize.y){
         for(int i = 0; i < transparentLayersCount + 1; i++){
             if(depth >= layerDepth[i]){
                 depth = layerDepth[i];

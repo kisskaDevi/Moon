@@ -241,22 +241,22 @@ void layersCombiner::updateDescriptorSets(
             bufferInfo.offset = 0;
             bufferInfo.range = bufferMap.at("camera").first;
 
-            const auto deferredAttachmentsImage = attachmentsMap.at("image").second.front();
+        const auto deferredAttachmentsImage = attachmentsMap.at("image").second.front();
         VkDescriptorImageInfo colorImageInfo;
             colorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        colorImageInfo.imageView = deferredAttachmentsImage->instances[i].imageView;
+            colorImageInfo.imageView = deferredAttachmentsImage->instances[i].imageView;
             colorImageInfo.sampler = deferredAttachmentsImage->sampler;
 
         const auto deferredAttachmentsBloom = attachmentsMap.at("bloom").second.front();
         VkDescriptorImageInfo bloomImageInfo;
             bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        bloomImageInfo.imageView = deferredAttachmentsBloom->instances[i].imageView;
+            bloomImageInfo.imageView = deferredAttachmentsBloom->instances[i].imageView;
             bloomImageInfo.sampler = deferredAttachmentsBloom->sampler;
 
         const auto deferredAttachmentsGPos = attachmentsMap.at("GBuffer.position").second.front();
         VkDescriptorImageInfo positionImageInfo;
             positionImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        positionImageInfo.imageView = deferredAttachmentsGPos->instances[i].imageView;
+            positionImageInfo.imageView = deferredAttachmentsGPos->instances[i].imageView;
             positionImageInfo.sampler = deferredAttachmentsGPos->sampler;
 
         const auto deferredAttachmentsGNorm = attachmentsMap.at("GBuffer.normal").second.front();

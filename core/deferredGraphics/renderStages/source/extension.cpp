@@ -120,8 +120,8 @@ void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
                 OutliningPushConst outlining;
                 MaterialBlock material;
             } pushConstBlock;
-                pushConstBlock.outlining.stencilColor = object->getOutliningColor();
-                pushConstBlock.outlining.width = object->getOutliningWidth();
+            pushConstBlock.outlining.stencilColor = object->getOutliningColor();
+            pushConstBlock.outlining.width = object->getOutliningWidth();
 
             uint32_t primirives = 0;
             object->getModel()->render(

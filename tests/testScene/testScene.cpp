@@ -56,7 +56,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
     app->setGraphics(graphics["base"]);
     graphics["base"]->bind(cameras["base"]);
-    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
+    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true).setEnable("Selector", true);
 
     cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
@@ -315,8 +315,9 @@ void testScene::mouseEvent(float frameTime)
 
     uint32_t primitiveNumber = std::numeric_limits<uint32_t>::max();
     for(uint32_t i=0; i < imageCount; i++){
-        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != std::numeric_limits<uint32_t>::max())
+        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != std::numeric_limits<uint32_t>::max()){
             break;
+        }
     }
 
     glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {});
@@ -327,9 +328,9 @@ void testScene::mouseEvent(float frameTime)
         cameras["base"]->rotateY(sensitivity * static_cast<float>(mousePos[0] - x), {0.0f,0.0f,1.0f});
         mousePos = {x,y};
 
-        auto scale = [](double pos, double ex) -> float { return static_cast<float>(2.0 * pos / ex - 1.0);};
+        auto scale = [](double pos, double ex) -> float { return static_cast<float>(pos / ex);};
         for(uint32_t i=0; i < imageCount; i++){
-            graphics["base"]->updateStorageBuffer(i, scale(mousePos[0],extent[0]), scale(mousePos[1],extent[1]));
+            graphics["base"]->updateStorageBuffer(i, scale(mousePos[0], extent[0]), scale(mousePos[1], extent[1]));
         }
     } else {
         glfwGetCursorPos(window,&mousePos[0],&mousePos[1]);

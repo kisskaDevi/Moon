@@ -19,6 +19,7 @@
 #include "skybox.h"
 #include "shadow.h"
 #include "boundingBox.h"
+#include "selector.h"
 
 #include <cstring>
 
@@ -37,6 +38,7 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     enable["Scattering"] = false;
     enable["BoundingBox"] = false;
     enable["TransparentLayer"] = false;
+    enable["Selector"] = false;
 
     link = &Link;
 }
@@ -130,7 +132,8 @@ void deferredGraphics::createGraphicsPasses(){
         for(uint32_t i = 0; i < TransparentLayersCount; i++){
             enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
             workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i);
-        }
+        };
+        workflows["Selector"] = new selectorGraphics(enable["Selector"], enable["TransparentLayer"] ? TransparentLayersCount : 1);
     }
 
     for(auto& [_,workflow]: workflows){
@@ -231,7 +234,8 @@ void deferredGraphics::createCommandBuffers(){
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     device.getQueue(0,0))
         }, new node({
-            stage(  {   workflows["SSLR"]->getCommandBuffer(imageIndex),
+            stage(  {   workflows["Selector"]->getCommandBuffer(imageIndex),
+                        workflows["SSLR"]->getCommandBuffer(imageIndex),
                         workflows["SSAO"]->getCommandBuffer(imageIndex),
                         workflows["Bloom"]->getCommandBuffer(imageIndex),
                         workflows["Blur"]->getCommandBuffer(imageIndex),
@@ -313,7 +317,7 @@ void deferredGraphics::createStorageBuffers(uint32_t imageCount){
 void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
     StorageBufferObject StorageUBO{};
         StorageUBO.mousePosition = vector<float,4>(mousex,mousey,0.0f,0.0f);
-        StorageUBO.number = std::numeric_limits<int>::max();
+        StorageUBO.number = std::numeric_limits<uint32_t>::max();
         StorageUBO.depth = std::numeric_limits<float>::max();
     std::memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
 }

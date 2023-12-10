@@ -14,6 +14,7 @@ SOURCES += \
     boundingBox.cpp \
     postProcessing.cpp \
     scattering.cpp \
+    selector.cpp \
     shadow.cpp \
     skybox.cpp \
     customFilter.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
     boundingBox.h \
     postProcessing.h \
     scattering.h \
+    selector.h \
     shadow.h \
     skybox.h \
     customFilter.h \

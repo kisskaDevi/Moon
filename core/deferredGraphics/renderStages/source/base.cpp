@@ -25,12 +25,6 @@ void graphics::Base::createDescriptorSetLayout(VkDevice device)
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-       bindings.back().binding = static_cast<uint32_t>(bindings.size() - 1);
-       bindings.back().descriptorCount = 1;
-       bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-       bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-       bindings.back().pImmutableSamplers = nullptr;
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -129,15 +123,15 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(0<<4)|0]);
 
-    depthStencil.stencilTestEnable = VK_TRUE;
-    depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
-    depthStencil.back.failOp = VK_STENCIL_OP_REPLACE;
-    depthStencil.back.depthFailOp = VK_STENCIL_OP_REPLACE;
-    depthStencil.back.passOp = VK_STENCIL_OP_REPLACE;
-    depthStencil.back.compareMask = 0xff;
-    depthStencil.back.writeMask = 0xff;
-    depthStencil.back.reference = 1;
-    depthStencil.front = depthStencil.back;
+        depthStencil.stencilTestEnable = VK_TRUE;
+        depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
+        depthStencil.back.failOp = VK_STENCIL_OP_REPLACE;
+        depthStencil.back.depthFailOp = VK_STENCIL_OP_REPLACE;
+        depthStencil.back.passOp = VK_STENCIL_OP_REPLACE;
+        depthStencil.back.compareMask = 0xff;
+        depthStencil.back.writeMask = 0xff;
+        depthStencil.back.reference = 1;
+        depthStencil.front = depthStencil.back;
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[(1<<4)|0]);
     pipelineInfo.back().layout = PipelineLayoutDictionary[(1<<4)|0];
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(1<<4)|0]);
@@ -151,9 +145,6 @@ void graphics::createBaseDescriptorPool()
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{});
         poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
     poolSizes.push_back(VkDescriptorPoolSize{});
         poolSizes.back().type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -194,11 +185,6 @@ void graphics::updateBaseDescriptorSets(
             skyboxImageInfo.imageView = *emptyTexture["black"]->getTextureImageView();
             skyboxImageInfo.sampler   = *emptyTexture["black"]->getTextureSampler();
 
-        VkDescriptorBufferInfo StorageBufferInfo{};
-            StorageBufferInfo.buffer = bufferMap.at("storage").second[i];
-            StorageBufferInfo.offset = 0;
-            StorageBufferInfo.range = bufferMap.at("storage").first;
-
         attachments* depthAttachment = !base.transparencyPass || base.transparencyNumber == 0 ? nullptr :
             attachmentsMap.at(("transparency" + std::to_string(base.transparencyNumber - 1) + ".") + "GBuffer.depth").second.front();
         VkDescriptorImageInfo depthImageInfo{};
@@ -223,14 +209,6 @@ void graphics::updateBaseDescriptorSets(
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &skyboxImageInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = base.DescriptorSets.at(i);
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pBufferInfo = &StorageBufferInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = base.DescriptorSets.at(i);

@@ -10,14 +10,7 @@ const float c_MinRoughness = 0.04;
 layout(constant_id = 0) const bool enableTransparencyPass = false;
 
 layout(set = 0, binding = 1) uniform samplerCube samplerCubeMap;
-
-layout(set = 0, binding = 2) buffer StorageBuffer {
-    vec4 mousePosition;
-    int number;
-    float depth;
-} storage;
-
-layout(set = 0, binding = 3) uniform sampler2D depthMap;
+layout(set = 0, binding = 2) uniform sampler2D depthMap;
 
 layout (push_constant) uniform Material{
     vec4 baseColorFactor;
@@ -154,13 +147,4 @@ void main()
     outBaseColor = baseColor;
     outPosition = vec4(position.xyz, params);
     outNormal   = vec4(material.normalTextureSet > -1 ? getNormal() : normal, emissiveAndAO);
-
-    if(storage.depth > glPosition.z){
-        if(abs(glPosition.x / glPosition.w - storage.mousePosition.x) < 0.002 && 
-            abs(glPosition.y / glPosition.w - storage.mousePosition.y) < 0.002)
-        {
-            storage.number = material.number;
-            storage.depth = glPosition.z;
-        }
-    }
 }

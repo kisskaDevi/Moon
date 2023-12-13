@@ -10,7 +10,7 @@ Debug:GLFW_BIN_DIR = Debug
 
 DEFINES += TESTPOS
 
-win32: LIBS += \
+LIBS += \
     -L$$OUT_PWD/../../core/graphicsManager/$$DESTDIR \
     -L$$OUT_PWD/../../core/deferredGraphics/$$DESTDIR \
     -L$$OUT_PWD/../../core/imguiGraphics/$$DESTDIR \
@@ -28,9 +28,9 @@ win32: LIBS += \
     -lmodels \
     -ltransformational \
     -linterfaces \
-    -lutils \
-    -lvulkan-1 \
-    -lglfw3dll
+    -lutils
+win32: LIBS += -lvulkan-1 -lglfw3dll
+unix: LIBS += -lvulkan -lglfw
 
 INCLUDEPATH += \
     $$PWD/../../dependences\libs \

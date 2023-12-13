@@ -11,8 +11,10 @@ This repository contains a number of modules, that makes 3D render using [Vulkan
 From working directory:
 
 * Pre build steps
+
 For clean `Ubuntu` you need install next libs:
-**For GLFW build:
+
+** For GLFW build:
 ```
 sudo apt install libx11-dev
 sudo apt install libxrandr-dev
@@ -21,7 +23,7 @@ sudo apt install libxcursor-dev
 sudo apt install libxi-dev
 sudo apt install mesa-common-dev
 ```
-**Vulkan:
+** Vulkan:
 ```
 sudo apt install vulkan-tools
 sudo apt install libvulkan-dev

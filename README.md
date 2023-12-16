@@ -6,6 +6,12 @@
 
 This repository contains a number of modules, that makes 3D render using [Vulkan API](https://www.vulkan.org/). All render moduls are implemented as static libraries and located in [core](core) directory, check READMEs in modules directories for more detailed information. Tests are located in [tests](tests) directory and implemented as executable applications, that demonstrate rendering functionality. Almost all build dependences could be cloning by [clone script](dependences/libs/clone.py), for more build informations check [requirements](#Requirements) and [build](#Build-tests-applications) paragraphs.
 
+Links to another readme:
+* [Deferred Graphics](core/deferredGraphics/README.md)
+* [Graphics Manager](core/graphicsManager/README.md)
+* [Imgui Graphics](core/imguiGraphics/README.md)
+* [Cuda Ray Tracing](core/cudaRayTracing/README.md)
+
 ## Build tests applications
 
 From working directory:
@@ -14,7 +20,7 @@ From working directory:
 
 For clean `Ubuntu` you need install next libs:
 
-** For GLFW build:
+* * For GLFW build:
 ```
 sudo apt install libx11-dev
 sudo apt install libxrandr-dev
@@ -23,7 +29,7 @@ sudo apt install libxcursor-dev
 sudo apt install libxi-dev
 sudo apt install mesa-common-dev
 ```
-** Vulkan:
+* * Vulkan:
 ```
 sudo apt install vulkan-tools
 sudo apt install libvulkan-dev

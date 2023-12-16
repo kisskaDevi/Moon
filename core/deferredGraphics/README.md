@@ -44,6 +44,7 @@ Begin
 │   ├── Layers Combining
 ├───┘
 ├── stage 6
+│   ├── Selector
 │   ├── SSLR
 │   ├── SSAO
 │   ├── Bloom

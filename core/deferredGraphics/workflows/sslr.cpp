@@ -6,17 +6,6 @@ SSLRGraphics::SSLRGraphics(bool enable) :
     enable(enable)
 {}
 
-namespace {
-    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments)
-    {
-        for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
-            pAttachments[attachmentNumber].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-            VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
-        }
-    }
-}
-
 void SSLRGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     ::createAttachments(physicalDevice, device, image, 1, &frame);

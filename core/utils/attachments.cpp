@@ -1,5 +1,6 @@
 #include "attachments.h"
 #include "operations.h"
+#include "vkdefault.h"
 #include <algorithm>
 #include <iterator>
 
@@ -181,4 +182,12 @@ std::vector<VkImage> attachments::getImages() const {
         images.push_back(instance.image);
     }
     return images;
+}
+
+void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments, VkImageUsageFlags usage){
+    for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
+        pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,usage,image.frameBufferExtent,image.Count);
+        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
+        pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
+    }
 }

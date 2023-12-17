@@ -3,7 +3,6 @@
 
 #include <vulkan.h>
 #include <vector>
-#include <string>
 
 struct imageInfo{
     uint32_t                        Count;
@@ -46,5 +45,7 @@ public:
 
     std::vector<VkImage> getImages() const;
 };
+
+void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments, VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT);
 
 #endif // ATTACHMENTS_H

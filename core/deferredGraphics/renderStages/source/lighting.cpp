@@ -3,8 +3,6 @@
 #include "light.h"
 #include "deferredAttachments.h"
 
-#include <iostream>
-
 struct lightPassPushConst{
     alignas(4) float minAmbientFactor;
 };
@@ -47,15 +45,15 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[0x0]);
-    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
+    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
+    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
 }
 
 void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
     std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
-    createPipeline(0x0, device, pInfo, pRenderPass, spotVert, spotFrag);
+    createPipeline(lightType::spot, device, pInfo, pRenderPass, spotVert, spotFrag);
 }
 
 void graphics::createLightingDescriptorPool()

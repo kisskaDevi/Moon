@@ -12,15 +12,6 @@ void gaussianBlur::createBufferAttachments(){
     vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
-namespace {
-    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments){
-        for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
-            pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
-        }
-    }
-}
-
 void gaussianBlur::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     createBufferAttachments();

@@ -102,7 +102,7 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineLayoutInfo.pSetLayouts = setLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[(0<<4)|0]);
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base]);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -116,12 +116,12 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = PipelineLayoutDictionary[(0<<4)|0];
+        pipelineInfo.back().layout = PipelineLayoutDictionary[objectType::base];
         pipelineInfo.back().renderPass = pRenderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(0<<4)|0]);
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base]);
 
         depthStencil.stencilTestEnable = VK_TRUE;
         depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
@@ -132,9 +132,9 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         depthStencil.back.writeMask = 0xff;
         depthStencil.back.reference = 1;
         depthStencil.front = depthStencil.back;
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[(1<<4)|0]);
-    pipelineInfo.back().layout = PipelineLayoutDictionary[(1<<4)|0];
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[(1<<4)|0]);
+    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base | objectProperty::outlining]);
+        pipelineInfo.back().layout = PipelineLayoutDictionary[objectType::base | objectProperty::outlining];
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base | objectProperty::outlining]);
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

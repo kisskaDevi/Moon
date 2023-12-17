@@ -8,6 +8,16 @@
 class model;
 struct physicalDevice;
 
+enum objectType : uint8_t {
+    base = 0x0,
+    skybox = 0x1
+};
+
+enum objectProperty : uint8_t {
+    non = 0x0,
+    outlining = 1<<4
+};
+
 class object
 {
 protected:

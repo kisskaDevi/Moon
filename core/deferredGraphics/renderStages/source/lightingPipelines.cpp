@@ -3,7 +3,6 @@
 #include "vkdefault.h"
 
 #include <filesystem>
-#include <iostream>
 
 void graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
     uint8_t key = mask;

@@ -145,11 +145,14 @@ void deferredGraphics::createGraphicsPasses(){
         workflow->setImageProp(&info);
     }
 
+    imageInfo scatterInfo{imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, VkOffset2D{0,0}, extent, extent, MSAASamples};
+    workflows["Scattering"]->setImageProp(&scatterInfo);
+
     imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkOffset2D{0,0},VkExtent2D{1024,1024},VkExtent2D{1024,1024},MSAASamples};
-    static_cast<shadowGraphics*>(workflows["Shadow"])->setImageProp(&shadowsInfo);
+    workflows["Shadow"]->setImageProp(&shadowsInfo);
 
     imageInfo swapChainInfo{imageCount, swapChainKHR->getFormat(), offset, extent, swapChainKHR->getExtent(), MSAASamples};
-    static_cast<postProcessingGraphics*>(workflows["PostProcessing"])->setImageProp(&swapChainInfo);
+    workflows["PostProcessing"]->setImageProp(&swapChainInfo);
 
     for(auto& [_,workflow]: workflows){
         workflow->create(attachmentsMap);
@@ -191,7 +194,7 @@ void deferredGraphics::createCommandBuffers(){
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(imageCount);
+        allocInfo.commandBufferCount = imageCount;
     vkAllocateCommandBuffers(device.getLogical(), &allocInfo, copyCommandBuffers.data());
 
     updateCmdFlags();
@@ -392,8 +395,8 @@ void deferredGraphics::bind(object* object){
     objects.push_back(object);
 
     switch (object->getPipelineBitMask()) {
-        case (0<<4)|0x0:
-        case (1<<4)|0x0:
+        case objectType::base:
+        case objectType::base | objectProperty::outlining:
             static_cast<shadowGraphics*>(workflows["Shadow"])->bindBaseObject(object);
             static_cast<graphics*>(workflows["DeferredGraphics"])->bind(object);
             for(uint32_t i = 0; i < TransparentLayersCount; i++){
@@ -401,7 +404,7 @@ void deferredGraphics::bind(object* object){
             }
             static_cast<boundingBoxGraphics*>(workflows["BoundingBox"])->bindObject(object);
             break;
-        case (0<<4)|0x1:
+        case objectType::skybox:
             static_cast<skyboxGraphics*>(workflows["Skybox"])->bindObject(object);
             break;
     }
@@ -416,8 +419,8 @@ bool deferredGraphics::remove(object* object){
     bool res = true;
 
     switch (object->getPipelineBitMask()) {
-        case (0<<4)|0x0:
-        case (1<<4)|0x0:
+        case objectType::base:
+        case objectType::base | objectProperty::outlining:
             res &= static_cast<shadowGraphics*>(workflows["Shadow"])->removeBaseObject(object)
                    && static_cast<graphics*>(workflows["DeferredGraphics"])->remove(object)
                    && static_cast<boundingBoxGraphics*>(workflows["BoundingBox"])->removeObject(object);
@@ -425,7 +428,7 @@ bool deferredGraphics::remove(object* object){
                 res &= static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->remove(object);
             }
             break;
-        case (0<<4)|0x1:
+        case objectType::skybox:
             res = res && static_cast<skyboxGraphics*>(workflows["Skybox"])->removeObject(object);
             break;
     }

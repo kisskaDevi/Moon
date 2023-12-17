@@ -24,22 +24,12 @@ void customFilter::createBufferAttachments(){
     vkCreateSampler(device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
 }
 
-namespace {
-    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments){
-        for(size_t index=0; index<attachmentsCount; index++){
-            pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
-            VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
-            vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments[index].sampler);
-        }
-    }
-}
-
 void customFilter::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     createBufferAttachments();
 
     frames.resize(blitAttachmentsCount);
-    ::createAttachments(physicalDevice, device, image, blitAttachmentsCount, frames.data());
+    ::createAttachments(physicalDevice, device, image, blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     attachmentsMap["blit"] = {enable,{}};
     for(auto& frame: frames){
         attachmentsMap["blit"].second.push_back(&frame);

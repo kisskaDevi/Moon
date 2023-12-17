@@ -9,6 +9,10 @@ class texture;
 class attachments;
 struct physicalDevice;
 
+enum lightType : uint8_t {
+    spot = 0x0
+};
+
 class light
 {
 protected:

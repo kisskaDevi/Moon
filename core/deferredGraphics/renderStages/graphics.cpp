@@ -40,33 +40,30 @@ void graphics::setAttachments()
     pAttachments.push_back(&deferredAttachments.GBuffer.depth);
 }
 
-namespace {
-void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, DeferredAttachments* pAttachments)
-{
-    VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    pAttachments->image.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
-    pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
-    pAttachments->bloom.create(physicalDevice, device, image.Format, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, image.frameBufferExtent, image.Count);
-    pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
-    pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
-    pAttachments->GBuffer.color.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
-    pAttachments->GBuffer.depth.createDepth(physicalDevice, device, Image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.frameBufferExtent, image.Count);
-
-    VkSamplerCreateInfo SamplerInfo{};
-        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->image.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->blur.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->bloom.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.position.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.normal.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.color.sampler);
-    vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.depth.sampler);
-}
-}
-
 void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
-    ::createAttachments(physicalDevice, device, image, &deferredAttachments);
+    auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, DeferredAttachments* pAttachments){
+        VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        pAttachments->image.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
+        pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
+        pAttachments->bloom.create(physicalDevice, device, image.Format, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, image.frameBufferExtent, image.Count);
+        pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
+        pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
+        pAttachments->GBuffer.color.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
+        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, Image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.frameBufferExtent, image.Count);
+
+        VkSamplerCreateInfo SamplerInfo{};
+        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->image.sampler);
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->blur.sampler);
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->bloom.sampler);
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.position.sampler);
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.normal.sampler);
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.color.sampler);
+        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.depth.sampler);
+    };
+
+    createAttachments(physicalDevice, device, image, &deferredAttachments);
     setAttachments();
 
     attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "image"] = {enable, {&deferredAttachments.image}};

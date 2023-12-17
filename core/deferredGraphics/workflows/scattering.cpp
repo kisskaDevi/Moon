@@ -9,17 +9,6 @@ scattering::scattering(bool enable) :
     enable(enable)
 {}
 
-namespace {
-    void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, uint32_t attachmentsCount, attachments* pAttachments){
-        for(size_t attachmentNumber=0; attachmentNumber<attachmentsCount; attachmentNumber++){
-            pAttachments[attachmentNumber].create(physicalDevice,device,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
-            VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentNumber].sampler);
-            pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
-        }
-    }
-}
-
 void scattering::Lighting::destroy(VkDevice device){
     workbody::destroy(device);
     for(auto& descriptorSetLayout: BufferDescriptorSetLayoutDictionary){
@@ -129,13 +118,13 @@ void scattering::Lighting::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[0x0]);
-    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[0x0]);
+    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
+    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
 }
 
 void scattering::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    createPipeline(0x0, device, pInfo, pRenderPass);
+    createPipeline(lightType::spot, device, pInfo, pRenderPass);
 }
 
 void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)

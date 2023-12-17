@@ -36,7 +36,7 @@ void baseObject::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
 
 uint8_t baseObject::getPipelineBitMask() const
 {
-    return (outlining.Enable<<4)|(0x0);
+    return objectType::base | (outlining.Enable ? objectProperty::outlining : objectProperty::non);
 }
 
 void baseObject::updateModelMatrix()
@@ -276,7 +276,7 @@ skyboxObject& skyboxObject::translate(const vector<float,3> &) {
 }
 
 uint8_t skyboxObject::getPipelineBitMask() const {
-    return (0<<4)|(0x1);
+    return objectType::skybox;
 }
 
 void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){

@@ -13,7 +13,6 @@ class linkable;
 class graphicsInterface{
 protected:
     uint32_t                    imageCount{0};
-
     swapChain*                  swapChainKHR{nullptr};
     std::vector<physicalDevice> devices;
     physicalDevice              device;

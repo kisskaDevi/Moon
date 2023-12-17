@@ -119,7 +119,7 @@ void deferredGraphics::createGraphicsPasses(){
     if(workflows.empty())
     {
         workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0);
-        workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 1, true);
+        workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
         workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"], blitFactor, blitAttachmentCount);
         workflows["Bloom"] = new customFilter(enable["Bloom"], blitFactor, 1.5f, 1.5f, blitAttachmentCount);
         workflows["Blur"] = new gaussianBlur(enable["Blur"]);

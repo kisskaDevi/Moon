@@ -3,12 +3,11 @@
 #include "vkdefault.h"
 #include "texture.h"
 
-#include <iostream>
-
 layersCombiner::layersCombiner(bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction) :
     enable(enable)
 {
-    combiner.transparentLayersCount = transparentLayersCount;
+    combiner.transparentLayersCount = transparentLayersCount == 0 ? 1 : transparentLayersCount;
+    combiner.enableTransparentLayers = transparentLayersCount != 0;
     combiner.enableScatteringRefraction = enableScatteringRefraction;
 }
 
@@ -458,6 +457,7 @@ void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
 
         layersCombinerPushConst pushConst{};
             pushConst.enableScatteringRefraction = static_cast<int>(combiner.enableScatteringRefraction);
+            pushConst.enableTransparentLayers = static_cast<int>(combiner.enableTransparentLayers);
         vkCmdPushConstants(commandBuffers[frameNumber], combiner.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(layersCombinerPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.Pipeline);

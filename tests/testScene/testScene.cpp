@@ -1,7 +1,6 @@
 #include "testScene.h"
 #include "deferredGraphics.h"
 #include "graphicsManager.h"
-#include "imguiGraphics.h"
 #include "gltfmodel.h"
 #include "spotLight.h"
 #include "baseObject.h"
@@ -9,9 +8,12 @@
 #include "baseCamera.h"
 #include "dualQuaternion.h"
 
+#ifdef IMGUI_GRAPHICS
+#include "imguiGraphics.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+#endif
 
 #include <random>
 #include <limits>
@@ -36,16 +38,20 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
     cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
 
+#ifdef SECOND_VIEW_WINDOW
     cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["view"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+#endif
 
     for(auto& [_,graph]: graphics){
         graph->destroyGraphics();
         graph->createGraphics();
     }
 
+#ifdef IMGUI_GRAPHICS
     gui->destroyGraphics();
     gui->createGraphics();
+#endif
 }
 
 void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
@@ -56,23 +62,38 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
     app->setGraphics(graphics["base"]);
     graphics["base"]->bind(cameras["base"]);
-    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true).setEnable("Selector", true);
+    graphics["base"]->
+        setEnable("TransparentLayer", true).
+        setEnable("Skybox", true).
+        setEnable("Blur", true).
+        setEnable("Bloom", true).
+        setEnable("SSAO", true).
+        setEnable("SSLR", true).
+        setEnable("Scattering", true).
+        setEnable("Shadow", true).
+        setEnable("Selector", true);
 
+#ifdef SECOND_VIEW_WINDOW
     cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
     app->setGraphics(graphics["view"]);
     graphics["view"]->bind(cameras["view"]);
     graphics["view"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
+#endif
 
+#ifdef IMGUI_GRAPHICS
     gui = new imguiGraphics;
     gui->setInstance(app->getInstance());
     app->setGraphics(gui);
+#endif
 
     for(auto& [_,graph]: graphics){
         graph->createGraphics();
     }
 
+#ifdef IMGUI_GRAPHICS
     gui->createGraphics();
+#endif
 
     loadModels();
     createObjects();
@@ -89,6 +110,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 {
     glfwPollEvents();
 
+#ifdef IMGUI_GRAPHICS
     ImGuiIO io = ImGui::GetIO();
     if(!io.WantCaptureMouse)    mouseEvent(frameTime);
     if(!io.WantCaptureKeyboard) keyboardEvent(frameTime);
@@ -101,6 +123,10 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     // Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()
     bool showDemoWindow = true;
     ImGui::ShowDemoWindow(&showDemoWindow);
+#else
+    mouseEvent(frameTime);
+    keyboardEvent(frameTime);
+#endif
 
     updates(frameTime);
 
@@ -139,7 +165,9 @@ void testScene::destroy()
         delete graph;
     }
 
+#ifdef IMGUI_GRAPHICS
     gui->destroyGraphics();
+#endif
 }
 
 void testScene::loadModels()
@@ -355,12 +383,14 @@ void testScene::mouseEvent(float frameTime)
         }
     }
 
+#ifdef SECOND_VIEW_WINDOW
     if(mouse->released(GLFW_MOUSE_BUTTON_RIGHT))
     {
         if(auto q = convert(inverse(cameras["base"]->getViewMatrix())); cameras.count("view") > 0){
             cameras["view"]->setTranslation(q.translation().im()).setRotation(q.rotation());
         }
     }
+#endif
 }
 
 void testScene::keyboardEvent(float frameTime)

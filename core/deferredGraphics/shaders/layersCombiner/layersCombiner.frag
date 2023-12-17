@@ -26,6 +26,7 @@ layout(set = 0, binding = 13) uniform sampler2D scattering;
 
 layout(push_constant) uniform PC {
     int enableScatteringRefraction;
+    int enableTransparentLayers;
 } pc;
 
 layout(location = 0) in vec2 fragTexCoord;
@@ -105,7 +106,7 @@ vec4 accumulateColor(vec3 beginCoords, vec3 endCoords, float step, sampler2D Sam
     return color + scat;
 }
 
-void main() {
+void transparentLayersCombine() {
     bool transparentFrags = (texture(layersSampler[0], fragTexCoord.xy).a != 0.0);
     bool enableScatteringRefraction = pc.enableScatteringRefraction == 1;
 
@@ -136,4 +137,13 @@ void main() {
 
     outBloom = accumulateColor(beginCoords, endCoords, step, bloomSampler, depth, skyboxBloom, true, false);
     outBloom = max(layerBloom, step * outBloom);
+}
+
+void main() {
+    if(pc.enableTransparentLayers == 0){
+        outColor = texture(Sampler, fragTexCoord);
+        outBloom = texture(bloomSampler, fragTexCoord);
+        return;
+    }
+    transparentLayersCombine();
 }

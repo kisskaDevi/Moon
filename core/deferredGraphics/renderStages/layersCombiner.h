@@ -5,13 +5,14 @@
 
 struct layersCombinerPushConst{
     alignas(4) int enableScatteringRefraction{true};
+    alignas(4) int enableTransparentLayers{true};
 };
 
 struct layersCombinerAttachments{
     attachments color;
     attachments bloom;
 
-    inline const uint32_t size() const{
+    inline uint32_t size() const{
         return 2;
     }
     inline attachments* operator&(){
@@ -38,6 +39,7 @@ private:
         void createDescriptorSetLayout(VkDevice device) override;
 
         uint32_t transparentLayersCount{1};
+        bool enableTransparentLayers{true};
         bool enableScatteringRefraction{true};
     }combiner;
 

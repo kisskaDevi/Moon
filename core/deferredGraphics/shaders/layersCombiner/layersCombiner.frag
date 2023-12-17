@@ -143,6 +143,8 @@ void main() {
     if(pc.enableTransparentLayers == 0){
         outColor = texture(Sampler, fragTexCoord);
         outBloom = texture(bloomSampler, fragTexCoord);
+        outColor += texture(depth, fragTexCoord.xy).r == 1.0 ? texture(skybox, fragTexCoord.xy) : vec4(0.0);
+        outBloom += texture(depth, fragTexCoord.xy).r == 1.0 ? texture(skyboxBloom, fragTexCoord.xy) : vec4(0.0);
         return;
     }
     transparentLayersCombine();

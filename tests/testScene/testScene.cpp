@@ -18,6 +18,8 @@
 #include <random>
 #include <limits>
 
+double blitFactor = 1.5;
+
 testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath):
     ExternalPath(ExternalPath),
     window(window),
@@ -67,8 +69,8 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
         setEnable("Skybox", true).
         setEnable("Blur", true).
         setEnable("Bloom", true).
-        setEnable("SSAO", true).
-        setEnable("SSLR", true).
+        setEnable("SSAO", false).
+        setEnable("SSLR", false).
         setEnable("Scattering", true).
         setEnable("Shadow", true).
         setEnable("Selector", true);
@@ -348,7 +350,12 @@ void testScene::mouseEvent(float frameTime)
         }
     }
 
-    glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {});
+    glfwSetScrollCallback(window,[](GLFWwindow*, double, double y) {
+        if(double newBlitFactor = blitFactor + 0.01 * y; newBlitFactor >= 1.0){
+            blitFactor = newBlitFactor;
+        }
+    });
+    graphics["base"]->setBlitFactor(static_cast<float>(blitFactor));
 
     if(double x = 0, y = 0; mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
         glfwGetCursorPos(window,&x,&y);

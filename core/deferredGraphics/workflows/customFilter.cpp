@@ -18,18 +18,12 @@ void customFilter::setBlitFactor(const float &blitFactor){
     this->blitFactor = blitFactor;
 }
 
-void customFilter::createBufferAttachments(){
-    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
-    VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
-    vkCreateSampler(device, &SamplerInfo, nullptr, &bufferAttachment.sampler);
-}
-
 void customFilter::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
-    createBufferAttachments();
-
     frames.resize(blitAttachmentsCount);
     ::createAttachments(physicalDevice, device, image, blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    ::createAttachments(physicalDevice, device, image, 1, &bufferAttachment, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
     attachmentsMap["blit"] = {enable,{}};
     for(auto& frame: frames){
         attachmentsMap["blit"].second.push_back(&frame);

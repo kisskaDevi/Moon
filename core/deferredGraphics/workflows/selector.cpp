@@ -5,7 +5,7 @@
 
 selectorGraphics::selectorGraphics(bool enable, uint32_t transparentLayersCount) :
     enable(enable) {
-    selector.transparentLayersCount = transparentLayersCount;
+    selector.transparentLayersCount = transparentLayersCount > 0 ? transparentLayersCount : 1;
 }
 
 void selectorGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)

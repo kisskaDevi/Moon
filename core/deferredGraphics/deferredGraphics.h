@@ -84,6 +84,7 @@ public:
     deferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
     deferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
     deferredGraphics& setScatteringRefraction(bool enable);
+    deferredGraphics& setBlitFactor(float blitFactor);
 
     void create(model* pModel);
     void destroy(model* pModel);

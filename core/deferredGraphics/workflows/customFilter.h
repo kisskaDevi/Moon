@@ -34,8 +34,6 @@ private:
     void createPipelines();
     void createDescriptorPool();
     void createDescriptorSets();
-
-    void createBufferAttachments();
 public:
     customFilter(bool enable, float blitFactor, float xSampleStep, float ySampleStep, uint32_t blitAttachmentsCount);
 

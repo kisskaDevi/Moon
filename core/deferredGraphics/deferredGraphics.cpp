@@ -121,7 +121,7 @@ void deferredGraphics::createGraphicsPasses(){
         workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0);
         workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
         workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"], blitFactor, blitAttachmentCount);
-        workflows["Bloom"] = new customFilter(enable["Bloom"], blitFactor, 1.5f, 1.5f, blitAttachmentCount);
+        workflows["Bloom"] = new customFilter(enable["Bloom"], blitFactor, blitFactor, blitFactor, blitAttachmentCount);
         workflows["Blur"] = new gaussianBlur(enable["Blur"]);
         workflows["Skybox"] = new skyboxGraphics(enable["Skybox"]);
         workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
@@ -133,7 +133,7 @@ void deferredGraphics::createGraphicsPasses(){
             enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
             workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i);
         };
-        workflows["Selector"] = new selectorGraphics(enable["Selector"], enable["TransparentLayer"] ? TransparentLayersCount : 1);
+        workflows["Selector"] = new selectorGraphics(enable["Selector"]);
     }
 
     for(auto& [_,workflow]: workflows){
@@ -211,41 +211,26 @@ void deferredGraphics::createCommandBuffers(){
     for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
         nodes[imageIndex]
          = new node({
-            stage(  {   copyCommandBuffers[imageIndex]},
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    device.getQueue(0,0))
+            stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device.getQueue(0,0))
         }, new node({
-            stage(  {   workflows["Shadow"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    device.getQueue(0,0)),
-            stage(  {   workflows["Skybox"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    device.getQueue(0,0))
+            stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0)),
+            stage(  {workflows["Skybox"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0))
         }, new node({
-            stage(  {   workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                    device.getQueue(0,0)),
-            stage(  getTransparentLayersCommandBuffers(imageIndex),
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                    device.getQueue(0,0))
+            stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
+            stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
         }, new node({
-            stage(  {   workflows["Scattering"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                    device.getQueue(0,0))
+            stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
         }, new node({
-            stage(  {   workflows["LayersCombiner"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                    device.getQueue(0,0))
+            stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
         }, new node({
-            stage(  {   workflows["Selector"]->getCommandBuffer(imageIndex),
-                        workflows["SSLR"]->getCommandBuffer(imageIndex),
-                        workflows["SSAO"]->getCommandBuffer(imageIndex),
-                        workflows["Bloom"]->getCommandBuffer(imageIndex),
-                        workflows["Blur"]->getCommandBuffer(imageIndex),
-                        workflows["BoundingBox"]->getCommandBuffer(imageIndex),
-                        workflows["PostProcessing"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                    device.getQueue(0,0))
+            stage( {workflows["Selector"]->getCommandBuffer(imageIndex),
+                    workflows["SSLR"]->getCommandBuffer(imageIndex),
+                    workflows["SSAO"]->getCommandBuffer(imageIndex),
+                    workflows["Bloom"]->getCommandBuffer(imageIndex),
+                    workflows["Blur"]->getCommandBuffer(imageIndex),
+                    workflows["BoundingBox"]->getCommandBuffer(imageIndex),
+                    workflows["PostProcessing"]->getCommandBuffer(imageIndex)},
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
         }, nullptr))))));
 
         nodes[imageIndex]->createSemaphores(device.getLogical());
@@ -461,6 +446,18 @@ deferredGraphics& deferredGraphics::setScatteringRefraction(bool enable){
     static_cast<layersCombiner*>(workflows["LayersCombiner"])->setScatteringRefraction(enable);
 
     updateCmdFlags();
+    return *this;
+}
+
+deferredGraphics& deferredGraphics::setBlitFactor(float blitFactor){
+    if(blitFactor >= 1.0f){
+        std::cout << blitFactor << std::endl;
+        this->blitFactor = blitFactor;
+        static_cast<customFilter*>(workflows["Bloom"])->setBlitFactor(blitFactor);
+        static_cast<customFilter*>(workflows["Bloom"])->setSampleStep(blitFactor, blitFactor);
+        static_cast<postProcessingGraphics*>(workflows["PostProcessing"])->setBlitFactor(blitFactor);
+        updateCmdFlags();
+    }
     return *this;
 }
 

@@ -10,6 +10,11 @@ postProcessingGraphics::postProcessingGraphics(bool enable, float blitFactor, ui
     postProcessing.blitAttachmentCount = blitAttachmentCount;
 }
 
+void postProcessingGraphics::setBlitFactor(float blitFactor)
+{
+    postProcessing.blitFactor = blitFactor;
+}
+
 void postProcessingGraphics::destroy()
 {
     postProcessing.destroy(device);

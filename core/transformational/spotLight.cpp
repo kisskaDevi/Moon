@@ -182,7 +182,7 @@ const std::vector<VkDescriptorSet>& spotLight::getDescriptorSets() const {
 }
 
 uint8_t spotLight::getPipelineBitMask() const {
-    return 0x0;
+    return lightType::spot;
 }
 
 void spotLight::create(

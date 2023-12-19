@@ -36,6 +36,7 @@ private:
     void createDescriptorSets();
 public:
     postProcessingGraphics(bool enable, float blitFactor, uint32_t blitAttachmentCount);
+    void setBlitFactor(float blitFactor);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;

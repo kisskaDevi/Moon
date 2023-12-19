@@ -5,7 +5,6 @@
 #include "linkable.h"
 
 #include <string>
-#include <iostream>
 
 graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures, size_t deviceIndex) : deviceIndex(deviceIndex)
 {

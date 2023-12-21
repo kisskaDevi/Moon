@@ -13,7 +13,7 @@ workflow.cpp
 postProcessing.cpp
 shadow.cpp
 skybox.cpp
-customFilter.cpp
+bloom.cpp
 ssao.cpp
 sslr.cpp
 scattering.cpp
@@ -25,7 +25,7 @@ workflow.h
 postProcessing.h
 shadow.h
 skybox.h
-customFilter.h
+bloom.h
 ssao.h
 sslr.h
 scattering.h

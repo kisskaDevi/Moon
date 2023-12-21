@@ -11,7 +11,7 @@
 #include "graphics.h"
 #include "postProcessing.h"
 #include "blur.h"
-#include "customFilter.h"
+#include "bloom.h"
 #include "sslr.h"
 #include "ssao.h"
 #include "layersCombiner.h"
@@ -121,7 +121,7 @@ void deferredGraphics::createGraphicsPasses(){
         workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0);
         workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
         workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
-        workflows["Bloom"] = new customFilter(enable["Bloom"], blitFactor, blitFactor, blitFactor, blitAttachmentCount);
+        workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitFactor, blitFactor, blitFactor, blitAttachmentCount);
         workflows["Blur"] = new gaussianBlur(enable["Blur"]);
         workflows["Skybox"] = new skyboxGraphics(enable["Skybox"]);
         workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
@@ -452,7 +452,7 @@ deferredGraphics& deferredGraphics::setScatteringRefraction(bool enable){
 deferredGraphics& deferredGraphics::setBlitFactor(float blitFactor){
     if(blitFactor >= 1.0f){
         this->blitFactor = blitFactor;
-        static_cast<customFilter*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
+        static_cast<bloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
         updateCmdFlags();
     }
     return *this;

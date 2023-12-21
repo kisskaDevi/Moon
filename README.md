@@ -48,7 +48,7 @@ git clone https://github.com/KhronosGroup/glTF-Sample-Models.git
 ```
 mkdir build
 cd build
-cmake .. -DCUDA_RAY_TRACING=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_RAY_TRACING=ON
 cmake --build . --config Release
 ```
 

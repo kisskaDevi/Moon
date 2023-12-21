@@ -1,15 +1,15 @@
-#ifndef CUSTOMFILTER_H
-#define CUSTOMFILTER_H
+#ifndef BLOOM_H
+#define BLOOM_H
 
 #include "workflow.h"
 
-struct CustomFilterPushConst{
+struct bloomPushConst{
     alignas (4) float deltax;
     alignas (4) float deltay;
     alignas (4) float blitFactor;
 };
 
-class customFilter : public workflow
+class bloomGraphics : public workflow
 {
 private:
     std::vector<attachments> frames;
@@ -42,7 +42,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    customFilter(bool enable, float blitFactor, float xSamplerStep, float ySamplerStep, uint32_t blitAttachmentsCount);
+    bloomGraphics(bool enable, float blitFactor, float xSamplerStep, float ySamplerStep, uint32_t blitAttachmentsCount);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
@@ -51,10 +51,10 @@ public:
         const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    customFilter& setBlitFactor(const float& blitFactor);
-    customFilter& setSamplerStepX(const float& xSamplerStep);
-    customFilter& setSamplerStepY(const float& ySamplerStep);
+    bloomGraphics& setBlitFactor(const float& blitFactor);
+    bloomGraphics& setSamplerStepX(const float& xSamplerStep);
+    bloomGraphics& setSamplerStepY(const float& ySamplerStep);
 };
 
 
-#endif // CUSTOMFILTER_H
+#endif // BLOOM_H

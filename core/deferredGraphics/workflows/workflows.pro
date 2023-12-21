@@ -10,6 +10,7 @@ INCLUDEPATH += \
     $$PWD/../../interfaces
 
 SOURCES += \
+    bloom.cpp \
     blur.cpp \
     boundingBox.cpp \
     postProcessing.cpp \
@@ -17,12 +18,12 @@ SOURCES += \
     selector.cpp \
     shadow.cpp \
     skybox.cpp \
-    customFilter.cpp \
     ssao.cpp \
     sslr.cpp \
     workflow.cpp
 
 HEADERS += \
+    bloom.h \
     blur.h \
     boundingBox.h \
     postProcessing.h \
@@ -30,7 +31,6 @@ HEADERS += \
     selector.h \
     shadow.h \
     skybox.h \
-    customFilter.h \
     ssao.h \
     sslr.h \
     workflow.h

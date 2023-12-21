@@ -373,15 +373,16 @@ void testScene::mouseEvent(float frameTime)
 
     if(mouse->released(GLFW_MOUSE_BUTTON_LEFT)){
         for(auto& [key, object]: objects){
-            object->setOutlining(false);
             if(object->comparePrimitive(primitiveNumber)){
                 std::random_device device;
                 std::uniform_real_distribution dist(0.3f, 1.0f);
 
-                object->setOutlining(true, 0.03f, {dist(device), dist(device), dist(device), dist(device)});
+                if(controledObject){
+                    controledObject->setOutlining(false);
+                }
                 controledObject = object;
+                controledObject->setOutlining(true, 0.03f, {dist(device), dist(device), dist(device), dist(device)});
                 std::cout<< key << " : primitive " << primitiveNumber <<std::endl;
-                object->printStatus();
 
                 for(auto& [_,graph]: graphics){
                     graph->updateCmdFlags();

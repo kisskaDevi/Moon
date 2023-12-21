@@ -6,6 +6,7 @@
 struct CustomFilterPushConst{
     alignas (4) float deltax;
     alignas (4) float deltay;
+    alignas (4) float blitFactor;
 };
 
 class customFilter : public workflow
@@ -17,16 +18,22 @@ private:
 
     bool enable{true};
     float blitFactor{0.0f};
-    float xSampleStep{1.5f};
-    float ySampleStep{1.5f};
-    uint32_t blitAttachmentsCount{0};
+    float xSamplerStep{1.5f};
+    float ySamplerStep{1.5f};
 
     struct Filter : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }filter;
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
+    struct Bloom : public workbody{
+        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout(VkDevice device) override;
+
+        uint32_t blitAttachmentsCount{0};
+    }bloom;
+
+    void render(VkCommandBuffer commandBuffer, attachments image, uint32_t frameNumber, uint32_t framebufferIndex, workbody* worker);
 
     void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
     void createRenderPass();
@@ -35,7 +42,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    customFilter(bool enable, float blitFactor, float xSampleStep, float ySampleStep, uint32_t blitAttachmentsCount);
+    customFilter(bool enable, float blitFactor, float xSamplerStep, float ySamplerStep, uint32_t blitAttachmentsCount);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
@@ -44,8 +51,9 @@ public:
         const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    void setBlitFactor(const float& blitFactor);
-    void setSampleStep(const float& deltaX, const float& deltaY);
+    customFilter& setBlitFactor(const float& blitFactor);
+    customFilter& setSamplerStepX(const float& xSamplerStep);
+    customFilter& setSamplerStepY(const float& ySamplerStep);
 };
 
 

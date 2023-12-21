@@ -40,7 +40,6 @@ private:
     bool                    enableScatteringRefraction{true};
     int                     ufoCounter{0};
 
-    transformational*                                   controledObject{nullptr};
     GLFWwindow*                                         window{nullptr};
     graphicsManager*                                    app{nullptr};
     controller*                                         mouse{nullptr};
@@ -57,6 +56,7 @@ private:
     std::unordered_map<std::string, group*>             groups;
     std::unordered_map<std::string, isotropicLight*>    lightPoints;
     std::vector<spotLight*>                             lightSources;
+    baseObject*                                         controledObject{nullptr};
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);

@@ -3,16 +3,10 @@
 
 #include "workflow.h"
 
-namespace SwapChain{
-    struct SupportDetails;
-}
+namespace SwapChain{struct SupportDetails;}
 struct GLFWwindow;
 class texture;
 class swapChain;
-
-struct postProcessingPushConst{
-    alignas(4) float blitFactor;
-};
 
 class postProcessingGraphics : public workflow
 {
@@ -23,9 +17,6 @@ private:
     struct PostProcessing : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
-
-        float       blitFactor{0.0f};
-        uint32_t    blitAttachmentCount{1};
     }postProcessing;
 
     void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
@@ -35,8 +26,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    postProcessingGraphics(bool enable, float blitFactor, uint32_t blitAttachmentCount);
-    void setBlitFactor(float blitFactor);
+    postProcessingGraphics(bool enable);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;

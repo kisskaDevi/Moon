@@ -3,17 +3,9 @@
 #include "vkdefault.h"
 #include "texture.h"
 
-postProcessingGraphics::postProcessingGraphics(bool enable, float blitFactor, uint32_t blitAttachmentCount) :
+postProcessingGraphics::postProcessingGraphics(bool enable) :
     enable{enable}
-{
-    postProcessing.blitFactor = blitFactor;
-    postProcessing.blitAttachmentCount = blitAttachmentCount;
-}
-
-void postProcessingGraphics::setBlitFactor(float blitFactor)
-{
-    postProcessing.blitFactor = blitFactor;
-}
+{}
 
 void postProcessingGraphics::destroy()
 {
@@ -98,7 +90,7 @@ void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentCount));
+    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -111,33 +103,15 @@ void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice 
 
 void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    uint32_t specializationData = blitAttachmentCount;
-    VkSpecializationMapEntry specializationMapEntry{};
-        specializationMapEntry.constantID = 0;
-        specializationMapEntry.offset = 0;
-        specializationMapEntry.size = sizeof(uint32_t);
-    VkSpecializationInfo specializationInfo;
-        specializationInfo.mapEntryCount = 1;
-        specializationInfo.pMapEntries = &specializationMapEntry;
-        specializationInfo.dataSize = sizeof(specializationData);
-        specializationInfo.pData = &specializationData;
 
     auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
     auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
     VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
     VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    shaderStages.push_back(VkPipelineShaderStageCreateInfo{});
-        shaderStages.back().sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages.back().stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages.back().module = vertShaderModule;
-        shaderStages.back().pName = "main";
-    shaderStages.push_back(VkPipelineShaderStageCreateInfo{});
-        shaderStages.back().sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages.back().stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages.back().module = fragShaderModule;
-        shaderStages.back().pName = "main";
-        shaderStages.back().pSpecializationInfo = &specializationInfo;
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
+        vkDefault::vertrxShaderStage(vertShaderModule),
+        vkDefault::fragmentShaderStage(fragShaderModule)
+    };
 
     VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
     VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
@@ -151,17 +125,10 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, ima
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    std::vector<VkPushConstantRange> pushConstantRange;
-    pushConstantRange.push_back(VkPushConstantRange{});
-        pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-        pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(postProcessingPushConst);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-        pipelineLayoutInfo.pushConstantRangeCount = 1;
-        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
@@ -188,7 +155,7 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, ima
 }
 
 void postProcessingGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &postProcessing, 0, (postProcessing.blitAttachmentCount + 5) * image.Count, postProcessing.blitAttachmentCount * image.Count);
+    workflow::createDescriptorPool(device, &postProcessing, 0, 6 * image.Count, image.Count);
 }
 
 void postProcessingGraphics::createDescriptorSets(){
@@ -243,13 +210,11 @@ void postProcessingGraphics::updateDescriptorSets(
             bbImageInfo.imageView = boundingBoxbAttachment ? boundingBoxbAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
             bbImageInfo.sampler = boundingBoxbAttachment ? boundingBoxbAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
-        const auto blitAttachments = attachmentsMap.count("blit") > 0 && attachmentsMap.at("blit").first ? attachmentsMap.at("blit").second : std::vector<attachments*>(postProcessing.blitAttachmentCount,nullptr);
-        std::vector<VkDescriptorImageInfo> blitImageInfo(postProcessing.blitAttachmentCount);
-        for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
-            blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blitImageInfo[index].imageView = blitAttachments[i] ? blitAttachments[i]->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
-            blitImageInfo[index].sampler = blitAttachments[i] ? blitAttachments[i]->sampler : *emptyTexture["black"]->getTextureSampler();
-        }
+        const auto blitAttachments = attachmentsMap.count("bloomFinal") > 0 && attachmentsMap.at("bloomFinal").first ? attachmentsMap.at("bloomFinal").second.front() : nullptr;
+        VkDescriptorImageInfo bloomImageInfo;
+            bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            bloomImageInfo.imageView = blitAttachments ? blitAttachments->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
+            bloomImageInfo.sampler = blitAttachments ? blitAttachments->sampler : *emptyTexture["black"]->getTextureSampler();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -274,8 +239,8 @@ void postProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = static_cast<uint32_t>(blitImageInfo.size());
-            descriptorWrites.back().pImageInfo = blitImageInfo.data();
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &bloomImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
@@ -319,10 +284,6 @@ void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber)
         renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        postProcessingPushConst pushConst{};
-            pushConst.blitFactor = postProcessing.blitFactor;
-        vkCmdPushConstants(commandBuffers[frameNumber], postProcessing.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(postProcessingPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.Pipeline);
         vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.PipelineLayout, 0, 1, &postProcessing.DescriptorSets[frameNumber], 0, nullptr);

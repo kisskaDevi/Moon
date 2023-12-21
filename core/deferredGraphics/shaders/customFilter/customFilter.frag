@@ -11,6 +11,7 @@ layout(location = 0) out vec4 outColor;
 layout(push_constant) uniform PC {
     float dx;
     float dy;
+    float blitFactor;
 } pc;
 
 void main() {

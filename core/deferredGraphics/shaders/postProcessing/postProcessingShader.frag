@@ -6,7 +6,7 @@ layout(constant_id = 0) const int bloomCount = 1;
 
 layout(set = 0, binding = 0) uniform sampler2D Sampler;
 layout(set = 0, binding = 1) uniform sampler2D blurSampler;
-layout(set = 0, binding = 2) uniform sampler2D bloomSampler[bloomCount];
+layout(set = 0, binding = 2) uniform sampler2D bloomSampler;
 layout(set = 0, binding = 3) uniform sampler2D sslrSampler;
 layout(set = 0, binding = 4) uniform sampler2D ssaoSampler;
 layout(set = 0, binding = 5) uniform sampler2D bbSampler;
@@ -70,25 +70,12 @@ vec4 radialBlur(sampler2D Sampler, vec2 TexCoord) {
     return vec4(Color, 1.0);
 }
 
-vec4 bloom() {
-    float blitFactor = pc.blitFactor;
-    vec4 bloomColor = vec4(0.0);
-    float invBlitFactor = 1.0 / blitFactor;
-    for(int i = 0; i < bloomCount; i++) {
-        vec2 coord = fragTexCoord * invBlitFactor;
-        bloomColor += /*colorBloomFactor[i] * exp(0.01*i*i) **/ texture(bloomSampler[i], coord);
-        invBlitFactor /= blitFactor;
-    }
-
-    return bloomColor;
-}
-
 void main() {
     outColor = vec4(0.0, 0.0, 0.0, 1.0);
 
     outColor += texture(Sampler, fragTexCoord);
     outColor += texture(blurSampler,fragTexCoord);
-    outColor += bloom();
+    outColor += texture(bloomSampler, fragTexCoord);
     outColor += texture(sslrSampler,fragTexCoord);
     outColor += texture(bbSampler,fragTexCoord);
     //outColor += vec4(texture(ssaoSampler,fragTexCoord).xyz,0.0f);

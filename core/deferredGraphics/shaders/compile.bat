@@ -31,5 +31,7 @@ glslc.exe boundingBox/boundingBox.vert                          -o ../spv/boundi
 glslc.exe boundingBox/boundingBox.frag                          -o ../spv/boundingBox/boundingBoxFrag.spv
 glslc.exe selector/selector.vert                                -o ../spv/selector/selectorVert.spv
 glslc.exe selector/selector.frag                                -o ../spv/selector/selectorFrag.spv
+glslc.exe bloom/bloom.vert                                      -o ../spv/bloom/bloomVert.spv
+glslc.exe bloom/bloom.frag                                      -o ../spv/bloom/bloomFrag.spv
 
 pause

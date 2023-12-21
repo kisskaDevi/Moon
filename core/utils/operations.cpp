@@ -418,11 +418,12 @@ VkResult SingleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPo
 }
 
 void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t baseArrayLayer, uint32_t arrayLayers){
-    std::unordered_map<VkImageLayout,std::pair<VkAccessFlags,VkPipelineStageFlags>> layoutDescription;
-    layoutDescription[VK_IMAGE_LAYOUT_UNDEFINED] = {0,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-    layoutDescription[VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL] = {VK_ACCESS_TRANSFER_WRITE_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT};
-    layoutDescription[VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL] = {VK_ACCESS_TRANSFER_READ_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT};
-    layoutDescription[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] = {VK_ACCESS_SHADER_READ_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+    std::unordered_map<VkImageLayout,std::pair<VkAccessFlags,VkPipelineStageFlags>> layoutDescription = {
+        {VK_IMAGE_LAYOUT_UNDEFINED, {0,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT}},
+        {VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {VK_ACCESS_TRANSFER_WRITE_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT}},
+        {VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, {VK_ACCESS_TRANSFER_READ_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT}},
+        {VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, {VK_ACCESS_SHADER_READ_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT}}
+    };
 
     VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;

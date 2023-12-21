@@ -31,3 +31,5 @@
 ./glslc boundingBox/boundingBox.frag                          -o ../spv/boundingBox/boundingBoxFrag.spv
 ./glslc selector/selector.vert                                -o ../spv/selector/selectorVert.spv
 ./glslc selector/selector.frag                                -o ../spv/selector/selectorFrag.spv
+./glslc bloom/bloom.vert                                      -o ../spv/bloom/bloomVert.spv
+./glslc bloom/bloom.frag                                      -o ../spv/bloom/bloomFrag.spv

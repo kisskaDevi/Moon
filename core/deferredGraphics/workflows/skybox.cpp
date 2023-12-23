@@ -3,11 +3,11 @@
 #include "vkdefault.h"
 #include "object.h"
 
-#include <algorithm>
-
-skyboxGraphics::skyboxGraphics(bool enable) :
+skyboxGraphics::skyboxGraphics(bool enable, std::vector<object*>* objects) :
     enable(enable)
-{}
+{
+    skybox.objects = objects;
+}
 
 void skyboxGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
@@ -225,9 +225,9 @@ void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
-    for(auto& object: skybox.objects)
+    for(auto& object: *skybox.objects)
     {
-        if(object->getEnable()){
+        if((objectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
             std::vector<VkDescriptorSet> descriptorSets = {skybox.DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
             vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
             vkCmdDraw(commandBuffers[frameNumber], 36, 1, 0, 0);
@@ -235,17 +235,4 @@ void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber)
     }
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
-}
-
-void skyboxGraphics::bindObject(object* newObject)
-{
-    skybox.objects.push_back(newObject);
-}
-
-bool skyboxGraphics::removeObject(object* object)
-{
-    auto& objects = skybox.objects;
-    size_t size = objects.size();
-    objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
-    return size - objects.size() > 0;
 }

@@ -39,7 +39,7 @@ private:
         VkDescriptorPool                                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>                    DescriptorSets;
 
-        std::vector<object *>                           objects;
+        std::vector<object*>*                           objects{nullptr};
 
         void Destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
@@ -73,7 +73,7 @@ private:
         VkDescriptorPool                                    DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>                        DescriptorSets;
 
-        std::vector<light*>                                 lightSources;
+        std::vector<light*>*                                lightSources;
 
         void Destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
@@ -115,7 +115,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber);
+    graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object = nullptr, std::vector<light*>* lightSources = nullptr);
 
     void destroy()override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
@@ -123,12 +123,6 @@ public:
         const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
         const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    void bind(object* newObject);
-    bool remove(object* object);
-
-    void bind(light* lightSource);
-    bool remove(light* lightSource);
 
     graphics& setMinAmbientFactor(const float& minAmbientFactor);
 };

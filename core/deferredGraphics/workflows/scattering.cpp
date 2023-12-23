@@ -3,11 +3,11 @@
 #include "light.h"
 #include "operations.h"
 
-#include <algorithm>
-
-scattering::scattering(bool enable) :
+scattering::scattering(bool enable, std::vector<light*>* lightSources) :
     enable(enable)
-{}
+{
+    lighting.lightSources = lightSources;
+}
 
 void scattering::Lighting::destroy(VkDevice device){
     workbody::destroy(device);
@@ -271,27 +271,13 @@ void scattering::updateCommandBuffer(uint32_t frameNumber)
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    for(auto& lightSource: lighting.lightSources){
-        scatteringPushConst pushConst{};
-            pushConst.width = image.Extent.width;
-            pushConst.height = image.Extent.height;
-        vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(scatteringPushConst), &pushConst);
-
-        lightSource->render(frameNumber, commandBuffers[frameNumber], lighting.DescriptorSets[frameNumber], lighting.PipelineLayoutDictionary, lighting.PipelinesDictionary);
+    for(auto& lightSource: *lighting.lightSources){
+        if(lightSource->isScatteringEnable()){
+            scatteringPushConst pushConst{image.Extent.width, image.Extent.height};
+            vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(scatteringPushConst), &pushConst);
+            lightSource->render(frameNumber, commandBuffers[frameNumber], lighting.DescriptorSets[frameNumber], lighting.PipelineLayoutDictionary, lighting.PipelinesDictionary);
+        }
     }
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
-}
-
-void scattering::bindLightSource(light* lightSource)
-{
-    lighting.lightSources.push_back(lightSource);
-}
-
-bool scattering::removeLightSource(light* lightSource)
-{
-    auto& objects = lighting.lightSources;
-    size_t size = objects.size();
-    objects.erase(std::remove(objects.begin(), objects.end(), lightSource), objects.end());
-    return size - objects.size() > 0;
 }

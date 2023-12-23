@@ -15,7 +15,7 @@ private:
         VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>    objects;
+        std::vector<object*>*   objects;
 
         void destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
@@ -30,7 +30,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    boundingBoxGraphics(bool enable);
+    boundingBoxGraphics(bool enable, std::vector<object*>* objects = nullptr);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
@@ -38,9 +38,6 @@ public:
         const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
         const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    void bindObject(object* object);
-    bool removeObject(object* object);
 };
 
 #endif // BOUNDINGBOX_H

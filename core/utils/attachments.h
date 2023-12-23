@@ -20,6 +20,7 @@ public:
         VkImage image{VK_NULL_HANDLE};
         VkDeviceMemory imageMemory{VK_NULL_HANDLE};
         VkImageView imageView{VK_NULL_HANDLE};
+        VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
     };
 
     std::vector<attachment> instances;

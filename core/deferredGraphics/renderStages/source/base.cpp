@@ -223,8 +223,8 @@ void graphics::updateBaseDescriptorSets(
 
 void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
-    for(auto object: objects){
-        if(VkDeviceSize offsets = 0; object->getEnable()){
+    for(auto object: *objects){
+        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineDictionary[object->getPipelineBitMask()]);
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);

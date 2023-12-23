@@ -96,7 +96,7 @@ public:
     bool remove(object* object);
 
     void bind(light* lightSource);
-    void remove(light* lightSource);
+    bool remove(light* lightSource);
 
     void updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
     uint32_t readStorageBuffer(uint32_t currentImage);

@@ -9,8 +9,8 @@ class model;
 struct physicalDevice;
 
 enum objectType : uint8_t {
-    base = 0x0,
-    skybox = 0x1
+    base = 0x1,
+    skybox = 0x2
 };
 
 enum objectProperty : uint8_t {

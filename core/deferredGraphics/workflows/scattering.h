@@ -6,8 +6,8 @@
 class light;
 
 struct scatteringPushConst{
-    alignas(4) int  width{0};
-    alignas(4) int  height{0};
+    alignas(4) uint32_t  width{0};
+    alignas(4) uint32_t  height{0};
 };
 
 class scattering : public workflow
@@ -21,7 +21,7 @@ private:
         std::unordered_map<uint8_t, VkDescriptorSetLayout> DescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkPipelineLayout>      PipelineLayoutDictionary;
         std::unordered_map<uint8_t, VkPipeline>            PipelinesDictionary;
-        std::vector<light*>     lightSources;
+        std::vector<light*>*                               lightSources;
 
         void destroy(VkDevice device);
         void createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
@@ -37,7 +37,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    scattering(bool enable);
+    scattering(bool enable, std::vector<light*>* lightSources = nullptr);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
@@ -45,9 +45,6 @@ public:
         const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
         const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    void bindLightSource(light* lightSource);
-    bool removeLightSource(light* lightSource);
 };
 
 #endif // SCATTERING_H

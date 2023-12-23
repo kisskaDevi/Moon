@@ -107,8 +107,8 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
 void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-    for(auto object: Parent->objects){
-        if(VkDeviceSize offsets = 0; object->getEnable() && object->getOutliningEnable()){
+    for(auto object: *Parent->objects){
+        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getOutliningEnable()){
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);

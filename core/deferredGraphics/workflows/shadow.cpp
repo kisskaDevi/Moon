@@ -22,9 +22,12 @@ void shadowGraphics::Shadow::destroy(VkDevice device)
     if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
-shadowGraphics::shadowGraphics(bool enable) :
+shadowGraphics::shadowGraphics(bool enable, std::vector<object*>* objects, std::vector<light*>* lightSources) :
     enable(enable)
-{}
+{
+    shadow.objects = objects;
+    shadow.lightSources = lightSources;
+}
 
 void shadowGraphics::destroy()
 {
@@ -136,25 +139,12 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void shadowGraphics::bindBaseObject(object *newObject)
-{
-    shadow.objects.push_back(newObject);
-}
-
-bool shadowGraphics::removeBaseObject(object* object)
-{
-    bool result = false;
-    for(uint32_t index = 0; index<shadow.objects.size(); index++){
-        if(object==shadow.objects[index]){
-            shadow.objects.erase(shadow.objects.begin()+index);
-            result = true;
-        }
-    }
-    return result;
-}
-
 void shadowGraphics::createFramebuffers(light* lightSource)
 {
+    if(lightSource->getShadowMaps().empty()){
+        lightSource->getShadowMaps().push_back(new attachments());
+        createAttachments(1, lightSource->getShadowMaps().back());
+    }
     framebuffers[lightSource].resize(image.Count);
     for (size_t j = 0; j < image.Count; j++){
         VkFramebufferCreateInfo framebufferInfo{};
@@ -169,38 +159,23 @@ void shadowGraphics::createFramebuffers(light* lightSource)
     }
 }
 
-void shadowGraphics::bindLightSource(light* lightSource)
-{
-    shadow.lightSources.push_back(lightSource);
-    if(lightSource->getShadowMaps().empty()){
-        lightSource->getShadowMaps().push_back(new attachments());
-        createAttachments(1, lightSource->getShadowMaps().back());
-    }
-}
 
-void shadowGraphics::removeLightSource(light* lightSource)
+void shadowGraphics::destroyFramebuffers(light* lightSource)
 {
-    for(uint32_t index = 0; index<shadow.lightSources.size(); index++){
-        if(lightSource==shadow.lightSources[index]){
-            for(auto shadowMap : lightSource->getShadowMaps()){
-                if(shadowMap){
-                    shadowMap->deleteAttachment(device);
-                    shadowMap->deleteSampler(device);
-                    delete shadowMap;
-                }
-            }
-            lightSource->getShadowMaps().clear();
-
-            for(uint32_t i=0;i<image.Count;i++){
-                if(framebuffers[shadow.lightSources[index]][i]){
-                    vkDestroyFramebuffer(device, framebuffers[shadow.lightSources[index]][i],nullptr);
-                    framebuffers[shadow.lightSources[index]][i] = VK_NULL_HANDLE;
-                }
-            }
-            framebuffers.erase(shadow.lightSources[index]);
-            shadow.lightSources.erase(shadow.lightSources.begin()+index);
-            break;
+    for(auto shadowMap : lightSource->getShadowMaps()){
+        if(shadowMap){
+            shadowMap->deleteAttachment(device);
+            shadowMap->deleteSampler(device);
+            delete shadowMap;
         }
+    }
+    lightSource->getShadowMaps().clear();
+
+    if(framebuffers.count(lightSource)){
+        for(auto& frame: framebuffers[lightSource]){
+            if(frame){ vkDestroyFramebuffer(device, frame,nullptr); frame = VK_NULL_HANDLE;}
+        }
+        framebuffers.erase(lightSource);
     }
 }
 
@@ -214,20 +189,22 @@ void shadowGraphics::create(std::unordered_map<std::string, std::pair<bool,std::
 
 void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
-    for(uint32_t attachmentNumber = 0; attachmentNumber < shadow.lightSources.size(); attachmentNumber++){
-        render(frameNumber,commandBuffers[frameNumber],attachmentNumber);
+    if(enable){
+        for(uint32_t attachmentNumber = 0; attachmentNumber < (*shadow.lightSources).size(); attachmentNumber++){
+            render(frameNumber,commandBuffers[frameNumber], attachmentNumber);
+        }
     }
 }
 
 void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber)
 {
     std::vector<VkClearValue> clearValues;
-    clearValues.push_back(VkClearValue{shadow.lightSources[attachmentNumber]->getShadowMaps().back()->clearValue.color});
+    clearValues.push_back(VkClearValue{(*shadow.lightSources)[attachmentNumber]->getShadowMaps().back()->clearValue.color});
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[shadow.lightSources[attachmentNumber]][frameNumber];
+        renderPassInfo.framebuffer = framebuffers[(*shadow.lightSources)[attachmentNumber]][frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
         renderPassInfo.renderArea.extent = image.frameBufferExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -235,33 +212,33 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
-        for(auto object: shadow.objects){
-            if(VkDeviceSize offsets = 0; object->getEnable() && object->getEnableShadow()){
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel()->getVertices(), &offsets);
-                if (object->getModel()->getIndices() != VK_NULL_HANDLE){
-                    vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
-                }
-
-                std::vector<VkDescriptorSet> descriptorSets = {
-                    shadow.lightSources[attachmentNumber]->getDescriptorSets()[frameNumber],
-                    object->getDescriptorSet()[frameNumber]
-                };
-
-                MaterialBlock material{};
-
-                uint32_t primitives = 0;
-                object->getModel()->render(
-                            object->getInstanceNumber(frameNumber),
-                            commandBuffer,
-                            shadow.PipelineLayout,
-                            static_cast<uint32_t>(descriptorSets.size()),
-                            descriptorSets.data(),primitives,
-                            sizeof(MaterialBlock),
-                            0,
-                            &material);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
+    for(auto object: *shadow.objects){
+        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getEnableShadow()){
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel()->getVertices(), &offsets);
+            if (object->getModel()->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
+
+            std::vector<VkDescriptorSet> descriptorSets = {
+                (*shadow.lightSources)[attachmentNumber]->getDescriptorSets()[frameNumber],
+                object->getDescriptorSet()[frameNumber]
+            };
+
+            MaterialBlock material{};
+
+            uint32_t primitives = 0;
+            object->getModel()->render(
+                        object->getInstanceNumber(frameNumber),
+                        commandBuffer,
+                        shadow.PipelineLayout,
+                        static_cast<uint32_t>(descriptorSets.size()),
+                        descriptorSets.data(),primitives,
+                        sizeof(MaterialBlock),
+                        0,
+                        &material);
         }
+    }
 
     vkCmdEndRenderPass(commandBuffer);
 }

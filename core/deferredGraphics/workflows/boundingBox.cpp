@@ -12,9 +12,11 @@ namespace {
     };
 }
 
-boundingBoxGraphics::boundingBoxGraphics(bool enable) :
+boundingBoxGraphics::boundingBoxGraphics(bool enable, std::vector<object*>* objects) :
     enable(enable)
-{}
+{
+    box.objects = objects;
+}
 
 void boundingBoxGraphics::boundingBox::destroy(VkDevice device){
     workbody::destroy(device);
@@ -264,20 +266,9 @@ void boundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
 }
 
-void boundingBoxGraphics::bindObject(object* object){
-    box.objects.push_back(object);
-}
-
-bool boundingBoxGraphics::removeObject(object* object){
-    auto& objects = box.objects;
-    size_t size = objects.size();
-    objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
-    return size - objects.size() > 0;
-}
-
 void boundingBoxGraphics::boundingBox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers){
-    for(auto object: objects){
-        if(VkDeviceSize offsets = 0; object->getEnable()){
+    for(auto object: *objects){
+        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);

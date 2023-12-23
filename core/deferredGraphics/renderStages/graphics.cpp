@@ -3,11 +3,13 @@
 #include "object.h"
 #include "deferredAttachments.h"
 
-graphics::graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber) :
+graphics::graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources) :
     enable(enable)
 {
     base.transparencyPass = transparencyPass;
     base.transparencyNumber = transparencyNumber;
+    base.objects = object;
+    lighting.lightSources = lightSources;
 
     outlining.Parent = &base;
     ambientLighting.Parent = &lighting;
@@ -262,30 +264,4 @@ void graphics::updateCommandBuffer(uint32_t frameNumber)
         ambientLighting.render(frameNumber,commandBuffers[frameNumber]);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
-}
-
-void graphics::bind(object *newObject)
-{
-    base.objects.push_back(newObject);
-}
-
-bool graphics::remove(object* object)
-{
-    auto& objects = base.objects;
-    size_t size = objects.size();
-    objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
-    return size - objects.size() > 0;
-}
-
-void graphics::bind(light* lightSource)
-{
-    lighting.lightSources.push_back(lightSource);
-}
-
-bool graphics::remove(light* lightSource)
-{
-    auto& objects = lighting.lightSources;
-    size_t size = objects.size();
-    objects.erase(std::remove(objects.begin(), objects.end(), lightSource), objects.end());
-    return size - objects.size() > 0;
 }

@@ -23,15 +23,15 @@ private:
         VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout   MaterialDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>    objects;
-        std::vector<light*>     lightSources;
+        std::vector<object*>*   objects;
+        std::vector<light*>*    lightSources;
     }shadow;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
     void createRenderPass();
     void createPipelines();
 public:
-    shadowGraphics(bool enable);
+    shadowGraphics(bool enable, std::vector<object*>* objects = nullptr, std::vector<light*>* lightSources = nullptr);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
@@ -42,12 +42,7 @@ public:
 
     void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
     void createFramebuffers(light* lightSource);
-
-    void bindLightSource(light* lightSource);
-    void removeLightSource(light* lightSource);
-
-    void bindBaseObject(object* newObject);
-    bool removeBaseObject(object* object);
+    void destroyFramebuffers(light* lightSource);
 };
 
 #endif // SHADOW_H

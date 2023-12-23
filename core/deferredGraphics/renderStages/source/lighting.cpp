@@ -134,7 +134,7 @@ void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string
 
 void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
-    for(auto& lightSource: lightSources){
+    for(auto& lightSource: *lightSources){
         lightSource->render(frameNumber, commandBuffer, DescriptorSets[frameNumber], PipelineLayoutDictionary, PipelinesDictionary);
     }
 }

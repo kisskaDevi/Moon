@@ -118,20 +118,20 @@ void deferredGraphics::createGraphicsPasses(){
 
     if(workflows.empty())
     {
-        workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0);
+        workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0, &objects, &lights);
         workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
         workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
         workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitFactor, blitFactor, blitFactor, blitAttachmentCount);
         workflows["Blur"] = new gaussianBlur(enable["Blur"]);
-        workflows["Skybox"] = new skyboxGraphics(enable["Skybox"]);
+        workflows["Skybox"] = new skyboxGraphics(enable["Skybox"], &objects);
         workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
         workflows["SSAO"] = new SSAOGraphics(enable["SSAO"]);
-        workflows["Shadow"] = new shadowGraphics(enable["Shadow"]);
-        workflows["Scattering"] = new scattering(enable["Scattering"]);
-        workflows["BoundingBox"] = new boundingBoxGraphics(enable["BoundingBox"]);
+        workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &lights);
+        workflows["Scattering"] = new scattering(enable["Scattering"], &lights);
+        workflows["BoundingBox"] = new boundingBoxGraphics(enable["BoundingBox"], &objects);
         for(uint32_t i = 0; i < TransparentLayersCount; i++){
             enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
-            workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i);
+            workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i, &objects, &lights);
         };
         workflows["Selector"] = new selectorGraphics(enable["Selector"]);
     }
@@ -342,85 +342,37 @@ void deferredGraphics::remove(camera* cameraObject){
 
 void deferredGraphics::bind(light* lightSource){
     if(lightSource->isShadowEnable() && enable["Shadow"]){
-        auto Shadow = static_cast<shadowGraphics*>(workflows["Shadow"]);
-        Shadow->bindLightSource(lightSource);
-        Shadow->createFramebuffers(lightSource);
-    }
-    if(lightSource->isScatteringEnable() && enable["Scattering"]){
-        auto Scattering = static_cast<scattering*>(workflows["Scattering"]);
-        Scattering->bindLightSource(lightSource);
+        static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(lightSource);
     }
     lightSource->create(device, commandPool, imageCount);
     lights.push_back(lightSource);
 
-    static_cast<graphics*>(workflows["DeferredGraphics"])->bind(lightSource);
-    for(uint32_t i = 0; i < TransparentLayersCount; i++){
-        static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->bind(lightSource);
-    }
-
     updateCmdFlags();
 }
 
-void deferredGraphics::remove(light* lightSource){
+bool deferredGraphics::remove(light* lightSource){
+    size_t size = lights.size();
     lightSource->destroy(device.getLogical());
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 
-    static_cast<graphics*>(workflows["DeferredGraphics"])->remove(lightSource);
-    for(uint32_t i = 0; i < TransparentLayersCount; i++){
-        static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->remove(lightSource);
-    }
-    static_cast<scattering*>(workflows["Scattering"])->removeLightSource(lightSource);
-    static_cast<shadowGraphics*>(workflows["Shadow"])->removeLightSource(lightSource);
+    static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(lightSource);
 
     updateCmdFlags();
+    return size - objects.size() > 0;
 }
 
 void deferredGraphics::bind(object* object){
     object->create(device, commandPool, imageCount);
     objects.push_back(object);
-
-    switch (object->getPipelineBitMask()) {
-        case objectType::base:
-        case objectType::base | objectProperty::outlining:
-            static_cast<shadowGraphics*>(workflows["Shadow"])->bindBaseObject(object);
-            static_cast<graphics*>(workflows["DeferredGraphics"])->bind(object);
-            for(uint32_t i = 0; i < TransparentLayersCount; i++){
-                static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->bind(object);
-            }
-            static_cast<boundingBoxGraphics*>(workflows["BoundingBox"])->bindObject(object);
-            break;
-        case objectType::skybox:
-            static_cast<skyboxGraphics*>(workflows["Skybox"])->bindObject(object);
-            break;
-    }
-
     updateCmdFlags();
 }
 
 bool deferredGraphics::remove(object* object){
+    size_t size = objects.size();
     object->destroy(device.getLogical());
     objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
-
-    bool res = true;
-
-    switch (object->getPipelineBitMask()) {
-        case objectType::base:
-        case objectType::base | objectProperty::outlining:
-            res &= static_cast<shadowGraphics*>(workflows["Shadow"])->removeBaseObject(object)
-                   && static_cast<graphics*>(workflows["DeferredGraphics"])->remove(object)
-                   && static_cast<boundingBoxGraphics*>(workflows["BoundingBox"])->removeObject(object);
-            for(uint32_t i = 0; i < TransparentLayersCount; i++){
-                res &= static_cast<graphics*>(workflows["TransparentLayer" + std::to_string(i)])->remove(object);
-            }
-            break;
-        case objectType::skybox:
-            res = res && static_cast<skyboxGraphics*>(workflows["Skybox"])->removeObject(object);
-            break;
-    }
-
     updateCmdFlags();
-
-    return res;
+    return size - objects.size() > 0;
 }
 
 void deferredGraphics::updateCmdFlags(){

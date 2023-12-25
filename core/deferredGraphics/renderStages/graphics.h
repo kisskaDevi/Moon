@@ -14,6 +14,7 @@ class   light;
 struct  Node;
 struct  Material;
 struct  MaterialBlock;
+class   depthMap;
 
 class graphics : public workflow
 {
@@ -65,6 +66,7 @@ private:
         bool                                                enableScattering{true};
 
         VkDescriptorSetLayout                               DescriptorSetLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout                               ShadowDescriptorSetLayout{VK_NULL_HANDLE};
         std::unordered_map<uint8_t, VkDescriptorSetLayout>  BufferDescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkDescriptorSetLayout>  DescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkPipelineLayout>       PipelineLayoutDictionary;
@@ -74,6 +76,7 @@ private:
         std::vector<VkDescriptorSet>                        DescriptorSets;
 
         std::vector<light*>*                                lightSources;
+        std::unordered_map<light*, depthMap*>*              depthMaps;
 
         void Destroy(VkDevice device);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
@@ -115,7 +118,12 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object = nullptr, std::vector<light*>* lightSources = nullptr);
+    graphics(bool enable,
+             bool transparencyPass,
+             uint32_t transparencyNumber,
+             std::vector<object*>* object = nullptr,
+             std::vector<light*>* lightSources = nullptr,
+             std::unordered_map<light*, depthMap*>* depthMaps = nullptr);
 
     void destroy()override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;

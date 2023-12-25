@@ -2,10 +2,7 @@
 #include "vkdefault.h"
 #include "light.h"
 #include "deferredAttachments.h"
-
-struct lightPassPushConst{
-    alignas(4) float minAmbientFactor;
-};
+#include "depthMap.h"
 
 void graphics::Lighting::Destroy(VkDevice device)
 {
@@ -15,6 +12,7 @@ void graphics::Lighting::Destroy(VkDevice device)
     for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
     }
+    if(ShadowDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, ShadowDescriptorSetLayout, nullptr); ShadowDescriptorSetLayout = VK_NULL_HANDLE;}
     if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
     if(DescriptorPool)      {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 
@@ -47,6 +45,7 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 
     light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
     light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
+    depthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
 void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -135,6 +134,7 @@ void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string
 void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     for(auto& lightSource: *lightSources){
-        lightSource->render(frameNumber, commandBuffer, DescriptorSets[frameNumber], PipelineLayoutDictionary, PipelinesDictionary);
+        uint8_t mask = lightSource->getPipelineBitMask();
+        lightSource->render(frameNumber, commandBuffer, {DescriptorSets[frameNumber], (*depthMaps)[lightSource]->getDescriptorSets()[frameNumber]}, PipelineLayoutDictionary[mask], PipelinesDictionary[mask]);
     }
 }

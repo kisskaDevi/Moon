@@ -20,7 +20,8 @@ texture.cpp
 device.cpp
 vkdefault.cpp
 buffer.cpp
-swapChain.cpp)
+swapChain.cpp
+depthMap.cpp)
 
 set(HEADERS attachments.h
 node.h
@@ -29,7 +30,8 @@ texture.h
 device.h
 vkdefault.h
 buffer.h
-swapChain.h)
+swapChain.h
+depthMap.h)
 
 add_library(utils STATIC ${SOURCES} ${HEADERS})
 target_include_directories(utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${INCLUDE_DIRS})

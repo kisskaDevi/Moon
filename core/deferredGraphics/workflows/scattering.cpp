@@ -2,15 +2,19 @@
 #include "vkdefault.h"
 #include "light.h"
 #include "operations.h"
+#include "depthMap.h"
 
-scattering::scattering(bool enable, std::vector<light*>* lightSources) :
+scattering::scattering(bool enable, std::vector<light*>* lightSources,
+                       std::unordered_map<light*, depthMap*>* depthMaps) :
     enable(enable)
 {
     lighting.lightSources = lightSources;
+    lighting.depthMaps = depthMaps;
 }
 
 void scattering::Lighting::destroy(VkDevice device){
     workbody::destroy(device);
+    if(ShadowDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, ShadowDescriptorSetLayout, nullptr); ShadowDescriptorSetLayout = VK_NULL_HANDLE;}
     for(auto& descriptorSetLayout: BufferDescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
     }
@@ -120,6 +124,7 @@ void scattering::Lighting::createDescriptorSetLayout(VkDevice device)
 
     light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
     light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
+    depthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
 void scattering::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -165,6 +170,7 @@ void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, imageIn
         pushConstantRange.back().size = sizeof(scatteringPushConst);
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         DescriptorSetLayout,
+        ShadowDescriptorSetLayout,
         BufferDescriptorSetLayoutDictionary[mask],
         DescriptorSetLayoutDictionary[mask]
     };
@@ -274,8 +280,9 @@ void scattering::updateCommandBuffer(uint32_t frameNumber)
     for(auto& lightSource: *lighting.lightSources){
         if(lightSource->isScatteringEnable()){
             scatteringPushConst pushConst{image.Extent.width, image.Extent.height};
+            uint8_t mask = lightSource->getPipelineBitMask();
             vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(scatteringPushConst), &pushConst);
-            lightSource->render(frameNumber, commandBuffers[frameNumber], lighting.DescriptorSets[frameNumber], lighting.PipelineLayoutDictionary, lighting.PipelinesDictionary);
+            lightSource->render(frameNumber, commandBuffers[frameNumber], {lighting.DescriptorSets[frameNumber], (*lighting.depthMaps)[lightSource]->getDescriptorSets()[frameNumber]}, lighting.PipelineLayoutDictionary[mask], lighting.PipelinesDictionary[mask]);
         }
     }
 

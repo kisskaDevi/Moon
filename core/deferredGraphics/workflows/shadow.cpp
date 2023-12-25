@@ -4,6 +4,7 @@
 #include "light.h"
 #include "object.h"
 #include "model.h"
+#include "depthMap.h"
 
 void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
 {
@@ -22,11 +23,11 @@ void shadowGraphics::Shadow::destroy(VkDevice device)
     if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
-shadowGraphics::shadowGraphics(bool enable, std::vector<object*>* objects, std::vector<light*>* lightSources) :
+shadowGraphics::shadowGraphics(bool enable, std::vector<object*>* objects, std::unordered_map<light*, depthMap*>* depthMaps) :
     enable(enable)
 {
     shadow.objects = objects;
-    shadow.lightSources = lightSources;
+    shadow.depthMaps = depthMaps;
 }
 
 void shadowGraphics::destroy()
@@ -141,9 +142,10 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
 
 void shadowGraphics::createFramebuffers(light* lightSource)
 {
-    if(lightSource->getShadowMaps().empty()){
-        lightSource->getShadowMaps().push_back(new attachments());
-        createAttachments(1, lightSource->getShadowMaps().back());
+    if(shadow.depthMaps->count(lightSource)){
+        (*shadow.depthMaps)[lightSource]->get() = new attachments;
+        createAttachments(1, (*shadow.depthMaps)[lightSource]->get());
+        (*shadow.depthMaps)[lightSource]->updateDescriptorSets(device, image.Count);
     }
     framebuffers[lightSource].resize(image.Count);
     for (size_t j = 0; j < image.Count; j++){
@@ -151,7 +153,7 @@ void shadowGraphics::createFramebuffers(light* lightSource)
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &lightSource->getShadowMaps().back()->instances[j].imageView;
+            framebufferInfo.pAttachments = &(*shadow.depthMaps)[lightSource]->get()->instances[j].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
@@ -162,15 +164,10 @@ void shadowGraphics::createFramebuffers(light* lightSource)
 
 void shadowGraphics::destroyFramebuffers(light* lightSource)
 {
-    for(auto shadowMap : lightSource->getShadowMaps()){
-        if(shadowMap){
-            shadowMap->deleteAttachment(device);
-            shadowMap->deleteSampler(device);
-            delete shadowMap;
-        }
+    if(shadow.depthMaps->count(lightSource) && (*shadow.depthMaps)[lightSource]->get()){
+        (*shadow.depthMaps)[lightSource]->get()->deleteAttachment(device);
+        (*shadow.depthMaps)[lightSource]->get()->deleteSampler(device);
     }
-    lightSource->getShadowMaps().clear();
-
     if(framebuffers.count(lightSource)){
         for(auto& frame: framebuffers[lightSource]){
             if(frame){ vkDestroyFramebuffer(device, frame,nullptr); frame = VK_NULL_HANDLE;}
@@ -190,21 +187,21 @@ void shadowGraphics::create(std::unordered_map<std::string, std::pair<bool,std::
 void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
     if(enable){
-        for(uint32_t attachmentNumber = 0; attachmentNumber < (*shadow.lightSources).size(); attachmentNumber++){
-            render(frameNumber,commandBuffers[frameNumber], attachmentNumber);
+        for(const auto& [light, depth] : *shadow.depthMaps){
+            render(frameNumber, commandBuffers[frameNumber], light, depth);
         }
     }
 }
 
-void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber)
+void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, depthMap* depthMap)
 {
     std::vector<VkClearValue> clearValues;
-    clearValues.push_back(VkClearValue{(*shadow.lightSources)[attachmentNumber]->getShadowMaps().back()->clearValue.color});
+    clearValues.push_back(VkClearValue{depthMap->get()->clearValue.color});
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[(*shadow.lightSources)[attachmentNumber]][frameNumber];
+        renderPassInfo.framebuffer = framebuffers[lightSource][frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
         renderPassInfo.renderArea.extent = image.frameBufferExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -221,7 +218,7 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
             }
 
             std::vector<VkDescriptorSet> descriptorSets = {
-                (*shadow.lightSources)[attachmentNumber]->getDescriptorSets()[frameNumber],
+                lightSource->getDescriptorSets()[frameNumber],
                 object->getDescriptorSet()[frameNumber]
             };
 

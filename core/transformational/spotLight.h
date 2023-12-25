@@ -61,7 +61,7 @@ private:
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSets(VkDevice device, uint32_t imageCount);
-    void updateDescriptorSets(VkDevice device, uint32_t imageCount, texture* emptyTextureBlack , texture* emptyTextureWhite);
+    void updateDescriptorSets(VkDevice device, uint32_t imageCount);
 
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
@@ -84,7 +84,6 @@ public:
 
     void                setLightColor(const vector<float,4> & color);
     void                setLightDropFactor(const float& dropFactor);
-    void                setShadowExtent(const VkExtent2D & shadowExtent);
     void                setTexture(texture* tex);
     void                setProjectionMatrix(const matrix<float,4,4> & projection);
 
@@ -104,9 +103,9 @@ public:
     void render(
         uint32_t frameNumber,
         VkCommandBuffer commandBuffer,
-        VkDescriptorSet descriptorSet,
-        std::unordered_map<uint8_t, VkPipelineLayout> PipelineLayoutDictionary,
-        std::unordered_map<uint8_t, VkPipeline> PipelinesDictionary) override;
+        const std::vector<VkDescriptorSet>& descriptorSet,
+        VkPipelineLayout pipelineLayout,
+        VkPipeline pipeline) override;
 
     void update(
         uint32_t frameNumber,

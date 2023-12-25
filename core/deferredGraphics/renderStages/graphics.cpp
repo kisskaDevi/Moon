@@ -3,13 +3,14 @@
 #include "object.h"
 #include "deferredAttachments.h"
 
-graphics::graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources) :
+graphics::graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources, std::unordered_map<light*, depthMap*>* depthMaps) :
     enable(enable)
 {
     base.transparencyPass = transparencyPass;
     base.transparencyNumber = transparencyNumber;
     base.objects = object;
     lighting.lightSources = lightSources;
+    lighting.depthMaps = depthMaps;
 
     outlining.Parent = &base;
     ambientLighting.Parent = &lighting;

@@ -9,7 +9,7 @@ layout(location = 2)	in mat4 projview;
 
 layout(set = 0, binding = 1) uniform sampler2D inDepthTexture;
 
-layout(set = 1, binding = 0) uniform LightBufferObject
+layout(set = 2, binding = 0) uniform LightBufferObject
 {
     mat4 proj;
     mat4 view;
@@ -19,8 +19,8 @@ layout(set = 1, binding = 0) uniform LightBufferObject
     vec4 prop;
 } light;
 
-layout(set = 2, binding = 0) uniform sampler2D shadowMap;
-layout(set = 2, binding = 1) uniform sampler2D lightTexture;
+layout(set = 3, binding = 0) uniform sampler2D lightTexture;
+layout(set = 1, binding = 0) uniform sampler2D shadowMap;
 
 layout (push_constant) uniform PC
 {

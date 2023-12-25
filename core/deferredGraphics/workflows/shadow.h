@@ -6,6 +6,7 @@
 
 class object;
 class light;
+class depthMap;
 
 class shadowGraphics : public workflow
 {
@@ -23,15 +24,17 @@ private:
         VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout   MaterialDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>*   objects;
-        std::vector<light*>*    lightSources;
+        std::vector<object*>* objects;
+        std::unordered_map<light*, depthMap*>* depthMaps;
     }shadow;
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, uint32_t attachmentNumber);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, depthMap* depthMap);
     void createRenderPass();
     void createPipelines();
 public:
-    shadowGraphics(bool enable, std::vector<object*>* objects = nullptr, std::vector<light*>* lightSources = nullptr);
+    shadowGraphics(bool enable,
+                   std::vector<object*>* objects = nullptr,
+                   std::unordered_map<light*, depthMap*>* depthMaps = nullptr);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;

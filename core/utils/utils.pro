@@ -17,7 +17,8 @@ SOURCES += \
     swapChain.cpp \
     texture.cpp \
     device.cpp \
-    vkdefault.cpp
+    vkdefault.cpp \
+    depthMap.cpp
 
 HEADERS += \
     attachments.h \
@@ -27,7 +28,8 @@ HEADERS += \
     swapChain.h \
     texture.h \
     device.h \
-    vkdefault.h
+    vkdefault.h \
+    depthMap.h
 
 
 DISTFILES += \

@@ -17,6 +17,7 @@ class camera;
 class object;
 class light;
 class workflow;
+class depthMap;
 
 struct StorageBufferObject{
     alignas(16) vector<float,4>    mousePosition;
@@ -51,6 +52,7 @@ private:
     camera*                                     cameraObject{nullptr};
     std::vector<object*>                        objects;
     std::vector<light*>                         lights;
+    std::unordered_map<light*, depthMap*>       depthMaps;
     std::unordered_map<std::string, texture*>   emptyTextures;
 
     void createStorageBuffers(uint32_t imageCount);

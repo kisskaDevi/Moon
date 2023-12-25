@@ -7,6 +7,7 @@
 #include "object.h"
 #include "camera.h"
 #include "swapChain.h"
+#include "depthMap.h"
 
 #include "graphics.h"
 #include "postProcessing.h"
@@ -118,7 +119,7 @@ void deferredGraphics::createGraphicsPasses(){
 
     if(workflows.empty())
     {
-        workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0, &objects, &lights);
+        workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0, &objects, &lights, &depthMaps);
         workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
         workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
         workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitFactor, blitFactor, blitFactor, blitAttachmentCount);
@@ -126,12 +127,12 @@ void deferredGraphics::createGraphicsPasses(){
         workflows["Skybox"] = new skyboxGraphics(enable["Skybox"], &objects);
         workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
         workflows["SSAO"] = new SSAOGraphics(enable["SSAO"]);
-        workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &lights);
-        workflows["Scattering"] = new scattering(enable["Scattering"], &lights);
+        workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &depthMaps);
+        workflows["Scattering"] = new scattering(enable["Scattering"], &lights, &depthMaps);
         workflows["BoundingBox"] = new boundingBoxGraphics(enable["BoundingBox"], &objects);
         for(uint32_t i = 0; i < TransparentLayersCount; i++){
             enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
-            workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i, &objects, &lights);
+            workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i, &objects, &lights, &depthMaps);
         };
         workflows["Selector"] = new selectorGraphics(enable["Selector"]);
     }
@@ -341,6 +342,9 @@ void deferredGraphics::remove(camera* cameraObject){
 }
 
 void deferredGraphics::bind(light* lightSource){
+    if(depthMaps.count(lightSource) == 0){
+        depthMaps[lightSource] = new depthMap(device, commandPool, imageCount);
+    }
     if(lightSource->isShadowEnable() && enable["Shadow"]){
         static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(lightSource);
     }
@@ -356,6 +360,10 @@ bool deferredGraphics::remove(light* lightSource){
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 
     static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(lightSource);
+    if(depthMaps.count(lightSource)){
+        depthMaps[lightSource]->destroy(device.getLogical());
+        delete depthMaps[lightSource];
+    }
 
     updateCmdFlags();
     return size - objects.size() > 0;

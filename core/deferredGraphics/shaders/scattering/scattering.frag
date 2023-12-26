@@ -1,7 +1,7 @@
 #version 450
 
 #include "../__methods__/defines.glsl"
-#include "scatteringBase.frag"
+#include "scatteringBase.glsl"
 
 layout(location = 0)	in vec4 eyePosition;
 layout(location = 1)	in vec4 glPosition;

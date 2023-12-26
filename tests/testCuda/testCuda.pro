@@ -37,7 +37,7 @@ equals(QMAKE_CXX,cl){
     win32: LIBS += \
         -L$$OUT_PWD/../../core/graphicsManager/$$DESTDIR \
         -L$$OUT_PWD/../../core/utils/$$DESTDIR \
-        -L$$PWD/../../dependences/libs/vulkan_runtime/x64 \
+        -L$$PWD/../../dependences/libs/vulkan_tools/x64 \
         -L$$PWD/../../dependences/libs/glfw/build/src/$$GLFW_BIN_DIR \
         -L$$OUT_PWD/../../core/cudaRayTracing/$$DESTDIR \
         -L$$CUDA_LIBS_DIR \

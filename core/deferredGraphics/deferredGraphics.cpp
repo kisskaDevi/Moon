@@ -122,7 +122,7 @@ void deferredGraphics::createGraphicsPasses(){
         workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0, &objects, &lights, &depthMaps);
         workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
         workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
-        workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitFactor, blitFactor, blitFactor, blitAttachmentCount);
+        workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitAttachmentsCount);
         workflows["Blur"] = new gaussianBlur(enable["Blur"]);
         workflows["Skybox"] = new skyboxGraphics(enable["Skybox"], &objects);
         workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
@@ -411,7 +411,6 @@ deferredGraphics& deferredGraphics::setScatteringRefraction(bool enable){
 
 deferredGraphics& deferredGraphics::setBlitFactor(float blitFactor){
     if(blitFactor >= 1.0f){
-        this->blitFactor = blitFactor;
         static_cast<bloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
         updateCmdFlags();
     }

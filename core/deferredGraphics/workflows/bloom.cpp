@@ -2,7 +2,7 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-bloomGraphics::bloomGraphics(bool enable, float blitFactor, float xSamplerStep, float ySamplerStep, uint32_t blitAttachmentsCount):
+bloomGraphics::bloomGraphics(bool enable, uint32_t blitAttachmentsCount, float blitFactor, float xSamplerStep, float ySamplerStep):
     enable(enable),
     blitFactor(blitFactor),
     xSamplerStep(xSamplerStep),

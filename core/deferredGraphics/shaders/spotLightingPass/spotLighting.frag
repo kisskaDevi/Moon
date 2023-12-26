@@ -3,7 +3,7 @@
 #include "../__methods__/defines.glsl"
 #include "../__methods__/colorFunctions.glsl"
 
-#include "spotLightingBase.frag"
+#include "spotLightingBase.glsl"
 
 layout(location = 0) in vec4 eyePosition;
 

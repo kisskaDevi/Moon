@@ -45,8 +45,7 @@ private:
     std::vector<bool>                           updateCommandBufferFlags;
     std::vector<node*>                          nodes;
 
-    float                                       blitFactor{1.5f};
-    uint32_t                                    blitAttachmentCount{8};
+    uint32_t                                    blitAttachmentsCount{8};
     uint32_t                                    TransparentLayersCount{2};
 
     camera*                                     cameraObject{nullptr};

@@ -51,8 +51,8 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         specializationInfo.dataSize = sizeof(VkBool32);
         specializationInfo.pData = &transparencyPass;
 
-    auto vertShaderCode = ShaderModule::readFile(ShadersPath / "base/basevert.spv");
-    auto fragShaderCode = ShaderModule::readFile(ShadersPath / "base/basefrag.spv");
+    auto vertShaderCode = ShaderModule::readFile(ShadersPath / "base/baseVert.spv");
+    auto fragShaderCode = ShaderModule::readFile(ShadersPath / "base/baseFrag.spv");
     VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
     VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {

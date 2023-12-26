@@ -17,7 +17,7 @@ private:
     attachments* srcAttachment{nullptr};
 
     bool enable{true};
-    float blitFactor{0.0f};
+    float blitFactor{1.5f};
     float xSamplerStep{1.5f};
     float ySamplerStep{1.5f};
 
@@ -42,7 +42,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    bloomGraphics(bool enable, float blitFactor, float xSamplerStep, float ySamplerStep, uint32_t blitAttachmentsCount);
+    bloomGraphics(bool enable, uint32_t blitAttachmentsCount, float blitFactor = 1.5f, float xSamplerStep = 1.5f, float ySamplerStep = 1.5f);
 
     void destroy() override;
     void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;

@@ -116,8 +116,8 @@ VkSurfaceKHR swapChain::getSurface(){
     return surface;
 }
 
-std::vector<uint32_t> swapChain::makeScreenShot(uint32_t i) const {
-    std::vector<uint32_t> buffer(extent.height * extent.height, 0);
+std::vector<uint32_t> swapChain::makeScreenshot(uint32_t i) const {
+    std::vector<uint32_t> buffer(extent.height * extent.width, 0);
 
     ::buffer stagingBuffer;
     Buffer::create(device.instance, device.getLogical(), sizeof(uint32_t) * extent.width * extent.height, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);

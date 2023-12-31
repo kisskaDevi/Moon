@@ -39,7 +39,7 @@ public:
     GLFWwindow* getWindow();
     VkSurfaceKHR getSurface();
 
-    std::vector<uint32_t> makeScreenShot(uint32_t i = 0) const;
+    std::vector<uint32_t> makeScreenshot(uint32_t i = 0) const;
 };
 
 #endif // SWAPCHAIN_H

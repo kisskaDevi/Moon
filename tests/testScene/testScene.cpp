@@ -8,6 +8,9 @@
 #include "baseCamera.h"
 #include "dualQuaternion.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #ifdef IMGUI_GRAPHICS
 #include "imguiGraphics.h"
 #include <imgui.h>
@@ -529,20 +532,15 @@ void testScene::keyboardEvent(float frameTime)
 
     if(board->pressed(GLFW_KEY_LEFT_CONTROL) && board->released(GLFW_KEY_S)){
         const auto& image = app->getSwapChain();
-        auto screenshot = image->makeScreenShot();
+        auto screenshot = image->makeScreenshot();
 
-        std::ofstream file("./screenshoot.ppm");
-        file << "P3\n" << image->getExtent().width << " " << image->getExtent().height << "\n255\n";
-
-        for (size_t j = 0; j < image->getExtent().height; j++) {
-            for (size_t i = 0; i < image->getExtent().width; i++) {
-                size_t pixel_index = i + j * image->getExtent().width;
-                uint32_t r = (screenshot[pixel_index] & 0x00ff0000) >> 16;
-                uint32_t g = (screenshot[pixel_index] & 0x0000ff00) >> 8;
-                uint32_t b = (screenshot[pixel_index] & 0x000000ff) >> 0;
-                file << r << " " << g << " " << b << "\n";
-            }
+        std::vector<uint8_t> jpg(3 * image->getExtent().height * image->getExtent().width, 0);
+        for (size_t pixel_index = 0, jpg_index = 0; pixel_index < image->getExtent().height * image->getExtent().width; pixel_index++) {
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
         }
+        stbi_write_jpg("./screenshoot.jpg", image->getExtent().width, image->getExtent().height, 3, jpg.data(), 100);
     }
 }
 

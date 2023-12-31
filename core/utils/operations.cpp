@@ -422,7 +422,8 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImage image, VkI
         {VK_IMAGE_LAYOUT_UNDEFINED, {0,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT}},
         {VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {VK_ACCESS_TRANSFER_WRITE_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT}},
         {VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, {VK_ACCESS_TRANSFER_READ_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT}},
-        {VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, {VK_ACCESS_SHADER_READ_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT}}
+        {VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, {VK_ACCESS_SHADER_READ_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT}},
+        {VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, {VK_ACCESS_TRANSFER_READ_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT}}
     };
 
     VkImageMemoryBarrier barrier{};
@@ -442,7 +443,7 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImage image, VkI
     vkCmdPipelineBarrier(commandBuffer, layoutDescription[oldLayout].second, layoutDescription[newLayout].second, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
-void Texture::copyFromBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, VkExtent3D extent, uint32_t layerCount){
+void Texture::copy(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkExtent3D extent, uint32_t layerCount){
     VkBufferImageCopy region{};
         region.bufferOffset = 0;
         region.bufferRowLength = 0;
@@ -453,7 +454,21 @@ void Texture::copyFromBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkI
         region.imageSubresource.layerCount = layerCount;
         region.imageOffset = {0, 0, 0};
         region.imageExtent = extent;
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
+
+void Texture::copy(VkCommandBuffer commandBuffer, VkImage srcImage, VkBuffer dstBuffer, VkExtent3D extent, uint32_t layerCount){
+    VkBufferImageCopy region{};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = layerCount;
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = extent;
+    vkCmdCopyImageToBuffer(commandBuffer, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstBuffer, 1, &region);
 }
 
 VkResult Texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkImageCreateFlags flags, VkExtent3D extent, uint32_t arrayLayers, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* imageMemory){

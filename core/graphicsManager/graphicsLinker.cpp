@@ -88,7 +88,7 @@ void graphicsLinker::createFramebuffers(){
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &swapChainKHR->attachment().instances[Image].imageView;
+            framebufferInfo.pAttachments = &swapChainKHR->attachment(Image).imageView;
             framebufferInfo.width = imageExtent.width;
             framebufferInfo.height = imageExtent.height;
             framebufferInfo.layers = 1;
@@ -187,7 +187,5 @@ const VkCommandBuffer& graphicsLinker::getCommandBuffer(uint32_t frameNumber) co
 }
 
 void graphicsLinker::updateCmdFlags(){
-    for(auto flag: updateCommandBufferFlags){
-        flag = true;
-    }
+    std::fill(updateCommandBufferFlags.begin(), updateCommandBufferFlags.end(), true);
 }

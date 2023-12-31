@@ -117,7 +117,7 @@ VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     if(devices.empty())             return debug::errorResult("[ createSwapChain ] device is VK_NULL_HANDLE");
 
     std::vector<uint32_t> queueIndices = {0};
-    swapChainKHR.setDevice(devices[deviceIndex].instance, devices[deviceIndex].getLogical());
+    swapChainKHR.setDevice(devices[deviceIndex]);
     return swapChainKHR.create(window, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data(), maxImageCount);
 }
 
@@ -190,23 +190,29 @@ VkResult graphicsManager::drawFrame()
         graphics->updateBuffers(resourceIndex);
         graphics->updateCommandBuffer(resourceIndex);
     }
-    linker.updateCmdFlags();
     linker.updateCommandBuffer(resourceIndex, imageIndex);
 
     std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[resourceIndex]}};
     for(auto& graph: graphics){
         waitSemaphores = graph->submit(waitSemaphores, {VK_NULL_HANDLE}, resourceIndex);
     }
-    VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &linker.submit(resourceIndex, waitSemaphores.size() > 0 ? waitSemaphores.back() : std::vector<VkSemaphore>(), fences[resourceIndex], devices[deviceIndex].getQueue(0,0));
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &swapChainKHR();
-        presentInfo.pImageIndices = &imageIndex;
+
+    VkSemaphore linkerSemaphore = linker.submit(
+        resourceIndex,
+        waitSemaphores.size() > 0 ? waitSemaphores.back() : std::vector<VkSemaphore>(),
+        fences[resourceIndex],
+        devices[deviceIndex].getQueue(0,0)
+    );
 
     resourceIndex = ((resourceIndex + 1) % swapChainKHR.getImageCount());
 
+    VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &linkerSemaphore;
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = &swapChainKHR();
+        presentInfo.pImageIndices = &imageIndex;
     return vkQueuePresentKHR(devices[deviceIndex].getQueue(0,0), &presentInfo);
 }
 

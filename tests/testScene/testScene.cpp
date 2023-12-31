@@ -405,12 +405,12 @@ void testScene::keyboardEvent(float frameTime)
 {
     float sensitivity = 5.0f*frameTime;
 
-    if(board->pressed(GLFW_KEY_A)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[0].dvec());
-    if(board->pressed(GLFW_KEY_X)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
-    if(board->pressed(GLFW_KEY_W)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
-    if(board->pressed(GLFW_KEY_D)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[0].dvec());
-    if(board->pressed(GLFW_KEY_Z)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
-    if(board->pressed(GLFW_KEY_S)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
+    if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_A)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[0].dvec());
+    if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_X)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
+    if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_W)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
+    if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_D)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[0].dvec());
+    if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_Z)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
+    if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_S)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
 
     auto rotateControled = [this](const float& ang, const vector<float,3>& ax){
         if(bool foundInGroups = false; this->controledObject){
@@ -526,6 +526,24 @@ void testScene::keyboardEvent(float frameTime)
 
     if(board->pressed(GLFW_KEY_LEFT_BRACKET))   timeScale -= timeScale > 0.0051f ? 0.005f : 0.0f;
     if(board->pressed(GLFW_KEY_RIGHT_BRACKET))  timeScale += 0.005f;
+
+    if(board->pressed(GLFW_KEY_LEFT_CONTROL) && board->released(GLFW_KEY_S)){
+        const auto& image = app->getSwapChain();
+        auto screenshot = image->makeScreenShot();
+
+        std::ofstream file("./screenshoot.ppm");
+        file << "P3\n" << image->getExtent().width << " " << image->getExtent().height << "\n255\n";
+
+        for (size_t j = 0; j < image->getExtent().height; j++) {
+            for (size_t i = 0; i < image->getExtent().width; i++) {
+                size_t pixel_index = i + j * image->getExtent().width;
+                uint32_t r = (screenshot[pixel_index] & 0x00ff0000) >> 16;
+                uint32_t g = (screenshot[pixel_index] & 0x0000ff00) >> 8;
+                uint32_t b = (screenshot[pixel_index] & 0x000000ff) >> 0;
+                file << r << " " << g << " " << b << "\n";
+            }
+        }
+    }
 }
 
 void testScene::updates(float frameTime)

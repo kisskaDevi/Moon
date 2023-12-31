@@ -5,7 +5,6 @@
 #include <stb_image.h>
 #include "tiny_gltf.h"
 
-#include <iostream>
 #include <cstring>
 
 void iamge::destroy(VkDevice device){
@@ -67,7 +66,7 @@ VkResult iamge::create(
     Memory::instance().nameMemory(textureImageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, textureImageMemory");
 
     Texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
-    Texture::copyFromBuffer(commandBuffer, stagingBuffer.instance, textureImage, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),1},imageCount);
+    Texture::copy(commandBuffer, stagingBuffer.instance, textureImage, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),1},imageCount);
     if(mipLevels == 1){
         Texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, 0, imageCount);
     } else {

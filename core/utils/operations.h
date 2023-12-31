@@ -160,12 +160,20 @@ namespace Texture {
             uint32_t                        baseArrayLayer,
             uint32_t                        arrayLayers);
 
-    void copyFromBuffer(
+    void copy(
             VkCommandBuffer                 commandBuffer,
-            VkBuffer                        buffer,
-            VkImage                         image,
+            VkBuffer                        srcBuffer,
+            VkImage                         dstImage,
             VkExtent3D                      extent,
             uint32_t                        layerCount);
+
+    void copy(
+            VkCommandBuffer                 commandBuffer,
+            VkImage                         srcImage,
+            VkBuffer                        dstBuffer,
+            VkExtent3D                      extent,
+            uint32_t                        layerCount);
+
 
     VkResult create(
             VkPhysicalDevice                physicalDevice,

@@ -3,11 +3,6 @@
 
 #include "workflow.h"
 
-namespace SwapChain{struct SupportDetails;}
-struct GLFWwindow;
-class texture;
-class swapChain;
-
 class postProcessingGraphics : public workflow
 {
 private:

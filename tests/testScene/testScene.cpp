@@ -41,7 +41,7 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
 
     cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
+    graphics["base"]->setExtentAndOffset(app->getSwapChain()->getExtent());
 
 #ifdef SECOND_VIEW_WINDOW
     cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);

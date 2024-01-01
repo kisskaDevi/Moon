@@ -103,6 +103,7 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, sc
         glfwGetFramebufferSize(window, &width, &height);
         glfwWaitEvents();
     }
+    std::cout << width << '\t' << height << std::endl;
 
     app->deviceWaitIdle();
     app->destroy();

@@ -37,6 +37,11 @@ VkPhysicalDeviceFeatures physicalDeviceFeatures(){
 GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName = "");
 std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, scene* testScene);
 
+using clk = std::chrono::high_resolution_clock;
+template<typename type> type period(clk::time_point time){
+    return std::chrono::duration<type, std::chrono::seconds::period>(clk::now() - time).count();
+}
+
 int main()
 {
     float fps = 60.0f;
@@ -60,19 +65,10 @@ int main()
 
     //Memory::instance().status();
 
-    static auto pastTime = std::chrono::high_resolution_clock::now();
-    while (!glfwWindowShouldClose(window))
-    {
-        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - pastTime).count();
-
-        if(fpsLock && fps < 1.0f/frameTime) continue;
-        pastTime = std::chrono::high_resolution_clock::now();
-
-        glfwSetWindowTitle(window, std::stringstream("Vulkan [" + std::to_string(1.0f/frameTime) + " FPS]").str().c_str());
-
-        if(app.checkNextFrame() != VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            testScene.updateFrame(app.getImageIndex(),frameTime);
+    for(auto time = clk::now(); !glfwWindowShouldClose(window);){
+        if(app.checkNextFrame() != VK_ERROR_OUT_OF_DATE_KHR) {
+            testScene.updateFrame(app.getImageIndex(), period<float>(time));
+            time = clk::now();
 
             if (VkResult result = app.drawFrame(); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
                 std::tie(WIDTH, HEIGHT) = resize(window,&app,&testScene);
@@ -84,13 +80,9 @@ int main()
 
     debug::checkResult(app.deviceWaitIdle(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
-    testScene.destroy();
-    app.destroy();
-
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    Memory::instance().status();
     return 0;
 }
 
@@ -123,7 +115,7 @@ GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::p
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan render", nullptr, nullptr);
     glfwSetWindowUserPointer(window, nullptr);
     glfwSetFramebufferSizeCallback(window, [](GLFWwindow*, int, int){ framebufferResized = true;});
 

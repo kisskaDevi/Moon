@@ -7,6 +7,8 @@ struct physicalDevice;
 
 class camera{
 public:
+    virtual ~camera(){};
+
     virtual void destroy(VkDevice device) = 0;
 
     virtual VkBuffer getBuffer(uint32_t index) const = 0;

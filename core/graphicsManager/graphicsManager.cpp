@@ -18,24 +18,23 @@ graphicsManager::graphicsManager(GLFWwindow* window, int32_t maxImageCount, cons
     create(window, maxImageCount);
 }
 
-graphicsManager::~graphicsManager()
-{
+graphicsManager::~graphicsManager(){
+    destroy();
+
     if(devices[deviceIndex].getLogical())           { vkDestroyDevice(devices[deviceIndex].getLogical(), nullptr); devices[deviceIndex].getLogical() = VK_NULL_HANDLE;}
     if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
     if(surface)                                     { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
     if(instance)                                    { vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
 }
 
-void graphicsManager::create(GLFWwindow* window, int32_t maxImageCount)
-{
+void graphicsManager::create(GLFWwindow* window, int32_t maxImageCount){
     debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(createSwapChain(window, maxImageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
 
-VkResult graphicsManager::createInstance()
-{
+VkResult graphicsManager::createInstance(){
     VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Graphics Manager";
@@ -75,8 +74,7 @@ VkResult graphicsManager::createInstance()
     return result;
 }
 
-VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFeatures)
-{
+VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFeatures){
     if(instance == VK_NULL_HANDLE)  return debug::errorResult("[ createDevice ] instance is VK_NULL_HANDLE");
 
     VkResult result = VK_SUCCESS;
@@ -98,8 +96,7 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
     return result;
 }
 
-VkResult graphicsManager::createSurface(GLFWwindow* window)
-{
+VkResult graphicsManager::createSurface(GLFWwindow* window){
     if(instance == VK_NULL_HANDLE)  return debug::errorResult("[ createSurface ] instance is VK_NULL_HANDLE");
     if(devices.empty())             return debug::errorResult("[ createSwapChain ] device is VK_NULL_HANDLE");
 
@@ -110,8 +107,7 @@ VkResult graphicsManager::createSurface(GLFWwindow* window)
     return result;
 }
 
-VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCount)
-{
+VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCount){
     if(window == nullptr)           return debug::errorResult("[ createSwapChain ] Window is nullptr");
     if(surface == VK_NULL_HANDLE)   return debug::errorResult("[ createSwapChain ] surface is VK_NULL_HANDLE");
     if(devices.empty())             return debug::errorResult("[ createSwapChain ] device is VK_NULL_HANDLE");
@@ -121,8 +117,7 @@ VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     return swapChainKHR.create(window, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data(), maxImageCount);
 }
 
-VkResult graphicsManager::createLinker()
-{
+VkResult graphicsManager::createLinker(){
     linker.setDevice(devices[deviceIndex].getLogical());
     linker.setSwapChain(&swapChainKHR);
     linker.createRenderPass();
@@ -138,8 +133,7 @@ VkResult graphicsManager::createLinker()
     return VK_SUCCESS;
 }
 
-void graphicsManager::setGraphics(graphicsInterface* graphics)
-{
+void graphicsManager::setGraphics(graphicsInterface* graphics){
     this->graphics.push_back(graphics);
     this->graphics.back()->setDevices(static_cast<uint32_t>(devices.size()), devices.data(), deviceIndex);
     this->graphics.back()->setSwapChain(&swapChainKHR);
@@ -147,8 +141,7 @@ void graphicsManager::setGraphics(graphicsInterface* graphics)
     linker.addLinkable(this->graphics.back()->getLinkable());
 }
 
-VkResult graphicsManager::createSyncObjects()
-{
+VkResult graphicsManager::createSyncObjects(){
     if(devices.empty())   return debug::errorResult("[ createSyncObjects ] device is VK_NULL_HANDLE");
 
     VkResult result = VK_SUCCESS;
@@ -170,8 +163,7 @@ VkResult graphicsManager::createSyncObjects()
     return result;
 }
 
-VkResult graphicsManager::checkNextFrame()
-{
+VkResult graphicsManager::checkNextFrame(){
     VkResult result = vkWaitForFences(devices[deviceIndex].getLogical(), 1, &fences[resourceIndex], VK_TRUE, UINT64_MAX);
     debug::checkResult(result, "VkFence : vkWaitForFences result = " + std::to_string(result));
 
@@ -184,11 +176,9 @@ VkResult graphicsManager::checkNextFrame()
     return result;
 }
 
-VkResult graphicsManager::drawFrame()
-{
+VkResult graphicsManager::drawFrame(){
     for(auto graphics: graphics){
-        graphics->updateBuffers(resourceIndex);
-        graphics->updateCommandBuffer(resourceIndex);
+        graphics->update(resourceIndex);
     }
     linker.updateCmdFlags();
     linker.updateCommandBuffer(resourceIndex, imageIndex);
@@ -217,33 +207,32 @@ VkResult graphicsManager::drawFrame()
     return vkQueuePresentKHR(devices[deviceIndex].getQueue(0,0), &presentInfo);
 }
 
-void graphicsManager::destroySwapChain()
-{
+void graphicsManager::destroySwapChain(){
     swapChainKHR.destroy();
 }
 
-void graphicsManager::destroyLinker()
-{
+void graphicsManager::destroyLinker(){
     linker.destroy();
 }
 
-void graphicsManager::destroySyncObjects()
-{
-    for (size_t imageIndex = 0; imageIndex < swapChainKHR.getImageCount(); imageIndex++){
-        vkDestroySemaphore(devices[deviceIndex].getLogical(), availableSemaphores[imageIndex], nullptr);
-        vkDestroyFence(devices[deviceIndex].getLogical(), fences[imageIndex], nullptr);
+void graphicsManager::destroySyncObjects(){
+    for (auto& semaphore : availableSemaphores){
+        vkDestroySemaphore(devices[deviceIndex].getLogical(), semaphore, nullptr);
     }
     availableSemaphores.clear();
+    for (auto& fence : fences){
+        vkDestroyFence(devices[deviceIndex].getLogical(), fence, nullptr);
+    }
     fences.clear();
 }
 
-void graphicsManager::destroySurface()
-{
-    if(surface) { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
+void graphicsManager::destroySurface(){
+    if(surface) {
+        vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;
+    }
 }
 
-void graphicsManager::destroy()
-{
+void graphicsManager::destroy(){
     destroySwapChain();
     destroyLinker();
     destroySyncObjects();

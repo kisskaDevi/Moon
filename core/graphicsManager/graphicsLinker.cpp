@@ -3,14 +3,21 @@
 #include "swapChain.h"
 #include "linkable.h"
 
+graphicsLinker::~graphicsLinker(){
+    destroy();
+}
+
 void graphicsLinker::destroy(){
-    if(renderPass) {vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
+    if(renderPass) {
+        vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;
+    }
+
     for(auto& framebuffer: framebuffers){
         if(framebuffer) vkDestroyFramebuffer(device, framebuffer,nullptr);
     }
     framebuffers.clear();
 
-    if(commandBuffers.data()){
+    if(!commandBuffers.empty()){
         vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     }
     commandBuffers.clear();

@@ -20,34 +20,32 @@ protected:
 
 public:
     virtual ~graphicsInterface(){};
-    virtual void destroyGraphics() = 0;
+    virtual void destroy() = 0;
 
-    virtual void setSwapChain(swapChain* swapChainKHR)
-    {
+    virtual void setSwapChain(swapChain* swapChainKHR){
         this->swapChainKHR = swapChainKHR;
         this->imageCount = swapChainKHR->getImageCount();
     }
 
-    virtual void setDevices(uint32_t devicesCount, physicalDevice* devices, int deviceIndex = -1)
-    {
+    virtual void setDevices(uint32_t devicesCount, physicalDevice* devices, int deviceIndex = -1){
         for(uint32_t i = 0; i < devicesCount; i++){
             this->devices.push_back(devices[i]);
         }
         device = deviceIndex == -1 ? this->devices.front() : this->devices[deviceIndex];
     }
-    virtual void createGraphics() = 0;
 
-    virtual void updateCommandBuffer(uint32_t imageIndex) = 0;
-    virtual void updateBuffers(uint32_t imageIndex) = 0;
+    virtual linkable* getLinkable(){
+        return link;
+    }
+
+    virtual void create() = 0;
+
+    virtual void update(uint32_t imageIndex) = 0;
 
     virtual std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) = 0;
-
-    virtual linkable* getLinkable(){
-        return link;
-    }
 };
 
 #endif // GRAPHICSINTERFACE_H

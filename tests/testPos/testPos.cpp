@@ -45,6 +45,12 @@ testPos::testPos(graphicsManager *app, GLFWwindow* window, const std::filesystem
     mouse->sensitivity = 0.4f;
 }
 
+testPos::~testPos(){
+    delete mouse;
+    delete board;
+    testPos::destroy();
+}
+
 void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
@@ -60,8 +66,8 @@ void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
     graphics["view"]->setExtentAndOffset(getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4, static_cast<int32_t>(HEIGHT / 2) - 4});
 
     for(auto& [_,graph]: graphics){
-        graph->destroyGraphics();
-        graph->createGraphics();
+        graph->destroy();
+        graph->create();
     }
 }
 
@@ -78,7 +84,7 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
-    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true).setEnable("Selector", true);
+    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", false).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true).setEnable("Selector", true);
 
     graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4 , static_cast<int32_t>(HEIGHT / 2) - 4}};
 
@@ -87,7 +93,7 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     for(auto& [key,graph]: graphics){
         graph->bind(cameras[key]);
-        graph->createGraphics();
+        graph->create();
     }
 
     loadModels();
@@ -131,7 +137,7 @@ void testPos::destroy()
     lightSources.clear();
 
     for(auto& [key,graph]: graphics){
-        graph->destroyGraphics();
+        graph->destroy();
         graph->remove(cameras[key]);
         delete graph;
     }
@@ -140,7 +146,7 @@ void testPos::destroy()
 void testPos::loadModels()
 {
     models["cameraModel"] = new class plyModel(ExternalPath / "dependences/model/ply/pyramid.ply");
-    models["ojectModel"] = new class plyModel(ExternalPath / "dependences/model/ply/plytest.ply");
+    models["ojectModel"] = new class plyModel(ExternalPath / "dependences/model/ply/octahedron.ply");
     models["cubeModel"] = new class plyModel(ExternalPath / "dependences/model/ply/cube.ply");
 
     for(auto& [_,model]: models){
@@ -238,9 +244,9 @@ void testPos::mouseEvent(float frameTime)
     float sensitivity = mouse->sensitivity * frameTime;
     uint32_t imageCount = app->getSwapChain()->getImageCount();
 
-    int primitiveNumber = INT_FAST32_MAX;
+    uint32_t primitiveNumber = std::numeric_limits<uint32_t>::max();
     for(uint32_t i=0; i < imageCount; i++){
-        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != INT_FAST32_MAX)
+        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != std::numeric_limits<uint32_t>::max())
             break;
     }
 

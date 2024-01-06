@@ -35,6 +35,7 @@ testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesy
 testScene::~testScene(){
     delete mouse;
     delete board;
+    testScene::destroy();
 }
 
 void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
@@ -50,13 +51,13 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 #endif
 
     for(auto& [_,graph]: graphics){
-        graph->destroyGraphics();
-        graph->createGraphics();
+        graph->destroy();
+        graph->create();
     }
 
 #ifdef IMGUI_GRAPHICS
-    gui->destroyGraphics();
-    gui->createGraphics();
+    gui->destroy();
+    gui->create();
 #endif
 }
 
@@ -94,11 +95,11 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 #endif
 
     for(auto& [_,graph]: graphics){
-        graph->createGraphics();
+        graph->create();
     }
 
 #ifdef IMGUI_GRAPHICS
-    gui->createGraphics();
+    gui->create();
 #endif
 
     loadModels();
@@ -125,14 +126,65 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    ImGui::SetWindowSize({300,200}, ImGuiCond_::ImGuiCond_Once);
+    ImGui::SetWindowSize({350,100}, ImGuiCond_::ImGuiCond_Once);
 
     ImGui::Begin("Debug");
 
-    ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f);
-    if(graphics["base"]->getEnable("Blur"))
-        ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.9f, 1.0f);
-    graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(farBlurDepth);
+    if (ImGui::TreeNodeEx("Props", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        std::string title = "FPS = " + std::to_string(1.0f / frameTime);
+        ImGui::Text("%s", title.c_str());
+        ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f);
+
+        if(graphics["base"]->getEnable("Blur")){
+            ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.9f, 1.0f);
+        }
+        graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(farBlurDepth);
+
+        ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f);
+        for(auto& [_,graph]: graphics){
+            graph->setMinAmbientFactor(minAmbientFactor);
+        }
+
+        ImGui::SliderFloat("animation speed", &animationSpeed, 0.0f, 5.0f);
+
+        if(ImGui::RadioButton("refraction of scattering", enableScatteringRefraction)){
+            enableScatteringRefraction = !enableScatteringRefraction;
+            for(auto& [_,graph]: graphics){
+                graph->setScatteringRefraction(enableScatteringRefraction);
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNodeEx("Object", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        std::string title = "controled object : " + controledObjectName;
+        ImGui::Text("%s", title.c_str());
+        if(ImGui::RadioButton("outlighting", controledObjectEnableOutlighting)){
+            controledObjectEnableOutlighting = !controledObjectEnableOutlighting;
+            if(controledObject){
+                controledObject->setOutlining(controledObjectEnableOutlighting);
+            }
+        }
+        if(ImGui::ColorPicker4("outlighting", controledObjectOutlightingColor, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB)){
+            if(controledObject){
+                controledObject->setOutlining(true && controledObjectEnableOutlighting, 0.03f,
+                    {
+                        controledObjectOutlightingColor[0],
+                        controledObjectOutlightingColor[1],
+                        controledObjectOutlightingColor[2],
+                        controledObjectOutlightingColor[3]
+                    }
+                );
+            }
+        }
+        for(auto& [_,graph]: graphics){
+            graph->updateCmdFlags();
+        }
+        ImGui::TreePop();
+    }
 
     ImGui::End();
 
@@ -144,7 +196,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     updates(frameTime);
 
     for(auto& [_,object]: objects){
-        object->updateAnimation(frameNumber, timeScale * frameTime);
+        object->updateAnimation(frameNumber, animationSpeed * frameTime);
     }
 }
 
@@ -173,13 +225,13 @@ void testScene::destroy()
     skyboxObjects.clear();
 
     for(auto& [key,graph]: graphics){
-        graph->destroyGraphics();
+        graph->destroy();
         graph->remove(cameras[key]);
         delete graph;
     }
 
 #ifdef IMGUI_GRAPHICS
-    gui->destroyGraphics();
+    gui->destroy();
 #endif
 }
 
@@ -381,15 +433,19 @@ void testScene::mouseEvent(float frameTime)
     if(mouse->released(GLFW_MOUSE_BUTTON_LEFT)){
         for(auto& [key, object]: objects){
             if(object->comparePrimitive(primitiveNumber)){
-                std::random_device device;
-                std::uniform_real_distribution dist(0.3f, 1.0f);
-
                 if(controledObject){
                     controledObject->setOutlining(false);
                 }
                 controledObject = object;
-                controledObject->setOutlining(true, 0.03f, {dist(device), dist(device), dist(device), dist(device)});
-                std::cout<< key << " : primitive " << primitiveNumber <<std::endl;
+                controledObjectName = key;
+                controledObject->setOutlining(true && controledObjectEnableOutlighting, 0.03f,
+                    {
+                        controledObjectOutlightingColor[0],
+                        controledObjectOutlightingColor[1],
+                        controledObjectOutlightingColor[2],
+                        controledObjectOutlightingColor[3]
+                    }
+                );
 
                 for(auto& [_,graph]: graphics){
                     graph->updateCmdFlags();
@@ -410,7 +466,7 @@ void testScene::mouseEvent(float frameTime)
 
 void testScene::keyboardEvent(float frameTime)
 {
-    float sensitivity = 5.0f*frameTime;
+    float sensitivity = 8.0f * frameTime;
 
     if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_A)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[0].dvec());
     if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_X)) cameras["base"]->translate(-sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
@@ -459,19 +515,6 @@ void testScene::keyboardEvent(float frameTime)
 
     if(board->released(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window,GLFW_TRUE);
 
-    if(board->released(GLFW_KEY_O)) {
-        for(auto& [_,object]: objects){
-            if(controledObject == object){
-                std::random_device device;
-                std::uniform_real_distribution dist(0.3f, 1.0f);
-                object->setOutlining(!object->getOutliningEnable(), 0.03f, {dist(device), dist(device), dist(device), dist(device)});
-            }
-        }
-        for(auto& [_,graph]: graphics){
-            graph->updateCmdFlags();
-        }
-    }
-
     if(board->released(GLFW_KEY_T)) {
         objects["bee0"]->changeAnimation(objects["bee0"]->getAnimationIndex() == 0 ? 1 : 0, 0.5f);
     }
@@ -493,9 +536,8 @@ void testScene::keyboardEvent(float frameTime)
 
         for(auto& [_,graph]: graphics){
             graph->bind(lightSources.back());
-            graph->bind(objects["ufo" + std::to_string(ufoCounter)]);
+            graph->bind(objects["ufo" + std::to_string(ufoCounter++)]);
         }
-        ufoCounter++;
     }
 
     if(board->released(GLFW_KEY_B)) {
@@ -506,33 +548,9 @@ void testScene::keyboardEvent(float frameTime)
                 graph->remove(lightSources.back());
             }
             lightSources.pop_back();
-            objects.erase("ufo" + std::to_string(ufoCounter));
-            ufoCounter--;
+            objects.erase("ufo" + std::to_string(ufoCounter--));
         }
     }
-
-    if(board->pressed(GLFW_KEY_KP_0)) {
-        minAmbientFactor -= minAmbientFactor > 0.011 ? 0.01f : 0.0f;
-        for(auto& [_,graph]: graphics){
-            graph->setMinAmbientFactor(minAmbientFactor);
-        }
-    }
-    if(board->pressed(GLFW_KEY_KP_2)) {
-        minAmbientFactor += 0.01f;
-        for(auto& [_,graph]: graphics){
-            graph->setMinAmbientFactor(minAmbientFactor);
-        }
-    }
-
-    if(board->released(GLFW_KEY_G)){
-        enableScatteringRefraction = !enableScatteringRefraction;
-        for(auto& [_,graph]: graphics){
-            graph->setScatteringRefraction(enableScatteringRefraction);
-        }
-    }
-
-    if(board->pressed(GLFW_KEY_LEFT_BRACKET))   timeScale -= timeScale > 0.0051f ? 0.005f : 0.0f;
-    if(board->pressed(GLFW_KEY_RIGHT_BRACKET))  timeScale += 0.005f;
 
     if(board->pressed(GLFW_KEY_LEFT_CONTROL) && board->released(GLFW_KEY_S)){
         const auto& image = app->getSwapChain();

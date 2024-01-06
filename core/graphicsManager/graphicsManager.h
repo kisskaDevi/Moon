@@ -22,8 +22,6 @@ public:
     graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {}, size_t deviceIndex = 0);
     ~graphicsManager();
 
-    void destroy();
-
     VkInstance      getInstance();
     VkSurfaceKHR    getSurface();
     uint32_t        getImageIndex();
@@ -32,6 +30,8 @@ public:
     void            setGraphics(graphicsInterface* graphics);
 
     void            create(GLFWwindow* window, int32_t maxImageCount = -1);
+    void            destroy();
+
     VkResult        checkNextFrame();
     VkResult        drawFrame();
 

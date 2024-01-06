@@ -140,7 +140,7 @@ void testCuda::create(uint32_t, uint32_t)
 
     app->setGraphics(graphics);
     graphics->setCamera(cam);
-    graphics->createGraphics();
+    graphics->create();
     graphics->setList(array);
 }
 
@@ -152,8 +152,8 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
     cuda::camera::destroy(cam);
     cam = cuda::camera::create(viewRay, float(width) / float(height));
 
-    graphics->destroyGraphics();
-    graphics->createGraphics();
+    graphics->destroy();
+    graphics->create();
 }
 
 void testCuda::updateFrame(uint32_t, float frameTime)
@@ -165,7 +165,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
 
 void testCuda::destroy()
 {
-    graphics->destroyGraphics();
+    graphics->destroy();
     hitableArray::destroy(array);
     cuda::camera::destroy(cam);
 }

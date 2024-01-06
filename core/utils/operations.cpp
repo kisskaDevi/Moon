@@ -40,6 +40,12 @@ bool debug::checkResult(bool result, std::string message){
     return result;
 }
 
+Memory::~Memory(){
+#ifndef NDEBUG
+    instance().status();
+#endif
+};
+
 Memory& Memory::instance()
 {
     static Memory s;

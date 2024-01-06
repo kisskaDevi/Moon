@@ -50,6 +50,10 @@ public:
         link = &Link;
     }
 
+    ~rayTracingGraphics(){
+        rayTracingGraphics::destroy();
+    }
+
     void setList(hitableContainer* container) {
         this->container = container;
     }
@@ -60,8 +64,8 @@ public:
         clear = true;
     }
 
-    void createGraphics() override;
-    void destroyGraphics() override;
+    void create() override;
+    void destroy() override;
 
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
@@ -78,8 +82,7 @@ public:
         return swapChainKHR->getExtent().height;
     }
 
-    void updateCommandBuffer(uint32_t) override {}
-    void updateBuffers(uint32_t) override {}
+    void update(uint32_t) override {}
 };
 
 #endif // !RAYTRACINGGRAPHICS

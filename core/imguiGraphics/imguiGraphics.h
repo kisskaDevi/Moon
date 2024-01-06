@@ -27,14 +27,12 @@ private:
 public:
     imguiGraphics();
     ~imguiGraphics();
-    void destroyGraphics() override;
 
     void setInstance(VkInstance instance);
-    void createGraphics() override;
 
-    void updateCommandBuffer(uint32_t imageIndex) override;
-    void updateBuffers(uint32_t imageIndex) override;
-
+    void create() override;
+    void destroy() override;
+    void update(uint32_t imageIndex) override;
     std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 };
 

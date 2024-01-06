@@ -23,7 +23,7 @@ __host__ __device__ inline vec4 min(const vec4& v1, const vec4& v2) {
 }
 
 
-void rayTracingGraphics::createGraphics()
+void rayTracingGraphics::create()
 {
     width = this->swapChainKHR->getExtent().width;
     height = this->swapChainKHR->getExtent().height;
@@ -83,7 +83,7 @@ void rayTracingGraphics::createGraphics()
     vkMapMemory(device.getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * width * height, 0, &stagingBuffer.map);
 }
 
-void rayTracingGraphics::destroyGraphics() {
+void rayTracingGraphics::destroy() {
     delete[] hostFrameBuffer;
 
     stagingBuffer.destroy(device.getLogical());

@@ -20,7 +20,8 @@ public:
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    DescriptorSets;
 
-    void destroy(VkDevice device);
+    virtual ~workbody(){};
+    virtual void destroy(VkDevice device);
     virtual void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) = 0;
     virtual void createDescriptorSetLayout(VkDevice device) = 0;
 };

@@ -25,7 +25,7 @@ private:
     std::unordered_map<VkDeviceMemory, std::string> nameMap;
 
     Memory() = default;
-    ~Memory() = default;
+    ~Memory();
 public:
 
     Memory(const Memory&) = delete;

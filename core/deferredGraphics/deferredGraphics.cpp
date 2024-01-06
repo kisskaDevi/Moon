@@ -44,6 +44,10 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
     link = &Link;
 }
 
+deferredGraphics::~deferredGraphics(){
+    deferredGraphics::destroy();
+}
+
 void deferredGraphics::freeCommandBuffers(){
     CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] commandPool is VK_NULL_HANDLE"));
     CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] VkDevice is VK_NULL_HANDLE"));
@@ -51,17 +55,25 @@ void deferredGraphics::freeCommandBuffers(){
     for(auto& [_,workflow]: workflows){
         workflow->freeCommandBuffer(commandPool);
     }
+}
+
+void deferredGraphics::destroyCommandPool(){
+    if(commandPool){
+        freeCommandBuffers();
+
+        vkDestroyCommandPool(device.getLogical(), commandPool, nullptr);
+        commandPool = VK_NULL_HANDLE;
+    }
+}
+
+void deferredGraphics::destroy(){
+    destroyCommandPool();
 
     for(auto& node: nodes){
         node->destroy(device.getLogical());
         delete node;
     }
     nodes.clear();
-}
-
-void deferredGraphics::destroyGraphics(){
-    freeCommandBuffers();
-    destroyCommandPool();
 
     for(auto& [_,texture] : emptyTextures){
         if(texture){
@@ -83,13 +95,6 @@ void deferredGraphics::destroyGraphics(){
     bufferMap.erase("storage");
 }
 
-void deferredGraphics::destroyCommandPool(){
-    if(commandPool){
-        vkDestroyCommandPool(device.getLogical(), commandPool, nullptr);
-        commandPool = VK_NULL_HANDLE;
-    }
-}
-
 void deferredGraphics::createCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo{};
@@ -99,7 +104,7 @@ void deferredGraphics::createCommandPool()
     vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
 }
 
-void deferredGraphics::createGraphics()
+void deferredGraphics::create()
 {
     createCommandPool();
 
@@ -249,6 +254,11 @@ std::vector<std::vector<VkSemaphore>> deferredGraphics::submit(const std::vector
     nodes[imageIndex]->submit();
 
     return nodes[imageIndex]->back()->getBackSemaphores();
+}
+
+void deferredGraphics::update(uint32_t imageIndex) {
+    updateBuffers(imageIndex);
+    updateCommandBuffer(imageIndex);
 }
 
 void deferredGraphics::updateCommandBuffer(uint32_t imageIndex){

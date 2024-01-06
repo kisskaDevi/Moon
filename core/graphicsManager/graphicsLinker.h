@@ -30,6 +30,7 @@ private:
     std::vector<VkSemaphore>        signalSemaphores;
 public:
     graphicsLinker() = default;
+    ~graphicsLinker();
     void destroy();
 
     void setSwapChain(swapChain* swapChainKHR);

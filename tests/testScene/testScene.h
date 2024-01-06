@@ -35,13 +35,13 @@ private:
     vector<uint32_t,2>      extent{0};
     vector<double,2>        mousePos{0.0};
     float                   globalTime{0.0f};
-    float                   timeScale{1.0f};
-    float                   minAmbientFactor{0.05f};
     bool                    enableScatteringRefraction{true};
     int                     ufoCounter{0};
 
-    float blitFactor = 1.5f;
-    float farBlurDepth = 1.0f;
+    float                   blitFactor = 1.5f;
+    float                   farBlurDepth = 1.0f;
+    float                   minAmbientFactor{0.05f};
+    float                   animationSpeed{1.0f};
 
     GLFWwindow*                                         window{nullptr};
     graphicsManager*                                    app{nullptr};
@@ -59,6 +59,10 @@ private:
     std::unordered_map<std::string, group*>             groups;
     std::unordered_map<std::string, isotropicLight*>    lightPoints;
     std::vector<spotLight*>                             lightSources;
+
+    bool                                                controledObjectEnableOutlighting{true};
+    float                                               controledObjectOutlightingColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    std::string                                         controledObjectName;
     baseObject*                                         controledObject{nullptr};
 
     void mouseEvent(float frameTime);

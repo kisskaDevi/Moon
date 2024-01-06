@@ -13,16 +13,24 @@ imguiGraphics::imguiGraphics(){
     link = &Link;
 }
 
-imguiGraphics::~imguiGraphics(){}
+imguiGraphics::~imguiGraphics(){
+    imguiGraphics::destroy();
+}
 
-void imguiGraphics::destroyGraphics() {
-    vkDestroyDescriptorPool(device.getLogical(), descriptorPool, VK_NULL_HANDLE);
+void imguiGraphics::destroy() {
+    if(descriptorPool){
+        vkDestroyDescriptorPool(device.getLogical(), descriptorPool, VK_NULL_HANDLE);
+        descriptorPool = VK_NULL_HANDLE;
+    }
+
+    if(commandPool) {
+        vkDestroyCommandPool(device.getLogical(), commandPool, nullptr);
+        commandPool = VK_NULL_HANDLE;
+    }
 
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-
-    if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
 }
 
 void imguiGraphics::setInstance(VkInstance instance){
@@ -66,7 +74,7 @@ void imguiGraphics::uploadFonts()
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void imguiGraphics::createGraphics() {
+void imguiGraphics::create() {
     setupImguiContext();
     createDescriptorPool();
     createCommandPool();
@@ -92,8 +100,7 @@ void imguiGraphics::createGraphics() {
     uploadFonts();
 }
 
-void imguiGraphics::updateCommandBuffer(uint32_t) {}
-void imguiGraphics::updateBuffers(uint32_t) {}
+void imguiGraphics::update(uint32_t) {}
 
 std::vector<std::vector<VkSemaphore>> imguiGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>&, uint32_t){
     return externalSemaphore;

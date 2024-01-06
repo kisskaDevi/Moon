@@ -21,7 +21,7 @@
 #endif
 
 bool framebufferResized = false;
-uint32_t imageCount = 2;
+uint32_t imageCount = 3;
 
 VkPhysicalDeviceFeatures physicalDeviceFeatures(){
     VkPhysicalDeviceFeatures deviceFeatures{};

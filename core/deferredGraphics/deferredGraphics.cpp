@@ -373,6 +373,7 @@ bool deferredGraphics::remove(light* lightSource){
     if(depthMaps.count(lightSource)){
         depthMaps[lightSource]->destroy(device.getLogical());
         delete depthMaps[lightSource];
+        depthMaps.erase(lightSource);
     }
 
     updateCmdFlags();

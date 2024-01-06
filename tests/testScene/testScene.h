@@ -25,8 +25,8 @@ class skyboxObject;
 class plyModel;
 class transformational;
 
-// #define SECOND_VIEW_WINDOW
-// #define IMGUI_GRAPHICS
+//#define SECOND_VIEW_WINDOW
+#define IMGUI_GRAPHICS
 
 class testScene : public scene
 {
@@ -39,6 +39,9 @@ private:
     float                   minAmbientFactor{0.05f};
     bool                    enableScatteringRefraction{true};
     int                     ufoCounter{0};
+
+    float blitFactor = 1.5f;
+    float farBlurDepth = 1.0f;
 
     GLFWwindow*                                         window{nullptr};
     graphicsManager*                                    app{nullptr};

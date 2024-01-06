@@ -19,6 +19,10 @@ void layersCombiner::setScatteringRefraction(bool enable){
     combiner.enableScatteringRefraction = enable;
 }
 
+void layersCombiner::setBlurDepth(float blurDepth){
+    this->blurDepth = blurDepth;
+}
+
 void layersCombiner::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments){
@@ -29,9 +33,10 @@ void layersCombiner::createAttachments(std::unordered_map<std::string, std::pair
         }
     };
 
-    createAttachments(physicalDevice, device, image, 2, &frame);
+    createAttachments(physicalDevice, device, image, layersCombinerAttachments::size(), &frame);
     attachmentsMap["combined.color"] = {enable, {&frame.color}};
     attachmentsMap["combined.bloom"] = {enable, {&frame.bloom}};
+    attachmentsMap["combined.blur"] = {enable, {&frame.blur}};
 }
 
 void layersCombiner::destroy(){
@@ -45,6 +50,7 @@ void layersCombiner::destroy(){
 void layersCombiner::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
         attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+        attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
         attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     };
 
@@ -52,6 +58,7 @@ void layersCombiner::createRenderPass(){
     attachmentRef.push_back(std::vector<VkAttachmentReference>());
         attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
         attachmentRef.back().push_back(VkAttachmentReference{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        attachmentRef.back().push_back(VkAttachmentReference{2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
 
     std::vector<VkSubpassDescription> subpass;
     for(auto refIt = attachmentRef.begin(); refIt != attachmentRef.end(); refIt++){
@@ -86,7 +93,8 @@ void layersCombiner::createFramebuffers(){
     for(size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> attachments = {
             frame.color.instances[i].imageView,
-            frame.bloom.instances[i].imageView
+            frame.bloom.instances[i].imageView,
+            frame.blur.instances[i].imageView,
         };
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -169,7 +177,7 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo,
     VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
     VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment(2,vkDefault::colorBlendAttachmentState(VK_FALSE));
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment(layersCombinerAttachments::size(), vkDefault::colorBlendAttachmentState(VK_FALSE));
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
@@ -440,7 +448,7 @@ void layersCombiner::updateDescriptorSets(
 
 void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
 {
-    std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue};
+    std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue, frame.blur.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -456,6 +464,7 @@ void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
         layersCombinerPushConst pushConst{};
             pushConst.enableScatteringRefraction = static_cast<int>(combiner.enableScatteringRefraction);
             pushConst.enableTransparentLayers = static_cast<int>(combiner.enableTransparentLayers);
+            pushConst.blurDepth = blurDepth;
         vkCmdPushConstants(commandBuffers[frameNumber], combiner.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(layersCombinerPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.Pipeline);

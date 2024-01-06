@@ -73,8 +73,10 @@ vec4 radialBlur(sampler2D Sampler, vec2 TexCoord) {
 void main() {
     outColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-    outColor += texture(Sampler, fragTexCoord);
-    outColor += texture(blurSampler,fragTexCoord);
+    vec4 baseColor = texture(Sampler, fragTexCoord);
+
+    outColor += dot(baseColor,baseColor) > 0.0f ? baseColor : texture(blurSampler, fragTexCoord);
+    
     outColor += texture(bloomSampler, fragTexCoord);
     outColor += texture(sslrSampler,fragTexCoord);
     outColor += texture(bbSampler,fragTexCoord);

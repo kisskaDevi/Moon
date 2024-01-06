@@ -392,6 +392,10 @@ deferredGraphics& deferredGraphics::setEnable(const std::string& name, bool enab
     return *this;
 }
 
+bool deferredGraphics::getEnable(const std::string& name){
+    return enable[name];
+}
+
 deferredGraphics& deferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
     static_cast<graphics*>(workflows["DeferredGraphics"])->setMinAmbientFactor(minAmbientFactor);
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
@@ -414,6 +418,13 @@ deferredGraphics& deferredGraphics::setBlitFactor(float blitFactor){
         static_cast<bloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
         updateCmdFlags();
     }
+    return *this;
+}
+
+deferredGraphics& deferredGraphics::setBlurDepth(float blurDepth){
+    static_cast<gaussianBlur*>(workflows["Blur"])->setBlurDepth(blurDepth);
+    static_cast<layersCombiner*>(workflows["LayersCombiner"])->setBlurDepth(blurDepth);
+    updateCmdFlags();
     return *this;
 }
 

@@ -190,6 +190,7 @@ VkResult graphicsManager::drawFrame()
         graphics->updateBuffers(resourceIndex);
         graphics->updateCommandBuffer(resourceIndex);
     }
+    linker.updateCmdFlags();
     linker.updateCommandBuffer(resourceIndex, imageIndex);
 
     std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[resourceIndex]}};

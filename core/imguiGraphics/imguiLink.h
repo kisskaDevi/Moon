@@ -1,9 +1,6 @@
 #ifndef IMGUILINK_H
 #define IMGUILINK_H
 
-#include <vector>
-#include <filesystem>
-
 #include "linkable.h"
 
 class imguiLink : public linkable

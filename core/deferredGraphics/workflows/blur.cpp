@@ -160,10 +160,17 @@ void gaussianBlur::blur::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
     }
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
+    std::vector<VkPushConstantRange> pushConstantRange;
+        pushConstantRange.push_back(VkPushConstantRange{});
+        pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange.back().offset = 0;
+        pushConstantRange.back().size = sizeof(float);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
@@ -237,7 +244,7 @@ void gaussianBlur::updateDescriptorSets(
         }
     };
 
-    const auto blurAttachment = attachmentsMap.at("blur").second.front();
+    const auto blurAttachment = attachmentsMap.at("combined.blur").second.front();
     updateDescriptorSets(device, blurAttachment, blurAttachment->sampler, xblur.DescriptorSets);
     updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, yblur.DescriptorSets);
 }
@@ -256,6 +263,8 @@ void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+        vkCmdPushConstants(commandBuffers[frameNumber], xblur.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(float), &blurDepth);
+
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.Pipeline);
         vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, xblur.PipelineLayout, 0, 1, &xblur.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
@@ -263,9 +272,16 @@ void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
     vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
     vkCmdNextSubpass(commandBuffers[frameNumber], VK_SUBPASS_CONTENTS_INLINE);
 
+        vkCmdPushConstants(commandBuffers[frameNumber], yblur.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(float), &blurDepth);
+
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.Pipeline);
         vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, yblur.PipelineLayout, 0, 1, &yblur.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
+gaussianBlur& gaussianBlur::setBlurDepth(float blurDepth){
+    this->blurDepth = blurDepth;
+    return *this;
 }

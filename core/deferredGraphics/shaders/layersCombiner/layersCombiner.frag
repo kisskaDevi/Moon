@@ -27,11 +27,14 @@ layout(set = 0, binding = 13) uniform sampler2D scattering;
 layout(push_constant) uniform PC {
     int enableScatteringRefraction;
     int enableTransparentLayers;
+    float blurDepth;
 } pc;
 
 layout(location = 0) in vec2 fragTexCoord;
+
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outBloom;
+layout(location = 2) out vec4 outBlur;
 
 mat4 projview = global.proj * global.view;
 vec3 eyePosition = global.eyePosition.xyz;
@@ -129,7 +132,8 @@ void transparentLayersCombine() {
         findRefr(i, nend, endStartPos, endCoords);
     }
 
-    bool layerBehindScattering = transparentFrags && texture(layersDepth[0], fragTexCoord.xy).r > texture(scattering, fragTexCoord.xy).a;
+    float depth0 = texture(layersDepth[0], fragTexCoord.xy).r;
+    bool layerBehindScattering = transparentFrags && depth0 > texture(scattering, fragTexCoord.xy).a;
     vec4 frontScatteringColor = layerBehindScattering || !enableScatteringRefraction ? vec4(texture(scattering, fragTexCoord.xy).xyz, 0.0) : vec4(0.0);
 
     outColor = accumulateColor(beginCoords, endCoords, step, Sampler, depth, skybox, true, enableScatteringRefraction);
@@ -137,14 +141,27 @@ void transparentLayersCombine() {
 
     outBloom = accumulateColor(beginCoords, endCoords, step, bloomSampler, depth, skyboxBloom, true, false);
     outBloom = max(layerBloom, step * outBloom);
+
+    float d = transparentFrags ? depth0 : texture(depth, fragTexCoord.xy).r;
+    outBlur = vec4(outColor.xyz, d);
+    if(d > pc.blurDepth){
+        outColor = vec4(0.0f);
+    }
 }
 
 void main() {
     if(pc.enableTransparentLayers == 0){
+        float d = texture(depth, fragTexCoord.xy).r;
+
         outColor = texture(Sampler, fragTexCoord);
         outBloom = texture(bloomSampler, fragTexCoord);
-        outColor += texture(depth, fragTexCoord.xy).r == 1.0 ? texture(skybox, fragTexCoord.xy) : vec4(0.0);
-        outBloom += texture(depth, fragTexCoord.xy).r == 1.0 ? texture(skyboxBloom, fragTexCoord.xy) : vec4(0.0);
+        outColor += d == 1.0 ? texture(skybox, fragTexCoord.xy) : vec4(0.0);
+        outBloom += d == 1.0 ? texture(skyboxBloom, fragTexCoord.xy) : vec4(0.0);
+        outBlur = vec4(outColor.xyz, d);
+        if(d > pc.blurDepth){
+            outColor = vec4(0.0f);
+        }
+    
         return;
     }
     transparentLayersCombine();

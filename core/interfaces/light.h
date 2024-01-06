@@ -5,7 +5,6 @@
 #include <vector>
 
 class texture;
-class attachments;
 struct physicalDevice;
 
 enum lightType : uint8_t {

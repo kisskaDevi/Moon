@@ -22,13 +22,13 @@ layout(location = 2) out vec4 outBloom;
 void main() {
     vec4 position = subpassLoad(inPositionTexture);
     vec4 normal = subpassLoad(inNormalTexture);
-    vec4 baseColorTexture = subpassLoad(inBaseColorTexture);
+    vec4 color = subpassLoad(inBaseColorTexture);
+    vec4 depth = subpassLoad(inDepthTexture);
 
     vec4 emissiveAndAO = decodeFromFloat(normal.a);
     vec4 emissiveTexture = vec4(emissiveAndAO.xyz, 1.0f);
     float ao = emissiveAndAO.a;
 
-    outColor = ao * calcLight(position, normal, baseColorTexture, eyePosition, shadowMap, lightTexture);
+    outColor = ao * calcLight(position, normal, color, eyePosition, shadowMap, lightTexture);
     outBloom = SRGBtoLINEAR(emissiveTexture) + (checkBrightness(outColor) ? outColor : vec4(0.0));
-    outBlur = vec4(0.0, 0.0, 0.0, 1.0);
 }

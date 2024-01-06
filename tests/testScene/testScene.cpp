@@ -6,7 +6,10 @@
 #include "baseObject.h"
 #include "group.h"
 #include "baseCamera.h"
+
+#ifdef SECOND_VIEW_WINDOW
 #include "dualQuaternion.h"
+#endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -20,8 +23,6 @@
 
 #include <random>
 #include <limits>
-
-double blitFactor = 1.5;
 
 testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath):
     ExternalPath(ExternalPath),
@@ -124,10 +125,17 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGui::SetWindowSize({300,200}, ImGuiCond_::ImGuiCond_Once);
 
-    // Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()
-    bool showDemoWindow = true;
-    ImGui::ShowDemoWindow(&showDemoWindow);
+    ImGui::Begin("Debug");
+
+    ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f);
+    if(graphics["base"]->getEnable("Blur"))
+        ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.9f, 1.0f);
+    graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(farBlurDepth);
+
+    ImGui::End();
+
 #else
     mouseEvent(frameTime);
     keyboardEvent(frameTime);
@@ -353,12 +361,8 @@ void testScene::mouseEvent(float frameTime)
         }
     }
 
-    glfwSetScrollCallback(window,[](GLFWwindow*, double, double y) {
-        if(double newBlitFactor = blitFactor + 0.01 * y; newBlitFactor >= 1.0){
-            blitFactor = newBlitFactor;
-        }
+    glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {
     });
-    graphics["base"]->setBlitFactor(static_cast<float>(blitFactor));
 
     if(double x = 0, y = 0; mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
         glfwGetCursorPos(window,&x,&y);

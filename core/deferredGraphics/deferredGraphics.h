@@ -80,12 +80,14 @@ public:
 
     void updateCmdFlags();
 
+    bool getEnable(const std::string& name);
     deferredGraphics& setEnable(const std::string& name, bool enable);
     deferredGraphics& setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
     deferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
     deferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
     deferredGraphics& setScatteringRefraction(bool enable);
     deferredGraphics& setBlitFactor(float blitFactor);
+    deferredGraphics& setBlurDepth(float blurDepth);
 
     void create(model* pModel);
     void destroy(model* pModel);

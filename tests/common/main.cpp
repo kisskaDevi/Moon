@@ -65,16 +65,16 @@ int main()
 
     //Memory::instance().status();
 
-    for(auto time = clk::now(); !glfwWindowShouldClose(window);){
-        if(app.checkNextFrame() != VK_ERROR_OUT_OF_DATE_KHR) {
-            testScene.updateFrame(app.getImageIndex(), period<float>(time));
-            time = clk::now();
+    for(float time = 1.0f; !glfwWindowShouldClose(window);){
+        if(auto start = clk::now(); app.checkNextFrame() != VK_ERROR_OUT_OF_DATE_KHR) {
+            testScene.updateFrame(app.getImageIndex(), time);
 
             if (VkResult result = app.drawFrame(); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
                 std::tie(WIDTH, HEIGHT) = resize(window,&app,&testScene);
             } else if(result) {
                 throw std::runtime_error("failed to with " + std::to_string(result));
             }
+            time = period<float>(start);
         }
     }
 

@@ -1,7 +1,5 @@
 #include <chrono>
 #include <stdexcept>
-#include <cstdlib>
-#include <sstream>
 #include <utility>
 #include <filesystem>
 
@@ -44,8 +42,6 @@ template<typename type> type period(clk::time_point time){
 
 int main()
 {
-    float fps = 60.0f;
-    bool fpsLock = false;
     uint32_t WIDTH = 800;
     uint32_t HEIGHT = 800;
     const std::filesystem::path ExternalPath = std::filesystem::absolute(std::filesystem::path(__FILE__).replace_filename("../../"));

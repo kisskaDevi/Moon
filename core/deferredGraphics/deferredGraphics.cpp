@@ -321,7 +321,7 @@ void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& m
 
 uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage){
     StorageBufferObject storageBuffer{};
-    std::memcpy(&storageBuffer, storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
+    std::memcpy((void*)&storageBuffer, (void*)storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
     return storageBuffer.number;
 }
 

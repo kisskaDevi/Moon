@@ -92,7 +92,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
 
     if(vertices){
         for(size_t bufferIndex = 0, vertexIndex = 0; bufferIndex < vertices->buffer.size_bytes(); bufferIndex += 3 * sizeof(float), vertexIndex++){
-            std::memcpy(&vertexBuffer[vertexIndex].pos, &vertices->buffer.get()[bufferIndex], 3 * sizeof(float));
+            std::memcpy((void*)&vertexBuffer[vertexIndex].pos, (void*)&vertices->buffer.get()[bufferIndex], 3 * sizeof(float));
         }
         for(uint32_t i = 0; i < vertexBuffer.size(); i++){
             maxSize = vector<float,3>(
@@ -119,7 +119,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     }
     if(normals){
         for(size_t bufferIndex = 0, vertexIndex = 0; bufferIndex < normals->buffer.size_bytes(); bufferIndex += 3 * sizeof(float), vertexIndex++){
-            std::memcpy(&vertexBuffer[vertexIndex].normal, &normals->buffer.get()[bufferIndex], 3 * sizeof(float));
+            std::memcpy((void*)&vertexBuffer[vertexIndex].normal, (void*)&normals->buffer.get()[bufferIndex], 3 * sizeof(float));
         }
     } else if(vertices) {
         for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
@@ -138,7 +138,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     }
     if(texcoords){
         for(size_t bufferIndex = 0, vertexIndex = 0; bufferIndex < texcoords->buffer.size_bytes(); bufferIndex += 2 * sizeof(float), vertexIndex++){
-            std::memcpy(&vertexBuffer[vertexIndex].uv0, &texcoords->buffer.get()[bufferIndex], 2 * sizeof(float));
+            std::memcpy((void*)&vertexBuffer[vertexIndex].uv0, (void*)&texcoords->buffer.get()[bufferIndex], 2 * sizeof(float));
         }
     }
 

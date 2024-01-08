@@ -236,7 +236,7 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel){
                 const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
 
                 newSkin->inverseBindMatrices.resize(accessor.count);
-                std::memcpy(newSkin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(matrix<float,4,4>));
+                std::memcpy((void*)newSkin->inverseBindMatrices.data(), (void*)&buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(matrix<float,4,4>));
                 for(auto& matrix: newSkin->inverseBindMatrices){
                     matrix = transpose(matrix);
                 }

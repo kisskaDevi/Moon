@@ -53,8 +53,7 @@ void imguiGraphics::createDescriptorPool(){
         pool_info.maxSets = 1;
         pool_info.poolSizeCount = static_cast<uint32_t>(descriptorPoolSize.size());
         pool_info.pPoolSizes = descriptorPoolSize.data();
-    VkResult result = vkCreateDescriptorPool(device.getLogical(), &pool_info, VK_NULL_HANDLE, &descriptorPool);
-    debug::checkResult(result, "VkDescriptorPool: vkCreateDescriptorPool result = " + std::to_string(result));
+    CHECK(vkCreateDescriptorPool(device.getLogical(), &pool_info, VK_NULL_HANDLE, &descriptorPool));
 }
 
 void imguiGraphics::createCommandPool()
@@ -63,7 +62,7 @@ void imguiGraphics::createCommandPool()
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
+    CHECK(vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool));
 }
 
 void imguiGraphics::uploadFonts()

@@ -1,7 +1,5 @@
 #include "gltfmodel.h"
 
-#include <iostream>
-
 bool gltfModel::hasAnimation(uint32_t frameIndex) const {
     return instances[instances.size() > frameIndex ? frameIndex : 0].animations.size() > 0;
 }

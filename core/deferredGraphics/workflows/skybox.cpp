@@ -69,7 +69,7 @@ void skyboxGraphics::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void skyboxGraphics::createFramebuffers()
@@ -88,7 +88,7 @@ void skyboxGraphics::createFramebuffers()
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
 }
 
@@ -108,7 +108,7 @@ void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 
     object::createSkyboxDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
 }
@@ -141,7 +141,7 @@ void skyboxGraphics::Skybox::createPipeline(VkDevice device, imageInfo* pInfo, V
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -160,7 +160,7 @@ void skyboxGraphics::Skybox::createPipeline(VkDevice device, imageInfo* pInfo, V
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

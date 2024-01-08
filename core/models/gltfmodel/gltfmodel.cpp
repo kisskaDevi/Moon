@@ -6,8 +6,6 @@
 #include "operations.h"
 #include "device.h"
 
-#include <iostream>
-#include <fstream>
 #include <cstring>
 
 namespace {
@@ -75,7 +73,7 @@ namespace {
                 descriptorSetAllocInfo.descriptorPool = descriptorPool;
                 descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
                 descriptorSetAllocInfo.descriptorSetCount = 1;
-            vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet);
+            CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet));
 
             VkDescriptorBufferInfo bufferInfo{ node->mesh->uniformBuffer.instance, 0, sizeof(Mesh::uniformBlock)};
 
@@ -100,7 +98,7 @@ namespace {
             descriptorSetAllocInfo.descriptorPool = descriptorPool;
             descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
-        vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material->descriptorSet);
+        CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material->descriptorSet));
 
         auto getDescriptorImageInfo = [&emptyTexture](texture* tex){
             VkDescriptorImageInfo descriptorImageInfo{};
@@ -429,7 +427,7 @@ void gltfModel::createDescriptorPool(VkDevice device)
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
         poolInfo.pPoolSizes = poolSize.data();
         poolInfo.maxSets = std::max(meshCount, imageSamplerCount);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
 void gltfModel::createDescriptorSet(VkDevice device, texture* emptyTexture)
@@ -452,9 +450,9 @@ void gltfModel::create(physicalDevice device, VkCommandPool commandPool)
 {
     if(!created)
     {
-        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
-        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
 
         emptyTexture = createEmptyTexture(device, commandPool);
 

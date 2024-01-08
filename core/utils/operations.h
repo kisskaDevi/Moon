@@ -2,13 +2,10 @@
 #define OPERATIONS_H
 
 #include <vulkan.h>
-#include <cstring>
 #include <vector>
 #include <string>
 #include <filesystem>
 #include <unordered_map>
-
-#define CHECKERROR(res, message) if(debug::checkResult(res, message + " in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__))) return;
 
 struct GLFWwindow;
 
@@ -52,17 +49,17 @@ public:
 
 namespace debug {
 
-    VkResult errorResult(
-            const std::string& message);
-
     void checkResult(
             VkResult        result,
             std::string     message);
 
-    bool checkResult(
+    void checkResult(
             bool            result,
             std::string     message);
 }
+
+#define CHECK(res) debug::checkResult(res, "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+#define CHECK_M(res, message) debug::checkResult(res, "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__) + " " + message);
 
 namespace ValidationLayer{
 

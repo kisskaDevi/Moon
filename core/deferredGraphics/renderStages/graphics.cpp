@@ -60,13 +60,13 @@ void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,
 
         VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->image.sampler);
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->blur.sampler);
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->bloom.sampler);
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.position.sampler);
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.normal.sampler);
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.color.sampler);
-        vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.depth.sampler);
+        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->image.sampler));
+        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->blur.sampler));
+        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->bloom.sampler));
+        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.position.sampler));
+        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.normal.sampler));
+        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.color.sampler));
+        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.depth.sampler));
     };
 
     createAttachments(physicalDevice, device, image, &deferredAttachments);
@@ -168,7 +168,7 @@ void graphics::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(subpass.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void graphics::createFramebuffers()
@@ -188,7 +188,7 @@ void graphics::createFramebuffers()
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
 }
 

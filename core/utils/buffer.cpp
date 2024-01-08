@@ -1,5 +1,6 @@
 #include "buffer.h"
 #include "operations.h"
+#include <cstring>
 
 void buffer::destroy(VkDevice device){
     if(map){
@@ -24,7 +25,7 @@ void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuf
     Memory::instance().nameMemory(staging.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, staging");
     Memory::instance().nameMemory(deviceLocal.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, deviceLocal");
 
-    vkMapMemory(device, staging.memory, 0, bufferSize, 0, &staging.map);
+    CHECK(vkMapMemory(device, staging.memory, 0, bufferSize, 0, &staging.map));
         std::memcpy(staging.map, data, bufferSize);
     vkUnmapMemory(device, staging.memory);
     staging.map = nullptr;

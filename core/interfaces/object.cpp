@@ -1,5 +1,6 @@
 #include "object.h"
 #include "vkdefault.h"
+#include "operations.h"
 
 bool object::getEnable() const {
     return enable;
@@ -77,7 +78,7 @@ void object::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* d
         uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         uniformBufferLayoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout));
 }
 
 void object::createSkyboxDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
@@ -89,5 +90,5 @@ void object::createSkyboxDescriptorSetLayout(VkDevice device, VkDescriptorSetLay
         uniformBufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         uniformBufferLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         uniformBufferLayoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &uniformBufferLayoutInfo, nullptr, descriptorSetLayout));
 }

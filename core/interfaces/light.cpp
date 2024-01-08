@@ -1,5 +1,6 @@
 #include "light.h"
 #include "vkdefault.h"
+#include "operations.h"
 #include <vector>
 
 void light::setEnableShadow(bool enable){
@@ -27,7 +28,7 @@ void light::createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayo
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         layoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout));
 }
 
 void light::createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
@@ -37,6 +38,6 @@ void light::createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLay
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         layoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout));
 }
 

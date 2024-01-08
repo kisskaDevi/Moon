@@ -1,5 +1,6 @@
 #include "model.h"
 #include "vkdefault.h"
+#include "operations.h"
 
 BoundingBox::BoundingBox(vector<float,3> min, vector<float,3> max)
     : min(min), max(max), valid(true) {};
@@ -30,7 +31,7 @@ void model::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout
         uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         uniformBlockLayoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &uniformBlockLayoutInfo, nullptr, descriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &uniformBlockLayoutInfo, nullptr, descriptorSetLayout));
 }
 
 void model::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
@@ -45,5 +46,5 @@ void model::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLa
         materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         materialLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         materialLayoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &materialLayoutInfo, nullptr, descriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &materialLayoutInfo, nullptr, descriptorSetLayout));
 }

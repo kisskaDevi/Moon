@@ -72,7 +72,7 @@ void boundingBoxGraphics::createRenderPass(){
     renderPassInfo.pSubpasses = subpass.data();
     renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
     renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void boundingBoxGraphics::createFramebuffers(){
@@ -87,7 +87,7 @@ void boundingBoxGraphics::createFramebuffers(){
         framebufferInfo.width = image.frameBufferExtent.width;
         framebufferInfo.height = image.frameBufferExtent.height;
         framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
 }
 
@@ -106,7 +106,7 @@ void boundingBoxGraphics::boundingBox::createDescriptorSetLayout(VkDevice device
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 
     object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
     model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
@@ -162,7 +162,7 @@ void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo
     pipelineLayoutInfo.pSetLayouts = setLayouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -181,7 +181,7 @@ void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo
     pipelineInfo.back().subpass = 0;
     pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

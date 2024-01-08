@@ -1,9 +1,7 @@
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
-#include <iostream>
 #include "matrix.h"
-#include <math.h>
 
 template<typename type>
 class quaternion

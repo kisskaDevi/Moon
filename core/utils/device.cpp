@@ -1,8 +1,6 @@
 #include "device.h"
 #include "operations.h"
 
-#include <iostream>
-
 queueFamily::queueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport):
 index(index), flags(flag), queueCount(queueCount), presentSupport(presentSupport){
     queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));
@@ -47,8 +45,7 @@ bool physicalDevice::presentSupport(VkSurfaceKHR surface)
     if(surface){
         for (const auto& [index, _] : queueFamilies){
             VkBool32 support = false;
-            VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(instance, index, surface, &support);
-            debug::checkResult(result, "VkPhysicalDevice : vkGetPhysicalDeviceSurfaceSupportKHR result = " + std::to_string(result));
+            CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(instance, index, surface, &support));
             presentSupport |= support;
             queueFamilies[index].presentSupport = support;
         }
@@ -79,7 +76,7 @@ VkResult physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t
         createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
         createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
     VkResult result = vkCreateDevice(instance, &createInfo, nullptr, &logical.instance);
-    debug::checkResult(result, "VkDevice : vkCreateDevice result = " + std::to_string(result));
+    CHECK(result);
 
     for(auto queueCreateInfo: queueCreateInfos){
         logical.queueMap[queueCreateInfo.queueFamilyIndex] = std::vector<VkQueue>(queueCreateInfo.queueCount);

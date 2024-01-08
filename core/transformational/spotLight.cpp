@@ -190,9 +190,9 @@ void spotLight::create(
     uint32_t imageCount)
 {
     if(!created){
-        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkDevice is VK_NULL_HANDLE"));
-        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkCommandPool is VK_NULL_HANDLE"));
 
         emptyTextureBlack = createEmptyTexture(device, commandPool);
         emptyTextureWhite = createEmptyTexture(device, commandPool, false);
@@ -232,14 +232,14 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-       Buffer::create(  physicalDevice,
+        Buffer::create(  physicalDevice,
                         device,
                         sizeof(LightBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
-       vkMapMemory(device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map);
+        CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map));
 
        Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
@@ -288,7 +288,7 @@ void spotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
         poolInfo.pPoolSizes = poolSize.data();
         poolInfo.maxSets = static_cast<uint32_t>(2 * imageCount);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
 void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
@@ -303,7 +303,7 @@ void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
         textAllocInfo.descriptorPool = descriptorPool;
         textAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         textAllocInfo.pSetLayouts = textLayouts.data();
-    vkAllocateDescriptorSets(device, &textAllocInfo, textureDescriptorSets.data());
+    CHECK(vkAllocateDescriptorSets(device, &textAllocInfo, textureDescriptorSets.data()));
 
     bufferDescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> bufferLayouts(imageCount, bufferDescriptorSetLayout);
@@ -312,7 +312,7 @@ void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
         bufferAllocInfo.descriptorPool = descriptorPool;
         bufferAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         bufferAllocInfo.pSetLayouts = bufferLayouts.data();
-    vkAllocateDescriptorSets(device, &bufferAllocInfo, bufferDescriptorSets.data());
+    CHECK(vkAllocateDescriptorSets(device, &bufferAllocInfo, bufferDescriptorSets.data()));
 }
 
 void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)

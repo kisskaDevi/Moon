@@ -71,7 +71,7 @@ void bloomGraphics::createRenderPass(){
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void bloomGraphics::createFramebuffers(){
@@ -86,7 +86,7 @@ void bloomGraphics::createFramebuffers(){
                 framebufferInfo.width = image.frameBufferExtent.width;
                 framebufferInfo.height = image.frameBufferExtent.height;
                 framebufferInfo.layers = 1;
-            vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * i + j]);
+            CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * i + j]));
         }
     }
     for(size_t i = 0; i < image.Count; i++){
@@ -98,7 +98,7 @@ void bloomGraphics::createFramebuffers(){
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * frames.size() + i]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * frames.size() + i]));
     }
 }
 
@@ -121,7 +121,7 @@ void bloomGraphics::Filter::createDescriptorSetLayout(VkDevice device){
         textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         textureLayoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
 }
 
 void bloomGraphics::Filter::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -158,7 +158,7 @@ void bloomGraphics::Filter::createPipeline(VkDevice device, imageInfo* pInfo, Vk
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -176,7 +176,7 @@ void bloomGraphics::Filter::createPipeline(VkDevice device, imageInfo* pInfo, Vk
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -186,10 +186,10 @@ void bloomGraphics::Bloom::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
-    textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    textureLayoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout);
+        textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        textureLayoutInfo.pBindings = bindings.data();
+    CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
 }
 
 void bloomGraphics::Bloom::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -228,35 +228,35 @@ void bloomGraphics::Bloom::createPipeline(VkDevice device, imageInfo* pInfo, VkR
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
-    pushConstantRange.push_back(VkPushConstantRange{});
-    pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-    pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(bloomPushConst);
+        pushConstantRange.push_back(VkPushConstantRange{});
+        pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange.back().offset = 0;
+        pushConstantRange.back().size = sizeof(bloomPushConst);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.pNext = nullptr;
-    pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-    pipelineInfo.pStages = shaderStages.data();
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssembly;
-    pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pRasterizationState = &rasterizer;
-    pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = PipelineLayout;
-    pipelineInfo.renderPass = pRenderPass;
-    pipelineInfo.subpass = 0;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-    pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.pNext = nullptr;
+        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.pStages = shaderStages.data();
+        pipelineInfo.pVertexInputState = &vertexInputInfo;
+        pipelineInfo.pInputAssemblyState = &inputAssembly;
+        pipelineInfo.pViewportState = &viewportState;
+        pipelineInfo.pRasterizationState = &rasterizer;
+        pipelineInfo.pMultisampleState = &multisampling;
+        pipelineInfo.pColorBlendState = &colorBlending;
+        pipelineInfo.layout = PipelineLayout;
+        pipelineInfo.renderPass = pRenderPass;
+        pipelineInfo.subpass = 0;
+        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.pDepthStencilState = &depthStencil;
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

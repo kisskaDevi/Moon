@@ -3,6 +3,7 @@
 #include "light.h"
 #include "deferredAttachments.h"
 #include "depthMap.h"
+#include "operations.h"
 
 void graphics::Lighting::Destroy(VkDevice device)
 {
@@ -66,7 +67,7 @@ void graphics::createLightingDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &lighting.DescriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &lighting.DescriptorPool));
 }
 
 void graphics::createLightingDescriptorSets()
@@ -78,7 +79,7 @@ void graphics::createLightingDescriptorSets()
         allocInfo.descriptorPool = lighting.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data());
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data()));
 }
 
 void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap)

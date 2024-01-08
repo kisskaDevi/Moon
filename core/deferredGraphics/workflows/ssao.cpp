@@ -56,7 +56,7 @@ void SSAOGraphics::createRenderPass()
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void SSAOGraphics::createFramebuffers()
@@ -71,7 +71,7 @@ void SSAOGraphics::createFramebuffers()
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
 }
 
@@ -96,7 +96,7 @@ void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
 void SSAOGraphics::SSAO::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -126,7 +126,7 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -144,7 +144,7 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

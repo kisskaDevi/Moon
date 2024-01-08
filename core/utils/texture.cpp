@@ -42,7 +42,7 @@ VkResult iamge::create(
     for(uint32_t i = 0, singleImageSize = static_cast<uint32_t>(imageSize/imageCount); i< imageCount; i++)
     {
         result = vkMapMemory(device, stagingBuffer.memory, i * singleImageSize, singleImageSize, 0, &stagingBuffer.map);
-        debug::checkResult(result, "VkDeviceMemory : vkMapMemory result = " + std::to_string(result));
+        CHECK(result);
             std::memcpy(stagingBuffer.map, pixels[i], singleImageSize);
         vkUnmapMemory(device, stagingBuffer.memory);
         stagingBuffer.map = nullptr;
@@ -61,7 +61,7 @@ VkResult iamge::create(
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                 &textureImage,
                                 &textureImageMemory);
-    debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
+    CHECK(result);
 
     Memory::instance().nameMemory(textureImageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, textureImageMemory");
 
@@ -104,12 +104,12 @@ VkResult texture::createTextureImage(
             }
         }
         result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, bufferSize, buffer, 1);
-        debug::checkResult(result, "iamge : create result = " + std::to_string(result));
+        CHECK(result);
         delete[] buffer[0];
     }else{
         buffer[0] = &gltfimage.image[0];
         result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, static_cast<VkDeviceSize>(gltfimage.image.size()), buffer, 1);
-        debug::checkResult(result, "iamge : create result = " + std::to_string(result));
+        CHECK(result);
     }
     return result;
 }
@@ -127,7 +127,7 @@ VkResult texture::createTextureImage(
     if(!pixels[0])    throw std::runtime_error("failed to load texture image!");
 
     result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, imageSize, pixels, 1);
-    debug::checkResult(result, "iamge : create result = " + std::to_string(result));
+    CHECK(result);
     stbi_image_free(pixels[0]);
     return result;
 }
@@ -146,7 +146,7 @@ VkResult texture::createEmptyTextureImage(
     pixels[0][3] = 255;
 
     result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, 1, 1, 4, pixels, 1);
-    debug::checkResult(result, "iamge : create result = " + std::to_string(result));
+    CHECK(result);
     delete[] pixels[0];
     return result;
 }

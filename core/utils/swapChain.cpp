@@ -1,6 +1,7 @@
 #include "swapChain.h"
 #include "buffer.h"
 #include <glfw3.h>
+#include <cstring>
 
 void swapChain::destroy(){
     for (auto& instance: swapChainAttachments.instances){
@@ -53,12 +54,12 @@ VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t qu
         createInfo.clipped = VK_TRUE;
         createInfo.oldSwapchain = VK_NULL_HANDLE;
     result = vkCreateSwapchainKHR(device.getLogical(), &createInfo, nullptr, &swapChainKHR);
-    debug::checkResult(result, "VkSwapchainKHR : vkCreateSwapchainKHR result = " + std::to_string(result));
+    CHECK(result);
 
     swapChainAttachments.instances.resize(imageCount);
     std::vector<VkImage> images = swapChainAttachments.getImages();
     result = vkGetSwapchainImagesKHR(device.getLogical(), swapChainKHR, &imageCount, images.data());
-    debug::checkResult(result, "VkSwapchainKHR : vkGetSwapchainImagesKHR result = " + std::to_string(result));
+    CHECK(result);
 
     for (auto& instance: swapChainAttachments.instances){
         instance.image = images[&instance - &swapChainAttachments.instances[0]];
@@ -71,7 +72,7 @@ VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t qu
                                         1,
                                         instance.image,
                                         &instance.imageView);
-        debug::checkResult(result, "attachments::image : Texture::createView result = " + std::to_string(result));
+        CHECK(result);
     }
 
     VkCommandPoolCreateInfo poolInfo{};
@@ -79,7 +80,7 @@ VkResult swapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t qu
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     result = vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
-    debug::checkResult(result, "VkCommandPool : vkCreateCommandPool result = " + std::to_string(result));
+    CHECK(result);
 
     return result;
 }
@@ -129,7 +130,9 @@ std::vector<uint32_t> swapChain::makeScreenshot(uint32_t i) const {
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
 
     void* map = nullptr;
-    vkMapMemory(device.getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * buffer.size(), 0, &map);
+    VkResult result = vkMapMemory(device.getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * buffer.size(), 0, &map);
+    debug::checkResult(result, std::string("in file ") + std::string(__FILE__) + std::string(" in line ") + std::to_string(__LINE__));
+
     std::memcpy(buffer.data(), map, sizeof(uint32_t) * buffer.size());
     vkUnmapMemory(device.getLogical(), stagingBuffer.memory);
 

@@ -84,7 +84,7 @@ void graphicsLinker::createRenderPass(){
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void graphicsLinker::createFramebuffers(){
@@ -99,7 +99,7 @@ void graphicsLinker::createFramebuffers(){
             framebufferInfo.width = imageExtent.width;
             framebufferInfo.height = imageExtent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[Image]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[Image]));
     }
 }
 
@@ -109,7 +109,7 @@ void graphicsLinker::createCommandPool()
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
+    CHECK(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool));
 }
 
 void graphicsLinker::createCommandBuffers(){
@@ -119,7 +119,7 @@ void graphicsLinker::createCommandBuffers(){
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = static_cast<uint32_t>(imageCount);
-    vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data());
+    CHECK(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()));
 
     updateCommandBufferFlags.resize(imageCount, true);
 }
@@ -127,13 +127,13 @@ void graphicsLinker::createCommandBuffers(){
 void graphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber){
     if(updateCommandBufferFlags[resourceNumber])
     {
-        vkResetCommandBuffer(commandBuffers[resourceNumber],0);
+        CHECK(vkResetCommandBuffer(commandBuffers[resourceNumber],0));
 
         VkCommandBufferBeginInfo beginInfo{};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = 0;
             beginInfo.pInheritanceInfo = nullptr;
-        vkBeginCommandBuffer(commandBuffers[resourceNumber], &beginInfo);
+        CHECK(vkBeginCommandBuffer(commandBuffers[resourceNumber], &beginInfo));
 
             std::vector<VkClearValue> clearValues = {VkClearValue{}};
 
@@ -154,7 +154,7 @@ void graphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t image
 
             vkCmdEndRenderPass(commandBuffers[resourceNumber]);
 
-        vkEndCommandBuffer(commandBuffers[resourceNumber]);
+        CHECK(vkEndCommandBuffer(commandBuffers[resourceNumber]));
 
         updateCommandBufferFlags[resourceNumber] = false;
     }
@@ -166,7 +166,7 @@ void graphicsLinker::createSyncObjects(){
     for (auto& signalSemaphore: signalSemaphores){
         VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &signalSemaphore);
+        CHECK(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &signalSemaphore));
     }
 }
 
@@ -181,7 +181,7 @@ const VkSemaphore& graphicsLinker::submit(uint32_t frameNumber, const std::vecto
         submitInfo.pCommandBuffers = &commandBuffers[frameNumber];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &signalSemaphores[frameNumber];
-    vkQueueSubmit(queue, 1, &submitInfo, fence);
+    CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
     return signalSemaphores[frameNumber];
 }
 

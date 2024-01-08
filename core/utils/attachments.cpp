@@ -43,7 +43,7 @@ VkResult attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, V
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                     &(instance.image),
                                     &(instance.imageMemory));
-        debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
+        CHECK(result);
 
         Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
 
@@ -56,7 +56,7 @@ VkResult attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, V
                                         1,
                                         instance.image,
                                         &(instance.imageView));
-        debug::checkResult(result, "VkImageView : Texture::createView result = " + std::to_string(result));
+        CHECK(result);
     }
     return result;
 }
@@ -84,7 +84,7 @@ VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                     &(instance.image),
                                     &(instance.imageMemory));
-        debug::checkResult(result, "VkImage : Texture::create result = " + std::to_string(result));
+        CHECK(result);
 
         Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, instance " + std::to_string(&instance - &instances[0]));
 
@@ -97,7 +97,7 @@ VkResult attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
                                         1,
                                         instance.image,
                                         &(instance.imageView));
-        debug::checkResult(result, "VkImageView : Texture::createView result = " + std::to_string(result));
+        CHECK(result);
     }
     return result;
 }
@@ -187,7 +187,7 @@ std::vector<VkImage> attachments::getImages() const {
 void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments, VkImageUsageFlags usage){
     for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
         pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,usage,image.frameBufferExtent,image.Count);
-        vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler);
+        CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler));
         pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
     }
 }

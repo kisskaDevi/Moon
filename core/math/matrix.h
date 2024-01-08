@@ -3,10 +3,7 @@
 
 #define _USE_MATH_DEFINES
 
-#include <iostream>
 #include <fstream>
-#include <math.h>
-
 #include "vector.h"
 
 template<typename type, uint32_t n, uint32_t m>

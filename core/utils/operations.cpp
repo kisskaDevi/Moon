@@ -1,5 +1,6 @@
 #include "operations.h"
 #include <glfw3.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 #include <set>
 #include <utility>
@@ -10,17 +11,11 @@
 
 #define ONLYDEVICELOCALHEAP
 
-VkResult debug::errorResult(const std::string& message){
-#ifndef NDEBUG
-    std::cerr << "ERROR : " << message << std::endl;
-#endif
-    return VK_ERROR_UNKNOWN;
-}
-
 void debug::checkResult(VkResult result, std::string message){
     if (result != VK_SUCCESS){
+        message = string_VkResult(result) + std::string(" : ") + message;
 #ifndef NDEBUG
-        std::cerr << "ERROR [" << result <<"] :: " << message << std::endl;
+        std::cerr << message << std::endl;
 #endif
 #ifdef THROW_EXEPTION
         throw std::runtime_error(message);
@@ -28,16 +23,15 @@ void debug::checkResult(VkResult result, std::string message){
     }
 }
 
-bool debug::checkResult(bool result, std::string message){
-    if (result){
+void debug::checkResult(bool result, std::string message){
+    if (result != VK_SUCCESS){
 #ifndef NDEBUG
-        std::cerr << "ERROR :: " << message << std::endl;
+        std::cerr << message << std::endl;
 #endif
 #ifdef THROW_EXEPTION
         throw std::runtime_error(message);
 #endif
     }
-    return result;
 }
 
 Memory::~Memory(){
@@ -94,10 +88,10 @@ void Memory::status()
 bool ValidationLayer::checkSupport(const std::vector<const char*> validationLayers)
 {
     uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    CHECK(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
 
     std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+    CHECK(vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()));
 
     bool res = true;
     for (const char* layerName : validationLayers){
@@ -200,7 +194,7 @@ void PhysicalDevice::printQueueIndices(VkPhysicalDevice device, VkSurfaceKHR sur
     for (uint32_t index = 0; index < queueFamilyCount; index++){
         VkBool32 presentSupport = false;
         if(surface){
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+            CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport));
         }
 
         std::cout << "index\t" << index << "\tqueue count\t" << queueFamilies[index].queueCount << std::endl;
@@ -239,7 +233,7 @@ std::vector<uint32_t> PhysicalDevice::findQueueFamilies(VkPhysicalDevice device,
     for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
         VkBool32 presentSupport = surface ? false : true;
         if(surface){
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+            CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport));
         }
         if (presentSupport){
             indices.push_back(index);
@@ -262,7 +256,7 @@ std::vector<uint32_t> PhysicalDevice::findQueueFamilies(VkPhysicalDevice device,
     for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
         VkBool32 presentSupport = surface ? false : true;
         if(surface){
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+            CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport));
         }
         if ((queueFamilies[index].queueFlags & queueFlags) == queueFlags && presentSupport){
             indices.push_back(index);
@@ -285,7 +279,7 @@ std::vector<VkQueueFamilyProperties> PhysicalDevice::findQueueFamiliesProperties
     for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
         VkBool32 presentSupport = surface ? false : true;
         if(surface){
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport);
+            CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentSupport));
         }
         if ((queueFamilies[index].queueFlags & queueFlags) == queueFlags && presentSupport){
             result.push_back(queueFamilies[index]);
@@ -322,10 +316,10 @@ bool PhysicalDevice::isSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, c
 bool PhysicalDevice::isExtensionsSupport(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions)
 {
     uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,nullptr);
+    CHECK(vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,nullptr));
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,availableExtensions.data());
+    CHECK(vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,availableExtensions.data()))
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -346,16 +340,15 @@ VkResult Buffer::create(VkPhysicalDevice physicalDevice, VkDevice device, VkDevi
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer);
-    debug::checkResult(result, "VkBuffer : vkCreateBuffer result = " + std::to_string(result));
+    CHECK(result);
 
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
 
     result = Memory::instance().allocate(physicalDevice, device, memoryRequirements, properties, bufferMemory);
-    debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
-
+    CHECK(result);
     result = vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
-    debug::checkResult(result, "VkImage : vkBindBufferMemory result = " + std::to_string(result));
+    CHECK(result);
 
     return result;
 }
@@ -391,14 +384,14 @@ VkCommandBuffer SingleCommandBuffer::create(VkDevice device, VkCommandPool comma
         allocInfo.commandPool = commandPool;
         allocInfo.commandBufferCount = 1;
     result = vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-    debug::checkResult(result, "VkCommandBuffer : vkAllocateCommandBuffers result = " + std::to_string(result));
+    CHECK(result);
 
 
     VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;
     result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-    debug::checkResult(result, "VkCommandBuffer : vkBeginCommandBuffer result = " + std::to_string(result));
+    CHECK(result);
 
     return commandBuffer;
 }
@@ -406,17 +399,17 @@ VkCommandBuffer SingleCommandBuffer::create(VkDevice device, VkCommandPool comma
 VkResult SingleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPool commandPool, VkCommandBuffer* commandBuffer)
 {
     VkResult result = vkEndCommandBuffer(*commandBuffer);
-    debug::checkResult(result, "VkCommandPool : vkEndCommandBuffer result = " + std::to_string(result));
+    CHECK(result);
 
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = commandBuffer;
     result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-    debug::checkResult(result, "VkSubmitInfo : vkQueueSubmit result = " + std::to_string(result));
+    CHECK(result);
 
     result = vkQueueWaitIdle(queue);
-    debug::checkResult(result, "VkQueue : vkQueueWaitIdle result = " + std::to_string(result));
+    CHECK(result);
 
     vkFreeCommandBuffers(device, commandPool, 1, commandBuffer);
 
@@ -494,16 +487,16 @@ VkResult Texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkIma
         imageInfo.samples = numSamples;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     result = vkCreateImage(device, &imageInfo, nullptr, image);
-    debug::checkResult(result, "VkImage : vkCreateImage result = " + std::to_string(result));
+    CHECK(result);
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device, *image, &memRequirements);
 
     result = Memory::instance().allocate(physicalDevice, device, memRequirements, properties, imageMemory);
-    debug::checkResult(result, "VkDeviceMemory : vkAllocateMemory result = " + std::to_string(result));
+    CHECK(result);
 
     result = vkBindImageMemory(device, *image, *imageMemory, 0);
-    debug::checkResult(result, "VkImage : vkBindImageMemory result = " + std::to_string(result));
+    CHECK(result);
 
     return result;
 }
@@ -536,7 +529,7 @@ VkResult Texture::createView(VkDevice device, VkImageViewType type, VkFormat for
         viewInfo.subresourceRange.baseArrayLayer = baseArrayLayer;
         viewInfo.subresourceRange.layerCount = layerCount;
     result = vkCreateImageView(device, &viewInfo, nullptr, imageView);
-    debug::checkResult(result, "VkImageView : vkCreateImageView result = " + std::to_string(result));
+    CHECK(result);
 
     return result;
 }
@@ -624,24 +617,24 @@ SwapChain::SupportDetails SwapChain::queryingSupport(VkPhysicalDevice device, Vk
 {
     SwapChain::SupportDetails details{};
     VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-    debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfaceCapabilitiesKHR result = " + std::to_string(result));
+    CHECK(result);
 
     uint32_t formatCount = 0, presentModeCount = 0;
 
     result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-    debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfaceFormatsKHR result = " + std::to_string(result));
+    CHECK(result);
     if (formatCount != 0){
         details.formats.resize(formatCount);
         result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-        debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfaceFormatsKHR result = " + std::to_string(result));
+        CHECK(result);
     }
 
     result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-    debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfacePresentModesKHR result = " + std::to_string(result));
+    CHECK(result);
     if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
         result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-        debug::checkResult(result, "VkSurfaceKHR : vkGetPhysicalDeviceSurfacePresentModesKHR result = " + std::to_string(result));
+        CHECK(result);
     }
 
     return details;
@@ -739,8 +732,7 @@ VkShaderModule ShaderModule::create(VkDevice* device, const std::vector<char>& c
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = code.size();
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-    VkResult result = vkCreateShaderModule(*device, &createInfo, nullptr, &shaderModule);
-    debug::checkResult(result, "VkShaderModule : vkCreateShaderModule result = " + std::to_string(result));
+    CHECK(vkCreateShaderModule(*device, &createInfo, nullptr, &shaderModule));
 
     return shaderModule;
 }

@@ -49,8 +49,8 @@ deferredGraphics::~deferredGraphics(){
 }
 
 void deferredGraphics::freeCommandBuffers(){
-    CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] commandPool is VK_NULL_HANDLE"));
-    CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] VkDevice is VK_NULL_HANDLE"));
+    CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] commandPool is VK_NULL_HANDLE"));
+    CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::freeCommandBuffers ] VkDevice is VK_NULL_HANDLE"));
 
     for(auto& [_,workflow]: workflows){
         workflow->freeCommandBuffer(commandPool);
@@ -101,7 +101,7 @@ void deferredGraphics::createCommandPool()
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
+    CHECK(vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool));
 }
 
 void deferredGraphics::create()
@@ -117,10 +117,10 @@ void deferredGraphics::create()
 }
 
 void deferredGraphics::createGraphicsPasses(){
-    CHECKERROR(commandPool == VK_NULL_HANDLE,       std::string("[ deferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
-    CHECKERROR(device.instance == VK_NULL_HANDLE,   std::string("[ deferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
-    CHECKERROR(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
-    CHECKERROR(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
+    CHECK_M(commandPool == VK_NULL_HANDLE,       std::string("[ deferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
+    CHECK_M(device.instance == VK_NULL_HANDLE,   std::string("[ deferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
+    CHECK_M(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
+    CHECK_M(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
     if(workflows.empty())
     {
@@ -178,7 +178,7 @@ void deferredGraphics::createGraphicsPasses(){
 }
 
 void deferredGraphics::updateDescriptorSets(){
-    CHECKERROR(cameraObject == nullptr, std::string("[ deferredGraphics::updateDescriptorSets ] camera is nullptr"));
+    CHECK_M(cameraObject == nullptr, std::string("[ deferredGraphics::updateDescriptorSets ] camera is nullptr"));
 
     for(auto& [name, workflow]: workflows){
         if(enable[name]){
@@ -189,7 +189,7 @@ void deferredGraphics::updateDescriptorSets(){
 }
 
 void deferredGraphics::createCommandBuffers(){
-    CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createCommandBuffers ] VkCommandPool is VK_NULL_HANDLE"));
+    CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createCommandBuffers ] VkCommandPool is VK_NULL_HANDLE"));
 
     for(auto& [_,workflow]: workflows){
         workflow->createCommandBuffers(commandPool);
@@ -201,7 +201,7 @@ void deferredGraphics::createCommandBuffers(){
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = imageCount;
-    vkAllocateCommandBuffers(device.getLogical(), &allocInfo, copyCommandBuffers.data());
+    CHECK(vkAllocateCommandBuffers(device.getLogical(), &allocInfo, copyCommandBuffers.data()));
 
     updateCmdFlags();
 
@@ -275,13 +275,13 @@ void deferredGraphics::updateCommandBuffer(uint32_t imageIndex){
 }
 
 void deferredGraphics::updateBuffers(uint32_t imageIndex){
-    vkResetCommandBuffer(copyCommandBuffers[imageIndex],0);
+    CHECK(vkResetCommandBuffer(copyCommandBuffers[imageIndex],0));
 
-     VkCommandBufferBeginInfo beginInfo{};
-         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-         beginInfo.flags = 0;
-         beginInfo.pInheritanceInfo = nullptr;
-    vkBeginCommandBuffer(copyCommandBuffers[imageIndex], &beginInfo);
+    VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
+    CHECK(vkBeginCommandBuffer(copyCommandBuffers[imageIndex], &beginInfo));
 
     if(cameraObject){
         cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
@@ -307,8 +307,7 @@ void deferredGraphics::createStorageBuffers(uint32_t imageCount){
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
-        vkMapMemory(device.getLogical(), buffer.memory, 0, sizeof(StorageBufferObject), 0, &buffer.map);
-        Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", deferredGraphics::createStorageBuffers, storageBuffersHost " + std::to_string(&buffer - &storageBuffersHost[0]));
+        CHECK(vkMapMemory(device.getLogical(), buffer.memory, 0, sizeof(StorageBufferObject), 0, &buffer.map));
         bufferMap["storage"].second.push_back(buffer.instance);
     }
 }

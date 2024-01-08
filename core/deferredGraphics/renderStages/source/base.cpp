@@ -31,7 +31,7 @@ void graphics::Base::createDescriptorSetLayout(VkDevice device)
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &SceneDescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &SceneDescriptorSetLayout));
 
     object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
     model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
@@ -102,7 +102,7 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineLayoutInfo.pSetLayouts = setLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base]);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base]));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -121,7 +121,7 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base]);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base]));
 
         depthStencil.stencilTestEnable = VK_TRUE;
         depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
@@ -132,9 +132,9 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
         depthStencil.back.writeMask = 0xff;
         depthStencil.back.reference = 1;
         depthStencil.front = depthStencil.back;
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base | objectProperty::outlining]);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base | objectProperty::outlining]));
         pipelineInfo.back().layout = PipelineLayoutDictionary[objectType::base | objectProperty::outlining];
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base | objectProperty::outlining]);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base | objectProperty::outlining]));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -154,7 +154,7 @@ void graphics::createBaseDescriptorPool()
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &base.DescriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &base.DescriptorPool));
 }
 
 void graphics::createBaseDescriptorSets()
@@ -166,7 +166,7 @@ void graphics::createBaseDescriptorSets()
         allocInfo.descriptorPool = base.DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(device, &allocInfo, base.DescriptorSets.data());
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, base.DescriptorSets.data()));
 }
 
 void graphics::updateBaseDescriptorSets(

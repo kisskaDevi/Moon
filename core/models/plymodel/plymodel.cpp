@@ -153,7 +153,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                     &uniformBuffer.instance,
                     &uniformBuffer.memory);
-    vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map);
+    CHECK(vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map));
     std::memcpy(uniformBuffer.map, &uniformBlock, sizeof(uniformBlock));
 
     Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
@@ -172,7 +172,7 @@ void plyModel::createDescriptorPool(VkDevice device) {
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
         poolInfo.pPoolSizes = poolSize.data();
         poolInfo.maxSets = std::max(meshCount, imageSamplerCount);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
 void plyModel::createDescriptorSet(VkDevice device, texture* emptyTexture) {
@@ -185,7 +185,7 @@ void plyModel::createDescriptorSet(VkDevice device, texture* emptyTexture) {
             descriptorSetAllocInfo.descriptorPool = descriptorPool;
             descriptorSetAllocInfo.pSetLayouts = &nodeDescriptorSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
-        vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &uniformBuffer.descriptorSet);
+        CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &uniformBuffer.descriptorSet));
 
         VkDescriptorBufferInfo bufferInfo{ uniformBuffer.instance, 0, sizeof(uniformBlock)};
 
@@ -205,7 +205,7 @@ void plyModel::createDescriptorSet(VkDevice device, texture* emptyTexture) {
             descriptorSetAllocInfo.descriptorPool = descriptorPool;
             descriptorSetAllocInfo.pSetLayouts = &materialDescriptorSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
-        vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material.descriptorSet);
+        CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material.descriptorSet));
 
         auto getDescriptorImageInfo = [&emptyTexture](texture* tex){
             VkDescriptorImageInfo descriptorImageInfo{};
@@ -258,9 +258,9 @@ void plyModel::create(physicalDevice device, VkCommandPool commandPool)
 {
     if(!created)
     {
-        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
-        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
 
         emptyTexture = createEmptyTexture(device, commandPool);
 

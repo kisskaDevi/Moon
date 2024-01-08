@@ -66,6 +66,7 @@ VkResult graphicsManager::createInstance(){
         createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
         createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo : nullptr;
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+    CHECK(result)
 
     if (enableValidationLayers){
         ValidationLayer::setupDebugMessenger(instance, &debugMessenger);
@@ -75,17 +76,17 @@ VkResult graphicsManager::createInstance(){
 }
 
 VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFeatures){
-    if(instance == VK_NULL_HANDLE)  return debug::errorResult("[ createDevice ] instance is VK_NULL_HANDLE");
+    CHECK_M(instance == VK_NULL_HANDLE, "[ graphicsManager::createDevice ] instance is VK_NULL_HANDLE");
 
     VkResult result = VK_SUCCESS;
 
     uint32_t deviceCount = 0;
     result = vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-    debug::checkResult(result, "VkInstance : vkEnumeratePhysicalDevices result = " + std::to_string(result));
+    CHECK(result);
 
     std::vector<VkPhysicalDevice> phDevices(deviceCount);
     result = vkEnumeratePhysicalDevices(instance, &deviceCount, phDevices.data());
-    debug::checkResult(result, "VkInstance : vkEnumeratePhysicalDevices result = " + std::to_string(result));
+    CHECK(result);
 
     for (const auto device : phDevices){
         devices.emplace_back(physicalDevice(device, deviceExtensions));
@@ -93,24 +94,27 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
 
     device logical(deviceFeatures);
     result = devices[deviceIndex].createDevice(logical,{{0,2}});
+    CHECK(result);
+
     return result;
 }
 
 VkResult graphicsManager::createSurface(GLFWwindow* window){
-    if(instance == VK_NULL_HANDLE)  return debug::errorResult("[ createSurface ] instance is VK_NULL_HANDLE");
-    if(devices.empty())             return debug::errorResult("[ createSwapChain ] device is VK_NULL_HANDLE");
+    CHECK_M(instance == VK_NULL_HANDLE, "[ graphicsManager::createSurface ] instance is VK_NULL_HANDLE");
+    CHECK_M(devices.empty(), "[ graphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
+    CHECK_M(window == nullptr, "[ createSurface ] Window is nullptr");
 
-    VkResult result = window ? glfwCreateWindowSurface(instance, window, nullptr, &surface) : debug::errorResult("[ createSurface ] Window is nullptr");
-    if(!devices[deviceIndex].presentSupport(surface)){
-        result = debug::errorResult("[ createSurface ] device doesn't support present");
-    }
+    VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    CHECK(result);
+    CHECK_M(!devices[deviceIndex].presentSupport(surface), "[ graphicsManager::createSurface ] device doesn't support present");
+
     return result;
 }
 
 VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCount){
-    if(window == nullptr)           return debug::errorResult("[ createSwapChain ] Window is nullptr");
-    if(surface == VK_NULL_HANDLE)   return debug::errorResult("[ createSwapChain ] surface is VK_NULL_HANDLE");
-    if(devices.empty())             return debug::errorResult("[ createSwapChain ] device is VK_NULL_HANDLE");
+    CHECK_M(window == nullptr, "[ graphicsManager::createSwapChain ] Window is nullptr");
+    CHECK_M(surface == VK_NULL_HANDLE, "[ graphicsManager::createSwapChain ] surface is VK_NULL_HANDLE");
+    CHECK_M(devices.empty(), "[ graphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
 
     std::vector<uint32_t> queueIndices = {0};
     swapChainKHR.setDevice(devices[deviceIndex]);
@@ -142,7 +146,7 @@ void graphicsManager::setGraphics(graphicsInterface* graphics){
 }
 
 VkResult graphicsManager::createSyncObjects(){
-    if(devices.empty())   return debug::errorResult("[ createSyncObjects ] device is VK_NULL_HANDLE");
+    CHECK_M(devices.empty(), "[ graphicsManager::createSyncObjects ] device is VK_NULL_HANDLE");
 
     VkResult result = VK_SUCCESS;
 
@@ -152,26 +156,27 @@ VkResult graphicsManager::createSyncObjects(){
     for (size_t imageIndex = 0; imageIndex < swapChainKHR.getImageCount(); imageIndex++){
         VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        vkCreateSemaphore(devices[deviceIndex].getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
+        result = vkCreateSemaphore(devices[deviceIndex].getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
+        CHECK(result);
 
         VkFenceCreateInfo fenceInfo{};
             fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         result = vkCreateFence(devices[deviceIndex].getLogical(), &fenceInfo, nullptr, &fences[imageIndex]);
-        debug::checkResult(result, "VkInstance : vkEnumeratePhysicalDevices result = " + std::to_string(result));
+        CHECK(result);
     }
     return result;
 }
 
 VkResult graphicsManager::checkNextFrame(){
     VkResult result = vkWaitForFences(devices[deviceIndex].getLogical(), 1, &fences[resourceIndex], VK_TRUE, UINT64_MAX);
-    debug::checkResult(result, "VkFence : vkWaitForFences result = " + std::to_string(result));
+    CHECK(result);
 
     result = vkResetFences(devices[deviceIndex].getLogical(), 1, &fences[resourceIndex]);
-    debug::checkResult(result, "VkFence : vkResetFences result = " + std::to_string(result));
+    CHECK(result);
 
     result = vkAcquireNextImageKHR(devices[deviceIndex].getLogical(), swapChainKHR(), UINT64_MAX, availableSemaphores[resourceIndex], VK_NULL_HANDLE, &imageIndex);
-    debug::checkResult(result, "VkFence : vkResetFences result = " + std::to_string(result));
+    CHECK(result);
 
     return result;
 }

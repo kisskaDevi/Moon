@@ -9,7 +9,7 @@ gaussianBlur::gaussianBlur(bool enable) :
 void gaussianBlur::createBufferAttachments(){
     bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
     VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-    vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler);
+    CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler));
 }
 
 void gaussianBlur::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
@@ -91,7 +91,7 @@ void gaussianBlur::createRenderPass(){
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void gaussianBlur::createFramebuffers(){
@@ -109,7 +109,7 @@ void gaussianBlur::createFramebuffers(){
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
         framebuffers.push_back(VkFramebuffer{});
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers.back());
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers.back()));
     }
 }
 
@@ -120,7 +120,7 @@ void gaussianBlur::blur::createDescriptorSetLayout(VkDevice device){
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
 void gaussianBlur::createPipelines(){
@@ -171,7 +171,7 @@ void gaussianBlur::blur::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -190,7 +190,7 @@ void gaussianBlur::blur::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
         pipelineInfo.back().subpass = subpassNumber;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

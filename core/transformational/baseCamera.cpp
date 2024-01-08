@@ -158,7 +158,7 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
-      vkMapMemory(device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map);
+    CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map));
 
       Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }

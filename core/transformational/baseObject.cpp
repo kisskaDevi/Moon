@@ -149,20 +149,20 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-      Buffer::create(   physicalDevice,
+        Buffer::create(   physicalDevice,
                         device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                         &buffer.instance,
                         &buffer.memory);
-      vkMapMemory(device, buffer.memory, 0, sizeof(UniformBuffer), 0, &buffer.map);
+        CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(UniformBuffer), 0, &buffer.map));
 
-      Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
+        Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-      Buffer::create(   physicalDevice,
+        Buffer::create(   physicalDevice,
                         device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -170,7 +170,7 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.instance,
                         &buffer.memory);
 
-      Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+        Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
@@ -202,7 +202,7 @@ void baseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
 void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
@@ -216,7 +216,7 @@ void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
     descriptors.resize(imageCount);
-    vkAllocateDescriptorSets(device, &allocInfo, descriptors.data());
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptors.data()));
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
@@ -242,9 +242,9 @@ void baseObject::create(
     uint32_t imageCount)
 {
     if(!created){
-        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
-        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
 
         createUniformBuffers(device.instance,device.getLogical(),imageCount);
         createDescriptorPool(device.getLogical(),imageCount);
@@ -290,7 +290,7 @@ void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
 void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
@@ -303,7 +303,7 @@ void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
     descriptors.resize(imageCount);
-    vkAllocateDescriptorSets(device, &allocInfo, descriptors.data());
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptors.data()));
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
@@ -343,9 +343,9 @@ void skyboxObject::create(
     uint32_t imageCount)
 {
     if(!created){
-        CHECKERROR(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECKERROR(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
-        CHECKERROR(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
 
         if(texture){
             VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);

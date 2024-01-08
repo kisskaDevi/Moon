@@ -11,7 +11,7 @@ void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* p
     static_cast<void>(attachmentsCount);
     pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
     VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-    vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments->sampler);
+    CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments->sampler));
 }
 
 void shadowGraphics::Shadow::destroy(VkDevice device)
@@ -51,7 +51,7 @@ void shadowGraphics::createRenderPass()
         renderPassInfo.pAttachments = &attachments;
         renderPassInfo.subpassCount = 1;
         renderPassInfo.pSubpasses = &subpass;
-    vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass));
 }
 
 void shadowGraphics::createPipelines()
@@ -117,7 +117,7 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
         pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -135,7 +135,7 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
@@ -157,7 +157,7 @@ void shadowGraphics::createFramebuffers(light* lightSource)
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[lightSource][j]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[lightSource][j]));
     }
 }
 

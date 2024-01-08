@@ -65,7 +65,7 @@ VkResult node::createSemaphores(VkDevice device){
     auto createSemaphore = [this, &result](VkDevice device, VkSemaphoreCreateInfo* semaphoreInfo, stage* stage){
         signalSemaphores.push_back(VkSemaphore{});
         result = vkCreateSemaphore(device, semaphoreInfo, nullptr, &signalSemaphores.back());
-        debug::checkResult(result, "VkSemaphore : vkCreateSemaphore result = " + std::to_string(result));
+        CHECK(result);
         stage->signalSemaphores.push_back(signalSemaphores.back());
     };
 

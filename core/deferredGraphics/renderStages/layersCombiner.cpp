@@ -29,7 +29,7 @@ void layersCombiner::createAttachments(std::unordered_map<std::string, std::pair
         for(size_t index=0; index < attachmentsCount; index++){
             pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (index==1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),image.frameBufferExtent,image.Count);
             VkSamplerCreateInfo samplerInfo = vkDefault::samler();
-            vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[index].sampler);
+            CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[index].sampler));
         }
     };
 
@@ -85,7 +85,7 @@ void layersCombiner::createRenderPass(){
         renderPassInfo.pSubpasses = subpass.data();
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
         renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void layersCombiner::createFramebuffers(){
@@ -104,7 +104,7 @@ void layersCombiner::createFramebuffers(){
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
 }
 
@@ -136,7 +136,7 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
 void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass){
@@ -191,7 +191,7 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo,
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -209,7 +209,7 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo,
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

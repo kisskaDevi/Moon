@@ -1,7 +1,6 @@
 #include "gltfmodel.h"
 #include "operations.h"
 
-#include <iostream>
 #include <numeric>
 
 namespace {
@@ -93,7 +92,7 @@ Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> m
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                     &uniformBuffer.instance,
                     &uniformBuffer.memory);
-    vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map);
+    CHECK(vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map));
 
     Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Mesh::Mesh, uniformBuffer");
 };

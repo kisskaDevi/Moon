@@ -1,6 +1,7 @@
 #include "depthMap.h"
 #include "vkdefault.h"
 #include "texture.h"
+#include "operations.h"
 
 void depthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
     std::vector<VkDescriptorPoolSize> poolSize = {
@@ -11,7 +12,7 @@ void depthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
         poolInfo.pPoolSizes = poolSize.data();
         poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
 void depthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
@@ -24,7 +25,7 @@ void depthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
         shadowAllocInfo.descriptorPool = descriptorPool;
         shadowAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         shadowAllocInfo.pSetLayouts = shadowLayouts.data();
-    vkAllocateDescriptorSets(device, &shadowAllocInfo, descriptorSets.data());
+    CHECK(vkAllocateDescriptorSets(device, &shadowAllocInfo, descriptorSets.data()));
 }
 
 depthMap::depthMap(physicalDevice device, VkCommandPool commandPool, uint32_t imageCount){
@@ -87,5 +88,5 @@ void depthMap::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout*
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         layoutInfo.pBindings = binding.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout));
 }

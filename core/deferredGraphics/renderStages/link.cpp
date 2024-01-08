@@ -34,7 +34,7 @@ void link::createDescriptorSetLayout() {
         textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         textureLayoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
 }
 
 void link::createPipeline(imageInfo* pInfo) {
@@ -61,7 +61,7 @@ void link::createPipeline(imageInfo* pInfo) {
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -80,7 +80,7 @@ void link::createPipeline(imageInfo* pInfo) {
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -94,7 +94,7 @@ void link::createDescriptorPool() {
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = imageCount;
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &DescriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &DescriptorPool));
 }
 
 void link::createDescriptorSets() {
@@ -105,7 +105,7 @@ void link::createDescriptorSets() {
         allocInfo.descriptorPool = DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data());
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data()));
 }
 
 void link::updateDescriptorSets(attachments* attachment) {

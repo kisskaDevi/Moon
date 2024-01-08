@@ -1,4 +1,5 @@
 #include "workflow.h"
+#include "operations.h"
 
 void workbody::destroy(VkDevice device){
     if(Pipeline)            {vkDestroyPipeline(device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
@@ -42,22 +43,22 @@ void workflow::createCommandBuffers(VkCommandPool commandPool)
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
-    vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data());
+    CHECK(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()));
 }
 
 void workflow::beginCommandBuffer(uint32_t frameNumber){
-    vkResetCommandBuffer(commandBuffers[frameNumber],0);
+    CHECK(vkResetCommandBuffer(commandBuffers[frameNumber],0));
 
     VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;
         beginInfo.pInheritanceInfo = nullptr;
 
-    vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo);
+    CHECK(vkBeginCommandBuffer(commandBuffers[frameNumber], &beginInfo));
 }
 
 void workflow::endCommandBuffer(uint32_t frameNumber){
-    vkEndCommandBuffer(commandBuffers[frameNumber]);
+    CHECK(vkEndCommandBuffer(commandBuffers[frameNumber]));
 }
 
 VkCommandBuffer& workflow::getCommandBuffer(uint32_t frameNumber)
@@ -85,7 +86,7 @@ void workflow::createDescriptorPool(VkDevice device, workbody* workbody, const u
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = maxSets;
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &workbody->DescriptorPool);
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &workbody->DescriptorPool));
 }
 
 void workflow::createDescriptorSets(VkDevice device, workbody* workbody, const uint32_t& imageCount){
@@ -96,5 +97,5 @@ void workflow::createDescriptorSets(VkDevice device, workbody* workbody, const u
         allocInfo.descriptorPool = workbody->DescriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(device, &allocInfo, workbody->DescriptorSets.data());
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, workbody->DescriptorSets.data()));
 };

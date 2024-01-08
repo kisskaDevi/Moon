@@ -58,7 +58,7 @@ void selectorGraphics::createRenderPass()
     renderPassInfo.pSubpasses = subpass.data();
     renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
     renderPassInfo.pDependencies = dependency.data();
-    vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
 void selectorGraphics::createFramebuffers()
@@ -73,7 +73,7 @@ void selectorGraphics::createFramebuffers()
         framebufferInfo.width = image.frameBufferExtent.width;
         framebufferInfo.height = image.frameBufferExtent.height;
         framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
 }
 
@@ -103,7 +103,7 @@ void selectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     layoutInfo.pBindings = bindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
+    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
 void selectorGraphics::Selector::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
@@ -145,7 +145,7 @@ void selectorGraphics::Selector::createPipeline(VkDevice device, imageInfo* pInf
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -163,7 +163,7 @@ void selectorGraphics::Selector::createPipeline(VkDevice device, imageInfo* pInf
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
-    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline);
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -171,9 +171,7 @@ void selectorGraphics::Selector::createPipeline(VkDevice device, imageInfo* pInf
 
 void selectorGraphics::createDescriptorPool(){
     std::vector<VkDescriptorPoolSize> poolSizes;
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
+    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, image.Count});
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count});
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count});
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count * selector.transparentLayersCount});
@@ -183,8 +181,8 @@ void selectorGraphics::createDescriptorPool(){
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &selector.DescriptorPool);
+        poolInfo.maxSets = image.Count;
+    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &selector.DescriptorPool));
 }
 
 void selectorGraphics::createDescriptorSets(){

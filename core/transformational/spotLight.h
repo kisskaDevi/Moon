@@ -49,10 +49,7 @@ private:
     matrix<float,4,4>                   globalTransformation{1.0f};
     matrix<float,4,4>                   modelMatrix{1.0f};
 
-    VkDescriptorSetLayout               bufferDescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorSetLayout               textureDescriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorPool                    descriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>        bufferDescriptorSets;
     std::vector<VkDescriptorSet>        textureDescriptorSets;
 
     std::vector<buffer> uniformBuffersHost;
@@ -92,8 +89,6 @@ public:
     vector<float,4>     getLightColor() const;
 
     void destroy(VkDevice device) override;
-    const std::vector<VkDescriptorSet>& getDescriptorSets() const override;
-    uint8_t getPipelineBitMask() const override;
 
     void create(
             physicalDevice device,

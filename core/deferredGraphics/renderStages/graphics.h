@@ -20,7 +20,6 @@ class graphics : public workflow
 {
 private:
     uint32_t                        primitiveCount{0};
-    std::vector<attachments*>       pAttachments;
     DeferredAttachments             deferredAttachments;
     bool                            enable{true};
 

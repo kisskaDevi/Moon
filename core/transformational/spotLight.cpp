@@ -11,6 +11,7 @@ spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & pro
     projectionMatrix(projection),
     type(type)
 {
+    pipelineBitMask = lightType::spot;
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
 }
@@ -20,6 +21,7 @@ spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<fl
     projectionMatrix(projection),
     type(type)
 {
+    pipelineBitMask = lightType::spot;
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
 }
@@ -34,7 +36,7 @@ void spotLight::destroy(VkDevice device)
     destroyBuffers(device, uniformBuffersDevice);
 
     if(textureDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, textureDescriptorSetLayout,  nullptr); textureDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(bufferDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, bufferDescriptorSetLayout,  nullptr); bufferDescriptorSetLayout = VK_NULL_HANDLE;}
+    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
 
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
@@ -176,14 +178,6 @@ vector<float,4> spotLight::getLightColor() const {
     return lightColor;
 }
 
-const std::vector<VkDescriptorSet>& spotLight::getDescriptorSets() const {
-    return bufferDescriptorSets;
-}
-
-uint8_t spotLight::getPipelineBitMask() const {
-    return lightType::spot;
-}
-
 void spotLight::create(
     physicalDevice device,
     VkCommandPool commandPool,
@@ -222,7 +216,7 @@ void spotLight::render(
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     std::vector<VkDescriptorSet> descriptorSets = descriptorSet;
-    descriptorSets.push_back(bufferDescriptorSets[frameNumber]);
+    descriptorSets.push_back(this->descriptorSets[frameNumber]);
     descriptorSets.push_back(textureDescriptorSets[frameNumber]);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
     vkCmdDraw(commandBuffer, 18, 1, 0, 0);
@@ -294,7 +288,7 @@ void spotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
 void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
 {
     light::createTextureDescriptorSetLayout(device,&textureDescriptorSetLayout);
-    light::createBufferDescriptorSetLayout(device,&bufferDescriptorSetLayout);
+    light::createBufferDescriptorSetLayout(device,&descriptorSetLayout);
 
     textureDescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> textLayouts(imageCount, textureDescriptorSetLayout);
@@ -305,14 +299,14 @@ void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
         textAllocInfo.pSetLayouts = textLayouts.data();
     CHECK(vkAllocateDescriptorSets(device, &textAllocInfo, textureDescriptorSets.data()));
 
-    bufferDescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> bufferLayouts(imageCount, bufferDescriptorSetLayout);
+    descriptorSets.resize(imageCount);
+    std::vector<VkDescriptorSetLayout> bufferLayouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo bufferAllocInfo{};
         bufferAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         bufferAllocInfo.descriptorPool = descriptorPool;
         bufferAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         bufferAllocInfo.pSetLayouts = bufferLayouts.data();
-    CHECK(vkAllocateDescriptorSets(device, &bufferAllocInfo, bufferDescriptorSets.data()));
+    CHECK(vkAllocateDescriptorSets(device, &bufferAllocInfo, descriptorSets.data()));
 }
 
 void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
@@ -341,7 +335,7 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
         std::vector<VkWriteDescriptorSet> bufferDescriptorWrites;
         bufferDescriptorWrites.push_back(VkWriteDescriptorSet{});
             bufferDescriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            bufferDescriptorWrites.back().dstSet = bufferDescriptorSets[i];
+            bufferDescriptorWrites.back().dstSet = descriptorSets[i];
             bufferDescriptorWrites.back().dstBinding = static_cast<uint32_t>(bufferDescriptorWrites.size() - 1);
             bufferDescriptorWrites.back().dstArrayElement = 0;
             bufferDescriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

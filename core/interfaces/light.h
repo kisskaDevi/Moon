@@ -8,7 +8,7 @@ class texture;
 struct physicalDevice;
 
 enum lightType : uint8_t {
-    spot = 0x0
+    spot = 0x1
 };
 
 class light
@@ -16,6 +16,12 @@ class light
 protected:
     bool enableShadow{false};
     bool enableScattering{false};
+
+    VkDescriptorSetLayout               descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorPool                    descriptorPool{VK_NULL_HANDLE};
+    std::vector<VkDescriptorSet>        descriptorSets;
+
+    uint8_t pipelineBitMask{0};
 
 public:
     virtual ~light(){};
@@ -26,10 +32,10 @@ public:
     bool isShadowEnable() const;
     bool isScatteringEnable() const;
 
-    virtual void destroy(VkDevice device) = 0;
+    uint8_t getPipelineBitMask() const;
+    const std::vector<VkDescriptorSet>& getDescriptorSets() const;
 
-    virtual const std::vector<VkDescriptorSet>& getDescriptorSets() const = 0;
-    virtual uint8_t getPipelineBitMask() const = 0;
+    virtual void destroy(VkDevice device) = 0;
 
     virtual void create(
             physicalDevice device,

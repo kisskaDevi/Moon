@@ -43,11 +43,7 @@ private:
     float startTimer{0.0f};
     float changeAnimationTime{0.0f};
 protected:
-    bool                            created{false};
-
-    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>    descriptors;
+    bool created{false};
 
     std::vector<buffer> uniformBuffersHost;
     std::vector<buffer> uniformBuffersDevice;
@@ -59,10 +55,11 @@ private:
     void createDescriptorSet(VkDevice device, uint32_t imageCount);
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
+
 public:
     baseObject() = default;
     baseObject(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    ~baseObject() = default;
+    virtual ~baseObject() = default;
 
     baseObject& setGlobalTransform(const matrix<float,4,4>& transform) override;
     baseObject& translate(const vector<float,3>& translate) override;
@@ -77,8 +74,6 @@ public:
     baseObject& setBloomFactor(const vector<float,4> & color);
 
     void destroy(VkDevice device) override;
-    uint8_t getPipelineBitMask() const override;
-    std::vector<VkDescriptorSet>& getDescriptorSet() override;
 
     void create(
         physicalDevice device,
@@ -111,7 +106,6 @@ public:
     skyboxObject& translate(const vector<float,3>& translate) override;
 
     void destroy(VkDevice device) override;
-    uint8_t getPipelineBitMask() const override;
 
     void create(
         physicalDevice device,

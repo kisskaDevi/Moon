@@ -37,6 +37,12 @@ protected:
     uint32_t firstInstance{0};
     uint32_t instanceCount{1};
 
+    uint8_t pipelineBitMask{0};
+
+    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
+    std::vector<VkDescriptorSet>    descriptors;
+
 public:
     virtual ~object(){};
 
@@ -63,6 +69,9 @@ public:
     uint32_t getFirstPrimitive() const;
     uint32_t getPrimitiveCount() const;
 
+    uint8_t getPipelineBitMask() const;
+    const std::vector<VkDescriptorSet>& getDescriptorSet() const;
+
     virtual void destroy(
         VkDevice device) = 0;
 
@@ -74,9 +83,6 @@ public:
     virtual void update(
         uint32_t frameNumber,
         VkCommandBuffer commandBuffer) = 0;
-
-    virtual uint8_t getPipelineBitMask() const = 0;
-    virtual std::vector<VkDescriptorSet>& getDescriptorSet() = 0;
 
     static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
     static void createSkyboxDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);

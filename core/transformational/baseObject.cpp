@@ -8,6 +8,7 @@
 
 baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCount)
 {
+    pipelineBitMask = objectType::base | (outlining.Enable ? objectProperty::outlining : objectProperty::non);
     pModel = model;
     this->firstInstance = firstInstance;
     this->instanceCount = instanceCount;
@@ -23,20 +24,11 @@ void baseObject::destroy(VkDevice device)
     created = false;
 }
 
-std::vector<VkDescriptorSet> &baseObject::getDescriptorSet() {
-    return descriptors;
-}
-
 void baseObject::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
         buffer.updateFlag = true;
     }
-}
-
-uint8_t baseObject::getPipelineBitMask() const
-{
-    return objectType::base | (outlining.Enable ? objectProperty::outlining : objectProperty::non);
 }
 
 void baseObject::updateModelMatrix()
@@ -260,7 +252,9 @@ void baseObject::printStatus() const
     std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
 }
 
-skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){}
+skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){
+    pipelineBitMask = objectType::skybox;
+}
 
 skyboxObject::~skyboxObject(){
     delete texture;
@@ -273,10 +267,6 @@ skyboxObject& skyboxObject::setMipLevel(float mipLevel){
 
 skyboxObject& skyboxObject::translate(const vector<float,3> &) {
     return *this;
-}
-
-uint8_t skyboxObject::getPipelineBitMask() const {
-    return objectType::skybox;
 }
 
 void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){

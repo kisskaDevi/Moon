@@ -27,7 +27,6 @@ void graphics::destroy()
     outlining.DestroyPipeline(device);
     lighting.Destroy(device);
     ambientLighting.DestroyPipeline(device);
-    pAttachments.clear();
 
     workflow::destroy();
 
@@ -35,16 +34,6 @@ void graphics::destroy()
     deferredAttachments.deleteSampler(device);
 }
 
-void graphics::setAttachments()
-{
-    pAttachments.push_back(&deferredAttachments.image);
-    pAttachments.push_back(&deferredAttachments.blur);
-    pAttachments.push_back(&deferredAttachments.bloom);
-    pAttachments.push_back(&deferredAttachments.GBuffer.position);
-    pAttachments.push_back(&deferredAttachments.GBuffer.normal);
-    pAttachments.push_back(&deferredAttachments.GBuffer.color);
-    pAttachments.push_back(&deferredAttachments.GBuffer.depth);
-}
 
 void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
@@ -70,7 +59,6 @@ void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,
     };
 
     createAttachments(physicalDevice, device, image, &deferredAttachments);
-    setAttachments();
 
     attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "image"] = {enable, {&deferredAttachments.image}};
     attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "blur"] = {enable, {&deferredAttachments.blur}};
@@ -83,14 +71,15 @@ void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,
 
 void graphics::createRenderPass()
 {
-    std::vector<VkAttachmentDescription> attachments;
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::imageDescription(pAttachments[attachments.size()]->format));
-    attachments.push_back(attachments::depthStencilDescription(pAttachments[attachments.size()]->format));
+    std::vector<VkAttachmentDescription> attachments = {
+        attachments::imageDescription(deferredAttachments.image.format),
+        attachments::imageDescription(deferredAttachments.blur.format),
+        attachments::imageDescription(deferredAttachments.bloom.format),
+        attachments::imageDescription(deferredAttachments.GBuffer.position.format),
+        attachments::imageDescription(deferredAttachments.GBuffer.normal.format),
+        attachments::imageDescription(deferredAttachments.GBuffer.color.format),
+        attachments::depthStencilDescription(deferredAttachments.GBuffer.depth.format)
+    };
 
     uint32_t gOffset = DeferredAttachments::GBufferOffset();
 
@@ -174,10 +163,10 @@ void graphics::createRenderPass()
 void graphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
-    for (size_t i = 0; i < image.Count; i++){
+    for (size_t imageIndex = 0; imageIndex < image.Count; imageIndex++){
         std::vector<VkImageView> attachments;
-        for(size_t j = 0; j < pAttachments.size(); j++){
-            attachments.push_back(pAttachments[j]->instances[i].imageView);
+        for(size_t attIndex = 0; attIndex < deferredAttachments.size(); attIndex++){
+            attachments.push_back(deferredAttachments[attIndex].instances[imageIndex].imageView);
         }
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -188,7 +177,7 @@ void graphics::createFramebuffers()
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[imageIndex]));
     }
 }
 
@@ -242,8 +231,8 @@ void graphics::updateDescriptorSets(
 void graphics::updateCommandBuffer(uint32_t frameNumber)
 {
     std::vector<VkClearValue> clearValues;
-    for(auto& attachments: pAttachments){
-        clearValues.push_back(attachments->clearValue);
+    for(size_t attIndex = 0; attIndex < deferredAttachments.size(); attIndex++){
+        clearValues.push_back(deferredAttachments[attIndex].clearValue);
     }
 
     VkRenderPassBeginInfo renderPassInfo{};

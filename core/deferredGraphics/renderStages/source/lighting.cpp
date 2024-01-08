@@ -84,30 +84,34 @@ void graphics::createLightingDescriptorSets()
 
 void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap)
 {
-    for (uint32_t i = 0; i < image.Count; i++)
-    {
+    for (uint32_t i = 0; i < image.Count; i++){
         std::vector<VkDescriptorImageInfo> imageInfos;
-        imageInfos.push_back(VkDescriptorImageInfo{});
-            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::positionIndex()]->instances[i].imageView;
-            imageInfos.back().sampler = VK_NULL_HANDLE;
-        imageInfos.push_back(VkDescriptorImageInfo{});
-            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::normalIndex()]->instances[i].imageView;
-            imageInfos.back().sampler = VK_NULL_HANDLE;
-        imageInfos.push_back(VkDescriptorImageInfo{});
-            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::colorIndex()]->instances[i].imageView;
-            imageInfos.back().sampler = VK_NULL_HANDLE;
-        imageInfos.push_back(VkDescriptorImageInfo{});
-            imageInfos.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfos.back().imageView = pAttachments[DeferredAttachments::GBufferOffset() + GBufferAttachments::depthIndex()]->instances[i].imageView;
-            imageInfos.back().sampler = VK_NULL_HANDLE;
+        imageInfos.push_back(VkDescriptorImageInfo{
+            VK_NULL_HANDLE,
+            deferredAttachments.GBuffer.position.instances[i].imageView,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        });
+        imageInfos.push_back(VkDescriptorImageInfo{
+            VK_NULL_HANDLE,
+            deferredAttachments.GBuffer.normal.instances[i].imageView,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        });
+        imageInfos.push_back(VkDescriptorImageInfo{
+            VK_NULL_HANDLE,
+            deferredAttachments.GBuffer.color.instances[i].imageView,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        });
+        imageInfos.push_back(VkDescriptorImageInfo{
+            VK_NULL_HANDLE,
+            deferredAttachments.GBuffer.depth.instances[i].imageView,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        });
 
-        VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = bufferMap.at("camera").second[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = bufferMap.at("camera").first;
+        VkDescriptorBufferInfo bufferInfo{
+            bufferMap.at("camera").second[i],
+            0,
+            bufferMap.at("camera").first
+        };
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for(auto& imageInfo: imageInfos){

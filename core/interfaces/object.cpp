@@ -70,6 +70,14 @@ uint32_t object::getPrimitiveCount() const {
     return primitiveCount;
 }
 
+const std::vector<VkDescriptorSet> &object::getDescriptorSet() const {
+    return descriptors;
+}
+
+uint8_t object::getPipelineBitMask() const {
+    return pipelineBitMask;
+}
+
 void object::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));

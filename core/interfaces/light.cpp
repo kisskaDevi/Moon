@@ -19,6 +19,15 @@ bool light::isScatteringEnable() const{
     return enableScattering;
 }
 
+const std::vector<VkDescriptorSet>& light::getDescriptorSets() const {
+    return descriptorSets;
+}
+
+uint8_t light::getPipelineBitMask() const {
+    return pipelineBitMask;
+}
+
+
 void light::createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));

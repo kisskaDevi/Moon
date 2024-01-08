@@ -10,11 +10,10 @@ private:
   quaternion<type> p;
   quaternion<type> q;
 public:
-  dualQuaternion();
+  dualQuaternion() = default;
   dualQuaternion(const dualQuaternion<type>& other);
   dualQuaternion(const quaternion<type>& p, const quaternion<type>& q);
   dualQuaternion<type>& operator=(const dualQuaternion<type>& other);
-  ~dualQuaternion();
 
   quaternion<type>          rotation()const;
   quaternion<type>          translation()const;
@@ -48,16 +47,8 @@ public:
 };
 
 template<typename type>
-dualQuaternion<type>::dualQuaternion()
-{}
-
-template<typename type>
 dualQuaternion<type>::dualQuaternion(const quaternion<type>& p, const quaternion<type>& q):
     p(p),q(q)
-{}
-
-template<typename type>
-dualQuaternion<type>::~dualQuaternion()
 {}
 
 template<typename type>
@@ -292,4 +283,6 @@ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>&
     return quat1*sigma;
 }
 
+extern template class dualQuaternion<float>;
+extern template class dualQuaternion<double>;
 #endif // DUALQUATERNION_H

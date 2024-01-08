@@ -552,4 +552,12 @@ template<typename T, uint32_t N> vector<T,N> mix(const vector<T,N>& left, const 
     return left + T(s) * (right - left);
 }
 
+extern template class vector<float, 2>;
+extern template class vector<double, 2>;
+
+extern template class vector<float, 3>;
+extern template class vector<double, 3>;
+
+extern template class vector<float, 4>;
+extern template class vector<double, 4>;
 #endif // VECTOR_H

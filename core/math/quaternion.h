@@ -18,7 +18,7 @@ public:
     quaternion(const type& s,const type& x,const type& y,const type& z);
     quaternion(const type& s,const vector<type, 3>& v);
     quaternion<type>& operator=(const quaternion<type>& other);
-    ~quaternion();
+    ~quaternion() = default;
 
     type                re() const;
     vector<type, 3>     im() const;
@@ -98,10 +98,6 @@ quaternion<type>& quaternion<type>::operator=(const quaternion<type>& other)
     z = other.z;
     return *this;
 }
-
-template<typename type>
-quaternion<type>::~quaternion()
-{}
 
 template<typename type>
 type                quaternion<type>::re()const
@@ -345,4 +341,6 @@ matrix<type,4,4> rotate(quaternion<type> qu){
     return convert4x4(qu);
 }
 
+extern template class quaternion<float>;
+extern template class quaternion<double>;
 #endif // QUATERNION_H

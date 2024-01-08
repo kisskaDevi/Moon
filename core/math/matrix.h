@@ -493,4 +493,12 @@ type radians(const type& angle) {
     return type(M_PI) * angle / type(180);
 }
 
+extern template class matrix<float, 2, 2>;
+extern template class matrix<double, 2, 2>;
+
+extern template class matrix<float, 3, 3>;
+extern template class matrix<double, 3, 3>;
+
+extern template class matrix<float, 4, 4>;
+extern template class matrix<double, 4, 4>;
 #endif // MATRIX_H

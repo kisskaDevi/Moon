@@ -16,6 +16,7 @@ LIBS += \
     -L$$OUT_PWD/../../core/transformational/$$DESTDIR \
     -L$$OUT_PWD/../../core/interfaces/$$DESTDIR \
     -L$$OUT_PWD/../../core/utils/$$DESTDIR \
+    -L$$OUT_PWD/../../core/math/$$DESTDIR \
     -L$$OUT_PWD/../../core/deferredGraphics/workflows/$$DESTDIR \
     -L$$PWD/../../dependences/libs/vulkan_tools/x64 \
     -L$$PWD/../../dependences/libs/glfw/build/src/$$GLFW_BIN_DIR \
@@ -26,7 +27,8 @@ LIBS += \
     -lmodels \
     -ltransformational \
     -linterfaces \
-    -lutils
+    -lutils \
+    -lmath
 win32: LIBS += -lvulkan-1 -lglfw3dll
 unix: LIBS += -lvulkan -lglfw
 

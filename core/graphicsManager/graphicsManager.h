@@ -59,12 +59,12 @@ private:
     uint32_t                                    imageIndex{0};
     uint32_t                                    resourceIndex{0};
 
-    VkResult        createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    VkResult        createInstance();
-    VkResult        createSurface(GLFWwindow* window);
-    VkResult        createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
-    VkResult        createLinker();
-    VkResult        createSyncObjects();
+    VkResult createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    VkResult createInstance();
+    VkResult createSurface(GLFWwindow* window);
+    VkResult createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
+    VkResult createLinker();
+    VkResult createSyncObjects();
 
     void destroySurface();
     void destroySwapChain();

@@ -29,6 +29,7 @@ private:
 
 protected:
     bool                    created{false};
+    VkDevice                device{VK_NULL_HANDLE};
 
     std::vector<buffer>     uniformBuffersHost;
     std::vector<buffer>     uniformBuffersDevice;

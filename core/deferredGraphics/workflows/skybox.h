@@ -37,7 +37,7 @@ private:
 
         std::vector<object*>*   objects;
 
-        void destroy(VkDevice device);
+        void destroy(VkDevice device) override;
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }skybox;

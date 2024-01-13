@@ -6,7 +6,7 @@
 
 #include <cstring>
 
-spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, uint32_t type):
+spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, spotType type):
     lightColor(color),
     projectionMatrix(projection),
     type(type)
@@ -16,7 +16,7 @@ spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & pro
     this->enableScattering = enableScattering;
 }
 
-spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, uint32_t type):
+spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, spotType type):
     tex(new texture(TEXTURE_PATH)),
     projectionMatrix(projection),
     type(type)
@@ -27,6 +27,7 @@ spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<fl
 }
 
 spotLight::~spotLight(){
+    spotLight::destroy(device);
     delete tex;
 }
 
@@ -204,6 +205,7 @@ void spotLight::create(
         createDescriptorSets(device.getLogical(), imageCount);
         updateDescriptorSets(device.getLogical(), imageCount);
         created = true;
+        this->device = device.getLogical();
     }
 }
 
@@ -354,42 +356,36 @@ void spotLight::printStatus() const
 
 //isotropicLight
 
-isotropicLight::isotropicLight(const vector<float,4>& color, std::vector<spotLight *>& lightSource, float radius)
+isotropicLight::isotropicLight(const vector<float,4>& color, float radius)
 {
     const auto proj = perspective(radians(91.0f), 1.0f, 0.01f, radius);
 
     lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
     lightSource.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    this->lightSource.push_back(lightSource.back());
 
     lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
     lightSource.back()->rotate(radians(-90.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    this->lightSource.push_back(lightSource.back());
 
     lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
     lightSource.back()->rotate(radians(0.0f),vector<float,3>(0.0f,1.0f,0.0f));
-    this->lightSource.push_back(lightSource.back());
 
     lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
     lightSource.back()->rotate(radians(90.0f),vector<float,3>(0.0f,1.0f,0.0f));
-    this->lightSource.push_back(lightSource.back());
 
     lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
     lightSource.back()->rotate(radians(-90.0f),vector<float,3>(0.0f,1.0f,0.0f));
-    this->lightSource.push_back(lightSource.back());
 
     lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
     lightSource.back()->rotate(radians(180.0f),vector<float,3>(1.0f,0.0f,0.0f));
-    this->lightSource.push_back(lightSource.back());
 
     // colors for debug if color = {0, 0, 0, 0}
     if(dot(color,color) == 0.0f){
-        this->lightSource.at(0)->setLightColor(vector<float,4>(1.0f,0.0f,0.0f,1.0f));
-        this->lightSource.at(1)->setLightColor(vector<float,4>(0.0f,1.0f,0.0f,1.0f));
-        this->lightSource.at(2)->setLightColor(vector<float,4>(0.0f,0.0f,1.0f,1.0f));
-        this->lightSource.at(3)->setLightColor(vector<float,4>(0.3f,0.6f,0.9f,1.0f));
-        this->lightSource.at(4)->setLightColor(vector<float,4>(0.6f,0.9f,0.3f,1.0f));
-        this->lightSource.at(5)->setLightColor(vector<float,4>(0.9f,0.3f,0.6f,1.0f));
+        lightSource.at(0)->setLightColor(vector<float,4>(1.0f,0.0f,0.0f,1.0f));
+        lightSource.at(1)->setLightColor(vector<float,4>(0.0f,1.0f,0.0f,1.0f));
+        lightSource.at(2)->setLightColor(vector<float,4>(0.0f,0.0f,1.0f,1.0f));
+        lightSource.at(3)->setLightColor(vector<float,4>(0.3f,0.6f,0.9f,1.0f));
+        lightSource.at(4)->setLightColor(vector<float,4>(0.6f,0.9f,0.3f,1.0f));
+        lightSource.at(5)->setLightColor(vector<float,4>(0.9f,0.3f,0.6f,1.0f));
     }
 }
 
@@ -401,6 +397,10 @@ vector<float,4> isotropicLight::getLightColor() const {
 
 vector<float,3> isotropicLight::getTranslate() const {
     return translation.im();
+}
+
+std::vector<spotLight*> isotropicLight::get() const {
+    return lightSource;
 }
 
 void isotropicLight:: setProjectionMatrix(const matrix<float,4,4> & projection)

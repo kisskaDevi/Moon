@@ -44,6 +44,7 @@ private:
     float changeAnimationTime{0.0f};
 protected:
     bool created{false};
+    VkDevice device{VK_NULL_HANDLE};
 
     std::vector<buffer> uniformBuffersHost;
     std::vector<buffer> uniformBuffersDevice;
@@ -59,7 +60,7 @@ private:
 public:
     baseObject() = default;
     baseObject(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    virtual ~baseObject() = default;
+    virtual ~baseObject();
 
     baseObject& setGlobalTransform(const matrix<float,4,4>& transform) override;
     baseObject& translate(const vector<float,3>& translate) override;

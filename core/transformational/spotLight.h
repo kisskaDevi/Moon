@@ -39,7 +39,8 @@ private:
 
     matrix<float,4,4>                   projectionMatrix{1.0f};
     bool                                created{false};
-    uint32_t                            type{spotType::circle};
+    VkDevice                            device{VK_NULL_HANDLE};
+    spotType                            type{spotType::circle};
 
     quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
@@ -63,9 +64,9 @@ private:
     void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
-    spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
-    spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, uint32_t type = spotType::circle);
-    ~spotLight();
+    spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, spotType type = spotType::circle);
+    spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, spotType type = spotType::circle);
+    virtual ~spotLight();
 
     spotLight&          setGlobalTransform(const matrix<float,4,4> & transform) override;
     spotLight&          translate(const vector<float,3> & translate) override;
@@ -124,11 +125,11 @@ private:
     matrix<float,4,4>                   globalTransformation{1.0f};
     matrix<float,4,4>                   modelMatrix{1.0f};
 
-    std::vector<spotLight *> lightSource;
+    std::vector<spotLight*>             lightSource;
 
     void updateModelMatrix();
 public:
-    isotropicLight(const vector<float,4>& color, std::vector<spotLight *>& lightSource, float radius = 100.0f);
+    isotropicLight(const vector<float,4>& color, float radius = 100.0f);
     ~isotropicLight();
 
     void setLightColor(const vector<float,4> & color);
@@ -146,6 +147,7 @@ public:
 
     vector<float,3> getTranslate() const;
     vector<float,4> getLightColor() const;
+    std::vector<spotLight*> get() const;
 };
 
 #endif // SPOTLIGHT_H

@@ -15,11 +15,13 @@ class depthMap
 
     texture*                        emptyTextureBlack{nullptr};
     texture*                        emptyTextureWhite{nullptr};
+    VkDevice                        device{VK_NULL_HANDLE};
 
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSets(VkDevice device, uint32_t imageCount);
 public:
     depthMap(physicalDevice device, VkCommandPool commandPool, uint32_t imageCount);
+    ~depthMap();
     void destroy(VkDevice device);
 
     const std::vector<VkDescriptorSet>& getDescriptorSets() const;

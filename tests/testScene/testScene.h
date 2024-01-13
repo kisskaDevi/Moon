@@ -5,11 +5,11 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <memory>
 #include <glfw3.h>
 
 #include "scene.h"
 #include "vector.h"
-
 #include "controller.h"
 
 class deferredGraphics;
@@ -45,25 +45,25 @@ private:
 
     GLFWwindow*                                         window{nullptr};
     graphicsManager*                                    app{nullptr};
-    controller*                                         mouse{nullptr};
-    controller*                                         board{nullptr};
+    std::shared_ptr<controller>                         mouse{nullptr};
+    std::shared_ptr<controller>                         board{nullptr};
 
-    std::unordered_map<std::string, baseCamera*>        cameras;
-    std::unordered_map<std::string, deferredGraphics*>  graphics;
-    imguiGraphics*                                      gui;
+    std::unordered_map<std::string, std::shared_ptr<baseCamera>>        cameras;
+    std::unordered_map<std::string, std::shared_ptr<deferredGraphics>>  graphics;
+    std::shared_ptr<imguiGraphics>                                      gui;
 
-    std::unordered_map<std::string, model*>             models;
-    std::unordered_map<std::string, baseObject*>        objects;
-    std::unordered_map<std::string, baseObject*>        staticObjects;
-    std::unordered_map<std::string, skyboxObject*>      skyboxObjects;
-    std::unordered_map<std::string, group*>             groups;
-    std::unordered_map<std::string, isotropicLight*>    lightPoints;
-    std::vector<spotLight*>                             lightSources;
+    std::unordered_map<std::string, std::shared_ptr<model>>             models;
+    std::unordered_map<std::string, std::shared_ptr<baseObject>>        objects;
+    std::unordered_map<std::string, std::shared_ptr<baseObject>>        staticObjects;
+    std::unordered_map<std::string, std::shared_ptr<skyboxObject>>      skyboxObjects;
+    std::unordered_map<std::string, std::shared_ptr<group>>             groups;
+    std::unordered_map<std::string, std::shared_ptr<isotropicLight>>    lightPoints;
+    std::vector<std::shared_ptr<spotLight>>                             lightSources;
 
-    bool                                                controledObjectEnableOutlighting{true};
-    float                                               controledObjectOutlightingColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    std::string                                         controledObjectName;
-    baseObject*                                         controledObject{nullptr};
+    bool            controledObjectEnableOutlighting{true};
+    float           controledObjectOutlightingColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    std::string     controledObjectName;
+    baseObject*     controledObject{nullptr};
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);
@@ -74,12 +74,10 @@ private:
     void createObjects();
 public:
     testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath);
-    ~testScene();
 
     void create(uint32_t WIDTH, uint32_t HEIGHT) override;
     void resize(uint32_t WIDTH, uint32_t HEIGHT) override;
     void updateFrame(uint32_t frameNumber, float frameTime) override;
-    void destroy() override;
 };
 
 #endif // TESTSCENE_H

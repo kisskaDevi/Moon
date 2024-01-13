@@ -15,6 +15,7 @@ private:
     std::filesystem::path filename;
     bool created{false};
     texture* emptyTexture{nullptr};
+    VkDevice device{VK_NULL_HANDLE};
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
@@ -48,6 +49,11 @@ private:
     vector<float,3> maxSize{0.0f};
 
     void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
+    void destroyStagingBuffer(VkDevice device);
+
+    void createDescriptorPool(VkDevice device);
+    void createDescriptorSet(VkDevice device, texture* emptyTexture);
+
 public:
     plyModel(std::filesystem::path filename,
              vector<float, 4> baseColorFactor = vector<float, 4>(0.5f,0.5f,0.5f,1.0f),
@@ -59,7 +65,7 @@ public:
 
     ~plyModel() override;
     void destroy(VkDevice device) override;
-    void destroyStagingBuffer(VkDevice device);
+    void create(physicalDevice device, VkCommandPool commandPool) override;
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
@@ -70,11 +76,6 @@ public:
     float animationEnd(uint32_t, uint32_t) const override {return 0.0f;}
     void updateAnimation(uint32_t, uint32_t, float) override {};
     void changeAnimation(uint32_t, uint32_t, uint32_t, float, float, float) override {};
-
-    void createDescriptorPool(VkDevice device);
-    void createDescriptorSet(VkDevice device, texture* emptyTexture);
-
-    void create(physicalDevice device, VkCommandPool commandPool) override;
 
     void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
     void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;

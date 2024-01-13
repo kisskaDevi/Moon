@@ -66,6 +66,7 @@ private:
 
     void updateCommandBuffer(uint32_t imageIndex);
     void updateBuffers(uint32_t imageIndex);
+
 public:
     deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
     ~deferredGraphics();

@@ -46,6 +46,11 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
 
 deferredGraphics::~deferredGraphics(){
     deferredGraphics::destroy();
+
+    for(auto& [_,map]: depthMaps){
+        static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
+        delete map;
+    }
 }
 
 void deferredGraphics::freeCommandBuffers(){
@@ -355,7 +360,7 @@ void deferredGraphics::bind(light* lightSource){
         depthMaps[lightSource] = new depthMap(device, commandPool, imageCount);
     }
     if(lightSource->isShadowEnable() && enable["Shadow"]){
-        static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(lightSource);
+        static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
     }
     lightSource->create(device, commandPool, imageCount);
     lights.push_back(lightSource);
@@ -368,9 +373,8 @@ bool deferredGraphics::remove(light* lightSource){
     lightSource->destroy(device.getLogical());
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 
-    static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(lightSource);
     if(depthMaps.count(lightSource)){
-        depthMaps[lightSource]->destroy(device.getLogical());
+        static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(depthMaps[lightSource]);
         delete depthMaps[lightSource];
         depthMaps.erase(lightSource);
     }

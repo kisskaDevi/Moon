@@ -36,6 +36,8 @@ void object::setOutlining(const bool& enable, const float& width, const vector<f
     outlining.Enable = enable;
     outlining.Width = width > 0.0f ? width : outlining.Width;
     outlining.Color = dot(color,color) > 0.0f ? color : outlining.Color;
+
+    pipelineBitMask |= outlining.Enable ? objectProperty::outlining : objectProperty::non;
 }
 
 bool object::getOutliningEnable() const {

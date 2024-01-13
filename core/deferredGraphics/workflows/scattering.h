@@ -26,7 +26,7 @@ private:
         std::vector<light*>*                               lightSources;
         std::unordered_map<light*, depthMap*>*             depthMaps;
 
-        void destroy(VkDevice device);
+        void destroy(VkDevice device) override;
         void createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;

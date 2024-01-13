@@ -156,8 +156,12 @@ void testPos::loadModels()
 
 void testPos::createLight()
 {
-    lightPoints["lightBox"] = new isotropicLight(vector<float,4>(1.0f,1.0f,1.0f,1.0f), lightSources, 10.0f);
+    lightPoints["lightBox"] = new isotropicLight(vector<float,4>(1.0f,1.0f,1.0f,1.0f), 10.0f);
     lightPoints["lightBox"]->setLightDropFactor(1.0f);
+
+    for(const auto& light: lightPoints["lightBox"]->get()){
+        lightSources.push_back(light);
+    }
 
     for(auto& source: lightSources){
         graphics["base"]->bind(source);

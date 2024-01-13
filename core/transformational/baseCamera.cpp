@@ -32,7 +32,9 @@ void baseCamera::recreate(float angle, float aspect, float near)
     setProjMatrix(proj);
 }
 
-baseCamera::~baseCamera(){}
+baseCamera::~baseCamera(){
+    baseCamera::destroy(device);
+}
 
 void baseCamera::destroy(VkDevice device)
 {
@@ -196,6 +198,7 @@ void baseCamera::create(physicalDevice device, uint32_t imageCount)
     if(!created){
         createUniformBuffers(device.instance,device.getLogical(),imageCount);
         created = true;
+        this->device = device.getLogical();
     }
 }
 

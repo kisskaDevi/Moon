@@ -152,7 +152,9 @@ gltfModel::gltfModel(std::filesystem::path filename, uint32_t instanceCount)
     instances.resize(instanceCount);
 }
 
-gltfModel::~gltfModel() {}
+gltfModel::~gltfModel() {
+    gltfModel::destroy(device);
+}
 
 void gltfModel::destroy(VkDevice device)
 {
@@ -455,6 +457,7 @@ void gltfModel::create(physicalDevice device, VkCommandPool commandPool)
         CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
 
         emptyTexture = createEmptyTexture(device, commandPool);
+        this->device = device.getLogical();
 
         VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
         loadFromFile(device.instance, device.getLogical(), commandBuffer);

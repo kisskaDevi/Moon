@@ -32,12 +32,6 @@ testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesy
     board(new controller(window, glfwGetKey))
 {}
 
-testScene::~testScene(){
-    delete mouse;
-    delete board;
-    testScene::destroy();
-}
-
 void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
@@ -54,21 +48,16 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
         graph->destroy();
         graph->create();
     }
-
-#ifdef IMGUI_GRAPHICS
-    gui->destroy();
-    gui->create();
-#endif
 }
 
 void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
-    cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
-    app->setGraphics(graphics["base"]);
-    graphics["base"]->bind(cameras["base"]);
+    cameras["base"] = std::make_shared<baseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["base"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{WIDTH, HEIGHT});
+    app->setGraphics(graphics["base"].get());
+    graphics["base"]->bind(cameras["base"].get());
     graphics["base"]->
         setEnable("TransparentLayer", true).
         setEnable("Skybox", true).
@@ -81,17 +70,17 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
         setEnable("Selector", true);
 
 #ifdef SECOND_VIEW_WINDOW
-    cameras["view"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH/3, HEIGHT/3}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)}};
-    app->setGraphics(graphics["view"]);
-    graphics["view"]->bind(cameras["view"]);
+    cameras["view"] = std::make_shared<baseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
+    graphics["view"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{WIDTH/3, HEIGHT/3}, VkOffset2D{static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+    app->setGraphics(graphics["view"].get());
+    graphics["view"]->bind(cameras["view"].get());
     graphics["view"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
 #endif
 
 #ifdef IMGUI_GRAPHICS
-    gui = new imguiGraphics;
+    gui = std::make_shared<imguiGraphics>();
     gui->setInstance(app->getInstance());
-    app->setGraphics(gui);
+    app->setGraphics(gui.get());
 #endif
 
     for(auto& [_,graph]: graphics){
@@ -200,155 +189,121 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     }
 }
 
-void testScene::destroy()
-{
-    for(auto& [_,graph]: graphics){
-        for (auto& [_,object]: objects)            graph->remove(object);
-        for (auto& [_,object]: staticObjects)      graph->remove(object);
-        for (auto& [_,object]: skyboxObjects)      graph->remove(object);
-        for (auto& [_,model]: models)              graph->destroy(model);
-        for (auto& light: lightSources)            graph->remove(light);
-    }
-    for(auto& [_,lightPoint]: lightPoints)  delete lightPoint;
-    for(auto& [_,object]: objects)          delete object;
-    for(auto& [_,object]: staticObjects)    delete object;
-    for(auto& [_,object]: skyboxObjects)    delete object;
-    for(auto& [_,model]: models)            delete model;
-    for(auto& light: lightSources)          delete light;
-
-    lightPoints.clear();
-    objects.clear();
-    objects.clear();
-    staticObjects.clear();
-    models.clear();
-    lightSources.clear();
-    skyboxObjects.clear();
-
-    for(auto& [key,graph]: graphics){
-        graph->destroy();
-        graph->remove(cameras[key]);
-        delete graph;
-    }
-
-#ifdef IMGUI_GRAPHICS
-    gui->destroy();
-#endif
-}
-
 void testScene::loadModels()
 {
-    models["bee"] = new class gltfModel(ExternalPath / "dependences/model/glb/Bee.glb", 6);
-    models["ufo"] = new class gltfModel(ExternalPath / "dependences/model/glb/RetroUFO.glb");
-    models["box"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Box/glTF-Binary/Box.glb");
-    models["sponza"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf");
-    models["duck"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Duck/glTF-Binary/Duck.glb");
-    models["DragonAttenuation"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
-    models["DamagedHelmet"] = new class gltfModel(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    models["robot"] = new class gltfModel(ExternalPath / "dependences/model/glb/Robot.glb");
+    models["bee"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Bee.glb", 6);
+    models["ufo"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/RetroUFO.glb");
+    models["box"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Box/glTF-Binary/Box.glb");
+    models["sponza"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf");
+    models["duck"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Duck/glTF-Binary/Duck.glb");
+    models["DragonAttenuation"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
+    models["DamagedHelmet"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    models["robot"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Robot.glb");
 
     for(auto& [_,model]: models){
-        graphics["base"]->create(model);
+        graphics["base"]->create(model.get());
     }
 }
 
 void testScene::createObjects()
 {
-    staticObjects["sponza"] = new baseObject(models["sponza"]);
+    staticObjects["sponza"] = std::make_shared<baseObject>(models["sponza"].get());
     staticObjects["sponza"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({3.0f,3.0f,3.0f});
 
-    objects["bee0"] = new baseObject(models["bee"], 0, 3);
+    objects["bee0"] = std::make_shared<baseObject>(models["bee"].get(), 0, 3);
     objects["bee0"]->translate({3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});
 
-    objects["bee1"] = new baseObject(models["bee"], 3, 3);
-    objects["bee1"]->translate({-3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});
-    objects["bee1"]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.7f));
+    objects["bee1"] = std::make_shared<baseObject>(models["bee"].get(), 3, 3);
+    objects["bee1"]->translate({-3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f}).setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.7f));
     objects["bee1"]->setAnimation(1, 1.0f);
 
-    objects["duck"] = new baseObject(models["duck"]);
+    objects["duck"] = std::make_shared<baseObject>(models["duck"].get());
     objects["duck"]->translate({0.0f,0.0f,3.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({3.0f});
     objects["duck"]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
 
-    objects["lightBox"] = new baseObject(models["box"]);
+    objects["lightBox"] = std::make_shared<baseObject>(models["box"].get());
     objects["lightBox"]->setBloomColor(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
-    groups["lightBox"] = new group;
-    groups["lightBox"]->addObject(objects["lightBox"]);
+    groups["lightBox"] = std::make_shared<group>();
+    groups["lightBox"]->addObject(objects["lightBox"].get());
 
-    objects["dragon"] = new baseObject(models["DragonAttenuation"]);
+    objects["dragon"] = std::make_shared<baseObject>(models["DragonAttenuation"].get());
     objects["dragon"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(26.0f, 11.0f, 11.0f));
 
-    objects["helmet"] = new baseObject(models["DamagedHelmet"]);
+    objects["helmet"] = std::make_shared<baseObject>(models["DamagedHelmet"].get());
     objects["helmet"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(27.0f, -10.0f, 14.0f));
 
-    objects["robot"] = new baseObject(models["robot"]);
+    objects["robot"] = std::make_shared<baseObject>(models["robot"].get());
     objects["robot"]->scale(25.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).rotate(radians(180.0f), {0.0f, 0.0f, 1.0f}).translate(vector<float,3>(-30.0f, 11.0f, 10.0f));
 
-    objects["ufo_light_0"] = new baseObject(models["ufo"]);
+    objects["ufo_light_0"] = std::make_shared<baseObject>(models["ufo"].get());
     objects["ufo_light_0"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
-    groups["ufo_light_0"] = new group;
+    groups["ufo_light_0"] = std::make_shared<group>();
     groups["ufo_light_0"]->rotate(radians(45.0f),vector<float,3>(1.0f,0.0f,0.0f)).rotate(radians(45.0f),vector<float,3>(0.0f,0.0f,-1.0f)).translate(vector<float,3>(24.0f, 7.5f, 18.0f));
-    groups["ufo_light_0"]->addObject(objects["ufo_light_0"]);
+    groups["ufo_light_0"]->addObject(objects["ufo_light_0"].get());
 
-    objects["ufo_light_1"] = new baseObject(models["ufo"]);
+    objects["ufo_light_1"] = std::make_shared<baseObject>(models["ufo"].get());
     objects["ufo_light_1"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
-    groups["ufo_light_1"] = new group;
+    groups["ufo_light_1"] = std::make_shared<group>();
     groups["ufo_light_1"]->rotate(radians(45.0f),vector<float,3>(-1.0f,0.0f,0.0f)).rotate(radians(45.0f),vector<float,3>(0.0f,0.0f,1.0f)).translate(vector<float,3>(24.0f, -7.5f, 18.0f));
-    groups["ufo_light_1"]->addObject(objects["ufo_light_1"]);
+    groups["ufo_light_1"]->addObject(objects["ufo_light_1"].get());
 
-    objects["ufo_light_2"] = new baseObject(models["ufo"]);
+    objects["ufo_light_2"] = std::make_shared<baseObject>(models["ufo"].get());
     objects["ufo_light_2"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
-    groups["ufo_light_2"] = new group;
+    groups["ufo_light_2"] = std::make_shared<group>();
     groups["ufo_light_2"]->rotate(radians(30.0f),vector<float,3>(-1.0f,0.0f,0.0f)).rotate(radians(30.0f),vector<float,3>(0.0f,0.0f,1.0f)).translate(vector<float,3>(-32.0f, 13.0f, 19.0f));
-    groups["ufo_light_2"]->addObject(objects["ufo_light_2"]);
+    groups["ufo_light_2"]->addObject(objects["ufo_light_2"].get());
 
-    objects["ufo_light_3"] = new baseObject(models["ufo"]);
+    objects["ufo_light_3"] = std::make_shared<baseObject>(models["ufo"].get());
     objects["ufo_light_3"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
-    groups["ufo_light_3"] = new group;
+    groups["ufo_light_3"] = std::make_shared<group>();
     groups["ufo_light_3"]->rotate(radians(30.0f),vector<float,3>(1.0f,0.0f,0.0f)).rotate(radians(30.0f),vector<float,3>(0.0f,0.0f,-1.0f)).translate(vector<float,3>(-32.0f, 7.0f, 19.0f));
-    groups["ufo_light_3"]->addObject(objects["ufo_light_3"]);
+    groups["ufo_light_3"]->addObject(objects["ufo_light_3"].get());
 
-    objects["ufo_light_4"] = new baseObject(models["ufo"]);
+    objects["ufo_light_4"] = std::make_shared<baseObject>(models["ufo"].get());
     objects["ufo_light_4"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
-    groups["ufo_light_4"] = new group;
+    groups["ufo_light_4"] = std::make_shared<group>();
     groups["ufo_light_4"]->rotate(radians(30.0f),vector<float,3>(-1.0f,0.0f,0.0f)).rotate(radians(30.0f),vector<float,3>(0.0f,0.0f,-1.0f)).translate(vector<float,3>(-26.0f, 13.0f, 19.0f));
-    groups["ufo_light_4"]->addObject(objects["ufo_light_4"]);
+    groups["ufo_light_4"]->addObject(objects["ufo_light_4"].get());
 
     for(auto key = "ufo" + std::to_string(ufoCounter); ufoCounter < 4; ufoCounter++, key = "ufo" + std::to_string(ufoCounter)){
-        objects[key] = new baseObject(models["ufo"]);
+        objects[key] = std::make_shared<baseObject>(models["ufo"].get());
         objects[key]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
         objects[key]->setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
-        groups[key] = new group;
-        groups[key]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
+        groups[key] = std::make_shared<group>();
+        groups[key]->addObject(objects["ufo" + std::to_string(ufoCounter)].get());
     }
 
-    skyboxObjects["lake"] = new skyboxObject({
-        ExternalPath / "dependences/texture/skybox/left.jpg",
-        ExternalPath / "dependences/texture/skybox/right.jpg",
-        ExternalPath / "dependences/texture/skybox/front.jpg",
-        ExternalPath / "dependences/texture/skybox/back.jpg",
-        ExternalPath / "dependences/texture/skybox/top.jpg",
-        ExternalPath / "dependences/texture/skybox/bottom.jpg"
+    skyboxObjects["lake"] = std::make_shared<skyboxObject>(
+        std::vector<std::filesystem::path>{
+            ExternalPath / "dependences/texture/skybox/left.jpg",
+            ExternalPath / "dependences/texture/skybox/right.jpg",
+            ExternalPath / "dependences/texture/skybox/front.jpg",
+            ExternalPath / "dependences/texture/skybox/back.jpg",
+            ExternalPath / "dependences/texture/skybox/top.jpg",
+            ExternalPath / "dependences/texture/skybox/bottom.jpg"
     });
     skyboxObjects["lake"]->scale({200.0f,200.0f,200.0f});
 
-    skyboxObjects["stars"] = new skyboxObject({
-        ExternalPath / "dependences/texture/skybox1/left.png",
-        ExternalPath / "dependences/texture/skybox1/right.png",
-        ExternalPath / "dependences/texture/skybox1/front.png",
-        ExternalPath / "dependences/texture/skybox1/back.png",
-        ExternalPath / "dependences/texture/skybox1/top.png",
-        ExternalPath / "dependences/texture/skybox1/bottom.png"
+    skyboxObjects["stars"] = std::make_shared<skyboxObject>(
+        std::vector<std::filesystem::path>{
+            ExternalPath / "dependences/texture/skybox1/left.png",
+            ExternalPath / "dependences/texture/skybox1/right.png",
+            ExternalPath / "dependences/texture/skybox1/front.png",
+            ExternalPath / "dependences/texture/skybox1/back.png",
+            ExternalPath / "dependences/texture/skybox1/top.png",
+            ExternalPath / "dependences/texture/skybox1/bottom.png"
     });
     skyboxObjects["stars"]->scale({200.0f,200.0f,200.0f});
 
     for(auto& [_,graph]: graphics){
         for(auto& [_,object]: objects){
-            graph->bind(object);
+            graph->bind(object.get());
         }
         for(auto& [_,object]: staticObjects){
-            graph->bind(object);
+            graph->bind(object.get());
         }
         for(auto& [_, object]: skyboxObjects){
-            graph->bind(object);
+            graph->bind(object.get());
         }
     }
 }
@@ -360,42 +315,46 @@ void testScene::createLight()
     std::filesystem::path LIGHT_TEXTURE2  = ExternalPath / "dependences/texture/light2.jpg";
     std::filesystem::path LIGHT_TEXTURE3  = ExternalPath / "dependences/texture/light3.jpg";
 
-    lightPoints["lightBox"] = new isotropicLight(vector<float,4>(1.0f,1.0f,1.0f,1.0f), lightSources);
-    groups["lightBox"]->addObject(lightPoints["lightBox"]);
+    lightPoints["lightBox"] = std::make_shared<isotropicLight>(vector<float,4>(1.0f,1.0f,1.0f,1.0f));
+    groups["lightBox"]->addObject(lightPoints["lightBox"].get());
+
+    for(const auto& light: lightPoints["lightBox"]->get()){
+        lightSources.push_back(std::shared_ptr<spotLight>(light));
+    }
 
     matrix<float,4,4> proj = perspective(radians(90.0f), 1.0f, 0.1f, 20.0f);
 
-    lightSources.push_back(new spotLight(LIGHT_TEXTURE0, proj, true, true));
-    groups["ufo0"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(LIGHT_TEXTURE0, proj, true, true));
+    groups["ufo0"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(LIGHT_TEXTURE1, proj, true, true));
-    groups["ufo1"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(LIGHT_TEXTURE1, proj, true, true));
+    groups["ufo1"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(LIGHT_TEXTURE2, proj, true, true));
-    groups["ufo2"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(LIGHT_TEXTURE2, proj, true, true));
+    groups["ufo2"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(LIGHT_TEXTURE3, proj, true, true));
-    groups["ufo3"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(LIGHT_TEXTURE3, proj, true, true));
+    groups["ufo3"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(vector<float,4>(1.0f,0.65f,0.2f,1.0f), proj, true, true));
-    groups["ufo_light_0"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(vector<float,4>(1.0f,0.65f,0.2f,1.0f), proj, true, true));
+    groups["ufo_light_0"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(vector<float,4>(0.9f,0.85f,0.95f,1.0f), proj, true, false));
-    groups["ufo_light_1"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(vector<float,4>(0.9f,0.85f,0.95f,1.0f), proj, true, false));
+    groups["ufo_light_1"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(vector<float,4>(0.9f,0.85f,0.75f,1.0f), proj, true, true));
+    lightSources.push_back(std::make_shared<spotLight>(vector<float,4>(0.9f,0.85f,0.75f,1.0f), proj, true, true));
     lightSources.back()->setLightColor(vector<float,4>(0.9f,0.85f,0.75f,1.0f));
-    groups["ufo_light_2"]->addObject(lightSources.back());
+    groups["ufo_light_2"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(vector<float,4>(0.9f,0.3f,0.4f,1.0f), proj, true, true));
-    groups["ufo_light_3"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(vector<float,4>(0.9f,0.3f,0.4f,1.0f), proj, true, true));
+    groups["ufo_light_3"]->addObject(lightSources.back().get());
 
-    lightSources.push_back(new spotLight(vector<float,4>(0.2f,0.5f,0.95f,1.0f), proj, true, true));
-    groups["ufo_light_4"]->addObject(lightSources.back());
+    lightSources.push_back(std::make_shared<spotLight>(vector<float,4>(0.2f,0.5f,0.95f,1.0f), proj, true, true));
+    groups["ufo_light_4"]->addObject(lightSources.back().get());
 
     for(auto& source: lightSources){
         for(auto& [_,graph]: graphics){
-            graph->bind(source);
+            graph->bind(source.get());
         }
         source->setLightDropFactor(0.05f);
     }
@@ -413,8 +372,7 @@ void testScene::mouseEvent(float frameTime)
         }
     }
 
-    glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {
-    });
+    glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {});
 
     if(double x = 0, y = 0; mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
         glfwGetCursorPos(window,&x,&y);
@@ -436,7 +394,7 @@ void testScene::mouseEvent(float frameTime)
                 if(controledObject){
                     controledObject->setOutlining(false);
                 }
-                controledObject = object;
+                controledObject = object.get();
                 controledObjectName = key;
                 controledObject->setOutlining(true && controledObjectEnableOutlighting, 0.03f,
                     {
@@ -522,21 +480,22 @@ void testScene::keyboardEvent(float frameTime)
     if(board->released(GLFW_KEY_N)) {
         std::random_device device;
         std::uniform_real_distribution dist(0.3f, 1.0f);
+        vector<float,4> newColor = vector<float,4>(dist(device), dist(device), dist(device), 1.0f);
 
-        lightSources.push_back(new spotLight({dist(device), dist(device), dist(device), 1.0f}, perspective(radians(90.0f), 1.0f, 0.1f, 20.0f), true, true));
+        lightSources.push_back(std::make_shared<spotLight>(newColor, perspective(radians(90.0f), 1.0f, 0.1f, 20.0f), true, true));
         lightSources.back()->setLightDropFactor(0.2f);
 
-        objects["ufo" + std::to_string(ufoCounter)] = new baseObject(models["ufo"]);
+        objects["ufo" + std::to_string(ufoCounter)] = std::make_shared<baseObject>(models["ufo"].get());
         objects["ufo" + std::to_string(ufoCounter)]->rotate(radians(90.0f),{1.0f,0.0f,0.0f});
 
-        groups["ufo0" + std::to_string(ufoCounter)] = new group;
+        groups["ufo0" + std::to_string(ufoCounter)] = std::make_shared<group>();
         groups["ufo0" + std::to_string(ufoCounter)]->translate(cameras["base"]->getTranslation());
-        groups["ufo0" + std::to_string(ufoCounter)]->addObject(lightSources.back());
-        groups["ufo0" + std::to_string(ufoCounter)]->addObject(objects["ufo" + std::to_string(ufoCounter)]);
+        groups["ufo0" + std::to_string(ufoCounter)]->addObject(lightSources.back().get());
+        groups["ufo0" + std::to_string(ufoCounter)]->addObject(objects["ufo" + std::to_string(ufoCounter)].get());
 
         for(auto& [_,graph]: graphics){
-            graph->bind(lightSources.back());
-            graph->bind(objects["ufo" + std::to_string(ufoCounter++)]);
+            graph->bind(lightSources.back().get());
+            graph->bind(objects["ufo" + std::to_string(ufoCounter++)].get());
         }
     }
 
@@ -544,8 +503,8 @@ void testScene::keyboardEvent(float frameTime)
         app->deviceWaitIdle();
         if(ufoCounter > 4) {
             for(auto& [_,graph]: graphics){
-                graph->remove(objects["ufo" + std::to_string(ufoCounter - 1)]);
-                graph->remove(lightSources.back());
+                graph->remove(objects["ufo" + std::to_string(ufoCounter - 1)].get());
+                graph->remove(lightSources.back().get());
             }
             lightSources.pop_back();
             objects.erase("ufo" + std::to_string(ufoCounter--));
@@ -570,8 +529,9 @@ void testScene::updates(float frameTime)
 {
     globalTime += frameTime;
 
-    skyboxObjects["stars"]->rotate(0.1f*frameTime,normalize(vector<float,3>(1.0f,1.0f,1.0f)));
-    objects["helmet"]->rotate(0.5f*frameTime,normalize(vector<float,3>(0.0f,0.0f,1.0f)));
-    objects["helmet"]->translate(vector<float,3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
+    skyboxObjects["stars"]->rotate(0.1f * frameTime, normalize(vector<float,3>(1.0f,1.0f,1.0f)));
+    objects["helmet"]->
+        rotate(0.5f * frameTime, normalize(vector<float,3>(0.0f,0.0f,1.0f))).
+        translate(vector<float,3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
 }
 

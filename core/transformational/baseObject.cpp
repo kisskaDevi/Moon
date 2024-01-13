@@ -14,6 +14,10 @@ baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCo
     this->instanceCount = instanceCount;
 }
 
+baseObject::~baseObject(){
+    baseObject::destroy(device);
+}
+
 void baseObject::destroy(VkDevice device)
 {
     destroyBuffers(device, uniformBuffersHost);
@@ -242,6 +246,7 @@ void baseObject::create(
         createDescriptorPool(device.getLogical(),imageCount);
         createDescriptorSet(device.getLogical(),imageCount);
         created = true;
+        this->device = device.getLogical();
     }
 }
 
@@ -252,11 +257,19 @@ void baseObject::printStatus() const
     std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
 }
 
+void skyboxObject::destroy(VkDevice device){
+    if(texture){
+        texture->destroy(device);
+    }
+    baseObject::destroy(device);
+}
+
 skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){
     pipelineBitMask = objectType::skybox;
 }
 
 skyboxObject::~skyboxObject(){
+    skyboxObject::destroy(device);
     delete texture;
 }
 
@@ -349,15 +362,6 @@ void skyboxObject::create(
         createDescriptorPool(device.getLogical(),imageCount);
         createDescriptorSet(device.getLogical(),imageCount);
         created = true;
+        this->device = device.getLogical();
     }
-}
-
-void skyboxObject::destroy(VkDevice device)
-{
-    if(texture){
-        texture->destroy(device);
-    }
-
-    baseObject::destroy(device);
-    created = false;
 }

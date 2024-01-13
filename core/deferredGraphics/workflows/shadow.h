@@ -11,11 +11,11 @@ class depthMap;
 class shadowGraphics : public workflow
 {
 private:
-    std::unordered_map<light*,std::vector<VkFramebuffer>> framebuffers;
+    std::unordered_map<depthMap*,std::vector<VkFramebuffer>> framebuffers;
     bool enable{true};
 
     struct Shadow : public workbody{
-        void destroy(VkDevice device);
+        void destroy(VkDevice device) override;
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
@@ -31,6 +31,7 @@ private:
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, depthMap* depthMap);
     void createRenderPass();
     void createPipelines();
+    attachments* createAttachments();
 public:
     shadowGraphics(bool enable,
                    std::vector<object*>* objects = nullptr,
@@ -43,9 +44,8 @@ public:
         const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&) override{};
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    void createAttachments(uint32_t attachmentsCount, attachments* pAttachments);
-    void createFramebuffers(light* lightSource);
-    void destroyFramebuffers(light* lightSource);
+    void createFramebuffers(depthMap* depthMap);
+    void destroyFramebuffers(depthMap* depthMap);
 };
 
 #endif // SHADOW_H

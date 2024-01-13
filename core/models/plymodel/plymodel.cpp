@@ -27,7 +27,9 @@ plyModel::plyModel(
     materialBlock.workflow = workflow;
 }
 
-plyModel::~plyModel() {}
+plyModel::~plyModel() {
+    plyModel::destroy(device);
+}
 
 void plyModel::destroy(VkDevice device) {
     destroyStagingBuffer(device);
@@ -58,6 +60,7 @@ void plyModel::destroy(VkDevice device) {
 
     created = false;
 }
+
 void plyModel::destroyStagingBuffer(VkDevice device) {
     vertexStaging.destroy(device);
     indexStaging.destroy(device);
@@ -263,6 +266,7 @@ void plyModel::create(physicalDevice device, VkCommandPool commandPool)
         CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
 
         emptyTexture = createEmptyTexture(device, commandPool);
+        this->device = device.getLogical();
 
         VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
         loadFromFile(device.instance, device.getLogical(), commandBuffer);

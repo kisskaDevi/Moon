@@ -6,12 +6,13 @@
 #include "model.h"
 #include "depthMap.h"
 
-void shadowGraphics::createAttachments(uint32_t attachmentsCount, attachments* pAttachments)
+attachments* shadowGraphics::createAttachments()
 {
-    static_cast<void>(attachmentsCount);
+    attachments* pAttachments = new attachments;
     pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.frameBufferExtent,image.Count);
     VkSamplerCreateInfo samplerInfo = vkDefault::samler();
     CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments->sampler));
+    return pAttachments;
 }
 
 void shadowGraphics::Shadow::destroy(VkDevice device)
@@ -140,39 +141,36 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void shadowGraphics::createFramebuffers(light* lightSource)
+void shadowGraphics::createFramebuffers(depthMap* depthMap)
 {
-    if(shadow.depthMaps->count(lightSource)){
-        (*shadow.depthMaps)[lightSource]->get() = new attachments;
-        createAttachments(1, (*shadow.depthMaps)[lightSource]->get());
-        (*shadow.depthMaps)[lightSource]->updateDescriptorSets(device, image.Count);
-    }
-    framebuffers[lightSource].resize(image.Count);
+    depthMap->get() = createAttachments();
+    depthMap->updateDescriptorSets(device, image.Count);
+    framebuffers[depthMap].resize(image.Count);
     for (size_t j = 0; j < image.Count; j++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &(*shadow.depthMaps)[lightSource]->get()->instances[j].imageView;
+            framebufferInfo.pAttachments = &depthMap->get()->instances[j].imageView;
             framebufferInfo.width = image.frameBufferExtent.width;
             framebufferInfo.height = image.frameBufferExtent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[lightSource][j]));
+        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[depthMap][j]));
     }
 }
 
 
-void shadowGraphics::destroyFramebuffers(light* lightSource)
+void shadowGraphics::destroyFramebuffers(depthMap* depthMap)
 {
-    if(shadow.depthMaps->count(lightSource) && (*shadow.depthMaps)[lightSource]->get()){
-        (*shadow.depthMaps)[lightSource]->get()->deleteAttachment(device);
-        (*shadow.depthMaps)[lightSource]->get()->deleteSampler(device);
+    if(depthMap->get()){
+        depthMap->get()->deleteAttachment(device);
+        depthMap->get()->deleteSampler(device);
     }
-    if(framebuffers.count(lightSource)){
-        for(auto& frame: framebuffers[lightSource]){
+    if(framebuffers.count(depthMap)){
+        for(auto& frame: framebuffers[depthMap]){
             if(frame){ vkDestroyFramebuffer(device, frame,nullptr); frame = VK_NULL_HANDLE;}
         }
-        framebuffers.erase(lightSource);
+        framebuffers.erase(depthMap);
     }
 }
 
@@ -201,7 +199,7 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[lightSource][frameNumber];
+        renderPassInfo.framebuffer = framebuffers[depthMap][frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
         renderPassInfo.renderArea.extent = image.frameBufferExtent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

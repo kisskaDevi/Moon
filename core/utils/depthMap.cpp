@@ -31,10 +31,15 @@ void depthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
 depthMap::depthMap(physicalDevice device, VkCommandPool commandPool, uint32_t imageCount){
     emptyTextureBlack = createEmptyTexture(device, commandPool);
     emptyTextureWhite = createEmptyTexture(device, commandPool, false);
+    this->device = device.getLogical();
 
     createDescriptorPool(device.getLogical(), imageCount);
     createDescriptorSets(device.getLogical(), imageCount);
     updateDescriptorSets(device.getLogical(), imageCount);
+}
+
+depthMap::~depthMap(){
+    destroy(device);
 }
 
 void depthMap::destroy(VkDevice device){

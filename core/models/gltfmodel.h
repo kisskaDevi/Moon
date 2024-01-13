@@ -98,6 +98,7 @@ private:
     std::filesystem::path filename;
     bool created{false};
     texture* emptyTexture{nullptr};
+    VkDevice device{VK_NULL_HANDLE};
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
@@ -125,25 +126,26 @@ private:
     void loadAnimations(tinygltf::Model& gltfModel);
 
     Node* nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes);
+    void destroyStagingBuffer(VkDevice device);
+
     void createDescriptorPool(VkDevice device);
     void createDescriptorSet(VkDevice device, texture* emptyTexture);
+
 public:
     gltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
     ~gltfModel() override;
 
     void destroy(VkDevice device) override;
-    void destroyStagingBuffer(VkDevice device);
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
+    void create(physicalDevice device, VkCommandPool commandPool) override;
 
     bool hasAnimation(uint32_t frameIndex) const override;
     float animationStart(uint32_t frameIndex, uint32_t index) const override;
     float animationEnd(uint32_t frameIndex, uint32_t index) const override;
     void updateAnimation(uint32_t frameIndex, uint32_t index, float time) override;
     void changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) override;
-
-    void create(physicalDevice device, VkCommandPool commandPool) override;
 
     void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
     void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;

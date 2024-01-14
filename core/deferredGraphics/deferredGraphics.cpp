@@ -46,11 +46,6 @@ deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkE
 
 deferredGraphics::~deferredGraphics(){
     deferredGraphics::destroy();
-
-    for(auto& [_,map]: depthMaps){
-        static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
-        delete map;
-    }
 }
 
 void deferredGraphics::freeCommandBuffers(){
@@ -72,6 +67,12 @@ void deferredGraphics::destroyCommandPool(){
 }
 
 void deferredGraphics::destroy(){
+    for(auto& [_,map]: depthMaps){
+        static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
+        delete map;
+        map = nullptr;
+    }
+
     destroyCommandPool();
 
     for(auto& node: nodes){
@@ -89,7 +90,10 @@ void deferredGraphics::destroy(){
 
     for(auto& [_,workflow]: workflows){
         workflow->destroy();
+        delete workflow;
     }
+    workflows.clear();
+    attachmentsMap.clear();
 
     Link.destroy();
 
@@ -119,6 +123,13 @@ void deferredGraphics::create()
     createGraphicsPasses();
     createCommandBuffers();
     updateDescriptorSets();
+
+    for(auto& [lightSource,map]: depthMaps){
+        depthMaps[lightSource] = new depthMap(device, commandPool, imageCount);
+        if(lightSource->isShadowEnable() && enable["Shadow"]){
+            static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
+        }
+    }
 }
 
 void deferredGraphics::createGraphicsPasses(){
@@ -127,25 +138,24 @@ void deferredGraphics::createGraphicsPasses(){
     CHECK_M(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
     CHECK_M(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
-    if(workflows.empty())
-    {
-        workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0, &objects, &lights, &depthMaps);
-        workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
-        workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
-        workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitAttachmentsCount);
-        workflows["Blur"] = new gaussianBlur(enable["Blur"]);
-        workflows["Skybox"] = new skyboxGraphics(enable["Skybox"], &objects);
-        workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
-        workflows["SSAO"] = new SSAOGraphics(enable["SSAO"]);
-        workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &depthMaps);
-        workflows["Scattering"] = new scattering(enable["Scattering"], &lights, &depthMaps);
-        workflows["BoundingBox"] = new boundingBoxGraphics(enable["BoundingBox"], &objects);
-        for(uint32_t i = 0; i < TransparentLayersCount; i++){
-            enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
-            workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i, &objects, &lights, &depthMaps);
-        };
-        workflows["Selector"] = new selectorGraphics(enable["Selector"]);
-    }
+
+    workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0, &objects, &lights, &depthMaps);
+    workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
+    workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
+    workflows["Blur"] = new gaussianBlur(enable["Blur"]);
+    workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitAttachmentsCount);
+    workflows["Skybox"] = new skyboxGraphics(enable["Skybox"], &objects);
+    workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
+    workflows["SSAO"] = new SSAOGraphics(enable["SSAO"]);
+    workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &depthMaps);
+    workflows["Scattering"] = new scattering(enable["Scattering"], &lights, &depthMaps);
+    workflows["BoundingBox"] = new boundingBoxGraphics(enable["BoundingBox"], &objects);
+    for(uint32_t i = 0; i < TransparentLayersCount; i++){
+        enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
+        workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i, &objects, &lights, &depthMaps);
+    };
+    workflows["Selector"] = new selectorGraphics(enable["Selector"]);
+
 
     for(auto& [_,workflow]: workflows){
         imageInfo info{imageCount, swapChainKHR->getFormat(), VkOffset2D{0,0}, extent, extent, MSAASamples};
@@ -186,9 +196,7 @@ void deferredGraphics::updateDescriptorSets(){
     CHECK_M(cameraObject == nullptr, std::string("[ deferredGraphics::updateDescriptorSets ] camera is nullptr"));
 
     for(auto& [name, workflow]: workflows){
-        if(enable[name]){
-            workflow->updateDescriptorSets(bufferMap, attachmentsMap);
-        }
+        workflow->updateDescriptorSets(bufferMap, attachmentsMap);
     }
     Link.updateDescriptorSets(attachmentsMap["final"].second.front());
 }
@@ -270,9 +278,7 @@ void deferredGraphics::updateCommandBuffer(uint32_t imageIndex){
     if(updateCommandBufferFlags[imageIndex]){
         for(auto& [name, workflow]: workflows){
             workflow->beginCommandBuffer(imageIndex);
-            if(enable[name]){
-                workflow->updateCommandBuffer(imageIndex);
-            }
+            workflow->updateCommandBuffer(imageIndex);
             workflow->endCommandBuffer(imageIndex);
         }
         updateCommandBufferFlags[imageIndex] = false;
@@ -358,9 +364,9 @@ void deferredGraphics::remove(camera* cameraObject){
 void deferredGraphics::bind(light* lightSource){
     if(depthMaps.count(lightSource) == 0){
         depthMaps[lightSource] = new depthMap(device, commandPool, imageCount);
-    }
-    if(lightSource->isShadowEnable() && enable["Shadow"]){
-        static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
+        if(lightSource->isShadowEnable() && enable["Shadow"]){
+            static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
+        }
     }
     lightSource->create(device, commandPool, imageCount);
     lights.push_back(lightSource);
@@ -428,7 +434,7 @@ deferredGraphics& deferredGraphics::setScatteringRefraction(bool enable){
 }
 
 deferredGraphics& deferredGraphics::setBlitFactor(float blitFactor){
-    if(blitFactor >= 1.0f){
+    if(enable["Bloom"] && blitFactor >= 1.0f){
         static_cast<bloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
         updateCmdFlags();
     }

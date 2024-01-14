@@ -137,7 +137,7 @@ void transparentLayersCombine() {
     vec4 frontScatteringColor = layerBehindScattering || !enableScatteringRefraction ? vec4(texture(scattering, fragTexCoord.xy).xyz, 0.0) : vec4(0.0);
 
     outColor = accumulateColor(beginCoords, endCoords, step, Sampler, depth, skybox, true, enableScatteringRefraction);
-    outColor = max(layerColor, max(step *outColor, frontScatteringColor));
+    outColor = max(layerColor, max(step * outColor, frontScatteringColor));
 
     outBloom = accumulateColor(beginCoords, endCoords, step, bloomSampler, depth, skyboxBloom, true, false);
     outBloom = max(layerBloom, step * outBloom);
@@ -153,10 +153,12 @@ void main() {
     if(pc.enableTransparentLayers == 0){
         float d = texture(depth, fragTexCoord.xy).r;
 
+        vec4 scatteringColor = vec4(texture(scattering, fragTexCoord.xy).xyz, 1.0);
         outColor = texture(Sampler, fragTexCoord);
         outBloom = texture(bloomSampler, fragTexCoord);
         outColor += d == 1.0 ? texture(skybox, fragTexCoord.xy) : vec4(0.0);
         outBloom += d == 1.0 ? texture(skyboxBloom, fragTexCoord.xy) : vec4(0.0);
+        outColor += scatteringColor;
         outBlur = vec4(outColor.xyz, d);
         if(d > pc.blurDepth){
             outColor = vec4(0.0f);

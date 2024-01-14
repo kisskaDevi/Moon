@@ -41,7 +41,6 @@ depthMap::depthMap(physicalDevice device, VkCommandPool commandPool, uint32_t im
 depthMap::~depthMap(){
     destroy(device);
 }
-
 void depthMap::destroy(VkDevice device){
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}

@@ -178,6 +178,8 @@ void postProcessingGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
     const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
+    if(!enable) return;
+
     for (size_t image = 0; image < this->image.Count; image++)
     {
         const auto layersAttachment = attachmentsMap.at("combined.color").second.front();
@@ -269,8 +271,9 @@ void postProcessingGraphics::updateDescriptorSets(
     }
 }
 
-void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber)
-{
+void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
+    if(!enable) return;
+
     std::vector<VkClearValue> clearValues;
     clearValues.push_back(VkClearValue{});
 

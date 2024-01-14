@@ -227,6 +227,8 @@ void boundingBoxGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
     const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&)
 {
+    if(!enable) return;
+
     for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
@@ -248,6 +250,8 @@ void boundingBoxGraphics::updateDescriptorSets(
 }
 
 void boundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
+    if(!enable) return;
+
     std::vector<VkClearValue> clearValues = {frame.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};

@@ -31,6 +31,8 @@ class transformational;
 class testScene : public scene
 {
 private:
+    bool& framebufferResized;
+
     std::filesystem::path   ExternalPath;
     vector<uint32_t,2>      extent{0};
     vector<double,2>        mousePos{0.0};
@@ -73,7 +75,7 @@ private:
     void createLight();
     void createObjects();
 public:
-    testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath);
+    testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
 
     void create(uint32_t WIDTH, uint32_t HEIGHT) override;
     void resize(uint32_t WIDTH, uint32_t HEIGHT) override;

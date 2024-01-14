@@ -18,7 +18,7 @@ private:
     bool enable{true};
 
     struct Lighting : workbody{
-        VkDescriptorSetLayout                              ShadowDescriptorSetLayout;
+        VkDescriptorSetLayout                              ShadowDescriptorSetLayout{VK_NULL_HANDLE};
         std::unordered_map<uint8_t, VkDescriptorSetLayout> BufferDescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkDescriptorSetLayout> DescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkPipelineLayout>      PipelineLayoutDictionary;

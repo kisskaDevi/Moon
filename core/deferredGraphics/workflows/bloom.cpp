@@ -288,6 +288,8 @@ void bloomGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
     const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
+    if(!enable) return;
+
     srcAttachment = attachmentsMap.at("combined.bloom").second.front();
 
     auto updateDescriptorSets = [](VkDevice device, attachments* image, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
@@ -335,8 +337,9 @@ void bloomGraphics::updateDescriptorSets(
     }
 }
 
-void bloomGraphics::updateCommandBuffer(uint32_t frameNumber)
-{
+void bloomGraphics::updateCommandBuffer(uint32_t frameNumber){
+    if(!enable) return;
+
     VkImageSubresourceRange ImageSubresourceRange{};
         ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         ImageSubresourceRange.baseMipLevel = 0;

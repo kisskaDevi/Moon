@@ -239,6 +239,8 @@ void layersCombiner::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
     const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
+    if(!enable) return;
+
     for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo;
@@ -446,8 +448,9 @@ void layersCombiner::updateDescriptorSets(
     }
 }
 
-void layersCombiner::updateCommandBuffer(uint32_t frameNumber)
-{
+void layersCombiner::updateCommandBuffer(uint32_t frameNumber){
+    if(!enable) return;
+
     std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue, frame.blur.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};

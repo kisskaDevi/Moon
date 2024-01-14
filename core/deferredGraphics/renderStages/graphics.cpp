@@ -224,12 +224,15 @@ void graphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
     const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
+    if(!enable) return;
+
     updateBaseDescriptorSets(bufferMap, attachmentsMap);
     updateLightingDescriptorSets(bufferMap);
 }
 
-void graphics::updateCommandBuffer(uint32_t frameNumber)
-{
+void graphics::updateCommandBuffer(uint32_t frameNumber){
+    if(!enable) return;
+
     std::vector<VkClearValue> clearValues;
     for(size_t attIndex = 0; attIndex < deferredAttachments.size(); attIndex++){
         clearValues.push_back(deferredAttachments[attIndex].clearValue);

@@ -184,10 +184,10 @@ void shadowGraphics::create(std::unordered_map<std::string, std::pair<bool,std::
 
 void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
-    if(enable){
-        for(const auto& [light, depth] : *shadow.depthMaps){
-            render(frameNumber, commandBuffers[frameNumber], light, depth);
-        }
+    if(!enable) return;
+
+    for(const auto& [light, depth] : *shadow.depthMaps){
+        render(frameNumber, commandBuffers[frameNumber], light, depth);
     }
 }
 

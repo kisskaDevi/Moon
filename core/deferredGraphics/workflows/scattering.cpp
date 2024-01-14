@@ -228,6 +228,8 @@ void scattering::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
     const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
+    if(!enable) return;
+
     for (uint32_t i = 0; i < image.Count; i++)
     {
         const auto depthAttachment = attachmentsMap.at("GBuffer.depth").second.front();
@@ -262,8 +264,9 @@ void scattering::updateDescriptorSets(
     }
 }
 
-void scattering::updateCommandBuffer(uint32_t frameNumber)
-{
+void scattering::updateCommandBuffer(uint32_t frameNumber){
+    if(!enable) return;
+
     std::vector<VkClearValue> clearValues = {frame.clearValue};
 
     VkRenderPassBeginInfo renderPassInfo{};

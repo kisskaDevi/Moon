@@ -222,6 +222,8 @@ void gaussianBlur::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
     const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
 {
+    if(!enable) return;
+
     auto updateDescriptorSets = [](VkDevice device, attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
         auto imageIt = attachment->instances.begin();
         auto setIt = descriptorSets.begin();
@@ -250,6 +252,8 @@ void gaussianBlur::updateDescriptorSets(
 }
 
 void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
+    if(!enable) return;
+
     std::vector<VkClearValue> clearValues(2, VkClearValue{frame.clearValue.color});
 
     VkRenderPassBeginInfo renderPassInfo{};

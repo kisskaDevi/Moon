@@ -24,7 +24,8 @@
 #include <random>
 #include <limits>
 
-testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath):
+testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized):
+    framebufferResized(framebufferResized),
     ExternalPath(ExternalPath),
     window(window),
     app(app),
@@ -143,6 +144,23 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
                 graph->setScatteringRefraction(enableScatteringRefraction);
             }
         }
+
+        auto switcher = [this](const std::string& name){
+            if(auto val = graphics["base"]->getEnable(name); ImGui::RadioButton(name.c_str(), val)){
+                val = !val;
+                graphics["base"]->setEnable(name, val);
+                framebufferResized = true;
+            }
+        };
+        switcher("Bloom");
+        switcher("Blur");
+        switcher("Skybox");
+        switcher("SSLR");
+        switcher("SSAO");
+        switcher("Shadow");
+        switcher("Scattering");
+        switcher("BoundingBox");
+        switcher("TransparentLayer");
 
         ImGui::TreePop();
     }

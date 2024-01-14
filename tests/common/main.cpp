@@ -55,7 +55,7 @@ int main()
 #elif defined(TESTCUDA)
     testCuda testScene(&app, window, ExternalPath);
 #else
-    testScene testScene(&app, window, ExternalPath);
+    testScene testScene(&app, window, ExternalPath, framebufferResized);
 #endif
     testScene.create(WIDTH,HEIGHT);
 

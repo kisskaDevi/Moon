@@ -64,7 +64,7 @@ private:
 
     bool            controledObjectEnableOutlighting{true};
     float           controledObjectOutlightingColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    std::string     controledObjectName;
+    std::string     controledObjectName{"none"};
     baseObject*     controledObject{nullptr};
 
     void mouseEvent(float frameTime);

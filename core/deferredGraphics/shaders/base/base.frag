@@ -2,12 +2,14 @@
 
 #include "../__methods__/defines.glsl"
 #include "../__methods__/colorFunctions.glsl"
+#include "../__methods__/math.glsl"
 
 const uint PBR_WORKFLOW_METALLIC_ROUGHNESS = 0;
 const uint PBR_WORKFLOW_SPECULAR_GLOSINESS = 1;
 const float c_MinRoughness = 0.04;
 
-layout(constant_id = 0) const bool enableTransparencyPass = false;
+layout(constant_id = 0) const bool enableTransparency = false;
+layout(constant_id = 1) const bool transparencyPass = false;
 
 layout(set = 0, binding = 1) uniform samplerCube samplerCubeMap;
 layout(set = 0, binding = 2) uniform sampler2D depthMap;
@@ -42,8 +44,7 @@ layout(location = 2)	in vec2 UV0;
 layout(location = 3)	in vec2 UV1;
 layout(location = 4)	in vec3 tangent;
 layout(location = 5)	in vec3 bitangent;
-layout(location = 6)	in vec4 eyePosition;
-layout(location = 7)	in vec4 glPosition;
+layout(location = 6)	in vec3 glPosition;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
 {
@@ -59,6 +60,7 @@ layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outBaseColor;
 
 vec3 getNormal() {
+    //return normal;
     vec3 tangentNormal = normalize(texture(normalTexture, material.normalTextureSet == 0 ? UV0 : UV1).xyz * 2.0 - 1.0);
     mat3 TBN = mat3(tangent, bitangent, normal);
     return normalize(TBN * tangentNormal);
@@ -107,16 +109,15 @@ void specularGlosinessWorkflow(inout float perceptualRoughness, inout float meta
 
 void main()
 {
-    float perceptualRoughness;
-    float metallic;
     vec4 baseColor = SRGBtoLINEAR(vec4(local.colorFactor.xyz, 1.0f) * texture(baseColorTexture, UV0) + local.constColor);
 
-    if(!enableTransparencyPass && baseColor.a < 1.0f){
-        discard;
-    }
-    if(enableTransparencyPass &&
-        (baseColor.a >= 1.0f || baseColor.a <= 0.0f || glPosition.z / glPosition.w < 1.001f * texture(depthMap , glPosition.xy / glPosition.w * 0.5f + 0.5f).r)){
-        discard;
+    if(enableTransparency){
+        if(!transparencyPass && baseColor.a < 1.0f){
+            discard;
+        }
+        if(transparencyPass && (!inOpenInterval(0.0f, 1.0f, baseColor.a) || glPosition.z < 1.001f * texture(depthMap , glPosition.xy).r)){
+            discard;
+        }
     }
 
 //    vec3 I = normalize(position.xyz - eyePosition.xyz);
@@ -124,6 +125,8 @@ void main()
 //    vec4 reflection = texture(samplerCubeMap, R);
 //    outBaseColor = vec4(max(outBaseColor.r,reflection.r),max(outBaseColor.g,reflection.g),max(outBaseColor.b,reflection.b), outBaseColor.a);
 
+    float perceptualRoughness;
+    float metallic;
     switch(uint(material.workflow)) {
         case PBR_WORKFLOW_METALLIC_ROUGHNESS: {
             metallicRoughnessWorkflow(perceptualRoughness, metallic, baseColor);

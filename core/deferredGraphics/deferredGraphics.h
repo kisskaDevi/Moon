@@ -104,8 +104,8 @@ public:
     void bind(light* lightSource);
     bool remove(light* lightSource);
 
-    void updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey);
-    uint32_t readStorageBuffer(uint32_t currentImage);
+    void updateStorageBuffer(uint32_t imageIndex, const float& mousex, const float& mousey);
+    uint32_t readStorageBuffer(uint32_t imageIndex);
 };
 
 #endif // DEFERREDGRAPHICS_H

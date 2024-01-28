@@ -33,6 +33,5 @@ float SSAO()
 
 void main()
 {
-    //outColor = vec4(SSAO());
     outColor = vec4(0.0f);
 }

@@ -2,6 +2,7 @@
 #include "deferredGraphics.h"
 #include "graphicsManager.h"
 #include "gltfmodel.h"
+#include "plymodel.h"
 #include "spotLight.h"
 #include "baseObject.h"
 #include "group.h"
@@ -120,6 +121,11 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
     ImGui::Begin("Debug");
 
+    if (ImGui::Button("Update"))
+    {
+        framebufferResized = true;
+    }
+
     if (ImGui::TreeNodeEx("Props", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
     {
         std::string title = "FPS = " + std::to_string(1.0f / frameTime);
@@ -169,6 +175,19 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     {
         std::string title = "controled object : " + controledObjectName;
         ImGui::Text("%s", title.c_str());
+        {
+            if(controledObject){
+                const auto p = controledObject->getTranslation();
+                std::string pos = "position : " + std::to_string(p[0]) + " " + std::to_string(p[1]) + " " + std::to_string(p[2]);
+                ImGui::Text("%s", pos.c_str());
+                const auto r = controledObject->getRotation();
+                std::string rot = "rot : " + std::to_string(r.re()) + " " + std::to_string(r.im()[0]) + " " + std::to_string(r.im()[1]) + " " + std::to_string(r.im()[2]);
+                ImGui::Text("%s", rot.c_str());
+                const auto s = controledObject->getScale();
+                std::string scl = "scale : " + std::to_string(s[0]) + " " + std::to_string(s[1]) + " " + std::to_string(s[2]);
+                ImGui::Text("%s", scl.c_str());
+            }
+        }
         if(ImGui::RadioButton("outlighting", controledObjectEnableOutlighting)){
             controledObjectEnableOutlighting = !controledObjectEnableOutlighting;
             if(controledObject){
@@ -217,6 +236,7 @@ void testScene::loadModels()
     models["DragonAttenuation"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
     models["DamagedHelmet"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
     models["robot"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Robot.glb");
+    models["floor"] = std::make_shared<plyModel>(ExternalPath / "dependences/model/ply/cube.ply");
 
     for(auto& [_,model]: models){
         graphics["base"]->create(model.get());

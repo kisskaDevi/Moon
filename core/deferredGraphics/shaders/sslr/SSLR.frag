@@ -2,6 +2,8 @@
 
 #include "../__methods__/defines.glsl"
 #include "../__methods__/pbr.glsl"
+#include "../__methods__/colorFunctions.glsl"
+#include "../__methods__/geometricFunctions.glsl"
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
     mat4 view;
@@ -20,18 +22,19 @@ layout(set = 0, binding = 8) uniform sampler2D layerDepth;
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 
-vec4 pointOfView = vec4(global.eyePosition.xyz, 1.0);
+vec4 p0 = vec4(global.eyePosition.xyz, 1.0);
 mat4 projview = global.proj * global.view;
+bool transparentFrags = texture(depth, fragTexCoord).r > texture(layerDepth, fragTexCoord).r;
 
 vec4 findPositionInPlane(const in mat4 projview, const in vec4 position) {
     vec4 positionProj = projview * position;
     return positionProj / positionProj.w;
 }
 
-vec2 findIncrement(const in mat4 projview, const in vec4 position, const in vec4 direction) {
+vec2 findIncrement(const in vec4 position, const in vec4 direction) {
     vec4 start = findPositionInPlane(projview, position);
     vec4 end = findPositionInPlane(projview, position + direction);
-    vec2 planeDir = (end.xy - start.xy);
+    vec2 planeDir = normalize(end.xy - start.xy);
     return planeDir;
 }
 
@@ -39,55 +42,90 @@ bool insideCondition(const in vec2 coords) {
     return coords.x > 0.0 && coords.y > 0.0 && coords.x < 1.0 && coords.y < 1.0;
 }
 
-vec4 findSampler(const in vec2 coords, bool depthCondition) {
-    return depthCondition ? texture(Sampler, coords) : texture(layerSampler, coords);
+vec4 findColor(const in vec2 coords, bool transparentFrags) {
+    return !transparentFrags ? texture(Sampler, coords) : texture(layerSampler, coords) ;
 }
 
-vec4 findPosition(const in vec2 coords, bool depthCondition) {
-    return depthCondition ? vec4(texture(position, coords).xyz, 1.0) : vec4(texture(layerPosition, coords).xyz, 1.0);
+vec4 findPosition(const in vec2 coords, bool transparentFrags) {
+    return !transparentFrags ? vec4(texture(position, coords).xyz, 1.0) : vec4(texture(layerPosition, coords).xyz, 1.0);
 }
 
-vec4 findNormal(const in vec2 coords, bool depthCondition) {
-    return depthCondition ? vec4(texture(normal, coords).xyz, 0.0) : vec4(texture(layerNormal, coords).xyz, 0.0);
+float findPositionA(const in vec2 coords, bool transparentFrags) {
+    return (!transparentFrags ? texture(position, coords) : texture(layerPosition, coords)).a;
 }
 
-vec4 SSLR(int steps, float incrementFactor, float resolution) {
-    vec4 SSLR = vec4(0.0);
+vec4 findNormal(const in vec2 coords, bool transparentFrags) {
+    return !transparentFrags ? vec4(texture(normal, coords).xyz, 0.0) : vec4(texture(layerNormal, coords).xyz, 0.0);
+}
 
-    bool depthCond = texture(depth, fragTexCoord).r < texture(layerDepth, fragTexCoord).r;
-    vec4 pointPosition = findPosition(fragTexCoord, depthCond);
-    vec4 pointNormal = vec4(0.0);
+vec3 u =   normalize(vec3(global.view[0][0],global.view[1][0],global.view[2][0]));
+vec3 v =   normalize(vec3(global.view[0][1],global.view[1][1],global.view[2][1]));
+vec3 n = - normalize(vec3(global.view[0][2],global.view[1][2],global.view[2][2]));
 
-    vec2 offset = 1.0 / textureSize(normal, 0);
-    for(int i = -1; i < 2; i++) {
-        for(int j = -1; j < 2; j++) {
-            pointNormal += findNormal(fragTexCoord + offset * vec2(i, j), depthCond);
+float h = - 1.0f / global.proj[1][1];
+float w = - global.proj[1][1] / global.proj[0][0] * h;
+
+vec4 getDir(vec2 planeCoords){
+    planeCoords = 2.0f * planeCoords - 1.0f;
+    return normalize(vec4(n + u * w * planeCoords.x - v * h * planeCoords.y, 0.0f));
+}
+
+vec4 calcPos(vec4 p, vec4 p0, vec4 r, vec2 planeCoords) {
+    vec4 d_i = getDir(planeCoords);
+    float t = linesIntersection(p0.xyz, d_i.xyz, p.xyz, r.xyz);
+    return p0 + t * d_i;
+}
+
+float findPosDis(vec4 p, vec4 p0, vec4 r, vec2 planeCoords){
+    bool transparentFrags = texture(depth, planeCoords).r > texture(layerDepth, planeCoords).r;
+    vec4 i_pos = calcPos(p, p0, r, planeCoords);
+    vec4 r_pos = findPosition(planeCoords, transparentFrags);
+    return zProj(projview, i_pos - r_pos);
+}
+
+vec4 SSLR(const in vec4 p, const in vec4 n, const in vec4 d, const in vec4 r, vec2 planeCoords, vec2 increment, int steps) {
+    bool binarySearch = false;
+    float d_pos = 0.0f;
+    for(int i = 0; i < steps; i++) {
+        planeCoords += increment;
+        d_pos = findPosDis(p, p0, r, planeCoords);
+        binarySearch = d_pos > 0.0f;
+        if(binarySearch || !insideCondition(planeCoords)){
+            break;
         }
     }
-    pointNormal /= 9.0;
-
-    vec4 reflectDirection = normalize(reflect(pointPosition - pointOfView, pointNormal));
-    vec2 increment = incrementFactor * findIncrement(projview, pointPosition, reflectDirection);
-    vec2 planeCoords = findPositionInPlane(projview, pointPosition).xy * vec2(0.5) + vec2(0.5);
-
-    for(int i = 0; i < steps && insideCondition(planeCoords); i++, planeCoords += increment) {
-        bool depthCond = texture(depth, planeCoords).r - texture(layerDepth, planeCoords).r < 0.0;
-        vec4 direction = normalize(findPosition(planeCoords, depthCond) - pointPosition);
-
-        float cosTheta = dot(reflectDirection, direction);
-        float cosPhi = dot(findNormal(planeCoords, depthCond), direction);
-
-        if((cosTheta >= resolution) && (cosPhi <= 0.0)) {
-            SSLR = findSampler(planeCoords, depthCond);
-        }
+    if(!binarySearch){
+        return vec4(0.0);
+    }
+    for(int j = 0; j < 8; j++){
+        int sign = d_pos > 0.0f ? -1 : 1;
+        planeCoords += sign * (increment /= 2);
+        d_pos = findPosDis(p, p0, r, planeCoords);
+    }
+    if(d_pos * d_pos < 0.005f){
+        float fresnel = 0.0f + 2.8f * pow(1.0f + dot(d, n), 2);
+        return fresnel * findColor(planeCoords, transparentFrags);
     }
 
-    return SSLR;
+    return vec4(0.0);
 }
 
 void main() {
     outColor = vec4(0.0);
 
-    float roug = 1.0 - texture(position, fragTexCoord).a;
-    outColor += SSLR(40, 0.1f, 0.9995);
+    float material = findPositionA(fragTexCoord, transparentFrags);
+    float roughness = decodeParameter(0x000000ff, 0, material) / 255.0f;
+    float s = (1.0f - roughness) * (1.0f - roughness);
+
+    int steps = 50;
+    float incrementFactor = 0.5f / steps;
+
+    vec4 p = findPosition(fragTexCoord, transparentFrags);
+    vec4 n = findNormal(fragTexCoord, transparentFrags);
+    vec4 d = normalize(p - p0);
+    vec4 r = normalize(reflect(d,n));
+
+    vec2 increment = incrementFactor * findIncrement(p, r);
+
+    outColor += s * SSLR(p, n, d, r, fragTexCoord, increment, steps);
 }

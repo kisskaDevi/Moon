@@ -27,6 +27,10 @@ plyModel::plyModel(
     materialBlock.workflow = workflow;
 }
 
+MaterialBlock &plyModel::getMaterialBlock(){
+    return materialBlock;
+}
+
 plyModel::~plyModel() {
     plyModel::destroy(device);
 }

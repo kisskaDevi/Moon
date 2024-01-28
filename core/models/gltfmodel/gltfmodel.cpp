@@ -373,7 +373,9 @@ void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
 
-    if (std::string error{}, warning{}; isBinary(filename) ? gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename.string().c_str()) : gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.string().c_str()))
+    if (std::string error{}, warning{}; isBinary(filename) ?
+        gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename.string().c_str()) :
+        gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.string().c_str()))
     {
         loadTextures(physicalDevice,device,commandBuffer,gltfModel);
         loadMaterials(gltfModel);

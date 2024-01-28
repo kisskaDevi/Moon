@@ -21,4 +21,36 @@ bool outsideSpotCondition(const in mat4 proj, const in mat4 view, const in float
     : abs(coordinates.x) >= abs(coordinates.z) || abs(coordinates.y) >= abs(coordinates.z);
 }
 
+float zProj(const in mat4 projview, const in vec4 position){
+    return projview[0][2]*position.x + projview[1][2]*position.y + projview[2][2]*position.z + projview[3][2]*position.w;
+}
+
+float wProj(const in mat4 projview, const in vec4 position){
+    return projview[0][3]*position.x + projview[1][3]*position.y + projview[2][3]*position.z + projview[3][3]*position.w;
+}
+
+float depthProj(const in mat4 projview, vec4 position){
+    return zProj(projview, position) / wProj(projview, position);
+}
+
+float linesIntersection(vec3 a, vec3 da, vec3 b, vec3 db){
+    float eps = 1e-2;
+    vec3 a_b = a - b;
+
+    float detM = db.y*da.x - db.x*da.y;
+    if(abs(detM) > eps){
+        return -(db.y*a_b.x - db.x*a_b.y) / detM;
+    }
+    detM = db.z*da.x - db.x*da.z;
+    if(abs(detM) > eps){
+        return -(db.z*a_b.x - db.x*a_b.z) / detM;
+    }
+    detM = db.z*da.y - db.y*da.z;
+    if(abs(detM) > eps){
+        return -(db.z*a_b.y - db.y*a_b.z) / detM;
+    }
+
+    return 0.0f;
+}
+
 #endif

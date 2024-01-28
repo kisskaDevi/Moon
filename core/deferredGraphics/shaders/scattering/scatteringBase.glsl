@@ -1,4 +1,5 @@
 #include "../__methods__/lightDrop.glsl"
+#include "../__methods__/geometricFunctions.glsl"
 
 #ifndef SCATTERING_BASE
 #define SCATTERING_BASE
@@ -240,18 +241,6 @@ vec4 findOpositeDir(vec3 q1, vec3 direction, vec3 lightDirection){
     return vec4( - normalize(reflect(q1,bitan)), 0.0f);
 }
 
-float findPropagationFactor(const in vec4 position, const in vec4 direction, const in vec4 lightPosition, const in vec4 lightDirection){
-    float Q = (position.x*lightDirection.y - position.y*lightDirection.x) + (lightDirection.x*lightPosition.y - lightDirection.y*lightPosition.x);
-    float D = direction.y*lightDirection.x - direction.x*lightDirection.y;
-    return Q/D;
-}
-
-float findDepth(const in mat4 projView, vec4 position){
-    float cameraViewZ = projView[0][2]*position.x + projView[1][2]*position.y + projView[2][2]*position.z + projView[3][2]*position.w;
-    float cameraViewW = projView[0][3]*position.x + projView[1][3]*position.y + projView[2][3]*position.z + projView[3][3]*position.w;
-    return cameraViewZ/cameraViewW;
-}
-
 //==//==//==//==//==//==//==//==//==//==//SCATTERING//==//==//==//==//==//==//==//==//==//==//
 
 vec4 LightScattering(
@@ -291,10 +280,10 @@ vec4 LightScattering(
         vec4 directionToLight2 = findOpositeDir(directionToLight1.xyz,direction.xyz,lightDirection.xyz);
 
         for(float distance = 0.0f, step = 1.0f/(steps-1); distance < 1.0f; distance += step){
-            vec4 lightDir = directionToLight1 + (directionToLight2 - directionToLight1) * distance;
-            float t = findPropagationFactor(start, direction, lightPosition, - normalize(lightDir));
+            vec4 lightDir = - normalize(directionToLight1 + (directionToLight2 - directionToLight1) * distance);
+            float t = linesIntersection(start.xyz, direction.xyz, lightPosition.xyz, lightDir.xyz);
             vec4 pointOfScattering = start + direction * t;
-            float depthOfScattering = findDepth(projView,pointOfScattering);
+            float depthOfScattering = depthProj(projView,pointOfScattering);
             if((depthMap > depthOfScattering) && (t > 0)){
                 outScatteringColor = type == 0.0f ? outScatteringColor + step * findConePointColor(pointOfScattering.xyz,shadowMap,lightTexture,lightColor,lightProjViewMatrix,lightProjMatrix,lightPosition.xyz,lightDirection.xyz, dropFactor)
                                                   : max(outScatteringColor, 0.5f * findPyramidPointColor(pointOfScattering.xyz,shadowMap,lightTexture,lightColor,lightProjViewMatrix,lightProjMatrix,lightPosition.xyz,lightDirection.xyz, dropFactor));

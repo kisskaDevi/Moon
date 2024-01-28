@@ -40,16 +40,24 @@ void graphics::Base::createDescriptorSetLayout(VkDevice device)
 
 void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    VkBool32 transparencyPass = static_cast<VkBool32>(this->transparencyPass);
-    VkSpecializationMapEntry specializationMapEntry{};
-        specializationMapEntry.constantID = 0;
-        specializationMapEntry.offset = 0;
-        specializationMapEntry.size = sizeof(VkBool32);
+    std::vector<VkBool32> transparencyData = {
+        static_cast<VkBool32>(enableTransparency),
+        static_cast<VkBool32>(transparencyPass)
+    };
+    std::vector<VkSpecializationMapEntry> specializationMapEntry;
+    specializationMapEntry.push_back(VkSpecializationMapEntry{});
+        specializationMapEntry.back().constantID = specializationMapEntry.size() - 1;
+        specializationMapEntry.back().offset = 0;
+        specializationMapEntry.back().size = sizeof(VkBool32);
+    specializationMapEntry.push_back(VkSpecializationMapEntry{});
+        specializationMapEntry.back().constantID = specializationMapEntry.size() - 1;
+        specializationMapEntry.back().offset = sizeof(VkBool32);
+        specializationMapEntry.back().size = sizeof(VkBool32);
     VkSpecializationInfo specializationInfo;
-        specializationInfo.mapEntryCount = 1;
-        specializationInfo.pMapEntries = &specializationMapEntry;
-        specializationInfo.dataSize = sizeof(VkBool32);
-        specializationInfo.pData = &transparencyPass;
+        specializationInfo.mapEntryCount = specializationMapEntry.size();
+        specializationInfo.pMapEntries = specializationMapEntry.data();
+        specializationInfo.dataSize = sizeof(VkBool32) * transparencyData.size();
+        specializationInfo.pData = transparencyData.data();
 
     auto vertShaderCode = ShaderModule::readFile(ShadersPath / "base/baseVert.spv");
     auto fragShaderCode = ShaderModule::readFile(ShadersPath / "base/baseFrag.spv");

@@ -40,14 +40,12 @@ layout(location = 2)	out vec2 outUV0;
 layout(location = 3)	out vec2 outUV1;
 layout(location = 4)	out vec3 outTangent;
 layout(location = 5)	out vec3 outBitangent;
-layout(location = 6)	out vec4 outEyePosition;
-layout(location = 7)	out vec4 glPosition;
+layout(location = 6)	out vec3 glPosition;
 
 void main()
 {
     outUV0 = inUV0;
     outUV1 = inUV1;
-    outEyePosition = global.eyePosition;
 
     mat4 skinMat = node.jointCount > 0.0 ?
         inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
@@ -63,5 +61,5 @@ void main()
     outBitangent = normalize(vec3(model * vec4(inBitangent,	0.0)));
 
     gl_Position = global.proj * global.view * outPosition;
-    glPosition = gl_Position;
+    glPosition = vec3(gl_Position.xy / gl_Position.w * 0.5f + 0.5f, gl_Position.z / gl_Position.w);
 }

@@ -138,8 +138,7 @@ void deferredGraphics::createGraphicsPasses(){
     CHECK_M(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
     CHECK_M(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
-
-    workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], false, 0, &objects, &lights, &depthMaps);
+    workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
     workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
     workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
     workflows["Blur"] = new gaussianBlur(enable["Blur"]);
@@ -152,7 +151,7 @@ void deferredGraphics::createGraphicsPasses(){
     workflows["BoundingBox"] = new boundingBoxGraphics(enable["BoundingBox"], &objects);
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
         enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
-        workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], true, i, &objects, &lights, &depthMaps);
+        workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
     };
     workflows["Selector"] = new selectorGraphics(enable["Selector"]);
 

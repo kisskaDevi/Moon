@@ -21,4 +21,8 @@ float power(float m, uint n){
     return result;
 }
 
+bool inOpenInterval(float left, float right, float x){
+    return x < right && x > left;
+}
+
 #endif

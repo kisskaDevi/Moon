@@ -87,6 +87,18 @@ baseObject& baseObject::scale(const vector<float,3> & scale)
     return *this;
 }
 
+const vector<float,3> baseObject::getTranslation() const{
+    return translation.im();
+}
+
+const quaternion<float> baseObject::getRotation() const{
+    return rotation;
+}
+
+const vector<float,3> baseObject::getScale() const{
+    return scaling;
+}
+
 baseObject& baseObject::setConstantColor(const vector<float,4> &color){
     this->constantColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);

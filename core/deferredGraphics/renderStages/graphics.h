@@ -26,6 +26,7 @@ private:
     struct Base{
         std::filesystem::path                           ShadersPath;
         bool                                            transparencyPass{false};
+        bool                                            enableTransparency{false};
         uint32_t                                        transparencyNumber{0};
 
         std::unordered_map<uint8_t, VkPipelineLayout>   PipelineLayoutDictionary;
@@ -118,6 +119,7 @@ private:
     void createDescriptorSets();
 public:
     graphics(bool enable,
+             bool enableTransparency,
              bool transparencyPass,
              uint32_t transparencyNumber,
              std::vector<object*>* object = nullptr,

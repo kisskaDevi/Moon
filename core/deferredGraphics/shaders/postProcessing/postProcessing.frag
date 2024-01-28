@@ -76,9 +76,9 @@ void main() {
     vec4 baseColor = texture(Sampler, fragTexCoord);
 
     outColor += dot(baseColor,baseColor) > 0.0f ? baseColor : texture(blurSampler, fragTexCoord);
-    
+    outColor = max(outColor, texture(sslrSampler,fragTexCoord));
     outColor += texture(bloomSampler, fragTexCoord);
-    outColor += texture(sslrSampler,fragTexCoord);
+    //outColor += texture(sslrSampler,fragTexCoord);
     outColor += texture(bbSampler,fragTexCoord);
-    //outColor += vec4(texture(ssaoSampler,fragTexCoord).xyz,0.0f);
+    outColor += vec4(texture(ssaoSampler,fragTexCoord).xyz,0.0f);
 }

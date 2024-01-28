@@ -42,6 +42,7 @@ private:
     float animationTimer{0.0f};
     float startTimer{0.0f};
     float changeAnimationTime{0.0f};
+
 protected:
     bool created{false};
     VkDevice device{VK_NULL_HANDLE};
@@ -68,6 +69,10 @@ public:
     baseObject& rotate(const quaternion<float>& quat);
     baseObject& scale(const vector<float,3>& scale) override;
     baseObject& setTranslation(const vector<float,3>& translate);
+
+    const vector<float,3> getTranslation() const;
+    const quaternion<float> getRotation() const;
+    const vector<float,3> getScale() const;
 
     baseObject& setConstantColor(const vector<float,4> & color);
     baseObject& setColorFactor(const vector<float,4> & color);

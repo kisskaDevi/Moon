@@ -3,9 +3,10 @@
 #include "object.h"
 #include "deferredAttachments.h"
 
-graphics::graphics(bool enable, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources, std::unordered_map<light*, depthMap*>* depthMaps) :
+graphics::graphics(bool enable, bool enableTransparency, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources, std::unordered_map<light*, depthMap*>* depthMaps) :
     enable(enable)
 {
+    base.enableTransparency = enableTransparency;
     base.transparencyPass = transparencyPass;
     base.transparencyNumber = transparencyNumber;
     base.objects = object;

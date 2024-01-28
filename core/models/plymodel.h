@@ -56,12 +56,14 @@ private:
 
 public:
     plyModel(std::filesystem::path filename,
-             vector<float, 4> baseColorFactor = vector<float, 4>(0.5f,0.5f,0.5f,1.0f),
-             vector<float, 4> diffuseFactor = vector<float, 4>(0.5f),
-             vector<float, 4> specularFactor = vector<float, 4>(0.5f),
+             vector<float, 4> baseColorFactor = vector<float, 4>(1.0f,1.0f,1.0f,1.0f),
+             vector<float, 4> diffuseFactor = vector<float, 4>(1.0f),
+             vector<float, 4> specularFactor = vector<float, 4>(1.0f),
              float metallicFactor = 0.0f,
              float roughnessFactor = 0.5f,
              float workflow = 1.0f);
+
+    MaterialBlock& getMaterialBlock();
 
     ~plyModel() override;
     void destroy(VkDevice device) override;

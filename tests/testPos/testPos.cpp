@@ -250,7 +250,9 @@ void testPos::mouseEvent(float frameTime)
 
     uint32_t primitiveNumber = std::numeric_limits<uint32_t>::max();
     for(uint32_t i=0; i < imageCount; i++){
-        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != std::numeric_limits<uint32_t>::max())
+        float depth = 1.0f;
+        graphics["base"]->readStorageBuffer(i, primitiveNumber, depth);
+        if(primitiveNumber != std::numeric_limits<uint32_t>::max())
             break;
     }
 

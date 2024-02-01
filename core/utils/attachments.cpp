@@ -178,7 +178,7 @@ VkAttachmentDescription attachments::depthStencilDescription(VkFormat format)
 
 std::vector<VkImage> attachments::getImages() const {
     std::vector<VkImage> images;
-    for (auto& instance: instances){
+    for (const auto& instance: instances){
         images.push_back(instance.image);
     }
     return images;

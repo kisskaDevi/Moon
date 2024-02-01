@@ -326,13 +326,15 @@ void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& m
     StorageBufferObject StorageUBO{};
         StorageUBO.mousePosition = vector<float,4>(mousex,mousey,0.0f,0.0f);
         StorageUBO.number = std::numeric_limits<uint32_t>::max();
+        StorageUBO.depth = 1.0f;
     std::memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
 }
 
-uint32_t deferredGraphics::readStorageBuffer(uint32_t currentImage){
+void deferredGraphics::readStorageBuffer(uint32_t currentImage, uint32_t& primitiveNumber, float& depth){
     StorageBufferObject storageBuffer{};
     std::memcpy((void*)&storageBuffer, (void*)storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
-    return storageBuffer.number;
+    primitiveNumber = storageBuffer.number;
+    depth = storageBuffer.depth;
 }
 
 void deferredGraphics::create(model *pModel){

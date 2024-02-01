@@ -133,7 +133,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
         ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f);
 
         if(graphics["base"]->getEnable("Blur")){
-            ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.9f, 1.0f);
+            ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.0f, 1.0f);
         }
         graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(farBlurDepth);
 
@@ -403,9 +403,9 @@ void testScene::mouseEvent(float frameTime)
     float sensitivity = mouse->sensitivity * frameTime;
     uint32_t imageCount = app->getSwapChain()->getImageCount();
 
-    uint32_t primitiveNumber = std::numeric_limits<uint32_t>::max();
     for(uint32_t i=0; i < imageCount; i++){
-        if(primitiveNumber = graphics["base"]->readStorageBuffer(i); primitiveNumber != std::numeric_limits<uint32_t>::max()){
+        graphics["base"]->readStorageBuffer(i, primitiveNumber, farBlurDepth);
+        if(primitiveNumber != std::numeric_limits<uint32_t>::max()){
             break;
         }
     }

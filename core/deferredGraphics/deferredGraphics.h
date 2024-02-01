@@ -22,6 +22,7 @@ class depthMap;
 struct StorageBufferObject{
     alignas(16) vector<float,4>    mousePosition;
     alignas(4)  uint32_t           number;
+    alignas(4)  float              depth;
 };
 
 class deferredGraphics: public graphicsInterface{
@@ -105,7 +106,7 @@ public:
     bool remove(light* lightSource);
 
     void updateStorageBuffer(uint32_t imageIndex, const float& mousex, const float& mousey);
-    uint32_t readStorageBuffer(uint32_t imageIndex);
+    void readStorageBuffer(uint32_t imageIndex, uint32_t& primitiveNumber, float& depth);
 };
 
 #endif // DEFERREDGRAPHICS_H

@@ -8,6 +8,7 @@ class texture;
 
 class depthMap
 {
+private:
     attachments*                    map{nullptr};
     VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};

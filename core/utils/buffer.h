@@ -4,9 +4,8 @@
 #include <vulkan.h>
 #include <vector>
 
-class buffer
+struct buffer
 {
-public:
     VkBuffer            instance{VK_NULL_HANDLE};
     VkDeviceMemory      memory{VK_NULL_HANDLE};
     bool                updateFlag{true};

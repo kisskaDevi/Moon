@@ -44,6 +44,7 @@ private:
     float                   farBlurDepth = 1.0f;
     float                   minAmbientFactor{0.05f};
     float                   animationSpeed{1.0f};
+    uint32_t                primitiveNumber = std::numeric_limits<uint32_t>::max();
 
     GLFWwindow*                                         window{nullptr};
     graphicsManager*                                    app{nullptr};

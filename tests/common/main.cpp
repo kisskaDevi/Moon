@@ -48,7 +48,7 @@ int main()
 
     GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.PNG");
 
-    graphicsManager app(window, imageCount, physicalDeviceFeatures(), 0);
+    graphicsManager app(window, imageCount, physicalDeviceFeatures(), 1);
 
 #if defined(TESTPOS)
     testPos testScene(&app, window, ExternalPath);

@@ -93,7 +93,6 @@ void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice 
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
         textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -155,7 +154,7 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, ima
 }
 
 void postProcessingGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &postProcessing, 0, 6 * image.Count, image.Count);
+    workflow::createDescriptorPool(device, &postProcessing, 0, 5 * image.Count, image.Count);
 }
 
 void postProcessingGraphics::createDescriptorSets(){
@@ -193,12 +192,6 @@ void postProcessingGraphics::updateDescriptorSets(
             blurImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             blurImageInfo.imageView = blurAttachment ? blurAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
             blurImageInfo.sampler = blurAttachment ? blurAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
-
-        const auto sslrAttachment = attachmentsMap.count("sslr") > 0 && attachmentsMap.at("sslr").first ? attachmentsMap.at("sslr").second.front() : nullptr;
-        VkDescriptorImageInfo sslrImageInfo;
-            sslrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
-            sslrImageInfo.sampler = sslrAttachment ? sslrAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
         const auto ssaoAttachment = attachmentsMap.count("ssao") > 0 && attachmentsMap.at("ssao").first ? attachmentsMap.at("ssao").second.front() : nullptr;
         VkDescriptorImageInfo ssaoImageInfo;
@@ -243,14 +236,6 @@ void postProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &bloomImageInfo;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &sslrImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];

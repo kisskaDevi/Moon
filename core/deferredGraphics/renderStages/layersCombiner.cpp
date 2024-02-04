@@ -131,6 +131,7 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -216,7 +217,7 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, imageInfo* pInfo,
 }
 
 void layersCombiner::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &combiner, image.Count, (8 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
+    workflow::createDescriptorPool(device, &combiner, image.Count, (9 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
 }
 
 void layersCombiner::createDescriptorSets(){
@@ -295,6 +296,12 @@ void layersCombiner::updateDescriptorSets(
             scatteringImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             scatteringImageInfo.imageView = scattering ? scattering->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
             scatteringImageInfo.sampler = scattering ? scattering->sampler : *emptyTexture["black"]->getTextureSampler();
+
+        const auto sslrAttachment = attachmentsMap.count("sslr") > 0 && attachmentsMap.at("sslr").first ? attachmentsMap.at("sslr").second.front() : nullptr;
+        VkDescriptorImageInfo sslrImageInfo;
+            sslrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
+            sslrImageInfo.sampler = sslrAttachment ? sslrAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);
@@ -444,6 +451,14 @@ void layersCombiner::updateDescriptorSets(
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &scatteringImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &sslrImageInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

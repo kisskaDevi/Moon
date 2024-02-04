@@ -237,12 +237,12 @@ void deferredGraphics::createCommandBuffers(){
             stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
             stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
         }, new node({
-            stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+            stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
+            stage(  {workflows["SSLR"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
         }, new node({
             stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
         }, new node({
             stage(  {workflows["Selector"]->getCommandBuffer(imageIndex),
-                     workflows["SSLR"]->getCommandBuffer(imageIndex),
                      workflows["SSAO"]->getCommandBuffer(imageIndex),
                      workflows["Bloom"]->getCommandBuffer(imageIndex),
                      workflows["Blur"]->getCommandBuffer(imageIndex),

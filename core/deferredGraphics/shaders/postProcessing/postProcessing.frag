@@ -7,9 +7,8 @@ layout(constant_id = 0) const int bloomCount = 1;
 layout(set = 0, binding = 0) uniform sampler2D Sampler;
 layout(set = 0, binding = 1) uniform sampler2D blurSampler;
 layout(set = 0, binding = 2) uniform sampler2D bloomSampler;
-layout(set = 0, binding = 3) uniform sampler2D sslrSampler;
-layout(set = 0, binding = 4) uniform sampler2D ssaoSampler;
-layout(set = 0, binding = 5) uniform sampler2D bbSampler;
+layout(set = 0, binding = 3) uniform sampler2D ssaoSampler;
+layout(set = 0, binding = 4) uniform sampler2D bbSampler;
 
 //vec4 colorBloomFactor[bloomCount] = vec4[](
 //    vec4(1.0f,0.0f,0.0f,1.0f),
@@ -76,7 +75,6 @@ void main() {
     vec4 baseColor = texture(Sampler, fragTexCoord);
 
     outColor += dot(baseColor,baseColor) > 0.0f ? baseColor : texture(blurSampler, fragTexCoord);
-    outColor = max(outColor, texture(sslrSampler,fragTexCoord));
     outColor += texture(bloomSampler, fragTexCoord);
     //outColor += texture(sslrSampler,fragTexCoord);
     outColor += texture(bbSampler,fragTexCoord);

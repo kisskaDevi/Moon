@@ -23,6 +23,7 @@ layout(set = 0, binding = 10) uniform sampler2D layersDepth[transparentLayersCou
 layout(set = 0, binding = 11) uniform sampler2D skybox;
 layout(set = 0, binding = 12) uniform sampler2D skyboxBloom;
 layout(set = 0, binding = 13) uniform sampler2D scattering;
+layout(set = 0, binding = 14) uniform sampler2D sslrSampler;
 
 layout(push_constant) uniform PC {
     int enableScatteringRefraction;
@@ -138,6 +139,7 @@ void transparentLayersCombine() {
 
     outColor = accumulateColor(beginCoords, endCoords, step, Sampler, depth, skybox, true, enableScatteringRefraction);
     outColor = max(layerColor, max(step * outColor, frontScatteringColor));
+    outColor += max(outColor, texture(sslrSampler,fragTexCoord));
 
     outBloom = accumulateColor(beginCoords, endCoords, step, bloomSampler, depth, skyboxBloom, true, false);
     outBloom = max(layerBloom, step * outBloom);
@@ -159,6 +161,7 @@ void main() {
         outColor += d == 1.0 ? texture(skybox, fragTexCoord.xy) : vec4(0.0);
         outBloom += d == 1.0 ? texture(skyboxBloom, fragTexCoord.xy) : vec4(0.0);
         outColor += scatteringColor;
+        outColor += max(outColor, texture(sslrSampler,fragTexCoord));
         outBlur = vec4(outColor.xyz, d);
         if(d > pc.blurDepth){
             outColor = vec4(0.0f);

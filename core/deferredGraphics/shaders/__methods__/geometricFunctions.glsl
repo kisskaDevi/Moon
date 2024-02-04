@@ -53,4 +53,13 @@ float linesIntersection(vec3 a, vec3 da, vec3 b, vec3 db){
     return 0.0f;
 }
 
+bool isInside(const in vec2 coords) {
+    return coords.x > 0.0 && coords.y > 0.0 && coords.x < 1.0 && coords.y < 1.0;
+}
+
+vec4 positionProj(const in mat4 projview, const in vec4 position) {
+    vec4 positionProj = projview * position;
+    return positionProj / positionProj.w;
+}
+
 #endif

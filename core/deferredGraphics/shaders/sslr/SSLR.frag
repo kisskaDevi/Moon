@@ -24,38 +24,32 @@ layout(location = 0) out vec4 outColor;
 
 vec4 p0 = vec4(global.eyePosition.xyz, 1.0);
 mat4 projview = global.proj * global.view;
-bool transparentFrags = texture(depth, fragTexCoord).r > texture(layerDepth, fragTexCoord).r;
-
-vec4 findPositionInPlane(const in mat4 projview, const in vec4 position) {
-    vec4 positionProj = projview * position;
-    return positionProj / positionProj.w;
-}
 
 vec2 findIncrement(const in vec4 position, const in vec4 direction) {
-    vec4 start = findPositionInPlane(projview, position);
-    vec4 end = findPositionInPlane(projview, position + direction);
+    vec4 start = positionProj(projview, position);
+    vec4 end = positionProj(projview, position + direction);
     vec2 planeDir = normalize(end.xy - start.xy);
     return planeDir;
 }
 
-bool insideCondition(const in vec2 coords) {
-    return coords.x > 0.0 && coords.y > 0.0 && coords.x < 1.0 && coords.y < 1.0;
+bool isTransparent(const in vec2 coords){
+    return texture(depth, coords).r > texture(layerDepth, coords).r;
 }
 
-vec4 findColor(const in vec2 coords, bool transparentFrags) {
-    return !transparentFrags ? texture(Sampler, coords) : texture(layerSampler, coords) ;
+vec4 findColor(const in vec2 coords) {
+    return isTransparent(coords) ? texture(layerSampler, coords) : texture(Sampler, coords);
 }
 
-vec4 findPosition(const in vec2 coords, bool transparentFrags) {
-    return !transparentFrags ? vec4(texture(position, coords).xyz, 1.0) : vec4(texture(layerPosition, coords).xyz, 1.0);
+vec4 findPosition(const in vec2 coords) {
+    return isTransparent(coords) ? vec4(texture(layerPosition, coords).xyz, 1.0) : vec4(texture(position, coords).xyz, 1.0);
 }
 
-float findPositionA(const in vec2 coords, bool transparentFrags) {
-    return (!transparentFrags ? texture(position, coords) : texture(layerPosition, coords)).a;
+vec4 findNormal(const in vec2 coords) {
+    return isTransparent(coords) ? vec4(texture(layerNormal, coords).xyz, 0.0) : vec4(texture(normal, coords).xyz, 0.0);
 }
 
-vec4 findNormal(const in vec2 coords, bool transparentFrags) {
-    return !transparentFrags ? vec4(texture(normal, coords).xyz, 0.0) : vec4(texture(layerNormal, coords).xyz, 0.0);
+float findMaterial(const in vec2 coords) {
+    return (isTransparent(coords) ? texture(layerPosition, coords) : texture(position, coords)).a;
 }
 
 vec3 u =   normalize(vec3(global.view[0][0],global.view[1][0],global.view[2][0]));
@@ -77,9 +71,9 @@ vec4 calcPos(vec4 p, vec4 p0, vec4 r, vec2 planeCoords) {
 }
 
 float findPosDis(vec4 p, vec4 p0, vec4 r, vec2 planeCoords){
-    bool transparentFrags = texture(depth, planeCoords).r > texture(layerDepth, planeCoords).r;
+    bool transparentFrags = isTransparent(planeCoords);
     vec4 i_pos = calcPos(p, p0, r, planeCoords);
-    vec4 r_pos = findPosition(planeCoords, transparentFrags);
+    vec4 r_pos = findPosition(planeCoords);
     return zProj(projview, i_pos - r_pos);
 }
 
@@ -90,7 +84,7 @@ vec4 SSLR(const in vec4 p, const in vec4 n, const in vec4 d, const in vec4 r, ve
         planeCoords += increment;
         d_pos = findPosDis(p, p0, r, planeCoords);
         binarySearch = d_pos > 0.0f;
-        if(binarySearch || !insideCondition(planeCoords)){
+        if(binarySearch || !isInside(planeCoords)){
             break;
         }
     }
@@ -104,7 +98,7 @@ vec4 SSLR(const in vec4 p, const in vec4 n, const in vec4 d, const in vec4 r, ve
     }
     if(d_pos * d_pos < 0.005f){
         float fresnel = 0.0f + 2.8f * pow(1.0f + dot(d, n), 2);
-        return fresnel * findColor(planeCoords, transparentFrags);
+        return fresnel * findColor(planeCoords);
     }
 
     return vec4(0.0);
@@ -113,15 +107,15 @@ vec4 SSLR(const in vec4 p, const in vec4 n, const in vec4 d, const in vec4 r, ve
 void main() {
     outColor = vec4(0.0);
 
-    float material = findPositionA(fragTexCoord, transparentFrags);
+    float material = findMaterial(fragTexCoord);
     float roughness = decodeParameter(0x000000ff, 0, material) / 255.0f;
     float s = (1.0f - roughness) * (1.0f - roughness);
 
     int steps = 50;
     float incrementFactor = 0.5f / steps;
 
-    vec4 p = findPosition(fragTexCoord, transparentFrags);
-    vec4 n = findNormal(fragTexCoord, transparentFrags);
+    vec4 p = findPosition(fragTexCoord);
+    vec4 n = findNormal(fragTexCoord);
     vec4 d = normalize(p - p0);
     vec4 r = normalize(reflect(d,n));
 

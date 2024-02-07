@@ -46,15 +46,15 @@ void graphics::Base::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderP
     };
     std::vector<VkSpecializationMapEntry> specializationMapEntry;
     specializationMapEntry.push_back(VkSpecializationMapEntry{});
-        specializationMapEntry.back().constantID = specializationMapEntry.size() - 1;
+        specializationMapEntry.back().constantID = static_cast<uint32_t>(specializationMapEntry.size() - 1);
         specializationMapEntry.back().offset = 0;
         specializationMapEntry.back().size = sizeof(VkBool32);
     specializationMapEntry.push_back(VkSpecializationMapEntry{});
-        specializationMapEntry.back().constantID = specializationMapEntry.size() - 1;
+        specializationMapEntry.back().constantID = static_cast<uint32_t>(specializationMapEntry.size() - 1);
         specializationMapEntry.back().offset = sizeof(VkBool32);
         specializationMapEntry.back().size = sizeof(VkBool32);
     VkSpecializationInfo specializationInfo;
-        specializationInfo.mapEntryCount = specializationMapEntry.size();
+        specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationMapEntry.size());
         specializationInfo.pMapEntries = specializationMapEntry.data();
         specializationInfo.dataSize = sizeof(VkBool32) * transparencyData.size();
         specializationInfo.pData = transparencyData.data();

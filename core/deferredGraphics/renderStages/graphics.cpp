@@ -167,7 +167,7 @@ void graphics::createFramebuffers()
     for (size_t imageIndex = 0; imageIndex < image.Count; imageIndex++){
         std::vector<VkImageView> attachments;
         for(size_t attIndex = 0; attIndex < deferredAttachments.size(); attIndex++){
-            attachments.push_back(deferredAttachments[attIndex].instances[imageIndex].imageView);
+            attachments.push_back(deferredAttachments[static_cast<uint32_t>(attIndex)].instances[imageIndex].imageView);
         }
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -236,7 +236,7 @@ void graphics::updateCommandBuffer(uint32_t frameNumber){
 
     std::vector<VkClearValue> clearValues;
     for(size_t attIndex = 0; attIndex < deferredAttachments.size(); attIndex++){
-        clearValues.push_back(deferredAttachments[attIndex].clearValue);
+        clearValues.push_back(deferredAttachments[static_cast<uint32_t>(attIndex)].clearValue);
     }
 
     VkRenderPassBeginInfo renderPassInfo{};

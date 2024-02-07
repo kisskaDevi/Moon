@@ -27,7 +27,7 @@ public:
         this->imageCount = swapChainKHR->getImageCount();
     }
 
-    virtual void setDevices(uint32_t devicesCount, physicalDevice* devices, int deviceIndex = -1){
+    virtual void setDevices(uint32_t devicesCount, physicalDevice* devices, uint64_t deviceIndex = -1){
         for(uint32_t i = 0; i < devicesCount; i++){
             this->devices.push_back(devices[i]);
         }

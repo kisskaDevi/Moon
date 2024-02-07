@@ -6,15 +6,13 @@
 
 #include <string>
 
-graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures, size_t deviceIndex) : deviceIndex(deviceIndex)
-{
+graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures, int64_t deviceIndex) : deviceIndex(deviceIndex){
     debug::checkResult(createInstance(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
 
-graphicsManager::graphicsManager(GLFWwindow* window, int32_t maxImageCount, const VkPhysicalDeviceFeatures& deviceFeatures, size_t deviceIndex)
-    : graphicsManager(deviceFeatures, deviceIndex)
-{
+graphicsManager::graphicsManager(GLFWwindow* window, int32_t maxImageCount, const VkPhysicalDeviceFeatures& deviceFeatures, int64_t deviceIndex)
+    : graphicsManager(deviceFeatures, deviceIndex){
     create(window, maxImageCount);
 }
 
@@ -88,8 +86,21 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
     result = vkEnumeratePhysicalDevices(instance, &deviceCount, phDevices.data());
     CHECK(result);
 
+    VkPhysicalDeviceType currentType = VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM;
     for (const auto device : phDevices){
         devices.emplace_back(physicalDevice(device, deviceExtensions));
+        if(deviceIndex < 0){
+            currentType = devices.back().type;
+            deviceIndex = static_cast<uint64_t>(devices.size() - 1);
+        }
+        if(currentType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && devices.back().type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
+            currentType = devices.back().type;
+            deviceIndex = static_cast<uint64_t>(devices.size() - 1);
+        }
+    }
+
+    if(deviceIndex < 0){
+        return VK_ERROR_DEVICE_LOST;
     }
 
     device logical(deviceFeatures);

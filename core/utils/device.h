@@ -2,7 +2,7 @@
 #define DEVICE_H
 
 #include <vulkan.h>
-
+#include <string>
 #include <vector>
 #include <map>
 
@@ -38,6 +38,9 @@ struct device
 struct physicalDevice
 {
     VkPhysicalDevice instance{VK_NULL_HANDLE};
+    VkPhysicalDeviceType type{VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM};
+    std::string name{};
+
     std::map<uint32_t, queueFamily> queueFamilies;
     std::vector<device> logical;
     std::vector<const char*> deviceExtensions;

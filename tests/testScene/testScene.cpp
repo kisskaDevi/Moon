@@ -134,6 +134,8 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
         if(graphics["base"]->getEnable("Blur")){
             ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.0f, 1.0f);
+        } else {
+            farBlurDepth = 1.0f;
         }
         graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(1.02f * farBlurDepth);
 

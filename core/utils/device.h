@@ -35,11 +35,16 @@ struct device
     {}
 };
 
+struct physicalDeviceProperties{
+    uint32_t index{0x7FFFFFFF};
+    VkPhysicalDeviceType type{VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM};
+    std::string name{};
+};
+
 struct physicalDevice
 {
     VkPhysicalDevice instance{VK_NULL_HANDLE};
-    VkPhysicalDeviceType type{VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM};
-    std::string name{};
+    physicalDeviceProperties properties{};
 
     std::map<uint32_t, queueFamily> queueFamilies;
     std::vector<device> logical;

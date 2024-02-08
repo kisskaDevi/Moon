@@ -18,8 +18,8 @@
 class graphicsManager
 {
 public:
-    graphicsManager(GLFWwindow* window, int32_t maxImageCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {}, int64_t deviceIndex = -1);
-    graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {}, int64_t deviceIndex = -1);
+    graphicsManager(GLFWwindow* window, int32_t maxImageCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {});
     ~graphicsManager();
 
     VkInstance      getInstance();
@@ -28,6 +28,9 @@ public:
     swapChain*      getSwapChain();
     VkResult        deviceWaitIdle();
     void            setGraphics(graphicsInterface* graphics);
+
+    std::vector<physicalDeviceProperties> getDeviceInfo();
+    void setDevice(uint32_t deviceIndex);
 
     void            create(GLFWwindow* window, int32_t maxImageCount = -1);
     void            destroy();
@@ -45,8 +48,8 @@ private:
     VkDebugUtilsMessengerEXT                    debugMessenger{VK_NULL_HANDLE};
     VkSurfaceKHR                                surface{VK_NULL_HANDLE};
 
-    std::vector<physicalDevice>                 devices;
-    int64_t                                     deviceIndex{0};
+    std::map<uint32_t, physicalDevice>          devices;
+    physicalDevice*                             activeDevice{nullptr};
 
     swapChain                                   swapChainKHR;
 

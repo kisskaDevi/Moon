@@ -36,8 +36,9 @@ physicalDevice::physicalDevice(VkPhysicalDevice physicalDevice, std::vector<cons
 
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-    type = physicalDeviceProperties.deviceType;
-    name = physicalDeviceProperties.deviceName;
+    properties.index = physicalDeviceProperties.deviceID;
+    properties.type = physicalDeviceProperties.deviceType;
+    properties.name = physicalDeviceProperties.deviceName;
 
     for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
         queueFamilies[index] = queueFamily{index,queueFamilyProperties[index].queueFlags,queueFamilyProperties[index].queueCount, false};
@@ -108,8 +109,9 @@ bool physicalDevice::createdLogical() const {
 
 physicalDevice& physicalDevice::operator=(const physicalDevice& other){
     instance = other.instance;
-    type = other.type;
-    name = other.name;
+    properties.index = other.properties.index;
+    properties.type = other.properties.type;
+    properties.name = other.properties.name;
     queueFamilies = other.queueFamilies;
     logical = other.logical;
     deviceExtensions = other.deviceExtensions;
@@ -118,8 +120,7 @@ physicalDevice& physicalDevice::operator=(const physicalDevice& other){
 
 physicalDevice::physicalDevice(const physicalDevice& other):
     instance(other.instance),
-    type(other.type),
-    name(other.name),
+    properties(other.properties),
     queueFamilies(other.queueFamilies),
     logical(other.logical),
     deviceExtensions(other.deviceExtensions)

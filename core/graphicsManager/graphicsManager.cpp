@@ -6,20 +6,20 @@
 
 #include <string>
 
-graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures, int64_t deviceIndex) : deviceIndex(deviceIndex){
+graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures){
     debug::checkResult(createInstance(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
 
-graphicsManager::graphicsManager(GLFWwindow* window, int32_t maxImageCount, const VkPhysicalDeviceFeatures& deviceFeatures, int64_t deviceIndex)
-    : graphicsManager(deviceFeatures, deviceIndex){
+graphicsManager::graphicsManager(GLFWwindow* window, int32_t maxImageCount, const VkPhysicalDeviceFeatures& deviceFeatures)
+    : graphicsManager(deviceFeatures){
     create(window, maxImageCount);
 }
 
 graphicsManager::~graphicsManager(){
     destroy();
 
-    if(devices[deviceIndex].getLogical())           { vkDestroyDevice(devices[deviceIndex].getLogical(), nullptr); devices[deviceIndex].getLogical() = VK_NULL_HANDLE;}
+    if(activeDevice->getLogical())                 { vkDestroyDevice(activeDevice->getLogical(), nullptr); activeDevice->getLogical() = VK_NULL_HANDLE;}
     if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
     if(surface)                                     { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
     if(instance)                                    { vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
@@ -86,25 +86,24 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
     result = vkEnumeratePhysicalDevices(instance, &deviceCount, phDevices.data());
     CHECK(result);
 
-    VkPhysicalDeviceType currentType = VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM;
-    for (const auto device : phDevices){
-        devices.emplace_back(physicalDevice(device, deviceExtensions));
-        if(deviceIndex < 0){
-            currentType = devices.back().type;
-            deviceIndex = static_cast<uint64_t>(devices.size() - 1);
+    for (const auto phDevice : phDevices){
+        const auto device = physicalDevice(phDevice, deviceExtensions);
+        devices[device.properties.index] = std::move(device);
+        if(!activeDevice){
+            activeDevice = &devices[device.properties.index];
         }
-        if(currentType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && devices.back().type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
-            currentType = devices.back().type;
-            deviceIndex = static_cast<uint64_t>(devices.size() - 1);
+        if(activeDevice->properties.type != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+            devices[device.properties.index].properties.type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
+            activeDevice = &devices[device.properties.index];
         }
     }
 
-    if(deviceIndex < 0){
+    if(!activeDevice){
         return VK_ERROR_DEVICE_LOST;
     }
 
     device logical(deviceFeatures);
-    result = devices[deviceIndex].createDevice(logical,{{0,2}});
+    result = activeDevice->createDevice(logical,{{0,2}});
     CHECK(result);
 
     return result;
@@ -117,7 +116,7 @@ VkResult graphicsManager::createSurface(GLFWwindow* window){
 
     VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
     CHECK(result);
-    CHECK_M(!devices[deviceIndex].presentSupport(surface), "[ graphicsManager::createSurface ] device doesn't support present");
+    CHECK_M(!activeDevice->presentSupport(surface), "[ graphicsManager::createSurface ] device doesn't support present");
 
     return result;
 }
@@ -128,12 +127,12 @@ VkResult graphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     CHECK_M(devices.empty(), "[ graphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
 
     std::vector<uint32_t> queueIndices = {0};
-    swapChainKHR.setDevice(devices[deviceIndex]);
+    swapChainKHR.setDevice(*activeDevice);
     return swapChainKHR.create(window, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data(), maxImageCount);
 }
 
 VkResult graphicsManager::createLinker(){
-    linker.setDevice(devices[deviceIndex].getLogical());
+    linker.setDevice(activeDevice->getLogical());
     linker.setSwapChain(&swapChainKHR);
     linker.createRenderPass();
     linker.createFramebuffers();
@@ -150,10 +149,22 @@ VkResult graphicsManager::createLinker(){
 
 void graphicsManager::setGraphics(graphicsInterface* graphics){
     this->graphics.push_back(graphics);
-    this->graphics.back()->setDevices(static_cast<uint32_t>(devices.size()), devices.data(), deviceIndex);
+    this->graphics.back()->setDevices(devices, activeDevice->properties.index);
     this->graphics.back()->setSwapChain(&swapChainKHR);
     this->graphics.back()->getLinkable()->setRenderPass(linker.getRenderPass());
     linker.addLinkable(this->graphics.back()->getLinkable());
+}
+
+std::vector<physicalDeviceProperties> graphicsManager::getDeviceInfo(){
+    std::vector<physicalDeviceProperties> deviceProperties;
+    for(const auto& [_,device]: devices){
+        deviceProperties.push_back(device.properties);
+    }
+    return deviceProperties;
+}
+
+void graphicsManager::setDevice(uint32_t deviceIndex){
+    activeDevice = &devices.at(deviceIndex);
 }
 
 VkResult graphicsManager::createSyncObjects(){
@@ -167,26 +178,26 @@ VkResult graphicsManager::createSyncObjects(){
     for (size_t imageIndex = 0; imageIndex < swapChainKHR.getImageCount(); imageIndex++){
         VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        result = vkCreateSemaphore(devices[deviceIndex].getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
+        result = vkCreateSemaphore(activeDevice->getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
         CHECK(result);
 
         VkFenceCreateInfo fenceInfo{};
             fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        result = vkCreateFence(devices[deviceIndex].getLogical(), &fenceInfo, nullptr, &fences[imageIndex]);
+        result = vkCreateFence(activeDevice->getLogical(), &fenceInfo, nullptr, &fences[imageIndex]);
         CHECK(result);
     }
     return result;
 }
 
 VkResult graphicsManager::checkNextFrame(){
-    VkResult result = vkWaitForFences(devices[deviceIndex].getLogical(), 1, &fences[resourceIndex], VK_TRUE, UINT64_MAX);
+    VkResult result = vkWaitForFences(activeDevice->getLogical(), 1, &fences[resourceIndex], VK_TRUE, UINT64_MAX);
     CHECK(result);
 
-    result = vkResetFences(devices[deviceIndex].getLogical(), 1, &fences[resourceIndex]);
+    result = vkResetFences(activeDevice->getLogical(), 1, &fences[resourceIndex]);
     CHECK(result);
 
-    result = vkAcquireNextImageKHR(devices[deviceIndex].getLogical(), swapChainKHR(), UINT64_MAX, availableSemaphores[resourceIndex], VK_NULL_HANDLE, &imageIndex);
+    result = vkAcquireNextImageKHR(activeDevice->getLogical(), swapChainKHR(), UINT64_MAX, availableSemaphores[resourceIndex], VK_NULL_HANDLE, &imageIndex);
     CHECK(result);
 
     return result;
@@ -208,7 +219,7 @@ VkResult graphicsManager::drawFrame(){
         resourceIndex,
         waitSemaphores.size() > 0 ? waitSemaphores.back() : std::vector<VkSemaphore>(),
         fences[resourceIndex],
-        devices[deviceIndex].getQueue(0,0)
+        activeDevice->getQueue(0,0)
     );
 
     resourceIndex = ((resourceIndex + 1) % swapChainKHR.getImageCount());
@@ -220,7 +231,7 @@ VkResult graphicsManager::drawFrame(){
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &swapChainKHR();
         presentInfo.pImageIndices = &imageIndex;
-    return vkQueuePresentKHR(devices[deviceIndex].getQueue(0,0), &presentInfo);
+    return vkQueuePresentKHR(activeDevice->getQueue(0,0), &presentInfo);
 }
 
 void graphicsManager::destroySwapChain(){
@@ -233,11 +244,11 @@ void graphicsManager::destroyLinker(){
 
 void graphicsManager::destroySyncObjects(){
     for (auto& semaphore : availableSemaphores){
-        vkDestroySemaphore(devices[deviceIndex].getLogical(), semaphore, nullptr);
+        vkDestroySemaphore(activeDevice->getLogical(), semaphore, nullptr);
     }
     availableSemaphores.clear();
     for (auto& fence : fences){
-        vkDestroyFence(devices[deviceIndex].getLogical(), fence, nullptr);
+        vkDestroyFence(activeDevice->getLogical(), fence, nullptr);
     }
     fences.clear();
 }
@@ -259,4 +270,4 @@ VkInstance      graphicsManager::getInstance()      {return instance;}
 VkSurfaceKHR    graphicsManager::getSurface()       {return surface;}
 uint32_t        graphicsManager::getImageIndex()    {return imageIndex;}
 swapChain*      graphicsManager::getSwapChain()     {return &swapChainKHR;}
-VkResult        graphicsManager::deviceWaitIdle()   {return vkDeviceWaitIdle(devices[deviceIndex].getLogical());}
+VkResult        graphicsManager::deviceWaitIdle()   {return vkDeviceWaitIdle(activeDevice->getLogical());}

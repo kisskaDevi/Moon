@@ -12,10 +12,10 @@ class linkable;
 
 class graphicsInterface{
 protected:
-    uint32_t                    imageCount{0};
-    swapChain*                  swapChainKHR{nullptr};
-    std::vector<physicalDevice> devices;
-    physicalDevice              device;
+    uint32_t                            imageCount{0};
+    swapChain*                          swapChainKHR{nullptr};
+    std::map<uint32_t, physicalDevice>  devices;
+    physicalDevice                      device;
     linkable*                   link{nullptr};
 
 public:
@@ -27,11 +27,9 @@ public:
         this->imageCount = swapChainKHR->getImageCount();
     }
 
-    virtual void setDevices(uint32_t devicesCount, physicalDevice* devices, uint64_t deviceIndex = -1){
-        for(uint32_t i = 0; i < devicesCount; i++){
-            this->devices.push_back(devices[i]);
-        }
-        device = deviceIndex == -1 ? this->devices.front() : this->devices[deviceIndex];
+    virtual void setDevices(const std::map<uint32_t, physicalDevice>& devices, uint32_t deviceIndex = 0xffffffff){
+        this->devices = devices;
+        device = devices.at(deviceIndex);
     }
 
     virtual linkable* getLinkable(){

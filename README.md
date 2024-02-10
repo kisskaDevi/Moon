@@ -13,50 +13,54 @@ Links to another readme:
 * [Cuda Ray Tracing](core/cudaRayTracing/README.md)
 
 ## Build tests applications
-
 From working directory:
-
-* Pre build steps
-
-For clean `Ubuntu` you need install next libs:
-
-* * For GLFW build:
-```
-sudo apt install libx11-dev
-sudo apt install libxrandr-dev
-sudo apt install libxinerama-dev
-sudo apt install libxcursor-dev
-sudo apt install libxi-dev
-sudo apt install mesa-common-dev
-```
-* * Vulkan:
-```
-sudo apt install vulkan-tools
-sudo apt install libvulkan-dev
-sudo apt install vulkan-validationlayers-dev spirv-tools
-```
-You can check `Vulkan` with `vulkaninfo` and `vkcube` commands
-
-* Clone dependences:
-```
-python ./dependences/libs/clone.py
-cd dependences/model
-git clone https://github.com/KhronosGroup/glTF-Sample-Models.git
-```
-
-* Build:
-```
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_RAY_TRACING=ON
-cmake --build . --config Release
-```
-
-Use `CUDA_RAY_TRACING` flag for build `cudaRayTracing` module and `testCuda` test, make shure you have installed `CUDA`, it is not installed with dependences by `clone.py` script.
+*   Pre build steps
+    *   For clean `Ubuntu` you need install next libs:
+        *   For GLFW build:
+            ```
+            sudo apt install libx11-dev
+            sudo apt install libxrandr-dev
+            sudo apt install libxinerama-dev
+            sudo apt install libxcursor-dev
+            sudo apt install libxi-dev
+            sudo apt install mesa-common-dev
+            ```
+        *   Vulkan:
+            ```
+            sudo apt install vulkan-tools
+            sudo apt install libvulkan-dev
+            sudo apt install vulkan-validationlayers-dev spirv-tools
+            ```
+            You can check `Vulkan` with `vulkaninfo` and `vkcube` commands
+    *   Clone dependences:
+        *   Linux:
+            ```
+            ./scripts/clone.sh
+            ```
+        *   Windows
+            ```
+            ./scripts/clone.bat
+            ```
+*   Compile shaders
+    *   Linux:
+        ```
+        ./scripts/shaders_compile.sh
+        ```
+    *   Windows
+        ```
+        ./scripts/shaders_compile.bat
+*   Build:
+    ```
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_RAY_TRACING=ON
+    cmake --build . --config Release
+    ```
+    Use `CUDA_RAY_TRACING` flag for build `cudaRayTracing` module and `testCuda` test, make shure you have installed `CUDA`, it is not installed with dependences by `clone.py` script.
 
 ## Requirements
 
-A number of dependences that could be cloning by [clone script](dependences/libs/clone.py):
+A number of dependences that could be cloning by [clone script](scripts/clone.py):
 * [stb](https://github.com/nothings/stb.git) - image loader
 * [tinygltf](https://github.com/syoyo/tinygltf.git) - gltf model loader
 * [tinyply](https://github.com/ddiakopoulos/tinyply.git) - ply model loader

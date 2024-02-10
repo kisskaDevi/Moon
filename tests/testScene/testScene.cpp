@@ -137,7 +137,6 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
         } else {
             farBlurDepth = 1.0f;
         }
-        graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(1.02f * farBlurDepth);
 
         ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f);
         for(auto& [_,graph]: graphics){
@@ -573,5 +572,7 @@ void testScene::updates(float frameTime)
     objects["helmet"]->
         rotate(0.5f * frameTime, normalize(vector<float,3>(0.0f,0.0f,1.0f))).
         translate(vector<float,3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
+
+    graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(1.02f * farBlurDepth);
 }
 

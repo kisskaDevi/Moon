@@ -11,23 +11,25 @@ graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures)
     debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
 
-graphicsManager::graphicsManager(GLFWwindow* window, int32_t maxImageCount, const VkPhysicalDeviceFeatures& deviceFeatures)
+graphicsManager::graphicsManager(GLFWwindow* window, int32_t imageCount, int32_t resourceCount, const VkPhysicalDeviceFeatures& deviceFeatures)
     : graphicsManager(deviceFeatures){
-    create(window, maxImageCount);
+    this->imageCount = imageCount;
+    this->resourceCount = resourceCount;
+    create(window);
 }
 
 graphicsManager::~graphicsManager(){
     destroy();
 
-    if(activeDevice->getLogical())                 { vkDestroyDevice(activeDevice->getLogical(), nullptr); activeDevice->getLogical() = VK_NULL_HANDLE;}
+    if(activeDevice->getLogical())                  { vkDestroyDevice(activeDevice->getLogical(), nullptr); activeDevice->getLogical() = VK_NULL_HANDLE;}
     if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
     if(surface)                                     { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
     if(instance)                                    { vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
 }
 
-void graphicsManager::create(GLFWwindow* window, int32_t maxImageCount){
+void graphicsManager::create(GLFWwindow* window){
     debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(createSwapChain(window, maxImageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    debug::checkResult(createSwapChain(window, imageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     debug::checkResult(createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
@@ -150,12 +152,12 @@ VkResult graphicsManager::createLinker(){
 void graphicsManager::setGraphics(graphicsInterface* graphics){
     this->graphics.push_back(graphics);
     this->graphics.back()->setDevices(devices, activeDevice->properties.index);
-    this->graphics.back()->setSwapChain(&swapChainKHR);
+    this->graphics.back()->setProperties(swapChainKHR.getFormat(), resourceCount);
     this->graphics.back()->getLinkable()->setRenderPass(linker.getRenderPass());
     linker.addLinkable(this->graphics.back()->getLinkable());
 }
 
-std::vector<physicalDeviceProperties> graphicsManager::getDeviceInfo(){
+std::vector<physicalDeviceProperties> graphicsManager::getDeviceInfo() const {
     std::vector<physicalDeviceProperties> deviceProperties;
     for(const auto& [_,device]: devices){
         deviceProperties.push_back(device.properties);
@@ -172,10 +174,10 @@ VkResult graphicsManager::createSyncObjects(){
 
     VkResult result = VK_SUCCESS;
 
-    availableSemaphores.resize(swapChainKHR.getImageCount());
-    fences.resize(swapChainKHR.getImageCount());
+    availableSemaphores.resize(resourceCount);
+    fences.resize(resourceCount);
 
-    for (size_t imageIndex = 0; imageIndex < swapChainKHR.getImageCount(); imageIndex++){
+    for (size_t imageIndex = 0; imageIndex < resourceCount; imageIndex++){
         VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         result = vkCreateSemaphore(activeDevice->getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
@@ -222,7 +224,7 @@ VkResult graphicsManager::drawFrame(){
         activeDevice->getQueue(0,0)
     );
 
-    resourceIndex = ((resourceIndex + 1) % swapChainKHR.getImageCount());
+    resourceIndex = ((resourceIndex + 1) % resourceCount);
 
     VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -232,6 +234,10 @@ VkResult graphicsManager::drawFrame(){
         presentInfo.pSwapchains = &swapChainKHR();
         presentInfo.pImageIndices = &imageIndex;
     return vkQueuePresentKHR(activeDevice->getQueue(0,0), &presentInfo);
+}
+
+VkResult graphicsManager::deviceWaitIdle() const {
+    return vkDeviceWaitIdle(activeDevice->getLogical());
 }
 
 void graphicsManager::destroySwapChain(){
@@ -266,8 +272,13 @@ void graphicsManager::destroy(){
     destroySurface();
 }
 
-VkInstance      graphicsManager::getInstance()      {return instance;}
-VkSurfaceKHR    graphicsManager::getSurface()       {return surface;}
-uint32_t        graphicsManager::getImageIndex()    {return imageIndex;}
-swapChain*      graphicsManager::getSwapChain()     {return &swapChainKHR;}
-VkResult        graphicsManager::deviceWaitIdle()   {return vkDeviceWaitIdle(activeDevice->getLogical());}
+VkInstance      graphicsManager::getInstance()      const {return instance;}
+VkExtent2D      graphicsManager::getImageExtent()   const {return swapChainKHR.getExtent();}
+uint32_t        graphicsManager::getResourceIndex() const {return resourceIndex;}
+uint32_t        graphicsManager::getResourceCount() const {return resourceCount;}
+uint32_t        graphicsManager::getImageIndex()    const {return imageIndex;}
+uint32_t        graphicsManager::getImageCount()    const {return imageCount;}
+
+std::vector<uint32_t> graphicsManager::makeScreenshot() const {
+    return swapChainKHR.makeScreenshot(imageIndex);
+}

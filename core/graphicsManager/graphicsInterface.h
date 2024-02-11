@@ -5,26 +5,25 @@
 #include <vector>
 
 #include "device.h"
-#include "swapChain.h"
 
 struct GLFWwindow;
 class linkable;
 
 class graphicsInterface{
 protected:
+    VkFormat                            format{VK_FORMAT_UNDEFINED};
     uint32_t                            imageCount{0};
-    swapChain*                          swapChainKHR{nullptr};
     std::map<uint32_t, physicalDevice>  devices;
     physicalDevice                      device;
-    linkable*                   link{nullptr};
+    linkable*                           link{nullptr};
 
 public:
     virtual ~graphicsInterface(){};
     virtual void destroy() = 0;
 
-    virtual void setSwapChain(swapChain* swapChainKHR){
-        this->swapChainKHR = swapChainKHR;
-        this->imageCount = swapChainKHR->getImageCount();
+    virtual void setProperties(VkFormat swapChainFormat, uint32_t resourceCount){
+        format = swapChainFormat;
+        imageCount = resourceCount;
     }
 
     virtual void setDevices(const std::map<uint32_t, physicalDevice>& devices, uint32_t deviceIndex = 0xffffffff){

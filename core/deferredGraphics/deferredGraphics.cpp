@@ -6,7 +6,6 @@
 #include "light.h"
 #include "object.h"
 #include "camera.h"
-#include "swapChain.h"
 #include "depthMap.h"
 
 #include "graphics.h"
@@ -135,7 +134,6 @@ void deferredGraphics::create()
 void deferredGraphics::createGraphicsPasses(){
     CHECK_M(commandPool == VK_NULL_HANDLE,       std::string("[ deferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
     CHECK_M(device.instance == VK_NULL_HANDLE,   std::string("[ deferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
-    CHECK_M(swapChainKHR == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] swapChain is nullptr"));
     CHECK_M(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
     workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
@@ -157,7 +155,7 @@ void deferredGraphics::createGraphicsPasses(){
 
 
     for(auto& [_,workflow]: workflows){
-        imageInfo info{imageCount, swapChainKHR->getFormat(), VkOffset2D{0,0}, extent, extent, MSAASamples};
+        imageInfo info{imageCount, format, VkOffset2D{0,0}, extent, extent, MSAASamples};
 
         workflow->setEmptyTexture(emptyTextures);
         workflow->setShadersPath(shadersPath);
@@ -171,8 +169,8 @@ void deferredGraphics::createGraphicsPasses(){
     imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkOffset2D{0,0},VkExtent2D{1024,1024},VkExtent2D{1024,1024},MSAASamples};
     workflows["Shadow"]->setImageProp(&shadowsInfo);
 
-    imageInfo swapChainInfo{imageCount, swapChainKHR->getFormat(), offset, extent, swapChainKHR->getExtent(), MSAASamples};
-    workflows["PostProcessing"]->setImageProp(&swapChainInfo);
+    imageInfo postProcessingInfo{imageCount, format, offset, extent, extent, MSAASamples};
+    workflows["PostProcessing"]->setImageProp(&postProcessingInfo);
 
     for(auto& [_,workflow]: workflows){
         workflow->create(attachmentsMap);
@@ -182,7 +180,7 @@ void deferredGraphics::createGraphicsPasses(){
     Link.setDeviceProp(device.getLogical());
     Link.setImageCount(imageCount);
     Link.createDescriptorSetLayout();
-    Link.createPipeline(&swapChainInfo);
+    Link.createPipeline(&postProcessingInfo);
     Link.createDescriptorPool();
     Link.createDescriptorSets();
 

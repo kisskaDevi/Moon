@@ -51,6 +51,9 @@ private:
     std::shared_ptr<controller>                         mouse{nullptr};
     std::shared_ptr<controller>                         board{nullptr};
 
+    uint32_t resourceCount{0};
+    uint32_t imageCount{0};
+
     std::unordered_map<std::string, std::shared_ptr<baseCamera>>        cameras;
     std::unordered_map<std::string, std::shared_ptr<deferredGraphics>>  graphics;
     std::shared_ptr<imguiGraphics>                                      gui;

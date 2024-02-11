@@ -15,7 +15,9 @@ class linkable;
 class imguiGraphics: public graphicsInterface
 {
 private:
+    GLFWwindow*         window{nullptr};
     VkInstance          instance{VK_NULL_HANDLE};
+    uint32_t            imageCount{0};
     VkDescriptorPool    descriptorPool{VK_NULL_HANDLE};
     VkCommandPool       commandPool{VK_NULL_HANDLE};
     imguiLink           Link;
@@ -25,10 +27,8 @@ private:
     void createCommandPool();
     void uploadFonts();
 public:
-    imguiGraphics();
+    imguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);
     ~imguiGraphics();
-
-    void setInstance(VkInstance instance);
 
     void create() override;
     void destroy() override;

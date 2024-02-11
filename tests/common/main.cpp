@@ -19,6 +19,7 @@
 #endif
 
 bool framebufferResized = false;
+uint32_t resCount = 2;
 uint32_t imageCount = 3;
 
 VkPhysicalDeviceFeatures physicalDeviceFeatures(){
@@ -48,7 +49,7 @@ int main()
 
     GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.PNG");
 
-    graphicsManager app(window, imageCount, physicalDeviceFeatures());
+    graphicsManager app(window, imageCount, resCount, physicalDeviceFeatures());
 
 #if defined(TESTPOS)
     testPos testScene(&app, window, ExternalPath);
@@ -63,7 +64,7 @@ int main()
 
     for(float time = 1.0f; !glfwWindowShouldClose(window);){
         if(auto start = clk::now(); app.checkNextFrame() != VK_ERROR_OUT_OF_DATE_KHR) {
-            testScene.updateFrame(app.getImageIndex(), time);
+            testScene.updateFrame(app.getResourceIndex(), time);
 
             if (VkResult result = app.drawFrame(); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized){
                 std::tie(WIDTH, HEIGHT) = resize(window,&app,&testScene);
@@ -95,7 +96,7 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, sc
     app->deviceWaitIdle();
     app->destroy();
 
-    app->create(window, imageCount);
+    app->create(window);
 
     testScene->resize(width, height);
 

@@ -7,9 +7,11 @@
 #include "imgui_impl_vulkan.h"
 
 #include "operations.h"
-#include "swapChain.h"
 
-imguiGraphics::imguiGraphics(){
+imguiGraphics::imguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t imageCount) :
+    window(window),
+    instance(instance),
+    imageCount(imageCount) {
     link = &Link;
 }
 
@@ -31,10 +33,6 @@ void imguiGraphics::destroy() {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-}
-
-void imguiGraphics::setInstance(VkInstance instance){
-    this->instance = instance;
 }
 
 void imguiGraphics::setupImguiContext(){
@@ -79,7 +77,7 @@ void imguiGraphics::create() {
     createCommandPool();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForVulkan(swapChainKHR->getWindow(), true);
+    ImGui_ImplGlfw_InitForVulkan(window, true);
     ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = instance;
         initInfo.PhysicalDevice = device.instance;

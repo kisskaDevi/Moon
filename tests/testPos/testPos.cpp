@@ -246,7 +246,7 @@ void testPos::createObjects()
 void testPos::mouseEvent(float frameTime)
 {
     float sensitivity = mouse->sensitivity * frameTime;
-    uint32_t imageCount = app->getSwapChain()->getImageCount();
+    uint32_t imageCount = app->getResourceCount();
 
     uint32_t primitiveNumber = std::numeric_limits<uint32_t>::max();
     for(uint32_t i=0; i < imageCount; i++){

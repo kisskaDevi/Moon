@@ -18,25 +18,29 @@
 class graphicsManager
 {
 public:
-    graphicsManager(GLFWwindow* window, int32_t maxImageCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    graphicsManager(GLFWwindow* window, int32_t imageCount = -1, int32_t resourceCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
     graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {});
     ~graphicsManager();
 
-    VkInstance      getInstance();
-    VkSurfaceKHR    getSurface();
-    uint32_t        getImageIndex();
-    swapChain*      getSwapChain();
-    VkResult        deviceWaitIdle();
-    void            setGraphics(graphicsInterface* graphics);
+    VkInstance getInstance() const;
+    VkExtent2D getImageExtent() const;
+    uint32_t   getResourceIndex() const;
+    uint32_t   getResourceCount() const;
+    uint32_t   getImageIndex() const;
+    uint32_t   getImageCount() const;
 
-    std::vector<physicalDeviceProperties> getDeviceInfo();
+    std::vector<physicalDeviceProperties> getDeviceInfo() const;
     void setDevice(uint32_t deviceIndex);
+    void setGraphics(graphicsInterface* graphics);
 
-    void            create(GLFWwindow* window, int32_t maxImageCount = -1);
-    void            destroy();
+    void create(GLFWwindow* window);
+    void destroy();
 
-    VkResult        checkNextFrame();
-    VkResult        drawFrame();
+    VkResult checkNextFrame();
+    VkResult drawFrame();
+    VkResult deviceWaitIdle() const;
+
+    std::vector<uint32_t> makeScreenshot() const ;
 
 private:
     bool                                        enableValidationLayers = true;
@@ -60,7 +64,9 @@ private:
     std::vector<VkFence>                        fences;
 
     uint32_t                                    imageIndex{0};
+    uint32_t                                    imageCount{0};
     uint32_t                                    resourceIndex{0};
+    uint32_t                                    resourceCount{0};
 
     VkResult createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
     VkResult createInstance();

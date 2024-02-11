@@ -97,24 +97,24 @@ void swapChain::setDevice(const physicalDevice& device){
     this->device = device;
 }
 
-uint32_t swapChain::getImageCount(){
+uint32_t swapChain::getImageCount() const{
     return imageCount;
 }
 
-VkExtent2D swapChain::getExtent(){
+VkExtent2D swapChain::getExtent() const{
     return extent;
 }
 
-VkFormat swapChain::getFormat(){
+VkFormat swapChain::getFormat() const{
     return format;
+}
+
+VkSurfaceKHR swapChain::getSurface() const{
+    return surface;
 }
 
 GLFWwindow* swapChain::getWindow(){
     return window;
-}
-
-VkSurfaceKHR swapChain::getSurface(){
-    return surface;
 }
 
 std::vector<uint32_t> swapChain::makeScreenshot(uint32_t i) const {

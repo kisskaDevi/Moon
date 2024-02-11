@@ -31,7 +31,9 @@ testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesy
     window(window),
     app(app),
     mouse(new controller(window, glfwGetMouseButton)),
-    board(new controller(window, glfwGetKey))
+    board(new controller(window, glfwGetKey)),
+    resourceCount(app->getResourceCount()),
+    imageCount(app->getImageCount())
 {}
 
 void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
@@ -39,7 +41,7 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
 
     cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"]->setExtentAndOffset(app->getSwapChain()->getExtent());
+    graphics["base"]->setExtentAndOffset(app->getImageExtent());
 
 #ifdef SECOND_VIEW_WINDOW
     cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
@@ -80,8 +82,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 #endif
 
 #ifdef IMGUI_GRAPHICS
-    gui = std::make_shared<imguiGraphics>();
-    gui->setInstance(app->getInstance());
+    gui = std::make_shared<imguiGraphics>(window, app->getInstance(), app->getImageCount());
     app->setGraphics(gui.get());
 #endif
 
@@ -229,14 +230,14 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
 void testScene::loadModels()
 {
-    models["bee"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Bee.glb", 6);
+    models["bee"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Bee.glb", 2 * resourceCount);
     models["ufo"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/RetroUFO.glb");
     models["box"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Box/glTF-Binary/Box.glb");
     models["sponza"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf");
     models["duck"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Duck/glTF-Binary/Duck.glb");
     models["DragonAttenuation"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
     models["DamagedHelmet"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    models["robot"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Robot.glb");
+    models["robot"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Robot.glb", resourceCount);
     models["floor"] = std::make_shared<plyModel>(ExternalPath / "dependences/model/ply/cube.ply");
 
     for(auto& [_,model]: models){
@@ -249,10 +250,10 @@ void testScene::createObjects()
     staticObjects["sponza"] = std::make_shared<baseObject>(models["sponza"].get());
     staticObjects["sponza"]->rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({3.0f,3.0f,3.0f});
 
-    objects["bee0"] = std::make_shared<baseObject>(models["bee"].get(), 0, 3);
+    objects["bee0"] = std::make_shared<baseObject>(models["bee"].get(), 0, resourceCount);
     objects["bee0"]->translate({3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f});
 
-    objects["bee1"] = std::make_shared<baseObject>(models["bee"].get(), 3, 3);
+    objects["bee1"] = std::make_shared<baseObject>(models["bee"].get(), resourceCount, resourceCount);
     objects["bee1"]->translate({-3.0f,0.0f,0.0f}).rotate(radians(90.0f),{1.0f,0.0f,0.0f}).scale({0.2f,0.2f,0.2f}).setConstantColor(vector<float,4>(0.0f,0.0f,0.0f,-0.7f));
     objects["bee1"]->setAnimation(1, 1.0f);
 
@@ -271,7 +272,7 @@ void testScene::createObjects()
     objects["helmet"] = std::make_shared<baseObject>(models["DamagedHelmet"].get());
     objects["helmet"]->scale(1.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(vector<float,3>(27.0f, -10.0f, 14.0f));
 
-    objects["robot"] = std::make_shared<baseObject>(models["robot"].get());
+    objects["robot"] = std::make_shared<baseObject>(models["robot"].get(), 0, resourceCount);
     objects["robot"]->scale(25.0f).rotate(quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).rotate(radians(180.0f), {0.0f, 0.0f, 1.0f}).translate(vector<float,3>(-30.0f, 11.0f, 10.0f));
 
     objects["ufo_light_0"] = std::make_shared<baseObject>(models["ufo"].get());
@@ -402,9 +403,8 @@ void testScene::createLight()
 void testScene::mouseEvent(float frameTime)
 {
     float sensitivity = mouse->sensitivity * frameTime;
-    uint32_t imageCount = app->getSwapChain()->getImageCount();
 
-    for(uint32_t i=0; i < imageCount; i++){
+    for(uint32_t i=0; i < resourceCount; i++){
         graphics["base"]->readStorageBuffer(i, primitiveNumber, farBlurDepth);
         if(primitiveNumber != std::numeric_limits<uint32_t>::max()){
             break;
@@ -420,7 +420,7 @@ void testScene::mouseEvent(float frameTime)
         mousePos = {x,y};
 
         auto scale = [](double pos, double ex) -> float { return static_cast<float>(pos / ex);};
-        for(uint32_t i=0; i < imageCount; i++){
+        for(uint32_t i=0; i < resourceCount; i++){
             graphics["base"]->updateStorageBuffer(i, scale(mousePos[0], extent[0]), scale(mousePos[1], extent[1]));
         }
     } else {
@@ -539,8 +539,7 @@ void testScene::keyboardEvent(float frameTime)
     }
 
     if(board->released(GLFW_KEY_B)) {
-        app->deviceWaitIdle();
-        if(ufoCounter > 4) {
+        if(ufoCounter > 4 && app->deviceWaitIdle() == VK_SUCCESS) {
             for(auto& [_,graph]: graphics){
                 graph->remove(objects["ufo" + std::to_string(ufoCounter - 1)].get());
                 graph->remove(lightSources.back().get());
@@ -551,16 +550,16 @@ void testScene::keyboardEvent(float frameTime)
     }
 
     if(board->pressed(GLFW_KEY_LEFT_CONTROL) && board->released(GLFW_KEY_S)){
-        const auto& image = app->getSwapChain();
-        auto screenshot = image->makeScreenshot();
+        const auto& imageExtent = app->getImageExtent();
+        auto screenshot = app->makeScreenshot();
 
-        std::vector<uint8_t> jpg(3 * image->getExtent().height * image->getExtent().width, 0);
-        for (size_t pixel_index = 0, jpg_index = 0; pixel_index < image->getExtent().height * image->getExtent().width; pixel_index++) {
+        std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
+        for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
             jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
             jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
             jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
         }
-        stbi_write_jpg("./screenshoot.jpg", image->getExtent().width, image->getExtent().height, 3, jpg.data(), 100);
+        stbi_write_jpg("./screenshoot.jpg", imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
     }
 }
 

@@ -33,11 +33,11 @@ public:
     VkSwapchainKHR& operator()();
     ::attachment& attachment(uint32_t i);
 
-    uint32_t getImageCount();
-    VkExtent2D getExtent();
-    VkFormat getFormat();
+    uint32_t getImageCount() const;
+    VkExtent2D getExtent() const;
+    VkFormat getFormat() const;
+    VkSurfaceKHR getSurface() const;
     GLFWwindow* getWindow();
-    VkSurfaceKHR getSurface();
 
     std::vector<uint32_t> makeScreenshot(uint32_t i = 0) const;
 };

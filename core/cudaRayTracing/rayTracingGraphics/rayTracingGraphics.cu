@@ -43,7 +43,7 @@ void rayTracingGraphics::create()
     imageInfo swapChainInfo{
         imageCount,
         format,
-        swapChain->getExtent(),
+        swapChainKHR->getExtent(),
         VK_SAMPLE_COUNT_1_BIT
     };
 

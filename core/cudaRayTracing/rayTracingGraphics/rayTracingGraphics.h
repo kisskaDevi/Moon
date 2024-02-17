@@ -85,10 +85,10 @@ public:
         return swapChainImage.get();
 	}
 	size_t getWidth() const {
-        return swapChain->getExtent().width;
+        return swapChainKHR->getExtent().width;
 	}
 	size_t getHeight() const {
-        return swapChain->getExtent().height;
+        return swapChainKHR->getExtent().height;
     }
 
     void update(uint32_t) override {}

@@ -177,7 +177,7 @@ void deferredGraphics::createGraphicsPasses(){
         workflow->create(attachmentsMap);
     }
 
-    imageInfo linkInfo{imageCount, format, swapChain->getExtent(), MSAASamples};
+    imageInfo linkInfo{imageCount, format, swapChainKHR->getExtent(), MSAASamples};
     Link.setShadersPath(shadersPath);
     Link.setDeviceProp(device.getLogical());
     Link.setImageCount(imageCount);

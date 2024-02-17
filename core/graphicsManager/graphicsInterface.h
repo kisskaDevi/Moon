@@ -16,7 +16,7 @@ protected:
     uint32_t                            imageCount{0};
     std::map<uint32_t, physicalDevice>  devices;
     physicalDevice                      device;
-    swapChain*                          swapChain;
+    swapChain*                          swapChainKHR;
     linkable*                           link{nullptr};
     vector<float,2>                     offset{0.0f, 0.0f};
     vector<float,2>                     size{1.0f, 1.0f};
@@ -31,7 +31,7 @@ public:
     }
 
     virtual void setSwapChain(class swapChain* swapChain){
-        this->swapChain = swapChain;
+        this->swapChainKHR = swapChain;
     }
 
     virtual void setProperties(VkFormat swapChainFormat, uint32_t resourceCount){

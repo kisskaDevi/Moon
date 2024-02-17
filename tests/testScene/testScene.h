@@ -25,7 +25,7 @@ class skyboxObject;
 class plyModel;
 class transformational;
 
-//#define SECOND_VIEW_WINDOW
+#define SECOND_VIEW_WINDOW
 #define IMGUI_GRAPHICS
 
 class testScene : public scene

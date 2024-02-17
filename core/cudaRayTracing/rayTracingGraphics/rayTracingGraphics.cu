@@ -4,6 +4,8 @@
 #include "hitableList.h"
 #include "material.h"
 
+#include <cstring>
+
 #include "core/utils/vkdefault.h"
 #include "core/utils/operations.h"
 
@@ -143,7 +145,7 @@ namespace base {
         hitRecord rec;
 
         for (; maxIterations > 0; maxIterations--) {
-            if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, FLT_MAX, rec)) {
+            if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, 1e+37, rec)) {
                 color = min(rec.color, color);
                 r = ray(rec.point, scatter(r, rec.normal, rec.props, local_rand_state));
             } else {
@@ -163,7 +165,7 @@ namespace bloom {
         r = ray(r.getOrigin(), random_in_unit_sphere(r.getDirection(), 0.025 * pi, local_rand_state));
 
         for (; maxIterations > 0; maxIterations--) {
-            if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, FLT_MAX, rec)) {
+            if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, 1e+37, rec)) {
                 color = min(rec.color, color);
                 r = ray(rec.point, scatter(r, rec.normal, rec.props, local_rand_state));
             } else {

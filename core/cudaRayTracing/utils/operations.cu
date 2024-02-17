@@ -12,7 +12,7 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
 }
 
 namespace cuda::Buffer {
-    void* Buffer::create(size_t size) {
+    void* create(size_t size) {
         void* buffer;
         checkCudaErrors(cudaMalloc((void**)&buffer, size));
         return buffer;
@@ -20,7 +20,7 @@ namespace cuda::Buffer {
 }
 
 namespace cuda::Image {
-    void Image::outPPM(vec4* frameBuffer, size_t width, size_t height, const std::string& filename) {
+    void outPPM(vec4* frameBuffer, size_t width, size_t height, const std::string& filename) {
         vec4* hostFrameBuffer = new vec4[width * height];
         cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4), cudaMemcpyDeviceToHost);
 
@@ -38,7 +38,7 @@ namespace cuda::Image {
         delete[] hostFrameBuffer;
     }
 
-    void Image::outPGM(vec4* frameBuffer, size_t width, size_t height, const std::string& filename) {
+    void outPGM(vec4* frameBuffer, size_t width, size_t height, const std::string& filename) {
         vec4* hostFrameBuffer = new vec4[width * height];
         cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4), cudaMemcpyDeviceToHost);
 

@@ -29,8 +29,6 @@ class deferredGraphics: public graphicsInterface{
 private:
     std::filesystem::path                       shadersPath;
     VkExtent2D                                  extent{0,0};
-    VkOffset2D                                  offset{0,0};
-    VkExtent2D                                  frameBufferExtent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
     std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>> bufferMap;
@@ -69,13 +67,15 @@ private:
     void updateBuffers(uint32_t imageIndex);
 
 public:
-    deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset = {0,0}, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
     ~deferredGraphics();
 
     void destroy() override;
     void create() override;
 
     void update(uint32_t imageIndex) override;
+
+    void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size) override;
 
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
@@ -86,7 +86,7 @@ public:
 
     bool getEnable(const std::string& name);
     deferredGraphics& setEnable(const std::string& name, bool enable);
-    deferredGraphics& setExtentAndOffset(VkExtent2D extent, VkOffset2D offset = {0,0});
+    deferredGraphics& setExtent(VkExtent2D extent);
     deferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
     deferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
     deferredGraphics& setScatteringRefraction(bool enable);

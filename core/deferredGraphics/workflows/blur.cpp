@@ -7,7 +7,7 @@ gaussianBlur::gaussianBlur(bool enable) :
 {}
 
 void gaussianBlur::createBufferAttachments(){
-    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.frameBufferExtent,image.Count);
+    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
     VkSamplerCreateInfo samplerInfo = vkDefault::samler();
     CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler));
 }
@@ -105,8 +105,8 @@ void gaussianBlur::createFramebuffers(){
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = image.frameBufferExtent.width;
-            framebufferInfo.height = image.frameBufferExtent.height;
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers.push_back(VkFramebuffer{});
         CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers.back()));
@@ -145,8 +145,8 @@ void gaussianBlur::blur::createPipeline(VkDevice device, imageInfo* pInfo, VkRen
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
+    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -261,7 +261,7 @@ void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = image.frameBufferExtent;
+        renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

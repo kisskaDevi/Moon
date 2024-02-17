@@ -4,8 +4,7 @@
 #include <vulkan.h>
 #include <vector>
 
-struct stage
-{
+struct stage{
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> waitSemaphores;
     std::vector<VkSemaphore> signalSemaphores;
@@ -20,8 +19,7 @@ struct stage
     VkResult submit();
 };
 
-struct node
-{
+struct node{
     std::vector<stage> stages;
     std::vector<VkSemaphore> signalSemaphores;
     node* next{nullptr};

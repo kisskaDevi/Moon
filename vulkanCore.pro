@@ -25,11 +25,11 @@ math.subdir = core/math
 testScene.subdir = tests/testScene
 testPos.subdir = tests/testPos
 
-graphicsManager.depends = utils
 interfaces.depends = utils
+graphicsManager.depends = utils math
 models.depends = utils interfaces math
 transformational.depends = utils interfaces math
-imguiGraphics.depends = utils graphicsManager
+imguiGraphics.depends = utils graphicsManager math
 workflows.depends = utils interfaces math
 deferredGraphics.depends = utils interfaces workflows graphicsManager math
 testScene.depends = graphicsManager imguiGraphics deferredGraphics models transformational math
@@ -41,7 +41,7 @@ equals(QMAKE_CXX,cl){
         testCuda
 
     cudaRayTracing.subdir = core/cudaRayTracing
-    cudaRayTracing.depends = utils graphicsManager
+    cudaRayTracing.depends = utils math graphicsManager
     testCuda.subdir = tests/testCuda
     testCuda.depends = graphicsManager cudaRayTracing
 }

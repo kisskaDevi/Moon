@@ -7,7 +7,6 @@
 #include "core/utils/vkdefault.h"
 #include "core/utils/operations.h"
 
-
 __host__ __device__ inline vec4 max(const vec4& v1, const vec4& v2) {
     return vec4(    v1.x() >= v2.x() ? v1.x() : v2.x(),
                 v1.y() >= v2.y() ? v1.y() : v2.y(),
@@ -22,12 +21,8 @@ __host__ __device__ inline vec4 min(const vec4& v1, const vec4& v2) {
                 v1.w() < v2.w() ? v1.w() : v2.w());
 }
 
-
 void rayTracingGraphics::create()
 {
-    width = this->swapChainKHR->getExtent().width;
-    height = this->swapChainKHR->getExtent().height;
-
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = 0;
@@ -37,20 +32,18 @@ void rayTracingGraphics::create()
     finalAttachment.create(
         device.instance,
         device.getLogical(),
-        swapChainKHR->getFormat(),
+        format,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        swapChainKHR->getExtent(),
-        swapChainKHR->getImageCount()
+        extent,
+        imageCount
     );
     VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
     vkCreateSampler(device.getLogical(), &SamplerInfo, nullptr, &finalAttachment.sampler);
 
     imageInfo swapChainInfo{
-        swapChainKHR->getImageCount(),
-        swapChainKHR->getFormat(),
-        offset,
-        swapChainKHR->getExtent(),
-        swapChainKHR->getExtent(),
+        imageCount,
+        format,
+        swapChain->getExtent(),
         VK_SAMPLE_COUNT_1_BIT
     };
 

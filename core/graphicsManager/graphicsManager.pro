@@ -6,7 +6,8 @@ WARNINGS += -Wall
 INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
     $$PWD/../../dependences/libs/glfw/include/GLFW \
-    $$PWD/../utils
+    $$PWD/../utils \
+    $$PWD/../math
 
 SOURCES += \
     graphicsLinker.cpp \

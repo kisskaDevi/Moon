@@ -18,4 +18,4 @@ linkable.h)
 
 add_library(graphicsManager STATIC ${SOURCES} ${HEADERS})
 target_include_directories(graphicsManager PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(graphicsManager PUBLIC utils)
+target_link_libraries(graphicsManager PUBLIC utils math)

@@ -62,8 +62,8 @@ void testPos::resize(uint32_t WIDTH, uint32_t HEIGHT)
     }
 
     cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
-    graphics["view"]->setExtentAndOffset(getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4, static_cast<int32_t>(HEIGHT / 2) - 4});
+    graphics["base"]->setExtent({static_cast<uint32_t>(WIDTH), static_cast<uint32_t>(HEIGHT)});
+    graphics["view"]->setExtent(getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])));
 
     for(auto& [_,graph]: graphics){
         graph->destroy();
@@ -84,9 +84,10 @@ void testPos::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     cameras["base"] = new baseCamera(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
     graphics["base"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", {WIDTH, HEIGHT}};
-    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", false).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true).setEnable("Selector", true);
+    graphics["base"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", false).setEnable("Bloom", true).setEnable("Shadow", true).setEnable("Selector", true);
 
-    graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0])), {static_cast<int32_t>(WIDTH / 2) - 4 , static_cast<int32_t>(HEIGHT / 2) - 4}};
+    graphics["view"] = new deferredGraphics{ExternalPath / "core/deferredGraphics/spv", getSmallWindowExent(WIDTH, HEIGHT, (- m[1][1] / m[0][0]))};
+    graphics["view"]->setPositionInWindow({0.55f, 0.55f}, {0.4f, 0.4f});
 
     app->setGraphics(graphics["base"]);
     app->setGraphics(graphics["view"]);
@@ -147,7 +148,7 @@ void testPos::loadModels()
 {
     models["cameraModel"] = new class plyModel(ExternalPath / "dependences/model/ply/pyramid.ply");
     models["ojectModel"] = new class plyModel(ExternalPath / "dependences/model/ply/octahedron.ply");
-    models["cubeModel"] = new class plyModel(ExternalPath / "dependences/model/ply/cube.ply");
+    models["cubeModel"] = new class plyModel(ExternalPath / "dependences/model/ply/cube_inv_norm.ply");
 
     for(auto& [_,model]: models){
         graphics["base"]->create(model);
@@ -217,9 +218,9 @@ void testPos::createObjects()
     staticObjects["object"] = new baseObject(models.at("ojectModel"));
     staticObjects["object"]->setConstantColor(vector<float,4>(0.2f,0.8f,1.0f,1.0f));
     staticObjects["object"]->setColorFactor(vector<float,4>(0.0f,0.0f,0.0f,1.0f));
+    staticObjects["object"]->scale(0.3f);
 
     maxSize = maxAbs(static_cast<plyModel*>(staticObjects["object"]->getModel())->getMaxSize(), maxSize);
-    staticObjects["object"]->scale(1.0f/maximum(maxSize));
 
     staticObjects["cube"] = new baseObject(models.at("cubeModel"));
     staticObjects["cube"]->setConstantColor(vector<float,4>(0.94f,0.94f,0.94f,1.0f));

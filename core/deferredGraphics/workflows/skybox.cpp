@@ -85,8 +85,8 @@ void skyboxGraphics::createFramebuffers()
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
             framebufferInfo.pAttachments = pAttachments.data();
-            framebufferInfo.width = image.frameBufferExtent.width;
-            framebufferInfo.height = image.frameBufferExtent.height;
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
@@ -124,8 +124,8 @@ void skyboxGraphics::Skybox::createPipeline(VkDevice device, imageInfo* pInfo, V
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
+    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -221,7 +221,7 @@ void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = image.frameBufferExtent;
+        renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

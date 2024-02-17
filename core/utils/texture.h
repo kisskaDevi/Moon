@@ -22,8 +22,7 @@ struct textureSampler {
     VkSamplerAddressMode addressModeW;
 };
 
-struct iamge
-{
+struct iamge{
     VkImage textureImage{VK_NULL_HANDLE};
     VkImageView textureImageView{VK_NULL_HANDLE};
     VkSampler textureSampler{VK_NULL_HANDLE};
@@ -48,8 +47,7 @@ struct iamge
             const uint32_t&     imageCount);
 };
 
-class texture
-{
+class texture{
 protected:
     std::vector<std::filesystem::path> path;
 
@@ -89,8 +87,7 @@ public:
 };
 
 
-class cubeTexture: public texture
-{
+class cubeTexture: public texture{
 public:
     cubeTexture() = default;
     cubeTexture(const std::vector<std::filesystem::path> & path);
@@ -103,9 +100,6 @@ public:
     void createTextureImageView(VkDevice device);
 };
 
-texture* createEmptyTexture(
-        const physicalDevice& device,
-        VkCommandPool,
-        bool isBlack = true);
+texture* createEmptyTexture(const physicalDevice&, VkCommandPool, bool isBlack = true);
 
 #endif // TEXTURE_H

@@ -6,6 +6,12 @@
 
 #include "linkable.h"
 #include "core/utils/attachments.h"
+#include "core/math/vector.h"
+
+struct linkPushConstant{
+    vector<float,2> offset{0.0f, 0.0f};
+    vector<float,2> size{1.0f, 1.0f};
+};
 
 class rayTracingLink : public linkable{
 private:
@@ -20,12 +26,15 @@ private:
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    DescriptorSets;
 
+    linkPushConstant                pushConstant;
+
 public:
     rayTracingLink() = default;
     void destroy();
     void setDeviceProp(VkDevice device);
     void setImageCount(const uint32_t& count);
     void setShadersPath(const std::filesystem::path& shadersPath);
+    void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size);
 
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
     void setRenderPass(VkRenderPass renderPass) override;

@@ -12,8 +12,8 @@ struct GLFWwindow;
 class Memory {
 private:
     struct Description{
-        uint64_t    alignment{0};
-        uint64_t    size{0};
+        uint64_t alignment{0};
+        uint64_t size{0};
     };
 
     uint64_t totalMemoryUsed{0};

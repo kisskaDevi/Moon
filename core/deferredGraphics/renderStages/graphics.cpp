@@ -40,13 +40,13 @@ void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, DeferredAttachments* pAttachments){
         VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        pAttachments->image.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
-        pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.frameBufferExtent, image.Count);
-        pAttachments->bloom.create(physicalDevice, device, image.Format, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, image.frameBufferExtent, image.Count);
-        pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
-        pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
-        pAttachments->GBuffer.color.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.frameBufferExtent, image.Count);
-        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, Image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.frameBufferExtent, image.Count);
+        pAttachments->image.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
+        pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
+        pAttachments->bloom.create(physicalDevice, device, image.Format, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, image.Extent, image.Count);
+        pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
+        pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
+        pAttachments->GBuffer.color.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
+        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, Image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.Extent, image.Count);
 
         VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -175,8 +175,8 @@ void graphics::createFramebuffers()
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = image.frameBufferExtent.width;
-            framebufferInfo.height = image.frameBufferExtent.height;
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[imageIndex]));
     }
@@ -244,7 +244,7 @@ void graphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = image.frameBufferExtent;
+        renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

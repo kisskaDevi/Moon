@@ -7,8 +7,7 @@
 #include "operations.h"
 #include "device.h"
 
-class swapChain
-{
+class swapChain{
 private:
     physicalDevice      device;
     uint32_t            imageCount{0};

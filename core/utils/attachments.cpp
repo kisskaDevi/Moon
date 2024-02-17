@@ -4,15 +4,13 @@
 #include <algorithm>
 #include <iterator>
 
-attachments::attachments(const attachments &other)
-{
+attachments::attachments(const attachments &other){
     std::copy(other.instances.begin(), other.instances.end(), std::back_inserter(instances));
     sampler = other.sampler;
     format = other.format;
 }
 
-attachments& attachments::operator=(const attachments& other)
-{
+attachments& attachments::operator=(const attachments& other){
     std::copy(other.instances.begin(), other.instances.end(), std::back_inserter(instances));
     sampler = other.sampler;
     format = other.format;
@@ -186,7 +184,7 @@ std::vector<VkImage> attachments::getImages() const {
 
 void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments, VkImageUsageFlags usage){
     for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
-        pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,usage,image.frameBufferExtent,image.Count);
+        pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,usage,image.Extent,image.Count);
         CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler));
         pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
     }

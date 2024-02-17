@@ -7,6 +7,7 @@
 #include "object.h"
 #include "camera.h"
 #include "depthMap.h"
+#include "swapChain.h"
 
 #include "graphics.h"
 #include "postProcessing.h"
@@ -23,8 +24,8 @@
 
 #include <cstring>
 
-deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset, VkSampleCountFlagBits MSAASamples):
-    shadersPath(shadersPath), extent(extent), offset(offset), MSAASamples(MSAASamples)
+deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
+    shadersPath(shadersPath), extent(extent), MSAASamples(MSAASamples)
 {
     enable["DeferredGraphics"] = true;
     enable["LayersCombiner"] = true;
@@ -155,7 +156,7 @@ void deferredGraphics::createGraphicsPasses(){
 
 
     for(auto& [_,workflow]: workflows){
-        imageInfo info{imageCount, format, VkOffset2D{0,0}, extent, extent, MSAASamples};
+        imageInfo info{imageCount, format, extent, MSAASamples};
 
         workflow->setEmptyTexture(emptyTextures);
         workflow->setShadersPath(shadersPath);
@@ -163,24 +164,25 @@ void deferredGraphics::createGraphicsPasses(){
         workflow->setImageProp(&info);
     }
 
-    imageInfo scatterInfo{imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, VkOffset2D{0,0}, extent, extent, MSAASamples};
+    imageInfo scatterInfo{imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples};
     workflows["Scattering"]->setImageProp(&scatterInfo);
 
-    imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkOffset2D{0,0},VkExtent2D{1024,1024},VkExtent2D{1024,1024},MSAASamples};
+    imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples};
     workflows["Shadow"]->setImageProp(&shadowsInfo);
 
-    imageInfo postProcessingInfo{imageCount, format, offset, extent, extent, MSAASamples};
+    imageInfo postProcessingInfo{imageCount, format, extent, MSAASamples};
     workflows["PostProcessing"]->setImageProp(&postProcessingInfo);
 
     for(auto& [_,workflow]: workflows){
         workflow->create(attachmentsMap);
     }
 
+    imageInfo linkInfo{imageCount, format, swapChain->getExtent(), MSAASamples};
     Link.setShadersPath(shadersPath);
     Link.setDeviceProp(device.getLogical());
     Link.setImageCount(imageCount);
     Link.createDescriptorSetLayout();
-    Link.createPipeline(&postProcessingInfo);
+    Link.createPipeline(&linkInfo);
     Link.createDescriptorPool();
     Link.createDescriptorSets();
 
@@ -269,6 +271,12 @@ std::vector<std::vector<VkSemaphore>> deferredGraphics::submit(const std::vector
 void deferredGraphics::update(uint32_t imageIndex) {
     updateBuffers(imageIndex);
     updateCommandBuffer(imageIndex);
+}
+
+void deferredGraphics::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size) {
+    this->offset = offset;
+    this->size = size;
+    Link.setPositionInWindow(offset, size);
 }
 
 void deferredGraphics::updateCommandBuffer(uint32_t imageIndex){
@@ -447,8 +455,7 @@ deferredGraphics& deferredGraphics::setBlurDepth(float blurDepth){
     return *this;
 }
 
-deferredGraphics& deferredGraphics::setExtentAndOffset(VkExtent2D extent, VkOffset2D offset) {
-    this->offset = offset;
+deferredGraphics& deferredGraphics::setExtent(VkExtent2D extent) {
     this->extent = extent;
     return *this;
 }

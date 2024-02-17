@@ -27,6 +27,11 @@ void rayTracingLink::setRenderPass(VkRenderPass renderPass)
     this->renderPass = renderPass;
 }
 
+void rayTracingLink::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
+    pushConstant.offset = offset;
+    pushConstant.size = size;
+}
+
 void rayTracingLink::createDescriptorSetLayout() {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -45,8 +50,8 @@ void rayTracingLink::createPipeline(imageInfo* pInfo) {
     VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vkDefault::vertrxShaderStage(vertShaderModule), vkDefault::fragmentShaderStage(fragShaderModule)};
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->frameBufferExtent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
+    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -57,10 +62,17 @@ void rayTracingLink::createPipeline(imageInfo* pInfo) {
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
     VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
+    std::vector<VkPushConstantRange> pushConstantRange;
+    pushConstantRange.push_back(VkPushConstantRange{});
+    pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+    pushConstantRange.back().offset = 0;
+    pushConstantRange.back().size = sizeof(linkPushConstant);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
+    pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
@@ -131,6 +143,7 @@ void rayTracingLink::updateDescriptorSets(attachments* attachment) {
 
 void rayTracingLink::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
 {
+    vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(linkPushConstant), &pushConstant);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[imageNumber], 0, nullptr);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);

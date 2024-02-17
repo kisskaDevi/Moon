@@ -22,11 +22,9 @@ struct queueFamily{
     bool availableQueueFlag(VkQueueFlags flag) const;
 };
 
-struct device
-{
+struct device{
     VkDevice                    instance{VK_NULL_HANDLE};
     VkPhysicalDeviceFeatures    deviceFeatures{};
-
     std::map<uint32_t, std::vector<VkQueue>> queueMap;
 
     device() = default;
@@ -41,8 +39,7 @@ struct physicalDeviceProperties{
     std::string name{};
 };
 
-struct physicalDevice
-{
+struct physicalDevice{
     VkPhysicalDevice instance{VK_NULL_HANDLE};
     physicalDeviceProperties properties{};
 

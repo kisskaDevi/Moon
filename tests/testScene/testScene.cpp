@@ -41,11 +41,11 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
 
     cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"]->setExtentAndOffset(app->getImageExtent());
+    graphics["base"]->setExtent({WIDTH, HEIGHT});
 
 #ifdef SECOND_VIEW_WINDOW
     cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["view"]->setExtentAndOffset({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)}, {static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+    graphics["view"]->setExtent({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)});
 #endif
 
     for(auto& [_,graph]: graphics){
@@ -75,7 +75,8 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 
 #ifdef SECOND_VIEW_WINDOW
     cameras["view"] = std::make_shared<baseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["view"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{WIDTH/3, HEIGHT/3}, VkOffset2D{static_cast<int32_t>(WIDTH / 2), static_cast<int32_t>(HEIGHT / 2)});
+    graphics["view"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{WIDTH/3, HEIGHT/3});
+    graphics["view"]->setPositionInWindow(viewOffset, viewExtent);
     app->setGraphics(graphics["view"].get());
     graphics["view"]->bind(cameras["view"].get());
     graphics["view"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
@@ -145,6 +146,14 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
         }
 
         ImGui::SliderFloat("animation speed", &animationSpeed, 0.0f, 5.0f);
+
+#ifdef SECOND_VIEW_WINDOW
+        ImGui::SliderFloat("v_offset_x", &viewOffset[0], 0.0f, 1.0f);
+        ImGui::SliderFloat("v_offset_y", &viewOffset[1], 0.0f, 1.0f);
+        ImGui::SliderFloat("v_extent_x", &viewExtent[0], 0.0f, 1.0f);
+        ImGui::SliderFloat("v_extent_y", &viewExtent[1], 0.0f, 1.0f);
+        graphics["view"]->setPositionInWindow(viewOffset, viewExtent);
+#endif
 
         if(ImGui::RadioButton("refraction of scattering", enableScatteringRefraction)){
             enableScatteringRefraction = !enableScatteringRefraction;

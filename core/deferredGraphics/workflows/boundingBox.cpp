@@ -84,8 +84,8 @@ void boundingBoxGraphics::createFramebuffers(){
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
         framebufferInfo.pAttachments = pAttachments.data();
-        framebufferInfo.width = image.frameBufferExtent.width;
-        framebufferInfo.height = image.frameBufferExtent.height;
+        framebufferInfo.width = image.Extent.width;
+        framebufferInfo.height = image.Extent.height;
         framebufferInfo.layers = 1;
         CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
     }
@@ -131,8 +131,8 @@ void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
+    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -259,7 +259,7 @@ void boundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
     renderPassInfo.renderPass = renderPass;
     renderPassInfo.framebuffer = framebuffers[frameNumber];
     renderPassInfo.renderArea.offset = {0,0};
-    renderPassInfo.renderArea.extent = image.frameBufferExtent;
+    renderPassInfo.renderArea.extent = image.Extent;
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 

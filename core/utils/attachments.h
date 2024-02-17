@@ -7,9 +7,7 @@
 struct imageInfo{
     uint32_t                        Count;
     VkFormat                        Format;
-    VkOffset2D                      Offset;
     VkExtent2D                      Extent;
-    VkExtent2D                      frameBufferExtent;
     VkSampleCountFlagBits           Samples;
 };
 
@@ -20,9 +18,7 @@ struct attachment{
     VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
 };
 
-class attachments
-{
-public:
+struct attachments{
     std::vector<attachment> instances;
     VkSampler sampler{VK_NULL_HANDLE};
     VkFormat format{VK_FORMAT_UNDEFINED};

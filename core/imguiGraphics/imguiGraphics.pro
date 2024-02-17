@@ -8,6 +8,7 @@ INCLUDEPATH += \
     $$PWD/../../dependences/libs/glfw/include/GLFW \
     $$PWD/../../dependences/libs/glfw/include \
     $$PWD/../utils \
+    $$PWD/../math \
     $$PWD/../graphicsManager \
     $$PWD/../../dependences/libs/imgui \
     $$PWD/../../dependences/libs/imgui/backends

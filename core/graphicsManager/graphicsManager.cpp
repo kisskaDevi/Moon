@@ -152,6 +152,7 @@ VkResult graphicsManager::createLinker(){
 void graphicsManager::setGraphics(graphicsInterface* graphics){
     this->graphics.push_back(graphics);
     this->graphics.back()->setDevices(devices, activeDevice->properties.index);
+    this->graphics.back()->setSwapChain(&swapChainKHR);
     this->graphics.back()->setProperties(swapChainKHR.getFormat(), resourceCount);
     this->graphics.back()->getLinkable()->setRenderPass(linker.getRenderPass());
     linker.addLinkable(this->graphics.back()->getLinkable());

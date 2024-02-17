@@ -6,8 +6,7 @@
 
 class texture;
 
-class depthMap
-{
+class depthMap {
 private:
     attachments*                    map{nullptr};
     VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};

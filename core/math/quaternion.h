@@ -333,7 +333,7 @@ quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, cons
         return theta == T(0) ? t : std::sin(t*theta)/std::sin(theta);
     };
 
-    return sinRatio(theta, T(1)-t) * quat1 + sinRatio(theta, t) * quat2;
+    return normalize(sinRatio(theta, T(1)-t) * quat1 + sinRatio(theta, t) * quat2);
 }
 
 template<typename type>

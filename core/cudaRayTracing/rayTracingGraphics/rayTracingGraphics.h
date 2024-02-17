@@ -4,6 +4,8 @@
 #include "graphicsInterface.h"
 #include "core/utils/attachments.h"
 #include "core/utils/buffer.h"
+#include "core/math/vector.h"
+#include "core/utils/swapChain.h"
 
 #include "rayTracingLink.h"
 #include "vec4.h"
@@ -37,17 +39,24 @@ private:
 
     std::filesystem::path shadersPath;
     VkExtent2D extent;
-    VkOffset2D offset;
 
     buffer stagingBuffer;
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
 public:
-    rayTracingGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkOffset2D offset)
-        : shadersPath(shadersPath), extent(extent), offset(offset), cam(cam)
+    rayTracingGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent)
+        : shadersPath(shadersPath), extent(extent), cam(cam)
     {
+        width = extent.width;
+        height = extent.height;
         Link.setShadersPath(shadersPath);
         link = &Link;
+    }
+
+    void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size) override {
+        this->offset = offset;
+        this->size = size;
+        Link.setPositionInWindow(offset, size);
     }
 
     ~rayTracingGraphics(){
@@ -76,10 +85,10 @@ public:
         return swapChainImage.get();
 	}
 	size_t getWidth() const {
-        return swapChainKHR->getExtent().width;
+        return swapChain->getExtent().width;
 	}
 	size_t getHeight() const {
-        return swapChainKHR->getExtent().height;
+        return swapChain->getExtent().height;
     }
 
     void update(uint32_t) override {}

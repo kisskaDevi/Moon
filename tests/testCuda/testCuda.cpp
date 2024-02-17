@@ -131,7 +131,7 @@ testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesyst
 
     array = hitableArray::create();
     cam = cuda::camera::create(viewRay, float(width) / float(height));
-    graphics = new rayTracingGraphics(ExternalPath / "core/cudaRayTracing/rayTracingGraphics/spv",{width,height},{0,0});
+    graphics = new rayTracingGraphics(ExternalPath / "core/cudaRayTracing/rayTracingGraphics/spv",{width,height});
 }
 
 void testCuda::create(uint32_t, uint32_t)

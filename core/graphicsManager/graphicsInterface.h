@@ -5,9 +5,10 @@
 #include <vector>
 
 #include "device.h"
+#include "vector.h"
 
-struct GLFWwindow;
 class linkable;
+class swapChain;
 
 class graphicsInterface{
 protected:
@@ -15,11 +16,23 @@ protected:
     uint32_t                            imageCount{0};
     std::map<uint32_t, physicalDevice>  devices;
     physicalDevice                      device;
+    swapChain*                          swapChain;
     linkable*                           link{nullptr};
+    vector<float,2>                     offset{0.0f, 0.0f};
+    vector<float,2>                     size{1.0f, 1.0f};
 
 public:
     virtual ~graphicsInterface(){};
     virtual void destroy() = 0;
+
+    virtual void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
+        this->offset = offset;
+        this->size = size;
+    }
+
+    virtual void setSwapChain(class swapChain* swapChain){
+        this->swapChain = swapChain;
+    }
 
     virtual void setProperties(VkFormat swapChainFormat, uint32_t resourceCount){
         format = swapChainFormat;

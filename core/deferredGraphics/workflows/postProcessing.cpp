@@ -70,8 +70,8 @@ void postProcessingGraphics::createFramebuffers()
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.instances[Image].imageView;
-            framebufferInfo.width = image.frameBufferExtent.width;
-            framebufferInfo.height = image.frameBufferExtent.height;
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[Image]));
     }
@@ -112,8 +112,8 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, ima
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
+    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -266,7 +266,7 @@ void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
-        renderPassInfo.renderArea.offset = image.Offset;
+        renderPassInfo.renderArea.offset = {0,0};
         renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();

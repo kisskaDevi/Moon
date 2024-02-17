@@ -83,8 +83,8 @@ void bloomGraphics::createFramebuffers(){
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
                 framebufferInfo.pAttachments = &frames[i].instances[j].imageView;
-                framebufferInfo.width = image.frameBufferExtent.width;
-                framebufferInfo.height = image.frameBufferExtent.height;
+                framebufferInfo.width = image.Extent.width;
+                framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
             CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * i + j]));
         }
@@ -95,8 +95,8 @@ void bloomGraphics::createFramebuffers(){
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &bufferAttachment.instances[i].imageView;
-            framebufferInfo.width = image.frameBufferExtent.width;
-            framebufferInfo.height = image.frameBufferExtent.height;
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * frames.size() + i]));
     }
@@ -135,8 +135,8 @@ void bloomGraphics::Filter::createPipeline(VkDevice device, imageInfo* pInfo, Vk
         vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
+    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -215,8 +215,8 @@ void bloomGraphics::Bloom::createPipeline(VkDevice device, imageInfo* pInfo, VkR
     };
     shaderStages.back().pSpecializationInfo = &specializationInfo;
 
-    VkViewport viewport = vkDefault::viewport(pInfo->Offset, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->frameBufferExtent);
+    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
@@ -361,8 +361,8 @@ void bloomGraphics::updateCommandBuffer(uint32_t frameNumber){
     }
 
     VkImage blitBufferImage = bufferAttachment.instances[frameNumber].image;
-    uint32_t width = image.frameBufferExtent.width;
-    uint32_t height = image.frameBufferExtent.height;
+    uint32_t width = image.Extent.width;
+    uint32_t height = image.Extent.height;
 
     for(uint32_t k = 0; k < frames.size(); k++){
         Texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, (k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
@@ -391,7 +391,7 @@ void bloomGraphics::render(VkCommandBuffer commandBuffer, attachments image, uin
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[framebufferIndex];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = this->image.frameBufferExtent;
+        renderPassInfo.renderArea.extent = this->image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

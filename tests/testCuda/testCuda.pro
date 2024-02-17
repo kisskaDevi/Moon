@@ -17,6 +17,7 @@ INCLUDEPATH += \
     $$PWD/../../core/cudaRayTracing/utils \
     $$PWD/../../core/graphicsManager \
     $$PWD/../../core/utils \
+    $$PWD/../../core/math \
     $$PWD/../.. \
     $$PWD/../common \
     $$PWD

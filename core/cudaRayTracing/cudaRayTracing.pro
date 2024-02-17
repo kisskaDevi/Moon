@@ -7,7 +7,8 @@ INCLUDEPATH += \
     $$PWD/../../dependences/libs/vulkan/include/vulkan \
     $$PWD/../graphicsManager \
     $$PWD/../.. \
-    $$PWD/../utils
+    $$PWD/../utils \
+    $$PWD/../math
 
 HEADERS += \
     $$PWD/hitable/sphere.h \
@@ -67,7 +68,8 @@ CUDA_INCLUDEPATH += \
     -I$$PWD/../../dependences/libs/vulkan/include/vulkan \
     -I$$PWD/../graphicsManager \
     -I$$PWD/../.. \
-    -I$$PWD/../utils
+    -I$$PWD/../utils \
+    -I$$PWD/../math
 
 QMAKE_LIBDIR += -L$$CUDA_LIBS_DIR
 LIBS += $$QMAKE_LIBDIR -lcuda -lcudart -lcudadevrt -lcudart_static

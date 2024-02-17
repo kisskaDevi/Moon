@@ -77,7 +77,10 @@ void rayTracingGraphics::create()
 }
 
 void rayTracingGraphics::destroy() {
-    delete[] hostFrameBuffer;
+    if(hostFrameBuffer){
+        delete[] hostFrameBuffer;
+        hostFrameBuffer = nullptr;
+    }
 
     stagingBuffer.destroy(device.getLogical());
     if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}

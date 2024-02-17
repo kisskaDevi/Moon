@@ -165,7 +165,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
 
 void testCuda::destroy()
 {
-    graphics->destroy();
+    delete graphics;
     hitableArray::destroy(array);
     cuda::camera::destroy(cam);
 }

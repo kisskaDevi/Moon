@@ -38,7 +38,6 @@ add_subdirectory(core/models)
 add_subdirectory(core/transformational)
 add_subdirectory(core/math)
 add_subdirectory(tests/testScene)
-add_subdirectory(tests/testPos)
 
 option(CUDA_RAY_TRACING "Compile cudaRayTracing and cudaTest" OFF)
 if(CUDA_RAY_TRACING)

@@ -10,8 +10,7 @@ SUBDIRS += \
     models \
     transformational \
     math \
-    testScene \
-    testPos
+    testScene
 
 utils.subdir = core/utils
 workflows.subdir = core/deferredGraphics/workflows
@@ -23,7 +22,6 @@ models.subdir = core/models
 transformational.subdir = core/transformational
 math.subdir = core/math
 testScene.subdir = tests/testScene
-testPos.subdir = tests/testPos
 
 interfaces.depends = utils
 graphicsManager.depends = utils math
@@ -33,7 +31,6 @@ imguiGraphics.depends = utils graphicsManager math
 workflows.depends = utils interfaces math
 deferredGraphics.depends = utils interfaces workflows graphicsManager math
 testScene.depends = graphicsManager imguiGraphics deferredGraphics models transformational math
-testPos.depends = graphicsManager imguiGraphics deferredGraphics models transformational math
 
 equals(QMAKE_CXX,cl){
     SUBDIRS += \

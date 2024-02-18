@@ -18,7 +18,7 @@
 
 class graphicsManager;
 class rayTracingGraphics;
-class hitableArray;
+class hitableContainer;
 class imguiGraphics;
 
 class testCuda : public scene
@@ -37,7 +37,7 @@ private:
     graphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
     cuda::camera* cam{nullptr};
-    hitableArray* array{nullptr};
+    hitableContainer* array{nullptr};
 
     std::shared_ptr<controller> mouse;
     std::shared_ptr<controller> board;

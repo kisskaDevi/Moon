@@ -137,13 +137,15 @@ namespace base {
                 break;
             }
         }
-        return  rec.props.emissionFactor >= 1.0f
-                   ? vec4(color.x(), color.y(), color.z(), 1.0f)
-                   : vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        return rec.props.emissionFactor >= 1.0f ? vec4(color.x(), color.y(), color.z(), 1.0f) : vec4(0.0f, 0.0f, 0.0f, 0.0f);
     }
 }
 
 namespace bloom {
+    __device__ bool isBloomed(const vec4& color, const hitRecord& rec){
+        return (rec.props.emissionFactor >= 1.0f) && (color.x() >= 0.9f || color.y() >= 0.9f || color.z() >= 0.9f);
+    }
+
     __device__ vec4 color(ray r, size_t maxIterations, hitableContainer* container, curandState* local_rand_state) {
         vec4 color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
         hitRecord rec;
@@ -157,9 +159,7 @@ namespace bloom {
                 break;
             }
         }
-        return  (rec.props.emissionFactor >= 1.0f) && (color.x() >= 0.9f || color.y() >= 0.9f || color.z() >= 0.9f)
-                ? vec4(color.x(), color.y(), color.z(), 1.0f)
-                : vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        return isBloomed(color, rec) ? vec4(color.x(), color.y(), color.z(), 1.0f) : vec4(0.0f, 0.0f, 0.0f, 1.0f);
     }
 }
 

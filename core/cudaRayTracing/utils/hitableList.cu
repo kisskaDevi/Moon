@@ -50,13 +50,3 @@ hitableList* hitableList::create() {
 
     return hostlist;
 }
-
-__global__ void deleteList(hitableList* list) {
-    delete list;
-}
-
-void hitableList::destroy(hitableList* list) {
-    deleteList <<<1, 1>>> (list);
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaDeviceSynchronize());
-}

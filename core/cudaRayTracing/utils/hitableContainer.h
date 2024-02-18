@@ -13,5 +13,6 @@ public:
 };
 
 void add(hitableContainer* container, const std::vector<hitable*>& objects);
+void destroy(hitableContainer* container);
 
 #endif // HITABLECONTAINER_H

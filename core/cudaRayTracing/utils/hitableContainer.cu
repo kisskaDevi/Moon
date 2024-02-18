@@ -13,3 +13,13 @@ void add(hitableContainer* container, const std::vector<hitable*>& objects) {
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
+
+__global__ void deleteList(hitableContainer* list) {
+    delete list;
+}
+
+void destroy(hitableContainer* list) {
+    deleteList <<<1, 1>>> (list);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}

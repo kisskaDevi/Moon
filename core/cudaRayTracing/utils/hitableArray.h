@@ -17,7 +17,6 @@ public:
     __host__ __device__ void add(hitable* object) override;
 
     static hitableArray* create();
-    static void destroy(hitableArray* array);
 };
 
 #endif // HITABLEARRAY_H

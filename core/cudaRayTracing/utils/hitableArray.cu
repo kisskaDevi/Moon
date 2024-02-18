@@ -49,13 +49,3 @@ hitableArray* hitableArray::create() {
 
     return hostarr;
 }
-
-__global__ void deleteArray(hitableArray* arr) {
-    delete arr;
-}
-
-void hitableArray::destroy(hitableArray* array) {
-    deleteArray <<<1, 1>>> (array);
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaDeviceSynchronize());
-}

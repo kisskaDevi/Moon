@@ -6,7 +6,6 @@
 
 #include "triangle.h"
 #include "sphere.h"
-#include "hitableContainer.h"
 
 #include "object.h"
 
@@ -235,7 +234,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
 
 void testCuda::destroy()
 {
-    hitableArray::destroy(array);
+    ::destroy(array);
     cuda::camera::destroy(cam);
 }
 

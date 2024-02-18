@@ -53,21 +53,21 @@ struct Material {
 
 struct MaterialBlock
 {
-    alignas(16) vector<float,4>   baseColorFactor{0.0f};
-    alignas(16) vector<float,4>   emissiveFactor{0.0f};
-    alignas(16) vector<float,4>   diffuseFactor{0.0f};
-    alignas(16) vector<float,4>   specularFactor{0.0f};
-    alignas(4)  float       workflow{0.0f};
-    alignas(4)  int         colorTextureSet{-1};
-    alignas(4)  int         PhysicalDescriptorTextureSet{-1};
-    alignas(4)  int         normalTextureSet{-1};
-    alignas(4)  int         occlusionTextureSet{-1};
-    alignas(4)  int         emissiveTextureSet{-1};
-    alignas(4)  float       metallicFactor{0.0f};
-    alignas(4)  float       roughnessFactor{0.0f};
-    alignas(4)  float       alphaMask{0.0f};
-    alignas(4)  float       alphaMaskCutoff{0.0f};
-    alignas(4)  uint32_t    primitive;
+    vector<float,4>   baseColorFactor{0.0f};
+    vector<float,4>   emissiveFactor{0.0f};
+    vector<float,4>   diffuseFactor{0.0f};
+    vector<float,4>   specularFactor{0.0f};
+    float       workflow{0.0f};
+    int         colorTextureSet{-1};
+    int         PhysicalDescriptorTextureSet{-1};
+    int         normalTextureSet{-1};
+    int         occlusionTextureSet{-1};
+    int         emissiveTextureSet{-1};
+    float       metallicFactor{0.0f};
+    float       roughnessFactor{0.0f};
+    float       alphaMask{0.0f};
+    float       alphaMaskCutoff{0.0f};
+    uint32_t    primitive;
 };
 
 enum PBRWorkflows{

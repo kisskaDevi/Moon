@@ -23,7 +23,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 add_executable(testCuda ${INCLUDES} ${SOURCES})
 add_definitions(-DTESTCUDA)
 
-target_link_libraries(testCuda PRIVATE cudaRayTracing ${LIBS_DIRS})
+target_link_libraries(testCuda PRIVATE cudaRayTracing imguiGraphics ${LIBS_DIRS})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_custom_command(TARGET testCuda POST_BUILD

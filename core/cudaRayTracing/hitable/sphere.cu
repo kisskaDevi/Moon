@@ -1,6 +1,7 @@
 #include "sphere.h"
+#include "operations.h"
 
-__device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
+__host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
     bool result = false;
 
     vec4 oc = r.getOrigin() - center;

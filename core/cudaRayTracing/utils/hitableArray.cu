@@ -4,7 +4,6 @@
 
 __host__ __device__ hitableArray::~hitableArray() {
     for(size_t i = 0; i < size; i++){
-        array[i]->destroy();
         delete array[i];
     }
     delete[] array;
@@ -40,7 +39,7 @@ hitableArray* hitableArray::create() {
     hitableArray** array;
     checkCudaErrors(cudaMalloc((void**)&array, sizeof(hitableArray**)));
 
-    createArray << <1, 1 >> > (array);
+    createArray<<<1, 1>>>(array);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 

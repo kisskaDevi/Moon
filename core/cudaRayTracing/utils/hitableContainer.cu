@@ -6,7 +6,7 @@ __global__ void addKernel(hitableContainer* container, hitable* object) {
     container->add(object);
 }
 
-void add(hitableContainer* container, std::vector<hitable*> objects) {
+void add(hitableContainer* container, const std::vector<hitable*>& objects) {
     for (auto& object : objects) {
         addKernel<<<1,1>>>(container, object);
     }

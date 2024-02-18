@@ -1,8 +1,6 @@
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
-//#include"glm/glm.hpp"
-
 #include "vec4.h"
 #ifndef __CUDA_ARCH__
     #include <iostream>

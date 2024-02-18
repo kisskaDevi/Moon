@@ -3,7 +3,6 @@
 
 #include "buffer.h"
 #include "hitableContainer.h"
-#include "material.h"
 #include "triangle.h"
 
 #include <vector>

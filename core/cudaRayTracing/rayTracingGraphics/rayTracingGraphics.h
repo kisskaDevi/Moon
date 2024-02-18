@@ -5,7 +5,6 @@
 #include "core/utils/attachments.h"
 #include "core/utils/buffer.h"
 #include "core/math/vector.h"
-#include "core/utils/swapChain.h"
 
 #include "rayTracingLink.h"
 #include "vec4.h"
@@ -21,8 +20,6 @@ private:
     cuda::buffer<vec4> colorImage;
     cuda::buffer<uint32_t> swapChainImage;
 
-    uint32_t width{0};
-    uint32_t height{0};
     uint32_t xThreads{ 8 };
     uint32_t yThreads{ 8 };
     uint32_t rayDepth{ 12 };
@@ -45,10 +42,9 @@ private:
 
 public:
     rayTracingGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent)
-        : shadersPath(shadersPath), extent(extent), cam(cam)
+        : shadersPath(shadersPath), extent(extent)
     {
-        width = extent.width;
-        height = extent.height;
+        setExtent(extent);
         Link.setShadersPath(shadersPath);
         link = &Link;
     }
@@ -63,14 +59,14 @@ public:
         rayTracingGraphics::destroy();
     }
 
+    void setExtent(VkExtent2D extent){
+        this->extent = extent;
+    }
     void setList(hitableContainer* container) {
         this->container = container;
     }
     void setCamera(cuda::camera* cam){
         this->cam = cam;
-    }
-    void update(){
-        clear = true;
     }
 
     void create() override;
@@ -81,17 +77,11 @@ public:
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
 
-    inline uint32_t* getSwapChain() {
-        return swapChainImage.get();
-	}
-	size_t getWidth() const {
-        return swapChainKHR->getExtent().width;
-	}
-	size_t getHeight() const {
-        return swapChainKHR->getExtent().height;
-    }
-
     void update(uint32_t) override {}
+
+    void clearFrame(){
+        clear = true;
+    }
 };
 
 #endif // !RAYTRACINGGRAPHICS

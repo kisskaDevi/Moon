@@ -24,6 +24,7 @@
 
 #include <random>
 #include <limits>
+#include <cstring>
 
 testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized):
     framebufferResized(framebufferResized),
@@ -34,7 +35,10 @@ testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesy
     board(new controller(window, glfwGetKey)),
     resourceCount(app->getResourceCount()),
     imageCount(app->getImageCount())
-{}
+{
+    screenshot.resize(100);
+    std::memcpy(screenshot.data(), "screenshot", 10);
+}
 
 void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
@@ -72,6 +76,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
         setEnable("Scattering", true).
         setEnable("Shadow", true).
         setEnable("Selector", true);
+    graphics["base"]->create();
 
 #ifdef SECOND_VIEW_WINDOW
     cameras["view"] = std::make_shared<baseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
@@ -79,19 +84,21 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics["view"]->setPositionInWindow(viewOffset, viewExtent);
     app->setGraphics(graphics["view"].get());
     graphics["view"]->bind(cameras["view"].get());
-    graphics["view"]->setEnable("TransparentLayer", true).setEnable("Skybox", true).setEnable("Blur", true).setEnable("Bloom", true).setEnable("SSAO", true).setEnable("SSLR", true).setEnable("Scattering", true).setEnable("Shadow", true);
+    graphics["view"]->
+        setEnable("TransparentLayer", true).
+        setEnable("Skybox", false).
+        setEnable("Blur", false).
+        setEnable("Bloom", false).
+        setEnable("SSAO", false).
+        setEnable("SSLR", false).
+        setEnable("Scattering", false).
+        setEnable("Shadow", false);
+    graphics["view"]->create();
 #endif
 
 #ifdef IMGUI_GRAPHICS
     gui = std::make_shared<imguiGraphics>(window, app->getInstance(), app->getImageCount());
     app->setGraphics(gui.get());
-#endif
-
-    for(auto& [_,graph]: graphics){
-        graph->create();
-    }
-
-#ifdef IMGUI_GRAPHICS
     gui->create();
 #endif
 
@@ -123,10 +130,35 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
     ImGui::Begin("Debug");
 
-    if (ImGui::Button("Update"))
-    {
+    if (ImGui::Button("Update")){
         framebufferResized = true;
     }
+
+    ImGui::SameLine(0.0, 10.0f);
+    if(ImGui::Button("Make screenshot")){
+        const auto& imageExtent = app->getImageExtent();
+        auto screenshot = app->makeScreenshot();
+
+        std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
+        for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
+        }
+        auto filename = std::string("./") + std::string(this->screenshot.data()) + std::string(".jpg");
+        stbi_write_jpg(filename.c_str(), imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
+    }
+
+    ImGui::SameLine(0.0, 10.0f);
+    ImGui::SetNextItemWidth(100.0f);
+    ImGui::InputText("filename", screenshot.data(), screenshot.size());
+
+    auto switcher = [this](std::shared_ptr<deferredGraphics> graphics, const std::string& name){
+        if(auto val = graphics->getEnable(name); ImGui::RadioButton(name.c_str(), val)){
+            graphics->setEnable(name, !val);
+            framebufferResized = true;
+        }
+    };
 
     if (ImGui::TreeNodeEx("Props", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -147,14 +179,6 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
         ImGui::SliderFloat("animation speed", &animationSpeed, 0.0f, 5.0f);
 
-#ifdef SECOND_VIEW_WINDOW
-        ImGui::SliderFloat("v_offset_x", &viewOffset[0], 0.0f, 1.0f);
-        ImGui::SliderFloat("v_offset_y", &viewOffset[1], 0.0f, 1.0f);
-        ImGui::SliderFloat("v_extent_x", &viewExtent[0], 0.0f, 1.0f);
-        ImGui::SliderFloat("v_extent_y", &viewExtent[1], 0.0f, 1.0f);
-        graphics["view"]->setPositionInWindow(viewOffset, viewExtent);
-#endif
-
         if(ImGui::RadioButton("refraction of scattering", enableScatteringRefraction)){
             enableScatteringRefraction = !enableScatteringRefraction;
             for(auto& [_,graph]: graphics){
@@ -162,25 +186,39 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
             }
         }
 
-        auto switcher = [this](const std::string& name){
-            if(auto val = graphics["base"]->getEnable(name); ImGui::RadioButton(name.c_str(), val)){
-                val = !val;
-                graphics["base"]->setEnable(name, val);
-                framebufferResized = true;
-            }
-        };
-        switcher("Bloom");
-        switcher("Blur");
-        switcher("Skybox");
-        switcher("SSLR");
-        switcher("SSAO");
-        switcher("Shadow");
-        switcher("Scattering");
-        switcher("BoundingBox");
-        switcher("TransparentLayer");
+        switcher(graphics["base"], "Bloom");
+        switcher(graphics["base"], "Blur");
+        switcher(graphics["base"], "Skybox");
+        switcher(graphics["base"], "SSLR");
+        switcher(graphics["base"], "SSAO");
+        switcher(graphics["base"], "Shadow");
+        switcher(graphics["base"], "Scattering");
+        switcher(graphics["base"], "BoundingBox");
+        switcher(graphics["base"], "TransparentLayer");
 
         ImGui::TreePop();
     }
+
+#ifdef SECOND_VIEW_WINDOW
+    if (ImGui::TreeNodeEx("Second Window", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::SliderFloat("v_offset_x", &viewOffset[0], 0.0f, 1.0f);
+        ImGui::SliderFloat("v_offset_y", &viewOffset[1], 0.0f, 1.0f);
+        ImGui::SliderFloat("v_extent_x", &viewExtent[0], 0.0f, 1.0f);
+        ImGui::SliderFloat("v_extent_y", &viewExtent[1], 0.0f, 1.0f);
+        graphics["view"]->setPositionInWindow(viewOffset, viewExtent);
+
+        switcher(graphics["view"], "Bloom");
+        switcher(graphics["view"], "Blur");
+        switcher(graphics["view"], "Skybox");
+        switcher(graphics["view"], "SSLR");
+        switcher(graphics["view"], "SSAO");
+        switcher(graphics["view"], "Shadow");
+        switcher(graphics["view"], "Scattering");
+        switcher(graphics["view"], "BoundingBox");
+        switcher(graphics["view"], "TransparentLayer");
+    }
+#endif
 
     if (ImGui::TreeNodeEx("Object", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -556,19 +594,6 @@ void testScene::keyboardEvent(float frameTime)
             lightSources.pop_back();
             objects.erase("ufo" + std::to_string(ufoCounter--));
         }
-    }
-
-    if(board->pressed(GLFW_KEY_LEFT_CONTROL) && board->released(GLFW_KEY_S)){
-        const auto& imageExtent = app->getImageExtent();
-        auto screenshot = app->makeScreenshot();
-
-        std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
-        for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
-        }
-        stbi_write_jpg("./screenshoot.jpg", imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
     }
 }
 

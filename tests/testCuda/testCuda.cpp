@@ -10,6 +10,18 @@
 
 #include "object.h"
 
+#ifdef IMGUI_GRAPHICS
+#include "imguiGraphics.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
+#endif
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+#include <cstring>
+
 enum sign
 {
     minus,
@@ -121,36 +133,45 @@ void createWorld(std::vector<primitive>& primitives, hitableContainer* container
     }
 }
 
-testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath) :
+testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized) :
+    framebufferResized(framebufferResized),
     ExternalPath(ExternalPath),
     app(app),
     window(window),
     mouse(new controller(window, glfwGetMouseButton)),
     board(new controller(window, glfwGetKey))
 {
-
-    array = hitableArray::create();
-    cam = cuda::camera::create(viewRay, float(width) / float(height));
-    graphics = new rayTracingGraphics(ExternalPath / "core/cudaRayTracing/rayTracingGraphics/spv",{width,height});
+    screenshot.resize(100);
+    std::memcpy(screenshot.data(), "screenshot", 10);
 }
 
-void testCuda::create(uint32_t, uint32_t)
+void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
+    extent = {WIDTH, HEIGHT};
+    array = hitableArray::create();
     createWorld(primitives, array);
 
-    app->setGraphics(graphics);
+    cam = cuda::camera::create(viewRay, float(extent[0]) / float(extent[1]));
+    graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/cudaRayTracing/rayTracingGraphics/spv", VkExtent2D{extent[0],extent[1]});
+    app->setGraphics(graphics.get());
     graphics->setCamera(cam);
     graphics->create();
     graphics->setList(array);
+
+#ifdef IMGUI_GRAPHICS
+    gui = std::make_shared<imguiGraphics>(window, app->getInstance(), app->getImageCount());
+    app->setGraphics(gui.get());
+    gui->create();
+#endif
 }
 
 void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
-    width = WIDTH;
-    height = HEIGHT;
+    extent = {WIDTH, HEIGHT};
 
     cuda::camera::destroy(cam);
-    cam = cuda::camera::create(viewRay, float(width) / float(height));
+    cam = cuda::camera::create(viewRay, float(extent[0]) / float(extent[1]));
+    graphics->setExtent({extent[0],extent[1]});
 
     graphics->destroy();
     graphics->create();
@@ -159,13 +180,61 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 void testCuda::updateFrame(uint32_t, float frameTime)
 {
     glfwPollEvents();
+
+#ifdef IMGUI_GRAPHICS
+    ImGuiIO io = ImGui::GetIO();
+    if(!io.WantCaptureMouse)    mouseEvent(frameTime);
+    if(!io.WantCaptureKeyboard) keyboardEvent(frameTime);
+
+    // Start the Dear ImGui frame
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::SetWindowSize({350,100}, ImGuiCond_::ImGuiCond_Once);
+
+    ImGui::Begin("Debug");
+
+    if (ImGui::Button("Update")){
+        framebufferResized = true;
+    }
+
+    ImGui::SameLine(0.0, 10.0f);
+    if(ImGui::Button("Make screenshot")){
+        const auto& imageExtent = app->getImageExtent();
+        auto screenshot = app->makeScreenshot();
+
+        std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
+        for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
+            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
+        }
+        auto filename = std::string("./") + std::string(this->screenshot.data()) + std::string(".jpg");
+        stbi_write_jpg(filename.c_str(), imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
+    }
+
+    ImGui::SameLine(0.0, 10.0f);
+    ImGui::SetNextItemWidth(100.0f);
+    ImGui::InputText("filename", screenshot.data(), screenshot.size());
+
+    std::string title = "FPS = " + std::to_string(1.0f / frameTime);
+    ImGui::Text("%s", title.c_str());
+
+    if(ImGui::SliderFloat("focus", &focus, 0.03f, 0.04999f, "%.5f")){
+        cuda::camera::setFocus(cam, focus);
+        graphics->clearFrame();
+    }
+
+    ImGui::End();
+
+#else
     mouseEvent(frameTime);
     keyboardEvent(frameTime);
+#endif
 }
 
 void testCuda::destroy()
 {
-    delete graphics;
     hitableArray::destroy(array);
     cuda::camera::destroy(cam);
 }
@@ -176,24 +245,23 @@ void testCuda::mouseEvent(float)
 
     if(double x = 0, y = 0; mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
         glfwGetCursorPos(window,&x,&y);
-        float cos_delta = std::cos(sensitivity * static_cast<float>(mousePosX - x));
-        float sin_delta = std::sin(sensitivity * static_cast<float>(mousePosX - x));
+        float cos_delta = std::cos(sensitivity * static_cast<float>(mousePos[0] - x));
+        float sin_delta = std::sin(sensitivity * static_cast<float>(mousePos[0] - x));
         viewRay = ray(
             viewRay.getOrigin(),
             vec4(
                 viewRay.getDirection().x() * cos_delta - viewRay.getDirection().y() * sin_delta,
                 viewRay.getDirection().y() * cos_delta + viewRay.getDirection().x() * sin_delta,
-                viewRay.getDirection().z() + sensitivity *static_cast<float>(mousePosY - y),
+                viewRay.getDirection().z() + sensitivity *static_cast<float>(mousePos[1] - y),
                 0.0f
                 )
             );
         cuda::camera::setViewRay(cam, viewRay);
-        graphics->update();
+        graphics->clearFrame();
 
-        mousePosX = x;
-        mousePosY = y;
+        mousePos = {x,y};
     } else {
-        glfwGetCursorPos(window,&mousePosX,&mousePosY);
+        glfwGetCursorPos(window,&mousePos[0],&mousePos[1]);
     }
 }
 
@@ -201,46 +269,18 @@ void testCuda::keyboardEvent(float)
 {
     float sensitivity = 0.1f;
 
-    if(board->pressed(GLFW_KEY_W)){
-        viewRay = ray(viewRay.getOrigin() + sensitivity * viewRay.getDirection(), viewRay.getDirection());
+    auto moveCamera = [&sensitivity, this](vec4 deltaOrigin){
+        viewRay = ray(viewRay.getOrigin() + sensitivity * deltaOrigin, viewRay.getDirection());
         cuda::camera::setViewRay(cam, viewRay);
-        graphics->update();
-    }
-    if(board->pressed(GLFW_KEY_S)){
-        viewRay = ray(viewRay.getOrigin() - sensitivity * viewRay.getDirection(), viewRay.getDirection());
-        cuda::camera::setViewRay(cam, viewRay);
-        graphics->update();
-    }
-    if(board->pressed(GLFW_KEY_D)){
-        viewRay = ray(viewRay.getOrigin() + sensitivity * vec4::getHorizontal(viewRay.getDirection()), viewRay.getDirection());
-        cuda::camera::setViewRay(cam, viewRay);
-        graphics->update();
-    }
-    if(board->pressed(GLFW_KEY_A)){
-        viewRay = ray(viewRay.getOrigin() - sensitivity * vec4::getHorizontal(viewRay.getDirection()), viewRay.getDirection());
-        cuda::camera::setViewRay(cam, viewRay);
-        graphics->update();
-    }
-    if(board->pressed(GLFW_KEY_X)){
-        viewRay = ray(viewRay.getOrigin() + sensitivity * vec4::getVertical(viewRay.getDirection()), viewRay.getDirection());
-        cuda::camera::setViewRay(cam, viewRay);
-        graphics->update();
-    }
-    if(board->pressed(GLFW_KEY_Z)){
-        viewRay = ray(viewRay.getOrigin() - sensitivity * vec4::getVertical(viewRay.getDirection()), viewRay.getDirection());
-        cuda::camera::setViewRay(cam, viewRay);
-        graphics->update();
-    }
-    if(board->pressed(GLFW_KEY_KP_ADD)){
-        focus += 0.0001f;
-        cuda::camera::setFocus(cam, focus);
-        graphics->update();
-    }
-    if(board->pressed(GLFW_KEY_KP_SUBTRACT)){
-        focus -= 0.0001f;
-        cuda::camera::setFocus(cam, focus);
-        graphics->update();
-    }
+        graphics->clearFrame();
+    };
+
+    if(board->pressed(GLFW_KEY_W)) moveCamera( viewRay.getDirection());
+    if(board->pressed(GLFW_KEY_S)) moveCamera(-viewRay.getDirection());
+    if(board->pressed(GLFW_KEY_D)) moveCamera( vec4::getHorizontal(viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_A)) moveCamera(-vec4::getHorizontal(viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_X)) moveCamera( vec4::getVertical(viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_Z)) moveCamera(-vec4::getVertical(viewRay.getDirection()));
 
     if(board->released(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window,GLFW_TRUE);
 }

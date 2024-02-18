@@ -47,21 +47,14 @@ utils/operations.h)
 set(CUDA_ARCH compute_86)
 set(CUDA_SM sm_86)
 set(SYSTEM_TYPE 64)
-set(MSVCRT_LINK_FLAG $<$<CONFIG:Debug>:"/MD">
-    $<$<CONFIG:Release>:"/MDd">)
-set(XFLAGS -Xcompiler "/EHsc,/W3,/nologo,/O2,/FS,${MSVCRT_LINK_FLAG}")
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=${CUDA_ARCH},code=${CUDA_SM} -rdc=true)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(MSVCRT_LINK_FLAG $<$<CONFIG:Debug>:"/MD"> $<$<CONFIG:Release>:"/MDd">)
+    set(XFLAGS -Xcompiler "/EHsc,/W3,/nologo,/O2,/FS,${MSVCRT_LINK_FLAG}")
+endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../.. ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-
-#find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-#find_library(CUDA_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-#find_library(CUDADEVRT_LIBRARY cudadevrt ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-#find_library(CUDART_STATIC_LIBRARY lcudart_static ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-
-#set(CUDA_LIBS ${CUDART_LIBRARY}
-#${CUDA_LIBRARY}
-#${CUDADEVRT_LIBRARY}
-#${CUDART_STATIC_LIBRARY})
 
 add_library(cudaRayTracing STATIC ${SOURCES} ${HEADERS})
 target_include_directories(cudaRayTracing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/hitable
@@ -77,15 +70,4 @@ set_target_properties(${PROJECT_NAME}
        CUDA_RESOLVE_DEVICE_SYMBOLS ON
 )
 target_link_libraries(cudaRayTracing PUBLIC graphicsManager utils ${CUDA_LIBRARIES})
-target_compile_options(cudaRayTracing PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
-                        -gencode arch=${CUDA_ARCH},code=${CUDA_SM}
-                        #-x cu
-                        -rdc=true
-                        #-std=c++17
-                        #--machine ${SYSTEM_TYPE}
-                        #--compile
-                        #-cudart static
-                        #-DNDEBUG -D_CONSOLE -D_UNICODE -DUNICODE
-                        #${NVCCFLAGS}
-                        #${XFLAGS}
-                       >)
+target_compile_options(cudaRayTracing PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: ${CUDA_NVCC_FLAGS}>)

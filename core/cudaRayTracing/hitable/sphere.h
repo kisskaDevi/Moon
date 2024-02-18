@@ -2,7 +2,6 @@
 #define SPHEREH
 
 #include "hitable.h"
-#include "operations.h"
 #include "material.h"
 
 class alignas(64) sphere : public hitable {
@@ -15,11 +14,10 @@ private:
 public:
     __host__ __device__ sphere() {}
     __host__ __device__ ~sphere() {}
-    __host__ __device__ void destroy() override {}
 
     __host__ __device__ sphere(vec4 cen, float r, vec4 color, const properties& props) : center(cen), radius(r), color(color), props(props) {};
     __host__ __device__ sphere(vec4 cen, float r, vec4 color) : center(cen), radius(r), color(color) {};
-    __device__ virtual bool hit(const ray& r, float tMin, float tMax, hitRecord& rec) const override;
+    __host__ __device__ bool hit(const ray& r, float tMin, float tMax, hitRecord& rec) const override;
 
     static sphere* create(vec4 cen, float r, vec4 color, const properties& props);
 };

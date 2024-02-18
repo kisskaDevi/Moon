@@ -5,7 +5,6 @@ __host__ __device__ void destroyObject(hitable* object) {
     if (object->next) {
         destroyObject(object->next);
     }
-    object->destroy();
     delete object;
 }
 
@@ -41,7 +40,7 @@ hitableList* hitableList::create() {
     hitableList** list;
     checkCudaErrors(cudaMalloc((void**)&list, sizeof(hitableList**)));
 
-    createList << <1, 1 >> > (list);
+    createList<<<1, 1>>>(list);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 

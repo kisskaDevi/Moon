@@ -10,9 +10,7 @@
 
 #include <graphicsManager.h>
 
-#if defined(TESTPOS)
-    #include "testPos.h"
-#elif defined(TESTCUDA)
+#if defined(TESTCUDA)
     #include "testCuda.h"
 #else
     #include "testScene.h"
@@ -51,10 +49,8 @@ int main()
 
     graphicsManager app(window, imageCount, resCount, physicalDeviceFeatures());
 
-#if defined(TESTPOS)
-    testPos testScene(&app, window, ExternalPath);
-#elif defined(TESTCUDA)
-    testCuda testScene(&app, window, ExternalPath);
+#if defined(TESTCUDA)
+    testCuda testScene(&app, window, ExternalPath, framebufferResized);
 #else
     testScene testScene(&app, window, ExternalPath, framebufferResized);
 #endif

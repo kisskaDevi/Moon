@@ -1,13 +1,14 @@
 #include "triangle.h"
+#include "operations.h"
 
 namespace {
-    __device__ float det3(const vec4& a, const vec4& b, const vec4& c) {
+    __host__ __device__ float det3(const vec4& a, const vec4& b, const vec4& c) {
         return a.x() * b.y() * c.z() + b.x() * c.y() * a.z() + c.x() * a.y() * b.z() -
             (a.x() * c.y() * b.z() + b.x() * a.y() * c.z() + c.x() * b.y() * a.z());
     }
 }
 
-__device__ bool triangle::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
+__host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
     bool result = false;
 
     const vec4 a = vertexBuffer[index1].point - r.getOrigin();
@@ -50,7 +51,7 @@ triangle* triangle::create(const size_t& i0, const size_t& i1, const size_t& i2,
     triangle** tr;
     checkCudaErrors(cudaMalloc((void**)&tr, sizeof(triangle**)));
 
-    createTriangle << <1, 1 >> > (tr, i0, i1, i2, vertexBuffer);
+    createTriangle<<<1,1>>>(tr, i0, i1, i2, vertexBuffer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 

@@ -5,43 +5,54 @@
 
 #include <filesystem>
 #include <vector>
+#include <memory>
 
 #include "scene.h"
 #include "controller.h"
 #include "object.h"
+#include "vector.h"
 
-#include "ray.h"
+#include "camera.h"
+
+#define IMGUI_GRAPHICS
 
 class graphicsManager;
 class rayTracingGraphics;
 class hitableArray;
-namespace cuda {class camera;}
+class imguiGraphics;
 
 class testCuda : public scene
 {
 private:
-    std::filesystem::path ExternalPath;
-    double mousePosX = 0, mousePosY = 0;
-    ray viewRay = ray(vec4(2.0f, 0.0f, 2.0f, 1.0f), vec4(-1.0f, 0.0f, -1.0f, 0.0f));
-    float focus = 0.049f;
-    uint32_t width = 800, height = 800;
+    bool& framebufferResized;
+
+    std::filesystem::path   ExternalPath;
+    vector<uint32_t,2>      extent{0};
+    vector<double,2>        mousePos{0.0};
+
+    ray                     viewRay = ray(vec4(2.0f, 0.0f, 2.0f, 1.0f), vec4(-1.0f, 0.0f, -1.0f, 0.0f));
+    float                   focus = 0.049f;
+    std::string             screenshot;
 
     graphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
     cuda::camera* cam{nullptr};
     hitableArray* array{nullptr};
-    rayTracingGraphics* graphics{nullptr};
 
-    controller* mouse{nullptr};
-    controller* board{nullptr};
+    std::shared_ptr<controller> mouse;
+    std::shared_ptr<controller> board;
+    std::shared_ptr<rayTracingGraphics> graphics;
+#ifdef IMGUI_GRAPHICS
+    std::shared_ptr<imguiGraphics> gui;
+#endif
+
+    std::vector<primitive> primitives;
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);
 
-    std::vector<primitive> primitives;
-
 public:
-    testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath);
+    testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
     ~testCuda(){
         destroy();
     };

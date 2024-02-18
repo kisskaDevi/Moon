@@ -12,6 +12,9 @@
 #include "vector.h"
 #include "controller.h"
 
+// #define SECOND_VIEW_WINDOW
+#define IMGUI_GRAPHICS
+
 class deferredGraphics;
 class imguiGraphics;
 class model;
@@ -24,9 +27,6 @@ class baseCamera;
 class skyboxObject;
 class plyModel;
 class transformational;
-
-#define SECOND_VIEW_WINDOW
-#define IMGUI_GRAPHICS
 
 class testScene : public scene
 {
@@ -44,6 +44,7 @@ private:
     float                   farBlurDepth = 1.0f;
     float                   minAmbientFactor{0.05f};
     float                   animationSpeed{1.0f};
+    std::string             screenshot;
     uint32_t                primitiveNumber = std::numeric_limits<uint32_t>::max();
 
 #ifdef SECOND_VIEW_WINDOW
@@ -51,17 +52,19 @@ private:
     vector<float,2>      viewExtent{0.33f,0.33f};
 #endif
 
-    GLFWwindow*                                         window{nullptr};
-    graphicsManager*                                    app{nullptr};
-    std::shared_ptr<controller>                         mouse{nullptr};
-    std::shared_ptr<controller>                         board{nullptr};
+    GLFWwindow* window{nullptr};
+    graphicsManager* app{nullptr};
+    std::shared_ptr<controller> mouse{nullptr};
+    std::shared_ptr<controller> board{nullptr};
 
     uint32_t resourceCount{0};
     uint32_t imageCount{0};
 
-    std::unordered_map<std::string, std::shared_ptr<baseCamera>>        cameras;
-    std::unordered_map<std::string, std::shared_ptr<deferredGraphics>>  graphics;
-    std::shared_ptr<imguiGraphics>                                      gui;
+    std::unordered_map<std::string, std::shared_ptr<baseCamera>> cameras;
+    std::unordered_map<std::string, std::shared_ptr<deferredGraphics>> graphics;
+#ifdef IMGUI_GRAPHICS
+    std::shared_ptr<imguiGraphics> gui;
+#endif
 
     std::unordered_map<std::string, std::shared_ptr<model>>             models;
     std::unordered_map<std::string, std::shared_ptr<baseObject>>        objects;

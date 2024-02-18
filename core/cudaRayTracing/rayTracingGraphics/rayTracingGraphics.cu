@@ -1,13 +1,12 @@
 #include "rayTracingGraphics.h"
 #include "operations.h"
 #include "ray.h"
-#include "hitableList.h"
 #include "material.h"
 
 #include <cstring>
 
+#include "core/utils/swapChain.h"
 #include "core/utils/vkdefault.h"
-#include "core/utils/operations.h"
 
 __host__ __device__ inline vec4 max(const vec4& v1, const vec4& v2) {
     return vec4(    v1.x() >= v2.x() ? v1.x() : v2.x(),
@@ -58,24 +57,24 @@ void rayTracingGraphics::create()
     Link.createDescriptorSets();
     Link.updateDescriptorSets(&finalAttachment);
 
-    colorImage = cuda::buffer<vec4>(width * height);
-    bloomImage = cuda::buffer<vec4>(width * height);
-    swapChainImage  = cuda::buffer<uint32_t>(width * height);
+    colorImage = cuda::buffer<vec4>(extent.width * extent.height);
+    bloomImage = cuda::buffer<vec4>(extent.width * extent.height);
+    swapChainImage  = cuda::buffer<uint32_t>(extent.width * extent.height);
 
-    checkCudaErrors(cudaMalloc((void**)&randState, width * height * sizeof(curandState)));
+    checkCudaErrors(cudaMalloc((void**)&randState, extent.width * extent.height * sizeof(curandState)));
 
     Buffer::create(
         device.instance,
         device.getLogical(),
-        sizeof(uint32_t) * width * height,
+        sizeof(uint32_t) * extent.width * extent.height,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         &stagingBuffer.instance,
         &stagingBuffer.memory
     );
 
-    hostFrameBuffer = new uint32_t[width * height];
-    vkMapMemory(device.getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * width * height, 0, &stagingBuffer.map);
+    hostFrameBuffer = new uint32_t[extent.width * extent.height];
+    vkMapMemory(device.getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * extent.width * extent.height, 0, &stagingBuffer.map);
 }
 
 void rayTracingGraphics::destroy() {
@@ -213,20 +212,20 @@ __global__ void render(bool clear, size_t width, size_t height, size_t rayDepth,
 
 std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)
 {
-    dim3 blocks(width / xThreads + 1, height / yThreads + 1, 1);
+    dim3 blocks(extent.width / xThreads + 1, extent.height / yThreads + 1, 1);
     dim3 threads(xThreads, yThreads, 1);
 
-    render<<<blocks, threads>>>(clear, width, height, rayDepth, randState, swapChainImage.get(), colorImage.get(), bloomImage.get(), cam, container);
+    render<<<blocks, threads>>>(clear, extent.width, extent.height, rayDepth, randState, swapChainImage.get(), colorImage.get(), bloomImage.get(), cam, container);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     clear = false;
 
-    cudaMemcpy(hostFrameBuffer, swapChainImage.get(), sizeof(uint32_t) * width * height, cudaMemcpyDeviceToHost);
-    std::memcpy(stagingBuffer.map, hostFrameBuffer, sizeof(uint32_t) * width * height);
+    cudaMemcpy(hostFrameBuffer, swapChainImage.get(), sizeof(uint32_t) * extent.width * extent.height, cudaMemcpyDeviceToHost);
+    std::memcpy(stagingBuffer.map, hostFrameBuffer, sizeof(uint32_t) * extent.width * extent.height);
 
     VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
     Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
-    Texture::copy(commandBuffer, stagingBuffer.instance, finalAttachment.instances[imageIndex].image, {width, height, 1}, 1);
+    Texture::copy(commandBuffer, stagingBuffer.instance, finalAttachment.instances[imageIndex].image, {extent.width, extent.height, 1}, 1);
     Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool, &commandBuffer);
 

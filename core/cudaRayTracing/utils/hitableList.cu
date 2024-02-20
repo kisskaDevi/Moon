@@ -14,10 +14,16 @@ __host__ __device__ hitableList::~hitableList() {
 
 __device__ bool hitableList::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
     float depth = tMax;
+    hitCoords coord;
+    hitable* resObj = nullptr;
     for (hitable* object = head; object; object = object->next) {
-        if (object->hit(r, tMin, depth, rec)) {
-            depth = rec.t;
+        if (object->hit(r, tMin, depth, coord)) {
+            depth = coord.t;
+            resObj = object;
         }
+    }
+    if(depth != tMax && resObj){
+        resObj->calcHitRecord(r, coord, rec);
     }
     return depth != tMax;
 }
@@ -44,7 +50,7 @@ hitableList* hitableList::create() {
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
-    hitableList* hostlist = new hitableList;
+    hitableList* hostlist = nullptr;
     checkCudaErrors(cudaMemcpy(&hostlist, list, sizeof(hitableList*), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaFree(list));
 

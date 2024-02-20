@@ -12,10 +12,16 @@ __host__ __device__ hitableArray::~hitableArray() {
 
 __device__ bool hitableArray::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
     float depth = tMax;
+    hitCoords coord;
+    hitable* resObj = nullptr;
     for (size_t i = 0; i < size; i++) {
-        if (array[i]->hit(r, tMin, depth, rec)) {
-            depth = rec.t;
+        if (array[i]->hit(r, tMin, depth, coord)) {
+            depth = coord.t;
+            resObj = array[i];
         }
+    }
+    if(depth != tMax && resObj){
+        resObj->calcHitRecord(r, coord, rec);
     }
     return depth != tMax;
 }
@@ -43,7 +49,7 @@ hitableArray* hitableArray::create() {
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
-    hitableArray* hostarr = new hitableArray;
+    hitableArray* hostarr = nullptr;
     checkCudaErrors(cudaMemcpy(&hostarr, array, sizeof(hitableArray*), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaFree(array));
 

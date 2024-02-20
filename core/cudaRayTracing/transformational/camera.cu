@@ -48,7 +48,7 @@ __host__ __device__ void cuda::camera::setFocus(const float& focus){
 }
 
 cuda::camera* cuda::camera::create(const ray& viewRay, float aspect) {
-    cuda::camera* cam;
+    cuda::camera* cam = nullptr;
     cuda::camera hostcam(viewRay, aspect);
     checkCudaErrors(cudaMalloc((void**)&cam, sizeof(cuda::camera)));
     cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice);

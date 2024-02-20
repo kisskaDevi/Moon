@@ -41,6 +41,7 @@ add_subdirectory(tests/testScene)
 
 option(CUDA_RAY_TRACING "Compile cudaRayTracing and cudaTest" OFF)
 if(CUDA_RAY_TRACING)
-    add_subdirectory(core/cudaRayTracing)
+    add_subdirectory(core/rayTracingGraphics/cudaRayTracing)
+    add_subdirectory(core/rayTracingGraphics)
     add_subdirectory(tests/testCuda)
 endif()

@@ -1,7 +1,7 @@
 #ifndef CAMERAH
 #define CAMERAH
 
-#include "ray.h"
+#include "math/ray.h"
 
 namespace cuda {
 

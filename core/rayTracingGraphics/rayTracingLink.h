@@ -5,8 +5,8 @@
 #include <filesystem>
 
 #include "linkable.h"
-#include "core/utils/attachments.h"
-#include "core/math/vector.h"
+#include "attachments.h"
+#include "vector.h"
 
 struct linkPushConstant{
     vector<float,2> offset{0.0f, 0.0f};

@@ -2,7 +2,6 @@
 #define SPHEREH
 
 #include "hitable.h"
-#include "material.h"
 
 class alignas(64) sphere : public hitable {
 private:

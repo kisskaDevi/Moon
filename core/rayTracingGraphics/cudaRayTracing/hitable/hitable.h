@@ -1,8 +1,8 @@
 #ifndef HITABLEH
 #define HITABLEH
 
-#include "ray.h"
-#include "material.h"
+#include "math/ray.h"
+#include "materials/material.h"
 
 struct hitRecord
 {

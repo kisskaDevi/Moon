@@ -1,6 +1,6 @@
 #include "rayTracingLink.h"
-#include "core/utils/operations.h"
-#include "core/utils/vkdefault.h"
+#include "operations.h"
+#include "vkdefault.h"
 
 void rayTracingLink::destroy(){
     if(Pipeline)            {vkDestroyPipeline(device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}

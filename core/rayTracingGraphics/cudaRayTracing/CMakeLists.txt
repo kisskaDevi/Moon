@@ -18,8 +18,7 @@ find_package(CUDA 12.0 REQUIRED)
 set(SOURCES hitable/sphere.cu
 hitable/triangle.cu
 math/vec4.cu
-rayTracingGraphics/rayTracingGraphics.cu
-rayTracingGraphics/rayTracingLink.cpp
+graphics/cudaRayTracing.cu
 transformational/camera.cu
 utils/hitableArray.cu
 utils/hitableContainer.cu
@@ -34,8 +33,7 @@ math/dualQuaternion.h
 math/quaternion.h
 math/ray.h
 math/vec4.h
-rayTracingGraphics/rayTracingGraphics.h
-rayTracingGraphics/rayTracingLink.h
+graphics/cudaRayTracing.h
 transformational/camera.h
 transformational/object.h
 utils/buffer.h
@@ -54,20 +52,23 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(XFLAGS -Xcompiler "/EHsc,/W3,/nologo,/O2,/FS,${MSVCRT_LINK_FLAG}")
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../.. ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+set(INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}
+${CMAKE_CURRENT_LIST_DIR}/hitable
+${CMAKE_CURRENT_LIST_DIR}/materials
+${CMAKE_CURRENT_LIST_DIR}/math
+${CMAKE_CURRENT_LIST_DIR}/transformational
+${CMAKE_CURRENT_LIST_DIR}/utils
+${CMAKE_CURRENT_LIST_DIR}/graphics
+${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+
+include_directories(${INCLUDE_DIRS})
 
 add_library(cudaRayTracing STATIC ${SOURCES} ${HEADERS})
-target_include_directories(cudaRayTracing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/hitable
-${CMAKE_CURRENT_SOURCE_DIR}/materials
-${CMAKE_CURRENT_SOURCE_DIR}/math
-${CMAKE_CURRENT_SOURCE_DIR}/rayTracingGraphics
-${CMAKE_CURRENT_SOURCE_DIR}/transformational
-${CMAKE_CURRENT_SOURCE_DIR}/utils
-${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories(cudaRayTracing PUBLIC ${INCLUDE_DIRS})
 set_target_properties(${PROJECT_NAME}
    PROPERTIES
        CUDA_SEPARABLE_COMPILATION ON
        CUDA_RESOLVE_DEVICE_SYMBOLS ON
 )
-target_link_libraries(cudaRayTracing PUBLIC graphicsManager utils ${CUDA_LIBRARIES})
+target_link_libraries(cudaRayTracing PUBLIC ${CUDA_LIBRARIES})
 target_compile_options(cudaRayTracing PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: ${CUDA_NVCC_FLAGS}>)

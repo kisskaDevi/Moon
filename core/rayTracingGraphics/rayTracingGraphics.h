@@ -1,36 +1,21 @@
 #ifndef RAYTRACINGGRAPHICS
 #define RAYTRACINGGRAPHICS
 
-#include "graphicsInterface.h"
-#include "core/utils/attachments.h"
-#include "core/utils/buffer.h"
-#include "core/math/vector.h"
-
 #include "rayTracingLink.h"
-#include "vec4.h"
-#include "camera.h"
-#include "hitableContainer.h"
+#include "graphicsInterface.h"
+#include "attachments.h"
 #include "buffer.h"
+#include "vector.h"
 
 #include <stdint.h>
 
+#include "cudaRayTracing.h"
+
 class rayTracingGraphics : public graphicsInterface {
 private:
-    cuda::buffer<vec4> bloomImage;
-    cuda::buffer<vec4> colorImage;
-    cuda::buffer<uint32_t> swapChainImage;
-
-    uint32_t xThreads{ 8 };
-    uint32_t yThreads{ 8 };
-    uint32_t rayDepth{ 8 };
-
-    bool clear{false};
-
-    cuda::camera* cam{nullptr};
-    curandState* randState{nullptr};
-    hitableContainer* container{nullptr};
     uint32_t* hostFrameBuffer{nullptr};
 
+    cudaRayTracing rayTracer;
     rayTracingLink Link;
     attachments finalAttachment;
 
@@ -61,12 +46,13 @@ public:
 
     void setExtent(VkExtent2D extent){
         this->extent = extent;
+        rayTracer.setExtent(extent.width, extent.height);
     }
     void setList(hitableContainer* container) {
-        this->container = container;
+        rayTracer.setList(container);
     }
     void setCamera(cuda::camera* cam){
-        this->cam = cam;
+        rayTracer.setCamera(cam);
     }
 
     void create() override;
@@ -80,7 +66,7 @@ public:
     void update(uint32_t) override {}
 
     void clearFrame(){
-        clear = true;
+        rayTracer.clearFrame();
     }
 };
 

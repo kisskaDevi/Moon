@@ -1,7 +1,7 @@
 #ifndef CUDA_OPERATIONSH
 #define CUDA_OPERATIONSH
 
-#include "vec4.h"
+#include "math/vec4.h"
 #include <string>
 
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__)

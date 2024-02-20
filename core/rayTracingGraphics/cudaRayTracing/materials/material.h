@@ -1,7 +1,7 @@
 #ifndef MATERIALH
 #define MATERIALH
 
-#include "ray.h"
+#include "math/ray.h"
 
 struct properties
 {

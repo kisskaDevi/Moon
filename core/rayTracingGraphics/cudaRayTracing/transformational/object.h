@@ -1,9 +1,9 @@
 #ifndef OBJECTH
 #define OBJECTH
 
-#include "buffer.h"
-#include "hitableContainer.h"
-#include "triangle.h"
+#include "utils/buffer.h"
+#include "utils/hitableContainer.h"
+#include "hitable/triangle.h"
 
 #include <vector>
 

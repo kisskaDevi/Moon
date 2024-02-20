@@ -2,7 +2,6 @@
 #define TRIANGLE
 
 #include "hitable.h"
-#include "material.h"
 
 struct alignas(64) vertex {
     vec4 point{0.0f, 0.0f, 0.0f, 1.0f};

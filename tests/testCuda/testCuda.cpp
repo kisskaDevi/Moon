@@ -151,7 +151,7 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     createWorld(primitives, array);
 
     cam = cuda::camera::create(viewRay, float(extent[0]) / float(extent[1]));
-    graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/cudaRayTracing/rayTracingGraphics/spv", VkExtent2D{extent[0],extent[1]});
+    graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
     graphics->setCamera(cam);
     graphics->create();

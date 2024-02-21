@@ -35,8 +35,8 @@ public:
     __host__ __device__ inline vec4& operator*=(const float t);
     __host__ __device__ inline vec4& operator/=(const float t);
 
-    __host__ __device__ inline float length() const { return sqrt(x() * x() + y() * y() + z() * z() + w() * w()); }
     __host__ __device__ inline float length2() const { return x() * x() + y() * y() + z() * z() + w() * w(); }
+    __host__ __device__ inline float length() const { return sqrt(length2()); }
     __host__ __device__ inline void normalize();
 
     __host__ __device__ static vec4 getHorizontal(const vec4& d) {

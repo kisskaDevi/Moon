@@ -92,24 +92,21 @@ VkResult texture::createTextureImage(
         VkCommandBuffer     commandBuffer,
         tinygltf::Image&    gltfimage)
 {
-    VkResult result = VK_SUCCESS;
     VkDeviceSize bufferSize = gltfimage.width * gltfimage.height * 4;
-    stbi_uc* buffer[1];
-    if (stbi_uc* rgb = &gltfimage.image[0]; gltfimage.component == 3){
-        buffer[0] = new stbi_uc[bufferSize];
-
+    stbi_uc* buffer = &gltfimage.image[0];
+    if (stbi_uc* rgb = buffer; gltfimage.component == 3){
+        buffer = new stbi_uc[bufferSize];
         for (int32_t i = 0; i< gltfimage.width * gltfimage.height; ++i){
             for (int32_t j = 0; j < 3; ++j) {
-                buffer[0][4*i + j] = rgb[3*i + j];
+                buffer[4*i + j] = rgb[3*i + j];
             }
         }
-        result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, bufferSize, buffer, 1);
-        CHECK(result);
-        delete[] buffer[0];
-    }else{
-        buffer[0] = &gltfimage.image[0];
-        result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, static_cast<VkDeviceSize>(gltfimage.image.size()), buffer, 1);
-        CHECK(result);
+    }
+
+    VkResult result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, bufferSize, &buffer, 1);
+    CHECK(result);
+    if(gltfimage.component == 3){
+        delete[] buffer;
     }
     return result;
 }
@@ -121,14 +118,14 @@ VkResult texture::createTextureImage(
 {
     VkResult result = VK_SUCCESS;
     int texWidth = 0, texHeight = 0, texChannels = 0;
-    stbi_uc* pixels[1] = {stbi_load(path[0].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha)};
+    stbi_uc* buffer = stbi_load(path[0].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = 4 * texWidth * texHeight;
 
-    if(!pixels[0])    throw std::runtime_error("failed to load texture image!");
+    if(!buffer) throw std::runtime_error("failed to load texture image!");
 
-    result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, imageSize, pixels, 1);
+    result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, imageSize, &buffer, 1);
     CHECK(result);
-    stbi_image_free(pixels[0]);
+    stbi_image_free(buffer);
     return result;
 }
 
@@ -139,15 +136,15 @@ VkResult texture::createEmptyTextureImage(
         bool                isBlack)
 {
     VkResult result = VK_SUCCESS;
-    stbi_uc* pixels[1] = {new stbi_uc[4]};
+    stbi_uc* buffer = new stbi_uc[4];
     for(size_t i = 0; i < 3; i++){
-        pixels[0][i] = (isBlack ? 0 : 255);
+        buffer[i] = (isBlack ? 0 : 255);
     }
-    pixels[0][3] = 255;
+    buffer[3] = 255;
 
-    result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, 1, 1, 4, pixels, 1);
+    result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, 1, 1, 4, &buffer, 1);
     CHECK(result);
-    delete[] pixels[0];
+    delete[] buffer;
     return result;
 }
 
@@ -204,21 +201,21 @@ cubeTexture::cubeTexture(const std::vector<std::filesystem::path>& path)
 void cubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
 {
     int texWidth = 0, texHeight = 0, texChannels = 0;
-    stbi_uc *pixels[6];
+    stbi_uc *buffer[6];
     VkDeviceSize imageSize = 0;
     for(uint32_t i=0;i<6;i++)
     {
-        pixels[i]= stbi_load(path[i].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        buffer[i]= stbi_load(path[i].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         imageSize += 4 * texWidth * texHeight;
 
-        if(!pixels[i]){
+        if(!buffer[i]){
             throw std::runtime_error("failed to load texture image!");
         }
     }
 
-    image.create(physicalDevice, device, commandBuffer, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, mipLevels, texWidth, texHeight, imageSize, pixels, 6);
+    image.create(physicalDevice, device, commandBuffer, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, mipLevels, texWidth, texHeight, imageSize, buffer, 6);
     for(uint32_t i=0;i<6;i++){
-        stbi_image_free(pixels[i]);
+        stbi_image_free(buffer[i]);
     }
 }
 

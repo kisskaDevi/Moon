@@ -139,20 +139,6 @@ __host__ __device__ inline vec4& vec4::operator/=(const float t) {
     return *this;
 }
 
-__host__ __device__ inline vec4 max(const vec4& v1, const vec4& v2) {
-    return vec4(    v1.x() >= v2.x() ? v1.x() : v2.x(),
-                v1.y() >= v2.y() ? v1.y() : v2.y(),
-                v1.z() >= v2.z() ? v1.z() : v2.z(),
-                v1.w() >= v2.w() ? v1.w() : v2.w());
-}
-
-__host__ __device__ inline vec4 min(const vec4& v1, const vec4& v2) {
-    return vec4(v1.x() < v2.x() ? v1.x() : v2.x(),
-                v1.y() < v2.y() ? v1.y() : v2.y(),
-                v1.z() < v2.z() ? v1.z() : v2.z(),
-                v1.w() < v2.w() ? v1.w() : v2.w());
-}
-
 __host__ __device__ vec4 normal(const vec4& v);
 
 __host__ __device__ vec4 cross(const vec4& v1, const vec4& v2);

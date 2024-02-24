@@ -11,19 +11,18 @@ __host__ __device__ hitableArray::~hitableArray() {
 }
 
 __device__ bool hitableArray::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
-    float depth = tMax;
-    hitCoords coord;
+    hitCoords coord = {tMax, 0.0f, 0.0f};
     hitable* resObj = nullptr;
     for (size_t i = 0; i < size; i++) {
-        if (array[i]->hit(r, tMin, depth, coord)) {
-            depth = coord.t;
+        if (array[i]->hit(r, tMin, coord.t, coord)) {
             resObj = array[i];
         }
     }
-    if(depth != tMax && resObj){
-        resObj->calcHitRecord(r, coord, rec);
+    if(coord.t != tMax && resObj){
+        rec = resObj->calcHitRecord(r, coord);
+        return true;
     }
-    return depth != tMax;
+    return false;
 }
 
 __host__ __device__ void hitableArray::add(hitable* object) {

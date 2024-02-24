@@ -3,9 +3,9 @@
 
 __host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
     vec4 oc = r.getOrigin() - center;
-    float a = dot(r.getDirection(), r.getDirection());
-    float b = - dot(oc, r.getDirection()) / a;
-    float c = dot(oc, oc) - radius * radius / a;
+    float a = 1.0f / r.getDirection().length2();
+    float b = - dot(oc, r.getDirection()) * a;
+    float c = oc.length2() - radius * radius * a;
     float discriminant = b * b - c;
 
     if (discriminant < 0) {
@@ -20,16 +20,18 @@ __host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCo
         result = (temp < tMax && temp > tMin);
     }
     if (result) {
-        coord.t = temp;
+        coord = {temp, 0.0f, 0.0f};
     }
     return result;
 }
 
-__host__ __device__ void sphere::calcHitRecord(const ray& r, const hitCoords& coord, hitRecord& rec) const {
+__host__ __device__ hitRecord sphere::calcHitRecord(const ray& r, const hitCoords& coord) const {
+    hitRecord rec;
     rec.point = r.point(coord.t);
     rec.normal = (rec.point - center) / radius;
     rec.color = color;
     rec.props = props;
+    return rec;
 }
 
 __global__ void createSphere(sphere** sph, vec4 cen, float r, vec4 color, const properties props) {

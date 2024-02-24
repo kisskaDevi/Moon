@@ -13,19 +13,18 @@ __host__ __device__ hitableList::~hitableList() {
 }
 
 __device__ bool hitableList::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
-    float depth = tMax;
-    hitCoords coord;
+    hitCoords coord = {tMax, 0.0f, 0.0f};
     hitable* resObj = nullptr;
     for (hitable* object = head; object; object = object->next) {
-        if (object->hit(r, tMin, depth, coord)) {
-            depth = coord.t;
+        if (object->hit(r, tMin, coord.t, coord)) {
             resObj = object;
         }
     }
-    if(depth != tMax && resObj){
-        resObj->calcHitRecord(r, coord, rec);
+    if(coord.t != tMax && resObj){
+        rec = resObj->calcHitRecord(r, coord);
+        return true;
     }
-    return depth != tMax;
+    return false;
 }
 
 __host__ __device__ void hitableList::add(hitable* object) {

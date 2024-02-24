@@ -17,7 +17,6 @@ struct hitCoords
     float t{0};
     float u{0};
     float v{0};
-    float s{0};
 };
 
 class hitable {
@@ -25,7 +24,7 @@ public:
     hitable* next{ nullptr };
     __host__ __device__ virtual ~hitable() {};
     __host__ __device__ virtual bool hit(const ray& r, float tMin, float tMax, hitCoords& coords) const = 0;
-    __host__ __device__ virtual void calcHitRecord(const ray& r, const hitCoords& coords, hitRecord& rec) const = 0;
+    __host__ __device__ virtual hitRecord calcHitRecord(const ray& r, const hitCoords& coords) const = 0;
 };
 
 #endif

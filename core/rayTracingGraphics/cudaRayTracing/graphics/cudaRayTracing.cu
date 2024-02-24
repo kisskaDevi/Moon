@@ -34,42 +34,42 @@ void cudaRayTracing::destroy() {
 }
 
 namespace base {
-__device__ vec4 color(ray r, size_t maxIterations, hitableContainer* container, curandState* local_rand_state) {
-    vec4 color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    hitRecord rec;
+    __device__ vec4 color(ray r, size_t maxIterations, hitableContainer* container, curandState* local_rand_state) {
+        vec4 color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        hitRecord rec;
 
-    for (; maxIterations > 0; maxIterations--) {
-        if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, 1e+37, rec)) {
-            color = min(rec.color, color);
-            r = ray(rec.point, scatter(r, rec.normal, rec.props, local_rand_state));
-        } else {
-            break;
+        for (; maxIterations > 0; maxIterations--) {
+            if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, 1e+37, rec)) {
+                color = min(rec.color, color);
+                r = ray(rec.point, scatter(r, rec.normal, rec.props, local_rand_state));
+            } else {
+                break;
+            }
         }
+        return rec.props.emissionFactor >= 1.0f ? vec4(color.x(), color.y(), color.z(), 1.0f) : vec4(0.0f, 0.0f, 0.0f, 0.0f);
     }
-    return rec.props.emissionFactor >= 1.0f ? vec4(color.x(), color.y(), color.z(), 1.0f) : vec4(0.0f, 0.0f, 0.0f, 0.0f);
-}
 }
 
 namespace bloom {
-__device__ bool isBloomed(const vec4& color, const hitRecord& rec){
-    return (rec.props.emissionFactor >= 1.0f) && (color.x() >= 0.9f || color.y() >= 0.9f || color.z() >= 0.9f);
-}
-
-__device__ vec4 color(ray r, size_t maxIterations, hitableContainer* container, curandState* local_rand_state) {
-    vec4 color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    hitRecord rec;
-    r = ray(r.getOrigin(), random_in_unit_sphere(r.getDirection(), 0.025 * pi, local_rand_state));
-
-    for (; maxIterations > 0; maxIterations--) {
-        if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, 1e+37, rec)) {
-            color = min(rec.color, color);
-            r = ray(rec.point, scatter(r, rec.normal, rec.props, local_rand_state));
-        } else {
-            break;
-        }
+    __device__ bool isBloomed(const vec4& color, const hitRecord& rec){
+        return (rec.props.emissionFactor >= 1.0f) && (color.x() >= 0.9f || color.y() >= 0.9f || color.z() >= 0.9f);
     }
-    return isBloomed(color, rec) ? vec4(color.x(), color.y(), color.z(), 1.0f) : vec4(0.0f, 0.0f, 0.0f, 1.0f);
-}
+
+    __device__ vec4 color(ray r, size_t maxIterations, hitableContainer* container, curandState* local_rand_state) {
+        vec4 color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        hitRecord rec;
+        r = ray(r.getOrigin(), random_in_unit_sphere(r.getDirection(), 0.025 * pi, local_rand_state));
+
+        for (; maxIterations > 0; maxIterations--) {
+            if (r.getDirection().length2() > 0.0f && container->hit(r, 0.001f, 1e+37, rec)) {
+                color = min(rec.color, color);
+                r = ray(rec.point, scatter(r, rec.normal, rec.props, local_rand_state));
+            } else {
+                break;
+            }
+        }
+        return isBloomed(color, rec) ? vec4(color.x(), color.y(), color.z(), 1.0f) : vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
 }
 
 __global__ void render(bool clear, size_t width, size_t height, size_t rayDepth, curandState* randState, uint32_t* dst, vec4* base, vec4* bloom, cuda::camera* cam, hitableContainer* container)
@@ -92,15 +92,13 @@ __global__ void render(bool clear, size_t width, size_t height, size_t rayDepth,
         base[pixel] += base::color(camRay, rayDepth, container, &randState[pixel]);
         bloom[pixel] += bloom::color(camRay, 2, container, &randState[pixel]);
 
-        vec4 res = base[pixel] / (base[pixel].a() == 0.0f ? 1.0f : base[pixel].a());
-        res += bloom[pixel] / (bloom[pixel].a() == 0.0f ? 1.0f : bloom[pixel].a());
-
         auto max = [](const float& a, const float& b) {
             return a >= b ? a : b;
         };
 
-        float maximum =  max(res.r(), max(res.g(), res.b()));
-        res /= (maximum > 1.0f) ? maximum : 1.0f;
+        vec4 res = base[pixel] / max(1.0f, base[pixel].a()) + bloom[pixel] / max(1.0f, bloom[pixel].a());
+        res /= max(1.0f, max(res.r(), max(res.g(), res.b())));
+
         dst[pixel] = (uint32_t(255.0f*res[2]) << 0 | uint32_t(255.0f*res[1]) << 8 | uint32_t(255.0f*res[0]) << 16 | uint32_t(255) << 24);
     }
 }

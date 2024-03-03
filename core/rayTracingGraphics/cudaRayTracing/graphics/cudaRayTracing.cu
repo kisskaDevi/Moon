@@ -37,10 +37,10 @@ __device__ bool isEmit(const hitRecord& rec){
 template<bool bloom = false>
 __device__ vec4 color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda::camera* cam, float u, float v, hitRecord& rec, hitableContainer* container, curandState* randState) {
     vec4 result = vec4(0.0f);
-    for(bool onePassCondition = true; rec.rayDepth < minRayIterations || onePassCondition; rec.rayDepth++, onePassCondition = false){
-        ray r = rec.rayDepth ? rec.r : cam->getPixelRay(u, v, randState);
-        if constexpr (bloom){
-            r = ray(r.getOrigin(), random_in_unit_sphere(r.getDirection(), 0.025 * pi, randState));
+    do {
+        ray r = rec.rayDepth++ ? rec.r : cam->getPixelRay(u, v, randState);
+        if constexpr (bloom) {
+            r = ray(r.getOrigin(), random_in_unit_sphere(r.getDirection(), 0.05 * pi, randState));
         }
         if (vec4 color = rec.color; container->hit(r, 0.001f, 1e+37, rec)) {
             rec.lightIntensity *= rec.props.absorptionFactor;
@@ -54,7 +54,7 @@ __device__ vec4 color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda
             break;
         }
         rec.r = ray(rec.point, scattering);
-    }
+    } while (rec.rayDepth < minRayIterations);
     return result;
 }
 
@@ -84,7 +84,7 @@ __global__ void render(bool clear, size_t width, size_t height, size_t minRayIte
     }
 }
 
-void cudaRayTracing::calculateImage(uint32_t* hostFrameBuffer)
+bool cudaRayTracing::calculateImage(uint32_t* hostFrameBuffer)
 {
     dim3 blocks(width / xThreads + 1, height / yThreads + 1, 1);
     dim3 threads(xThreads, yThreads, 1);
@@ -92,6 +92,9 @@ void cudaRayTracing::calculateImage(uint32_t* hostFrameBuffer)
     render<<<blocks, threads>>>(clear, width, height, minRayIterations, maxRayIterations, swapChainImage.get(), frame.get(), cam, container);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-    cudaMemcpy(hostFrameBuffer, swapChainImage.get(), sizeof(uint32_t) * width * height, cudaMemcpyDeviceToHost);
     clear = false;
+
+    checkCudaErrors(cudaMemcpy(hostFrameBuffer, swapChainImage.get(), sizeof(uint32_t) * width * height, cudaMemcpyDeviceToHost));
+
+    return true;
 }

@@ -58,7 +58,7 @@ public:
     void create();
     void destroy();
 
-    void calculateImage(uint32_t* hostFrameBuffer);
+    bool calculateImage(uint32_t* hostFrameBuffer);
 
     void clearFrame(){
         clear = true;

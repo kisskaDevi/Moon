@@ -8,7 +8,7 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
 		std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " << file << ":" << line << " '" << func << "' \n";
 		cudaDeviceReset();
 		exit(99);
-	}
+    }
 }
 
 namespace cuda::Buffer {

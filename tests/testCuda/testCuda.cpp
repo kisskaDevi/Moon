@@ -114,7 +114,7 @@ void createWorld(std::vector<primitive>& primitives, hitableContainer* container
             vec4(0.3f, 0.3f, 0.3f, 1.0f),
             vec4(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
-            { 1.0f / 1.5f, 0.96f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
+            { 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
             std::vector<vec4>(6, vec4(1.0f))),
             createBoxIndexBuffer(),
             0);
@@ -122,7 +122,7 @@ void createWorld(std::vector<primitive>& primitives, hitableContainer* container
 
     primitives.emplace_back(
         createBoxVertexBuffer(
-            vec4(1.0f, 1.0f, 0.01f, 1.0f),
+            vec4(2.0f, 2.0f, 0.01f, 1.0f),
             vec4(0.0f, 0.0f, 3.0f, 0.0f),
             sign::plus,
             { 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f},

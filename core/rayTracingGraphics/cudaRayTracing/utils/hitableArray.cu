@@ -19,7 +19,7 @@ __device__ bool hitableArray::hit(const ray& r, float tMin, float tMax, hitRecor
         }
     }
     if(coord.t != tMax && resObj){
-        rec = resObj->calcHitRecord(r, coord);
+        resObj->calcHitRecord(r, coord, rec);
         return true;
     }
     return false;

@@ -69,10 +69,10 @@ std::vector<uint32_t> createBoxIndexBuffer() {
 
 void createWorld(std::vector<primitive>& primitives, hitableContainer* container) {
     add(container, {
-           sphere::create( vec4( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f}),
-           sphere::create( vec4( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f }),
-           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f }),
-           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f }),
+           sphere::create( vec4( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f}),
+           sphere::create( vec4( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}),
+           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f}),
+           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f}),
            sphere::create( vec4(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
            sphere::create( vec4( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
            sphere::create( vec4( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
@@ -92,7 +92,7 @@ void createWorld(std::vector<primitive>& primitives, hitableContainer* container
         createBoxVertexBuffer(
             vec4(3.0f, 3.0f, 1.5f, 1.0f),
             vec4(0.0f, 0.0f, 1.5f, 0.0f),
-            sign::minus, { 1.0f, 0.0f, 0.0f, pi, 0.0f },
+            sign::minus, { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f },
             { vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.8f, 0.4f, 0.8f, 1.0f), vec4(0.4f, 0.4f, 0.4f, 1.0f), vec4(0.9f, 0.5f, 0.0f, 1.0f), vec4(0.1f, 0.4f, 0.9f, 1.0f) }),
             createBoxIndexBuffer(),
             0);
@@ -101,9 +101,9 @@ void createWorld(std::vector<primitive>& primitives, hitableContainer* container
     primitives.emplace_back(
         createBoxVertexBuffer(
             vec4(0.4f, 0.4f, 0.4f, 1.0f),
-            vec4(1.5f, 0.0f, 0.4f, 0.0f),
+            vec4(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
-            { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f },
+            { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
             std::vector<vec4>(6, vec4(1.0f))),
             createBoxIndexBuffer(),
             0);
@@ -112,24 +112,35 @@ void createWorld(std::vector<primitive>& primitives, hitableContainer* container
     primitives.emplace_back(
         createBoxVertexBuffer(
             vec4(0.3f, 0.3f, 0.3f, 1.0f),
-            vec4(1.5f, 0.0f, 0.4f, 0.0f),
+            vec4(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
-            { 1.0f / 1.5f, 0.96f, 0.01f, 0.01f * pi, 0.0f },
+            { 1.0f / 1.5f, 0.96f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
             std::vector<vec4>(6, vec4(1.0f))),
             createBoxIndexBuffer(),
             0);
     primitives.back().moveToContainer(container);
 
-    for (int i = 0; i < 0; i++) {
-        float phi = 2.0f * pi * float(i) / 50.0f;
-        primitives.emplace_back(
-            createBoxVertexBuffer(vec4(0.1f, 0.1f, 0.1f, 1.0f), vec4(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f, 0.0f), sign::plus, { std::cos(phi), 0.96f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
-                                  std::vector<vec4>(6, vec4(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
-            createBoxIndexBuffer(),
-            0
-            );
-        primitives.back().moveToContainer(container);
-    }
+    primitives.emplace_back(
+        createBoxVertexBuffer(
+            vec4(1.0f, 1.0f, 0.01f, 1.0f),
+            vec4(0.0f, 0.0f, 3.0f, 0.0f),
+            sign::plus,
+            { 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f},
+            std::vector<vec4>(6, vec4(1.0f))),
+        createBoxIndexBuffer(),
+        0);
+    primitives.back().moveToContainer(container);
+
+    // for (int i = 0; i < 50; i++) {
+    //     float phi = 2.0f * pi * float(i) / 50.0f;
+    //     primitives.emplace_back(
+    //         createBoxVertexBuffer(vec4(0.1f, 0.1f, 0.1f, 1.0f), vec4(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f, 0.0f), sign::plus, { 1.0f, 0.96f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
+    //                               std::vector<vec4>(6, vec4(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
+    //         createBoxIndexBuffer(),
+    //         0
+    //         );
+    //     primitives.back().moveToContainer(container);
+    // }
 }
 
 testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized) :

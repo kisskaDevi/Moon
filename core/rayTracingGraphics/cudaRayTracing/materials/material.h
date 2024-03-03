@@ -10,6 +10,7 @@ struct properties
     float fuzz{ 0.0f };
     float angle{ 0.0f };
     float emissionFactor{ 0.0f };
+    float absorptionFactor{ 1.0f };
 };
 
 __device__ inline vec4 scatter(const ray& r, const vec4& norm, const properties& props, curandState* local_rand_state)

@@ -37,8 +37,7 @@ __host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hit
     return false;
 }
 
-__host__ __device__ hitRecord triangle::calcHitRecord(const ray& r, const hitCoords& coord) const {
-    hitRecord rec;
+__host__ __device__ void triangle::calcHitRecord(const ray& r, const hitCoords& coord, hitRecord& rec) const {
     const float s = 1.0f - coord.u - coord.v;
     rec.point = r.point(coord.t);
     rec.normal = normal(coord.v * vertexBuffer[index0].normal + coord.u * vertexBuffer[index2].normal + s * vertexBuffer[index1].normal);
@@ -49,8 +48,8 @@ __host__ __device__ hitRecord triangle::calcHitRecord(const ray& r, const hitCoo
         coord.v * vertexBuffer[index0].props.fuzz + coord.u * vertexBuffer[index2].props.fuzz + s * vertexBuffer[index1].props.fuzz,
         coord.v * vertexBuffer[index0].props.angle + coord.u * vertexBuffer[index2].props.angle + s * vertexBuffer[index1].props.angle,
         coord.v * vertexBuffer[index0].props.emissionFactor + coord.u * vertexBuffer[index2].props.emissionFactor + s * vertexBuffer[index1].props.emissionFactor,
+        coord.v * vertexBuffer[index0].props.absorptionFactor + coord.u * vertexBuffer[index2].props.absorptionFactor + s * vertexBuffer[index1].props.absorptionFactor
     };
-    return rec;
 }
 
 __global__ void createTriangle(triangle** tr, const size_t i0, const size_t i1, const size_t i2, vertex* vertexBuffer) {

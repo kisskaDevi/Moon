@@ -8,20 +8,29 @@
 
 #include <stdint.h>
 
+struct fragment{
+    vec4 color;
+    hitRecord record;
+};
+
+struct frameBuffer{
+    fragment base;
+    fragment bloom;
+};
+
 class cudaRayTracing {
 private:
-    cuda::buffer<vec4> bloomImage;
-    cuda::buffer<vec4> colorImage;
+    cuda::buffer<frameBuffer> frame;
     cuda::buffer<uint32_t> swapChainImage;
 
     uint32_t xThreads{ 8 };
     uint32_t yThreads{ 8 };
-    uint32_t rayDepth{ 8 };
+    uint32_t minRayIterations{ 2 };
+    uint32_t maxRayIterations{ 12 };
 
     bool clear{false};
 
     cuda::camera* cam{nullptr};
-    curandState* randState{nullptr};
     hitableContainer* container{nullptr};
     uint32_t* hostFrameBuffer{nullptr};
 

@@ -21,7 +21,7 @@ __device__ bool hitableList::hit(const ray& r, float tMin, float tMax, hitRecord
         }
     }
     if(coord.t != tMax && resObj){
-        rec = resObj->calcHitRecord(r, coord);
+        resObj->calcHitRecord(r, coord, rec);
         return true;
     }
     return false;

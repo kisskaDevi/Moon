@@ -25,13 +25,11 @@ __host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCo
     return result;
 }
 
-__host__ __device__ hitRecord sphere::calcHitRecord(const ray& r, const hitCoords& coord) const {
-    hitRecord rec;
+__host__ __device__ void sphere::calcHitRecord(const ray& r, const hitCoords& coord, hitRecord& rec) const {
     rec.point = r.point(coord.t);
     rec.normal = (rec.point - center) / radius;
     rec.color = color;
     rec.props = props;
-    return rec;
 }
 
 __global__ void createSphere(sphere** sph, vec4 cen, float r, vec4 color, const properties props) {

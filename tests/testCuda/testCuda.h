@@ -44,8 +44,7 @@ private:
     std::shared_ptr<imguiGraphics> gui;
 #endif
 
-    std::vector<cuda::model> models;
-    std::vector<cuda::box>   boxes;
+    std::unordered_map<std::string, cuda::model> models;
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);

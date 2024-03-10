@@ -127,16 +127,19 @@ void createWorld(std::vector<cuda::model>& models)
             std::vector<vec4>(6, vec4(1.0f))),
         boxIndexBuffer);
 
-    // for (int i = 0; i < 50; i++) {
-    //     float phi = 2.0f * pi * float(i) / 50.0f;
-    //     primitives.emplace_back(
-    //         createBoxVertexBuffer(vec4(0.1f, 0.1f, 0.1f, 1.0f), vec4(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f, 0.0f), sign::plus, { 1.0f, 0.96f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
-    //                               std::vector<vec4>(6, vec4(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
-    //         createBoxIndexBuffer(),
-    //         0
-    //         );
-    //     primitives.back().moveToContainer(container);
-    // }
+#if false
+    for (int i = 0; i < 50; i++) {
+        float phi = 2.0f * pi * static_cast<float>(i) / 50.0f;
+        models.emplace_back(
+            createBoxVertexBuffer(
+                vec4(0.1f, 0.1f, 0.1f, 1.0f),
+                vec4(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f, 0.0f),
+                sign::plus,
+                { 1.0f, 0.96f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
+                std::vector<vec4>(6, vec4(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
+            boxIndexBuffer);
+    }
+#endif
 }
 
 testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized) :
@@ -264,18 +267,13 @@ void testCuda::mouseEvent(float)
         glfwGetCursorPos(window,&x,&y);
         float cos_delta = std::cos(sensitivity * static_cast<float>(mousePos[0] - x));
         float sin_delta = std::sin(sensitivity * static_cast<float>(mousePos[0] - x));
-        viewRay = ray(
-            viewRay.getOrigin(),
-            vec4(
-                viewRay.getDirection().x() * cos_delta - viewRay.getDirection().y() * sin_delta,
-                viewRay.getDirection().y() * cos_delta + viewRay.getDirection().x() * sin_delta,
-                viewRay.getDirection().z() + sensitivity *static_cast<float>(mousePos[1] - y),
-                0.0f
-                )
-            );
+        viewRay = ray(  viewRay.getOrigin(),
+                        vec4(   viewRay.getDirection().x() * cos_delta - viewRay.getDirection().y() * sin_delta,
+                                viewRay.getDirection().y() * cos_delta + viewRay.getDirection().x() * sin_delta,
+                                viewRay.getDirection().z() + sensitivity *static_cast<float>(mousePos[1] - y),
+                                0.0f));
         cuda::camera::setViewRay(cam, viewRay);
         graphics->clearFrame();
-
         mousePos = {x,y};
     } else {
         glfwGetCursorPos(window,&mousePos[0],&mousePos[1]);

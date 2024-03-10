@@ -1,23 +1,23 @@
 #include "hitableList.h"
 #include "operations.h"
 
-__host__ __device__ void destroyObject(hitable* object) {
-    if (object->next) {
-        destroyObject(object->next);
-    }
-    delete object;
-}
+namespace cuda {
 
 __host__ __device__ hitableList::~hitableList() {
-    destroyObject(head);
+    if(container_size){
+        for (node* next = head->next; next; container_size--, next = head->next) {
+            delete head;
+            head = next;
+        }
+    }
 }
 
-__device__ bool hitableList::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
+__host__ __device__ bool hitableList::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
     hitCoords coord = {tMax, 0.0f, 0.0f};
     hitable* resObj = nullptr;
-    for (hitable* object = head; object; object = object->next) {
-        if (object->hit(r, tMin, coord.t, coord)) {
-            resObj = object;
+    for (node* currentNode = head; currentNode; currentNode = currentNode->next) {
+        if (currentNode->current->hit(r, tMin, coord.t, coord)) {
+            resObj = currentNode->current;
         }
     }
     if(coord.t != tMax && resObj){
@@ -28,13 +28,25 @@ __device__ bool hitableList::hit(const ray& r, float tMin, float tMax, hitRecord
 }
 
 __host__ __device__ void hitableList::add(hitable* object) {
-    if (head) {
-        tail->next = object;
+    if(node* newNode = new node{object, nullptr}; tail){
+        tail->next = newNode;
+        tail = newNode;
     } else {
-        head = object;
-        head->next = object;
+        head = newNode;
+        tail = newNode;
     }
-    tail = object;
+    container_size++;
+}
+
+__host__ __device__ hitable* hitableList::operator[](uint32_t i) {
+    if(i < container_size){
+        node* currentNode = head;
+        for (; i > 0; i--) {
+            currentNode = currentNode->next;
+        }
+        return currentNode->current;
+    }
+    return nullptr;
 }
 
 __global__ void createList(hitableList** list) {
@@ -54,4 +66,6 @@ hitableList* hitableList::create() {
     checkCudaErrors(cudaFree(list));
 
     return hostlist;
+}
+
 }

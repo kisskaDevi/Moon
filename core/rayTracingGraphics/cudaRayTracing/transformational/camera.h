@@ -18,6 +18,8 @@ namespace cuda {
         float apertura{ 0.005f };
 
     public:
+        __host__ __device__ camera();
+
         __host__ __device__ camera(
             const ray viewRay,
             float aspect,
@@ -29,7 +31,9 @@ namespace cuda {
         __host__ __device__ camera(const ray viewRay, float aspect);
 
         __device__ ray getPixelRay(float u, float v, curandState* local_rand_state);
-        __device__ ray getPixelRay(float u, float v);
+        __host__ __device__ ray getPixelRay(float u, float v);
+
+        __host__ __device__ ray getViewRay();
 
         __host__ __device__ void setViewRay(const ray& viewRay);
         __host__ __device__ void setFocus(const float& focus);
@@ -40,6 +44,8 @@ namespace cuda {
         static void reset(camera* cam, const ray& viewRay, float aspect);
         static void setViewRay(camera* cam, const ray& viewRay);
         static void setFocus(camera* cam, const float& focus);
+
+        static camera copyToHost(camera* pDevice);
     };
 }
 #endif

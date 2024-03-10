@@ -16,7 +16,7 @@ namespace cuda {
         buffer() = default;
         buffer(const size_t& size) : memory(static_cast<Type*>(Buffer::create(sizeof(Type) * size))), size(size) {}
 
-        buffer(const size_t& size, Type* mem) : memory(static_cast<Type*>(Buffer::create(sizeof(Type) * size))), size(size)
+        buffer(const size_t& size, const Type* mem) : memory(static_cast<Type*>(Buffer::create(sizeof(Type) * size))), size(size)
         {
             cudaMemcpy(memory, mem, size * sizeof(Type), cudaMemcpyHostToDevice);
             checkCudaErrors(cudaGetLastError());
@@ -62,6 +62,10 @@ namespace cuda {
         }
 
         Type* get() {
+            return memory;
+        }
+
+        const Type* get() const {
             return memory;
         }
     };

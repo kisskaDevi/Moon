@@ -57,6 +57,7 @@ void rayTracingGraphics::create()
 }
 
 void rayTracingGraphics::destroy() {
+    rayTracer.destroy();
     if(hostFrameBuffer){
         delete[] hostFrameBuffer;
         hostFrameBuffer = nullptr;

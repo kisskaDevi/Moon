@@ -5,65 +5,67 @@
 #include "transformational/camera.h"
 #include "utils/hitableContainer.h"
 #include "utils/buffer.h"
+#include "models/model.h"
 
 #include <stdint.h>
 
-struct fragment{
-    vec4 color;
-    hitRecord record;
-};
+namespace cuda {
 
-struct frameBuffer{
-    fragment base;
-    fragment bloom;
-};
+    struct fragment{
+        vec4 color;
+        cuda::hitRecord record;
+    };
 
-class cudaRayTracing {
-private:
-    cuda::buffer<frameBuffer> frame;
-    cuda::buffer<uint32_t> swapChainImage;
+    struct frameBuffer{
+        fragment base;
+        fragment bloom;
+    };
 
-    uint32_t xThreads{ 8 };
-    uint32_t yThreads{ 8 };
-    uint32_t minRayIterations{ 2 };
-    uint32_t maxRayIterations{ 12 };
+    class cudaRayTracing {
+    private:
+        cuda::buffer<frameBuffer> frame;
+        cuda::buffer<uint32_t> swapChainImage;
 
-    bool clear{false};
+        uint32_t xThreads{ 8 };
+        uint32_t yThreads{ 8 };
+        uint32_t minRayIterations{ 2 };
+        uint32_t maxRayIterations{ 12 };
 
-    cuda::camera* cam{nullptr};
-    hitableContainer* container{nullptr};
-    uint32_t* hostFrameBuffer{nullptr};
+        bool clear{false};
 
-    uint32_t width;
-    uint32_t height;
+        cuda::camera* cam{nullptr};
+        cuda::hitableContainer* container{nullptr};
+        uint32_t* hostFrameBuffer{nullptr};
 
-public:
-    cudaRayTracing(){}
+        uint32_t width;
+        uint32_t height;
 
-    ~cudaRayTracing(){
-        destroy();
-    }
+    public:
+        cudaRayTracing();
+        ~cudaRayTracing();
 
-    void setExtent(uint32_t width, uint32_t height){
-        this->width = width;
-        this->height = height;
-    }
-    void setList(hitableContainer* container) {
-        this->container = container;
-    }
-    void setCamera(cuda::camera* cam){
-        this->cam = cam;
-    }
+        void setExtent(uint32_t width, uint32_t height){
+            this->width = width;
+            this->height = height;
+        }
+        void bind(const cuda::model* m) {
+            add(container, m->hitables);
+        }
+        void setCamera(cuda::camera* cam){
+            this->cam = cam;
+        }
 
-    void create();
-    void destroy();
+        void create();
+        void destroy();
 
-    bool calculateImage(uint32_t* hostFrameBuffer);
+        bool calculateImage(uint32_t* hostFrameBuffer);
 
-    void clearFrame(){
-        clear = true;
-    }
-};
+        void clearFrame(){
+            clear = true;
+        }
+    };
+
+}
 
 #endif // !CUDARAYTRACING
 

@@ -9,16 +9,15 @@
 
 #include "scene.h"
 #include "controller.h"
-#include "object.h"
 #include "vector.h"
 
-#include "camera.h"
+#include "transformational/camera.h"
+#include "models/model.h"
 
 #define IMGUI_GRAPHICS
 
 class graphicsManager;
 class rayTracingGraphics;
-class hitableContainer;
 class imguiGraphics;
 
 class testCuda : public scene
@@ -37,7 +36,6 @@ private:
     graphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
     cuda::camera* cam{nullptr};
-    hitableContainer* array{nullptr};
 
     std::shared_ptr<controller> mouse;
     std::shared_ptr<controller> board;
@@ -46,7 +44,8 @@ private:
     std::shared_ptr<imguiGraphics> gui;
 #endif
 
-    std::vector<primitive> primitives;
+    std::vector<cuda::model> models;
+    std::vector<cuda::box>   boxes;
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);

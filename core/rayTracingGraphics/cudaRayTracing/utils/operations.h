@@ -24,7 +24,6 @@ namespace cuda::Image{
         size_t                  width,
         size_t                  height,
         const std::string&      filename);
-
 }
 
 #endif

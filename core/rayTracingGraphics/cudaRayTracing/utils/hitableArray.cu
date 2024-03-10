@@ -2,18 +2,17 @@
 
 #include "operations.h"
 
+namespace cuda {
+
 __host__ __device__ hitableArray::~hitableArray() {
-    for(size_t i = 0; i < size; i++){
-        delete array[i];
-    }
     delete[] array;
-    size = 0;
+    container_size = 0;
 }
 
-__device__ bool hitableArray::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
+__host__ __device__ bool hitableArray::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
     hitCoords coord = {tMax, 0.0f, 0.0f};
     hitable* resObj = nullptr;
-    for (size_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < container_size; i++) {
         if (array[i]->hit(r, tMin, coord.t, coord)) {
             resObj = array[i];
         }
@@ -26,14 +25,21 @@ __device__ bool hitableArray::hit(const ray& r, float tMin, float tMax, hitRecor
 }
 
 __host__ __device__ void hitableArray::add(hitable* object) {
-    hitable** newArray = new hitable*[size + 1];
-    for(size_t i = 0; i < size; i++){
+    hitable** newArray = new hitable*[container_size + 1];
+    for(size_t i = 0; i < container_size; i++){
         newArray[i] = array[i];
     }
-    newArray[size] = object;
+    newArray[container_size] = object;
     delete[] array;
     array = newArray;
-    size++;
+    container_size++;
+}
+
+__host__ __device__ hitable* hitableArray::operator[](uint32_t i) {
+    if(i >= container_size){
+        return nullptr;
+    }
+    return array[i];
 }
 
 __global__ void createArray(hitableArray** arr) {
@@ -53,4 +59,6 @@ hitableArray* hitableArray::create() {
     checkCudaErrors(cudaFree(array));
 
     return hostarr;
+}
+
 }

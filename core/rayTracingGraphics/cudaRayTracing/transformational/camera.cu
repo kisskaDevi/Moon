@@ -1,6 +1,8 @@
 #include "camera.h"
 #include "operations.h"
 
+__host__ __device__ cuda::camera::camera(){}
+
 __host__ __device__ cuda::camera::camera(
     const ray viewRay,
     float aspect,
@@ -30,11 +32,15 @@ __device__ ray cuda::camera::getPixelRay(float u, float v, curandState* local_ra
     return ray(viewRay.point(matrixOffset), t * matrixOffset * viewRay.getDirection() - (u * horizontal + v * vertical));
 }
 
-__device__ ray cuda::camera::getPixelRay(float u, float v) {
+__host__ __device__ ray cuda::camera::getPixelRay(float u, float v) {
     const float t = focus / (matrixOffset - focus);
     u = matrixScale * t * u;
     v = matrixScale * t * v;
     return ray(viewRay.point(matrixOffset), t * matrixOffset * viewRay.getDirection() - (u * horizontal + v * vertical));
+}
+
+__host__ __device__ ray cuda::camera::getViewRay(){
+    return viewRay;
 }
 
 __host__ __device__ void cuda::camera::setViewRay(const ray& viewRay){
@@ -51,7 +57,7 @@ cuda::camera* cuda::camera::create(const ray& viewRay, float aspect) {
     cuda::camera* cam = nullptr;
     cuda::camera hostcam(viewRay, aspect);
     checkCudaErrors(cudaMalloc((void**)&cam, sizeof(cuda::camera)));
-    cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice);
+    checkCudaErrors(cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     return cam;
@@ -59,8 +65,7 @@ cuda::camera* cuda::camera::create(const ray& viewRay, float aspect) {
 
 void cuda::camera::reset(camera* cam, const ray& viewRay, float aspect) {
     cuda::camera hostcam(viewRay, aspect);
-    cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice);
-    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaMemcpy(cam, &hostcam, sizeof(cuda::camera), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
@@ -89,4 +94,12 @@ void cuda::camera::setFocus(camera* cam, const float& focus){
     setFocusKernel<<<1,1>>>(cam, focus);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+}
+
+cuda::camera cuda::camera::copyToHost(camera* pDevice){
+    cuda::camera hostcam;
+    checkCudaErrors(cudaMemcpy(&hostcam, pDevice, sizeof(cuda::camera), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+    return hostcam;
 }

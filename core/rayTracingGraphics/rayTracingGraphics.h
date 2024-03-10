@@ -11,11 +11,15 @@
 
 #include "cudaRayTracing.h"
 
+namespace cuda {
+class model;
+}
+
 class rayTracingGraphics : public graphicsInterface {
 private:
     uint32_t* hostFrameBuffer{nullptr};
 
-    cudaRayTracing rayTracer;
+    cuda::cudaRayTracing rayTracer;
     rayTracingLink Link;
     attachments finalAttachment;
 
@@ -48,8 +52,8 @@ public:
         this->extent = extent;
         rayTracer.setExtent(extent.width, extent.height);
     }
-    void setList(hitableContainer* container) {
-        rayTracer.setList(container);
+    void bind(const cuda::model* m) {
+        rayTracer.bind(m);
     }
     void setCamera(cuda::camera* cam){
         rayTracer.setCamera(cam);

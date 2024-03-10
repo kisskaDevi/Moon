@@ -2,12 +2,10 @@
 
 #include "rayTracingGraphics.h"
 #include "graphicsManager.h"
-#include "hitableArray.h"
 
 #include "triangle.h"
 #include "sphere.h"
-
-#include "object.h"
+#include "camera.h"
 
 #ifdef IMGUI_GRAPHICS
 #include "imguiGraphics.h"
@@ -27,7 +25,7 @@ enum sign
     plus
 };
 
-std::vector<vertex> createBoxVertexBuffer(vec4 scale, vec4 translate, sign normalSign, properties props, std::vector<vec4> colors) {
+std::vector<cuda::vertex> createBoxVertexBuffer(vec4 scale, vec4 translate, sign normalSign, cuda::properties props, std::vector<vec4> colors) {
     float plus = normalSign == sign::plus ? 1.0f : -1.0f, minus = -plus;
     vec4 v[8] =
         {
@@ -47,10 +45,10 @@ std::vector<vertex> createBoxVertexBuffer(vec4 scale, vec4 translate, sign norma
         };
     size_t indices[6][4] = { {0,1,2,3}, {4,5,6,7}, {0,1,4,5}, {2,3,6,7}, {0,2,4,6}, {1,3,5,7} };
 
-    std::vector<vertex> vertexBuffer;
+    std::vector<cuda::vertex> vertexBuffer;
     for (size_t i = 0; i < 6; i++) {
         for (size_t j = 0; j < 4; j++) {
-            vertexBuffer.push_back(vertex(v[indices[i][j]], n[i], colors[i], props));
+            vertexBuffer.push_back(cuda::vertex(v[indices[i][j]], n[i], colors[i], props));
         }
     }
     return vertexBuffer;
@@ -67,69 +65,67 @@ std::vector<uint32_t> createBoxIndexBuffer() {
     };
 }
 
-void createWorld(std::vector<primitive>& primitives, hitableContainer* container) {
-    add(container, {
-           sphere::create( vec4( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f}),
-           sphere::create( vec4( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}),
-           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
-           sphere::create( vec4( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})
-       });
+void createWorld(std::vector<cuda::model>& models)
+{
+    const std::vector<cuda::sphere> spheres = {
+        cuda::sphere(vec4( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f}),
+        cuda::sphere(vec4( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}),
+        cuda::sphere(vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}),
+        cuda::sphere(vec4( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})
+    };
 
-    primitives.emplace_back(
+    for(const auto& sphere: spheres){
+        models.emplace_back(std::vector<cuda::hitable*>{cuda::sphere::create(&sphere)}, std::vector<cuda::box>{sphere.bbox});
+    }
+
+    const auto boxIndexBuffer = createBoxIndexBuffer();
+    models.emplace_back(
         createBoxVertexBuffer(
             vec4(3.0f, 3.0f, 1.5f, 1.0f),
             vec4(0.0f, 0.0f, 1.5f, 0.0f),
             sign::minus, { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f },
             { vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.8f, 0.4f, 0.8f, 1.0f), vec4(0.4f, 0.4f, 0.4f, 1.0f), vec4(0.9f, 0.5f, 0.0f, 1.0f), vec4(0.1f, 0.4f, 0.9f, 1.0f) }),
-            createBoxIndexBuffer(),
-            0);
-    primitives.back().moveToContainer(container);
+            boxIndexBuffer);
 
-    primitives.emplace_back(
+    models.emplace_back(
         createBoxVertexBuffer(
             vec4(0.4f, 0.4f, 0.4f, 1.0f),
             vec4(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
             { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
             std::vector<vec4>(6, vec4(1.0f))),
-            createBoxIndexBuffer(),
-            0);
-    primitives.back().moveToContainer(container);
+        boxIndexBuffer);
 
-    primitives.emplace_back(
+    models.emplace_back(
         createBoxVertexBuffer(
             vec4(0.3f, 0.3f, 0.3f, 1.0f),
             vec4(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
             { 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
             std::vector<vec4>(6, vec4(1.0f))),
-            createBoxIndexBuffer(),
-            0);
-    primitives.back().moveToContainer(container);
+        boxIndexBuffer);
 
-    primitives.emplace_back(
+    models.emplace_back(
         createBoxVertexBuffer(
             vec4(2.0f, 2.0f, 0.01f, 1.0f),
             vec4(0.0f, 0.0f, 3.0f, 0.0f),
             sign::plus,
             { 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f},
             std::vector<vec4>(6, vec4(1.0f))),
-        createBoxIndexBuffer(),
-        0);
-    primitives.back().moveToContainer(container);
+        boxIndexBuffer);
 
     // for (int i = 0; i < 50; i++) {
     //     float phi = 2.0f * pi * float(i) / 50.0f;
@@ -158,15 +154,22 @@ testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesyst
 void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
-    array = hitableArray::create();
-    createWorld(primitives, array);
+    createWorld(models);
 
     cam = cuda::camera::create(viewRay, float(extent[0]) / float(extent[1]));
     graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
     graphics->setCamera(cam);
     graphics->create();
-    graphics->setList(array);
+    for(const auto& model: models){
+        graphics->bind(&model);
+        boxes.insert(boxes.end(), model.boxes.begin(), model.boxes.end());
+    }
+    for(const auto& box: boxes){
+        std::cout << box.min.x() << "\t" << box.min.y() << "\t" << box.min.z() << "\n";
+        std::cout << box.max.x() << "\t" << box.max.y() << "\t" << box.max.z() << "\n";
+        std::cout << "=============================================================\n";
+    }
 
 #ifdef IMGUI_GRAPHICS
     gui = std::make_shared<imguiGraphics>(window, app->getInstance(), app->getImageCount());
@@ -235,6 +238,11 @@ void testCuda::updateFrame(uint32_t, float frameTime)
         graphics->clearFrame();
     }
 
+    cuda::camera hostCam = cuda::camera::copyToHost(cam);
+    vec4 o = hostCam.getViewRay().getOrigin();
+    std::string camPos = std::to_string(o.x()) + " " + std::to_string(o.y()) + " " + std::to_string(o.z());
+    ImGui::Text("%s", camPos.c_str());
+
     ImGui::End();
 
 #else
@@ -245,7 +253,6 @@ void testCuda::updateFrame(uint32_t, float frameTime)
 
 void testCuda::destroy()
 {
-    ::destroy(array);
     cuda::camera::destroy(cam);
 }
 

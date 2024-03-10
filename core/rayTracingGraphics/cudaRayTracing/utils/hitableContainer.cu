@@ -2,6 +2,8 @@
 
 #include "operations.h"
 
+namespace cuda {
+
 __global__ void addKernel(hitableContainer* container, hitable* object) {
     container->add(object);
 }
@@ -14,12 +16,14 @@ void add(hitableContainer* container, const std::vector<hitable*>& objects) {
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void deleteList(hitableContainer* list) {
-    delete list;
+__global__ void deleteContainer(hitableContainer* container) {
+    delete container;
 }
 
-void destroy(hitableContainer* list) {
-    deleteList <<<1, 1>>> (list);
+void destroy(hitableContainer* container) {
+    deleteContainer <<<1, 1>>> (container);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+}
+
 }

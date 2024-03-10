@@ -2,6 +2,9 @@
 #include "operations.h"
 #include "ray.h"
 #include "material.h"
+#include "hitableArray.h"
+
+namespace cuda {
 
 __host__ __device__ vec4 max(const vec4& v1, const vec4& v2) {
     return vec4(v1.x() >= v2.x() ? v1.x() : v2.x(),
@@ -17,10 +20,19 @@ __host__ __device__ vec4 min(const vec4& v1, const vec4& v2) {
                 v1.w() < v2.w() ? v1.w() : v2.w());
 }
 
+cudaRayTracing::cudaRayTracing(){
+    container = hitableArray::create();
+}
+
+cudaRayTracing::~cudaRayTracing(){
+    destroy();
+    ::cuda::destroy(container);
+}
+
 void cudaRayTracing::create()
 {
     frame = cuda::buffer<frameBuffer>(width * height);
-    swapChainImage  = cuda::buffer<uint32_t>(width * height);
+    swapChainImage = cuda::buffer<uint32_t>(width * height);
 }
 
 void cudaRayTracing::destroy() {
@@ -29,13 +41,13 @@ void cudaRayTracing::destroy() {
 }
 
 template<bool bloom = false>
-__device__ bool isEmit(const hitRecord& rec){
+__device__ bool isEmit(const cuda::hitRecord& rec){
     return (rec.props.emissionFactor >= 0.98f) &&
            (!bloom || (rec.color.x() >= 0.9f || rec.color.y() >= 0.9f || rec.color.z() >= 0.9f));
 }
 
 template<bool bloom = false>
-__device__ vec4 color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda::camera* cam, float u, float v, hitRecord& rec, hitableContainer* container, curandState* randState) {
+__device__ vec4 color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda::camera* cam, float u, float v, cuda::hitRecord& rec, cuda::hitableContainer* container, curandState* randState) {
     vec4 result = vec4(0.0f);
     do {
         ray r = rec.rayDepth++ ? rec.r : cam->getPixelRay(u, v, randState);
@@ -50,7 +62,7 @@ __device__ vec4 color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda
         vec4 scattering = scatter(r, rec.normal, rec.props, randState);
         if(scattering.length2() == 0.0f || rec.rayDepth >= maxRayIterations){
             result= isEmit<bloom>(rec) ? rec.color : vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            rec = hitRecord{};
+            rec = cuda::hitRecord{};
             break;
         }
         rec.r = ray(rec.point, scattering);
@@ -58,7 +70,7 @@ __device__ vec4 color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda
     return result;
 }
 
-__global__ void render(bool clear, size_t width, size_t height, size_t minRayIterations, size_t maxRayIterations, uint32_t* dst, frameBuffer* frame, cuda::camera* cam, hitableContainer* container)
+__global__ void render(bool clear, size_t width, size_t height, size_t minRayIterations, size_t maxRayIterations, uint32_t* dst, frameBuffer* frame, cuda::camera* cam, cuda::hitableContainer* container)
 {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -97,4 +109,6 @@ bool cudaRayTracing::calculateImage(uint32_t* hostFrameBuffer)
     checkCudaErrors(cudaMemcpy(hostFrameBuffer, swapChainImage.get(), sizeof(uint32_t) * width * height, cudaMemcpyDeviceToHost));
 
     return true;
+}
+
 }

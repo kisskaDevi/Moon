@@ -3,20 +3,30 @@
 
 #include "hitableContainer.h"
 
-class hitableList : public hitableContainer {
-private:
-    hitable* head{ nullptr };
-    hitable* tail{ nullptr };
+namespace cuda {
 
-public:
-    __host__ __device__ hitableList() {}
-    __host__ __device__ ~hitableList();
+    class hitableList : public hitableContainer {
+    private:
+        struct node{
+            hitable* current{nullptr};
+            node* next{nullptr};
+        };
 
-    __device__ bool hit(const ray& r, float tMin, float tMax, hitRecord& rec) const override;
+        node* head{nullptr};
+        node* tail{nullptr};
 
-    __host__ __device__ void add(hitable* object) override ;
+    public:
+        __host__ __device__ hitableList(){};
+        __host__ __device__ ~hitableList();
 
-    static hitableList* create();
-};
+        __host__ __device__ bool hit(const ray& r, float tMin, float tMax, hitRecord& rec) const override;
+
+        __host__ __device__ void add(hitable* object) override ;
+
+        __host__ __device__ hitable* operator[](uint32_t i) override;
+
+        static hitableList* create();
+    };
+}
 
 #endif

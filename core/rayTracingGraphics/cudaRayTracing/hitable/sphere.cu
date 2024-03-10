@@ -1,6 +1,21 @@
 #include "sphere.h"
 #include "operations.h"
 
+namespace cuda {
+
+__host__ __device__ void sphere::calcBox() {
+    bbox.min = center - vec4(radius, radius, radius, 0.0f);
+    bbox.max = center + vec4(radius, radius, radius, 0.0f);
+}
+
+__host__ __device__ sphere::sphere(vec4 cen, float r, vec4 color, const properties& props) : center(cen), radius(r), color(color), props(props) {
+    calcBox();
+}
+
+__host__ __device__ sphere::sphere(vec4 cen, float r, vec4 color) : center(cen), radius(r), color(color) {
+    calcBox();
+}
+
 __host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
     vec4 oc = r.getOrigin() - center;
     float a = 1.0f / r.getDirection().length2();
@@ -49,4 +64,10 @@ sphere* sphere::create(vec4 cen, float r, vec4 color, const properties& props) {
     checkCudaErrors(cudaFree(sph));
 
     return hostsph;
+}
+
+sphere* sphere::create(const sphere* pHost){
+    return sphere::create(pHost->center, pHost->radius, pHost->color, pHost->props);
+}
+
 }

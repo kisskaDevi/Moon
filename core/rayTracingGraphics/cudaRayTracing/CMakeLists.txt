@@ -18,6 +18,7 @@ find_package(CUDA 12.0 REQUIRED)
 set(SOURCES hitable/sphere.cu
 hitable/triangle.cu
 math/vec4.cu
+models/model.cu
 graphics/cudaRayTracing.cu
 transformational/camera.cu
 utils/hitableArray.cu
@@ -33,6 +34,7 @@ math/dualQuaternion.h
 math/quaternion.h
 math/ray.h
 math/vec4.h
+models/model.h
 graphics/cudaRayTracing.h
 transformational/camera.h
 transformational/object.h
@@ -56,6 +58,7 @@ set(INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}
 ${CMAKE_CURRENT_LIST_DIR}/hitable
 ${CMAKE_CURRENT_LIST_DIR}/materials
 ${CMAKE_CURRENT_LIST_DIR}/math
+${CMAKE_CURRENT_LIST_DIR}/models
 ${CMAKE_CURRENT_LIST_DIR}/transformational
 ${CMAKE_CURRENT_LIST_DIR}/utils
 ${CMAKE_CURRENT_LIST_DIR}/graphics

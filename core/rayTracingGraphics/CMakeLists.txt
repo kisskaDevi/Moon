@@ -12,11 +12,13 @@ set(CMAKE_DEBUG_POSTFIX d)
 
 set(SOURCES
 rayTracingGraphics.cpp
-rayTracingLink.cpp)
+rayTracingLink.cpp
+boundingBoxGraphics.cpp)
 
 set(HEADERS
 rayTracingGraphics.h
-rayTracingLink.h)
+rayTracingLink.h
+boundingBoxGraphics.h)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 

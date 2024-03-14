@@ -31,6 +31,8 @@ void rayTracingGraphics::create()
         VK_SAMPLE_COUNT_1_BIT
     };
 
+    bbGraphics.create(device.instance, device.getLogical(), swapChainInfo, shadersPath);
+
     Link.setImageCount(imageCount);
     Link.setDeviceProp(device.getLogical());
     Link.setShadersPath(shadersPath);
@@ -38,7 +40,7 @@ void rayTracingGraphics::create()
     Link.createPipeline(&swapChainInfo);
     Link.createDescriptorPool();
     Link.createDescriptorSets();
-    Link.updateDescriptorSets(&finalAttachment);
+    Link.updateDescriptorSets(&finalAttachment, &bbGraphics.getAttachments());
 
     Buffer::create(
         device.instance,
@@ -80,7 +82,12 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
     Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
     Texture::copy(commandBuffer, stagingBuffer.instance, finalAttachment.instances[imageIndex].image, {extent.width, extent.height, 1}, 1);
     Texture::transitionLayout(commandBuffer, finalAttachment.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
+    bbGraphics.render(commandBuffer, imageIndex);
     SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool, &commandBuffer);
 
     return std::vector<std::vector<VkSemaphore>>();
+}
+
+void rayTracingGraphics::update(uint32_t imageIndex) {
+    bbGraphics.update(imageIndex);
 }

@@ -6,7 +6,7 @@
 namespace cuda {
 
     class camera {
-    private:
+    public:
         ray viewRay;
         vec4 horizontal;
         vec4 vertical;
@@ -17,7 +17,6 @@ namespace cuda {
         float focus{ 0.049f };
         float apertura{ 0.005f };
 
-    public:
         __host__ __device__ camera();
 
         __host__ __device__ camera(

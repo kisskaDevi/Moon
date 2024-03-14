@@ -23,8 +23,8 @@ namespace cuda {
     };
 
     struct box{
-        vec4 min{0.0f};
-        vec4 max{0.0f};
+        alignas(16) vec4 min{0.0f};
+        alignas(16) vec4 max{0.0f};
     };
 
     class hitable {

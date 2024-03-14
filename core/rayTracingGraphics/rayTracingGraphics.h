@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "cudaRayTracing.h"
+#include "boundingBoxGraphics.h"
 
 namespace cuda {
 class model;
@@ -29,6 +30,8 @@ private:
     buffer stagingBuffer;
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
+    boundingBoxGraphics bbGraphics;
+
 public:
     rayTracingGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent)
         : shadersPath(shadersPath), extent(extent)
@@ -46,28 +49,30 @@ public:
 
     ~rayTracingGraphics(){
         rayTracingGraphics::destroy();
+        bbGraphics.destroy();
     }
 
     void setExtent(VkExtent2D extent){
         this->extent = extent;
         rayTracer.setExtent(extent.width, extent.height);
     }
-    void bind(const cuda::model* m) {
+    void bind(cuda::model* m) {
         rayTracer.bind(m);
+        bbGraphics.bind(m);
     }
     void setCamera(cuda::camera* cam){
         rayTracer.setCamera(cam);
+        bbGraphics.bind(cam);
     }
 
     void create() override;
     void destroy() override;
+    void update(uint32_t imageIndex) override;
 
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
-
-    void update(uint32_t) override {}
 
     void clearFrame(){
         rayTracer.clearFrame();

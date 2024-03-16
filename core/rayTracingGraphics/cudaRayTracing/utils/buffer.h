@@ -38,6 +38,7 @@ namespace cuda {
 
         buffer& operator=(buffer&& other)
         {
+            destroy();
             memory = other.memory;
             size = other.size;
             other.memory = nullptr;

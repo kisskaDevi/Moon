@@ -224,7 +224,7 @@ void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
 
     cameraBuffer.resize(image.Count);
     for (auto& buffer: cameraBuffer){
-        Buffer::create(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer.instance, &buffer.memory);
+        Buffer::create(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer.instance, &buffer.memory);
     }
 
     createAttachments();
@@ -239,9 +239,9 @@ void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
 void boundingBoxGraphics::update(uint32_t imageIndex){
     cuda::camera hostCam = cuda::camera::copyToHost(camera);
     const float fov = 2.0f * std::atan(hostCam.matrixScale / hostCam.matrixOffset);
-    const auto& u = hostCam.horizontal;
-    const auto& v = hostCam.vertical;
-    const auto& n = -hostCam.viewRay.getDirection();
+    const auto& u =  normal(hostCam.horizontal);
+    const auto& v =  normal(hostCam.vertical);
+    const auto& n = -normal(hostCam.viewRay.getDirection());
     const auto& c = hostCam.viewRay.getOrigin();
 
     matrix<float,4,4> projMatrix = perspective(fov, hostCam.aspect, hostCam.matrixOffset);
@@ -257,7 +257,7 @@ void boundingBoxGraphics::update(uint32_t imageIndex){
     buffer.view = transpose(viewMatrix);
 
     CHECK(vkMapMemory(device, cameraBuffer[imageIndex].memory, 0, sizeof(CameraBuffer), 0, &cameraBuffer[imageIndex].map));
-    std::memcpy(cameraBuffer[imageIndex].map, &buffer, sizeof(buffer));
+    std::memcpy(cameraBuffer[imageIndex].map, &buffer, sizeof(CameraBuffer));
     vkUnmapMemory(device, cameraBuffer[imageIndex].memory);
 }
 

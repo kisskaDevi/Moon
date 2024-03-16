@@ -188,8 +188,7 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
 
-    cuda::camera::destroy(cam);
-    cam = cuda::camera::create(viewRay, float(extent[0]) / float(extent[1]));
+    cuda::camera::reset(cam, viewRay, float(extent[0]) / float(extent[1]));
     graphics->setExtent({extent[0],extent[1]});
 
     graphics->destroy();
@@ -239,7 +238,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     std::string title = "FPS = " + std::to_string(1.0f / frameTime);
     ImGui::Text("%s", title.c_str());
 
-    if(ImGui::SliderFloat("focus", &focus, 0.03f, 0.04999f, "%.5f")){
+    if(ImGui::SliderFloat("focus", &focus, 0.03f, 0.1f, "%.5f")){
         cuda::camera::setFocus(cam, focus);
         graphics->clearFrame();
     }

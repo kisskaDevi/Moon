@@ -17,8 +17,8 @@ namespace cuda {
         model(const std::vector<vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer);
         model(const std::vector<hitable*>& hitables, const std::vector<box>& boxes);
         model() = default;
-        model(model&& m) = default;
-        model& operator=(model&& m) = default;
+        model(model&& m);
+        model& operator=(model&& m);
 
         ~model();
     };

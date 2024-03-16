@@ -70,6 +70,7 @@ void rayTracingGraphics::destroy() {
     finalAttachment.deleteAttachment(device.getLogical());
     finalAttachment.deleteSampler(device.getLogical());
     Link.destroy();
+    bbGraphics.destroy();
 }
 
 std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)

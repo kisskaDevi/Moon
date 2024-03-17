@@ -8,6 +8,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer{
 layout (push_constant) uniform PushConstants{
     vec4 min;
     vec4 max;
+    vec4 color;
 } pushConstants;
 
 vec3 min = vec3(pushConstants.min);

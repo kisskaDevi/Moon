@@ -44,6 +44,8 @@ private:
     std::shared_ptr<imguiGraphics> gui;
 #endif
 
+    bool enableBB{true};
+
     std::unordered_map<std::string, cuda::model> models;
 
     void mouseEvent(float frameTime);

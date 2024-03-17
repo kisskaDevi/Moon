@@ -416,6 +416,20 @@ VkResult SingleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPo
     return result;
 }
 
+SingleCommandBuffer::scoped::scoped(VkDevice device, VkQueue queue, VkCommandPool commandPool):
+    commandBuffer(create(device, commandPool)), device(device), queue(queue), commandPool(commandPool)
+{}
+
+SingleCommandBuffer::scoped::~scoped(){
+    if(commandBuffer != VK_NULL_HANDLE){
+        submit(device, queue, commandPool, &commandBuffer);
+    }
+}
+
+VkCommandBuffer& SingleCommandBuffer::scoped::get(){
+    return commandBuffer;
+}
+
 void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t baseArrayLayer, uint32_t arrayLayers){
     std::unordered_map<VkImageLayout,std::pair<VkAccessFlags,VkPipelineStageFlags>> layoutDescription = {
         {VK_IMAGE_LAYOUT_UNDEFINED, {0,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT}},

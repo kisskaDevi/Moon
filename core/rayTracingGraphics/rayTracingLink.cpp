@@ -10,6 +10,10 @@ void rayTracingLink::destroy(){
     DescriptorSets.clear();
 }
 
+void rayTracingLink::setEmptyTexture(texture* emptyTexture){
+    this->emptyTexture = emptyTexture;
+}
+
 void rayTracingLink::setDeviceProp(VkDevice device){
     this->device = device;
 }
@@ -127,13 +131,13 @@ void rayTracingLink::updateDescriptorSets(const attachments* attachment, const a
     {
         VkDescriptorImageInfo imageInfo;
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = attachment->instances[image].imageView;
-        imageInfo.sampler = attachment->sampler;
+        imageInfo.imageView = attachment->instances.empty() ? *emptyTexture->getTextureImageView() : attachment->instances[image].imageView;
+        imageInfo.sampler = attachment->instances.empty() ? *emptyTexture->getTextureSampler() : attachment->sampler;
 
         VkDescriptorImageInfo bbImageInfo;
         bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        bbImageInfo.imageView = bbAttachment->instances[image].imageView;
-        bbImageInfo.sampler = bbAttachment->sampler;
+        bbImageInfo.imageView = bbAttachment->instances.empty() ? *emptyTexture->getTextureImageView() : bbAttachment->instances[image].imageView;
+        bbImageInfo.sampler = bbAttachment->instances.empty() ? *emptyTexture->getTextureSampler() : bbAttachment->sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

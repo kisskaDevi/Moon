@@ -27,6 +27,12 @@ namespace cuda {
         alignas(16) vec4 max{0.0f};
     };
 
+    struct cbox : public box{
+        alignas(16) vec4 color{0.0f, 1.0f, 0.0f, 0.0f};
+        cbox(const box& b) : box(b){}
+        cbox(const box& b, const vec4& color) : box(b), color(color){}
+    };
+
     class hitable {
     public:
         box bbox;

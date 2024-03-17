@@ -53,12 +53,14 @@ public:
     void destroy();
     void create(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, const std::filesystem::path& shadersPath);
     void update(uint32_t imageIndex);
-    void render(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     const attachments& getAttachments() const;
     void bind(cuda::model* model);
     void bind(const std::vector<cuda::model*>& model);
     void bind(cuda::camera* camera);
+
+    void setEnable(bool enable){this->enable = enable;}
 };
 
 #endif // BOUNDINGBOXGRAPHICS_H

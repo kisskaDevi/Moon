@@ -5,6 +5,7 @@
 #include "graphicsInterface.h"
 #include "attachments.h"
 #include "buffer.h"
+#include "texture.h"
 #include "vector.h"
 
 #include <stdint.h>
@@ -21,16 +22,17 @@ private:
     uint32_t* hostFrameBuffer{nullptr};
 
     cuda::cudaRayTracing rayTracer;
+    boundingBoxGraphics bbGraphics;
     rayTracingLink Link;
+
     attachments finalAttachment;
+    texture* emptyTexture{nullptr};
 
     std::filesystem::path shadersPath;
     VkExtent2D extent;
 
     buffer stagingBuffer;
     VkCommandPool commandPool{VK_NULL_HANDLE};
-
-    boundingBoxGraphics bbGraphics;
 
 public:
     rayTracingGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent)
@@ -52,6 +54,7 @@ public:
         bbGraphics.destroy();
     }
 
+    void setEnableBoundingBox(bool enable);
     void setExtent(VkExtent2D extent){
         this->extent = extent;
         rayTracer.setExtent(extent.width, extent.height);
@@ -68,7 +71,6 @@ public:
     void create() override;
     void destroy() override;
     void update(uint32_t imageIndex) override;
-
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
         const std::vector<VkFence>& externalFence,

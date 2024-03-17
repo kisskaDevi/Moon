@@ -6,6 +6,7 @@
 
 #include "linkable.h"
 #include "attachments.h"
+#include "texture.h"
 #include "vector.h"
 
 struct linkPushConstant{
@@ -28,9 +29,12 @@ private:
 
     linkPushConstant                pushConstant;
 
+    texture*                        emptyTexture{nullptr};
+
 public:
     rayTracingLink() = default;
     void destroy();
+    void setEmptyTexture(texture* emptyTexture);
     void setDeviceProp(VkDevice device);
     void setImageCount(const uint32_t& count);
     void setShadersPath(const std::filesystem::path& shadersPath);

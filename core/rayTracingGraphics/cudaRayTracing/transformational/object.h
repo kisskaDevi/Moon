@@ -7,5 +7,4 @@ namespace cuda {
 
 }
 
-
 #endif // !OBJECTH

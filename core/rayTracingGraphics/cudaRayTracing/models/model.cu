@@ -27,7 +27,7 @@ model::model(const std::vector<vertex>& vertexBuffer, const std::vector<uint32_t
     }
 }
 
-model::model(const std::vector<hitable*>& hitables, const std::vector<box>& boxes)
+model::model(const std::vector<hitable*>& hitables, const std::vector<cbox>& boxes)
     : hitables(hitables), boxes(boxes) {}
 
 model::model(model&& m) : vertexBuffer(std::move(m.vertexBuffer)), hitables(std::move(m.hitables)), boxes(std::move(m.boxes))
@@ -42,6 +42,12 @@ model& model::operator=(model&& m)
     hitables = std::move(m.hitables);
     boxes = std::move(m.boxes);
     return *this;
+}
+
+void model::setBoxesColor(const vec4& color){
+    for(auto& box: boxes){
+        box.color = color;
+    }
 }
 
 }

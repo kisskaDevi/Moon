@@ -88,7 +88,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
     };
 
     for(const auto& [name, sphere]: spheres){
-        models[name] = cuda::model(std::vector<cuda::hitable*>{cuda::sphere::create(&sphere)}, std::vector<cuda::box>{sphere.bbox});
+        models[name] = cuda::model({cuda::sphere::create(&sphere)}, {sphere.bbox});
     }
 
     const auto boxIndexBuffer = createBoxIndexBuffer();
@@ -163,6 +163,7 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
     graphics->setCamera(cam);
+    graphics->setEnableBoundingBox(enableBB);
     graphics->create();
     for(auto& [name, model]: models){
         graphics->bind(&model);
@@ -192,6 +193,7 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
     graphics->setExtent({extent[0],extent[1]});
 
     graphics->destroy();
+    graphics->setEnableBoundingBox(enableBB);
     graphics->create();
 }
 
@@ -247,6 +249,11 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     vec4 o = hostCam.getViewRay().getOrigin();
     std::string camPos = std::to_string(o.x()) + " " + std::to_string(o.y()) + " " + std::to_string(o.z());
     ImGui::Text("%s", camPos.c_str());
+
+    if(ImGui::RadioButton("enable BB", enableBB)){
+        enableBB = !enableBB;
+        framebufferResized = true;
+    }
 
     ImGui::End();
 

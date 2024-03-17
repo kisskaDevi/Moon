@@ -13,6 +13,8 @@ void rayTracingGraphics::create()
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
 
+    emptyTexture = createEmptyTexture(device, commandPool);
+
     finalAttachment.create(
         device.instance,
         device.getLogical(),
@@ -24,6 +26,15 @@ void rayTracingGraphics::create()
     VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
     vkCreateSampler(device.getLogical(), &SamplerInfo, nullptr, &finalAttachment.sampler);
 
+    imageInfo bbInfo{
+        imageCount,
+        format,
+        extent,
+        VK_SAMPLE_COUNT_1_BIT
+    };
+
+    bbGraphics.create(device.instance, device.getLogical(), bbInfo, shadersPath);
+
     imageInfo swapChainInfo{
         imageCount,
         format,
@@ -31,8 +42,7 @@ void rayTracingGraphics::create()
         VK_SAMPLE_COUNT_1_BIT
     };
 
-    bbGraphics.create(device.instance, device.getLogical(), swapChainInfo, shadersPath);
-
+    Link.setEmptyTexture(emptyTexture);
     Link.setImageCount(imageCount);
     Link.setDeviceProp(device.getLogical());
     Link.setShadersPath(shadersPath);
@@ -59,6 +69,10 @@ void rayTracingGraphics::create()
 }
 
 void rayTracingGraphics::destroy() {
+    if(emptyTexture){
+        emptyTexture->destroy(device.getLogical());
+        delete emptyTexture;
+    }
     rayTracer.destroy();
     if(hostFrameBuffer){
         delete[] hostFrameBuffer;
@@ -91,4 +105,8 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
 
 void rayTracingGraphics::update(uint32_t imageIndex) {
     bbGraphics.update(imageIndex);
+}
+
+void rayTracingGraphics::setEnableBoundingBox(bool enable){
+    bbGraphics.setEnable(enable);
 }

@@ -250,6 +250,20 @@ namespace SingleCommandBuffer {
             VkQueue                         queue,
             VkCommandPool                   commandPool,
             VkCommandBuffer*                commandBuffer);
+
+    class scoped{
+    private:
+        VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
+        VkDevice device{VK_NULL_HANDLE};
+        VkQueue queue{VK_NULL_HANDLE};
+        VkCommandPool commandPool{VK_NULL_HANDLE};
+    public:
+        scoped(VkDevice device, VkQueue queue, VkCommandPool commandPool);
+        ~scoped();
+        scoped(const scoped&) = delete;
+        scoped& operator=(const scoped&) = delete;
+        VkCommandBuffer& get();
+    };
 }
 
 namespace SwapChain {

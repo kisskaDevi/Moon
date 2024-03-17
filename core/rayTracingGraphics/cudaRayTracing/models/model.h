@@ -10,17 +10,19 @@ namespace cuda {
 
     class model {
     public:
-        cuda::buffer<vertex> vertexBuffer;
+        buffer<vertex> vertexBuffer;
         std::vector<hitable*> hitables;
-        std::vector<box> boxes;
+        std::vector<cbox> boxes;
 
         model(const std::vector<vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer);
-        model(const std::vector<hitable*>& hitables, const std::vector<box>& boxes);
+        model(const std::vector<hitable*>& hitables, const std::vector<cbox>& boxes  = {});
         model() = default;
         model(model&& m);
         model& operator=(model&& m);
 
         ~model();
+
+        void setBoxesColor(const vec4& color);
     };
 }
 

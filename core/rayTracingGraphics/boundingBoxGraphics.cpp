@@ -111,7 +111,7 @@ void boundingBoxGraphics::createPipeline(){
     pushConstantRange.push_back(VkPushConstantRange{});
     pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
     pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(cuda::box);
+    pushConstantRange.back().size = sizeof(cuda::cbox);
 
     std::vector<VkDescriptorSetLayout> setLayouts = {descriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -208,7 +208,6 @@ void boundingBoxGraphics::destroy(){
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
 
-
     for (auto& buffer: cameraBuffer){
         Buffer::destroy(device, buffer.instance, buffer.memory);
     }
@@ -216,6 +215,8 @@ void boundingBoxGraphics::destroy(){
 }
 
 void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, const std::filesystem::path& shadersPath){
+    if(!enable) return;
+
     this->physicalDevice = physicalDevice;
     this->device = device;
     this->image = image;
@@ -237,6 +238,8 @@ void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
 }
 
 void boundingBoxGraphics::update(uint32_t imageIndex){
+    if(!enable) return;
+
     cuda::camera hostCam = cuda::camera::copyToHost(camera);
     const float fov = 2.0f * std::atan(hostCam.matrixScale / hostCam.matrixOffset);
     const auto& u =  normal(hostCam.horizontal);
@@ -261,7 +264,7 @@ void boundingBoxGraphics::update(uint32_t imageIndex){
     vkUnmapMemory(device, cameraBuffer[imageIndex].memory);
 }
 
-void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIndex){
+void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const {
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue};
@@ -281,7 +284,7 @@ void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, NULL);
         for(const auto& box: model->boxes){
-            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::box), &box);
+            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::cbox), &box);
             vkCmdDraw(commandBuffer, 36, 1, 0, 0);
         }
     }

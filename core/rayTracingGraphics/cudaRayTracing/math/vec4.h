@@ -7,6 +7,8 @@
 
 #define pi 3.14159265358979323846f
 
+namespace cuda {
+
 class vec4 {
     float e[4];
 
@@ -139,10 +141,44 @@ __host__ __device__ inline vec4& vec4::operator/=(const float t) {
     return *this;
 }
 
-__host__ __device__ vec4 normal(const vec4& v);
+__host__ __device__ inline vec4 normal(const vec4& v) {
+    return v / v.length();
+}
 
-__host__ __device__ vec4 cross(const vec4& v1, const vec4& v2);
+__host__ __device__ inline vec4 cross(const vec4& v1, const vec4& v2) {
+    return vec4(v1.y() * v2.z() - v1.z() * v2.y(), v1.z() * v2.x() - v1.x() * v2.z(), v1.x() * v2.y() - v1.y() * v2.x(), 0.0f);
+}
 
-__device__ vec4 random_in_unit_sphere(const vec4& direction, const float& angle, curandState* local_rand_state);
+__device__ inline vec4 random_in_unit_sphere(const vec4& direction, const float& angle, curandState* local_rand_state) {
+    float phi = 2 * pi * curand_uniform(local_rand_state);
+    float theta = angle * curand_uniform(local_rand_state);
+
+    float x = std::sin(theta) * std::cos(phi);
+    float y = std::sin(theta) * std::sin(phi);
+    float z = std::cos(theta);
+
+    return normal(x * vec4::getHorizontal(direction) + y * vec4::getVertical(direction) + z * direction);
+}
+
+__host__ __device__ inline vec4 max(const vec4& v1, const vec4& v2) {
+    return vec4(v1.x() >= v2.x() ? v1.x() : v2.x(),
+                v1.y() >= v2.y() ? v1.y() : v2.y(),
+                v1.z() >= v2.z() ? v1.z() : v2.z(),
+                v1.w() >= v2.w() ? v1.w() : v2.w());
+}
+
+__host__ __device__ inline vec4 min(const vec4& v1, const vec4& v2) {
+    return vec4(v1.x() < v2.x() ? v1.x() : v2.x(),
+                v1.y() < v2.y() ? v1.y() : v2.y(),
+                v1.z() < v2.z() ? v1.z() : v2.z(),
+                v1.w() < v2.w() ? v1.w() : v2.w());
+}
+
+__host__ __device__ inline float det3(const vec4& a, const vec4& b, const vec4& c) {
+    return a.x() * b.y() * c.z() + b.x() * c.y() * a.z() + c.x() * a.y() * b.z() -
+           (a.x() * c.y() * b.z() + b.x() * a.y() * c.z() + c.x() * b.y() * a.z());
+}
+
+}
 
 #endif

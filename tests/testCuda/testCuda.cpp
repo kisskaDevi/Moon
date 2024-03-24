@@ -18,6 +18,8 @@
 
 #include <cstring>
 
+using namespace cuda;
+
 enum sign
 {
     minus,
@@ -95,7 +97,8 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
         createBoxVertexBuffer(
             vec4(3.0f, 3.0f, 1.5f, 1.0f),
             vec4(0.0f, 0.0f, 1.5f, 0.0f),
-            sign::minus, { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f },
+            sign::minus,
+            { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f },
             { vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.8f, 0.4f, 0.8f, 1.0f), vec4(0.4f, 0.4f, 0.4f, 1.0f), vec4(0.9f, 0.5f, 0.0f, 1.0f), vec4(0.1f, 0.4f, 0.9f, 1.0f) }),
             boxIndexBuffer);
 

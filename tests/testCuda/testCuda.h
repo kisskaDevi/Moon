@@ -28,7 +28,7 @@ private:
     vector<uint32_t,2>      extent{0};
     vector<double,2>        mousePos{0.0};
 
-    ray                     viewRay = ray(vec4(2.0f, 0.0f, 2.0f, 1.0f), vec4(-1.0f, 0.0f, -1.0f, 0.0f));
+    cuda::ray               viewRay = cuda::ray(cuda::vec4(2.0f, 0.0f, 2.0f, 1.0f), cuda::vec4(-1.0f, 0.0f, -1.0f, 0.0f));
     float                   focus = 0.049f;
     std::string             screenshot;
 

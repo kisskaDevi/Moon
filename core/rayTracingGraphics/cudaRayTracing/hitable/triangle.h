@@ -5,7 +5,7 @@
 
 namespace cuda {
 
-    struct alignas(64) vertex {
+    struct vertex {
         vec4 point{0.0f, 0.0f, 0.0f, 1.0f};
         vec4 normal{0.0f, 0.0f, 0.0f, 0.0f};
         vec4 color{0.0f, 0.0f, 0.0f, 0.0f};
@@ -16,7 +16,7 @@ namespace cuda {
         {}
     };
 
-    class alignas(64) triangle : public hitable {
+    class triangle : public hitable {
     private:
         size_t index0, index1, index2;
         const vertex* vertexBuffer{ nullptr };

@@ -2,6 +2,8 @@
 #define RAYH
 #include "vec4.h"
 
+namespace cuda {
+
 class ray
 {
 private:
@@ -15,5 +17,7 @@ public:
     __host__ __device__ vec4 getDirection() const { return direction; }
     __host__ __device__ vec4 point(const float& t) const { return origin + t * direction; }
 };
+
+}
 
 #endif

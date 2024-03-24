@@ -3,27 +3,6 @@
 
 namespace cuda {
 
-namespace {
-    __host__ __device__ float det3(const vec4& a, const vec4& b, const vec4& c) {
-        return a.x() * b.y() * c.z() + b.x() * c.y() * a.z() + c.x() * a.y() * b.z() -
-            (a.x() * c.y() * b.z() + b.x() * a.y() * c.z() + c.x() * b.y() * a.z());
-    }
-
-    __host__ __device__ vec4 max(const vec4& v1, const vec4& v2) {
-        return vec4(v1.x() >= v2.x() ? v1.x() : v2.x(),
-                    v1.y() >= v2.y() ? v1.y() : v2.y(),
-                    v1.z() >= v2.z() ? v1.z() : v2.z(),
-                    v1.w() >= v2.w() ? v1.w() : v2.w());
-    }
-
-    __host__ __device__ vec4 min(const vec4& v1, const vec4& v2) {
-        return vec4(v1.x() < v2.x() ? v1.x() : v2.x(),
-                    v1.y() < v2.y() ? v1.y() : v2.y(),
-                    v1.z() < v2.z() ? v1.z() : v2.z(),
-                    v1.w() < v2.w() ? v1.w() : v2.w());
-    }
-}
-
 __host__ __device__ triangle::triangle(const size_t& i0, const size_t& i1, const size_t& i2, const vertex* vertexBuffer)
     : index0(i0), index1(i1), index2(i2), vertexBuffer(vertexBuffer) {
 };

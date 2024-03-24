@@ -19,7 +19,6 @@ set(SOURCES
     hitable/sphere.cu
     hitable/triangle.cu
     hitable/hitable.cu
-    math/vec4.cu
     models/model.cu
     graphics/cudaRayTracing.cu
     transformational/camera.cu

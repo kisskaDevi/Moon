@@ -15,34 +15,40 @@ set(CMAKE_DEBUG_POSTFIX d)
 
 find_package(CUDA 12.0 REQUIRED)
 
-set(SOURCES hitable/sphere.cu
-hitable/triangle.cu
-math/vec4.cu
-models/model.cu
-graphics/cudaRayTracing.cu
-transformational/camera.cu
-utils/hitableArray.cu
-utils/hitableContainer.cu
-utils/hitableList.cu
-utils/operations.cu)
+set(SOURCES
+    hitable/sphere.cu
+    hitable/triangle.cu
+    hitable/hitable.cu
+    math/vec4.cu
+    models/model.cu
+    graphics/cudaRayTracing.cu
+    transformational/camera.cu
+    utils/hitableArray.cu
+    utils/hitableContainer.cu
+    utils/hitableList.cu
+    utils/operations.cu
+)
 
-set(HEADERS hitable/hitable.h
-hitable/sphere.h
-hitable/triangle.h
-materials/material.h
-math/dualQuaternion.h
-math/quaternion.h
-math/ray.h
-math/vec4.h
-models/model.h
-graphics/cudaRayTracing.h
-transformational/camera.h
-transformational/object.h
-utils/buffer.h
-utils/hitableArray.h
-utils/hitableContainer.h
-utils/hitableList.h
-utils/operations.h)
+set(HEADERS
+    hitable/hitable.h
+    hitable/sphere.h
+    hitable/triangle.h
+    materials/material.h
+    math/dualQuaternion.h
+    math/quaternion.h
+    math/ray.h
+    math/vec4.h
+    models/model.h
+    graphics/cudaRayTracing.h
+    transformational/camera.h
+    transformational/object.h
+    utils/buffer.h
+    utils/hitableArray.h
+    utils/hitableContainer.h
+    utils/hitableList.h
+    utils/operations.h
+    utils/devicep.h
+)
 
 set(CUDA_ARCH compute_86)
 set(CUDA_SM sm_86)
@@ -54,15 +60,17 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(XFLAGS -Xcompiler "/EHsc,/W3,/nologo,/O2,/FS,${MSVCRT_LINK_FLAG}")
 endif()
 
-set(INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}
-${CMAKE_CURRENT_LIST_DIR}/hitable
-${CMAKE_CURRENT_LIST_DIR}/materials
-${CMAKE_CURRENT_LIST_DIR}/math
-${CMAKE_CURRENT_LIST_DIR}/models
-${CMAKE_CURRENT_LIST_DIR}/transformational
-${CMAKE_CURRENT_LIST_DIR}/utils
-${CMAKE_CURRENT_LIST_DIR}/graphics
-${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+set(INCLUDE_DIRS
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/hitable
+    ${CMAKE_CURRENT_LIST_DIR}/materials
+    ${CMAKE_CURRENT_LIST_DIR}/math
+    ${CMAKE_CURRENT_LIST_DIR}/models
+    ${CMAKE_CURRENT_LIST_DIR}/transformational
+    ${CMAKE_CURRENT_LIST_DIR}/utils
+    ${CMAKE_CURRENT_LIST_DIR}/graphics
+    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+)
 
 include_directories(${INCLUDE_DIRS})
 

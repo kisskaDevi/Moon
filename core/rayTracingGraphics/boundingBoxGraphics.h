@@ -32,7 +32,7 @@ private:
     bool enable{true};
 
     std::vector<cuda::model*> models;
-    cuda::camera* camera;
+    cuda::devicep<cuda::camera>* camera;
 
     std::vector<buffer> cameraBuffer;
 
@@ -58,7 +58,7 @@ public:
     const attachments& getAttachments() const;
     void bind(cuda::model* model);
     void bind(const std::vector<cuda::model*>& model);
-    void bind(cuda::camera* camera);
+    void bind(cuda::devicep<cuda::camera>* camera);
 
     void setEnable(bool enable){this->enable = enable;}
 };

@@ -42,23 +42,24 @@ __host__ __device__ hitable* hitableArray::operator[](uint32_t i) {
     return array[i];
 }
 
-__global__ void createArray(hitableArray** arr) {
-    *arr = new hitableArray();
+__global__ void createKernel(hitableArray* p) {
+    p = new (p) hitableArray();
 }
 
-hitableArray* hitableArray::create() {
-    hitableArray** array;
-    checkCudaErrors(cudaMalloc((void**)&array, sizeof(hitableArray**)));
-
-    createArray<<<1, 1>>>(array);
+void hitableArray::create(hitableArray* dpointer, const hitableArray& host){
+    createKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+}
 
-    hitableArray* hostarr = nullptr;
-    checkCudaErrors(cudaMemcpy(&hostarr, array, sizeof(hitableArray*), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaFree(array));
+__global__ void destroyKernel(hitableArray* p) {
+    p->~hitableArray();
+}
 
-    return hostarr;
+void hitableArray::destroy(hitableArray* dpointer){
+    destroyKernel<<<1,1>>>(dpointer);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 }

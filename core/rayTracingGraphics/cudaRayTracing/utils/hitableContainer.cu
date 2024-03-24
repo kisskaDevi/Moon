@@ -16,12 +16,12 @@ void add(hitableContainer* container, const std::vector<hitable*>& objects) {
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void deleteContainer(hitableContainer* container) {
-    delete container;
+__global__ void destroyKernel(hitableContainer* p) {
+    p->~hitableContainer();
 }
 
-void destroy(hitableContainer* container) {
-    deleteContainer <<<1, 1>>> (container);
+void hitableContainer::destroy(hitableContainer* dpointer){
+    destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }

@@ -2,72 +2,49 @@
 #define BUFFERH
 
 #include "operations.h"
+#include "devicep.h"
 
 namespace cuda {
 
-    template <typename Type>
+    template <typename type>
     class buffer
     {
     private:
-        Type* memory{ nullptr };
+        devicep<type> memory{ nullptr };
         size_t size{ 0 };
 
     public:
         buffer() = default;
-        buffer(const size_t& size) : memory(static_cast<Type*>(Buffer::create(sizeof(Type) * size))), size(size) {}
+        buffer(const size_t& size) : memory(size), size(size) {}
 
-        buffer(const size_t& size, const Type* mem) : memory(static_cast<Type*>(Buffer::create(sizeof(Type) * size))), size(size)
+        buffer(const size_t& size, const type* mem) : memory(size), size(size)
         {
-            cudaMemcpy(memory, mem, size * sizeof(Type), cudaMemcpyHostToDevice);
+            cudaMemcpy(memory.get(), mem, size * sizeof(type), cudaMemcpyHostToDevice);
             checkCudaErrors(cudaGetLastError());
         }
 
         void create(size_t size) {
-            memory = static_cast<Type*>(Buffer::create(sizeof(Type) * size));
+            memory = devicep<type>(size);
             this->size = size;
         }
 
         buffer(const buffer& other) = delete;
         buffer& operator=(const buffer& other) = delete;
 
-        buffer(buffer&& other) : memory(other.memory), size(other.size)
-        {
-            other.memory = nullptr;
-            other.size = 0;
-        }
+        buffer(buffer&& other) : memory(std::move(other.memory)), size(std::move(other.size))
+        {}
 
         buffer& operator=(buffer&& other)
         {
-            destroy();
-            memory = other.memory;
-            size = other.size;
-            other.memory = nullptr;
-            other.size = 0;
+            memory = std::move(other.memory);
+            size = std::move(other.size);
             return *this;
         }
 
-        void destroy() {
-            if (memory) {
-                checkCudaErrors(cudaFree(memory));
-            }
-            memory = nullptr;
-            size = 0;
-        }
+        ~buffer(){};
 
-        ~buffer() {
-            destroy();
-        }
-
-        Type& operator[](size_t i) {
-            return *(memory + i);
-        }
-
-        Type* get() {
-            return memory;
-        }
-
-        const Type* get() const {
-            return memory;
+        type* get() {
+            return memory();
         }
     };
 }

@@ -24,16 +24,8 @@ namespace {
     }
 }
 
-
-__host__ __device__ void triangle::calcBox(){
-    bbox.min = min(vertexBuffer[index0].point, min(vertexBuffer[index1].point, vertexBuffer[index2].point));
-    bbox.max = max(vertexBuffer[index0].point, max(vertexBuffer[index1].point, vertexBuffer[index2].point));
-}
-
-
 __host__ __device__ triangle::triangle(const size_t& i0, const size_t& i1, const size_t& i2, const vertex* vertexBuffer)
     : index0(i0), index1(i1), index2(i2), vertexBuffer(vertexBuffer) {
-    calcBox();
 };
 
 __host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
@@ -80,23 +72,30 @@ __host__ __device__ void triangle::calcHitRecord(const ray& r, const hitCoords& 
     };
 }
 
-__global__ void createTriangle(triangle** tr, const size_t i0, const size_t i1, const size_t i2, vertex* vertexBuffer) {
-    *tr = new triangle(i0, i1, i2, vertexBuffer);
+__global__ void createKernel(triangle* tr, const size_t i0, const size_t i1, const size_t i2, const vertex* vertexBuffer) {
+    tr = new (tr) triangle(i0, i1, i2, vertexBuffer);
 }
 
-triangle* triangle::create(const size_t& i0, const size_t& i1, const size_t& i2, vertex* vertexBuffer) {
-    triangle** tr;
-    checkCudaErrors(cudaMalloc((void**)&tr, sizeof(triangle**)));
-
-    createTriangle<<<1,1>>>(tr, i0, i1, i2, vertexBuffer);
+void triangle::create(triangle* dpointer, const triangle& host){
+    createKernel<<<1,1>>>(dpointer, host.index0, host.index1, host.index2, host.vertexBuffer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-
-    triangle* hosttr = nullptr;
-    checkCudaErrors(cudaMemcpy(&hosttr, tr, sizeof(triangle*), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaFree(tr));
-
-    return hosttr;
 }
 
+__global__ void destroyKernel(triangle* p) {
+    p->~triangle();
+}
+
+void triangle::destroy(triangle* dpointer){
+    destroyKernel<<<1,1>>>(dpointer);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+box triangle::calcBox() const {
+    box bbox;
+    bbox.min = min(vertexBuffer[index0].point, min(vertexBuffer[index1].point, vertexBuffer[index2].point));
+    bbox.max = max(vertexBuffer[index0].point, max(vertexBuffer[index1].point, vertexBuffer[index2].point));
+    return bbox;
+}
 }

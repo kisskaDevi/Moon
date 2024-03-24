@@ -33,8 +33,8 @@ namespace cuda {
 
         bool clear{false};
 
-        cuda::camera* cam{nullptr};
-        cuda::hitableContainer* container{nullptr};
+        cuda::devicep<cuda::camera>* cam{nullptr};
+        cuda::devicep<cuda::hitableContainer> container;
         uint32_t* hostFrameBuffer{nullptr};
 
         uint32_t width;
@@ -48,15 +48,19 @@ namespace cuda {
             this->width = width;
             this->height = height;
         }
-        void bind(const cuda::model* m) {
-            add(container, m->hitables);
+        void bind(cuda::model* m) {
+            std::vector<hitable*> hitables;
+            for(const auto& primitive : m->primitives){
+                hitables.push_back(primitive.hit());
+            }
+            add(container.get(), hitables);
         }
-        void setCamera(cuda::camera* cam){
+        void setCamera(cuda::devicep<cuda::camera>* cam){
             this->cam = cam;
         }
 
         void create();
-        void destroy();
+        void update();
 
         bool calculateImage(uint32_t* hostFrameBuffer);
 

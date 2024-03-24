@@ -20,24 +20,17 @@ __host__ __device__ vec4 min(const vec4& v1, const vec4& v2) {
                 v1.w() < v2.w() ? v1.w() : v2.w());
 }
 
-cudaRayTracing::cudaRayTracing(){
-    container = hitableArray::create();
-}
+cudaRayTracing::cudaRayTracing() :
+    container(cuda::make_devicep<cuda::hitableContainer>(cuda::hitableArray()))
+{}
 
 cudaRayTracing::~cudaRayTracing(){
-    destroy();
-    ::cuda::destroy(container);
 }
 
 void cudaRayTracing::create()
 {
     frame = cuda::buffer<frameBuffer>(width * height);
     swapChainImage = cuda::buffer<uint32_t>(width * height);
-}
-
-void cudaRayTracing::destroy() {
-    frame.destroy();
-    swapChainImage.destroy();
 }
 
 template<bool bloom = false>
@@ -96,12 +89,21 @@ __global__ void render(bool clear, size_t width, size_t height, size_t minRayIte
     }
 }
 
+__global__ void updateKernel(cuda::camera* cam){
+    cam->update();
+}
+
+void cudaRayTracing::update(){
+    updateKernel<<<1, 1>>>(cam->get());
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
 bool cudaRayTracing::calculateImage(uint32_t* hostFrameBuffer)
 {
     dim3 blocks(width / xThreads + 1, height / yThreads + 1, 1);
     dim3 threads(xThreads, yThreads, 1);
-
-    render<<<blocks, threads>>>(clear, width, height, minRayIterations, maxRayIterations, swapChainImage.get(), frame.get(), cam, container);
+    render<<<blocks, threads>>>(clear, width, height, minRayIterations, maxRayIterations, swapChainImage.get(), frame.get(), cam->get(), container());
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     clear = false;

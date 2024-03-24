@@ -5,17 +5,22 @@
 
 #include "utils/buffer.h"
 #include "hitable/triangle.h"
+#include "utils/devicep.h"
 
 namespace cuda {
 
-    class model {
-    public:
+    struct primitive{
+        devicep<hitable> hit;
+        cbox box;
+    };
+
+    struct model {
         buffer<vertex> vertexBuffer;
-        std::vector<hitable*> hitables;
-        std::vector<cbox> boxes;
+        std::vector<primitive> primitives;
 
         model(const std::vector<vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer);
-        model(const std::vector<hitable*>& hitables, const std::vector<cbox>& boxes  = {});
+        model(std::vector<primitive>&& primitives);
+        model(primitive&& primitive);
         model() = default;
         model(model&& m);
         model& operator=(model&& m);

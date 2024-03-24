@@ -5,7 +5,6 @@
 
 #include "triangle.h"
 #include "sphere.h"
-#include "camera.h"
 
 #ifdef IMGUI_GRAPHICS
 #include "imguiGraphics.h"
@@ -88,7 +87,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
     };
 
     for(const auto& [name, sphere]: spheres){
-        models[name] = cuda::model({cuda::sphere::create(&sphere)}, {sphere.bbox});
+        models[name] = cuda::model(cuda::primitive{cuda::make_devicep<cuda::hitable>(sphere), sphere.calcBox()});
     }
 
     const auto boxIndexBuffer = createBoxIndexBuffer();
@@ -159,23 +158,26 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
     createWorld(models);
 
-    cam = cuda::camera::create(viewRay, float(extent[0]) / float(extent[1]));
+    cam = cuda::make_devicep<cuda::camera>(cuda::camera(viewRay, float(extent[0]) / float(extent[1])));
     graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
-    graphics->setCamera(cam);
+    graphics->setCamera(&cam);
     graphics->setEnableBoundingBox(enableBB);
     graphics->create();
     for(auto& [name, model]: models){
         graphics->bind(&model);
 
+#ifdef false
         std::cout << name << std::endl;
-        for(const auto& box: model.boxes){
+        for(const auto& primitive: model.primitives){
+            const auto& box = primitive.box;
             std::cout << "--------------------------------\n";
-            std::cout << "box " << &box - &model.boxes[0] << std::endl;
+            std::cout << "box " << &primitive - &model.primitives[0] << std::endl;
             std::cout << "min:\t" << box.min.x() << "\t" << box.min.y() << "\t" << box.min.z() << "\n";
             std::cout << "max:\t" << box.max.x() << "\t" << box.max.y() << "\t" << box.max.z() << "\n";
         }
         std::cout << "===============================\n";
+#endif
     }
 
 #ifdef IMGUI_GRAPHICS
@@ -188,8 +190,7 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
-
-    cuda::camera::reset(cam, viewRay, float(extent[0]) / float(extent[1]));
+    cam = std::move(cuda::make_devicep<cuda::camera>(cuda::camera(viewRay, float(extent[0]) / float(extent[1]))));
     graphics->setExtent({extent[0],extent[1]});
 
     graphics->destroy();
@@ -241,12 +242,14 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     ImGui::Text("%s", title.c_str());
 
     if(ImGui::SliderFloat("focus", &focus, 0.03f, 0.1f, "%.5f")){
-        cuda::camera::setFocus(cam, focus);
+        cuda::camera hostcam = cuda::to_host(cam);
+        hostcam.focus = focus;
+        cuda::to_device(hostcam, cam);
         graphics->clearFrame();
     }
 
-    cuda::camera hostCam = cuda::camera::copyToHost(cam);
-    vec4 o = hostCam.getViewRay().getOrigin();
+    cuda::camera hostCam = cuda::to_host(cam);
+    vec4 o = hostCam.viewRay.getOrigin();
     std::string camPos = std::to_string(o.x()) + " " + std::to_string(o.y()) + " " + std::to_string(o.z());
     ImGui::Text("%s", camPos.c_str());
 
@@ -263,11 +266,6 @@ void testCuda::updateFrame(uint32_t, float frameTime)
 #endif
 }
 
-void testCuda::destroy()
-{
-    cuda::camera::destroy(cam);
-}
-
 void testCuda::mouseEvent(float)
 {
     float sensitivity = 0.02f;
@@ -281,7 +279,9 @@ void testCuda::mouseEvent(float)
                                 viewRay.getDirection().y() * cos_delta + viewRay.getDirection().x() * sin_delta,
                                 viewRay.getDirection().z() + sensitivity *static_cast<float>(mousePos[1] - y),
                                 0.0f));
-        cuda::camera::setViewRay(cam, viewRay);
+        cuda::camera hostcam = cuda::to_host(cam);
+        hostcam.viewRay = viewRay;
+        cuda::to_device(hostcam, cam);
         graphics->clearFrame();
         mousePos = {x,y};
     } else {
@@ -295,7 +295,9 @@ void testCuda::keyboardEvent(float)
 
     auto moveCamera = [&sensitivity, this](vec4 deltaOrigin){
         viewRay = ray(viewRay.getOrigin() + sensitivity * deltaOrigin, viewRay.getDirection());
-        cuda::camera::setViewRay(cam, viewRay);
+        cuda::camera hostcam = cuda::to_host(cam);
+        hostcam.viewRay = viewRay;
+        cuda::to_device(hostcam, cam);
         graphics->clearFrame();
     };
 

@@ -11,14 +11,6 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
     }
 }
 
-namespace cuda::Buffer {
-    void* create(size_t size) {
-        void* buffer;
-        checkCudaErrors(cudaMalloc((void**)&buffer, size));
-        return buffer;
-    }
-}
-
 namespace cuda::Image {
     void outPPM(vec4* frameBuffer, size_t width, size_t height, const std::string& filename) {
         vec4* hostFrameBuffer = new vec4[width * height];
@@ -34,7 +26,6 @@ namespace cuda::Image {
                         << static_cast<uint32_t>(255.99f * hostFrameBuffer[pixel_index].b()) << "\n";
             }
         }
-        image.close();
         delete[] hostFrameBuffer;
     }
 
@@ -50,7 +41,6 @@ namespace cuda::Image {
                 image << static_cast<uint32_t>(255.99f * (hostFrameBuffer[pixel_index].r() + hostFrameBuffer[pixel_index].g() + hostFrameBuffer[pixel_index].b()) / 3) << "\n";
             }
         }
-        image.close();
         delete[] hostFrameBuffer;
     }
 }

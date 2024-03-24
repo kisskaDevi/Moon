@@ -53,19 +53,24 @@ __global__ void createList(hitableList** list) {
     *list = new hitableList();
 }
 
-hitableList* hitableList::create() {
-    hitableList** list;
-    checkCudaErrors(cudaMalloc((void**)&list, sizeof(hitableList**)));
+__global__ void createKernel(hitableList* p) {
+    p = new (p) hitableList();
+}
 
-    createList<<<1, 1>>>(list);
+void hitableList::create(hitableList* dpointer, const hitableList& host){
+    createKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+}
 
-    hitableList* hostlist = nullptr;
-    checkCudaErrors(cudaMemcpy(&hostlist, list, sizeof(hitableList*), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaFree(list));
+__global__ void destroyKernel(hitableList* p) {
+    p->~hitableList();
+}
 
-    return hostlist;
+void hitableList::destroy(hitableList* dpointer){
+    destroyKernel<<<1,1>>>(dpointer);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 }

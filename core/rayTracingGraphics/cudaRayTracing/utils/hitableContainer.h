@@ -20,10 +20,11 @@ namespace cuda {
         __host__ __device__ virtual size_t size() const {
             return container_size;
         }
+
+        static void destroy(hitableContainer* dpointer);
     };
 
     void add(hitableContainer* container, const std::vector<hitable*>& objects);
-    void destroy(hitableContainer* container);
 }
 
 #endif // HITABLECONTAINER_H

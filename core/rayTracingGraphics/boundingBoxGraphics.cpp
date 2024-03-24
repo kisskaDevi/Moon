@@ -240,7 +240,7 @@ void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
 void boundingBoxGraphics::update(uint32_t imageIndex){
     if(!enable) return;
 
-    cuda::camera hostCam = cuda::camera::copyToHost(camera);
+    cuda::camera hostCam = cuda::to_host(*camera);
     const float fov = 2.0f * std::atan(hostCam.matrixScale / hostCam.matrixOffset);
     const auto& u =  normal(hostCam.horizontal);
     const auto& v =  normal(hostCam.vertical);
@@ -283,7 +283,8 @@ void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
     for(auto model: models){
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, NULL);
-        for(const auto& box: model->boxes){
+        for(const auto& primitive: model->primitives){
+            const auto& box = primitive.box;
             vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::cbox), &box);
             vkCmdDraw(commandBuffer, 36, 1, 0, 0);
         }
@@ -304,6 +305,6 @@ void boundingBoxGraphics::bind(const std::vector<cuda::model*>& m){
     models.insert(models.end(), m.begin(), m.end());
 }
 
-void boundingBoxGraphics::bind(cuda::camera* camera){
+void boundingBoxGraphics::bind(cuda::devicep<cuda::camera>* camera){
     this->camera = camera;
 }

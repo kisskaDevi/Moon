@@ -35,11 +35,11 @@ namespace cuda {
 
     class hitable {
     public:
-        box bbox;
-
         __host__ __device__ virtual ~hitable() {};
         __host__ __device__ virtual bool hit(const ray& r, float tMin, float tMax, hitCoords& coords) const = 0;
         __host__ __device__ virtual void calcHitRecord(const ray& r, const hitCoords& coords, hitRecord& rec) const = 0;
+
+        static void destroy(hitable* dpointer);
     };
 
 }

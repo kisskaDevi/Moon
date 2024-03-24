@@ -73,7 +73,6 @@ void rayTracingGraphics::destroy() {
         emptyTexture->destroy(device.getLogical());
         delete emptyTexture;
     }
-    rayTracer.destroy();
     if(hostFrameBuffer){
         delete[] hostFrameBuffer;
         hostFrameBuffer = nullptr;
@@ -104,6 +103,7 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
 }
 
 void rayTracingGraphics::update(uint32_t imageIndex) {
+    rayTracer.update();
     bbGraphics.update(imageIndex);
 }
 

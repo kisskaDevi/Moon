@@ -12,18 +12,18 @@ namespace cuda {
         float radius{ 0.0f };
         properties props;
 
-        __host__ __device__ void calcBox();
     public:
         __host__ __device__ sphere() {}
         __host__ __device__ ~sphere() {}
 
-        __host__ __device__ sphere(vec4 cen, float r, vec4 color, const properties& props);
-        __host__ __device__ sphere(vec4 cen, float r, vec4 color);
+        __host__ __device__ sphere(const vec4& cen, float r, const vec4& color, const properties& props);
+        __host__ __device__ sphere(const vec4& cen, float r, const vec4& color);
         __host__ __device__ bool hit(const ray& r, float tMin, float tMax, hitCoords& coords) const override;
         __host__ __device__ void calcHitRecord(const ray& r, const hitCoords& coords, hitRecord& rec) const override;
 
-        static sphere* create(vec4 cen, float r, vec4 color, const properties& props);
-        static sphere* create(const sphere* pHost);
+        static void create(sphere* dpointer, const sphere& host);
+        static void destroy(sphere* dpointer);
+        box calcBox() const;
     };
 
 }

@@ -19,7 +19,8 @@ namespace cuda {
 
         __host__ __device__ hitable* operator[](uint32_t i) override;
 
-        static hitableArray* create();
+        static void create(hitableArray* dpointer, const hitableArray& host);
+        static void destroy(hitableArray* dpointer);
     };
 }
 

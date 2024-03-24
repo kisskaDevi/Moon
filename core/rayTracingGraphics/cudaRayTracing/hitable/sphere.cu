@@ -3,18 +3,9 @@
 
 namespace cuda {
 
-__host__ __device__ void sphere::calcBox() {
-    bbox.min = center - vec4(radius, radius, radius, 0.0f);
-    bbox.max = center + vec4(radius, radius, radius, 0.0f);
-}
+__host__ __device__ sphere::sphere(const vec4& cen, float r, const vec4& color, const properties& props) : center(cen), radius(r), color(color), props(props) {}
 
-__host__ __device__ sphere::sphere(vec4 cen, float r, vec4 color, const properties& props) : center(cen), radius(r), color(color), props(props) {
-    calcBox();
-}
-
-__host__ __device__ sphere::sphere(vec4 cen, float r, vec4 color) : center(cen), radius(r), color(color) {
-    calcBox();
-}
+__host__ __device__ sphere::sphere(const vec4& cen, float r, const vec4& color) : center(cen), radius(r), color(color) {}
 
 __host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
     vec4 oc = r.getOrigin() - center;
@@ -47,27 +38,30 @@ __host__ __device__ void sphere::calcHitRecord(const ray& r, const hitCoords& co
     rec.props = props;
 }
 
-__global__ void createSphere(sphere** sph, vec4 cen, float r, vec4 color, const properties props) {
-    *sph = new sphere(cen, r, color, props);
+__global__ void createKernel(sphere* sph, vec4 cen, float r, vec4 color, const properties props) {
+    sph = new (sph) sphere(cen, r, color, props);
 }
 
-sphere* sphere::create(vec4 cen, float r, vec4 color, const properties& props) {
-    sphere** sph;
-    checkCudaErrors(cudaMalloc((void**)&sph, sizeof(sphere**)));
-
-    createSphere<<<1,1>>>(sph, cen, r, color, props);
+void sphere::create(sphere* dpointer, const sphere& host){
+    createKernel<<<1,1>>>(dpointer, host.center, host.radius, host.color, host.props);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-
-    sphere* hostsph = nullptr;
-    checkCudaErrors(cudaMemcpy(&hostsph, sph, sizeof(sphere*), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaFree(sph));
-
-    return hostsph;
 }
 
-sphere* sphere::create(const sphere* pHost){
-    return sphere::create(pHost->center, pHost->radius, pHost->color, pHost->props);
+__global__ void destroyKernel(sphere* p) {
+    p->~sphere();
 }
 
+void sphere::destroy(sphere* dpointer){
+    destroyKernel<<<1,1>>>(dpointer);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+box sphere::calcBox() const {
+    box bbox;
+    bbox.min = center - vec4(radius, radius, radius, 0.0f);
+    bbox.max = center + vec4(radius, radius, radius, 0.0f);
+    return bbox;
+}
 }

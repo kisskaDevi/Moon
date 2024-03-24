@@ -63,7 +63,7 @@ public:
         rayTracer.bind(m);
         bbGraphics.bind(m);
     }
-    void setCamera(cuda::camera* cam){
+    void setCamera(cuda::devicep<cuda::camera>* cam){
         rayTracer.setCamera(cam);
         bbGraphics.bind(cam);
     }

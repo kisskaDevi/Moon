@@ -4,7 +4,6 @@
 #include <glfw3.h>
 
 #include <filesystem>
-#include <vector>
 #include <memory>
 
 #include "scene.h"
@@ -35,7 +34,7 @@ private:
 
     graphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
-    cuda::camera* cam{nullptr};
+    cuda::devicep<cuda::camera> cam;
 
     std::shared_ptr<controller> mouse;
     std::shared_ptr<controller> board;
@@ -53,13 +52,10 @@ private:
 
 public:
     testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
-    ~testCuda(){
-        destroy();
-    };
+    ~testCuda() = default;
     void create(uint32_t WIDTH, uint32_t HEIGHT) override;
     void resize(uint32_t WIDTH, uint32_t HEIGHT) override;
     void updateFrame(uint32_t frameNumber, float frameTime) override;
-    void destroy();
 };
 
 #endif // TESTPOS_H

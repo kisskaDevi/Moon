@@ -7,8 +7,8 @@ namespace cuda {
 
     struct camera {
         ray viewRay;
-        vec4 horizontal;
-        vec4 vertical;
+        vec4f horizontal;
+        vec4f vertical;
 
         float aspect{ 1.0f };
         float matrixScale{ 0.04f };

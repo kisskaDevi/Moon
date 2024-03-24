@@ -3,12 +3,12 @@
 
 namespace cuda {
 
-__host__ __device__ sphere::sphere(const vec4& cen, float r, const vec4& color, const properties& props) : center(cen), radius(r), color(color), props(props) {}
+__host__ __device__ sphere::sphere(const vec4f& cen, float r, const vec4f& color, const properties& props) : center(cen), radius(r), color(color), props(props) {}
 
-__host__ __device__ sphere::sphere(const vec4& cen, float r, const vec4& color) : center(cen), radius(r), color(color) {}
+__host__ __device__ sphere::sphere(const vec4f& cen, float r, const vec4f& color) : center(cen), radius(r), color(color) {}
 
 __host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
-    vec4 oc = r.getOrigin() - center;
+    vec4f oc = r.getOrigin() - center;
     float a = 1.0f / r.getDirection().length2();
     float b = - dot(oc, r.getDirection()) * a;
     float c = oc.length2() - radius * radius * a;
@@ -38,7 +38,7 @@ __host__ __device__ void sphere::calcHitRecord(const ray& r, const hitCoords& co
     rec.props = props;
 }
 
-__global__ void createKernel(sphere* sph, vec4 cen, float r, vec4 color, const properties props) {
+__global__ void createKernel(sphere* sph, vec4f cen, float r, vec4f color, const properties props) {
     sph = new (sph) sphere(cen, r, color, props);
 }
 
@@ -60,8 +60,8 @@ void sphere::destroy(sphere* dpointer){
 
 box sphere::calcBox() const {
     box bbox;
-    bbox.min = center - vec4(radius, radius, radius, 0.0f);
-    bbox.max = center + vec4(radius, radius, radius, 0.0f);
+    bbox.min = center - vec4f(radius, radius, radius, 0.0f);
+    bbox.max = center + vec4f(radius, radius, radius, 0.0f);
     return bbox;
 }
 }

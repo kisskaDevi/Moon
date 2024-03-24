@@ -2,9 +2,8 @@
 #define QUATERNION_H
 
 #include "vec4.h"
-#ifndef __CUDA_ARCH__
-    #include <iostream>
-#endif // !__CUDA_ARCH__
+
+namespace cuda {
 
 template<typename type>
 class quaternion
@@ -19,12 +18,12 @@ public:
     __host__ __device__ quaternion();
     __host__ __device__ quaternion(const quaternion<type>& other);
     __host__ __device__ quaternion(const type& s, const type& x, const type& y, const type& z);
-    __host__ __device__ quaternion(const type& s, const vec4& v);
+    __host__ __device__ quaternion(const type& s, const vec4<type>& v);
     __host__ __device__ quaternion<type>& operator=(const quaternion<type>& other);
     __host__ __device__ ~quaternion();
 
     __host__ __device__ type                scalar()const;
-    __host__ __device__ vec4                vector()const;
+    __host__ __device__ vec4<type>          vector()const;
 
     __host__ __device__ bool                operator==(const quaternion<type>& other)const;
     __host__ __device__ bool                operator!=(const quaternion<type>& other)const;
@@ -50,9 +49,9 @@ public:
     //template<typename T> friend glm::mat3x3 convert(const quaternion<T>& quat);
 
     template<typename T> __host__ __device__ friend quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
-    template<typename T> __host__ __device__ friend quaternion<T> convert(const T& angle, const vec4& axis);
+    template<typename T> __host__ __device__ friend quaternion<T> convert(const T& angle, const vec4<type>& axis);
 
-    template<typename T> __host__ __device__ friend vec4 convertToEulerAngles(const quaternion<T>& quat);
+    template<typename T> __host__ __device__ friend vec4<type> convertToEulerAngles(const quaternion<T>& quat);
     template<typename T> __host__ __device__ friend quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat);
 
     template<typename T> __host__ __device__ friend quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, const T& t);
@@ -84,7 +83,7 @@ __host__ __device__ quaternion<type>::quaternion(const type& s, const type& x, c
 {}
 
 template<typename type>
-__host__ __device__ quaternion<type>::quaternion(const type& s, const vec4& v) :
+__host__ __device__ quaternion<type>::quaternion(const type& s, const vec4<type>& v) :
     s(s),
     x(static_cast<type>(v.x())),
     y(static_cast<type>(v.y())),
@@ -112,9 +111,9 @@ __host__ __device__ type quaternion<type>::scalar()const
 }
 
 template<typename type>
-__host__ __device__ vec4 quaternion<type>::vector()const
+__host__ __device__ vec4<type> quaternion<type>::vector()const
 {
-    return vec4(x, y, z, static_cast<type>(0));
+    return vec4<type>(x, y, z, static_cast<type>(0));
 }
 
 template<typename type>
@@ -292,15 +291,15 @@ __host__ __device__ quaternion<T> convert(const T& yaw, const T& pitch, const T&
 }
 
 template<typename T>
-__host__ __device__ quaternion<T> convert(const T& angle, const vec4& axis)
+__host__ __device__ quaternion<T> convert(const T& angle, const vec4<T>& axis)
 {
-    return quaternion<T>(std::cos(angle * T(0.5)), std::sin(angle * T(0.5)) * vec4(axis.x(), axis.y(), axis.z(), T(0)));
+    return quaternion<T>(std::cos(angle * T(0.5)), std::sin(angle * T(0.5)) * vec4<T>(axis.x(), axis.y(), axis.z(), T(0)));
 }
 
 template<typename T>
-__host__ __device__ vec4 convertToEulerAngles(const quaternion<T>& quat)
+__host__ __device__ vec4<T> convertToEulerAngles(const quaternion<T>& quat)
 {
-    return  vec4(
+    return  vec4<T>(
         std::atan((quat.s * quat.x + quat.y * quat.z) * T(2) / (T(1) - (quat.x * quat.x + quat.y * quat.y) * T(2))),
         std::asin((quat.s * quat.y - quat.x * quat.z) * T(2)),
         std::atan((quat.s * quat.z + quat.y * quat.x) * T(2) / (T(1) - (quat.z * quat.z + quat.y * quat.y) * T(2))),
@@ -312,7 +311,7 @@ template<typename T>
 __host__ __device__ quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat)
 {
     return quaternion<T>(std::acos(quat.s) * T(2),
-        vec4(quat.x, quat.y, quat.z, T(0)) / std::sqrt(T(1) - quat.s * quat.s));
+        vec4<T>(quat.x, quat.y, quat.z, T(0)) / std::sqrt(T(1) - quat.s * quat.s));
 }
 
 template<typename T>
@@ -324,6 +323,8 @@ __host__ __device__ quaternion<T> slerp(const quaternion<T>& quat1, const quater
     T theta = std::acos(q1q2 / modq1 / modq2);
 
     return std::sin((T(1) - t) * theta) / std::sin(theta) * quat1 + std::sin(t * theta) / std::sin(theta) * quat2;
+}
+
 }
 
 #endif // QUATERNION_H

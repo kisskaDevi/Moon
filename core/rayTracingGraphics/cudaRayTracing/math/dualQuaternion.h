@@ -3,6 +3,8 @@
 
 #include "quaternion.h"
 
+namespace cuda {
+
 template<typename type>
 class dualQuaternion
 {
@@ -274,11 +276,11 @@ __host__ __device__ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, cons
 
     dualQuaternion<T> dQuat(conjugate(r1) * r2, T(0.5) * conjugate(r1) * (t2 - t1) * r2);
     T theta = T(2) * std::acos(dQuat.p.scalar());
-    vec4 l = normal(dQuat.p.vector());
+    vec4f l = normal(dQuat.p.vector());
 
-    vec4 tr = dQuat.translation().vector();
+    vec4f tr = dQuat.translation().vector();
     T d = tr.x() * l.x() + tr.y() * l.y() + tr.z() * l.z();
-    vec4 m = T(0.5) * (cross(tr, l) + (tr - d * l) / std::tan(T(0.5) * theta));
+    vec4f m = T(0.5) * (cross(tr, l) + (tr - d * l) / std::tan(T(0.5) * theta));
 
     theta *= t;
     d *= t;
@@ -289,4 +291,5 @@ __host__ __device__ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, cons
     return quat1 * sigma;
 }
 
+}
 #endif // DUALQUATERNION_H

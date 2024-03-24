@@ -37,7 +37,7 @@ model& model::operator=(model&& m)
     return *this;
 }
 
-void model::setBoxesColor(const vec4& color){
+void model::setBoxesColor(const vec4f& color){
     for(auto& primitive: primitives){
         primitive.box.color = color;
     }

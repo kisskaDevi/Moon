@@ -7,8 +7,8 @@ namespace cuda {
 
     class sphere : public hitable {
     private:
-        vec4 center{ 0.0f, 0.0f, 0.0f, 1.0f };
-        vec4 color{ 0.0f,0.0f, 0.0f, 0.0f };
+        vec4f center{ 0.0f, 0.0f, 0.0f, 1.0f };
+        vec4f color{ 0.0f,0.0f, 0.0f, 0.0f };
         float radius{ 0.0f };
         properties props;
 
@@ -16,8 +16,8 @@ namespace cuda {
         __host__ __device__ sphere() {}
         __host__ __device__ ~sphere() {}
 
-        __host__ __device__ sphere(const vec4& cen, float r, const vec4& color, const properties& props);
-        __host__ __device__ sphere(const vec4& cen, float r, const vec4& color);
+        __host__ __device__ sphere(const vec4f& cen, float r, const vec4f& color, const properties& props);
+        __host__ __device__ sphere(const vec4f& cen, float r, const vec4f& color);
         __host__ __device__ bool hit(const ray& r, float tMin, float tMax, hitCoords& coords) const override;
         __host__ __device__ void calcHitRecord(const ray& r, const hitCoords& coords, hitRecord& rec) const override;
 

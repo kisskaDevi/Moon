@@ -6,12 +6,12 @@
 namespace cuda {
 
     struct vertex {
-        vec4 point{0.0f, 0.0f, 0.0f, 1.0f};
-        vec4 normal{0.0f, 0.0f, 0.0f, 0.0f};
-        vec4 color{0.0f, 0.0f, 0.0f, 0.0f};
+        vec4f point{0.0f, 0.0f, 0.0f, 1.0f};
+        vec4f normal{0.0f, 0.0f, 0.0f, 0.0f};
+        vec4f color{0.0f, 0.0f, 0.0f, 0.0f};
         properties props;
         __host__ __device__ vertex() {}
-        __host__ __device__ vertex(vec4 point, vec4 normal, vec4 color, const properties& props):
+        __host__ __device__ vertex(vec4f point, vec4f normal, vec4f color, const properties& props):
             point(point), normal(normal), color(color), props(props)
         {}
     };

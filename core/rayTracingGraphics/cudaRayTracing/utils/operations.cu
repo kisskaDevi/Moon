@@ -12,9 +12,9 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
 }
 
 namespace cuda::Image {
-    void outPPM(vec4* frameBuffer, size_t width, size_t height, const std::string& filename) {
-        vec4* hostFrameBuffer = new vec4[width * height];
-        cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4), cudaMemcpyDeviceToHost);
+    void outPPM(vec4f* frameBuffer, size_t width, size_t height, const std::string& filename) {
+        vec4f* hostFrameBuffer = new vec4f[width * height];
+        cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4f), cudaMemcpyDeviceToHost);
 
         std::ofstream image(filename);
         image << "P3\n" << width << " " << height << "\n255\n";
@@ -29,9 +29,9 @@ namespace cuda::Image {
         delete[] hostFrameBuffer;
     }
 
-    void outPGM(vec4* frameBuffer, size_t width, size_t height, const std::string& filename) {
-        vec4* hostFrameBuffer = new vec4[width * height];
-        cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4), cudaMemcpyDeviceToHost);
+    void outPGM(vec4f* frameBuffer, size_t width, size_t height, const std::string& filename) {
+        vec4f* hostFrameBuffer = new vec4f[width * height];
+        cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4f), cudaMemcpyDeviceToHost);
 
         std::ofstream image(filename);
         image << "P2\n" << width << " " << height << "\n255\n";

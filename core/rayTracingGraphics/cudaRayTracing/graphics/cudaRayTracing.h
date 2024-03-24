@@ -12,7 +12,7 @@
 namespace cuda {
 
     struct fragment{
-        vec4 color;
+        vec4f color;
         cuda::hitRecord record;
     };
 

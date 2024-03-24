@@ -34,7 +34,7 @@ private:
     graphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
     cuda::devicep<cuda::camera> cam;
-    cuda::camera hostcam = cuda::camera(cuda::ray(cuda::vec4(2.0f, 0.0f, 2.0f, 1.0f), cuda::vec4(-1.0f, 0.0f, -1.0f, 0.0f)), 1.0f);
+    cuda::camera hostcam = cuda::camera(cuda::ray(cuda::vec4f(2.0f, 0.0f, 2.0f, 1.0f), cuda::vec4f(-1.0f, 0.0f, -1.0f, 0.0f)), 1.0f);
 
     std::shared_ptr<controller> mouse;
     std::shared_ptr<controller> board;

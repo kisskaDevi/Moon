@@ -26,21 +26,21 @@ __device__ bool isEmit(const cuda::hitRecord& rec){
 }
 
 template<bool bloom = false>
-__device__ vec4 color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda::camera* cam, float u, float v, cuda::hitRecord& rec, cuda::hitableContainer* container, curandState* randState) {
-    vec4 result = vec4(0.0f);
+__device__ vec4f color(uint32_t minRayIterations, uint32_t maxRayIterations, cuda::camera* cam, float u, float v, cuda::hitRecord& rec, cuda::hitableContainer* container, curandState* randState) {
+    vec4f result = vec4f(0.0f);
     do {
         ray r = rec.rayDepth++ ? rec.r : cam->getPixelRay(u, v, randState);
         if constexpr (bloom) {
-            r = ray(r.getOrigin(), random_in_unit_sphere(r.getDirection(), 0.05 * pi, randState));
+            r = ray(r.getOrigin(), random_in_unit_sphere(r.getDirection(), 0.05f * pi, randState));
         }
-        if (vec4 color = rec.color; container->hit(r, 0.001f, 1e+37, rec)) {
+        if (vec4f color = rec.color; container->hit(r, 0.001f, 1e+37, rec)) {
             rec.lightIntensity *= rec.props.absorptionFactor;
-            rec.color = min(vec4(rec.lightIntensity * rec.color.x(), rec.lightIntensity * rec.color.y(), rec.lightIntensity * rec.color.z(), rec.color.a()), color);
+            rec.color = min(vec4f(rec.lightIntensity * rec.color.x(), rec.lightIntensity * rec.color.y(), rec.lightIntensity * rec.color.z(), rec.color.a()), color);
         }
 
-        vec4 scattering = scatter(r, rec.normal, rec.props, randState);
+        vec4f scattering = scatter(r, rec.normal, rec.props, randState);
         if(scattering.length2() == 0.0f || rec.rayDepth >= maxRayIterations){
-            result= isEmit<bloom>(rec) ? rec.color : vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            result= isEmit<bloom>(rec) ? rec.color : vec4f(0.0f, 0.0f, 0.0f, 1.0f);
             rec = cuda::hitRecord{};
             break;
         }
@@ -68,9 +68,9 @@ __global__ void render(bool clear, size_t width, size_t height, size_t minRayIte
         frame[pixel].base.color += color(minRayIterations, maxRayIterations, cam, u, v, frame[pixel].base.record, container, &randState);
         frame[pixel].bloom.color += color<true>(minRayIterations, 2, cam, u, v, frame[pixel].bloom.record, container, &randState);
 
-        vec4 base = frame[pixel].base.color / max(1.0f, frame[pixel].base.color.a());
-        vec4 bloom = frame[pixel].bloom.color / max(1.0f, frame[pixel].bloom.color.a());
-        vec4 res = max(base, bloom);
+        vec4f base = frame[pixel].base.color / ::max(1.0f, frame[pixel].base.color.a());
+        vec4f bloom = frame[pixel].bloom.color / ::max(1.0f, frame[pixel].bloom.color.a());
+        vec4f res = max(base, bloom);
         dst[pixel] = (uint32_t(255.0f*res[2]) << 0 | uint32_t(255.0f*res[1]) << 8 | uint32_t(255.0f*res[0]) << 16 | uint32_t(255) << 24);
     }
 }

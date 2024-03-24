@@ -3,8 +3,8 @@
 namespace cuda {
 
 __host__ __device__ void camera::update(){
-    horizontal = aspect * vec4::getHorizontal(viewRay.getDirection());
-    vertical = vec4::getVertical(viewRay.getDirection());
+    horizontal = aspect * vec4f::getHorizontal(viewRay.getDirection());
+    vertical = vec4f::getVertical(viewRay.getDirection());
 }
 
 __host__ __device__ camera::camera(){}

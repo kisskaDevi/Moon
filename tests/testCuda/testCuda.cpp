@@ -18,27 +18,28 @@
 
 #include <cstring>
 
+#include "math/dualQuaternion.h"
 using namespace cuda;
 
 enum sign{ minus, plus };
 
-std::vector<cuda::vertex> createBoxVertexBuffer(vec4 scale, vec4 translate, sign normalSign, cuda::properties props, std::vector<vec4> colors) {
+std::vector<cuda::vertex> createBoxVertexBuffer(vec4f scale, vec4f translate, sign normalSign, cuda::properties props, std::vector<vec4f> colors) {
     float plus = normalSign == sign::plus ? 1.0f : -1.0f, minus = -plus;
-    vec4 v[8] =
+    vec4f v[8] =
         {
-            scale * vec4(-1.0f, -1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4(-1.0f,  1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4(1.0f, -1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4(1.0f,  1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4(-1.0f, -1.0f,  1.0f, 1.0f) + translate,
-            scale * vec4(-1.0f,  1.0f,  1.0f, 1.0f) + translate,
-            scale * vec4(1.0f, -1.0f,  1.0f, 1.0f) + translate,
-            scale * vec4(1.0f,  1.0f,  1.0f, 1.0f) + translate
+            scale * vec4f(-1.0f, -1.0f, -1.0f, 1.0f) + translate,
+            scale * vec4f(-1.0f,  1.0f, -1.0f, 1.0f) + translate,
+            scale * vec4f(1.0f, -1.0f, -1.0f, 1.0f) + translate,
+            scale * vec4f(1.0f,  1.0f, -1.0f, 1.0f) + translate,
+            scale * vec4f(-1.0f, -1.0f,  1.0f, 1.0f) + translate,
+            scale * vec4f(-1.0f,  1.0f,  1.0f, 1.0f) + translate,
+            scale * vec4f(1.0f, -1.0f,  1.0f, 1.0f) + translate,
+            scale * vec4f(1.0f,  1.0f,  1.0f, 1.0f) + translate
         };
-    vec4 n[6] =
+    vec4f n[6] =
         {
-            vec4(0.0f, 0.0f, minus, 0.0f), vec4(0.0f, 0.0f, plus, 0.0f), vec4(minus, 0.0f, 0.0f, 0.0f),
-            vec4(plus, 0.0f, 0.0f, 0.0f), vec4(0.0f, minus, 0.0f, 0.0f), vec4(0.0f, plus, 0.0f, 0.0f)
+            vec4f(0.0f, 0.0f, minus, 0.0f), vec4f(0.0f, 0.0f, plus, 0.0f), vec4f(minus, 0.0f, 0.0f, 0.0f),
+            vec4f(plus, 0.0f, 0.0f, 0.0f), vec4f(0.0f, minus, 0.0f, 0.0f), vec4f(0.0f, plus, 0.0f, 0.0f)
         };
     size_t indices[6][4] = { {0,1,2,3}, {4,5,6,7}, {0,1,4,5}, {2,3,6,7}, {0,2,4,6}, {1,3,5,7} };
 
@@ -65,23 +66,23 @@ std::vector<uint32_t> createBoxIndexBuffer() {
 void createWorld(std::unordered_map<std::string, cuda::model>& models)
 {
     const std::unordered_map<std::string, cuda::sphere> spheres = {
-        {"sphere_0",  cuda::sphere(vec4( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
-        {"sphere_1",  cuda::sphere(vec4( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
-        {"sphere_2",  cuda::sphere(vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_3",  cuda::sphere(vec4( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_4",  cuda::sphere(vec4(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_5",  cuda::sphere(vec4( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_6",  cuda::sphere(vec4( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_7",  cuda::sphere(vec4(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_8",  cuda::sphere(vec4(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_9",  cuda::sphere(vec4(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_10", cuda::sphere(vec4( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_11", cuda::sphere(vec4(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_12", cuda::sphere(vec4( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_13", cuda::sphere(vec4(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_14", cuda::sphere(vec4( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_15", cuda::sphere(vec4(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_16", cuda::sphere(vec4( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})}
+        {"sphere_0",  cuda::sphere(vec4f( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
+        {"sphere_1",  cuda::sphere(vec4f( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
+        {"sphere_2",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_3",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_4",  cuda::sphere(vec4f(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_5",  cuda::sphere(vec4f( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_6",  cuda::sphere(vec4f( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_7",  cuda::sphere(vec4f(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_8",  cuda::sphere(vec4f(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_9",  cuda::sphere(vec4f(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_10", cuda::sphere(vec4f( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_11", cuda::sphere(vec4f(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_12", cuda::sphere(vec4f( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_13", cuda::sphere(vec4f(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_14", cuda::sphere(vec4f( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_15", cuda::sphere(vec4f(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_16", cuda::sphere(vec4f( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})}
     };
 
     for(const auto& [name, sphere]: spheres){
@@ -91,38 +92,38 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
     const auto boxIndexBuffer = createBoxIndexBuffer();
     models["environment_box"] = cuda::model(
         createBoxVertexBuffer(
-            vec4(3.0f, 3.0f, 1.5f, 1.0f),
-            vec4(0.0f, 0.0f, 1.5f, 0.0f),
+            vec4f(3.0f, 3.0f, 1.5f, 1.0f),
+            vec4f(0.0f, 0.0f, 1.5f, 0.0f),
             sign::minus,
             { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f },
-            { vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.5f, 0.5f, 0.5f, 1.0f), vec4(0.8f, 0.4f, 0.8f, 1.0f), vec4(0.4f, 0.4f, 0.4f, 1.0f), vec4(0.9f, 0.5f, 0.0f, 1.0f), vec4(0.1f, 0.4f, 0.9f, 1.0f) }),
+            { vec4f(0.5f, 0.5f, 0.5f, 1.0f), vec4f(0.5f, 0.5f, 0.5f, 1.0f), vec4f(0.8f, 0.4f, 0.8f, 1.0f), vec4f(0.4f, 0.4f, 0.4f, 1.0f), vec4f(0.9f, 0.5f, 0.0f, 1.0f), vec4f(0.1f, 0.4f, 0.9f, 1.0f) }),
             boxIndexBuffer);
 
     models["glass_box"] = cuda::model(
         createBoxVertexBuffer(
-            vec4(0.4f, 0.4f, 0.4f, 1.0f),
-            vec4(1.5f, 0.0f, 0.41f, 0.0f),
+            vec4f(0.4f, 0.4f, 0.4f, 1.0f),
+            vec4f(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
             { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
-            std::vector<vec4>(6, vec4(1.0f))),
+            std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
     models["glass_box_inside"] = cuda::model(
         createBoxVertexBuffer(
-            vec4(0.3f, 0.3f, 0.3f, 1.0f),
-            vec4(1.5f, 0.0f, 0.41f, 0.0f),
+            vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+            vec4f(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
             { 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
-            std::vector<vec4>(6, vec4(1.0f))),
+            std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
     models["upper_light_plane"] = cuda::model(
         createBoxVertexBuffer(
-            vec4(2.0f, 2.0f, 0.01f, 1.0f),
-            vec4(0.0f, 0.0f, 3.0f, 0.0f),
+            vec4f(2.0f, 2.0f, 0.01f, 1.0f),
+            vec4f(0.0f, 0.0f, 3.0f, 0.0f),
             sign::plus,
             { 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f},
-            std::vector<vec4>(6, vec4(1.0f))),
+            std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
 #if false
@@ -130,11 +131,11 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
         float phi = 2.0f * pi * static_cast<float>(i) / 50.0f;
         models["box_" + std::to_string(i)] = cuda::model(
             createBoxVertexBuffer(
-                vec4(0.1f, 0.1f, 0.1f, 1.0f),
-                vec4(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f, 0.0f),
+                vec4f(0.1f, 0.1f, 0.1f, 1.0f),
+                vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f, 0.0f),
                 sign::plus,
                 { 1.0f, 0.96f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
-                std::vector<vec4>(6, vec4(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
+                std::vector<vec4f>(6, vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
             boxIndexBuffer);
     }
 #endif
@@ -250,7 +251,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
         graphics->clearFrame();
     }
 
-    vec4 o = hostcam.viewRay.getOrigin();
+    vec4f o = hostcam.viewRay.getOrigin();
     std::string camPos = std::to_string(o.x()) + " " + std::to_string(o.y()) + " " + std::to_string(o.z());
     ImGui::Text("%s", camPos.c_str());
 
@@ -277,9 +278,9 @@ void testCuda::mouseEvent(float)
         float dcos = std::cos(ms * static_cast<float>(mousePos[0] - x));
         float dsin = std::sin(ms * static_cast<float>(mousePos[0] - x));
         float dz = ms * static_cast<float>(mousePos[1] - y);
-        const vec4& d = hostcam.viewRay.getDirection();
-        const vec4& o = hostcam.viewRay.getOrigin();
-        hostcam.viewRay = ray(o, vec4(d.x() * dcos - d.y() * dsin, d.y() * dcos + d.x() * dsin, d.z() + dz, 0.0f));
+        const vec4f& d = hostcam.viewRay.getDirection();
+        const vec4f& o = hostcam.viewRay.getOrigin();
+        hostcam.viewRay = ray(o, vec4f(d.x() * dcos - d.y() * dsin, d.y() * dcos + d.x() * dsin, d.z() + dz, 0.0f));
 
         graphics->clearFrame();
     }
@@ -288,7 +289,7 @@ void testCuda::mouseEvent(float)
 
 void testCuda::keyboardEvent(float)
 {
-    auto moveCamera = [this](vec4 deltaOrigin){
+    auto moveCamera = [this](vec4f deltaOrigin){
         hostcam.viewRay = ray(hostcam.viewRay.getOrigin() + deltaOrigin, hostcam.viewRay.getDirection());
         graphics->clearFrame();
     };
@@ -296,10 +297,10 @@ void testCuda::keyboardEvent(float)
     const float& bs = board->sensitivity;
     if(board->pressed(GLFW_KEY_W)) moveCamera( bs * hostcam.viewRay.getDirection());
     if(board->pressed(GLFW_KEY_S)) moveCamera(-bs * hostcam.viewRay.getDirection());
-    if(board->pressed(GLFW_KEY_D)) moveCamera( bs * vec4::getHorizontal(hostcam.viewRay.getDirection()));
-    if(board->pressed(GLFW_KEY_A)) moveCamera(-bs * vec4::getHorizontal(hostcam.viewRay.getDirection()));
-    if(board->pressed(GLFW_KEY_X)) moveCamera( bs * vec4::getVertical(hostcam.viewRay.getDirection()));
-    if(board->pressed(GLFW_KEY_Z)) moveCamera(-bs * vec4::getVertical(hostcam.viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_D)) moveCamera( bs * vec4f::getHorizontal(hostcam.viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_A)) moveCamera(-bs * vec4f::getHorizontal(hostcam.viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_X)) moveCamera( bs * vec4f::getVertical(hostcam.viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_Z)) moveCamera(-bs * vec4f::getVertical(hostcam.viewRay.getDirection()));
 
     if(board->released(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window,GLFW_TRUE);
 }

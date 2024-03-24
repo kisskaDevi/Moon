@@ -27,7 +27,7 @@ namespace cuda {
 
         ~model();
 
-        void setBoxesColor(const vec4& color);
+        void setBoxesColor(const vec4f& color);
     };
 }
 

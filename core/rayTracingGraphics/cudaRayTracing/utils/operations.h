@@ -9,13 +9,13 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
 
 namespace cuda::Image{
     void outPPM(
-        vec4*                   frameBuffer,
+        vec4f*                   frameBuffer,
         size_t                  width,
         size_t                  height,
         const std::string&      filename);
 
     void outPGM(
-        vec4*                   frameBuffer,
+        vec4f*                   frameBuffer,
         size_t                  width,
         size_t                  height,
         const std::string&      filename);

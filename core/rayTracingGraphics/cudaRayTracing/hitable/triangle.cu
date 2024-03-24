@@ -8,10 +8,10 @@ __host__ __device__ triangle::triangle(const size_t& i0, const size_t& i1, const
 {};
 
 __host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
-    const vec4 a = vertexBuffer[index[1]].point - r.getOrigin();
-    const vec4 b = vertexBuffer[index[1]].point - vertexBuffer[index[2]].point;
-    const vec4 c = vertexBuffer[index[1]].point - vertexBuffer[index[0]].point;
-    const vec4 d = r.getDirection();
+    const vec4f a = vertexBuffer[index[1]].point - r.getOrigin();
+    const vec4f b = vertexBuffer[index[1]].point - vertexBuffer[index[2]].point;
+    const vec4f c = vertexBuffer[index[1]].point - vertexBuffer[index[0]].point;
+    const vec4f d = r.getDirection();
 
     float det = det3(d, b, c);
     if (det == 0.0f) {

@@ -6,15 +6,15 @@ namespace cuda {
 
 class ray {
 private:
-    vec4 origin;
-    vec4 direction;
+    vec4f origin;
+    vec4f direction;
 
 public:
     __host__ __device__ ray() {}
-    __host__ __device__ ray(const vec4& origin, const vec4& direction) : origin(origin), direction(normal(direction)){}
-    __host__ __device__ vec4 getOrigin() const { return origin; }
-    __host__ __device__ vec4 getDirection() const { return direction; }
-    __host__ __device__ vec4 point(const float& t) const { return origin + t * direction; }
+    __host__ __device__ ray(const vec4f& origin, const vec4f& direction) : origin(origin), direction(normal(direction)){}
+    __host__ __device__ vec4f getOrigin() const { return origin; }
+    __host__ __device__ vec4f getDirection() const { return direction; }
+    __host__ __device__ vec4f point(const float& t) const { return origin + t * direction; }
 };
 
 }

@@ -4,8 +4,7 @@
 
 namespace cuda {
 
-class ray
-{
+class ray {
 private:
     vec4 origin;
     vec4 direction;

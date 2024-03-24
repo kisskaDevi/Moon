@@ -39,7 +39,7 @@ public:
 
     __host__ __device__ inline float length2() const { return x() * x() + y() * y() + z() * z() + w() * w(); }
     __host__ __device__ inline float length() const { return sqrt(length2()); }
-    __host__ __device__ inline void normalize();
+    __host__ __device__ inline vec4& normalize() { return *this *= (1.0f / length());}
 
     __host__ __device__ static vec4 getHorizontal(const vec4& d) {
         float D = std::sqrt(d.x() * d.x() + d.y() * d.y());
@@ -52,15 +52,9 @@ public:
     }
 };
 
-
-inline std::ostream& operator<<(std::ostream& os, const vec4& t) {
+__host__ inline std::ostream& operator<<(std::ostream& os, const vec4& t) {
     os << t.x() << '\t' << t.y() << '\t' << t.z() << '\t' << t.w();
     return os;
-}
-
-__host__ __device__ inline void vec4::normalize() {
-    float k = 1.0f / length();
-    *this *= k;
 }
 
 __host__ __device__ inline vec4 operator+(const vec4& v1, const vec4& v2) {

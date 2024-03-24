@@ -18,7 +18,7 @@ namespace cuda {
 
     class triangle : public hitable {
     private:
-        size_t index0, index1, index2;
+        size_t index[3];
         const vertex* vertexBuffer{ nullptr };
 
     public:

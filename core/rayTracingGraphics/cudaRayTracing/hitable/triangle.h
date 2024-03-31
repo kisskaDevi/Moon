@@ -26,13 +26,12 @@ namespace cuda {
         __host__ __device__ ~triangle() {}
 
         __host__ __device__ triangle(const size_t& i0, const size_t& i1, const size_t& i2, const vertex* vertexBuffer);
-        __host__ __device__ bool hit(const ray& r, float tMin, float tMax, hitCoords& rec) const override;
+        __host__ __device__ bool hit(const ray& r, hitCoords& coords) const override;
         __host__ __device__ void calcHitRecord(const ray& r, const hitCoords& coords, hitRecord& rec) const override;
-
 
         static void create(triangle* dpointer, const triangle& host);
         static void destroy(triangle* dpointer);
-        box calcBox() const;
+        __host__ __device__ box calcBox() const override;
     };
 
 }

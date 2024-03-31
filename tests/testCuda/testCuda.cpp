@@ -18,7 +18,6 @@
 
 #include <cstring>
 
-#include "math/dualQuaternion.h"
 using namespace cuda;
 
 enum sign{ minus, plus };
@@ -166,7 +165,6 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     app->setGraphics(graphics.get());
     graphics->setCamera(&cam);
     graphics->setEnableBoundingBox(enableBB);
-    graphics->create();
     for(auto& [name, model]: models){
         graphics->bind(&model);
 
@@ -182,6 +180,8 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
         std::cout << "===============================\n";
 #endif
     }
+    graphics->create();
+    graphics->buildTree();
 
 #ifdef IMGUI_GRAPHICS
     gui = std::make_shared<imguiGraphics>(window, app->getInstance(), app->getImageCount());

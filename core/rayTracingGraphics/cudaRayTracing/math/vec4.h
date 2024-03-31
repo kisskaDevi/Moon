@@ -4,9 +4,7 @@
 #include <math.h>
 #include <curand_kernel.h>
 
-#ifndef __CUDA_ARCH__
 #include <iostream>
-#endif // !__CUDA_ARCH__
 
 #define pi 3.14159265358979323846f
 
@@ -54,15 +52,30 @@ public:
         T z = std::sqrt(d.x() * d.x() + d.y() * d.y());
         return z > 0.0f ? vec4<T>(-d.z() * d.x() / z / d.length(), -d.z() * d.y() / z / d.length(), z, 0.0f) : vec4<T>(0.0f, 1.0, 0.0f, 0.0f);
     }
+
+    __host__ __device__ inline size_t maxValueIndex(size_t lessThen = 4) const {
+        size_t idx = 0;
+        T v = e[idx];
+        for(size_t i = 1; i < lessThen; i++)
+            if(e[i] > v) v = e[idx = i];
+        return idx;
+    }
+
+    __host__ __device__ inline size_t minValueIndex(size_t lessThen = 4) const {
+        size_t idx = 0;
+        T v = e[idx];
+        for(size_t i = 1; i < lessThen; i++)
+            if(e[i] < v) v = e[idx = i];
+        return idx;
+    }
+
 };
 
-#ifndef __CUDA_ARCH__
 template<typename T>
-__host__ inline std::ostream& operator<<(std::ostream& os, const vec4<T>& t) {
+inline std::ostream& operator<<(std::ostream& os, const vec4<T>& t) {
     os << t.x() << '\t' << t.y() << '\t' << t.z() << '\t' << t.w();
     return os;
 }
-#endif // !__CUDA_ARCH__
 
 template<typename T>
 __host__ __device__ inline vec4<T> operator+(const vec4<T>& v1, const vec4<T>& v2) {

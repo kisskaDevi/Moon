@@ -9,6 +9,7 @@
 #include "vector.h"
 
 #include <stdint.h>
+#include <random>
 
 #include "cudaRayTracing.h"
 #include "boundingBoxGraphics.h"
@@ -61,7 +62,9 @@ public:
     }
     void bind(cuda::model* m) {
         rayTracer.bind(m);
-        bbGraphics.bind(m);
+        for(const auto& primitive: m->primitives){
+            //bbGraphics.bind(primitive.box);
+        }
     }
     void setCamera(cuda::devicep<cuda::camera>* cam){
         rayTracer.setCamera(cam);
@@ -78,6 +81,23 @@ public:
 
     void clearFrame(){
         rayTracer.clearFrame();
+    }
+
+    void bindNextNode(cuda::cudaRayTracing::kdTree_host* node){
+        std::random_device device;
+        std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+        node->box.color = cuda::vec4f(dist(device), dist(device), dist(device), 1.0f);
+        bbGraphics.bind(node->box);
+        if(node->left){
+            bindNextNode(node->left);
+        }
+        if(node->right){
+            bindNextNode(node->right);
+        }
+    }
+    void buildTree(){
+        rayTracer.buildTree();
+        bindNextNode(rayTracer.getTree());
     }
 };
 

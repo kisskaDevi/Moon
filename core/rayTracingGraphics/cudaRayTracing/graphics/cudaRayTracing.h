@@ -3,12 +3,14 @@
 
 #include "math/vec4.h"
 #include "transformational/camera.h"
-#include "utils/hitableContainer.h"
 #include "utils/buffer.h"
+#include "utils/kdTree.h"
 #include "models/model.h"
 
 #include <stdint.h>
 
+#include "hitableArray.h"
+#include "hitableList.h"
 namespace cuda {
 
     struct fragment{
@@ -22,6 +24,12 @@ namespace cuda {
     };
 
     class cudaRayTracing {
+    public:
+        using container_host = std::vector<const cuda::primitive*>;
+        using container_dev = hitableList;
+        using kdTree_host = kdNode<container_host::iterator>;
+        using kdTree_dev = kdNode<container_dev::iterator>;
+
     private:
         cuda::buffer<frameBuffer> frame;
         cuda::buffer<uint32_t> swapChainImage;
@@ -33,14 +41,19 @@ namespace cuda {
 
         bool clear{false};
 
-        cuda::devicep<cuda::camera>* cam{nullptr};
-        cuda::devicep<cuda::hitableContainer> container;
-        uint32_t* hostFrameBuffer{nullptr};
+        devicep<cuda::camera>* cam{nullptr};
+
+        devicep<container_dev> devContainer;
+        container_host hostContainer;
+
+        devicep<kdTree_dev> devTree;
+        kdTree_host* hostTree{nullptr};
 
         uint32_t width;
         uint32_t height;
 
     public:
+
         cudaRayTracing();
         ~cudaRayTracing();
 
@@ -49,11 +62,9 @@ namespace cuda {
             this->height = height;
         }
         void bind(cuda::model* m) {
-            std::vector<hitable*> hitables;
             for(const auto& primitive : m->primitives){
-                hitables.push_back(primitive.hit());
+                hostContainer.push_back(&primitive);
             }
-            add(container.get(), hitables);
         }
         void setCamera(cuda::devicep<cuda::camera>* cam){
             this->cam = cam;
@@ -66,6 +77,12 @@ namespace cuda {
 
         void clearFrame(){
             clear = true;
+        }
+
+        void buildTree();
+
+        kdTree_host* getTree(){
+            return hostTree;
         }
     };
 

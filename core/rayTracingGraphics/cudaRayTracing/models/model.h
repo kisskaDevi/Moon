@@ -5,14 +5,8 @@
 
 #include "utils/buffer.h"
 #include "hitable/triangle.h"
-#include "utils/devicep.h"
 
 namespace cuda {
-
-    struct primitive{
-        devicep<hitable> hit;
-        cbox box;
-    };
 
     struct model {
         buffer<vertex> vertexBuffer;

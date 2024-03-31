@@ -7,7 +7,7 @@ __host__ __device__ triangle::triangle(const size_t& i0, const size_t& i1, const
     : index{i0,i1,i2}, vertexBuffer(vertexBuffer)
 {};
 
-__host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
+__host__ __device__ bool triangle::hit(const ray& r, hitCoords& coord) const {
     const vec4f a = vertexBuffer[index[1]].point - r.getOrigin();
     const vec4f b = vertexBuffer[index[1]].point - vertexBuffer[index[2]].point;
     const vec4f c = vertexBuffer[index[1]].point - vertexBuffer[index[0]].point;
@@ -20,7 +20,7 @@ __host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hit
     det = 1.0f / det;
 
     const float t = det3(a, b, c) * det;
-    if(t > tMax || t < tMin){
+    if(t > coord.tmax || t < coord.tmin){
         return false;
     }
 
@@ -29,7 +29,7 @@ __host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hit
     const float s = 1.0f - u - v;
 
     if (u >= 0.0f && v >= 0.0f && s >= 0.0f) {
-        coord = {t,u,v};
+        coord = {coord.tmin, t, u, v};
         return true;
     }
 
@@ -38,7 +38,7 @@ __host__ __device__ bool triangle::hit(const ray& r, float tMin, float tMax, hit
 
 __host__ __device__ void triangle::calcHitRecord(const ray& r, const hitCoords& coord, hitRecord& rec) const {
     const float s = 1.0f - coord.u - coord.v;
-    rec.point = r.point(coord.t);
+    rec.point = r.point(coord.tmax);
     rec.normal = normal(coord.v * vertexBuffer[index[0]].normal + coord.u * vertexBuffer[index[2]].normal + s * vertexBuffer[index[1]].normal);
     rec.color = coord.v * vertexBuffer[index[0]].color + coord.u * vertexBuffer[index[2]].color + s * vertexBuffer[index[1]].color;
     rec.props = {
@@ -71,7 +71,7 @@ void triangle::destroy(triangle* dpointer){
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-box triangle::calcBox() const {
+__host__ __device__ box triangle::calcBox() const {
     box bbox;
     bbox.min = min(vertexBuffer[index[0]].point, min(vertexBuffer[index[1]].point, vertexBuffer[index[2]].point));
     bbox.max = max(vertexBuffer[index[0]].point, max(vertexBuffer[index[1]].point, vertexBuffer[index[2]].point));

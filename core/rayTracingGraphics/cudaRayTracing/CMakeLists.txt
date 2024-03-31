@@ -26,6 +26,7 @@ set(SOURCES
     utils/hitableContainer.cu
     utils/hitableList.cu
     utils/operations.cu
+    utils/kdTree.cu
 )
 
 set(HEADERS
@@ -47,12 +48,13 @@ set(HEADERS
     utils/hitableList.h
     utils/operations.h
     utils/devicep.h
+    utils/kdTree.h
 )
 
 set(CUDA_ARCH compute_86)
 set(CUDA_SM sm_86)
 set(SYSTEM_TYPE 64)
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=${CUDA_ARCH},code=${CUDA_SM} -rdc=true --use_fast_math)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=${CUDA_ARCH},code=${CUDA_SM} -rdc=true --use_fast_math --expt-relaxed-constexpr)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(MSVCRT_LINK_FLAG $<$<CONFIG:Debug>:"/MD"> $<$<CONFIG:Release>:"/MDd">)

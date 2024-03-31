@@ -7,7 +7,7 @@ __host__ __device__ sphere::sphere(const vec4f& cen, float r, const vec4f& color
 
 __host__ __device__ sphere::sphere(const vec4f& cen, float r, const vec4f& color) : center(cen), radius(r), color(color) {}
 
-__host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCoords& coord) const {
+__host__ __device__ bool sphere::hit(const ray& r, hitCoords& coord) const {
     vec4f oc = r.getOrigin() - center;
     float a = 1.0f / r.getDirection().length2();
     float b = - dot(oc, r.getDirection()) * a;
@@ -20,19 +20,19 @@ __host__ __device__ bool sphere::hit(const ray& r, float tMin, float tMax, hitCo
 
     discriminant = sqrt(discriminant);
     float temp = b - discriminant;
-    bool result = (temp < tMax && temp > tMin);
+    bool result = (temp < coord.tmax && temp > coord.tmin);
     if (!result) {
         temp = b + discriminant;
-        result = (temp < tMax && temp > tMin);
+        result = (temp < coord.tmax && temp > coord.tmin);
     }
     if (result) {
-        coord = {temp, 0.0f, 0.0f};
+        coord.tmax = temp;
     }
     return result;
 }
 
 __host__ __device__ void sphere::calcHitRecord(const ray& r, const hitCoords& coord, hitRecord& rec) const {
-    rec.point = r.point(coord.t);
+    rec.point = r.point(coord.tmax);
     rec.normal = (rec.point - center) / radius;
     rec.color = color;
     rec.props = props;
@@ -58,7 +58,7 @@ void sphere::destroy(sphere* dpointer){
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-box sphere::calcBox() const {
+__host__ __device__ box sphere::calcBox() const {
     box bbox;
     bbox.min = center - vec4f(radius, radius, radius, 0.0f);
     bbox.max = center + vec4f(radius, radius, radius, 0.0f);

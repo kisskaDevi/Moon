@@ -12,19 +12,13 @@ __host__ __device__ hitableList::~hitableList() {
     }
 }
 
-__host__ __device__ bool hitableList::hit(const ray& r, float tMin, float tMax, hitRecord& rec) const {
-    hitCoords coord = {tMax, 0.0f, 0.0f};
-    hitable* resObj = nullptr;
-    for (node* currentNode = head; currentNode; currentNode = currentNode->next) {
-        if (currentNode->current->hit(r, tMin, coord.t, coord)) {
-            resObj = currentNode->current;
+__host__ __device__ bool hitableList::hit(const ray& r, hitCoords& coord) const {
+    for(iterator it = begin(); it != end(); it++){
+        if ((*it)->hit(r, coord)) {
+            coord.obj = *it;
         }
     }
-    if(coord.t != tMax && resObj){
-        resObj->calcHitRecord(r, coord, rec);
-        return true;
-    }
-    return false;
+    return coord.obj;
 }
 
 __host__ __device__ void hitableList::add(hitable* object) {
@@ -38,15 +32,15 @@ __host__ __device__ void hitableList::add(hitable* object) {
     container_size++;
 }
 
-__host__ __device__ hitable* hitableList::operator[](uint32_t i) {
-    if(i < container_size){
-        node* currentNode = head;
-        for (; i > 0; i--) {
-            currentNode = currentNode->next;
-        }
-        return currentNode->current;
+__host__ __device__ hitable*&hitableList::operator[](uint32_t i) const {
+    if(i == container_size - 1){
+        return tail->current;
     }
-    return nullptr;
+    node* currentNode = head;
+    for (; i > 0; i--) {
+        currentNode = currentNode->next;
+    }
+    return currentNode->current;
 }
 
 __global__ void createList(hitableList** list) {

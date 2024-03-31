@@ -280,14 +280,11 @@ void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    for(auto model: models){
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, NULL);
-        for(const auto& primitive: model->primitives){
-            const auto& box = primitive.box;
-            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::cbox), &box);
-            vkCmdDraw(commandBuffer, 36, 1, 0, 0);
-        }
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, NULL);
+    for(auto box: boxes){
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::cbox), &box);
+        vkCmdDraw(commandBuffer, 36, 1, 0, 0);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -297,12 +294,8 @@ const attachments& boundingBoxGraphics::getAttachments() const {
     return frame;
 }
 
-void boundingBoxGraphics::bind(cuda::model* model){
-    models.push_back(model);
-}
-
-void boundingBoxGraphics::bind(const std::vector<cuda::model*>& m){
-    models.insert(models.end(), m.begin(), m.end());
+void boundingBoxGraphics::bind(cuda::cbox box){
+    boxes.push_back(box);
 }
 
 void boundingBoxGraphics::bind(cuda::devicep<cuda::camera>* camera){

@@ -4,7 +4,7 @@
 #include "attachments.h"
 #include "buffer.h"
 
-#include "models/model.h"
+#include "hitable/hitable.h"
 #include "transformational/camera.h"
 
 #include <filesystem>
@@ -31,7 +31,7 @@ private:
     attachments frame;
     bool enable{true};
 
-    std::vector<cuda::model*> models;
+    std::vector<cuda::cbox> boxes;
     cuda::devicep<cuda::camera>* camera;
 
     std::vector<buffer> cameraBuffer;
@@ -56,8 +56,7 @@ public:
     void render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     const attachments& getAttachments() const;
-    void bind(cuda::model* model);
-    void bind(const std::vector<cuda::model*>& model);
+    void bind(cuda::cbox box);
     void bind(cuda::devicep<cuda::camera>* camera);
 
     void setEnable(bool enable){this->enable = enable;}

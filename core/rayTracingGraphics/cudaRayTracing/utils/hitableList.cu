@@ -43,10 +43,6 @@ __host__ __device__ hitable*&hitableList::operator[](uint32_t i) const {
     return currentNode->current;
 }
 
-__global__ void createList(hitableList** list) {
-    *list = new hitableList();
-}
-
 __global__ void createKernel(hitableList* p) {
     p = new (p) hitableList();
 }

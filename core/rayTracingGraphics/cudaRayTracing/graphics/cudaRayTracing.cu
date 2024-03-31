@@ -5,15 +5,8 @@
 
 namespace cuda {
 
-cudaRayTracing::cudaRayTracing() :
-    devContainer(cuda::make_devicep<container_dev>(container_dev()))
-{}
-
-cudaRayTracing::~cudaRayTracing(){
-    if(hostTree){
-        delete hostTree;
-    }
-}
+cudaRayTracing::cudaRayTracing(){}
+cudaRayTracing::~cudaRayTracing(){}
 
 void cudaRayTracing::create()
 {
@@ -21,23 +14,19 @@ void cudaRayTracing::create()
     swapChainImage = cuda::buffer<uint32_t>(width * height);
 }
 
-__global__ void createTree(cudaRayTracing::kdTree_dev* devTree, cudaRayTracing::container_dev* container)
-{
-    new (devTree) cudaRayTracing::kdTree_dev(container->begin(), container->size());
-}
-
 void cudaRayTracing::buildTree(){
-    hostTree = new kdTree_host(hostContainer.begin(), hostContainer.size());
+    devContainer = cuda::make_devicep<container_dev>(container_dev());
+
+    hostTree = kdTree_host(hostContainer.begin(), hostContainer.size());
     std::vector<hitable*> hitables;
     for(const auto& p : hostContainer){
         hitables.push_back(p->hit());
     }
     add(devContainer.get(), hitables);
 
-    devTree = make_devicep<kdTree_dev>(kdTree_dev(nullptr, 0));
-    createTree<<<1,1>>>(devTree.get(), devContainer.get());
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaDeviceSynchronize());
+    if(std::is_same<container_dev, kdTree>::value){
+        makeTree((kdTree*)devContainer.get());
+    }
 }
 
 template<bool bloom = false>

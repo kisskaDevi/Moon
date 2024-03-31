@@ -47,12 +47,10 @@ namespace cuda {
         __host__ __device__ cbox(const box& b, const vec4f& color) : box(b), color(color){}
 
         __host__ __device__ bool intersect(const ray &r) const {
-            // r.dir is unit direction vector of ray
             float dx = 1.0f / r.getDirection().x();
             float dy = 1.0f / r.getDirection().y();
             float dz = 1.0f / r.getDirection().z();
-            // lb is the corner of AABB with minimal coordinates - left bottom, rt is maximal corner
-            // r.org is origin of ray
+
             float t1 = (min.x() - r.getOrigin().x()) * dx;
             float t2 = (max.x() - r.getOrigin().x()) * dx;
             float t3 = (min.y() - r.getOrigin().y()) * dy;
@@ -68,13 +66,11 @@ namespace cuda {
             {
                 return false;
             }
-
             // if tmin > tmax, ray doesn't intersect AABB
             if (tmin > tmax)
             {
                 return false;
             }
-
             return true;
         }
     };

@@ -106,7 +106,3 @@ void rayTracingGraphics::update(uint32_t imageIndex) {
     rayTracer.update();
     bbGraphics.update(imageIndex);
 }
-
-void rayTracingGraphics::setEnableBoundingBox(bool enable){
-    bbGraphics.setEnable(enable);
-}

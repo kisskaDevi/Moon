@@ -26,9 +26,8 @@ namespace cuda {
     class cudaRayTracing {
     public:
         using container_host = std::vector<const cuda::primitive*>;
-        using container_dev = hitableList;
         using kdTree_host = kdNode<container_host::iterator>;
-        using kdTree_dev = kdNode<container_dev::iterator>;
+        using container_dev = kdTree;
 
     private:
         cuda::buffer<frameBuffer> frame;
@@ -45,9 +44,7 @@ namespace cuda {
 
         devicep<container_dev> devContainer;
         container_host hostContainer;
-
-        devicep<kdTree_dev> devTree;
-        kdTree_host* hostTree{nullptr};
+        kdTree_host hostTree;
 
         uint32_t width;
         uint32_t height;
@@ -82,7 +79,7 @@ namespace cuda {
         void buildTree();
 
         kdTree_host* getTree(){
-            return hostTree;
+            return &hostTree;
         }
     };
 

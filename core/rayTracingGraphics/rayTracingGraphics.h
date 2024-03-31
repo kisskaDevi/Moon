@@ -55,21 +55,31 @@ public:
         bbGraphics.destroy();
     }
 
-    void setEnableBoundingBox(bool enable);
+    void setEnableBoundingBox(bool enable){
+        bbGraphics.setEnable(enable);
+    }
+
     void setExtent(VkExtent2D extent){
         this->extent = extent;
         rayTracer.setExtent(extent.width, extent.height);
     }
+
     void bind(cuda::model* m) {
         rayTracer.bind(m);
         for(const auto& primitive: m->primitives){
             //bbGraphics.bind(primitive.box);
         }
     }
+
     void setCamera(cuda::devicep<cuda::camera>* cam){
         rayTracer.setCamera(cam);
         bbGraphics.bind(cam);
     }
+
+    void clearFrame(){
+        rayTracer.clearFrame();
+    }
+
 
     void create() override;
     void destroy() override;
@@ -78,10 +88,6 @@ public:
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
-
-    void clearFrame(){
-        rayTracer.clearFrame();
-    }
 
     void bindNextNode(cuda::cudaRayTracing::kdTree_host* node){
         std::random_device device;

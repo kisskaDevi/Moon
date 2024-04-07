@@ -23,7 +23,7 @@ namespace cuda {
         using iterator = baseIterator<node>;
 
         __host__ __device__ hitableList(){};
-        __host__ __device__ ~hitableList();
+        virtual __host__ __device__ ~hitableList();
 
         __host__ __device__ bool hit(const ray& r, hitCoords& coord) const override;
 
@@ -42,11 +42,8 @@ namespace cuda {
     };
 
     __host__ __device__ inline void sort(hitableList::iterator begin, size_t size, cbox& box){
-        hitableList::iterator last = begin + size;
-        for(auto it = begin; it != last; it++){
-            box.min = cuda::min((*it)->calcBox().min, box.min);
-            box.max = cuda::max((*it)->calcBox().max, box.max);
-        }
+        hitableList::iterator end = begin + size;
+        box = calcBox(begin, end);
     }
 }
 

@@ -38,11 +38,8 @@ namespace cuda {
     };
 
     __host__ __device__ inline void sort(hitableArray::iterator begin, size_t size, cbox& box){
-        hitableArray::iterator last = begin + size;
-        for(auto it = begin; it != last; it++){
-            box.min = cuda::min((*it)->calcBox().min, box.min);
-            box.max = cuda::max((*it)->calcBox().max, box.max);
-        }
+        hitableArray::iterator end = begin + size;
+        box = calcBox(begin, end);
     }
 }
 

@@ -87,19 +87,30 @@ namespace cuda {
 
     struct primitive{
         devicep<hitable> hit;
-        cbox box;
+        cbox bbox;
+
+        box calcBox() const{
+            return bbox;
+        }
     };
 
-    inline void sort(std::vector<const cuda::primitive*>::iterator begin, size_t size, cbox& box){
-        std::vector<const cuda::primitive*>::iterator last = begin + size;
-        for(auto it = begin; it != last; it++){
-            box.min = cuda::min((*it)->box.min, box.min);
-            box.max = cuda::max((*it)->box.max, box.max);
+    template <typename iterator>
+    __host__ __device__ box calcBox(iterator begin, iterator end){
+        box resbox;
+        for(auto it = begin; it != end; it++){
+            resbox.min = cuda::min((*it)->calcBox().min, resbox.min);
+            resbox.max = cuda::max((*it)->calcBox().max, resbox.max);
         }
+        return resbox;
+    }
+
+    inline void sort(std::vector<const cuda::primitive*>::iterator begin, size_t size, cbox& box){
+        std::vector<const cuda::primitive*>::iterator end = begin + size;
+        box = calcBox(begin, end);
 
         vec4f limits = box.max - box.min;
-        std::sort(begin, last, [i = limits.maxValueIndex(3)](const cuda::primitive* a, const cuda::primitive* b){
-            return a->box.min[i] < b->box.min[i];
+        std::sort(begin, end, [i = limits.maxValueIndex(3)](const cuda::primitive* a, const cuda::primitive* b){
+            return a->calcBox().min[i] < b->calcBox().min[i];
         });
     }
 }

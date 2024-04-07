@@ -49,6 +49,7 @@ set(HEADERS
     utils/operations.h
     utils/devicep.h
     utils/kdTree.h
+    utils/stack.h
 )
 
 set(CUDA_ARCH compute_86)

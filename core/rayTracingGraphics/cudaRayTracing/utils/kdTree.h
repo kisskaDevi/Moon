@@ -2,6 +2,7 @@
 #define KDTREE_H
 
 #include "hitableArray.h"
+#include "utils/stack.h"
 
 namespace cuda{
 
@@ -43,7 +44,7 @@ struct kdNode{
     __host__ __device__ kdNode(iterator begin, size_t size) : begin(begin), size(size){
         sort(begin, size, box);
 
-        if(size > 2){
+        if(size > 30){
             left = new kdNode(begin, size / 2);
             right = new kdNode(begin + left->size, size - left->size);
         }
@@ -52,23 +53,35 @@ struct kdNode{
     __host__ __device__ ~kdNode() { del(); }
 
     __host__ __device__ bool hit(const ray& r, hitCoords& coord) const {
-        if(!box.intersect(r)){
-            return false;
-        }
+        stack<const kdNode*, 35> selected;
+        for(stack<const kdNode*, 35> treeTraverse(this); !treeTraverse.empty();){
+            const kdNode* curr = treeTraverse.top();
+            treeTraverse.pop();
 
-        if(!(left || right)){
-            for(iterator it = begin; it != (begin + size); it++){
+            if(curr->box.intersect(r)){
+                if(curr->left){
+                    treeTraverse.push(curr->left);
+                }
+                if(curr->right){
+                    treeTraverse.push(curr->right);
+                }
+
+                if(!(curr->left || curr->right)){
+                    selected.push(curr);
+                }
+            }
+        }
+        for(;!selected.empty();){
+            const kdNode* curr = selected.top();
+            selected.pop();
+            for(iterator it = curr->begin; it != (curr->begin + curr->size); it++){
                 if ((*it)->hit(r, coord)) {
                     coord.obj = *it;
                 }
             }
-            return coord.obj;
         }
 
-        bool res = false;
-        res |= left && left->hit(r, coord);
-        res |= right && right->hit(r, coord);
-        return res;
+        return coord.obj;
     }
 };
 

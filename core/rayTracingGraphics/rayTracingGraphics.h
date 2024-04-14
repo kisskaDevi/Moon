@@ -20,19 +20,29 @@ class model;
 
 class rayTracingGraphics : public graphicsInterface {
 private:
-    uint32_t* hostFrameBuffer{nullptr};
+    struct imageResource{
+        uint32_t* host{nullptr};
+        buffer hostDevice;
+        attachments device;
+
+        void create(physicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount);
+        void destroy(physicalDevice phDevice);
+        void moveFromHostToHostDevice(VkExtent2D extent);
+        void copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex);
+    };
+
+    imageResource color;
+    imageResource bloom;
 
     cuda::cudaRayTracing rayTracer;
     boundingBoxGraphics bbGraphics;
     rayTracingLink Link;
 
-    attachments finalAttachment;
     texture* emptyTexture{nullptr};
 
     std::filesystem::path shadersPath;
     VkExtent2D extent;
 
-    buffer stagingBuffer;
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
 public:

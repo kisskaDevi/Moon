@@ -125,15 +125,16 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
             std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
-#if 0
-    for (int i = 0; i < 50; i++) {
-        float phi = 2.0f * pi * static_cast<float>(i) / 50.0f;
+#if 1
+    size_t num = 50;
+    for (int i = 0; i < num; i++) {
+        float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
         models["box_" + std::to_string(i)] = cuda::model(
             createBoxVertexBuffer(
                 vec4f(0.1f, 0.1f, 0.1f, 1.0f),
-                vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f, 0.0f),
+                vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f + 2.8 * std::abs(std::sin(phi)), 0.0f),
                 sign::plus,
-                { 1.0f, 0.96f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
+                { 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
                 std::vector<vec4f>(6, vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
             boxIndexBuffer);
     }

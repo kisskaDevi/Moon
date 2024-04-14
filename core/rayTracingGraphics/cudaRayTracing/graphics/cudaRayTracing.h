@@ -12,15 +12,10 @@
 #include "hitableArray.h"
 #include "hitableList.h"
 namespace cuda {
-
-    struct fragment{
+    struct frameRecord{
+        cuda::hitRecord hit;
         vec4f color;
-        cuda::hitRecord record;
-    };
-
-    struct frameBuffer{
-        fragment base;
-        fragment bloom;
+        vec4f bloom;
     };
 
     class cudaRayTracing {
@@ -30,8 +25,11 @@ namespace cuda {
         using container_dev = kdTree;
 
     private:
-        cuda::buffer<frameBuffer> frame;
-        cuda::buffer<uint32_t> swapChainImage;
+        uint32_t width;
+        uint32_t height;
+        cuda::buffer<frameRecord> record;
+        cuda::buffer<uint32_t> baseColor;
+        cuda::buffer<uint32_t> bloomColor;
 
         uint32_t xThreads{ 8 };
         uint32_t yThreads{ 8 };
@@ -45,9 +43,6 @@ namespace cuda {
         devicep<container_dev> devContainer;
         container_host hostContainer;
         kdTree_host hostTree;
-
-        uint32_t width;
-        uint32_t height;
 
     public:
 
@@ -70,7 +65,7 @@ namespace cuda {
         void create();
         void update();
 
-        bool calculateImage(uint32_t* hostFrameBuffer);
+        bool calculateImage(uint32_t* baseColor, uint32_t* bloomColor);
 
         void clearFrame(){
             clear = true;

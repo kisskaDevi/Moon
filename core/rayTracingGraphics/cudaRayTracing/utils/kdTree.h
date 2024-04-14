@@ -21,7 +21,6 @@ struct kdNode{
         if(right){
             delete right;
         }
-
     }
 
     __host__ __device__ kdNode(){}
@@ -44,7 +43,7 @@ struct kdNode{
     __host__ __device__ kdNode(iterator begin, size_t size) : begin(begin), size(size){
         sort(begin, size, box);
 
-        if(size > 30){
+        if(size > 10){
             left = new kdNode(begin, size / 2);
             right = new kdNode(begin + left->size, size - left->size);
         }
@@ -53,8 +52,8 @@ struct kdNode{
     __host__ __device__ ~kdNode() { del(); }
 
     __host__ __device__ bool hit(const ray& r, hitCoords& coord) const {
-        stack<const kdNode*, 35> selected;
-        for(stack<const kdNode*, 35> treeTraverse(this); !treeTraverse.empty();){
+        stack<const kdNode*, 50> selected;
+        for(stack<const kdNode*, 50> treeTraverse(this); !treeTraverse.empty();){
             const kdNode* curr = treeTraverse.top();
             treeTraverse.pop();
 
@@ -65,7 +64,6 @@ struct kdNode{
                 if(curr->right){
                     treeTraverse.push(curr->right);
                 }
-
                 if(!(curr->left || curr->right)){
                     selected.push(curr);
                 }

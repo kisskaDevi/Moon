@@ -34,6 +34,7 @@ namespace cuda {
         }
 
         type* get() {return memory();}
+        size_t getSize() {return size;}
     };
 }
 

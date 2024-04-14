@@ -126,13 +126,13 @@ void rayTracingLink::createDescriptorSets() {
     vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data());
 }
 
-void rayTracingLink::updateDescriptorSets(const attachments* attachment, const attachments* bbAttachment) {
+void rayTracingLink::updateDescriptorSets(const attachments* color, const attachments* bbAttachment) {
     for (size_t image = 0; image < this->imageCount; image++)
     {
         VkDescriptorImageInfo imageInfo;
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = attachment->instances.empty() ? *emptyTexture->getTextureImageView() : attachment->instances[image].imageView;
-        imageInfo.sampler = attachment->instances.empty() ? *emptyTexture->getTextureSampler() : attachment->sampler;
+        imageInfo.imageView = color->instances.empty() ? *emptyTexture->getTextureImageView() : color->instances[image].imageView;
+        imageInfo.sampler = color->instances.empty() ? *emptyTexture->getTextureSampler() : color->sampler;
 
         VkDescriptorImageInfo bbImageInfo;
         bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

@@ -2,7 +2,7 @@
 #include "operations.h"
 #include "ray.h"
 #include "material.h"
-
+#include <iostream>
 namespace cuda {
 
 cudaRayTracing::cudaRayTracing(){}
@@ -19,6 +19,7 @@ void cudaRayTracing::buildTree(){
     devContainer = cuda::make_devicep<container_dev>(container_dev());
 
     hostTree = kdTree_host(hostContainer.begin(), hostContainer.size());
+    maxDepth = findMaxDepth(&hostTree, maxDepth);
     std::vector<hitable*> hitables;
     for(const auto& p : hostContainer){
         hitables.push_back(p->hit());

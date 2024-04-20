@@ -99,21 +99,29 @@ public:
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
 
-    void bindNextNode(cuda::cudaRayTracing::kdTree_host* node){
-        std::random_device device;
-        std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-        node->box.color = cuda::vec4f(dist(device), dist(device), dist(device), 1.0f);
+    void bindNextNode(cuda::cudaRayTracing::kdTree_host* node, size_t maxDepth, size_t& depth){
+        depth++;
+        // std::random_device device;
+        // std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+        float col = (float)depth / (float)maxDepth;
+        float r = col == 1.0 ? col : 0.0;
+        float g = col < 1.0 ? 0.0f : 0.0;
+        node->box.color = cuda::vec4f(r, g, 0.0, 1.0f);
         bbGraphics.bind(node->box);
         if(node->left){
-            bindNextNode(node->left);
+            bindNextNode(node->left, maxDepth, depth);
         }
         if(node->right){
-            bindNextNode(node->right);
+            bindNextNode(node->right, maxDepth, depth);
         }
+        depth--;
     }
     void buildTree(){
         rayTracer.buildTree();
-        bindNextNode(rayTracer.getTree());
+        size_t maxDepth;
+        size_t depth = 0;
+        const auto root = rayTracer.getTree(maxDepth);
+        bindNextNode(root, maxDepth, depth);
     }
 };
 

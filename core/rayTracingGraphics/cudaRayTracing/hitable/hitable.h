@@ -36,12 +36,12 @@ namespace cuda {
     };
 
     struct box{
-        alignas(16) vec4f min{std::numeric_limits<float>::max()};
-        alignas(16) vec4f max{std::numeric_limits<float>::min()};
+        vec4f min{std::numeric_limits<float>::max()};
+        vec4f max{std::numeric_limits<float>::min()};
     };
 
     struct cbox : public box{
-        alignas(16) vec4f color{0.0f, 1.0f, 0.0f, 0.0f};
+        vec4f color{0.0f, 0.0f, 0.0f, 0.0f};
         __host__ __device__ cbox(){}
         __host__ __device__ cbox(const box& b) : box(b){}
         __host__ __device__ cbox(const box& b, const vec4f& color) : box(b), color(color){}

@@ -43,6 +43,7 @@ namespace cuda {
         devicep<container_dev> devContainer;
         container_host hostContainer;
         kdTree_host hostTree;
+        size_t maxDepth{0};
 
     public:
 
@@ -73,7 +74,8 @@ namespace cuda {
 
         void buildTree();
 
-        kdTree_host* getTree(){
+        kdTree_host* getTree(size_t& maxDepth){
+            maxDepth = this->maxDepth;
             return &hostTree;
         }
     };

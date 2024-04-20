@@ -83,6 +83,18 @@ struct kdNode{
     }
 };
 
+template <typename iterator>
+size_t findMaxDepth(kdNode<iterator>* node, size_t& index){
+    if(node){
+        size_t res = ++index;
+        res = std::max(res, findMaxDepth(node->left, index));
+        res = std::max(res, findMaxDepth(node->right, index));
+        --index;
+        return res;
+    }
+    return 0;
+}
+
 class kdTree : public hitableContainer {
 public:
     using container = hitableArray;

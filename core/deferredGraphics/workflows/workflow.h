@@ -3,6 +3,7 @@
 
 #include <vulkan.h>
 #include "attachments.h"
+#include "buffer.h"
 
 #include <filesystem>
 #include <unordered_map>
@@ -48,9 +49,7 @@ public:
     workflow& setImageProp(imageInfo* pInfo);
 
     virtual void create(attachmentsDatabase& aDatabase) = 0;
-    virtual void updateDescriptorSets(
-        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-        const attachmentsDatabase& aDatabase) = 0;
+    virtual void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) = 0;
     virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
 
     void createCommandBuffers(VkCommandPool commandPool);

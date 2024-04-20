@@ -97,11 +97,8 @@ void deferredGraphics::destroy(){
 
     Link.destroy();
 
-    for (auto& buffer: storageBuffersHost){
-        buffer.destroy(device.getLogical());
-    }
-    storageBuffersHost.clear();
-    bufferMap.erase("storage");
+    storageBuffersHost.destroy(device.getLogical());
+    bDatabase.buffersMap.erase("storage");
 }
 
 void deferredGraphics::createCommandPool()
@@ -197,7 +194,7 @@ void deferredGraphics::updateDescriptorSets(){
     CHECK_M(cameraObject == nullptr, std::string("[ deferredGraphics::updateDescriptorSets ] camera is nullptr"));
 
     for(auto& [name, workflow]: workflows){
-        workflow->updateDescriptorSets(bufferMap, aDatabase);
+        workflow->updateDescriptorSets(bDatabase, aDatabase);
     }
     Link.updateDescriptorSets(aDatabase.get("final"));
 }
@@ -315,19 +312,14 @@ void deferredGraphics::updateBuffers(uint32_t imageIndex){
 }
 
 void deferredGraphics::createStorageBuffers(uint32_t imageCount){
-    storageBuffersHost.resize(imageCount);
-    bufferMap["storage"] = {sizeof(StorageBufferObject),{}};
-    for (auto& buffer: storageBuffersHost){
-        Buffer::create( device.instance,
-                        device.getLogical(),
-                        sizeof(StorageBufferObject),
-                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        &buffer.instance,
-                        &buffer.memory);
-        CHECK(vkMapMemory(device.getLogical(), buffer.memory, 0, sizeof(StorageBufferObject), 0, &buffer.map));
-        bufferMap["storage"].second.push_back(buffer.instance);
-    }
+    storageBuffersHost.create(device.instance,
+                              device.getLogical(),
+                              sizeof(StorageBufferObject),
+                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                              imageCount);
+    storageBuffersHost.map(device.getLogical());
+    bDatabase.addBufferData("storage", &storageBuffersHost);
 }
 
 void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
@@ -335,12 +327,12 @@ void deferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& m
         StorageUBO.mousePosition = vector<float,4>(mousex,mousey,0.0f,0.0f);
         StorageUBO.number = std::numeric_limits<uint32_t>::max();
         StorageUBO.depth = 1.0f;
-    std::memcpy(storageBuffersHost[currentImage].map, &StorageUBO, sizeof(StorageUBO));
+    std::memcpy(storageBuffersHost.instances[currentImage].map, &StorageUBO, sizeof(StorageUBO));
 }
 
 void deferredGraphics::readStorageBuffer(uint32_t currentImage, uint32_t& primitiveNumber, float& depth){
     StorageBufferObject storageBuffer{};
-    std::memcpy((void*)&storageBuffer, (void*)storageBuffersHost[currentImage].map, sizeof(StorageBufferObject));
+    std::memcpy((void*)&storageBuffer, (void*)storageBuffersHost.instances[currentImage].map, sizeof(StorageBufferObject));
     primitiveNumber = storageBuffer.number;
     depth = storageBuffer.depth;
 }
@@ -356,17 +348,14 @@ void deferredGraphics::destroy(model* pModel){
 void deferredGraphics::bind(camera* cameraObject){
     this->cameraObject = cameraObject;
     cameraObject->create(device, imageCount);
-    bufferMap["camera"] = {cameraObject->getBufferRange(),{}};
-    for(uint32_t i = 0; i < imageCount; i++){
-        bufferMap["camera"].second.push_back(cameraObject->getBuffer(i));
-    }
+    bDatabase.addBufferData("camera", &cameraObject->getBuffers());
 }
 
 void deferredGraphics::remove(camera* cameraObject){
     if(this->cameraObject == cameraObject){
         this->cameraObject->destroy(device.getLogical());
         this->cameraObject = nullptr;
-        bufferMap.erase("camera");
+        bDatabase.buffersMap.erase("camera");
     }
 }
 

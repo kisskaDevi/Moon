@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include <vulkan.h>
+#include "buffer.h"
 
 struct physicalDevice;
 
@@ -11,8 +12,7 @@ public:
 
     virtual void destroy(VkDevice device) = 0;
 
-    virtual VkBuffer getBuffer(uint32_t index) const = 0;
-    virtual VkDeviceSize getBufferRange() const = 0;
+    virtual const buffers& getBuffers() const = 0;
 
     virtual void create(physicalDevice device, uint32_t imageCount) = 0;
     virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;

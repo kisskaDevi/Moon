@@ -237,18 +237,14 @@ void layersCombiner::create(attachmentsDatabase& aDatabase)
 }
 
 void layersCombiner::updateDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const buffersDatabase& bDatabase,
     const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
     for (uint32_t i = 0; i < image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo;
-            bufferInfo.buffer = bufferMap.at("camera").second[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = bufferMap.at("camera").first;
-
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
         VkDescriptorImageInfo colorImageInfo = aDatabase.descriptorImageInfo("image", i);
         VkDescriptorImageInfo bloomImageInfo = aDatabase.descriptorImageInfo("bloom", i);
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);

@@ -170,18 +170,14 @@ void SSAOGraphics::create(attachmentsDatabase& aDatabase)
 }
 
 void SSAOGraphics::updateDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const buffersDatabase& bDatabase,
     const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
     for (uint32_t i = 0; i < this->image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = bufferMap.at("camera").second[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = bufferMap.at("camera").first;
-
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
         VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
         VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo("GBuffer.normal", i);
         VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo("image", i);

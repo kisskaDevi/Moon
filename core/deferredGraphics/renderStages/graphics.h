@@ -101,13 +101,11 @@ private:
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-    void updateBaseDescriptorSets(
-        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-        const attachmentsDatabase& aDatabase);
+    void updateBaseDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase);
 
     void createLightingDescriptorPool();
     void createLightingDescriptorSets();
-    void updateLightingDescriptorSets(const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap);
+    void updateLightingDescriptorSets(const buffersDatabase& bDatabase);
 
     void setAttachments();
 
@@ -128,9 +126,7 @@ public:
 
     void destroy()override;
     void create(attachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(
-        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-        const attachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
     graphics& setMinAmbientFactor(const float& minAmbientFactor);

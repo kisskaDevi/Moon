@@ -172,7 +172,7 @@ void postProcessingGraphics::create(attachmentsDatabase& aDatabase)
 }
 
 void postProcessingGraphics::updateDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
+    const buffersDatabase&,
     const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;

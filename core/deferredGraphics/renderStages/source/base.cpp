@@ -178,15 +178,12 @@ void graphics::createBaseDescriptorSets()
 }
 
 void graphics::updateBaseDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const buffersDatabase& bDatabase,
     const attachmentsDatabase& aDatabase)
 {
     for (uint32_t i = 0; i < image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = bufferMap.at("camera").second[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = bufferMap.at("camera").first;
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
 
         VkDescriptorImageInfo skyboxImageInfo{};
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

@@ -223,17 +223,14 @@ void boundingBoxGraphics::create(attachmentsDatabase& aDatabase)
 }
 
 void boundingBoxGraphics::updateDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const buffersDatabase& bDatabase,
     const attachmentsDatabase&)
 {
     if(!enable) return;
 
     for (uint32_t i = 0; i < image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = bufferMap.at("camera").second[i];
-        bufferInfo.offset = 0;
-        bufferInfo.range = bufferMap.at("camera").first;
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

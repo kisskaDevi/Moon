@@ -219,7 +219,7 @@ void gaussianBlur::create(attachmentsDatabase& aDatabasep)
 }
 
 void gaussianBlur::updateDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
+    const buffersDatabase&,
     const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;

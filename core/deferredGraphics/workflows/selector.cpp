@@ -200,19 +200,13 @@ void selectorGraphics::create(attachmentsDatabase& aDatabase)
     }
 }
 
-void selectorGraphics::updateDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const attachmentsDatabase& aDatabase)
+void selectorGraphics::updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
     for (uint32_t i = 0; i < this->image.Count; i++)
     {
-        VkDescriptorBufferInfo StorageBufferInfo{};
-            StorageBufferInfo.buffer = bufferMap.at("storage").second[i];
-            StorageBufferInfo.offset = 0;
-            StorageBufferInfo.range = bufferMap.at("storage").first;
-
+        VkDescriptorBufferInfo StorageBufferInfo = bDatabase.descriptorBufferInfo("storage", i);
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
         VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i, "white");
 

@@ -31,13 +31,13 @@ private:
     VkExtent2D                                  extent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
-    std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>> bufferMap;
+    buffersDatabase bDatabase;
     attachmentsDatabase aDatabase;
     std::unordered_map<std::string, workflow*>  workflows;
     std::unordered_map<std::string, bool>       enable;
     class link                                  Link;
 
-    std::vector<buffer>                         storageBuffersHost;
+    buffers                                     storageBuffersHost;
 
     VkCommandPool                               commandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer>                copyCommandBuffers;

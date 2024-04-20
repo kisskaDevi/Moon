@@ -39,9 +39,7 @@ public:
 
     void destroy() override;
     void create(attachmentsDatabase&) override;
-    void updateDescriptorSets(
-        const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
-        const attachmentsDatabase&) override{};
+    void updateDescriptorSets(const buffersDatabase&, const attachmentsDatabase&) override{};
     void updateCommandBuffer(uint32_t frameNumber) override;
 
     void createFramebuffers(depthMap* depthMap);

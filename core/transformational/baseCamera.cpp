@@ -5,7 +5,6 @@
 
 #include <cstring>
 
-
 baseCamera::baseCamera(){}
 
 baseCamera::baseCamera(float angle, float aspect, float near)
@@ -38,14 +37,14 @@ baseCamera::~baseCamera(){
 
 void baseCamera::destroy(VkDevice device)
 {
-    destroyBuffers(device, uniformBuffersHost);
-    destroyBuffers(device, uniformBuffersDevice);
+    uniformBuffersHost.destroy(device);
+    uniformBuffersDevice.destroy(device);
     created = false;
 }
 
-void baseCamera::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
+void updateUniformBuffersFlags(buffers& uniformBuffers)
 {
-    for (auto& buffer: uniformBuffers){
+    for (auto& buffer: uniformBuffers.instances){
         buffer.updateFlag = true;
     }
 }
@@ -151,45 +150,47 @@ quaternion<float>   baseCamera::getRotationY()const     {   return rotationY;}
 
 void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
-    uniformBuffersHost.resize(imageCount);
-    for (auto& buffer: uniformBuffersHost){
-      Buffer::create(   physicalDevice,
-                        device,
-                        sizeof(UniformBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        &buffer.instance,
-                        &buffer.memory);
-    CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(UniformBufferObject), 0, &buffer.map));
-
-      Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
+    uniformBuffersHost.create(physicalDevice,
+                              device,
+                              sizeof(UniformBufferObject),
+                              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                              imageCount);
+    uniformBuffersHost.map(device);
+    for (auto& buffer: uniformBuffersHost.instances){
+        Memory::instance().nameMemory(  buffer.memory,
+                                        std::string(__FILE__) +
+                                        " in line " + std::to_string(__LINE__) +
+                                        ", baseCamera::createUniformBuffers, uniformBuffersHost " +
+                                        std::to_string(&buffer - &uniformBuffersHost.instances[0]));
     }
-    uniformBuffersDevice.resize(imageCount);
-    for (auto& buffer: uniformBuffersDevice){
-      Buffer::create(   physicalDevice,
-                        device,
-                        sizeof(UniformBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        &buffer.instance,
-                        &buffer.memory);
-
-      Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+    uniformBuffersDevice.create(physicalDevice,
+                                device,
+                                sizeof(UniformBufferObject),
+                                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                imageCount);
+    for (auto& buffer: uniformBuffersDevice.instances){
+        Memory::instance().nameMemory(buffer.memory,
+                                    std::string(__FILE__) +
+                                    " in line " + std::to_string(__LINE__) +
+                                    ", baseCamera::createUniformBuffers, uniformBuffersDevice " +
+                                    std::to_string(&buffer - &uniformBuffersDevice.instances[0]));
     }
 }
 
 void baseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
-    if(uniformBuffersHost[frameNumber].updateFlag){
+    if(uniformBuffersHost.instances[frameNumber].updateFlag){
         UniformBufferObject baseUBO{};
             baseUBO.view = transpose(viewMatrix);
             baseUBO.proj = transpose(projMatrix);
             baseUBO.eyePosition = vector<float,4>(translation.im()[0], translation.im()[1], translation.im()[2], 1.0);
-        std::memcpy(uniformBuffersHost[frameNumber].map, &baseUBO, sizeof(baseUBO));
+        std::memcpy(uniformBuffersHost.instances[frameNumber].map, &baseUBO, sizeof(baseUBO));
 
-        uniformBuffersHost[frameNumber].updateFlag = false;
+        uniformBuffersHost.instances[frameNumber].updateFlag = false;
 
-        Buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+        Buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffersHost.instances[frameNumber].instance, uniformBuffersDevice.instances[frameNumber].instance);
     }
 }
 
@@ -202,12 +203,6 @@ void baseCamera::create(physicalDevice device, uint32_t imageCount)
     }
 }
 
-VkBuffer baseCamera::getBuffer(uint32_t index)const
-{
-    return uniformBuffersDevice[index].instance;
-}
-
-VkDeviceSize baseCamera::getBufferRange() const
-{
-    return sizeof(UniformBufferObject);
+const buffers& baseCamera::getBuffers() const {
+    return uniformBuffersDevice;
 }

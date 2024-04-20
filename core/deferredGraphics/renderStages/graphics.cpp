@@ -222,13 +222,13 @@ void graphics::create(attachmentsDatabase& aDatabase)
 }
 
 void graphics::updateDescriptorSets(
-    const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
+    const buffersDatabase& bDatabase,
     const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
-    updateBaseDescriptorSets(bufferMap, aDatabase);
-    updateLightingDescriptorSets(bufferMap);
+    updateBaseDescriptorSets(bDatabase, aDatabase);
+    updateLightingDescriptorSets(bDatabase);
 }
 
 void graphics::updateCommandBuffer(uint32_t frameNumber){

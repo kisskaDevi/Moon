@@ -82,7 +82,7 @@ void graphics::createLightingDescriptorSets()
     CHECK(vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data()));
 }
 
-void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap)
+void graphics::updateLightingDescriptorSets(const buffersDatabase& bDatabase)
 {
     for (uint32_t i = 0; i < image.Count; i++){
         std::vector<VkDescriptorImageInfo> imageInfos;
@@ -107,11 +107,7 @@ void graphics::updateLightingDescriptorSets(const std::unordered_map<std::string
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         });
 
-        VkDescriptorBufferInfo bufferInfo{
-            bufferMap.at("camera").second[i],
-            0,
-            bufferMap.at("camera").first
-        };
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for(auto& imageInfo: imageInfos){

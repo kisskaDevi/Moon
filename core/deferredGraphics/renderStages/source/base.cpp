@@ -179,7 +179,7 @@ void graphics::createBaseDescriptorSets()
 
 void graphics::updateBaseDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     for (uint32_t i = 0; i < image.Count; i++)
     {
@@ -193,12 +193,8 @@ void graphics::updateBaseDescriptorSets(
             skyboxImageInfo.imageView = *emptyTexture["black"]->getTextureImageView();
             skyboxImageInfo.sampler   = *emptyTexture["black"]->getTextureSampler();
 
-        attachments* depthAttachment = !base.transparencyPass || base.transparencyNumber == 0 ? nullptr :
-            attachmentsMap.at(("transparency" + std::to_string(base.transparencyNumber - 1) + ".") + "GBuffer.depth").second.front();
-        VkDescriptorImageInfo depthImageInfo{};
-            depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = depthAttachment ? depthAttachment->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            depthImageInfo.sampler = depthAttachment ? depthAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
+        std::string depthId = !base.transparencyPass || base.transparencyNumber == 0 ? "" : ("transparency" + std::to_string(base.transparencyNumber - 1) + ".") + "GBuffer.depth";
+        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(depthId, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

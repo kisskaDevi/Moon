@@ -36,7 +36,7 @@ void graphics::destroy()
 }
 
 
-void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void graphics::createAttachments(attachmentsDatabase& aDatabase)
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, DeferredAttachments* pAttachments){
         VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -61,13 +61,13 @@ void graphics::createAttachments(std::unordered_map<std::string, std::pair<bool,
 
     createAttachments(physicalDevice, device, image, &deferredAttachments);
 
-    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "image"] = {enable, {&deferredAttachments.image}};
-    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "blur"] = {enable, {&deferredAttachments.blur}};
-    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "bloom"] = {enable, {&deferredAttachments.bloom}};
-    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.position"] = {enable, {&deferredAttachments.GBuffer.position}};
-    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.normal"] = {enable, {&deferredAttachments.GBuffer.normal}};
-    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.color"] = {enable, {&deferredAttachments.GBuffer.color}};
-    attachmentsMap[(!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.depth"] = {enable, {&deferredAttachments.GBuffer.depth}};
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "image", enable, &deferredAttachments.image);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "blur", enable, &deferredAttachments.blur);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "bloom", enable, &deferredAttachments.bloom);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.position", enable, &deferredAttachments.GBuffer.position);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.normal", enable, &deferredAttachments.GBuffer.normal);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.color", enable, &deferredAttachments.GBuffer.color);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.depth", enable, &deferredAttachments.GBuffer.depth);
 }
 
 void graphics::createRenderPass()
@@ -209,10 +209,10 @@ void graphics::createDescriptorSets()
     createLightingDescriptorSets();
 }
 
-void graphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void graphics::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -223,11 +223,11 @@ void graphics::create(std::unordered_map<std::string, std::pair<bool,std::vector
 
 void graphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
-    updateBaseDescriptorSets(bufferMap, attachmentsMap);
+    updateBaseDescriptorSets(bufferMap, aDatabase);
     updateLightingDescriptorSets(bufferMap);
 }
 

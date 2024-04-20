@@ -33,10 +33,9 @@ void scattering::Lighting::destroy(VkDevice device){
     }
 }
 
-void scattering::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
-{
+void scattering::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    attachmentsMap["scattering"] = {enable,{&frame}};
+    aDatabase.addAttachmentData("scattering", enable, &frame);
 }
 
 void scattering::destroy()
@@ -212,10 +211,10 @@ void scattering::createDescriptorSets(){
     workflow::createDescriptorSets(device, &lighting, image.Count);
 }
 
-void scattering::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void scattering::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -226,17 +225,13 @@ void scattering::create(std::unordered_map<std::string, std::pair<bool,std::vect
 
 void scattering::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
     for (uint32_t i = 0; i < image.Count; i++)
     {
-        const auto depthAttachment = attachmentsMap.at("GBuffer.depth").second.front();
-        VkDescriptorImageInfo depthInfos;
-            depthInfos.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfos.imageView = depthAttachment->instances[i].imageView;
-            depthInfos.sampler = depthAttachment->sampler;
+        VkDescriptorImageInfo depthInfos = aDatabase.descriptorImageInfo("GBuffer.depth", i);
 
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = bufferMap.at("camera").second[i];

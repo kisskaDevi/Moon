@@ -82,8 +82,8 @@ public:
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 
-    VkImageView* getTextureImageView();
-    VkSampler*   getTextureSampler();
+    const VkImageView* getTextureImageView() const;
+    const VkSampler*   getTextureSampler() const;
 };
 
 

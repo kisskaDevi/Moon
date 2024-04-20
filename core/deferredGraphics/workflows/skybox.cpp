@@ -9,11 +9,10 @@ skyboxGraphics::skyboxGraphics(bool enable, std::vector<object*>* objects) :
     skybox.objects = objects;
 }
 
-void skyboxGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
-{
+void skyboxGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 2, &frame);
-    attachmentsMap["skybox.color"] = {enable,{&frame.color}};
-    attachmentsMap["skybox.bloom"] = {enable,{&frame.bloom}};
+    aDatabase.addAttachmentData("skybox.color", enable, &frame.color);
+    aDatabase.addAttachmentData("skybox.bloom", enable, &frame.bloom);
 }
 
 void skyboxGraphics::Skybox::destroy(VkDevice device)
@@ -174,10 +173,10 @@ void skyboxGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &skybox, image.Count);
 }
 
-void skyboxGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void skyboxGraphics::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -188,7 +187,7 @@ void skyboxGraphics::create(std::unordered_map<std::string, std::pair<bool,std::
 
 void skyboxGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&)
+    const attachmentsDatabase&)
 {
     if(!enable) return;
 

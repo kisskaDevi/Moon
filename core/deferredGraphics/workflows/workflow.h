@@ -47,10 +47,10 @@ public:
     workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
     workflow& setImageProp(imageInfo* pInfo);
 
-    virtual void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) = 0;
+    virtual void create(attachmentsDatabase& aDatabase) = 0;
     virtual void updateDescriptorSets(
         const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) = 0;
+        const attachmentsDatabase& aDatabase) = 0;
     virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
 
     void createCommandBuffers(VkCommandPool commandPool);

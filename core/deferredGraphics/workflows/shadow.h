@@ -38,10 +38,10 @@ public:
                    std::unordered_map<light*, depthMap*>* depthMaps = nullptr);
 
     void destroy() override;
-    void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+    void create(attachmentsDatabase&) override;
     void updateDescriptorSets(
         const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
-        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&) override{};
+        const attachmentsDatabase&) override{};
     void updateCommandBuffer(uint32_t frameNumber) override;
 
     void createFramebuffers(depthMap* depthMap);

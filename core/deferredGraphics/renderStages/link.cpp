@@ -120,7 +120,7 @@ void link::createDescriptorSets() {
     CHECK(vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data()));
 }
 
-void link::updateDescriptorSets(attachments* attachment) {
+void link::updateDescriptorSets(const attachments* attachment) {
     for (size_t image = 0; image < this->imageCount; image++)
     {
         VkDescriptorImageInfo imageInfo;

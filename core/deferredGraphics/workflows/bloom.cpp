@@ -14,13 +14,13 @@ bloomGraphics& bloomGraphics::setBlitFactor(const float& blitFactor){this->blitF
 bloomGraphics& bloomGraphics::setSamplerStepX(const float& xSamplerStep){this->xSamplerStep = xSamplerStep; return *this;}
 bloomGraphics& bloomGraphics::setSamplerStepY(const float& ySamplerStep){this->ySamplerStep = ySamplerStep; return *this;}
 
-void bloomGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void bloomGraphics::createAttachments(attachmentsDatabase& aDatabase)
 {
     frames.resize(bloom.blitAttachmentsCount);
     ::createAttachments(physicalDevice, device, image, bloom.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     ::createAttachments(physicalDevice, device, image, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-    attachmentsMap["bloomFinal"] = {enable, {&bufferAttachment}};
+    aDatabase.addAttachmentData("bloomFinal", enable, &bufferAttachment);
 }
 
 void bloomGraphics::destroy(){
@@ -272,10 +272,10 @@ void bloomGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &bloom, image.Count);
 }
 
-void bloomGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void bloomGraphics::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -286,11 +286,11 @@ void bloomGraphics::create(std::unordered_map<std::string, std::pair<bool,std::v
 
 void bloomGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
-    srcAttachment = attachmentsMap.at("combined.bloom").second.front();
+    srcAttachment = aDatabase.get("combined.bloom");
 
     auto updateDescriptorSets = [](VkDevice device, attachments* image, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
         auto imageIt = image->instances.begin();

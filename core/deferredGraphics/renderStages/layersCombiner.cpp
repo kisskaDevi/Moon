@@ -23,7 +23,7 @@ void layersCombiner::setBlurDepth(float blurDepth){
     this->blurDepth = blurDepth;
 }
 
-void layersCombiner::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void layersCombiner::createAttachments(attachmentsDatabase& aDatabase)
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo image, uint32_t attachmentsCount, attachments* pAttachments){
         for(size_t index=0; index < attachmentsCount; index++){
@@ -34,9 +34,9 @@ void layersCombiner::createAttachments(std::unordered_map<std::string, std::pair
     };
 
     createAttachments(physicalDevice, device, image, layersCombinerAttachments::size(), &frame);
-    attachmentsMap["combined.color"] = {enable, {&frame.color}};
-    attachmentsMap["combined.bloom"] = {enable, {&frame.bloom}};
-    attachmentsMap["combined.blur"] = {enable, {&frame.blur}};
+    aDatabase.addAttachmentData("combined.color", enable, &frame.color);
+    aDatabase.addAttachmentData("combined.bloom", enable, &frame.bloom);
+    aDatabase.addAttachmentData("combined.blur", enable, &frame.blur);
 }
 
 void layersCombiner::destroy(){
@@ -224,10 +224,10 @@ void layersCombiner::createDescriptorSets(){
     workflow::createDescriptorSets(device, &combiner, image.Count);
 }
 
-void layersCombiner::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void layersCombiner::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -238,7 +238,7 @@ void layersCombiner::create(std::unordered_map<std::string, std::pair<bool,std::
 
 void layersCombiner::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
@@ -249,59 +249,15 @@ void layersCombiner::updateDescriptorSets(
             bufferInfo.offset = 0;
             bufferInfo.range = bufferMap.at("camera").first;
 
-        const auto deferredAttachmentsImage = attachmentsMap.at("image").second.front();
-        VkDescriptorImageInfo colorImageInfo;
-            colorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            colorImageInfo.imageView = deferredAttachmentsImage->instances[i].imageView;
-            colorImageInfo.sampler = deferredAttachmentsImage->sampler;
-
-        const auto deferredAttachmentsBloom = attachmentsMap.at("bloom").second.front();
-        VkDescriptorImageInfo bloomImageInfo;
-            bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bloomImageInfo.imageView = deferredAttachmentsBloom->instances[i].imageView;
-            bloomImageInfo.sampler = deferredAttachmentsBloom->sampler;
-
-        const auto deferredAttachmentsGPos = attachmentsMap.at("GBuffer.position").second.front();
-        VkDescriptorImageInfo positionImageInfo;
-            positionImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionImageInfo.imageView = deferredAttachmentsGPos->instances[i].imageView;
-            positionImageInfo.sampler = deferredAttachmentsGPos->sampler;
-
-        const auto deferredAttachmentsGNorm = attachmentsMap.at("GBuffer.normal").second.front();
-        VkDescriptorImageInfo normalImageInfo;
-            normalImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalImageInfo.imageView = deferredAttachmentsGNorm->instances[i].imageView;
-            normalImageInfo.sampler = deferredAttachmentsGNorm->sampler;
-
-        const auto deferredAttachmentsGDepth = attachmentsMap.at("GBuffer.depth").second.front();
-        VkDescriptorImageInfo depthImageInfo;
-            depthImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthImageInfo.imageView = deferredAttachmentsGDepth->instances[i].imageView;
-            depthImageInfo.sampler = deferredAttachmentsGDepth->sampler;
-
-        const auto skyboxColor = attachmentsMap.count("skybox.color") > 0 && attachmentsMap.at("skybox.color").first ? attachmentsMap.at("skybox.color").second.front() : nullptr;
-        VkDescriptorImageInfo skyboxImageInfo;
-            skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = skyboxColor ? skyboxColor->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            skyboxImageInfo.sampler = skyboxColor ? skyboxColor->sampler : *emptyTexture["black"]->getTextureSampler();
-
-        const auto skyboxBloom = attachmentsMap.count("skybox.bloom") > 0 && attachmentsMap.at("skybox.bloom").first ? attachmentsMap.at("skybox.bloom").second.front() : nullptr;
-        VkDescriptorImageInfo skyboxBloomImageInfo;
-            skyboxBloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxBloomImageInfo.imageView = skyboxBloom ? skyboxBloom->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            skyboxBloomImageInfo.sampler = skyboxBloom ? skyboxBloom->sampler : *emptyTexture["black"]->getTextureSampler();
-
-        const auto scattering = attachmentsMap.count("scattering") > 0 && attachmentsMap.at("scattering").first ? attachmentsMap.at("scattering").second.front() : nullptr;
-        VkDescriptorImageInfo scatteringImageInfo;
-            scatteringImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            scatteringImageInfo.imageView = scattering ? scattering->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            scatteringImageInfo.sampler = scattering ? scattering->sampler : *emptyTexture["black"]->getTextureSampler();
-
-        const auto sslrAttachment = attachmentsMap.count("sslr") > 0 && attachmentsMap.at("sslr").first ? attachmentsMap.at("sslr").second.front() : nullptr;
-        VkDescriptorImageInfo sslrImageInfo;
-            sslrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            sslrImageInfo.imageView = sslrAttachment ? sslrAttachment->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            sslrImageInfo.sampler = sslrAttachment ? sslrAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
+        VkDescriptorImageInfo colorImageInfo = aDatabase.descriptorImageInfo("image", i);
+        VkDescriptorImageInfo bloomImageInfo = aDatabase.descriptorImageInfo("bloom", i);
+        VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
+        VkDescriptorImageInfo normalImageInfo = aDatabase.descriptorImageInfo("GBuffer.normal", i);
+        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i, "white");
+        VkDescriptorImageInfo skyboxImageInfo = aDatabase.descriptorImageInfo("skybox.color", i);
+        VkDescriptorImageInfo skyboxBloomImageInfo = aDatabase.descriptorImageInfo("skybox.bloom", i);
+        VkDescriptorImageInfo scatteringImageInfo = aDatabase.descriptorImageInfo("scattering", i);
+        VkDescriptorImageInfo sslrImageInfo = aDatabase.descriptorImageInfo("sslr", i);
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);
@@ -312,30 +268,11 @@ void layersCombiner::updateDescriptorSets(
         for(uint32_t index = 0; index < combiner.transparentLayersCount; index++){
             std::string key = "transparency" + std::to_string(index) + ".";
 
-            const auto transparencyLayersImage = attachmentsMap.count(key + "image") > 0 && attachmentsMap.at(key + "image").first ? attachmentsMap.at(key + "image").second.front() : nullptr;
-            colorLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            colorLayersImageInfo[index].imageView = transparencyLayersImage ? transparencyLayersImage->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            colorLayersImageInfo[index].sampler = transparencyLayersImage ? transparencyLayersImage->sampler : *emptyTexture["black"]->getTextureSampler();
-
-            const auto transparencyLayersBloom = attachmentsMap.count(key + "bloom") > 0 && attachmentsMap.at(key + "bloom").first? attachmentsMap.at(key + "bloom").second.front() : nullptr;
-            bloomLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bloomLayersImageInfo[index].imageView = transparencyLayersBloom ? transparencyLayersBloom->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            bloomLayersImageInfo[index].sampler = transparencyLayersBloom ? transparencyLayersBloom->sampler : *emptyTexture["black"]->getTextureSampler();
-
-            const auto transparencyLayersGPos = attachmentsMap.count(key + "GBuffer.position") > 0 && attachmentsMap.at(key + "GBuffer.position").first ? attachmentsMap.at(key + "GBuffer.position").second.front() : nullptr;
-            positionLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionLayersImageInfo[index].imageView = transparencyLayersGPos ? transparencyLayersGPos->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            positionLayersImageInfo[index].sampler = transparencyLayersGPos ? transparencyLayersGPos->sampler : *emptyTexture["black"]->getTextureSampler();
-
-            const auto transparencyLayersGNorm = attachmentsMap.count(key + "GBuffer.normal") > 0 && attachmentsMap.at(key + "GBuffer.normal").first ? attachmentsMap.at(key + "GBuffer.normal").second.front() : nullptr;
-            normalLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalLayersImageInfo[index].imageView = transparencyLayersGNorm ? transparencyLayersGNorm->instances[i].imageView : *emptyTexture["black"]->getTextureImageView();
-            normalLayersImageInfo[index].sampler = transparencyLayersGNorm ? transparencyLayersGNorm->sampler : *emptyTexture["black"]->getTextureSampler();
-
-            const auto transparencyLayersGDepth = attachmentsMap.count(key + "GBuffer.depth") > 0 && attachmentsMap.at(key + "GBuffer.depth").first ? attachmentsMap.at(key + "GBuffer.depth").second.front() : nullptr;
-            depthLayersImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthLayersImageInfo[index].imageView = transparencyLayersGDepth ? transparencyLayersGDepth->instances[i].imageView : *emptyTexture["white"]->getTextureImageView();
-            depthLayersImageInfo[index].sampler = transparencyLayersGDepth ? transparencyLayersGDepth->sampler : *emptyTexture["white"]->getTextureSampler();
+            colorLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "image", i);
+            bloomLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "bloom", i);
+            positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.position", i);
+            normalLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.normal", i);
+            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.depth", i, "white");
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

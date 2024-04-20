@@ -6,10 +6,9 @@ SSAOGraphics::SSAOGraphics(bool enable) :
     enable(enable)
 {}
 
-void SSAOGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
-{
+void SSAOGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    attachmentsMap["ssao"] = {enable,{&frame}};
+    aDatabase.addAttachmentData("ssao", enable, &frame);
 }
 
 void SSAOGraphics::destroy()
@@ -158,10 +157,10 @@ void SSAOGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &ssao, image.Count);
 }
 
-void SSAOGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void SSAOGraphics::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -172,7 +171,7 @@ void SSAOGraphics::create(std::unordered_map<std::string, std::pair<bool,std::ve
 
 void SSAOGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
@@ -183,29 +182,10 @@ void SSAOGraphics::updateDescriptorSets(
             bufferInfo.offset = 0;
             bufferInfo.range = bufferMap.at("camera").first;
 
-        const auto position = attachmentsMap.at("GBuffer.position").second.front();
-        VkDescriptorImageInfo positionInfo{};
-            positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionInfo.imageView = position->instances[i].imageView;
-            positionInfo.sampler = position->sampler;
-
-        const auto normal = attachmentsMap.at("GBuffer.normal").second.front();
-        VkDescriptorImageInfo normalInfo{};
-            normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalInfo.imageView = normal->instances[i].imageView;
-            normalInfo.sampler = normal->sampler;
-
-        const auto image = attachmentsMap.at("image").second.front();
-        VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = image->instances[i].imageView;
-            imageInfo.sampler = image->sampler;
-
-        const auto depth = attachmentsMap.at("GBuffer.depth").second.front();
-        VkDescriptorImageInfo depthInfo{};
-            depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = depth->instances[i].imageView;
-            depthInfo.sampler = depth->sampler;
+        VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
+        VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo("GBuffer.normal", i);
+        VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo("image", i);
+        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i, "white");
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

@@ -32,10 +32,9 @@ void boundingBoxGraphics::destroy(){
     frame.deleteSampler(device);
 }
 
-void boundingBoxGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
-{
+void boundingBoxGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    attachmentsMap["boundingBox"] = {enable,{&frame}};
+    aDatabase.addAttachmentData("boundingBox", enable, &frame);
 }
 
 void boundingBoxGraphics::createRenderPass(){
@@ -211,10 +210,10 @@ void boundingBoxGraphics::createDescriptorSets(){
     vkAllocateDescriptorSets(device, &allocInfo, box.DescriptorSets.data());
 }
 
-void boundingBoxGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void boundingBoxGraphics::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -225,7 +224,7 @@ void boundingBoxGraphics::create(std::unordered_map<std::string, std::pair<bool,
 
 void boundingBoxGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&)
+    const attachmentsDatabase&)
 {
     if(!enable) return;
 

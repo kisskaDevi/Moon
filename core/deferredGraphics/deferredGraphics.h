@@ -32,7 +32,7 @@ private:
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
     std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>> bufferMap;
-    std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>> attachmentsMap;
+    attachmentsDatabase aDatabase;
     std::unordered_map<std::string, workflow*>  workflows;
     std::unordered_map<std::string, bool>       enable;
     class link                                  Link;

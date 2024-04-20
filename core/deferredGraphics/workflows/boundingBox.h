@@ -23,7 +23,7 @@ private:
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }box;
 
-    void createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap);
+    void createAttachments(attachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -33,10 +33,10 @@ public:
     boundingBoxGraphics(bool enable, std::vector<object*>* objects = nullptr);
 
     void destroy() override;
-    void create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+    void create(attachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(
         const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-        const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap) override;
+        const attachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 

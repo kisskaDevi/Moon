@@ -1,6 +1,7 @@
 #include "attachments.h"
 #include "operations.h"
 #include "vkdefault.h"
+#include <texture.h>
 #include <algorithm>
 #include <iterator>
 
@@ -188,4 +189,61 @@ void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const i
         CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler));
         pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
     }
+}
+
+attachmentsDatabase::attachmentsDatabase(const std::string& emptyTextureId, texture* emptyTexture)
+{
+    defaultEmptyTexture = emptyTextureId;
+    emptyTexturesMap[emptyTextureId] = emptyTexture;
+}
+
+void attachmentsDatabase::destroy(){
+    attachmentsMap.clear();
+    emptyTexturesMap.clear();
+    defaultEmptyTexture.clear();
+}
+
+bool attachmentsDatabase::addEmptyTexture(const std::string& id, texture* emptyTexture){
+    if(emptyTexturesMap.count(id) > 0) return false;
+    if(defaultEmptyTexture.empty()) defaultEmptyTexture = id;
+
+    emptyTexturesMap[id] = emptyTexture;
+    return true;
+}
+
+bool attachmentsDatabase::addAttachmentData(const std::string& id, bool enable, attachments* pImages){
+    if(attachmentsMap.count(id) > 0) return false;
+
+    attachmentsMap[id] = data{enable, pImages};
+    return true;
+}
+
+bool attachmentsDatabase::enable(const std::string& id) const {
+    return attachmentsMap.at(id).enable;
+}
+
+const attachments* attachmentsDatabase::get(const std::string& id) const{
+    return attachmentsMap.count(id) > 0 && attachmentsMap.at(id).enable ? attachmentsMap.at(id).pImages : nullptr;
+}
+
+VkImageView attachmentsDatabase::imageView(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId) const {
+    const auto emptyTexture = emptyTextureId ? emptyTexturesMap.at(*emptyTextureId) : emptyTexturesMap.at(defaultEmptyTexture);
+    const auto attachment = get(id);
+
+    return attachment ? attachment->instances[imageIndex].imageView : *emptyTexture->getTextureImageView();
+}
+
+VkSampler attachmentsDatabase::sampler(const std::string& id, const std::optional<std::string>& emptyTextureId) const {
+    const auto emptyTexture = emptyTextureId ? emptyTexturesMap.at(*emptyTextureId) : emptyTexturesMap.at(defaultEmptyTexture);
+    const auto attachment = get(id);
+
+    return attachment ? attachment->sampler : *emptyTexture->getTextureSampler();
+}
+
+VkDescriptorImageInfo attachmentsDatabase::descriptorImageInfo(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId) const{
+    VkDescriptorImageInfo res;
+    res.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    res.imageView = imageView(id, imageIndex, emptyTextureId);
+    res.sampler = sampler(id);
+    return res;
 }

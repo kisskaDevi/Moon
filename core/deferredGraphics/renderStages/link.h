@@ -44,7 +44,7 @@ public:
     void createPipeline(imageInfo* pInfo);
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(attachments* attachment);
+    void updateDescriptorSets(const attachments* attachment);
 };
 
 #endif // LINK_H

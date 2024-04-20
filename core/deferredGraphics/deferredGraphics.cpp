@@ -93,7 +93,7 @@ void deferredGraphics::destroy(){
         delete workflow;
     }
     workflows.clear();
-    attachmentsMap.clear();
+    aDatabase.destroy();
 
     Link.destroy();
 
@@ -119,6 +119,8 @@ void deferredGraphics::create()
 
     emptyTextures["black"] = ::createEmptyTexture(device, commandPool);
     emptyTextures["white"] = ::createEmptyTexture(device, commandPool, false);
+    aDatabase.addEmptyTexture("black", emptyTextures["black"]);
+    aDatabase.addEmptyTexture("white", emptyTextures["white"]);
 
     createGraphicsPasses();
     createCommandBuffers();
@@ -174,7 +176,7 @@ void deferredGraphics::createGraphicsPasses(){
     workflows["PostProcessing"]->setImageProp(&postProcessingInfo);
 
     for(auto& [_,workflow]: workflows){
-        workflow->create(attachmentsMap);
+        workflow->create(aDatabase);
     }
 
     imageInfo linkInfo{imageCount, format, swapChainKHR->getExtent(), MSAASamples};
@@ -195,9 +197,9 @@ void deferredGraphics::updateDescriptorSets(){
     CHECK_M(cameraObject == nullptr, std::string("[ deferredGraphics::updateDescriptorSets ] camera is nullptr"));
 
     for(auto& [name, workflow]: workflows){
-        workflow->updateDescriptorSets(bufferMap, attachmentsMap);
+        workflow->updateDescriptorSets(bufferMap, aDatabase);
     }
-    Link.updateDescriptorSets(attachmentsMap["final"].second.front());
+    Link.updateDescriptorSets(aDatabase.get("final"));
 }
 
 void deferredGraphics::createCommandBuffers(){

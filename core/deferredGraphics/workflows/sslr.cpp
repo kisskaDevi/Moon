@@ -6,10 +6,9 @@ SSLRGraphics::SSLRGraphics(bool enable) :
     enable(enable)
 {}
 
-void SSLRGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
-{
+void SSLRGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    attachmentsMap["sslr"] = {enable,{&frame}};
+    aDatabase.addAttachmentData("sslr", enable, &frame);
 }
 
 void SSLRGraphics::destroy()
@@ -162,10 +161,10 @@ void SSLRGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &sslr, image.Count);
 }
 
-void SSLRGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void SSLRGraphics::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -176,7 +175,7 @@ void SSLRGraphics::create(std::unordered_map<std::string, std::pair<bool,std::ve
 
 void SSLRGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>& bufferMap,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
@@ -187,57 +186,22 @@ void SSLRGraphics::updateDescriptorSets(
             bufferInfo.offset = 0;
             bufferInfo.range = bufferMap.at("camera").first;
 
-        const auto position = attachmentsMap.at("GBuffer.position").second.front();
-        VkDescriptorImageInfo positionInfo{};
-            positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            positionInfo.imageView = position->instances[i].imageView;
-            positionInfo.sampler = position->sampler;
+        VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
+        VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo("GBuffer.normal", i);
+        VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo("image", i);
+        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i);
 
-        const auto normal = attachmentsMap.at("GBuffer.normal").second.front();
-        VkDescriptorImageInfo normalInfo{};
-            normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalInfo.imageView = normal->instances[i].imageView;
-            normalInfo.sampler = normal->sampler;
+        const auto layerPositionId = aDatabase.get("transparency0.GBuffer.position") ? "transparency0.GBuffer.position" : "GBuffer.position";
+        VkDescriptorImageInfo layerPositionInfo = aDatabase.descriptorImageInfo(layerPositionId, i);
 
-        const auto image = attachmentsMap.at("image").second.front();
-        VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = image->instances[i].imageView;
-            imageInfo.sampler = image->sampler;
+        const auto layerNormalId = aDatabase.get("transparency0.GBuffer.normal") ? "transparency0.GBuffer.normal" : "GBuffer.normal";
+        VkDescriptorImageInfo layerNormalInfo = aDatabase.descriptorImageInfo(layerNormalId, i);
 
-        const auto depth = attachmentsMap.at("GBuffer.depth").second.front();
-        VkDescriptorImageInfo depthInfo{};
-            depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            depthInfo.imageView = depth->instances[i].imageView;
-            depthInfo.sampler = depth->sampler;
+        const auto layerImageId = aDatabase.get("transparency0.image") ? "transparency0.image" : "image";
+        VkDescriptorImageInfo layerImageInfo = aDatabase.descriptorImageInfo(layerImageId, i);
 
-        const auto layerPosition = attachmentsMap.count("transparency0.GBuffer.position") > 0 && attachmentsMap.at("transparency0.GBuffer.position").first ?
-                                    attachmentsMap.at("transparency0.GBuffer.position").second.front() : attachmentsMap.at("GBuffer.position").second.front();
-        VkDescriptorImageInfo layerPositionInfo{};
-            layerPositionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerPositionInfo.imageView = layerPosition->instances[i].imageView;
-            layerPositionInfo.sampler = layerPosition->sampler;
-
-        const auto layerNormal = attachmentsMap.count("transparency0.GBuffer.normal") > 0 && attachmentsMap.at("transparency0.GBuffer.normal").first ?
-                                    attachmentsMap.at("transparency0.GBuffer.normal").second.front() : attachmentsMap.at("GBuffer.normal").second.front();
-        VkDescriptorImageInfo layerNormalInfo{};
-            layerNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerNormalInfo.imageView = layerNormal->instances[i].imageView;
-            layerNormalInfo.sampler = layerNormal->sampler;
-
-        const auto layerImage = attachmentsMap.count("transparency0.image") > 0 && attachmentsMap.at("transparency0.image").first ?
-                                    attachmentsMap.at("transparency0.image").second.front() : attachmentsMap.at("image").second.front();
-        VkDescriptorImageInfo layerImageInfo{};
-            layerImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerImageInfo.imageView = layerImage->instances[i].imageView;
-            layerImageInfo.sampler = layerImage->sampler;
-
-        const auto layerDepth = attachmentsMap.count("transparency0.GBuffer.depth") > 0 && attachmentsMap.at("transparency0.GBuffer.depth").first ?
-                                    attachmentsMap.at("transparency0.GBuffer.depth").second.front() : attachmentsMap.at("GBuffer.depth").second.front();
-        VkDescriptorImageInfo layerDepthInfo{};
-            layerDepthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layerDepthInfo.imageView = layerDepth->instances[i].imageView;
-            layerDepthInfo.sampler = layerDepth->sampler;
+        const auto layerDepthId = aDatabase.get("transparency0.GBuffer.depth") ? "transparency0.GBuffer.depth" : "GBuffer.depth";
+        VkDescriptorImageInfo layerDepthInfo = aDatabase.descriptorImageInfo(layerDepthId, i, "white");
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

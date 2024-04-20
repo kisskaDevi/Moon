@@ -174,7 +174,7 @@ void shadowGraphics::destroyFramebuffers(depthMap* depthMap)
     }
 }
 
-void shadowGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>&)
+void shadowGraphics::create(attachmentsDatabase&)
 {
     if(enable){
         createRenderPass();

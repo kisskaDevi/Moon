@@ -71,8 +71,8 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
         setEnable("Skybox", true).
         setEnable("Blur", true).
         setEnable("Bloom", true).
-        setEnable("SSAO", false).
-        setEnable("SSLR", false).
+        setEnable("SSAO", true).
+        setEnable("SSLR", true).
         setEnable("Scattering", true).
         setEnable("Shadow", true).
         setEnable("Selector", true);

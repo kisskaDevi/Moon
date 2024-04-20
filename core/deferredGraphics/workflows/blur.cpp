@@ -12,11 +12,11 @@ void gaussianBlur::createBufferAttachments(){
     CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler));
 }
 
-void gaussianBlur::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void gaussianBlur::createAttachments(attachmentsDatabase& aDatabase)
 {
     createBufferAttachments();
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    attachmentsMap["blured"] = {enable, {&frame}};
+    aDatabase.addAttachmentData("blured", enable, &frame);
 }
 
 void gaussianBlur::destroy(){
@@ -206,10 +206,10 @@ void gaussianBlur::createDescriptorSets(){
     workflow::createDescriptorSets(device, &yblur, image.Count);
 }
 
-void gaussianBlur::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void gaussianBlur::create(attachmentsDatabase& aDatabasep)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabasep);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -220,11 +220,11 @@ void gaussianBlur::create(std::unordered_map<std::string, std::pair<bool,std::ve
 
 void gaussianBlur::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
-    auto updateDescriptorSets = [](VkDevice device, attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
+    auto updateDescriptorSets = [](VkDevice device, const attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
         auto imageIt = attachment->instances.begin();
         auto setIt = descriptorSets.begin();
         for (;imageIt != attachment->instances.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
@@ -246,7 +246,7 @@ void gaussianBlur::updateDescriptorSets(
         }
     };
 
-    const auto blurAttachment = attachmentsMap.at("combined.blur").second.front();
+    const auto blurAttachment = aDatabase.get("combined.blur");
     updateDescriptorSets(device, blurAttachment, blurAttachment->sampler, xblur.DescriptorSets);
     updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, yblur.DescriptorSets);
 }

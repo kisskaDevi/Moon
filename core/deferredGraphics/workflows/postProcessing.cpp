@@ -1,7 +1,6 @@
 #include "postProcessing.h"
 #include "operations.h"
 #include "vkdefault.h"
-#include "texture.h"
 
 postProcessingGraphics::postProcessingGraphics(bool enable) :
     enable{enable}
@@ -16,10 +15,9 @@ void postProcessingGraphics::destroy()
     frame.deleteSampler(device);
 }
 
-void postProcessingGraphics::createAttachments(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
-{
+void postProcessingGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    attachmentsMap["final"] = {enable, {&frame}};
+    aDatabase.addAttachmentData("final", enable, &frame);
 }
 
 void postProcessingGraphics::createRenderPass()
@@ -161,10 +159,10 @@ void postProcessingGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &postProcessing, image.Count);
 }
 
-void postProcessingGraphics::create(std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+void postProcessingGraphics::create(attachmentsDatabase& aDatabase)
 {
     if(enable){
-        createAttachments(attachmentsMap);
+        createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
@@ -175,46 +173,21 @@ void postProcessingGraphics::create(std::unordered_map<std::string, std::pair<bo
 
 void postProcessingGraphics::updateDescriptorSets(
     const std::unordered_map<std::string, std::pair<VkDeviceSize,std::vector<VkBuffer>>>&,
-    const std::unordered_map<std::string, std::pair<bool,std::vector<attachments*>>>& attachmentsMap)
+    const attachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
-    for (size_t image = 0; image < this->image.Count; image++)
-    {
-        const auto layersAttachment = attachmentsMap.at("combined.color").second.front();
-        VkDescriptorImageInfo layersImageInfo;
-            layersImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            layersImageInfo.imageView = layersAttachment->instances[image].imageView;
-            layersImageInfo.sampler = layersAttachment->sampler;
-
-        const auto blurAttachment = attachmentsMap.count("blured") > 0 && attachmentsMap.at("blured").first ? attachmentsMap.at("blured").second.front() : nullptr;
-        VkDescriptorImageInfo blurImageInfo;
-            blurImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blurImageInfo.imageView = blurAttachment ? blurAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
-            blurImageInfo.sampler = blurAttachment ? blurAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
-
-        const auto ssaoAttachment = attachmentsMap.count("ssao") > 0 && attachmentsMap.at("ssao").first ? attachmentsMap.at("ssao").second.front() : nullptr;
-        VkDescriptorImageInfo ssaoImageInfo;
-            ssaoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            ssaoImageInfo.imageView = ssaoAttachment ? ssaoAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
-            ssaoImageInfo.sampler = ssaoAttachment ? ssaoAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
-
-        const auto boundingBoxbAttachment = attachmentsMap.count("boundingBox") > 0 && attachmentsMap.at("boundingBox").first ? attachmentsMap.at("boundingBox").second.front() : nullptr;
-        VkDescriptorImageInfo bbImageInfo;
-            bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bbImageInfo.imageView = boundingBoxbAttachment ? boundingBoxbAttachment->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
-            bbImageInfo.sampler = boundingBoxbAttachment ? boundingBoxbAttachment->sampler : *emptyTexture["black"]->getTextureSampler();
-
-        const auto blitAttachments = attachmentsMap.count("bloomFinal") > 0 && attachmentsMap.at("bloomFinal").first ? attachmentsMap.at("bloomFinal").second.front() : nullptr;
-        VkDescriptorImageInfo bloomImageInfo;
-            bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            bloomImageInfo.imageView = blitAttachments ? blitAttachments->instances[image].imageView : *emptyTexture["black"]->getTextureImageView();
-            bloomImageInfo.sampler = blitAttachments ? blitAttachments->sampler : *emptyTexture["black"]->getTextureSampler();
+    for (size_t i = 0; i < this->image.Count; i++){
+        VkDescriptorImageInfo layersImageInfo = aDatabase.descriptorImageInfo("combined.color", i);
+        VkDescriptorImageInfo blurImageInfo = aDatabase.descriptorImageInfo("blured", i);
+        VkDescriptorImageInfo ssaoImageInfo = aDatabase.descriptorImageInfo("ssao", i);
+        VkDescriptorImageInfo bbImageInfo = aDatabase.descriptorImageInfo("boundingBox", i);
+        VkDescriptorImageInfo bloomImageInfo =  aDatabase.descriptorImageInfo("bloomFinal", i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
+            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -222,7 +195,7 @@ void postProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &layersImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
+            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -230,7 +203,7 @@ void postProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &blurImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
+            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -238,7 +211,7 @@ void postProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &bloomImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
+            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -246,7 +219,7 @@ void postProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &ssaoImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[image];
+            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;

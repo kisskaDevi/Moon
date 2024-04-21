@@ -1,7 +1,7 @@
 #version 450
 
-#include "../__methods__/defines.glsl"
-#include "../__methods__/colorFunctions.glsl"
+#include "../../../workflows/shaders/__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/colorFunctions.glsl"
 
 #include "spotLightingBase.glsl"
 

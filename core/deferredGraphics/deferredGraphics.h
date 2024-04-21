@@ -28,6 +28,7 @@ struct StorageBufferObject{
 class deferredGraphics: public graphicsInterface{
 private:
     std::filesystem::path                       shadersPath;
+    std::filesystem::path                       workflowsShadersPath;
     VkExtent2D                                  extent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
@@ -67,7 +68,7 @@ private:
     void updateBuffers(uint32_t imageIndex);
 
 public:
-    deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    deferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
     ~deferredGraphics();
 
     void destroy() override;

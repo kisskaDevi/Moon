@@ -63,7 +63,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
 
     cameras["base"] = std::make_shared<baseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{WIDTH, HEIGHT});
+    graphics["base"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{WIDTH, HEIGHT});
     app->setGraphics(graphics["base"].get());
     graphics["base"]->bind(cameras["base"].get());
     graphics["base"]->

@@ -17,10 +17,6 @@ void workflow::destroy(){
     framebuffers.clear();
 }
 
-workflow& workflow::setEmptyTexture(std::unordered_map<std::string, texture*> emptyTexture){
-    this->emptyTexture = emptyTexture;
-    return *this;
-}
 workflow& workflow::setShadersPath(const std::filesystem::path &path){
     shadersPath = path;
     return *this;

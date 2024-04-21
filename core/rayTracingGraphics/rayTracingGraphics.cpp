@@ -23,7 +23,7 @@ void rayTracingGraphics::imageResource::create(physicalDevice phDevice, VkFormat
         phDevice.instance,
         phDevice.getLogical(),
         format,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
         extent,
         imageCount
         );
@@ -64,6 +64,25 @@ void rayTracingGraphics::create()
     color.create(device, format, extent, imageCount);
     bloom.create(device, format, extent, imageCount);
 
+    aDatabase.addEmptyTexture("black", emptyTexture);
+    aDatabase.addAttachmentData("color", true, &color.device);
+    aDatabase.addAttachmentData("bloom", true, &bloom.device);
+
+
+    imageInfo bloomInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
+
+    bloomParameters params;
+    params.in.bloom = "bloom";
+    params.out.bloom = "finalBloom";
+
+    bloomGraph = bloomGraphics(params, true, 6, VK_IMAGE_LAYOUT_UNDEFINED);
+    bloomGraph.setShadersPath(workflowsShadersPath);
+    bloomGraph.setDeviceProp(device.instance, device.getLogical());
+    bloomGraph.setImageProp(&bloomInfo);
+    bloomGraph.create(aDatabase);
+    bloomGraph.createCommandBuffers(commandPool);
+    bloomGraph.updateDescriptorSets(bDatabase, aDatabase);
+
     imageInfo bbInfo{
         imageCount,
         format,
@@ -88,7 +107,7 @@ void rayTracingGraphics::create()
     Link.createPipeline(&swapChainInfo);
     Link.createDescriptorPool();
     Link.createDescriptorSets();
-    Link.updateDescriptorSets(&color.device, &bbGraphics.getAttachments());
+    Link.updateDescriptorSets(&color.device, &bbGraphics.getAttachments(), aDatabase.get("finalBloom"));
 
     rayTracer.create();
 }
@@ -102,9 +121,12 @@ void rayTracingGraphics::destroy() {
     color.destroy(device);
     bloom.destroy(device);
 
+    bloomGraph.destroy();
+
     if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
     Link.destroy();
     bbGraphics.destroy();
+    aDatabase.destroy();
 }
 
 std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)
@@ -112,11 +134,28 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
     rayTracer.calculateImage(color.host, bloom.host);
 
     color.moveFromHostToHostDevice(extent);
+    bloom.moveFromHostToHostDevice(extent);
 
-    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
-    color.copyToDevice(commandBuffer, extent, imageIndex);
-    bbGraphics.render(commandBuffer, imageIndex);
-    SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool, &commandBuffer);
+    std::vector<VkCommandBuffer> commandBuffers;
+    commandBuffers.push_back(SingleCommandBuffer::create(device.getLogical(),commandPool));
+    color.copyToDevice(commandBuffers.back(), extent, imageIndex);
+    bloom.copyToDevice(commandBuffers.back(), extent, imageIndex);
+    bbGraphics.render(commandBuffers.back(), imageIndex);
+    SingleCommandBuffer::submit(device.getLogical(), device.getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
+
+    bloomGraph.beginCommandBuffer(imageIndex);
+    bloomGraph.updateCommandBuffer(imageIndex);
+    bloomGraph.endCommandBuffer(imageIndex);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &bloomGraph.getCommandBuffer(imageIndex);
+    VkResult result = vkQueueSubmit(device.getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE);
+    CHECK(result);
+
+    result = vkQueueWaitIdle(device.getQueue(0,0));
+    CHECK(result);
 
     return std::vector<std::vector<VkSemaphore>>();
 }

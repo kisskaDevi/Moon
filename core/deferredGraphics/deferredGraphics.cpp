@@ -24,8 +24,8 @@
 
 #include <cstring>
 
-deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
-    shadersPath(shadersPath), extent(extent), MSAASamples(MSAASamples)
+deferredGraphics::deferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
+    shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent), MSAASamples(MSAASamples)
 {
     enable["DeferredGraphics"] = true;
     enable["LayersCombiner"] = true;
@@ -222,28 +222,43 @@ void deferredGraphics::createGraphicsPasses(){
     selectorParams.out.selector = "selector";
 
     workflows["DeferredGraphics"] = new graphics(graphicsParams, enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
+    workflows["DeferredGraphics"]->setShadersPath(shadersPath);
+
     workflows["LayersCombiner"] = new layersCombiner(layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
+    workflows["LayersCombiner"]->setShadersPath(shadersPath);
+
     workflows["PostProcessing"] = new postProcessingGraphics(postProcessingParams, enable["PostProcessing"]);
-    workflows["Blur"] = new gaussianBlur(blurParams, enable["Blur"]);
-    workflows["Bloom"] = new bloomGraphics(bloomParams, enable["Bloom"], blitAttachmentsCount);
-    workflows["Skybox"] = new skyboxGraphics(skyboxParams, enable["Skybox"], &objects);
-    workflows["SSLR"] = new SSLRGraphics(SSLRParams, enable["SSLR"]);
-    workflows["SSAO"] = new SSAOGraphics(SSAOParams, enable["SSAO"]);
-    workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &depthMaps);
-    workflows["Scattering"] = new scattering(scatteringParams, enable["Scattering"], &lights, &depthMaps);
-    workflows["BoundingBox"] = new boundingBoxGraphics(bbParams, enable["BoundingBox"], &objects);
+    workflows["PostProcessing"]->setShadersPath(shadersPath);
+
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
-        enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
-        workflows["TransparentLayer" + std::to_string(i)] = new graphics(graphicsParams, enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
+        const auto key = "TransparentLayer" + std::to_string(i);
+        enable[key] = enable["TransparentLayer"];
+        workflows[key] = new graphics(graphicsParams, enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
+        workflows[key]->setShadersPath(shadersPath);
     };
+
+    workflows["Blur"] = new gaussianBlur(blurParams, enable["Blur"]);
+    workflows["Blur"]->setShadersPath(workflowsShadersPath);
+    workflows["Bloom"] = new bloomGraphics(bloomParams, enable["Bloom"], blitAttachmentsCount);
+    workflows["Bloom"]->setShadersPath(workflowsShadersPath);
+    workflows["Skybox"] = new skyboxGraphics(skyboxParams, enable["Skybox"], &objects);
+    workflows["Skybox"]->setShadersPath(workflowsShadersPath);
+    workflows["SSLR"] = new SSLRGraphics(SSLRParams, enable["SSLR"]);
+    workflows["SSLR"]->setShadersPath(workflowsShadersPath);
+    workflows["SSAO"] = new SSAOGraphics(SSAOParams, enable["SSAO"]);
+    workflows["SSAO"]->setShadersPath(workflowsShadersPath);
+    workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &depthMaps);
+    workflows["Shadow"]->setShadersPath(workflowsShadersPath);
+    workflows["Scattering"] = new scattering(scatteringParams, enable["Scattering"], &lights, &depthMaps);
+    workflows["Scattering"]->setShadersPath(workflowsShadersPath);
+    workflows["BoundingBox"] = new boundingBoxGraphics(bbParams, enable["BoundingBox"], &objects);
+    workflows["BoundingBox"]->setShadersPath(workflowsShadersPath);
     workflows["Selector"] = new selectorGraphics(selectorParams, enable["Selector"]);
+    workflows["Selector"]->setShadersPath(workflowsShadersPath);
 
 
     for(auto& [_,workflow]: workflows){
         imageInfo info{imageCount, format, extent, MSAASamples};
-
-        workflow->setEmptyTexture(emptyTextures);
-        workflow->setShadersPath(shadersPath);
         workflow->setDeviceProp(device.instance, device.getLogical());
         workflow->setImageProp(&info);
     }

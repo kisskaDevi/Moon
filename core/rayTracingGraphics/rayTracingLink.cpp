@@ -40,6 +40,7 @@ void rayTracingLink::createDescriptorSetLayout() {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
     textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -107,6 +108,7 @@ void rayTracingLink::createDescriptorPool() {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
+    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -126,7 +128,7 @@ void rayTracingLink::createDescriptorSets() {
     vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data());
 }
 
-void rayTracingLink::updateDescriptorSets(const attachments* color, const attachments* bbAttachment) {
+void rayTracingLink::updateDescriptorSets(const attachments* color, const attachments* bbAttachment, const attachments* bloomAttachment) {
     for (size_t image = 0; image < this->imageCount; image++)
     {
         VkDescriptorImageInfo imageInfo;
@@ -138,6 +140,11 @@ void rayTracingLink::updateDescriptorSets(const attachments* color, const attach
         bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         bbImageInfo.imageView = bbAttachment->instances.empty() ? *emptyTexture->getTextureImageView() : bbAttachment->instances[image].imageView;
         bbImageInfo.sampler = bbAttachment->instances.empty() ? *emptyTexture->getTextureSampler() : bbAttachment->sampler;
+
+        VkDescriptorImageInfo bloomImageInfo;
+        bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        bloomImageInfo.imageView = bloomAttachment->instances.empty() ? *emptyTexture->getTextureImageView() : bloomAttachment->instances[image].imageView;
+        bloomImageInfo.sampler = bloomAttachment->instances.empty() ? *emptyTexture->getTextureSampler() : bloomAttachment->sampler;
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -156,6 +163,14 @@ void rayTracingLink::updateDescriptorSets(const attachments* color, const attach
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &bbImageInfo;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = DescriptorSets[image];
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &bloomImageInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

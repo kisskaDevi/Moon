@@ -71,6 +71,7 @@ struct attachmentsDatabase{
     bool addAttachmentData(const std::string& id, bool enable, attachments* pImages);
     bool enable(const std::string& id) const;
     const attachments* get(const std::string& id) const;
+    const texture* getEmpty(const std::string& id = "") const;
     VkImageView imageView(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId = std::nullopt) const;
     VkSampler sampler(const std::string& id, const std::optional<std::string>& emptyTextureId = std::nullopt) const;
     VkDescriptorImageInfo descriptorImageInfo(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId = std::nullopt) const;

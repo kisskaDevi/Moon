@@ -1,6 +1,6 @@
 #version 450
 
-#include "../__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/defines.glsl"
 
 layout(set = 0, binding = 0) uniform sampler2D Sampler;
 

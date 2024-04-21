@@ -1,6 +1,6 @@
 #version 450
 
-#include "../__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/defines.glsl"
 
 layout(constant_id = 0) const int transparentLayersCount = 1;
 

@@ -1,7 +1,7 @@
-#include "../__methods__/lightDrop.glsl"
-#include "../__methods__/pbr.glsl"
-#include "../__methods__/shadow.glsl"
-#include "../__methods__/geometricFunctions.glsl"
+#include "../../../workflows/shaders/__methods__/lightDrop.glsl"
+#include "../../../workflows/shaders/__methods__/pbr.glsl"
+#include "../../../workflows/shaders/__methods__/shadow.glsl"
+#include "../../../workflows/shaders/__methods__/geometricFunctions.glsl"
 
 #ifndef SPOT_LIGHTING_BASE
 #define SPOT_LIGHTING_BASE

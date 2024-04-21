@@ -47,7 +47,7 @@ public:
     void createPipeline(imageInfo* pInfo);
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(const attachments* attachment, const attachments* bbAttachment);
+    void updateDescriptorSets(const attachments* attachment, const attachments* bbAttachment, const attachments* bloomAttachment);
 };
 
 #endif

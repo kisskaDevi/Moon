@@ -1,6 +1,6 @@
 #version 450
 
-#include "../__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/defines.glsl"
 
 vec2 fragCoord[6] = vec2[](
     vec2(0.0f, 0.0f),

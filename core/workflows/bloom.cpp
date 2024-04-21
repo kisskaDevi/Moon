@@ -2,12 +2,14 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-bloomGraphics::bloomGraphics(bloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, float blitFactor, float xSamplerStep, float ySamplerStep):
+bloomGraphics::bloomGraphics(bloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, VkImageLayout inputImageLayout, float blitFactor, float xSamplerStep, float ySamplerStep):
     parameters(parameters),
     enable(enable),
     blitFactor(blitFactor),
     xSamplerStep(xSamplerStep),
-    ySamplerStep(ySamplerStep){
+    ySamplerStep(ySamplerStep),
+    inputImageLayout(inputImageLayout)
+{
     bloom.blitAttachmentsCount = blitAttachmentsCount;
 }
 
@@ -355,7 +357,7 @@ void bloomGraphics::updateCommandBuffer(uint32_t frameNumber){
 
     std::vector<VkImage> blitImages(frames.size());
     blitImages[0] = srcAttachment->instances[frameNumber].image;
-    Texture::transitionLayout(commandBuffers[frameNumber], blitImages[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+    Texture::transitionLayout(commandBuffers[frameNumber], blitImages[0], inputImageLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 
     for(size_t i=1;i<frames.size();i++){
         blitImages[i] = frames[i - 1].instances[frameNumber].image;

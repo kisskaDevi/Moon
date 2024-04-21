@@ -26,4 +26,4 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(rayTracingGraphics STATIC ${SOURCES} ${HEADERS})
 target_include_directories(rayTracingGraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(rayTracingGraphics PUBLIC graphicsManager cudaRayTracing)
+target_link_libraries(rayTracingGraphics PUBLIC graphicsManager cudaRayTracing workflows)

@@ -1,8 +1,8 @@
 #version 450
 
-#include "../__methods__/defines.glsl"
-#include "../__methods__/colorFunctions.glsl"
-#include "../__methods__/geometricFunctions.glsl"
+#include "../../../workflows/shaders/__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/colorFunctions.glsl"
+#include "../../../workflows/shaders/__methods__/geometricFunctions.glsl"
 
 layout(push_constant) uniform PC {
     float minAmbientFactor;

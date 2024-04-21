@@ -398,20 +398,27 @@ VkCommandBuffer SingleCommandBuffer::create(VkDevice device, VkCommandPool comma
 
 VkResult SingleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPool commandPool, VkCommandBuffer* commandBuffer)
 {
-    VkResult result = vkEndCommandBuffer(*commandBuffer);
-    CHECK(result);
+    return SingleCommandBuffer::submit(device, queue, commandPool, 1, commandBuffer);
+}
+
+VkResult SingleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPool commandPool, uint32_t commandBufferCount, VkCommandBuffer* commandBuffer)
+{
+    for(size_t i = 0; i < commandBufferCount; i++){
+        VkResult result = vkEndCommandBuffer(commandBuffer[i]);
+        CHECK(result);
+    }
 
     VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = commandBuffer;
-    result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = commandBufferCount;
+    submitInfo.pCommandBuffers = commandBuffer;
+    VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
     CHECK(result);
 
     result = vkQueueWaitIdle(queue);
     CHECK(result);
 
-    vkFreeCommandBuffers(device, commandPool, 1, commandBuffer);
+    vkFreeCommandBuffers(device, commandPool, commandBufferCount, commandBuffer);
 
     return result;
 }

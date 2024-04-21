@@ -13,6 +13,7 @@
 
 #include "cudaRayTracing.h"
 #include "boundingBoxGraphics.h"
+#include <bloom.h>
 
 namespace cuda {
 class model;
@@ -36,18 +37,23 @@ private:
 
     cuda::cudaRayTracing rayTracer;
     boundingBoxGraphics bbGraphics;
+    bloomGraphics bloomGraph;
     rayTracingLink Link;
 
     texture* emptyTexture{nullptr};
 
     std::filesystem::path shadersPath;
+    std::filesystem::path workflowsShadersPath;
     VkExtent2D extent;
+
+    attachmentsDatabase aDatabase;
+    buffersDatabase bDatabase;
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
 public:
-    rayTracingGraphics(const std::filesystem::path& shadersPath, VkExtent2D extent)
-        : shadersPath(shadersPath), extent(extent)
+    rayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
+        : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
     {
         setExtent(extent);
         Link.setShadersPath(shadersPath);

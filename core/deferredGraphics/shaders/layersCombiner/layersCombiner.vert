@@ -1,6 +1,6 @@
 #version 450
 
-#include "../__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/defines.glsl"
 
 vec2 positions[6] = vec2[](
     vec2(-1.0f, -1.0f),

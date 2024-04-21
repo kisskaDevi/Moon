@@ -6,7 +6,6 @@
 #include "buffer.h"
 
 #include <filesystem>
-#include <unordered_map>
 
 class texture;
 
@@ -34,7 +33,6 @@ protected:
     VkDevice                        device{VK_NULL_HANDLE};
     std::filesystem::path           shadersPath;
     imageInfo                       image;
-    std::unordered_map<std::string, texture*> emptyTexture;
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
@@ -43,7 +41,6 @@ public:
     virtual ~workflow(){};
     virtual void destroy();
 
-    workflow& setEmptyTexture(std::unordered_map<std::string, texture*> emptyTexture);
     workflow& setShadersPath(const std::filesystem::path &path);
     workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
     workflow& setImageProp(imageInfo* pInfo);

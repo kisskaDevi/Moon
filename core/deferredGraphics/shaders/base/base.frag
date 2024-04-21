@@ -1,8 +1,8 @@
 #version 450
 
-#include "../__methods__/defines.glsl"
-#include "../__methods__/colorFunctions.glsl"
-#include "../__methods__/math.glsl"
+#include "../../../workflows/shaders/__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/colorFunctions.glsl"
+#include "../../../workflows/shaders/__methods__/math.glsl"
 
 const uint PBR_WORKFLOW_METALLIC_ROUGHNESS = 0;
 const uint PBR_WORKFLOW_SPECULAR_GLOSINESS = 1;

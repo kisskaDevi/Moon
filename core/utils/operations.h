@@ -251,6 +251,13 @@ namespace SingleCommandBuffer {
             VkCommandPool                   commandPool,
             VkCommandBuffer*                commandBuffer);
 
+    VkResult submit(
+            VkDevice                        device,
+            VkQueue                         queue,
+            VkCommandPool                   commandPool,
+            uint32_t                        commandBufferCount,
+            VkCommandBuffer*                commandBuffer);
+
     class scoped{
     private:
         VkCommandBuffer commandBuffer{VK_NULL_HANDLE};

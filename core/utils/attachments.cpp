@@ -226,6 +226,11 @@ const attachments* attachmentsDatabase::get(const std::string& id) const{
     return attachmentsMap.count(id) > 0 && attachmentsMap.at(id).enable ? attachmentsMap.at(id).pImages : nullptr;
 }
 
+const texture* attachmentsDatabase::getEmpty(const std::string& id) const {
+    const auto texid = id.empty() ? defaultEmptyTexture : id;
+    return emptyTexturesMap.count(texid) > 0 ? emptyTexturesMap.at(texid) : nullptr;
+}
+
 VkImageView attachmentsDatabase::imageView(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId) const {
     const auto emptyTexture = emptyTextureId ? emptyTexturesMap.at(*emptyTextureId) : emptyTexturesMap.at(defaultEmptyTexture);
     const auto attachment = get(id);

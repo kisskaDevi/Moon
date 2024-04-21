@@ -67,8 +67,8 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
     const std::unordered_map<std::string, cuda::sphere> spheres = {
         {"sphere_0",  cuda::sphere(vec4f( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
         {"sphere_1",  cuda::sphere(vec4f( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
-        {"sphere_2",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_3",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_2",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.95f})},
+        {"sphere_3",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.95f})},
         {"sphere_4",  cuda::sphere(vec4f(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
         {"sphere_5",  cuda::sphere(vec4f( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
         {"sphere_6",  cuda::sphere(vec4f( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
@@ -103,7 +103,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
             vec4f(0.4f, 0.4f, 0.4f, 1.0f),
             vec4f(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
-            { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
+            { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.9f},
             std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
@@ -112,7 +112,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
             vec4f(0.3f, 0.3f, 0.3f, 1.0f),
             vec4f(1.5f, 0.0f, 0.41f, 0.0f),
             sign::plus,
-            { 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 1.0f},
+            { 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.9f},
             std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
@@ -121,7 +121,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
             vec4f(2.0f, 2.0f, 0.01f, 1.0f),
             vec4f(0.0f, 0.0f, 3.0f, 0.0f),
             sign::plus,
-            { 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f},
+            { 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 0.9f},
             std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
@@ -134,7 +134,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
                 vec4f(0.1f, 0.1f, 0.1f, 1.0f),
                 vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f + 2.8 * std::abs(std::sin(phi)), 0.0f),
                 sign::plus,
-                { 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f },
+                { 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f, 0.9},
                 std::vector<vec4f>(6, vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
             boxIndexBuffer);
     }
@@ -162,7 +162,7 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     hostcam = cuda::camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
     cam = cuda::make_devicep<cuda::camera>(hostcam);
-    graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", VkExtent2D{extent[0],extent[1]});
+    graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
     graphics->setCamera(&cam);
     graphics->setEnableBoundingBox(enableBB);

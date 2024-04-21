@@ -2,7 +2,7 @@
 #include "operations.h"
 #include "ray.h"
 #include "material.h"
-#include <iostream>
+
 namespace cuda {
 
 cudaRayTracing::cudaRayTracing(){}

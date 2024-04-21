@@ -183,11 +183,11 @@ VkResult texture::createTextureSampler(VkDevice device, struct textureSampler Te
     return vkCreateSampler(device, &samplerInfo, nullptr, &image.textureSampler);
 }
 
-void                texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
-void                texture::setTextureFormat(VkFormat format){image.format = format;}
+void texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
+void texture::setTextureFormat(VkFormat format){image.format = format;}
 
-const VkImageView*        texture::getTextureImageView() const {return &image.textureImageView;}
-const VkSampler*          texture::getTextureSampler() const {return &image.textureSampler;}
+const VkImageView* texture::getTextureImageView() const {return &image.textureImageView;}
+const VkSampler* texture::getTextureSampler() const {return &image.textureSampler;}
 
 //cubeTexture
 

@@ -10,24 +10,27 @@ endif()
 
 include_directories(renderStages)
 
-set(SOURCES deferredGraphics.cpp
-renderStages/layersCombiner.cpp
-renderStages/source/ambientLighting.cpp
-renderStages/source/lighting.cpp
-renderStages/source/lightingPipelines.cpp
-renderStages/source/base.cpp
-renderStages/source/extension.cpp
-renderStages/graphics.cpp
-renderStages/link.cpp
-renderStages/deferredAttachments.cpp)
+set(SOURCES
+    deferredGraphics.cpp
+    renderStages/layersCombiner.cpp
+    renderStages/source/ambientLighting.cpp
+    renderStages/source/lighting.cpp
+    renderStages/source/lightingPipelines.cpp
+    renderStages/source/base.cpp
+    renderStages/source/extension.cpp
+    renderStages/graphics.cpp
+    renderStages/link.cpp
+    renderStages/deferredAttachments.cpp
+)
 
-set(HEADERS deferredGraphics.h
-renderStages/layersCombiner.h
-renderStages/graphics.h
-renderStages/link.h
-renderStages/deferredAttachments.h)
+set(HEADERS
+    deferredGraphics.h
+    renderStages/layersCombiner.h
+    renderStages/graphics.h
+    renderStages/link.h
+    renderStages/deferredAttachments.h
+)
 
 add_library(deferredGraphics STATIC ${SOURCES} ${HEADERS})
-target_include_directories(deferredGraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-${CMAKE_CURRENT_SOURCE_DIR}/renderStages)
+target_include_directories(deferredGraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/renderStages)
 target_link_libraries(deferredGraphics PUBLIC graphicsManager workflows interfaces utils)

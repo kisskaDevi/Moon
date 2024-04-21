@@ -9,6 +9,7 @@ struct selectorParameters{
         std::string position;
         std::string depth;
         std::string transparency;
+        std::string defaultDepthTexture;
     }in;
     struct{
         std::string selector;

@@ -11,6 +11,7 @@ struct SSLRParameters{
         std::string color;
         std::string depth;
         std::string firstTransparency;
+        std::string defaultDepthTexture;
     }in;
     struct{
         std::string sslr;

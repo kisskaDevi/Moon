@@ -10,6 +10,7 @@ struct SSAOParameters{
         std::string normal;
         std::string color;
         std::string depth;
+        std::string defaultDepthTexture;
     }in;
     struct{
         std::string ssao;

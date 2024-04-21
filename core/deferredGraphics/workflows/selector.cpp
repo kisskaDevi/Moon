@@ -208,7 +208,7 @@ void selectorGraphics::updateDescriptorSets(const buffersDatabase& bDatabase, co
     {
         VkDescriptorBufferInfo StorageBufferInfo = bDatabase.descriptorBufferInfo(parameters.in.storageBuffer, i);
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
-        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, "white");
+        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, parameters.in.defaultDepthTexture);
 
         std::vector<VkDescriptorImageInfo> positionLayersImageInfo(selector.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> depthLayersImageInfo(selector.transparentLayersCount);
@@ -217,7 +217,7 @@ void selectorGraphics::updateDescriptorSets(const buffersDatabase& bDatabase, co
             std::string key = parameters.in.transparency + std::to_string(index) + ".";
 
             positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.position, i);
-            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.depth, i, "white");
+            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.depth, i, parameters.in.defaultDepthTexture);
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

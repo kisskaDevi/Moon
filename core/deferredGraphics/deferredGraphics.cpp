@@ -164,6 +164,7 @@ void deferredGraphics::createGraphicsPasses(){
     SSLRParams.in.color = graphicsParams.out.image;
     SSLRParams.in.depth = graphicsParams.out.depth;
     SSLRParams.in.firstTransparency = graphicsParams.out.transparency + "0";
+    SSLRParams.in.defaultDepthTexture = "white";
     SSLRParams.out.sslr = "sslr";
 
     layersCombinerParameters layersCombinerParams;
@@ -178,6 +179,7 @@ void deferredGraphics::createGraphicsPasses(){
     layersCombinerParams.in.scattering = scatteringParams.out.scattering;
     layersCombinerParams.in.sslr = SSLRParams.out.sslr;
     layersCombinerParams.in.transparency = graphicsParams.out.transparency;
+    layersCombinerParams.in.defaultDepthTexture = "white";
     layersCombinerParams.out.color = "combined.color";
     layersCombinerParams.out.bloom = "combined.bloom";
     layersCombinerParams.out.blur = "combined.blur";
@@ -200,6 +202,7 @@ void deferredGraphics::createGraphicsPasses(){
     SSAOParams.in.normal = graphicsParams.out.normal;
     SSAOParams.in.color = graphicsParams.out.image;
     SSAOParams.in.depth = graphicsParams.out.depth;
+    SSAOParams.in.defaultDepthTexture = "white";
     SSAOParams.out.ssao = "ssao";
 
     postProcessingParameters postProcessingParams;
@@ -215,6 +218,7 @@ void deferredGraphics::createGraphicsPasses(){
     selectorParams.in.position = graphicsParams.out.position;
     selectorParams.in.depth = graphicsParams.out.depth;
     selectorParams.in.transparency = graphicsParams.out.transparency;
+    selectorParams.in.defaultDepthTexture = "white";
     selectorParams.out.selector = "selector";
 
     workflows["DeferredGraphics"] = new graphics(graphicsParams, enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);

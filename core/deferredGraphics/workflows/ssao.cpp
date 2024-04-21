@@ -181,7 +181,7 @@ void SSAOGraphics::updateDescriptorSets(
         VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
         VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo(parameters.in.normal, i);
         VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo(parameters.in.color, i);
-        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, "white");
+        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, parameters.in.defaultDepthTexture);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

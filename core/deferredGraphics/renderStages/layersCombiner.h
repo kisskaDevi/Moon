@@ -45,6 +45,7 @@ struct layersCombinerParameters{
         std::string scattering;
         std::string sslr;
         std::string transparency;
+        std::string defaultDepthTexture;
     }in;
     struct{
         std::string color;

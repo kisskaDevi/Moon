@@ -201,7 +201,7 @@ void SSLRGraphics::updateDescriptorSets(
 
         const auto layerDepthId = aDatabase.get(parameters.in.firstTransparency + parameters.in.depth) ?
                                       parameters.in.firstTransparency + parameters.in.depth : parameters.in.depth;
-        VkDescriptorImageInfo layerDepthInfo = aDatabase.descriptorImageInfo(layerDepthId, i, "white");
+        VkDescriptorImageInfo layerDepthInfo = aDatabase.descriptorImageInfo(layerDepthId, i, parameters.in.defaultDepthTexture);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

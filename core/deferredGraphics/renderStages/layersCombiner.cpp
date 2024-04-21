@@ -248,7 +248,7 @@ void layersCombiner::updateDescriptorSets(
         VkDescriptorImageInfo bloomImageInfo = aDatabase.descriptorImageInfo(parameters.in.bloom, i);
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
         VkDescriptorImageInfo normalImageInfo = aDatabase.descriptorImageInfo(parameters.in.normal, i);
-        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, "white");
+        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, parameters.in.defaultDepthTexture);
         VkDescriptorImageInfo skyboxImageInfo = aDatabase.descriptorImageInfo(parameters.in.skyboxColor, i);
         VkDescriptorImageInfo skyboxBloomImageInfo = aDatabase.descriptorImageInfo(parameters.in.skyboxBloom, i);
         VkDescriptorImageInfo scatteringImageInfo = aDatabase.descriptorImageInfo(parameters.in.scattering, i);
@@ -267,7 +267,7 @@ void layersCombiner::updateDescriptorSets(
             bloomLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.bloom, i);
             positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.position, i);
             normalLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.normal, i);
-            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.depth, i, "white");
+            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.depth, i, parameters.in.defaultDepthTexture);
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

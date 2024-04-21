@@ -2,8 +2,8 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-postProcessingGraphics::postProcessingGraphics(bool enable) :
-    enable{enable}
+postProcessingGraphics::postProcessingGraphics(postProcessingParameters parameters, bool enable) :
+    parameters(parameters), enable{enable}
 {}
 
 void postProcessingGraphics::destroy()
@@ -17,7 +17,7 @@ void postProcessingGraphics::destroy()
 
 void postProcessingGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    aDatabase.addAttachmentData("final", enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.postProcessing, enable, &frame);
 }
 
 void postProcessingGraphics::createRenderPass()
@@ -178,11 +178,11 @@ void postProcessingGraphics::updateDescriptorSets(
     if(!enable) return;
 
     for (size_t i = 0; i < this->image.Count; i++){
-        VkDescriptorImageInfo layersImageInfo = aDatabase.descriptorImageInfo("combined.color", i);
-        VkDescriptorImageInfo blurImageInfo = aDatabase.descriptorImageInfo("blured", i);
-        VkDescriptorImageInfo ssaoImageInfo = aDatabase.descriptorImageInfo("ssao", i);
-        VkDescriptorImageInfo bbImageInfo = aDatabase.descriptorImageInfo("boundingBox", i);
-        VkDescriptorImageInfo bloomImageInfo =  aDatabase.descriptorImageInfo("bloomFinal", i);
+        VkDescriptorImageInfo layersImageInfo = aDatabase.descriptorImageInfo(parameters.in.baseColor, i);
+        VkDescriptorImageInfo blurImageInfo = aDatabase.descriptorImageInfo(parameters.in.blur, i);
+        VkDescriptorImageInfo ssaoImageInfo = aDatabase.descriptorImageInfo(parameters.in.ssao, i);
+        VkDescriptorImageInfo bbImageInfo = aDatabase.descriptorImageInfo(parameters.in.boundingBox, i);
+        VkDescriptorImageInfo bloomImageInfo =  aDatabase.descriptorImageInfo(parameters.in.bloom, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

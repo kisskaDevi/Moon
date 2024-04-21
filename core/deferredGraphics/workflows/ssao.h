@@ -3,12 +3,27 @@
 
 #include "workflow.h"
 
+struct SSAOParameters{
+    struct{
+        std::string camera;
+        std::string position;
+        std::string normal;
+        std::string color;
+        std::string depth;
+    }in;
+    struct{
+        std::string ssao;
+    }out;
+};
+
 class SSAOGraphics : public workflow
 {
+private:
+    SSAOParameters parameters;
+
     attachments frame;
     bool enable{true};
 
-private:
     struct SSAO : public workbody{
         void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device)override;
@@ -21,7 +36,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    SSAOGraphics(bool enable);
+    SSAOGraphics(SSAOParameters parameters, bool enable);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

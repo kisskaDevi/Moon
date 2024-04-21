@@ -2,7 +2,8 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-bloomGraphics::bloomGraphics(bool enable, uint32_t blitAttachmentsCount, float blitFactor, float xSamplerStep, float ySamplerStep):
+bloomGraphics::bloomGraphics(bloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, float blitFactor, float xSamplerStep, float ySamplerStep):
+    parameters(parameters),
     enable(enable),
     blitFactor(blitFactor),
     xSamplerStep(xSamplerStep),
@@ -20,7 +21,7 @@ void bloomGraphics::createAttachments(attachmentsDatabase& aDatabase)
     ::createAttachments(physicalDevice, device, image, bloom.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     ::createAttachments(physicalDevice, device, image, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-    aDatabase.addAttachmentData("bloomFinal", enable, &bufferAttachment);
+    aDatabase.addAttachmentData(parameters.out.bloom, enable, &bufferAttachment);
 }
 
 void bloomGraphics::destroy(){
@@ -290,7 +291,7 @@ void bloomGraphics::updateDescriptorSets(
 {
     if(!enable) return;
 
-    srcAttachment = aDatabase.get("combined.bloom");
+    srcAttachment = aDatabase.get(parameters.in.bloom);
 
     auto updateDescriptorSets = [](VkDevice device, attachments* image, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
         auto imageIt = image->instances.begin();

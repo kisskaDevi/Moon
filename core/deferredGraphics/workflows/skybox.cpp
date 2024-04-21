@@ -3,16 +3,16 @@
 #include "vkdefault.h"
 #include "object.h"
 
-skyboxGraphics::skyboxGraphics(bool enable, std::vector<object*>* objects) :
-    enable(enable)
+skyboxGraphics::skyboxGraphics(skyboxParameters parameters, bool enable, std::vector<object*>* objects) :
+    parameters(parameters), enable(enable)
 {
     skybox.objects = objects;
 }
 
 void skyboxGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 2, &frame);
-    aDatabase.addAttachmentData("skybox.color", enable, &frame.color);
-    aDatabase.addAttachmentData("skybox.bloom", enable, &frame.bloom);
+    aDatabase.addAttachmentData(parameters.out.baseColor, enable, &frame.color);
+    aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
 }
 
 void skyboxGraphics::Skybox::destroy(VkDevice device)
@@ -190,7 +190,7 @@ void skyboxGraphics::updateDescriptorSets(const buffersDatabase& bDatabase, cons
     if(!enable) return;
 
     for (uint32_t i = 0; i < image.Count; i++){
-        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

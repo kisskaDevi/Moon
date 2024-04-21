@@ -3,9 +3,25 @@
 
 #include "workflow.h"
 
+struct SSLRParameters{
+    struct{
+        std::string camera;
+        std::string position;
+        std::string normal;
+        std::string color;
+        std::string depth;
+        std::string firstTransparency;
+    }in;
+    struct{
+        std::string sslr;
+    }out;
+};
+
 class SSLRGraphics : public workflow
 {
 private:
+    SSLRParameters parameters;
+
     attachments frame;
     bool enable;
 
@@ -21,7 +37,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    SSLRGraphics(bool enable);
+    SSLRGraphics(SSLRParameters parameters, bool enable);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

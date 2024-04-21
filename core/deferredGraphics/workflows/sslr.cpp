@@ -2,13 +2,13 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-SSLRGraphics::SSLRGraphics(bool enable) :
-    enable(enable)
+SSLRGraphics::SSLRGraphics(SSLRParameters parameters, bool enable) :
+    parameters(parameters), enable(enable)
 {}
 
 void SSLRGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    aDatabase.addAttachmentData("sslr", enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.sslr, enable, &frame);
 }
 
 void SSLRGraphics::destroy()
@@ -181,22 +181,26 @@ void SSLRGraphics::updateDescriptorSets(
 
     for (uint32_t i = 0; i < this->image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
-        VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
-        VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo("GBuffer.normal", i);
-        VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo("image", i);
-        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i);
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
+        VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
+        VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo(parameters.in.normal, i);
+        VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo(parameters.in.color, i);
+        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i);
 
-        const auto layerPositionId = aDatabase.get("transparency0.GBuffer.position") ? "transparency0.GBuffer.position" : "GBuffer.position";
+        const auto layerPositionId = aDatabase.get(parameters.in.firstTransparency + parameters.in.position) ?
+                                         parameters.in.firstTransparency + parameters.in.position : parameters.in.position;
         VkDescriptorImageInfo layerPositionInfo = aDatabase.descriptorImageInfo(layerPositionId, i);
 
-        const auto layerNormalId = aDatabase.get("transparency0.GBuffer.normal") ? "transparency0.GBuffer.normal" : "GBuffer.normal";
+        const auto layerNormalId = aDatabase.get(parameters.in.firstTransparency + parameters.in.normal) ?
+                                       parameters.in.firstTransparency + parameters.in.normal : parameters.in.normal;
         VkDescriptorImageInfo layerNormalInfo = aDatabase.descriptorImageInfo(layerNormalId, i);
 
-        const auto layerImageId = aDatabase.get("transparency0.image") ? "transparency0.image" : "image";
+        const auto layerImageId = aDatabase.get(parameters.in.firstTransparency + parameters.in.color) ?
+                                      parameters.in.firstTransparency + parameters.in.color : parameters.in.color;
         VkDescriptorImageInfo layerImageInfo = aDatabase.descriptorImageInfo(layerImageId, i);
 
-        const auto layerDepthId = aDatabase.get("transparency0.GBuffer.depth") ? "transparency0.GBuffer.depth" : "GBuffer.depth";
+        const auto layerDepthId = aDatabase.get(parameters.in.firstTransparency + parameters.in.depth) ?
+                                      parameters.in.firstTransparency + parameters.in.depth : parameters.in.depth;
         VkDescriptorImageInfo layerDepthInfo = aDatabase.descriptorImageInfo(layerDepthId, i, "white");
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

@@ -3,9 +3,20 @@
 
 #include "workflow.h"
 
+struct gaussianBlurParameters{
+    struct{
+        std::string blur;
+    }in;
+    struct{
+        std::string blur;
+    }out;
+};
+
 class gaussianBlur : public workflow
 {
 private:
+    gaussianBlurParameters parameters;
+
     attachments bufferAttachment;
     attachments frame;
     bool enable{true};
@@ -30,7 +41,7 @@ private:
 
     void createBufferAttachments();
 public:
-    gaussianBlur(bool enable);
+    gaussianBlur(gaussianBlurParameters parameters, bool enable);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

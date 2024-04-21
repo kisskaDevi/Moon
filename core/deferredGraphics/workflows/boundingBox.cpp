@@ -12,9 +12,8 @@ namespace {
     };
 }
 
-boundingBoxGraphics::boundingBoxGraphics(bool enable, std::vector<object*>* objects) :
-    enable(enable)
-{
+boundingBoxGraphics::boundingBoxGraphics(boundingBoxParameters parameters, bool enable, std::vector<object*>* objects) :
+    parameters(parameters), enable(enable){
     box.objects = objects;
 }
 
@@ -34,7 +33,7 @@ void boundingBoxGraphics::destroy(){
 
 void boundingBoxGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    aDatabase.addAttachmentData("boundingBox", enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.boundingBox, enable, &frame);
 }
 
 void boundingBoxGraphics::createRenderPass(){
@@ -230,7 +229,7 @@ void boundingBoxGraphics::updateDescriptorSets(
 
     for (uint32_t i = 0; i < image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

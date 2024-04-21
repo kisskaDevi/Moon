@@ -16,9 +16,27 @@ struct  Material;
 struct  MaterialBlock;
 class   depthMap;
 
+struct graphicsParameters{
+    struct{
+        std::string camera;
+    }in;
+    struct{
+        std::string image;
+        std::string blur;
+        std::string bloom;
+        std::string position;
+        std::string normal;
+        std::string color;
+        std::string depth;
+        std::string transparency;
+    }out;
+};
+
 class graphics : public workflow
 {
 private:
+    graphicsParameters parameters;
+
     uint32_t                        primitiveCount{0};
     DeferredAttachments             deferredAttachments;
     bool                            enable{true};
@@ -116,7 +134,8 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    graphics(bool enable,
+    graphics(graphicsParameters parameters,
+             bool enable,
              bool enableTransparency,
              bool transparencyPass,
              uint32_t transparencyNumber,

@@ -1,10 +1,9 @@
 #include "layersCombiner.h"
 #include "operations.h"
 #include "vkdefault.h"
-#include "texture.h"
 
-layersCombiner::layersCombiner(bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction) :
-    enable(enable)
+layersCombiner::layersCombiner(layersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction) :
+    parameters(parameters), enable(enable)
 {
     combiner.transparentLayersCount = transparentLayersCount == 0 ? 1 : transparentLayersCount;
     combiner.enableTransparentLayers = transparentLayersCount != 0;
@@ -34,9 +33,9 @@ void layersCombiner::createAttachments(attachmentsDatabase& aDatabase)
     };
 
     createAttachments(physicalDevice, device, image, layersCombinerAttachments::size(), &frame);
-    aDatabase.addAttachmentData("combined.color", enable, &frame.color);
-    aDatabase.addAttachmentData("combined.bloom", enable, &frame.bloom);
-    aDatabase.addAttachmentData("combined.blur", enable, &frame.blur);
+    aDatabase.addAttachmentData(parameters.out.color, enable, &frame.color);
+    aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
+    aDatabase.addAttachmentData(parameters.out.blur, enable, &frame.blur);
 }
 
 void layersCombiner::destroy(){
@@ -244,16 +243,16 @@ void layersCombiner::updateDescriptorSets(
 
     for (uint32_t i = 0; i < image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
-        VkDescriptorImageInfo colorImageInfo = aDatabase.descriptorImageInfo("image", i);
-        VkDescriptorImageInfo bloomImageInfo = aDatabase.descriptorImageInfo("bloom", i);
-        VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
-        VkDescriptorImageInfo normalImageInfo = aDatabase.descriptorImageInfo("GBuffer.normal", i);
-        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i, "white");
-        VkDescriptorImageInfo skyboxImageInfo = aDatabase.descriptorImageInfo("skybox.color", i);
-        VkDescriptorImageInfo skyboxBloomImageInfo = aDatabase.descriptorImageInfo("skybox.bloom", i);
-        VkDescriptorImageInfo scatteringImageInfo = aDatabase.descriptorImageInfo("scattering", i);
-        VkDescriptorImageInfo sslrImageInfo = aDatabase.descriptorImageInfo("sslr", i);
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
+        VkDescriptorImageInfo colorImageInfo = aDatabase.descriptorImageInfo(parameters.in.color, i);
+        VkDescriptorImageInfo bloomImageInfo = aDatabase.descriptorImageInfo(parameters.in.bloom, i);
+        VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
+        VkDescriptorImageInfo normalImageInfo = aDatabase.descriptorImageInfo(parameters.in.normal, i);
+        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, "white");
+        VkDescriptorImageInfo skyboxImageInfo = aDatabase.descriptorImageInfo(parameters.in.skyboxColor, i);
+        VkDescriptorImageInfo skyboxBloomImageInfo = aDatabase.descriptorImageInfo(parameters.in.skyboxBloom, i);
+        VkDescriptorImageInfo scatteringImageInfo = aDatabase.descriptorImageInfo(parameters.in.scattering, i);
+        VkDescriptorImageInfo sslrImageInfo = aDatabase.descriptorImageInfo(parameters.in.sslr, i);
 
         std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);
@@ -262,13 +261,13 @@ void layersCombiner::updateDescriptorSets(
         std::vector<VkDescriptorImageInfo> depthLayersImageInfo(combiner.transparentLayersCount);
 
         for(uint32_t index = 0; index < combiner.transparentLayersCount; index++){
-            std::string key = "transparency" + std::to_string(index) + ".";
+            std::string key = parameters.in.transparency + std::to_string(index) + ".";
 
-            colorLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "image", i);
-            bloomLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "bloom", i);
-            positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.position", i);
-            normalLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.normal", i);
-            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.depth", i, "white");
+            colorLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.color, i);
+            bloomLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.bloom, i);
+            positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.position, i);
+            normalLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.normal, i);
+            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.depth, i, "white");
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

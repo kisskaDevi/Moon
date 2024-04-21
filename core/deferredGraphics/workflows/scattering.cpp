@@ -4,9 +4,10 @@
 #include "operations.h"
 #include "depthMap.h"
 
-scattering::scattering(bool enable, std::vector<light*>* lightSources,
+scattering::scattering(scatteringParameters parameters,
+                       bool enable, std::vector<light*>* lightSources,
                        std::unordered_map<light*, depthMap*>* depthMaps) :
-    enable(enable)
+    parameters(parameters), enable(enable)
 {
     lighting.lightSources = lightSources;
     lighting.depthMaps = depthMaps;
@@ -35,7 +36,7 @@ void scattering::Lighting::destroy(VkDevice device){
 
 void scattering::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    aDatabase.addAttachmentData("scattering", enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.scattering, enable, &frame);
 }
 
 void scattering::destroy()
@@ -231,8 +232,8 @@ void scattering::updateDescriptorSets(
 
     for (uint32_t i = 0; i < image.Count; i++)
     {
-        VkDescriptorImageInfo depthInfos = aDatabase.descriptorImageInfo("GBuffer.depth", i);
-        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
+        VkDescriptorImageInfo depthInfos = aDatabase.descriptorImageInfo(parameters.in.depth, i);
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

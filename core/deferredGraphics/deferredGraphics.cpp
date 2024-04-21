@@ -136,22 +136,103 @@ void deferredGraphics::createGraphicsPasses(){
     CHECK_M(device.instance == VK_NULL_HANDLE,   std::string("[ deferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECK_M(cameraObject == nullptr,             std::string("[ deferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
-    workflows["DeferredGraphics"] = new graphics(enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
-    workflows["LayersCombiner"] = new layersCombiner(enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
-    workflows["PostProcessing"] = new postProcessingGraphics(enable["PostProcessing"]);
-    workflows["Blur"] = new gaussianBlur(enable["Blur"]);
-    workflows["Bloom"] = new bloomGraphics(enable["Bloom"], blitAttachmentsCount);
-    workflows["Skybox"] = new skyboxGraphics(enable["Skybox"], &objects);
-    workflows["SSLR"] = new SSLRGraphics(enable["SSLR"]);
-    workflows["SSAO"] = new SSAOGraphics(enable["SSAO"]);
+    graphicsParameters graphicsParams;
+    graphicsParams.in.camera = "camera";
+    graphicsParams.out.image = "image";
+    graphicsParams.out.blur = "blur";
+    graphicsParams.out.bloom = "bloom";
+    graphicsParams.out.position = "GBuffer.position";
+    graphicsParams.out.normal = "GBuffer.normal";
+    graphicsParams.out.color = "GBuffer.color";
+    graphicsParams.out.depth = "GBuffer.depth";
+    graphicsParams.out.transparency = "transparency";
+
+    skyboxParameters skyboxParams;
+    skyboxParams.in.camera = graphicsParams.in.camera;
+    skyboxParams.out.baseColor = "skybox.color";
+    skyboxParams.out.bloom = "skybox.bloom";
+
+    scatteringParameters scatteringParams;
+    scatteringParams.in.camera = graphicsParams.in.camera;
+    scatteringParams.in.depth = graphicsParams.out.depth;
+    scatteringParams.out.scattering = "scattering";
+
+    SSLRParameters SSLRParams;
+    SSLRParams.in.camera = graphicsParams.in.camera;
+    SSLRParams.in.position = graphicsParams.out.position;
+    SSLRParams.in.normal = graphicsParams.out.normal;
+    SSLRParams.in.color = graphicsParams.out.image;
+    SSLRParams.in.depth = graphicsParams.out.depth;
+    SSLRParams.in.firstTransparency = graphicsParams.out.transparency + "0";
+    SSLRParams.out.sslr = "sslr";
+
+    layersCombinerParameters layersCombinerParams;
+    layersCombinerParams.in.camera = graphicsParams.in.camera;
+    layersCombinerParams.in.color = graphicsParams.out.image;
+    layersCombinerParams.in.bloom = graphicsParams.out.bloom;
+    layersCombinerParams.in.position = graphicsParams.out.position;
+    layersCombinerParams.in.normal = graphicsParams.out.normal;
+    layersCombinerParams.in.depth = graphicsParams.out.depth;
+    layersCombinerParams.in.skyboxColor = skyboxParams.out.baseColor;
+    layersCombinerParams.in.skyboxBloom = skyboxParams.out.bloom;
+    layersCombinerParams.in.scattering = scatteringParams.out.scattering;
+    layersCombinerParams.in.sslr = SSLRParams.out.sslr;
+    layersCombinerParams.in.transparency = graphicsParams.out.transparency;
+    layersCombinerParams.out.color = "combined.color";
+    layersCombinerParams.out.bloom = "combined.bloom";
+    layersCombinerParams.out.blur = "combined.blur";
+
+    bloomParameters bloomParams;
+    bloomParams.in.bloom = layersCombinerParams.out.bloom;
+    bloomParams.out.bloom = "bloomFinal";
+
+    gaussianBlurParameters blurParams;
+    blurParams.in.blur = layersCombinerParams.out.blur;
+    blurParams.out.blur = "blured";
+
+    boundingBoxParameters bbParams;
+    bbParams.in.camera = graphicsParams.in.camera;
+    bbParams.out.boundingBox = "boundingBox";
+
+    SSAOParameters SSAOParams;
+    SSAOParams.in.camera = graphicsParams.in.camera;
+    SSAOParams.in.position = graphicsParams.out.position;
+    SSAOParams.in.normal = graphicsParams.out.normal;
+    SSAOParams.in.color = graphicsParams.out.image;
+    SSAOParams.in.depth = graphicsParams.out.depth;
+    SSAOParams.out.ssao = "ssao";
+
+    postProcessingParameters postProcessingParams;
+    postProcessingParams.in.baseColor = layersCombinerParams.out.color;
+    postProcessingParams.in.bloom = bloomParams.out.bloom;
+    postProcessingParams.in.blur = blurParams.out.blur;
+    postProcessingParams.in.boundingBox = bbParams.out.boundingBox;
+    postProcessingParams.in.ssao = SSAOParams.out.ssao;
+    postProcessingParams.out.postProcessing = "final";
+
+    selectorParameters selectorParams;
+    selectorParams.in.storageBuffer = "storage";
+    selectorParams.in.position = graphicsParams.out.position;
+    selectorParams.in.depth = graphicsParams.out.depth;
+    selectorParams.in.transparency = graphicsParams.out.transparency;
+    selectorParams.out.selector = "selector";
+
+    workflows["DeferredGraphics"] = new graphics(graphicsParams, enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
+    workflows["LayersCombiner"] = new layersCombiner(layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
+    workflows["PostProcessing"] = new postProcessingGraphics(postProcessingParams, enable["PostProcessing"]);
+    workflows["Blur"] = new gaussianBlur(blurParams, enable["Blur"]);
+    workflows["Bloom"] = new bloomGraphics(bloomParams, enable["Bloom"], blitAttachmentsCount);
+    workflows["Skybox"] = new skyboxGraphics(skyboxParams, enable["Skybox"], &objects);
+    workflows["SSLR"] = new SSLRGraphics(SSLRParams, enable["SSLR"]);
+    workflows["SSAO"] = new SSAOGraphics(SSAOParams, enable["SSAO"]);
     workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &depthMaps);
-    workflows["Scattering"] = new scattering(enable["Scattering"], &lights, &depthMaps);
-    workflows["BoundingBox"] = new boundingBoxGraphics(enable["BoundingBox"], &objects);
+    workflows["Scattering"] = new scattering(scatteringParams, enable["Scattering"], &lights, &depthMaps);
+    workflows["BoundingBox"] = new boundingBoxGraphics(bbParams, enable["BoundingBox"], &objects);
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
         enable["TransparentLayer" + std::to_string(i)] = enable["TransparentLayer"];
-        workflows["TransparentLayer" + std::to_string(i)] = new graphics(enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
+        workflows["TransparentLayer" + std::to_string(i)] = new graphics(graphicsParams, enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
     };
-    workflows["Selector"] = new selectorGraphics(enable["Selector"]);
+    workflows["Selector"] = new selectorGraphics(selectorParams, enable["Selector"]);
 
 
     for(auto& [_,workflow]: workflows){

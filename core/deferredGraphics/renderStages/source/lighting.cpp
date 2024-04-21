@@ -107,7 +107,7 @@ void graphics::updateLightingDescriptorSets(const buffersDatabase& bDatabase)
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         });
 
-        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for(auto& imageInfo: imageInfos){

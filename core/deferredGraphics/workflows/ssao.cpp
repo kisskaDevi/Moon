@@ -2,13 +2,13 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-SSAOGraphics::SSAOGraphics(bool enable) :
-    enable(enable)
+SSAOGraphics::SSAOGraphics(SSAOParameters parameters, bool enable) :
+    parameters(parameters), enable(enable)
 {}
 
 void SSAOGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    aDatabase.addAttachmentData("ssao", enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.ssao, enable, &frame);
 }
 
 void SSAOGraphics::destroy()
@@ -177,11 +177,11 @@ void SSAOGraphics::updateDescriptorSets(
 
     for (uint32_t i = 0; i < this->image.Count; i++)
     {
-        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo("camera", i);
-        VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
-        VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo("GBuffer.normal", i);
-        VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo("image", i);
-        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i, "white");
+        VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
+        VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
+        VkDescriptorImageInfo normalInfo = aDatabase.descriptorImageInfo(parameters.in.normal, i);
+        VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo(parameters.in.color, i);
+        VkDescriptorImageInfo depthInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, "white");
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

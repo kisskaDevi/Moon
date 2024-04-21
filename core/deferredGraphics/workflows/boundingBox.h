@@ -5,9 +5,20 @@
 
 class object;
 
+struct boundingBoxParameters{
+    struct{
+        std::string camera;
+    }in;
+    struct{
+        std::string boundingBox;
+    }out;
+};
+
 class boundingBoxGraphics : public workflow
 {
 private:
+    boundingBoxParameters parameters;
+
     attachments frame;
     bool enable{true};
 
@@ -30,7 +41,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    boundingBoxGraphics(bool enable, std::vector<object*>* objects = nullptr);
+    boundingBoxGraphics(boundingBoxParameters parameters, bool enable, std::vector<object*>* objects = nullptr);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

@@ -3,9 +3,24 @@
 
 #include "workflow.h"
 
+struct postProcessingParameters{
+    struct{
+        std::string baseColor;
+        std::string blur;
+        std::string bloom;
+        std::string ssao;
+        std::string boundingBox;
+    }in;
+    struct{
+        std::string postProcessing;
+    }out;
+};
+
 class postProcessingGraphics : public workflow
 {
 private:
+    postProcessingParameters parameters;
+
     attachments frame;
     bool enable{true};
 
@@ -21,7 +36,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    postProcessingGraphics(bool enable);
+    postProcessingGraphics(postProcessingParameters parameters, bool enable);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

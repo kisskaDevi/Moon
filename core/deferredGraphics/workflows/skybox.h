@@ -26,9 +26,21 @@ struct skyboxAttachments
     }
 };
 
+struct skyboxParameters{
+    struct{
+        std::string camera;
+    }in;
+    struct{
+        std::string baseColor;
+        std::string bloom;
+    }out;
+};
+
 class skyboxGraphics : public workflow
 {
 private:
+    skyboxParameters parameters;
+
     skyboxAttachments frame;
     bool enable;
 
@@ -49,7 +61,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    skyboxGraphics(bool enable, std::vector<object*>* object = nullptr);
+    skyboxGraphics(skyboxParameters parameters, bool enable, std::vector<object*>* object = nullptr);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

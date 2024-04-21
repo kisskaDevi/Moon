@@ -11,9 +11,21 @@ struct scatteringPushConst{
     alignas(4) uint32_t  height{0};
 };
 
+struct scatteringParameters{
+    struct{
+        std::string camera;
+        std::string depth;
+    }in;
+    struct{
+        std::string scattering;
+    }out;
+};
+
 class scattering : public workflow
 {
 private:
+    scatteringParameters parameters;
+
     attachments frame;
     bool enable{true};
 
@@ -40,7 +52,8 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    scattering(bool enable, std::vector<light*>* lightSources = nullptr,
+    scattering(scatteringParameters parameters,
+               bool enable, std::vector<light*>* lightSources = nullptr,
                std::unordered_map<light*, depthMap*>* depthMaps = nullptr);
 
     void destroy() override;

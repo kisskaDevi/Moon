@@ -3,8 +3,8 @@
 #include "object.h"
 #include "deferredAttachments.h"
 
-graphics::graphics(bool enable, bool enableTransparency, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources, std::unordered_map<light*, depthMap*>* depthMaps) :
-    enable(enable)
+graphics::graphics(graphicsParameters parameters, bool enable, bool enableTransparency, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources, std::unordered_map<light*, depthMap*>* depthMaps) :
+    parameters(parameters), enable(enable)
 {
     base.enableTransparency = enableTransparency;
     base.transparencyPass = transparencyPass;
@@ -61,13 +61,13 @@ void graphics::createAttachments(attachmentsDatabase& aDatabase)
 
     createAttachments(physicalDevice, device, image, &deferredAttachments);
 
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "image", enable, &deferredAttachments.image);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "blur", enable, &deferredAttachments.blur);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "bloom", enable, &deferredAttachments.bloom);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.position", enable, &deferredAttachments.GBuffer.position);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.normal", enable, &deferredAttachments.GBuffer.normal);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.color", enable, &deferredAttachments.GBuffer.color);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : "transparency" + std::to_string(base.transparencyNumber) + ".") + "GBuffer.depth", enable, &deferredAttachments.GBuffer.depth);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.image, enable, &deferredAttachments.image);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.blur, enable, &deferredAttachments.blur);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.bloom, enable, &deferredAttachments.bloom);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.position, enable, &deferredAttachments.GBuffer.position);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.normal, enable, &deferredAttachments.GBuffer.normal);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.color, enable, &deferredAttachments.GBuffer.color);
+    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.depth, enable, &deferredAttachments.GBuffer.depth);
 }
 
 void graphics::createRenderPass()

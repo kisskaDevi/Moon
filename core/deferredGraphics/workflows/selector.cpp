@@ -1,16 +1,16 @@
 #include "selector.h"
 #include "operations.h"
 #include "vkdefault.h"
-#include "texture.h"
 
-selectorGraphics::selectorGraphics(bool enable, uint32_t transparentLayersCount) :
-    enable(enable) {
+selectorGraphics::selectorGraphics(selectorParameters parameters, bool enable, uint32_t transparentLayersCount) :
+    parameters(parameters), enable(enable)
+{
     selector.transparentLayersCount = transparentLayersCount > 0 ? transparentLayersCount : 1;
 }
 
 void selectorGraphics::createAttachments(attachmentsDatabase& aDatabase){
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    aDatabase.addAttachmentData("selector", enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.selector, enable, &frame);
 }
 
 void selectorGraphics::destroy()
@@ -206,18 +206,18 @@ void selectorGraphics::updateDescriptorSets(const buffersDatabase& bDatabase, co
 
     for (uint32_t i = 0; i < this->image.Count; i++)
     {
-        VkDescriptorBufferInfo StorageBufferInfo = bDatabase.descriptorBufferInfo("storage", i);
-        VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo("GBuffer.position", i);
-        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo("GBuffer.depth", i, "white");
+        VkDescriptorBufferInfo StorageBufferInfo = bDatabase.descriptorBufferInfo(parameters.in.storageBuffer, i);
+        VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
+        VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, "white");
 
         std::vector<VkDescriptorImageInfo> positionLayersImageInfo(selector.transparentLayersCount);
         std::vector<VkDescriptorImageInfo> depthLayersImageInfo(selector.transparentLayersCount);
 
         for(uint32_t index = 0; index < selector.transparentLayersCount; index++){
-            std::string key = "transparency" + std::to_string(index) + ".";
+            std::string key = parameters.in.transparency + std::to_string(index) + ".";
 
-            positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.position", i);
-            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + "GBuffer.depth", i, "white");
+            positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.position, i);
+            depthLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.depth, i, "white");
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

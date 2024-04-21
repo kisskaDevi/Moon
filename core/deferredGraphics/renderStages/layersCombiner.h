@@ -32,9 +32,32 @@ struct layersCombinerAttachments{
     }
 };
 
+struct layersCombinerParameters{
+    struct{
+        std::string camera;
+        std::string color;
+        std::string bloom;
+        std::string position;
+        std::string normal;
+        std::string depth;
+        std::string skyboxColor;
+        std::string skyboxBloom;
+        std::string scattering;
+        std::string sslr;
+        std::string transparency;
+    }in;
+    struct{
+        std::string color;
+        std::string bloom;
+        std::string blur;
+    }out;
+};
+
 class layersCombiner : public workflow
 {
 private:
+    layersCombinerParameters parameters;
+
     layersCombinerAttachments frame;
     bool enable{true};
 
@@ -56,7 +79,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    layersCombiner(bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction);
+    layersCombiner(layersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

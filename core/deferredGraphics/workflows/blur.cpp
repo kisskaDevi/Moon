@@ -2,8 +2,8 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-gaussianBlur::gaussianBlur(bool enable) :
-    enable(enable)
+gaussianBlur::gaussianBlur(gaussianBlurParameters parameters, bool enable) :
+    parameters(parameters), enable(enable)
 {}
 
 void gaussianBlur::createBufferAttachments(){
@@ -16,7 +16,7 @@ void gaussianBlur::createAttachments(attachmentsDatabase& aDatabase)
 {
     createBufferAttachments();
     ::createAttachments(physicalDevice, device, image, 1, &frame);
-    aDatabase.addAttachmentData("blured", enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.blur, enable, &frame);
 }
 
 void gaussianBlur::destroy(){
@@ -246,7 +246,7 @@ void gaussianBlur::updateDescriptorSets(
         }
     };
 
-    const auto blurAttachment = aDatabase.get("combined.blur");
+    const auto blurAttachment = aDatabase.get(parameters.in.blur);
     updateDescriptorSets(device, blurAttachment, blurAttachment->sampler, xblur.DescriptorSets);
     updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, yblur.DescriptorSets);
 }

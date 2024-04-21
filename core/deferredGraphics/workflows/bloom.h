@@ -9,9 +9,20 @@ struct bloomPushConst{
     alignas (4) float blitFactor;
 };
 
+struct bloomParameters{
+    struct{
+        std::string bloom;
+    }in;
+    struct{
+        std::string bloom;
+    }out;
+};
+
 class bloomGraphics : public workflow
 {
 private:
+    bloomParameters parameters;
+
     std::vector<attachments> frames;
     attachments bufferAttachment;
     const attachments* srcAttachment{nullptr};
@@ -42,7 +53,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    bloomGraphics(bool enable, uint32_t blitAttachmentsCount, float blitFactor = 1.5f, float xSamplerStep = 1.5f, float ySamplerStep = 1.5f);
+    bloomGraphics(bloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, float blitFactor = 1.5f, float xSamplerStep = 1.5f, float ySamplerStep = 1.5f);
 
     void destroy() override;
     void create(attachmentsDatabase& aDatabase) override;

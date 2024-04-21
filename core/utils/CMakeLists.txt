@@ -8,30 +8,40 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-set(INCLUDE_DIRS ${Vulkan_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS}/vulkan ${GLFW_DIR}/include/GLFW
-${STB_DIR} ${GLTF_DIR} ${PLY_DIR}/source)
+set(INCLUDE_DIRS
+    ${Vulkan_INCLUDE_DIRS}
+    ${Vulkan_INCLUDE_DIRS}/vulkan
+    ${GLFW_DIR}/include/GLFW
+    ${STB_DIR}
+    ${GLTF_DIR}
+    ${PLY_DIR}/source
+)
 
 include_directories(${INCLUDE_DIRS})
 
-set(SOURCES attachments.cpp
-node.cpp
-operations.cpp
-texture.cpp
-device.cpp
-vkdefault.cpp
-buffer.cpp
-swapChain.cpp
-depthMap.cpp)
+set(SOURCES
+    attachments.cpp
+    node.cpp
+    operations.cpp
+    texture.cpp
+    device.cpp
+    vkdefault.cpp
+    buffer.cpp
+    swapChain.cpp
+    depthMap.cpp
+)
 
-set(HEADERS attachments.h
-node.h
-operations.h
-texture.h
-device.h
-vkdefault.h
-buffer.h
-swapChain.h
-depthMap.h)
+set(HEADERS
+    attachments.h
+    node.h
+    operations.h
+    texture.h
+    device.h
+    vkdefault.h
+    buffer.h
+    swapChain.h
+    depthMap.h
+)
 
 add_library(utils STATIC ${SOURCES} ${HEADERS})
 target_include_directories(utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${INCLUDE_DIRS})

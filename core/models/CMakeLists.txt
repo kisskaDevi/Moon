@@ -10,12 +10,17 @@ endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SOURCES gltfmodel/nodes.cpp
-gltfmodel/gltfmodel.cpp
-gltfmodel/animation.cpp
-plymodel/plymodel.cpp)
+set(SOURCES
+    gltfmodel/nodes.cpp
+    gltfmodel/gltfmodel.cpp
+    gltfmodel/animation.cpp
+    plymodel/plymodel.cpp
+)
 
-set(HEADERS gltfmodel.h plymodel.h)
+set(HEADERS
+    gltfmodel.h
+    plymodel.h
+)
 
 add_library(models STATIC ${SOURCES} ${HEADERS})
 target_include_directories(models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

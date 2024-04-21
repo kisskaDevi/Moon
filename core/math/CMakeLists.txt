@@ -8,15 +8,19 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-set(HEADERS quaternion.h
-dualQuaternion.h
-vector.h
-matrix.h)
+set(HEADERS
+    quaternion.h
+    dualQuaternion.h
+    vector.h
+    matrix.h
+)
 
-set(SOURCES quaternion.cpp
-dualQuaternion.cpp
-vector.cpp
-matrix.cpp)
+set(SOURCES
+    quaternion.cpp
+    dualQuaternion.cpp
+    vector.cpp
+    matrix.cpp
+)
 
 add_library(math STATIC ${SOURCES} ${HEADERS})
 target_include_directories(math PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

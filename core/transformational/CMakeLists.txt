@@ -8,16 +8,20 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-set(SOURCES baseCamera.cpp
-baseObject.cpp
-group.cpp
-spotLight.cpp)
+set(SOURCES
+    baseCamera.cpp
+    baseObject.cpp
+    group.cpp
+    spotLight.cpp
+)
 
-set(HEADERS baseCamera.h
-baseObject.h
-spotLight.h
-transformational.h
-group.h)
+set(HEADERS
+    baseCamera.h
+    baseObject.h
+    spotLight.h
+    transformational.h
+    group.h
+)
 
 add_library(transformational STATIC ${SOURCES} ${HEADERS})
 target_include_directories(transformational PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -9,16 +9,22 @@ else()
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
-set(SOURCES testCuda.cpp
-../common/main.cpp
-../common/controller.cpp)
-set(INCLUDES testCuda.h
-../common/scene.h
-../common/controller.h)
+set(SOURCES
+    testCuda.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/controller.cpp
+)
+set(INCLUDES
+    testCuda.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/scene.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common/controller.h
+)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}
-${CMAKE_CURRENT_SOURCE_DIR}/../common
-${CMAKE_CURRENT_SOURCE_DIR}/../..)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../common
+    ${CMAKE_CURRENT_SOURCE_DIR}/../..
+)
 
 add_executable(testCuda ${INCLUDES} ${SOURCES})
 add_definitions(-DTESTCUDA)
@@ -26,10 +32,12 @@ add_definitions(-DTESTCUDA)
 target_link_libraries(testCuda PRIVATE rayTracingGraphics imguiGraphics ${LIBS_DIRS})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    add_custom_command(TARGET testCuda POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<$<CONFIG:Debug>:${GLFW_DIR}/build/src/Debug/glfw3.dll>
-    $<$<CONFIG:Release>:${GLFW_DIR}/build/src/Release/glfw3.dll>
-    $<TARGET_FILE_DIR:testCuda>)
+    add_custom_command(
+        TARGET testCuda POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<$<CONFIG:Debug>:${GLFW_DIR}/build/src/Debug/glfw3.dll>
+        $<$<CONFIG:Release>:${GLFW_DIR}/build/src/Release/glfw3.dll>
+        $<TARGET_FILE_DIR:testCuda>
+    )
 endif()
 

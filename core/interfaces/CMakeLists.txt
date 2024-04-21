@@ -8,14 +8,18 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-set(SOURCES light.cpp
-model.cpp
-object.cpp)
+set(SOURCES
+    light.cpp
+    model.cpp
+    object.cpp
+)
 
-set(HEADERS camera.h
-light.h
-model.h
-object.h)
+set(HEADERS
+    camera.h
+    light.h
+    model.h
+    object.h
+)
 
 add_library(interfaces STATIC ${SOURCES} ${HEADERS})
 target_include_directories(interfaces PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

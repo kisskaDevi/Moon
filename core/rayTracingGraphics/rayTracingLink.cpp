@@ -10,10 +10,6 @@ void rayTracingLink::destroy(){
     DescriptorSets.clear();
 }
 
-void rayTracingLink::setEmptyTexture(texture* emptyTexture){
-    this->emptyTexture = emptyTexture;
-}
-
 void rayTracingLink::setDeviceProp(VkDevice device){
     this->device = device;
 }
@@ -128,23 +124,12 @@ void rayTracingLink::createDescriptorSets() {
     vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data());
 }
 
-void rayTracingLink::updateDescriptorSets(const attachments* color, const attachments* bbAttachment, const attachments* bloomAttachment) {
+void rayTracingLink::updateDescriptorSets(const attachmentsDatabase& aDatabase) {
     for (size_t image = 0; image < this->imageCount; image++)
     {
-        VkDescriptorImageInfo imageInfo;
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = color->instances.empty() ? *emptyTexture->getTextureImageView() : color->instances[image].imageView;
-        imageInfo.sampler = color->instances.empty() ? *emptyTexture->getTextureSampler() : color->sampler;
-
-        VkDescriptorImageInfo bbImageInfo;
-        bbImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        bbImageInfo.imageView = bbAttachment->instances.empty() ? *emptyTexture->getTextureImageView() : bbAttachment->instances[image].imageView;
-        bbImageInfo.sampler = bbAttachment->instances.empty() ? *emptyTexture->getTextureSampler() : bbAttachment->sampler;
-
-        VkDescriptorImageInfo bloomImageInfo;
-        bloomImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        bloomImageInfo.imageView = bloomAttachment->instances.empty() ? *emptyTexture->getTextureImageView() : bloomAttachment->instances[image].imageView;
-        bloomImageInfo.sampler = bloomAttachment->instances.empty() ? *emptyTexture->getTextureSampler() : bloomAttachment->sampler;
+        VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo(parameters.in.color, image);
+        VkDescriptorImageInfo bloomImageInfo = aDatabase.descriptorImageInfo(parameters.in.bloom, image);
+        VkDescriptorImageInfo bbImageInfo = aDatabase.descriptorImageInfo(parameters.in.boundingBox, image);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});

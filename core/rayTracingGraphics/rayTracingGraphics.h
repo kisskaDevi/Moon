@@ -22,11 +22,12 @@ class model;
 class rayTracingGraphics : public graphicsInterface {
 private:
     struct imageResource{
+        std::string id;
         uint32_t* host{nullptr};
         buffer hostDevice;
         attachments device;
 
-        void create(physicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount);
+        void create(const std::string& id, physicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount);
         void destroy(physicalDevice phDevice);
         void moveFromHostToHostDevice(VkExtent2D extent);
         void copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex);

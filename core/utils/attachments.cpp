@@ -211,7 +211,7 @@ bool attachmentsDatabase::addEmptyTexture(const std::string& id, texture* emptyT
     return true;
 }
 
-bool attachmentsDatabase::addAttachmentData(const std::string& id, bool enable, attachments* pImages){
+bool attachmentsDatabase::addAttachmentData(const std::string& id, bool enable, const attachments* pImages){
     if(attachmentsMap.count(id) > 0) return false;
 
     attachmentsMap[id] = data{enable, pImages};

@@ -5,7 +5,9 @@
 
 #include <cstring>
 
-void rayTracingGraphics::imageResource::create(physicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
+void rayTracingGraphics::imageResource::create(const std::string& id, physicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
+    this->id = id;
+
     host = new uint32_t[extent.width * extent.height];
 
     Buffer::create(
@@ -60,22 +62,21 @@ void rayTracingGraphics::create()
     vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
 
     emptyTexture = createEmptyTexture(device, commandPool);
-
-    color.create(device, format, extent, imageCount);
-    bloom.create(device, format, extent, imageCount);
-
     aDatabase.addEmptyTexture("black", emptyTexture);
-    aDatabase.addAttachmentData("color", true, &color.device);
-    aDatabase.addAttachmentData("bloom", true, &bloom.device);
 
+    color.create("color", device, format, extent, imageCount);
+    aDatabase.addAttachmentData(color.id, true, &color.device);
+
+    bloom.create("bloom", device, format, extent, imageCount);
+    aDatabase.addAttachmentData(bloom.id, true, &bloom.device);
 
     imageInfo bloomInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
 
-    bloomParameters params;
-    params.in.bloom = "bloom";
-    params.out.bloom = "finalBloom";
+    bloomParameters bloomParams;
+    bloomParams.in.bloom = bloom.id;
+    bloomParams.out.bloom = "finalBloom";
 
-    bloomGraph = bloomGraphics(params, true, 6, VK_IMAGE_LAYOUT_UNDEFINED);
+    bloomGraph = bloomGraphics(bloomParams, true, 6, VK_IMAGE_LAYOUT_UNDEFINED);
     bloomGraph.setShadersPath(workflowsShadersPath);
     bloomGraph.setDeviceProp(device.instance, device.getLogical());
     bloomGraph.setImageProp(&bloomInfo);
@@ -90,7 +91,9 @@ void rayTracingGraphics::create()
         VK_SAMPLE_COUNT_1_BIT
     };
 
+    std::string bbId = "bb";
     bbGraphics.create(device.instance, device.getLogical(), bbInfo, shadersPath);
+    aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
     imageInfo swapChainInfo{
         imageCount,
@@ -99,7 +102,12 @@ void rayTracingGraphics::create()
         VK_SAMPLE_COUNT_1_BIT
     };
 
-    Link.setEmptyTexture(emptyTexture);
+    rayTracingLinkParameters linkParams;
+    linkParams.in.color = color.id;
+    linkParams.in.bloom = bloomParams.out.bloom;
+    linkParams.in.boundingBox = bbId;
+
+    Link.setParameters(linkParams);
     Link.setImageCount(imageCount);
     Link.setDeviceProp(device.getLogical());
     Link.setShadersPath(shadersPath);
@@ -107,7 +115,7 @@ void rayTracingGraphics::create()
     Link.createPipeline(&swapChainInfo);
     Link.createDescriptorPool();
     Link.createDescriptorSets();
-    Link.updateDescriptorSets(&color.device, &bbGraphics.getAttachments(), aDatabase.get("finalBloom"));
+    Link.updateDescriptorSets(aDatabase);
 
     rayTracer.create();
 }

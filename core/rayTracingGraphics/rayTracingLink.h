@@ -14,8 +14,18 @@ struct linkPushConstant{
     vector<float,2> size{1.0f, 1.0f};
 };
 
+struct rayTracingLinkParameters{
+    struct{
+        std::string color;
+        std::string bloom;
+        std::string boundingBox;
+    }in;
+    struct{}out;
+};
+
 class rayTracingLink : public linkable{
 private:
+    rayTracingLinkParameters        parameters;
     std::filesystem::path           shadersPath;
     uint32_t                        imageCount{0};
     VkDevice                        device{VK_NULL_HANDLE};
@@ -29,16 +39,18 @@ private:
 
     linkPushConstant                pushConstant;
 
-    texture*                        emptyTexture{nullptr};
-
 public:
     rayTracingLink() = default;
+    rayTracingLink(const rayTracingLinkParameters& parameters) : parameters(parameters){};
     void destroy();
-    void setEmptyTexture(texture* emptyTexture);
+
     void setDeviceProp(VkDevice device);
     void setImageCount(const uint32_t& count);
     void setShadersPath(const std::filesystem::path& shadersPath);
     void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size);
+    void setParameters(const rayTracingLinkParameters& parameters){
+        this->parameters = parameters;
+    };
 
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
     void setRenderPass(VkRenderPass renderPass) override;
@@ -47,7 +59,7 @@ public:
     void createPipeline(imageInfo* pInfo);
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(const attachments* attachment, const attachments* bbAttachment, const attachments* bloomAttachment);
+    void updateDescriptorSets(const attachmentsDatabase& aDatabase);
 };
 
 #endif

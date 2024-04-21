@@ -60,6 +60,7 @@ public:
     void bind(cuda::devicep<cuda::camera>* camera);
 
     void setEnable(bool enable){this->enable = enable;}
+    bool getEnable(){return enable;}
 };
 
 #endif // BOUNDINGBOXGRAPHICS_H

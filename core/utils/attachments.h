@@ -53,7 +53,7 @@ class texture;
 struct attachmentsDatabase{
     struct data{
         bool enable{false};
-        attachments* pImages{nullptr};
+        const attachments* pImages{nullptr};
     };
 
     std::string defaultEmptyTexture;
@@ -68,7 +68,7 @@ struct attachmentsDatabase{
     void destroy();
 
     bool addEmptyTexture(const std::string& id, texture* emptyTexture);
-    bool addAttachmentData(const std::string& id, bool enable, attachments* pImages);
+    bool addAttachmentData(const std::string& id, bool enable, const attachments* pImages);
     bool enable(const std::string& id) const;
     const attachments* get(const std::string& id) const;
     const texture* getEmpty(const std::string& id = "") const;

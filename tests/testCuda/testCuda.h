@@ -29,6 +29,7 @@ private:
     vector<double,2>        mousePos{0.0};
 
     float                   focus = 0.049f;
+    float                   blitFactor = 1.5f;
     std::string             screenshot;
 
     graphicsManager *app{nullptr};
@@ -44,6 +45,7 @@ private:
 #endif
 
     bool enableBB{true};
+    bool enableBloom{true};
 
     std::unordered_map<std::string, cuda::model> models;
 

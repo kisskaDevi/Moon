@@ -76,7 +76,7 @@ void rayTracingGraphics::create()
     bloomParams.in.bloom = bloom.id;
     bloomParams.out.bloom = "finalBloom";
 
-    bloomGraph = bloomGraphics(bloomParams, true, 6, VK_IMAGE_LAYOUT_UNDEFINED);
+    bloomGraph = bloomGraphics(bloomParams, bloomEnable, 6, VK_IMAGE_LAYOUT_UNDEFINED);
     bloomGraph.setShadersPath(workflowsShadersPath);
     bloomGraph.setDeviceProp(device.instance, device.getLogical());
     bloomGraph.setImageProp(&bloomInfo);
@@ -84,24 +84,12 @@ void rayTracingGraphics::create()
     bloomGraph.createCommandBuffers(commandPool);
     bloomGraph.updateDescriptorSets(bDatabase, aDatabase);
 
-    imageInfo bbInfo{
-        imageCount,
-        format,
-        extent,
-        VK_SAMPLE_COUNT_1_BIT
-    };
-
+    imageInfo bbInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
     std::string bbId = "bb";
     bbGraphics.create(device.instance, device.getLogical(), bbInfo, shadersPath);
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
-    imageInfo swapChainInfo{
-        imageCount,
-        format,
-        swapChainKHR->getExtent(),
-        VK_SAMPLE_COUNT_1_BIT
-    };
-
+    imageInfo swapChainInfo{ imageCount, format, swapChainKHR->getExtent(), VK_SAMPLE_COUNT_1_BIT};
     rayTracingLinkParameters linkParams;
     linkParams.in.color = color.id;
     linkParams.in.bloom = bloomParams.out.bloom;

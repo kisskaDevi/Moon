@@ -15,9 +15,7 @@
 #include "boundingBoxGraphics.h"
 #include <bloom.h>
 
-namespace cuda {
-class model;
-}
+namespace cuda { class model;}
 
 class rayTracingGraphics : public graphicsInterface {
 private:
@@ -52,6 +50,8 @@ private:
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
+    bool bloomEnable = true;
+
 public:
     rayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
         : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
@@ -74,6 +74,14 @@ public:
 
     void setEnableBoundingBox(bool enable){
         bbGraphics.setEnable(enable);
+    }
+
+    void setEnableBloom(bool enable){
+        bloomEnable = enable;
+    }
+
+    void setBlitFactor(const float& blitFactor){
+        bloomGraph.setBlitFactor(blitFactor);
     }
 
     void setExtent(VkExtent2D extent){

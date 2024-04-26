@@ -102,6 +102,7 @@ private:
 
     buffer vertices, indices;
     buffer vertexStaging, indexStaging;
+    std::vector<unsigned char*> textureStaging;
 
     VkDescriptorSetLayout        nodeDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSetLayout        materialDescriptorSetLayout = VK_NULL_HANDLE;

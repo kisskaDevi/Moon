@@ -3,8 +3,7 @@
 #include "device.h"
 
 #include <stb_image.h>
-#include "tiny_gltf.h"
-
+#include <cmath>
 #include <cstring>
 
 void iamge::destroy(VkDevice device){
@@ -27,7 +26,7 @@ VkResult iamge::create(
         int                 texWidth,
         int                 texHeight,
         VkDeviceSize        imageSize,
-        stbi_uc**           pixels,
+        void**              pixels,
         const uint32_t&     imageCount)
 {
     VkResult result = VK_SUCCESS;
@@ -87,27 +86,16 @@ void texture::destroyStagingBuffer(VkDevice device){
 }
 
 VkResult texture::createTextureImage(
-        VkPhysicalDevice    physicalDevice,
-        VkDevice            device,
-        VkCommandBuffer     commandBuffer,
-        tinygltf::Image&    gltfimage)
+    VkPhysicalDevice    physicalDevice,
+    VkDevice            device,
+    VkCommandBuffer     commandBuffer,
+    int                 width,
+    int                 height,
+    void**              buffer)
 {
-    VkDeviceSize bufferSize = gltfimage.width * gltfimage.height * 4;
-    stbi_uc* buffer = &gltfimage.image[0];
-    if (stbi_uc* rgb = buffer; gltfimage.component == 3){
-        buffer = new stbi_uc[bufferSize];
-        for (int32_t i = 0; i< gltfimage.width * gltfimage.height; ++i){
-            for (int32_t j = 0; j < 3; ++j) {
-                buffer[4*i + j] = rgb[3*i + j];
-            }
-        }
-    }
-
-    VkResult result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, gltfimage.width, gltfimage.height, bufferSize, &buffer, 1);
+    VkDeviceSize bufferSize = width * height * 4;
+    VkResult result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, width, height, bufferSize, buffer, 1);
     CHECK(result);
-    if(gltfimage.component == 3){
-        delete[] buffer;
-    }
     return result;
 }
 
@@ -119,11 +107,11 @@ VkResult texture::createTextureImage(
     VkResult result = VK_SUCCESS;
     int texWidth = 0, texHeight = 0, texChannels = 0;
     stbi_uc* buffer = stbi_load(path[0].string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = 4 * texWidth * texHeight;
+    VkDeviceSize bufferSize = 4 * texWidth * texHeight;
 
     if(!buffer) throw std::runtime_error("failed to load texture image!");
 
-    result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, imageSize, &buffer, 1);
+    result = image.create(physicalDevice,device, commandBuffer, 0, mipLevels, texWidth, texHeight, bufferSize, (void**) &buffer, 1);
     CHECK(result);
     stbi_image_free(buffer);
     return result;
@@ -142,7 +130,7 @@ VkResult texture::createEmptyTextureImage(
     }
     buffer[3] = 255;
 
-    result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, 1, 1, 4, &buffer, 1);
+    result = image.create(physicalDevice, device, commandBuffer, 0, mipLevels, 1, 1, 4, (void**) &buffer, 1);
     CHECK(result);
     delete[] buffer;
     return result;
@@ -213,7 +201,7 @@ void cubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice d
         }
     }
 
-    image.create(physicalDevice, device, commandBuffer, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, mipLevels, texWidth, texHeight, imageSize, buffer, 6);
+    image.create(physicalDevice, device, commandBuffer, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, mipLevels, texWidth, texHeight, imageSize, (void**) buffer, 6);
     for(uint32_t i=0;i<6;i++){
         stbi_image_free(buffer[i]);
     }
@@ -244,3 +232,4 @@ texture* createEmptyTexture(const physicalDevice& device, VkCommandPool commandP
 
     return tex;
 };
+

@@ -6,7 +6,6 @@
 
 #include "linkable.h"
 #include "attachments.h"
-#include "texture.h"
 #include "vector.h"
 
 struct linkPushConstant{

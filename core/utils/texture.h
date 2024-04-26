@@ -43,7 +43,7 @@ struct iamge{
             int                 texWidth,
             int                 texHeight,
             VkDeviceSize        imageSize,
-            unsigned char**     pixels,
+            void**              pixels,
             const uint32_t&     imageCount);
 };
 
@@ -67,7 +67,9 @@ public:
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
-            tinygltf::Image&    gltfimage);
+            int                 width,
+            int                 height,
+            void**              buffer);
     VkResult createTextureImage(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,

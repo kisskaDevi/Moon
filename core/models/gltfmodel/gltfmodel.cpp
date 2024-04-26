@@ -208,6 +208,9 @@ void gltfModel::destroyStagingBuffer(VkDevice device)
     for(auto& texture: textures){
         texture.destroyStagingBuffer(device);
     }
+    for(auto texture: textureStaging){
+        delete[] texture;
+    }
 
     vertexStaging.destroy(device);
     indexStaging.destroy(device);
@@ -257,15 +260,28 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel){
 
 void gltfModel::loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel)
 {
-    for(tinygltf::Texture &tex : gltfModel.textures){
+    for(const tinygltf::Texture &tex : gltfModel.textures){
+        const tinygltf::Image& gltfimage = gltfModel.images[tex.source];
+        const VkDeviceSize bufferSize = gltfimage.width * gltfimage.height * 4;
+        if (gltfimage.component == 3){
+            textureStaging.push_back(new stbi_uc[bufferSize]);
+            for (int32_t i = 0; i< gltfimage.width * gltfimage.height; ++i){
+                for (int32_t j = 0; j < 3; ++j) {
+                    textureStaging.back()[4*i + j] = gltfimage.image[3*i + j];
+                }
+                textureStaging.back()[4*i + 3] = 255;
+            }
+        }
+        const unsigned char* buffer = gltfimage.component == 3 ? textureStaging.back() : gltfimage.image.data();
+
         textureSampler TextureSampler{};
             TextureSampler.minFilter = tex.sampler == -1 ? VK_FILTER_LINEAR : getVkFilterMode(gltfModel.samplers[tex.sampler].minFilter);
             TextureSampler.magFilter = tex.sampler == -1 ? VK_FILTER_LINEAR : getVkFilterMode(gltfModel.samplers[tex.sampler].magFilter);
             TextureSampler.addressModeU = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : getVkWrapMode(gltfModel.samplers[tex.sampler].wrapS);
             TextureSampler.addressModeV = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : getVkWrapMode(gltfModel.samplers[tex.sampler].wrapT);
             TextureSampler.addressModeW = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : TextureSampler.addressModeV;
-        textures.emplace_back(texture{});
-        textures.back().createTextureImage(physicalDevice,device,commandBuffer,gltfModel.images[tex.source]);
+        textures.emplace_back(texture());
+        textures.back().createTextureImage(physicalDevice, device, commandBuffer, gltfimage.width, gltfimage.height, (void**) &buffer);
         textures.back().createTextureImageView(device);
         textures.back().createTextureSampler(device,TextureSampler);
     }

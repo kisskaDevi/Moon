@@ -101,8 +101,9 @@ void boundingBoxGraphics::createPipeline(){
     VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
     rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
-    // rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    // inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
         vkDefault::colorBlendAttachmentState(VK_FALSE)
@@ -286,7 +287,7 @@ void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, NULL);
     for(auto box: boxes){
         vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::cbox), &box);
-        vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+        vkCmdDraw(commandBuffer, 24, 1, 0, 0);
     }
 
     vkCmdEndRenderPass(commandBuffer);

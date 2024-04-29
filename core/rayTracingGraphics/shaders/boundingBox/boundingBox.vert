@@ -14,43 +14,42 @@ layout (push_constant) uniform PushConstants{
 vec3 min = vec3(pushConstants.min);
 vec3 max = vec3(pushConstants.max);
 
-vec3 vertex[36] = vec3[](
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,min.y,max.z),
-    vec3(min.x,max.y,max.z),
-    vec3(max.x,max.y,min.z),
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,max.y,min.z),
-    vec3(max.x,min.y,max.z),
+vec3 vertex[24] = vec3[](
     vec3(min.x,min.y,min.z),
     vec3(max.x,min.y,min.z),
-    vec3(max.x,max.y,min.z),
+
     vec3(max.x,min.y,min.z),
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,max.y,max.z),
+    vec3(max.x,max.y,min.z),
+    
+    vec3(max.x,max.y,min.z),
     vec3(min.x,max.y,min.z),
-    vec3(max.x,min.y,max.z),
-    vec3(min.x,min.y,max.z),
+    
+    vec3(min.x,max.y,min.z),
     vec3(min.x,min.y,min.z),
-    vec3(min.x,max.y,max.z),
+    
     vec3(min.x,min.y,max.z),
     vec3(max.x,min.y,max.z),
-    vec3(max.x,max.y,max.z),
-    vec3(max.x,min.y,min.z),
-    vec3(max.x,max.y,min.z),
-    vec3(max.x,min.y,min.z),
-    vec3(max.x,max.y,max.z),
+
     vec3(max.x,min.y,max.z),
     vec3(max.x,max.y,max.z),
+    
+    vec3(max.x,max.y,max.z),
+    vec3(min.x,max.y,max.z),
+    
+    vec3(min.x,max.y,max.z),
+    vec3(min.x,min.y,max.z),
+
+    vec3(min.x,min.y,min.z),
+    vec3(min.x,min.y,max.z),
+    
+    vec3(max.x,min.y,min.z),
+    vec3(max.x,min.y,max.z),
+    
     vec3(max.x,max.y,min.z),
-    vec3(min.x,max.y,min.z),
     vec3(max.x,max.y,max.z),
+    
     vec3(min.x,max.y,min.z),
-    vec3(min.x,max.y,max.z),
-    vec3(max.x,max.y,max.z),
-    vec3(min.x,max.y,max.z),
-    vec3(max.x,min.y,max.z)
+    vec3(min.x,max.y,max.z)
 );
 
 void main()

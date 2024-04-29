@@ -59,7 +59,7 @@ public:
         pointer = other;
     }
 
-    devicep(const type& host){
+    explicit devicep(const type& host){
         del();
         pointer = create(host);
     }

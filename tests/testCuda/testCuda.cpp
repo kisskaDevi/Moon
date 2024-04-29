@@ -126,7 +126,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
         boxIndexBuffer);
 
 #if 1
-    size_t num = 50;
+    size_t num = 100;
     for (int i = 0; i < num; i++) {
         float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
         models["box_" + std::to_string(i)] = cuda::model(

@@ -2,7 +2,7 @@
 #include "operations.h"
 #include "ray.h"
 #include "material.h"
-
+#include <iostream>
 namespace cuda {
 
 cudaRayTracing::cudaRayTracing(){}
@@ -26,8 +26,13 @@ void cudaRayTracing::buildTree(){
     }
     add(devContainer.get(), hitables);
 
+    std::vector<uint32_t> nodeCounter;
+    buildSizesVector(&hostTree, nodeCounter);
+    buffer<uint32_t> devNodeCounter(nodeCounter.size(), (uint32_t*) nodeCounter.data());
+
+    cudaDeviceSetLimit(cudaLimitStackSize, 1024*2);
     if(std::is_same<container_dev, kdTree>::value){
-        makeTree((kdTree*)devContainer.get());
+        makeTree((kdTree*)devContainer.get(), devNodeCounter.get());
     }
 }
 

@@ -193,18 +193,18 @@ __device__ inline vec4<T> random_in_unit_sphere(const vec4<T>& direction, const 
 
 template<typename T>
 __host__ __device__ inline vec4<T> max(const vec4<T>& v1, const vec4<T>& v2) {
-    return vec4<T>(v1.x() >= v2.x() ? v1.x() : v2.x(),
-                v1.y() >= v2.y() ? v1.y() : v2.y(),
-                v1.z() >= v2.z() ? v1.z() : v2.z(),
-                v1.w() >= v2.w() ? v1.w() : v2.w());
+    return vec4<T>( v1.x() >= v2.x() ? v1.x() : v2.x(),
+                    v1.y() >= v2.y() ? v1.y() : v2.y(),
+                    v1.z() >= v2.z() ? v1.z() : v2.z(),
+                    v1.w() >= v2.w() ? v1.w() : v2.w());
 }
 
 template<typename T>
 __host__ __device__ inline vec4<T> min(const vec4<T>& v1, const vec4<T>& v2) {
-    return vec4<T>(v1.x() < v2.x() ? v1.x() : v2.x(),
-                v1.y() < v2.y() ? v1.y() : v2.y(),
-                v1.z() < v2.z() ? v1.z() : v2.z(),
-                v1.w() < v2.w() ? v1.w() : v2.w());
+    return vec4<T>( v1.x() < v2.x() ? v1.x() : v2.x(),
+                    v1.y() < v2.y() ? v1.y() : v2.y(),
+                    v1.z() < v2.z() ? v1.z() : v2.z(),
+                    v1.w() < v2.w() ? v1.w() : v2.w());
 }
 
 template<typename T>

@@ -38,13 +38,13 @@ namespace cuda {
     struct box{
         vec4f min{std::numeric_limits<float>::max()};
         vec4f max{std::numeric_limits<float>::min()};
-    };
 
-    struct cbox : public box{
-        vec4f color{0.0f, 0.0f, 0.0f, 0.0f};
-        __host__ __device__ cbox(){}
-        __host__ __device__ cbox(const box& b) : box(b){}
-        __host__ __device__ cbox(const box& b, const vec4f& color) : box(b), color(color){}
+        __host__ __device__ float surfaceArea() const {
+            const float dx = max.x() - min.x();
+            const float dy = max.y() - min.y();
+            const float dz = max.z() - min.z();
+            return 2.0f * (dx * dy + dz * dy + dx * dz);
+        }
 
         __host__ __device__ bool intersect(const ray &r) const {
             float dx = 1.0f / r.getDirection().x();
@@ -73,6 +73,13 @@ namespace cuda {
             }
             return true;
         }
+    };
+
+    struct cbox : public box{
+        vec4f color{0.0f, 0.0f, 0.0f, 0.0f};
+        __host__ __device__ cbox() = default;
+        __host__ __device__ cbox(const box& b) : box(b){}
+        __host__ __device__ cbox(const box& b, const vec4f& color) : box(b), color(color){}
     };
 
     class hitable {

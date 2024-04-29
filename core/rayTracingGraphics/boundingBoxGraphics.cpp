@@ -96,11 +96,13 @@ void boundingBoxGraphics::createPipeline(){
     VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
     VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
     VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
     rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+    // rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    // inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
         vkDefault::colorBlendAttachmentState(VK_FALSE)

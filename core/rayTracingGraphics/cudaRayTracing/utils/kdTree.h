@@ -43,9 +43,40 @@ struct kdNode{
     __host__ __device__ kdNode(iterator begin, size_t size) : begin(begin), size(size){
         sort(begin, size, box);
 
-        if(size > 10){
-            left = new kdNode(begin, size / 2);
+        if(size > 10)
+        {
+            float bestSAH = std::numeric_limits<float>::max();
+            size_t bestSize = 0, itSize = 0;
+            const iterator end = begin + size;
+            for(auto curr = begin; curr != end; curr++){
+                size_t leftN = ++itSize;
+                size_t rightN = size - itSize;
+
+                float leftS = calcBox(begin, curr + 1).surfaceArea();
+                float rightS = calcBox(curr + 1, end).surfaceArea();
+
+                if(float SAH = leftN * leftS + rightN * rightS; SAH < bestSAH){
+                    bestSAH = SAH;
+                    bestSize = itSize;
+                }
+            }
+            printf("bestSAH = %f \t itSize = %lu \t bestSize = %lu\n", bestSAH, itSize, bestSize);
+            printf("------------------------------------------------------\n");
+
+            left = new kdNode(begin, bestSize);
             right = new kdNode(begin + left->size, size - left->size);
+        }
+    }
+
+    __host__ __device__ kdNode(iterator begin, size_t size, uint32_t* offsets, size_t& nodesCounter) : begin(begin), size(size){
+        sort(begin, size, box);
+
+        if(size > 10)
+        {
+            uint32_t leftSize = offsets[nodesCounter++];
+            left = new kdNode(begin, leftSize, offsets, nodesCounter);
+            uint32_t rightSize = offsets[nodesCounter++];
+            right = new kdNode(begin + left->size, rightSize, offsets, nodesCounter);
         }
     }
 
@@ -95,6 +126,15 @@ size_t findMaxDepth(kdNode<iterator>* node, size_t& index){
     return 0;
 }
 
+template <typename iterator>
+void buildSizesVector(kdNode<iterator>* node, std::vector<uint32_t>& nodeCounter){
+    if(node){
+        nodeCounter.push_back(node->size);
+        buildSizesVector(node->left, nodeCounter);
+        buildSizesVector(node->right, nodeCounter);
+    }
+}
+
 class kdTree : public hitableContainer {
 public:
     using container = hitableArray;
@@ -134,6 +174,12 @@ public:
         root = new kdNode<container::iterator>(storage->begin(), storage->size());
     }
 
+    __host__ __device__ void makeTree(uint32_t* offsets) {
+        size_t nodesCounter = 0;
+        uint32_t size = offsets[nodesCounter++];
+        root = new kdNode<container::iterator>(storage->begin(), size, offsets, nodesCounter);
+    }
+
     __host__ __device__ iterator begin() {return storage->begin(); }
     __host__ __device__ iterator end() {return storage->end(); }
 
@@ -144,7 +190,7 @@ public:
     static void destroy(kdTree* dpointer);
 };
 
-void makeTree(kdTree* container);
+void makeTree(kdTree* container, uint32_t* offsets);
 }
 
 #endif // KDTREE_H

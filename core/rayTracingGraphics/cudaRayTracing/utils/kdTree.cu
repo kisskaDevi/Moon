@@ -2,13 +2,13 @@
 
 namespace cuda {
 
-__global__ void createTreeKernel(kdTree* tree)
+__global__ void createTreeKernel(kdTree* tree, uint32_t* offsets)
 {
-    tree->makeTree();
+    tree->makeTree(offsets);
 }
 
-void makeTree(kdTree* container){
-    createTreeKernel<<<1,1>>>(container);
+void makeTree(kdTree* container, uint32_t* offsets){
+    createTreeKernel<<<1,1>>>(container, offsets);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }

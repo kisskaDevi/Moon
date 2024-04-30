@@ -299,22 +299,12 @@ void plyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipe
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
-void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t&, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {
+void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) {
     std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
     std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
     nodeDescriptorSets.push_back(uniformBuffer.descriptorSet);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);
 
-    struct {
-        alignas(16) vector<float,3> min;
-        alignas(16) vector<float,3> max;
-    }BB;
-    BB.min = bb.min;
-    BB.max = bb.max;
-
-    std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &BB, sizeof(BB));
-
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
-
-    vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(BoundingBox), &bb);
+    vkCmdDraw(commandBuffer, 24, 1, 0, 0);
 }

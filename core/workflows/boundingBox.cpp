@@ -5,13 +5,6 @@
 #include "object.h"
 #include "model.h"
 
-namespace {
-    struct PushConstBlock {
-        alignas(16) vector<float,3> min;
-        alignas(16) vector<float,3> max;
-    };
-}
-
 boundingBoxGraphics::boundingBoxGraphics(boundingBoxParameters parameters, bool enable, std::vector<object*>* objects) :
     parameters(parameters), enable(enable){
     box.objects = objects;
@@ -138,6 +131,9 @@ void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo
     VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
 
     rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
         vkDefault::colorBlendAttachmentState(VK_FALSE)
@@ -148,7 +144,7 @@ void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo
     pushConstantRange.push_back(VkPushConstantRange{});
     pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
     pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(PushConstBlock);
+    pushConstantRange.back().size = sizeof(BoundingBox);
     std::vector<VkDescriptorSetLayout> setLayouts = {
         DescriptorSetLayout,
         ObjectDescriptorSetLayout,
@@ -277,20 +273,12 @@ void boundingBoxGraphics::boundingBox::render(uint32_t frameNumber, VkCommandBuf
 
             std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
 
-            PushConstBlock BB;
-
-            uint32_t primitiveCount = 0;
-
             object->getModel()->renderBB(
                 object->getInstanceNumber(frameNumber),
                 commandBuffers,
                 PipelineLayout,
                 static_cast<uint32_t>(descriptorSets.size()),
-                descriptorSets.data(),
-                primitiveCount,
-                sizeof(PushConstBlock),
-                0,
-                &BB);
+                descriptorSets.data());
         }
     }
 }

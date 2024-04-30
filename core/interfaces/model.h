@@ -9,9 +9,8 @@ class texture;
 struct physicalDevice;
 
 struct BoundingBox{
-    vector<float,3> min;
-    vector<float,3> max;
-    bool valid{false};
+    alignas(16) vector<float,3> min{0.0f,0.0f,0.0f};
+    alignas(16) vector<float,3> max{0.0f,0.0f,0.0f};
 
     BoundingBox() = default;
     BoundingBox(vector<float,3> min, vector<float,3> max);
@@ -107,7 +106,7 @@ public:
     virtual void create(physicalDevice device, VkCommandPool commandPool) = 0;
 
     virtual void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;
-    virtual void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;
+    virtual void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) = 0;
 
     static void createNodeDescriptorSetLayout(
             VkDevice                        device,

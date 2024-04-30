@@ -3,7 +3,7 @@
 #include "operations.h"
 
 BoundingBox::BoundingBox(vector<float,3> min, vector<float,3> max)
-    : min(min), max(max), valid(true) {};
+    : min(min), max(max) {};
 
 VkVertexInputBindingDescription model::Vertex::getBindingDescription(){
     return VkVertexInputBindingDescription{0,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX};

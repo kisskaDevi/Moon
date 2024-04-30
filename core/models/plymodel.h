@@ -41,10 +41,7 @@ private:
         float jointcount{0};
     } uniformBlock;
 
-    BoundingBox bb{
-        vector<float,3>(std::numeric_limits<float>::max()),
-        vector<float,3>(std::numeric_limits<float>::min())
-    };
+    BoundingBox bb;
 
     vector<float,3> maxSize{0.0f};
 
@@ -80,7 +77,7 @@ public:
     void changeAnimation(uint32_t, uint32_t, uint32_t, float, float, float) override {};
 
     void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
-    void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) override;
+    void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) override;
 };
 
 #endif // PLYMODEL_H

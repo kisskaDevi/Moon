@@ -42,43 +42,42 @@ layout(location = 7)	in  vec3 inBitangent;
 vec3 min = pushConstants.min;
 vec3 max = pushConstants.max;
 
-vec3 vertex[36] = vec3[](
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,min.y,max.z),
-    vec3(min.x,max.y,max.z),
-    vec3(max.x,max.y,min.z),
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,max.y,min.z),
-    vec3(max.x,min.y,max.z),
+vec3 vertex[24] = vec3[](
     vec3(min.x,min.y,min.z),
     vec3(max.x,min.y,min.z),
-    vec3(max.x,max.y,min.z),
+
     vec3(max.x,min.y,min.z),
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,min.y,min.z),
-    vec3(min.x,max.y,max.z),
+    vec3(max.x,max.y,min.z),
+    
+    vec3(max.x,max.y,min.z),
     vec3(min.x,max.y,min.z),
-    vec3(max.x,min.y,max.z),
-    vec3(min.x,min.y,max.z),
+    
+    vec3(min.x,max.y,min.z),
     vec3(min.x,min.y,min.z),
-    vec3(min.x,max.y,max.z),
+    
     vec3(min.x,min.y,max.z),
     vec3(max.x,min.y,max.z),
-    vec3(max.x,max.y,max.z),
-    vec3(max.x,min.y,min.z),
-    vec3(max.x,max.y,min.z),
-    vec3(max.x,min.y,min.z),
-    vec3(max.x,max.y,max.z),
+
     vec3(max.x,min.y,max.z),
     vec3(max.x,max.y,max.z),
+    
+    vec3(max.x,max.y,max.z),
+    vec3(min.x,max.y,max.z),
+    
+    vec3(min.x,max.y,max.z),
+    vec3(min.x,min.y,max.z),
+
+    vec3(min.x,min.y,min.z),
+    vec3(min.x,min.y,max.z),
+    
+    vec3(max.x,min.y,min.z),
+    vec3(max.x,min.y,max.z),
+    
     vec3(max.x,max.y,min.z),
-    vec3(min.x,max.y,min.z),
     vec3(max.x,max.y,max.z),
+    
     vec3(min.x,max.y,min.z),
-    vec3(min.x,max.y,max.z),
-    vec3(max.x,max.y,max.z),
-    vec3(min.x,max.y,max.z),
-    vec3(max.x,min.y,max.z)
+    vec3(min.x,max.y,max.z)
 );
 
 void main()

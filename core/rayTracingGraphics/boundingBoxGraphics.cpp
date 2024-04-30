@@ -191,7 +191,6 @@ void boundingBoxGraphics::createDescriptorSets(){
     }
 }
 
-
 boundingBoxGraphics::~boundingBoxGraphics(){
     destroy();
 }

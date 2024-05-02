@@ -91,8 +91,11 @@ public:
 
     void bind(cuda::model* m) {
         rayTracer.bind(m);
-        for(const auto& primitive: m->primitives){
-            //bbGraphics.bind(primitive.box);
+        for(auto& primitive: m->primitives){
+            std::random_device device;
+            std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+            primitive.bbox.color = cuda::vec4f(1.0, 0.0, 0.0, 1.0f);
+            // bbGraphics.bind(primitive.bbox);
         }
     }
 
@@ -116,10 +119,14 @@ public:
 
     void bindNextNode(cuda::cudaRayTracing::kdTree_host* node, size_t maxDepth, size_t& depth){
         depth++;
-        std::random_device device;
-        std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-        node->box.color = cuda::vec4f(dist(device), dist(device), dist(device), 1.0f);
-        bbGraphics.bind(node->box);
+
+        if(!(node->left || node->right)){
+            std::random_device device;
+            std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+            node->box.color = cuda::vec4f(dist(device), dist(device), dist(device), 1.0f);
+            bbGraphics.bind(node->box);
+        }
+
         if(node->left){
             bindNextNode(node->left, maxDepth, depth);
         }

@@ -60,10 +60,18 @@ void buffers::map(VkDevice device)
     }
 }
 
+void buffers::copy(size_t imageIndex, void *data)
+{
+    std::memcpy(instances[imageIndex].map, data, instances[imageIndex].size);
+}
+
 void buffers::destroy(VkDevice device)
 {
     for (auto& buffer: instances){
         buffer.destroy(device);
+        if(buffer.map){
+            vkUnmapMemory(device, buffer.memory);
+        }
     }
     instances.clear();
 }

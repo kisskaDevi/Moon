@@ -33,8 +33,7 @@ private:
 
     std::vector<cuda::cbox> boxes;
     cuda::devicep<cuda::camera>* camera;
-
-    std::vector<buffer> cameraBuffer;
+    buffers cameraBuffers;
 
     void createAttachments();
     void createRenderPass();

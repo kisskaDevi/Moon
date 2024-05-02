@@ -89,6 +89,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
     }
 
     const auto boxIndexBuffer = createBoxIndexBuffer();
+
     models["environment_box"] = cuda::model(
         createBoxVertexBuffer(
             vec4f(3.0f, 3.0f, 1.5f, 1.0f),
@@ -126,7 +127,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
         boxIndexBuffer);
 
 #if 1
-    size_t num = 10;
+    size_t num = 100;
     for (int i = 0; i < num; i++) {
         float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
         models["box_" + std::to_string(i)] = cuda::model(

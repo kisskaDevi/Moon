@@ -37,7 +37,7 @@ namespace cuda {
 
     struct box{
         vec4f min{std::numeric_limits<float>::max()};
-        vec4f max{std::numeric_limits<float>::min()};
+        vec4f max{std::numeric_limits<float>::lowest()};
 
         __host__ __device__ float surfaceArea() const {
             const float dx = max.x() - min.x();
@@ -96,7 +96,7 @@ namespace cuda {
         devicep<hitable> hit;
         cbox bbox;
 
-        box calcBox() const{
+        box calcBox() const {
             return bbox;
         }
     };
@@ -105,8 +105,9 @@ namespace cuda {
     __host__ __device__ box calcBox(iterator begin, iterator end){
         box resbox;
         for(auto it = begin; it != end; it++){
-            resbox.min = cuda::min((*it)->calcBox().min, resbox.min);
-            resbox.max = cuda::max((*it)->calcBox().max, resbox.max);
+            const box& itbox = (*it)->calcBox();
+            resbox.min = cuda::min(itbox.min, resbox.min);
+            resbox.max = cuda::max(itbox.max, resbox.max);
         }
         return resbox;
     }

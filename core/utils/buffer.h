@@ -32,6 +32,7 @@ struct buffers{
                 VkMemoryPropertyFlags           properties,
                 size_t                          instancesCount);
     void map(VkDevice device);
+    void copy(size_t imageIndex, void* data);
     void destroy(VkDevice device);
 };
 

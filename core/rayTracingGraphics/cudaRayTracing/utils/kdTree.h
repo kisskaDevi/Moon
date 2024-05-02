@@ -14,6 +14,8 @@ struct kdNode{
     size_t size{0};
     cbox box;
 
+    static const size_t itemsInNode = 10;
+
     __host__ __device__ void del(){
         if(left){
             delete left;
@@ -43,7 +45,7 @@ struct kdNode{
     __host__ __device__ kdNode(iterator begin, size_t size) : begin(begin), size(size){
         sort(begin, size, box);
 
-        if(size > 10)
+        if(size > itemsInNode)
         {
             float bestSAH = std::numeric_limits<float>::max();
             size_t bestSize = 0, itSize = 0;
@@ -60,18 +62,16 @@ struct kdNode{
                     bestSize = itSize;
                 }
             }
-            printf("bestSAH = %f \t itSize = %lu \t bestSize = %lu\n", bestSAH, itSize, bestSize);
-            printf("------------------------------------------------------\n");
 
             left = new kdNode(begin, bestSize);
-            right = new kdNode(begin + left->size, size - left->size);
+            right = new kdNode(begin + bestSize, size - bestSize);
         }
     }
 
     __host__ __device__ kdNode(iterator begin, size_t size, uint32_t* offsets, size_t& nodesCounter) : begin(begin), size(size){
         sort(begin, size, box);
 
-        if(size > 10)
+        if(size > itemsInNode)
         {
             uint32_t leftSize = offsets[nodesCounter++];
             left = new kdNode(begin, leftSize, offsets, nodesCounter);

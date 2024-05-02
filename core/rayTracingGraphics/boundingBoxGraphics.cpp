@@ -174,7 +174,7 @@ void boundingBoxGraphics::createDescriptorSets(){
     for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = cameraBuffer[i].instance;
+        bufferInfo.buffer = cameraBuffers.instances[i].instance;
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(CameraBuffer);
 
@@ -210,10 +210,7 @@ void boundingBoxGraphics::destroy(){
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
 
-    for (auto& buffer: cameraBuffer){
-        Buffer::destroy(device, buffer.instance, buffer.memory);
-    }
-    cameraBuffer.clear();
+    cameraBuffers.destroy(device);
 }
 
 void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, const std::filesystem::path& shadersPath){
@@ -225,10 +222,8 @@ void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
     vertShaderPath = shadersPath / "boundingBox/boundingBoxVert.spv";
     fragShaderPath = shadersPath / "boundingBox/boundingBoxFrag.spv";
 
-    cameraBuffer.resize(image.Count);
-    for (auto& buffer: cameraBuffer){
-        Buffer::create(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer.instance, &buffer.memory);
-    }
+    cameraBuffers.create(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, image.Count);
+    cameraBuffers.map(device);
 
     createAttachments();
     createRenderPass();
@@ -257,13 +252,8 @@ void boundingBoxGraphics::update(uint32_t imageIndex){
         0.0f, 0.0f, 0.0f, 1.0f
     };
 
-    CameraBuffer buffer{};
-    buffer.proj = transpose(projMatrix);
-    buffer.view = transpose(viewMatrix);
-
-    CHECK(vkMapMemory(device, cameraBuffer[imageIndex].memory, 0, sizeof(CameraBuffer), 0, &cameraBuffer[imageIndex].map));
-    std::memcpy(cameraBuffer[imageIndex].map, &buffer, sizeof(CameraBuffer));
-    vkUnmapMemory(device, cameraBuffer[imageIndex].memory);
+    CameraBuffer buffer{transpose(projMatrix), transpose(viewMatrix)};
+    cameraBuffers.copy(imageIndex, &buffer);
 }
 
 void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const {

@@ -68,18 +68,6 @@ struct kdNode{
         }
     }
 
-    __host__ __device__ kdNode(iterator begin, size_t size, uint32_t* offsets, size_t& nodesCounter) : begin(begin), size(size){
-        sort(begin, size, box);
-
-        if(size > itemsInNode)
-        {
-            uint32_t leftSize = offsets[nodesCounter++];
-            left = new kdNode(begin, leftSize, offsets, nodesCounter);
-            uint32_t rightSize = offsets[nodesCounter++];
-            right = new kdNode(begin + left->size, rightSize, offsets, nodesCounter);
-        }
-    }
-
     __host__ __device__ ~kdNode() { del(); }
 
     __host__ __device__ bool hit(const ray& r, hitCoords& coord) const {
@@ -175,9 +163,24 @@ public:
     }
 
     __host__ __device__ void makeTree(uint32_t* offsets) {
-        size_t nodesCounter = 0;
-        uint32_t size = offsets[nodesCounter++];
-        root = new kdNode<container::iterator>(storage->begin(), size, offsets, nodesCounter);
+        size_t nodesCounter = 0, offset = 0;
+
+        for(stack<kdNode<container::iterator>*, 50> makeStack(root = new kdNode<container::iterator>()); !makeStack.empty();){
+            kdNode<container::iterator>* curr = makeStack.top();
+            makeStack.pop();
+
+            curr->begin = storage->begin() + offset;
+            curr->size = offsets[nodesCounter++];
+            sort(curr->begin, curr->size, curr->box);
+
+            if(curr->size > kdNode<container::iterator>::itemsInNode)
+            {
+                makeStack.push(curr->right = new kdNode<container::iterator>());
+                makeStack.push(curr->left = new kdNode<container::iterator>());
+            } else {
+                offset += curr->size;
+            }
+        }
     }
 
     __host__ __device__ iterator begin() {return storage->begin(); }

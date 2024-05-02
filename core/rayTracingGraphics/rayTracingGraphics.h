@@ -120,12 +120,12 @@ public:
     void bindNextNode(cuda::cudaRayTracing::kdTree_host* node, size_t maxDepth, size_t& depth){
         depth++;
 
-        if(!(node->left || node->right)){
+        //if(!(node->left || node->right)){
             std::random_device device;
             std::uniform_real_distribution<float> dist(0.0f, 1.0f);
             node->box.color = cuda::vec4f(dist(device), dist(device), dist(device), 1.0f);
             bbGraphics.bind(node->box);
-        }
+        //}
 
         if(node->left){
             bindNextNode(node->left, maxDepth, depth);

@@ -30,7 +30,6 @@ void cudaRayTracing::buildTree(){
     buildSizesVector(&hostTree, nodeCounter);
     buffer<uint32_t> devNodeCounter(nodeCounter.size(), (uint32_t*) nodeCounter.data());
 
-    cudaDeviceSetLimit(cudaLimitStackSize, 1024*5);
     if(std::is_same<container_dev, kdTree>::value){
         makeTree((kdTree*)devContainer.get(), devNodeCounter.get());
     }

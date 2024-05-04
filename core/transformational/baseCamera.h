@@ -14,7 +14,7 @@ struct UniformBufferObject{
     alignas(16) vector<float,4>     eyePosition;
 };
 
-class baseCamera : public transformational, public camera
+class baseCamera : public transformational, public moon::interfaces::Camera
 {
 private:
     matrix<float,4,4>       projMatrix{1.0f};

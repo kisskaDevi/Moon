@@ -27,7 +27,7 @@ enum spotType
     square
 };
 
-class spotLight : public transformational, public light
+class spotLight : public transformational, public moon::interfaces::Light
 {
 private:
     moon::utils::Texture*               tex{nullptr};

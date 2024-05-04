@@ -20,9 +20,9 @@ struct Mesh{
         uint32_t firstIndex{0};
         uint32_t indexCount{0};
         uint32_t vertexCount{0};
-        Material* material{nullptr};
-        BoundingBox bb;
-        Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material, BoundingBox bb);
+        moon::interfaces::Material* material{nullptr};
+        moon::interfaces::BoundingBox bb;
+        Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, moon::interfaces::Material* material, moon::interfaces::BoundingBox bb);
     };
 
     class UniformBuffer : public moon::utils::Buffer {
@@ -92,7 +92,7 @@ struct Animation
     float end = std::numeric_limits<float>::min();
 };
 
-class gltfModel : public model
+class gltfModel : public moon::interfaces::Model
 {
 private:
     std::filesystem::path filename;
@@ -116,7 +116,7 @@ private:
 
     std::vector<instance>               instances;
     std::vector<moon::utils::Texture>   textures;
-    std::vector<Material>               materials;
+    std::vector<moon::interfaces::Material>               materials;
 
     void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
     void loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);

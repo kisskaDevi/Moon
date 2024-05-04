@@ -15,9 +15,12 @@
 // #define SECOND_VIEW_WINDOW
 #define IMGUI_GRAPHICS
 
+namespace moon::interfaces {
+class Model;
+}
+
 class deferredGraphics;
 class imguiGraphics;
-class model;
 class graphicsManager;
 class spotLight;
 class isotropicLight;
@@ -66,7 +69,7 @@ private:
     std::shared_ptr<imguiGraphics> gui;
 #endif
 
-    std::unordered_map<std::string, std::shared_ptr<model>>             models;
+    std::unordered_map<std::string, std::shared_ptr<moon::interfaces::Model>> models;
     std::unordered_map<std::string, std::shared_ptr<baseObject>>        objects;
     std::unordered_map<std::string, std::shared_ptr<baseObject>>        staticObjects;
     std::unordered_map<std::string, std::shared_ptr<skyboxObject>>      skyboxObjects;

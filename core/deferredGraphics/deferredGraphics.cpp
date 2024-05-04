@@ -437,21 +437,21 @@ void deferredGraphics::readStorageBuffer(uint32_t currentImage, uint32_t& primit
     depth = storageBuffer.depth;
 }
 
-void deferredGraphics::create(model *pModel){
+void deferredGraphics::create(moon::interfaces::Model *pModel){
     pModel->create(device, commandPool);
 }
 
-void deferredGraphics::destroy(model* pModel){
+void deferredGraphics::destroy(moon::interfaces::Model* pModel){
     pModel->destroy(device.getLogical());
 }
 
-void deferredGraphics::bind(camera* cameraObject){
+void deferredGraphics::bind(moon::interfaces::Camera* cameraObject){
     this->cameraObject = cameraObject;
     cameraObject->create(device, imageCount);
     bDatabase.addBufferData("camera", &cameraObject->getBuffers());
 }
 
-void deferredGraphics::remove(camera* cameraObject){
+void deferredGraphics::remove(moon::interfaces::Camera* cameraObject){
     if(this->cameraObject == cameraObject){
         this->cameraObject->destroy(device.getLogical());
         this->cameraObject = nullptr;
@@ -459,7 +459,7 @@ void deferredGraphics::remove(camera* cameraObject){
     }
 }
 
-void deferredGraphics::bind(light* lightSource){
+void deferredGraphics::bind(moon::interfaces::Light* lightSource){
     if(depthMaps.count(lightSource) == 0){
         depthMaps[lightSource] = new moon::utils::DepthMap(device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
@@ -472,7 +472,7 @@ void deferredGraphics::bind(light* lightSource){
     updateCmdFlags();
 }
 
-bool deferredGraphics::remove(light* lightSource){
+bool deferredGraphics::remove(moon::interfaces::Light* lightSource){
     size_t size = lights.size();
     lightSource->destroy(device.getLogical());
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
@@ -487,13 +487,13 @@ bool deferredGraphics::remove(light* lightSource){
     return size - objects.size() > 0;
 }
 
-void deferredGraphics::bind(object* object){
+void deferredGraphics::bind(moon::interfaces::Object* object){
     object->create(device, commandPool, imageCount);
     objects.push_back(object);
     updateCmdFlags();
 }
 
-bool deferredGraphics::remove(object* object){
+bool deferredGraphics::remove(moon::interfaces::Object* object){
     size_t size = objects.size();
     object->destroy(device.getLogical());
     objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());

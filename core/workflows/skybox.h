@@ -3,7 +3,7 @@
 
 #include "workflow.h"
 
-class object;
+namespace moon::interfaces {class Object;}
 
 namespace moon::workflows {
 
@@ -49,7 +49,7 @@ private:
     struct Skybox : public Workbody{
         VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>*   objects;
+        std::vector<moon::interfaces::Object*>*   objects;
 
         void destroy(VkDevice device) override;
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
@@ -63,7 +63,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<object*>* object = nullptr);
+    SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* object = nullptr);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;

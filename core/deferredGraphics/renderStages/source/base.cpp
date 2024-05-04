@@ -33,9 +33,9 @@ void graphics::Base::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &SceneDescriptorSetLayout));
 
-    object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
-    model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
-    model::createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
+    moon::interfaces::Object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
+    moon::interfaces::Model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
+    moon::interfaces::Model::createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
 }
 
 void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -69,8 +69,8 @@ void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
     };
     shaderStages.back().pSpecializationInfo = &specializationInfo;
 
-    auto bindingDescription = model::Vertex::getBindingDescription();
-    auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
+    auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
+    auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -97,7 +97,7 @@ void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(MaterialBlock);
+        pushConstantRange.back().size = sizeof(moon::interfaces::MaterialBlock);
     std::vector<VkDescriptorSetLayout> setLayouts = {
         SceneDescriptorSetLayout,
         ObjectDescriptorSetLayout,
@@ -110,7 +110,7 @@ void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         pipelineLayoutInfo.pSetLayouts = setLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base]));
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[moon::interfaces::ObjectType::base]));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -124,12 +124,12 @@ void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = PipelineLayoutDictionary[objectType::base];
+        pipelineInfo.back().layout = PipelineLayoutDictionary[moon::interfaces::ObjectType::base];
         pipelineInfo.back().renderPass = pRenderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base]));
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[moon::interfaces::ObjectType::base]));
 
         depthStencil.stencilTestEnable = VK_TRUE;
         depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
@@ -140,9 +140,9 @@ void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         depthStencil.back.writeMask = 0xff;
         depthStencil.back.reference = 1;
         depthStencil.front = depthStencil.back;
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[objectType::base | objectProperty::outlining]));
-        pipelineInfo.back().layout = PipelineLayoutDictionary[objectType::base | objectProperty::outlining];
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[objectType::base | objectProperty::outlining]));
+    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining]));
+        pipelineInfo.back().layout = PipelineLayoutDictionary[moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining];
+    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining]));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -226,7 +226,7 @@ void graphics::updateBaseDescriptorSets(
 void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     for(auto object: *objects){
-        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable()){
+        if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineDictionary[object->getPipelineBitMask()]);
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
@@ -239,7 +239,7 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                 object->getDescriptorSet()[frameNumber]
             };
 
-            MaterialBlock material;
+            moon::interfaces::MaterialBlock material;
 
             object->setFirstPrimitive(primitiveCount);
             object->getModel()->render(
@@ -249,7 +249,7 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                         static_cast<uint32_t>(descriptorSets.size()),
                         descriptorSets.data(),
                         primitiveCount,
-                        sizeof(MaterialBlock),
+                        sizeof(moon::interfaces::MaterialBlock),
                         0,
                         &material);
             object->setPrimitiveCount(primitiveCount - object->getFirstPrimitive());

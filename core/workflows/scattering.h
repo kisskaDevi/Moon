@@ -3,7 +3,7 @@
 
 #include "workflow.h"
 
-class light;
+namespace moon::interfaces { class Light;}
 namespace moon::utils { class DepthMap;}
 
 namespace moon::workflows {
@@ -37,8 +37,8 @@ private:
         std::unordered_map<uint8_t, VkDescriptorSetLayout>  DescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkPipelineLayout>       PipelineLayoutDictionary;
         std::unordered_map<uint8_t, VkPipeline>             PipelinesDictionary;
-        std::vector<light*>*                                lightSources;
-        std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps;
+        std::vector<moon::interfaces::Light*>*              lightSources;
+        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
 
         void destroy(VkDevice device) override;
         void createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
@@ -55,8 +55,8 @@ private:
     void createDescriptorSets();
 public:
     Scattering(ScatteringParameters parameters,
-               bool enable, std::vector<light*>* lightSources = nullptr,
-               std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps = nullptr);
+               bool enable, std::vector<moon::interfaces::Light*>* lightSources = nullptr,
+               std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;

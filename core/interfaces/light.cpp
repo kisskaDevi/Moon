@@ -3,32 +3,34 @@
 #include "operations.h"
 #include <vector>
 
-void light::setEnableShadow(bool enable){
+namespace moon::interfaces {
+
+void Light::setEnableShadow(bool enable){
     enableShadow = enable;
 }
 
-void light::setEnableScattering(bool enable){
+void Light::setEnableScattering(bool enable){
     enableScattering = enable;
 }
 
-bool light::isShadowEnable() const{
+bool Light::isShadowEnable() const{
     return enableShadow;
 }
 
-bool light::isScatteringEnable() const{
+bool Light::isScatteringEnable() const{
     return enableScattering;
 }
 
-const std::vector<VkDescriptorSet>& light::getDescriptorSets() const {
+const std::vector<VkDescriptorSet>& Light::getDescriptorSets() const {
     return descriptorSets;
 }
 
-uint8_t light::getPipelineBitMask() const {
+uint8_t Light::getPipelineBitMask() const {
     return pipelineBitMask;
 }
 
 
-void light::createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
+void Light::createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
     binding.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -40,7 +42,7 @@ void light::createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayo
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout));
 }
 
-void light::createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
+void Light::createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -50,3 +52,4 @@ void light::createTextureDescriptorSetLayout(VkDevice device, VkDescriptorSetLay
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout));
 }
 
+}

@@ -6,11 +6,13 @@
 
 namespace moon::utils { struct PhysicalDevice;}
 
-enum lightType : uint8_t {
+namespace moon::interfaces {
+
+enum LightType : uint8_t {
     spot = 0x1
 };
 
-class light
+class Light
 {
 protected:
     bool enableShadow{false};
@@ -23,7 +25,7 @@ protected:
     uint8_t pipelineBitMask{0};
 
 public:
-    virtual ~light(){};
+    virtual ~Light(){};
 
     void setEnableShadow(bool enable);
     void setEnableScattering(bool enable);
@@ -56,4 +58,5 @@ public:
     static void createBufferDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
 };
 
+}
 #endif // LIGHT_H

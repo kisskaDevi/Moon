@@ -7,8 +7,8 @@
 namespace moon::workflows {
 
 Scattering::Scattering(ScatteringParameters parameters,
-                       bool enable, std::vector<light*>* lightSources,
-                       std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
+                       bool enable, std::vector<moon::interfaces::Light*>* lightSources,
+                       std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps) :
     parameters(parameters), enable(enable)
 {
     lighting.lightSources = lightSources;
@@ -124,14 +124,14 @@ void Scattering::Lighting::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 
-    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
-    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
+    moon::interfaces::Light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[moon::interfaces::LightType::spot]);
+    moon::interfaces::Light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[moon::interfaces::LightType::spot]);
     moon::utils::DepthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
 void Scattering::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    createPipeline(lightType::spot, device, pInfo, pRenderPass);
+    createPipeline(moon::interfaces::LightType::spot, device, pInfo, pRenderPass);
 }
 
 void Scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)

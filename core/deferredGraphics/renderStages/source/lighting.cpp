@@ -44,8 +44,8 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout);
 
-    light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
-    light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
+        moon::interfaces::Light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[moon::interfaces::LightType::spot]);
+    moon::interfaces::Light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[moon::interfaces::LightType::spot]);
     moon::utils::DepthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
@@ -53,7 +53,7 @@ void graphics::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo*
 {
     std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
-    createPipeline(lightType::spot, device, pInfo, pRenderPass, spotVert, spotFrag);
+    createPipeline(moon::interfaces::LightType::spot, device, pInfo, pRenderPass, spotVert, spotFrag);
 }
 
 void graphics::createLightingDescriptorPool()

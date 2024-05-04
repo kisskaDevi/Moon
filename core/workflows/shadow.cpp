@@ -26,7 +26,7 @@ void ShadowGraphics::Shadow::destroy(VkDevice device)
     if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
-ShadowGraphics::ShadowGraphics(bool enable, std::vector<object*>* objects, std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
+ShadowGraphics::ShadowGraphics(bool enable, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps) :
     enable(enable)
 {
     shadow.objects = objects;
@@ -66,10 +66,10 @@ void ShadowGraphics::createPipelines()
 
 void ShadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
 {
-    light::createBufferDescriptorSetLayout(device, &lightUniformBufferSetLayout);
-    object::createDescriptorSetLayout(device, &ObjectDescriptorSetLayout);
-    model::createNodeDescriptorSetLayout(device, &PrimitiveDescriptorSetLayout);
-    model::createMaterialDescriptorSetLayout(device, &MaterialDescriptorSetLayout);
+    moon::interfaces::Light::createBufferDescriptorSetLayout(device, &lightUniformBufferSetLayout);
+    moon::interfaces::Object::createDescriptorSetLayout(device, &ObjectDescriptorSetLayout);
+    moon::interfaces::Model::createNodeDescriptorSetLayout(device, &PrimitiveDescriptorSetLayout);
+    moon::interfaces::Model::createMaterialDescriptorSetLayout(device, &MaterialDescriptorSetLayout);
 }
 
 void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -79,8 +79,8 @@ void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageI
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = moon::utils::vkDefault::vertrxShaderStage(vertShaderModule);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vertShaderStageInfo};
 
-    auto bindingDescription = model::Vertex::getBindingDescription();
-    auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
+    auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
+    auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -107,7 +107,7 @@ void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageI
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(MaterialBlock);
+        pushConstantRange.back().size = sizeof(moon::interfaces::MaterialBlock);
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         lightUniformBufferSetLayout,
         ObjectDescriptorSetLayout,
@@ -193,7 +193,7 @@ void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber)
     }
 }
 
-void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, moon::utils::DepthMap* depthMap)
+void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, moon::utils::DepthMap* depthMap)
 {
     std::vector<VkClearValue> clearValues;
     clearValues.push_back(VkClearValue{depthMap->get()->clearValue.color});
@@ -211,7 +211,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.Pipeline);
     for(auto object: *shadow.objects){
-        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getEnableShadow()){
+        if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getEnableShadow()){
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
                 vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
@@ -222,7 +222,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
                 object->getDescriptorSet()[frameNumber]
             };
 
-            MaterialBlock material{};
+            moon::interfaces::MaterialBlock material{};
 
             uint32_t primitives = 0;
             object->getModel()->render(
@@ -231,7 +231,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
                         shadow.PipelineLayout,
                         static_cast<uint32_t>(descriptorSets.size()),
                         descriptorSets.data(),primitives,
-                        sizeof(MaterialBlock),
+                        sizeof(moon::interfaces::MaterialBlock),
                         0,
                         &material);
         }

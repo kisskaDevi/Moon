@@ -6,9 +6,11 @@
 
 namespace moon::utils { struct PhysicalDevice;}
 
-class camera{
+namespace moon::interfaces {
+
+class Camera{
 public:
-    virtual ~camera(){};
+    virtual ~Camera(){};
 
     virtual void destroy(VkDevice device) = 0;
 
@@ -18,4 +20,5 @@ public:
     virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
 };
 
+}
 #endif // CAMERA_H

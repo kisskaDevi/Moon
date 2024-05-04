@@ -11,6 +11,8 @@
 #include "object.h"
 #include "matrix.h"
 
+namespace moon::interfaces { class Model;}
+
 struct UniformBuffer
 {
     alignas(16) matrix<float,4,4> modelMatrix;
@@ -20,9 +22,7 @@ struct UniformBuffer
     alignas(16) vector<float,4>   bloomFactor;
 };
 
-class model;
-
-class baseObject : public object, public transformational
+class baseObject : public moon::interfaces::Object, public transformational
 {
 private:
     quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
@@ -60,7 +60,7 @@ private:
 
 public:
     baseObject() = default;
-    baseObject(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
+    baseObject(moon::interfaces::Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
     virtual ~baseObject();
 
     baseObject& setGlobalTransform(const matrix<float,4,4>& transform) override;

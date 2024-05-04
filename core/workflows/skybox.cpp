@@ -5,7 +5,7 @@
 
 namespace moon::workflows {
 
-SkyboxGraphics::SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<object*>* objects) :
+SkyboxGraphics::SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects) :
     parameters(parameters), enable(enable)
 {
     skybox.objects = objects;
@@ -111,7 +111,7 @@ void SkyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
         layoutInfo.pBindings = bindings.data();
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 
-    object::createSkyboxDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
+    moon::interfaces::Object::createSkyboxDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
 }
 
 void SkyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -228,7 +228,7 @@ void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
     vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
     for(auto& object: *skybox.objects)
     {
-        if((objectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
+        if((moon::interfaces::ObjectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
             std::vector<VkDescriptorSet> descriptorSets = {skybox.DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
             vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
             vkCmdDraw(commandBuffers[frameNumber], 36, 1, 0, 0);

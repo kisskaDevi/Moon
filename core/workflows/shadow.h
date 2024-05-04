@@ -4,8 +4,10 @@
 #include "workflow.h"
 #include <unordered_map>
 
-class object;
-class light;
+namespace moon::interfaces {
+class Object;
+class Light;
+}
 namespace moon::utils { class DepthMap;}
 
 namespace moon::workflows {
@@ -26,18 +28,18 @@ private:
         VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout   MaterialDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>* objects;
-        std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps;
+        std::vector<moon::interfaces::Object*>* objects;
+        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
     }shadow;
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, moon::utils::DepthMap* depthMap);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, moon::utils::DepthMap* depthMap);
     void createRenderPass();
     void createPipelines();
     moon::utils::Attachments* createAttachments();
 public:
     ShadowGraphics(bool enable,
-                   std::vector<object*>* objects = nullptr,
-                   std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps = nullptr);
+                   std::vector<moon::interfaces::Object*>* objects = nullptr,
+                   std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase&) override;

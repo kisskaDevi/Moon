@@ -3,7 +3,7 @@
 
 #include "workflow.h"
 
-class object;
+namespace moon::interfaces { class Object;}
 
 namespace moon::workflows {
 
@@ -28,7 +28,7 @@ private:
         VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
 
-        std::vector<object*>*   objects;
+        std::vector<moon::interfaces::Object*>*   objects;
 
         void destroy(VkDevice device) override;
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
@@ -43,7 +43,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<object*>* objects = nullptr);
+    BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects = nullptr);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;

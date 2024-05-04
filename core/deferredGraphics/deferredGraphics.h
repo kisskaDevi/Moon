@@ -11,10 +11,12 @@
 #include <unordered_map>
 #include <filesystem>
 
-class model;
-class camera;
-class object;
-class light;
+namespace moon::interfaces {
+class Model;
+class Camera;
+class Object;
+class Light;
+}
 
 namespace moon::utils {
 class Texture;
@@ -51,10 +53,10 @@ private:
     uint32_t                                    blitAttachmentsCount{8};
     uint32_t                                    TransparentLayersCount{2};
 
-    camera*                                     cameraObject{nullptr};
-    std::vector<object*>                        objects;
-    std::vector<light*>                         lights;
-    std::unordered_map<light*, moon::utils::DepthMap*> depthMaps;
+    moon::interfaces::Camera* cameraObject{nullptr};
+    std::vector<moon::interfaces::Object*> objects;
+    std::vector<moon::interfaces::Light*> lights;
+    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*> depthMaps;
     std::unordered_map<std::string, moon::utils::Texture*> emptyTextures;
 
     void createStorageBuffers(uint32_t imageCount);
@@ -97,17 +99,17 @@ public:
     deferredGraphics& setBlitFactor(float blitFactor);
     deferredGraphics& setBlurDepth(float blurDepth);
 
-    void create(model* pModel);
-    void destroy(model* pModel);
+    void create(moon::interfaces::Model* pModel);
+    void destroy(moon::interfaces::Model* pModel);
 
-    void bind(camera* cameraObject);
-    void remove(camera* cameraObject);
+    void bind(moon::interfaces::Camera* cameraObject);
+    void remove(moon::interfaces::Camera* cameraObject);
 
-    void bind(object* object);
-    bool remove(object* object);
+    void bind(moon::interfaces::Object* object);
+    bool remove(moon::interfaces::Object* object);
 
-    void bind(light* lightSource);
-    bool remove(light* lightSource);
+    void bind(moon::interfaces::Light* lightSource);
+    bool remove(moon::interfaces::Light* lightSource);
 
     void updateStorageBuffer(uint32_t imageIndex, const float& mousex, const float& mousey);
     void readStorageBuffer(uint32_t imageIndex, uint32_t& primitiveNumber, float& depth);

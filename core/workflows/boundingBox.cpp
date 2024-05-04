@@ -7,7 +7,7 @@
 
 namespace moon::workflows {
 
-BoundingBoxGraphics::BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<object*>* objects) :
+BoundingBoxGraphics::BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects) :
     parameters(parameters), enable(enable){
     box.objects = objects;
 }
@@ -101,8 +101,8 @@ void BoundingBoxGraphics::BoundingBox::createDescriptorSetLayout(VkDevice device
         layoutInfo.pBindings = bindings.data();
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 
-    object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
-    model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
+    moon::interfaces::Object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
+    moon::interfaces::Model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
 }
 
 void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
@@ -115,8 +115,8 @@ void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::uti
         moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    auto bindingDescription = model::Vertex::getBindingDescription();
-    auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
+    auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
+    auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -265,7 +265,7 @@ void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
 
 void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers){
     for(auto object: *objects){
-        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable()){
+        if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);

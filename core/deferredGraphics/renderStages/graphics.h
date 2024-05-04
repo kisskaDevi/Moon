@@ -7,11 +7,10 @@
 #include <filesystem>
 #include <unordered_map>
 
-class   object;
-class   light;
-struct  Node;
-struct  Material;
-struct  MaterialBlock;
+namespace moon::interfaces {
+class   Object;
+class   Light;
+}
 
 namespace moon::utils {
 class   DepthMap;
@@ -61,7 +60,7 @@ private:
         VkDescriptorPool                                DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>                    DescriptorSets;
 
-        std::vector<object*>*                           objects{nullptr};
+        std::vector<moon::interfaces::Object*>*                           objects{nullptr};
 
         void Destroy(VkDevice device);
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
@@ -96,8 +95,8 @@ private:
         VkDescriptorPool                                    DescriptorPool{VK_NULL_HANDLE};
         std::vector<VkDescriptorSet>                        DescriptorSets;
 
-        std::vector<light*>*                                lightSources;
-        std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps;
+        std::vector<moon::interfaces::Light*>*                                lightSources;
+        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
 
         void Destroy(VkDevice device);
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
@@ -142,9 +141,9 @@ public:
              bool enableTransparency,
              bool transparencyPass,
              uint32_t transparencyNumber,
-             std::vector<object*>* object = nullptr,
-             std::vector<light*>* lightSources = nullptr,
-             std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps = nullptr);
+             std::vector<moon::interfaces::Object*>* object = nullptr,
+             std::vector<moon::interfaces::Light*>* lightSources = nullptr,
+             std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
     void destroy()override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;

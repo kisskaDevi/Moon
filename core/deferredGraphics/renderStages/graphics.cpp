@@ -9,8 +9,8 @@ graphics::graphics(
     bool enableTransparency,
     bool transparencyPass,
     uint32_t transparencyNumber,
-    std::vector<object*>* object, std::vector<light*>* lightSources,
-    std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
+    std::vector<moon::interfaces::Object*>* object, std::vector<moon::interfaces::Light*>* lightSources,
+    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps) :
     parameters(parameters), enable(enable)
 {
     base.enableTransparency = enableTransparency;

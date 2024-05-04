@@ -10,6 +10,8 @@ class Texture;
 struct PhysicalDevice;
 }
 
+namespace moon::interfaces {
+
 struct BoundingBox{
     alignas(16) vector<float,3> min{0.0f,0.0f,0.0f};
     alignas(16) vector<float,3> max{0.0f,0.0f,0.0f};
@@ -76,7 +78,7 @@ enum PBRWorkflows{
     PBR_WORKFLOW_SPECULAR_GLOSINESS = 1
 };
 
-class model
+class Model
 {
 public:
     struct Vertex{
@@ -93,7 +95,7 @@ public:
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
     };
 
-    virtual ~model(){};
+    virtual ~Model(){};
     virtual void destroy(VkDevice device) = 0;
 
     virtual const VkBuffer* getVertices() const = 0;
@@ -119,4 +121,5 @@ public:
             VkDescriptorSetLayout*          descriptorSetLayout);
 };
 
+}
 #endif // MODEL_H

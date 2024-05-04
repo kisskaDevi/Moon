@@ -27,7 +27,7 @@ plyModel::plyModel(
     materialBlock.workflow = workflow;
 }
 
-MaterialBlock &plyModel::getMaterialBlock(){
+moon::interfaces::MaterialBlock &plyModel::getMaterialBlock(){
     return materialBlock;
 }
 
@@ -183,8 +183,8 @@ void plyModel::createDescriptorPool(VkDevice device) {
 }
 
 void plyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture) {
-    model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
-    model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
+    moon::interfaces::Model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
+    moon::interfaces::Model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
 
     {
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
@@ -292,7 +292,7 @@ void plyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipe
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
     materialBlock.primitive = primitiveCount++;
-    std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &materialBlock, sizeof(MaterialBlock));
+    std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &materialBlock, sizeof(moon::interfaces::MaterialBlock));
 
     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
 
@@ -305,6 +305,6 @@ void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayou
     nodeDescriptorSets.push_back(uniformBuffer.descriptorSet);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);
 
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(BoundingBox), &bb);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(moon::interfaces::BoundingBox), &bb);
     vkCmdDraw(commandBuffer, 24, 1, 0, 0);
 }

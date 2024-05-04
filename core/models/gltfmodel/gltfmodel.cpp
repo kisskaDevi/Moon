@@ -36,7 +36,7 @@ namespace {
         return VK_FILTER_LINEAR;
     }
 
-    void calculateNodeTangent(std::vector<model::Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer){
+    void calculateNodeTangent(std::vector<moon::interfaces::Model::Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer){
         for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
             vector<float,3> dv1   = vertexBuffer[indexBuffer[i+1]].pos - vertexBuffer[indexBuffer[i+0]].pos;
             vector<float,3> dv2   = vertexBuffer[indexBuffer[i+2]].pos - vertexBuffer[indexBuffer[i+0]].pos;
@@ -91,7 +91,7 @@ namespace {
         }
     }
 
-    void createMaterialDescriptorSet(VkDevice device, Material* material, moon::utils::Texture* emptyTexture, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+    void createMaterialDescriptorSet(VkDevice device, moon::interfaces::Material* material, moon::utils::Texture* emptyTexture, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
     {
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -291,7 +291,7 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
 {
     for (tinygltf::Material &mat : gltfModel.materials)
     {
-        Material material{};
+        moon::interfaces::Material material{};
         if (mat.values.find("baseColorTexture") != mat.values.end()) {
             material.baseColorTexture = &textures[mat.values["baseColorTexture"].TextureIndex()];
             material.texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
@@ -329,11 +329,11 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
         if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
             tinygltf::Parameter param = mat.additionalValues["alphaMode"];
             if (param.string_value == "BLEND") {
-                material.alphaMode = Material::ALPHAMODE_BLEND;
+                material.alphaMode = moon::interfaces::Material::ALPHAMODE_BLEND;
             }
             if (param.string_value == "MASK") {
                 material.alphaCutoff = 0.5f;
-                material.alphaMode = Material::ALPHAMODE_MASK;
+                material.alphaMode = moon::interfaces::Material::ALPHAMODE_MASK;
             }
         }
         if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) {
@@ -381,7 +381,7 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
         materials.push_back(material);
     }
     // Push a default material at the end of the list for meshes with no material assigned
-    materials.push_back(Material());
+    materials.push_back(moon::interfaces::Material());
 }
 
 void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
@@ -452,8 +452,8 @@ void gltfModel::createDescriptorPool(VkDevice device)
 
 void gltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture)
 {
-    model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
-    model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
+    moon::interfaces::Model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
+    moon::interfaces::Model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
 
     for(auto& instance : instances){
         for (auto& node : instance.nodes){
@@ -499,17 +499,17 @@ void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipe
             nodeDescriptorSets.push_back(primitive->material->descriptorSet);
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
 
-            MaterialBlock material{};
+            moon::interfaces::MaterialBlock material{};
                 material.primitive = primitiveCount++;
                 material.emissiveFactor = primitive->material->emissiveFactor;
                 material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
                 material.normalTextureSet = primitive->material->normalTexture != nullptr ? primitive->material->texCoordSets.normal : -1;
                 material.occlusionTextureSet = primitive->material->occlusionTexture != nullptr ? primitive->material->texCoordSets.occlusion : -1;
                 material.emissiveTextureSet = primitive->material->emissiveTexture != nullptr ? primitive->material->texCoordSets.emissive : -1;
-                material.alphaMask = static_cast<float>(primitive->material->alphaMode == Material::ALPHAMODE_MASK);
+                material.alphaMask = static_cast<float>(primitive->material->alphaMode == moon::interfaces::Material::ALPHAMODE_MASK);
                 material.alphaMaskCutoff = primitive->material->alphaCutoff;
             if (primitive->material->pbrWorkflows.metallicRoughness) {
-                material.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
+                material.workflow = static_cast<float>(moon::interfaces::PBR_WORKFLOW_METALLIC_ROUGHNESS);
                 material.baseColorFactor = primitive->material->baseColorFactor;
                 material.metallicFactor = primitive->material->metallicFactor;
                 material.roughnessFactor = primitive->material->roughnessFactor;
@@ -517,7 +517,7 @@ void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipe
                 material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
             }
             if (primitive->material->pbrWorkflows.specularGlossiness) {
-                material.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
+                material.workflow = static_cast<float>(moon::interfaces::PBR_WORKFLOW_SPECULAR_GLOSINESS);
                 material.PhysicalDescriptorTextureSet = primitive->material->extension.specularGlossinessTexture != nullptr ? primitive->material->texCoordSets.specularGlossiness : -1;
                 material.colorTextureSet = primitive->material->extension.diffuseTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
                 material.diffuseFactor = primitive->material->extension.diffuseFactor;
@@ -527,7 +527,7 @@ void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipe
                     primitive->material->extension.specularFactor[2],
                     1.0f);
             }
-            std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &material, sizeof(MaterialBlock));
+            std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &material, sizeof(moon::interfaces::MaterialBlock));
 
             vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
 
@@ -560,7 +560,7 @@ void renderNodeBB(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pi
             nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);
 
-            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(BoundingBox), (void*) &primitive->bb);
+            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(moon::interfaces::BoundingBox), (void*) &primitive->bb);
             vkCmdDraw(commandBuffer, 24, 1, 0, 0);
         }
     }

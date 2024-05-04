@@ -78,7 +78,7 @@ void Node::destroy(VkDevice device)
     }
 }
 
-Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material, BoundingBox bb)
+Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, moon::interfaces::Material* material, moon::interfaces::BoundingBox bb)
     : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material), bb(bb)
 {}
 
@@ -178,7 +178,7 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
 
             newNode->mesh->primitives.push_back(
                 new Mesh::Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? &materials[primitive.material] : &materials.back(),
-                    BoundingBox(
+                    moon::interfaces::BoundingBox(
                         vector<float,3>(static_cast<float>(posAccessor.minValues[0]), static_cast<float>(posAccessor.minValues[1]), static_cast<float>(posAccessor.minValues[2])),
                         vector<float,3>(static_cast<float>(posAccessor.maxValues[0]), static_cast<float>(posAccessor.maxValues[1]), static_cast<float>(posAccessor.maxValues[2]))
                     )

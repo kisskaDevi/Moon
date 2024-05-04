@@ -6,9 +6,9 @@
 
 #include <cstring>
 
-baseObject::baseObject(model* model, uint32_t firstInstance, uint32_t instanceCount)
+baseObject::baseObject(moon::interfaces::Model* model, uint32_t firstInstance, uint32_t instanceCount)
 {
-    pipelineBitMask = objectType::base | (outlining.Enable ? objectProperty::outlining : objectProperty::non);
+    pipelineBitMask = moon::interfaces::ObjectType::base | (outlining.Enable ? moon::interfaces::ObjectProperty::outlining : moon::interfaces::ObjectProperty::non);
     pModel = model;
     this->firstInstance = firstInstance;
     this->instanceCount = instanceCount;
@@ -215,7 +215,7 @@ void baseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
 
 void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
 {
-    object::createDescriptorSetLayout(device,&descriptorSetLayout);
+    moon::interfaces::Object::createDescriptorSetLayout(device,&descriptorSetLayout);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -279,7 +279,7 @@ void skyboxObject::destroy(VkDevice device){
 skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) :
     baseObject(),
     texture(new moon::utils::CubeTexture(TEXTURE_PATH)){
-    pipelineBitMask = objectType::skybox;
+    pipelineBitMask = moon::interfaces::ObjectType::skybox;
 }
 
 skyboxObject::~skyboxObject(){
@@ -311,7 +311,7 @@ void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
 }
 
 void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
-    object::createSkyboxDescriptorSetLayout(device,&descriptorSetLayout);
+    moon::interfaces::Object::createSkyboxDescriptorSetLayout(device,&descriptorSetLayout);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};

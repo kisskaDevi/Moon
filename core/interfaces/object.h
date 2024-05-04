@@ -5,21 +5,23 @@
 #include <vector>
 #include <vector.h>
 
-class model;
-
 namespace moon::utils { struct PhysicalDevice;}
 
-enum objectType : uint8_t {
+namespace moon::interfaces {
+
+class Model;
+
+enum ObjectType : uint8_t {
     base = 0x1,
     skybox = 0x2
 };
 
-enum objectProperty : uint8_t {
+enum ObjectProperty : uint8_t {
     non = 0x0,
     outlining = 1<<4
 };
 
-class object
+class Object
 {
 protected:
     bool enable{true};
@@ -34,7 +36,7 @@ protected:
         vector<float,4> Color{0.0f};
     }outlining;
 
-    model* pModel{nullptr};
+    Model* pModel{nullptr};
     uint32_t firstInstance{0};
     uint32_t instanceCount{1};
 
@@ -45,10 +47,10 @@ protected:
     std::vector<VkDescriptorSet>    descriptors;
 
 public:
-    virtual ~object(){};
+    virtual ~Object(){};
 
-    void setModel(model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    model* getModel();
+    void setModel(Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
+    Model* getModel();
     uint32_t getInstanceNumber(uint32_t imageNumber) const;
 
     void setEnable(const bool& enable);
@@ -89,4 +91,5 @@ public:
     static void createSkyboxDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
 };
 
+}
 #endif // OBJECT_H

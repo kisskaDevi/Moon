@@ -26,8 +26,8 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::
         moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    auto bindingDescription = model::Vertex::getBindingDescription();
-    auto attributeDescriptions = model::Vertex::getAttributeDescriptions();
+    auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
+    auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -61,7 +61,7 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    struct PushConstBlock{ OutliningPushConst outlining; MaterialBlock material;};
+    struct PushConstBlock{ OutliningPushConst outlining; moon::interfaces::MaterialBlock material;};
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
@@ -108,7 +108,7 @@ void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: *Parent->objects){
-        if(VkDeviceSize offsets = 0; (objectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getOutliningEnable()){
+        if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getOutliningEnable()){
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
@@ -121,7 +121,7 @@ void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
 
             struct PushConstBlock{
                 OutliningPushConst outlining;
-                MaterialBlock material;
+                moon::interfaces::MaterialBlock material;
             } pushConstBlock;
             pushConstBlock.outlining.stencilColor = object->getOutliningColor();
             pushConstBlock.outlining.width = object->getOutliningWidth();

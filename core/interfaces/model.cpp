@@ -2,14 +2,16 @@
 #include "vkdefault.h"
 #include "operations.h"
 
+namespace moon::interfaces {
+
 BoundingBox::BoundingBox(vector<float,3> min, vector<float,3> max)
     : min(min), max(max) {};
 
-VkVertexInputBindingDescription model::Vertex::getBindingDescription(){
+VkVertexInputBindingDescription Model::Vertex::getBindingDescription(){
     return VkVertexInputBindingDescription{0,sizeof(Vertex),VK_VERTEX_INPUT_RATE_VERTEX};
 }
 
-std::vector<VkVertexInputAttributeDescription> model::Vertex::getAttributeDescriptions(){
+std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions(){
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
     attributeDescriptions.push_back(VkVertexInputAttributeDescription{static_cast<uint32_t>(attributeDescriptions.size()),0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, pos)});
     attributeDescriptions.push_back(VkVertexInputAttributeDescription{static_cast<uint32_t>(attributeDescriptions.size()),0,VK_FORMAT_R32G32B32_SFLOAT,offsetof(Vertex, normal)});
@@ -23,7 +25,7 @@ std::vector<VkVertexInputAttributeDescription> model::Vertex::getAttributeDescri
     return attributeDescriptions;
 }
 
-void model::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
+void Model::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
 {
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
@@ -34,7 +36,7 @@ void model::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout
     CHECK(vkCreateDescriptorSetLayout(device, &uniformBlockLayoutInfo, nullptr, descriptorSetLayout));
 }
 
-void model::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
+void Model::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
 {
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
@@ -47,4 +49,6 @@ void model::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLa
         materialLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         materialLayoutInfo.pBindings = binding.data();
     CHECK(vkCreateDescriptorSetLayout(device, &materialLayoutInfo, nullptr, descriptorSetLayout));
+}
+
 }

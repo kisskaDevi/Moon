@@ -11,7 +11,7 @@ spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & pro
     projectionMatrix(projection),
     type(type)
 {
-    pipelineBitMask = lightType::spot;
+    pipelineBitMask = moon::interfaces::LightType::spot;
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
 }
@@ -21,7 +21,7 @@ spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<fl
     projectionMatrix(projection),
     type(type)
 {
-    pipelineBitMask = lightType::spot;
+    pipelineBitMask = moon::interfaces::LightType::spot;
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
 }
@@ -289,8 +289,8 @@ void spotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
 
 void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
 {
-    light::createTextureDescriptorSetLayout(device,&textureDescriptorSetLayout);
-    light::createBufferDescriptorSetLayout(device,&descriptorSetLayout);
+    moon::interfaces::Light::createTextureDescriptorSetLayout(device,&textureDescriptorSetLayout);
+    moon::interfaces::Light::createBufferDescriptorSetLayout(device,&descriptorSetLayout);
 
     textureDescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> textLayouts(imageCount, textureDescriptorSetLayout);

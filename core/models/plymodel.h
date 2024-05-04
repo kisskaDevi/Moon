@@ -10,7 +10,7 @@
 
 #define MAX_NUM_JOINTS 128u
 
-class plyModel : public model{
+class plyModel : public moon::interfaces::Model{
 private:
     std::filesystem::path filename;
     bool created{false};
@@ -26,8 +26,8 @@ private:
     VkDescriptorSetLayout           materialDescriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
 
-    Material material;
-    MaterialBlock materialBlock{};
+    moon::interfaces::Material material;
+    moon::interfaces::MaterialBlock materialBlock{};
 
     class UniformBuffer : public moon::utils::Buffer {
     public:
@@ -41,7 +41,7 @@ private:
         float jointcount{0};
     } uniformBlock;
 
-    BoundingBox bb;
+    moon::interfaces::BoundingBox bb;
 
     vector<float,3> maxSize{0.0f};
 
@@ -60,7 +60,7 @@ public:
              float roughnessFactor = 0.5f,
              float workflow = 1.0f);
 
-    MaterialBlock& getMaterialBlock();
+    moon::interfaces::MaterialBlock& getMaterialBlock();
 
     ~plyModel() override;
     void destroy(VkDevice device) override;

@@ -8,8 +8,9 @@
 
 #include <filesystem>
 
-class shadowGraphics;
 namespace moon::utils { class Texture;}
+
+namespace moon::transformational {
 
 struct LightBufferObject
 {
@@ -21,13 +22,13 @@ struct LightBufferObject
     alignas(16) vector<float,4>     lightProp;
 };
 
-enum spotType
+enum SpotType
 {
     circle,
     square
 };
 
-class spotLight : public transformational, public moon::interfaces::Light
+class SpotLight : public Transformational, public moon::interfaces::Light
 {
 private:
     moon::utils::Texture*               tex{nullptr};
@@ -41,7 +42,7 @@ private:
     matrix<float,4,4>                   projectionMatrix{1.0f};
     bool                                created{false};
     VkDevice                            device{VK_NULL_HANDLE};
-    spotType                            type{spotType::circle};
+    SpotType                            type{SpotType::circle};
 
     quaternion<float>                   translation{0.0f,0.0f,0.0f,0.0f};
     quaternion<float>                   rotation{1.0f,0.0f,0.0f,0.0f};
@@ -65,21 +66,21 @@ private:
     void updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
-    spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, spotType type = spotType::circle);
-    spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, spotType type = spotType::circle);
-    virtual ~spotLight();
+    SpotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
+    SpotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
+    virtual ~SpotLight();
 
-    spotLight&          setGlobalTransform(const matrix<float,4,4> & transform) override;
-    spotLight&          translate(const vector<float,3> & translate) override;
-    spotLight&          rotate(const float & ang,const vector<float,3> & ax) override;
-    spotLight&          scale(const vector<float,3> & scale) override;
+    SpotLight&          setGlobalTransform(const matrix<float,4,4> & transform) override;
+    SpotLight&          translate(const vector<float,3> & translate) override;
+    SpotLight&          rotate(const float & ang,const vector<float,3> & ax) override;
+    SpotLight&          scale(const vector<float,3> & scale) override;
 
-    spotLight&          rotateX(const float & ang ,const vector<float,3> & ax);
-    spotLight&          rotateY(const float & ang ,const vector<float,3> & ax);
-    spotLight&          setTranslation(const vector<float,3>& translate);
-    spotLight&          setRotation(const quaternion<float>& rotation);
-    spotLight&          setRotation(const float & ang ,const vector<float,3> & ax);
-    spotLight&          rotate(const quaternion<float>& quat);
+    SpotLight&          rotateX(const float & ang ,const vector<float,3> & ax);
+    SpotLight&          rotateY(const float & ang ,const vector<float,3> & ax);
+    SpotLight&          setTranslation(const vector<float,3>& translate);
+    SpotLight&          setRotation(const quaternion<float>& rotation);
+    SpotLight&          setRotation(const float & ang ,const vector<float,3> & ax);
+    SpotLight&          rotate(const quaternion<float>& quat);
 
     void                setLightColor(const vector<float,4> & color);
     void                setLightDropFactor(const float& dropFactor);
@@ -111,7 +112,7 @@ public:
     void printStatus() const;
 };
 
-class isotropicLight: public transformational
+class IsotropicLight: public Transformational
 {
 private:
     vector<float,4>                     lightColor{0.0f};
@@ -126,29 +127,30 @@ private:
     matrix<float,4,4>                   globalTransformation{1.0f};
     matrix<float,4,4>                   modelMatrix{1.0f};
 
-    std::vector<spotLight*>             lightSource;
+    std::vector<SpotLight*>             lightSource;
 
     void updateModelMatrix();
 public:
-    isotropicLight(const vector<float,4>& color, float radius = 100.0f);
-    ~isotropicLight();
+    IsotropicLight(const vector<float,4>& color, float radius = 100.0f);
+    ~IsotropicLight();
 
     void setLightColor(const vector<float,4> & color);
     void setLightDropFactor(const float& dropFactor);
     void setProjectionMatrix(const matrix<float,4,4> & projection);
     void setTranslation(const vector<float,3>& translate);
 
-    isotropicLight& setGlobalTransform(const matrix<float,4,4>& transform);
-    isotropicLight& translate(const vector<float,3>& translate);
-    isotropicLight& rotate(const float& ang,const vector<float,3>& ax);
-    isotropicLight& scale(const vector<float,3>& scale);
+    IsotropicLight& setGlobalTransform(const matrix<float,4,4>& transform);
+    IsotropicLight& translate(const vector<float,3>& translate);
+    IsotropicLight& rotate(const float& ang,const vector<float,3>& ax);
+    IsotropicLight& scale(const vector<float,3>& scale);
 
     void rotateX(const float& ang ,const vector<float,3>& ax);
     void rotateY(const float& ang ,const vector<float,3>& ax);
 
     vector<float,3> getTranslate() const;
     vector<float,4> getLightColor() const;
-    std::vector<spotLight*> get() const;
+    std::vector<SpotLight*> get() const;
 };
 
+}
 #endif // SPOTLIGHT_H

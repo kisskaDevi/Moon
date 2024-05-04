@@ -13,6 +13,8 @@
 
 namespace moon::interfaces { class Model;}
 
+namespace moon::transformational {
+
 struct UniformBuffer
 {
     alignas(16) matrix<float,4,4> modelMatrix;
@@ -22,7 +24,7 @@ struct UniformBuffer
     alignas(16) vector<float,4>   bloomFactor;
 };
 
-class baseObject : public moon::interfaces::Object, public transformational
+class BaseObject : public moon::interfaces::Object, public Transformational
 {
 private:
     quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
@@ -59,25 +61,25 @@ private:
     void updateModelMatrix();
 
 public:
-    baseObject() = default;
-    baseObject(moon::interfaces::Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    virtual ~baseObject();
+    BaseObject() = default;
+    BaseObject(moon::interfaces::Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
+    virtual ~BaseObject();
 
-    baseObject& setGlobalTransform(const matrix<float,4,4>& transform) override;
-    baseObject& translate(const vector<float,3>& translate) override;
-    baseObject& rotate(const float& ang, const vector<float,3>& ax) override;
-    baseObject& rotate(const quaternion<float>& quat);
-    baseObject& scale(const vector<float,3>& scale) override;
-    baseObject& setTranslation(const vector<float,3>& translate);
+    BaseObject& setGlobalTransform(const matrix<float,4,4>& transform) override;
+    BaseObject& translate(const vector<float,3>& translate) override;
+    BaseObject& rotate(const float& ang, const vector<float,3>& ax) override;
+    BaseObject& rotate(const quaternion<float>& quat);
+    BaseObject& scale(const vector<float,3>& scale) override;
+    BaseObject& setTranslation(const vector<float,3>& translate);
 
     const vector<float,3> getTranslation() const;
     const quaternion<float> getRotation() const;
     const vector<float,3> getScale() const;
 
-    baseObject& setConstantColor(const vector<float,4> & color);
-    baseObject& setColorFactor(const vector<float,4> & color);
-    baseObject& setBloomColor(const vector<float,4> & color);
-    baseObject& setBloomFactor(const vector<float,4> & color);
+    BaseObject& setConstantColor(const vector<float,4> & color);
+    BaseObject& setColorFactor(const vector<float,4> & color);
+    BaseObject& setBloomColor(const vector<float,4> & color);
+    BaseObject& setBloomFactor(const vector<float,4> & color);
 
     void destroy(VkDevice device) override;
 
@@ -98,18 +100,18 @@ public:
     void printStatus() const;
 };
 
-class skyboxObject : public baseObject{
+class SkyboxObject : public BaseObject{
 private:
     moon::utils::CubeTexture* texture{nullptr};
 
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSet(VkDevice device, uint32_t imageCount);
 public:
-    skyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
-    ~skyboxObject();
+    SkyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
+    ~SkyboxObject();
 
-    skyboxObject& setMipLevel(float mipLevel);
-    skyboxObject& translate(const vector<float,3>& translate) override;
+    SkyboxObject& setMipLevel(float mipLevel);
+    SkyboxObject& translate(const vector<float,3>& translate) override;
 
     void destroy(VkDevice device) override;
 
@@ -119,4 +121,5 @@ public:
         uint32_t imageCount) override;
 };
 
+}
 #endif // BASEOBJECT_H

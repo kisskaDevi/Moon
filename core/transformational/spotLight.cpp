@@ -6,7 +6,9 @@
 
 #include <cstring>
 
-spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, spotType type):
+namespace moon::transformational {
+
+SpotLight::SpotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
     lightColor(color),
     projectionMatrix(projection),
     type(type)
@@ -16,7 +18,7 @@ spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & pro
     this->enableScattering = enableScattering;
 }
 
-spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, spotType type):
+SpotLight::SpotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
     tex(new moon::utils::Texture(TEXTURE_PATH)),
     projectionMatrix(projection),
     type(type)
@@ -26,12 +28,12 @@ spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<fl
     this->enableScattering = enableScattering;
 }
 
-spotLight::~spotLight(){
-    spotLight::destroy(device);
+SpotLight::~SpotLight(){
+    SpotLight::destroy(device);
     delete tex;
 }
 
-void spotLight::destroy(VkDevice device)
+void SpotLight::destroy(VkDevice device)
 {
     destroyBuffers(device, uniformBuffersHost);
     destroyBuffers(device, uniformBuffersDevice);
@@ -59,14 +61,14 @@ void spotLight::destroy(VkDevice device)
     created = false;
 }
 
-void spotLight::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
+void SpotLight::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
         buffer.updateFlag = true;
     }
 }
 
-void spotLight::updateModelMatrix()
+void SpotLight::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
@@ -76,63 +78,63 @@ void spotLight::updateModelMatrix()
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-spotLight& spotLight::setGlobalTransform(const matrix<float,4,4> & transform)
+SpotLight& SpotLight::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::translate(const vector<float,3> & translate)
+SpotLight& SpotLight::translate(const vector<float,3> & translate)
 {
     translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::rotate(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::rotate(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::rotate(const quaternion<float>& quat)
+SpotLight& SpotLight::rotate(const quaternion<float>& quat)
 {
     rotation = quat*rotation;
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::scale(const vector<float,3> & scale)
+SpotLight& SpotLight::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::setTranslation(const vector<float,3>& translate)
+SpotLight& SpotLight::setTranslation(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::setRotation(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::setRotation(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)));
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::setRotation(const quaternion<float>& rotation)
+SpotLight& SpotLight::setRotation(const quaternion<float>& rotation)
 {
     this->rotation = rotation;
     updateModelMatrix();
     return *this;
 }
 
-spotLight& spotLight::rotateX(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::rotateX(const float & ang ,const vector<float,3> & ax)
 {
     rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
@@ -140,7 +142,7 @@ spotLight& spotLight::rotateX(const float & ang ,const vector<float,3> & ax)
     return *this;
 }
 
-spotLight& spotLight::rotateY(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::rotateY(const float & ang ,const vector<float,3> & ax)
 {
     rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
@@ -148,38 +150,38 @@ spotLight& spotLight::rotateY(const float & ang ,const vector<float,3> & ax)
     return *this;
 }
 
-void spotLight::setTexture(moon::utils::Texture* tex) {
+void SpotLight::setTexture(moon::utils::Texture* tex) {
     this->tex = tex;
 }
 
-void spotLight::setProjectionMatrix(const matrix<float,4,4> & projection)  {
+void SpotLight::setProjectionMatrix(const matrix<float,4,4> & projection)  {
     projectionMatrix = projection;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void spotLight::setLightColor(const vector<float,4> &color){
+void SpotLight::setLightColor(const vector<float,4> &color){
     lightColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void spotLight::setLightDropFactor(const float& dropFactor){
+void SpotLight::setLightDropFactor(const float& dropFactor){
     lightDropFactor = dropFactor;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-matrix<float,4,4> spotLight::getModelMatrix() const {
+matrix<float,4,4> SpotLight::getModelMatrix() const {
     return modelMatrix;
 }
 
-vector<float,3> spotLight::getTranslate() const {
+vector<float,3> SpotLight::getTranslate() const {
     return translation.im();
 }
 
-vector<float,4> spotLight::getLightColor() const {
+vector<float,4> SpotLight::getLightColor() const {
     return lightColor;
 }
 
-void spotLight::create(
+void SpotLight::create(
     moon::utils::PhysicalDevice device,
     VkCommandPool commandPool,
     uint32_t imageCount)
@@ -209,7 +211,7 @@ void spotLight::create(
     }
 }
 
-void spotLight::render(
+void SpotLight::render(
     uint32_t frameNumber,
     VkCommandBuffer commandBuffer,
     const std::vector<VkDescriptorSet>& descriptorSet,
@@ -224,7 +226,7 @@ void spotLight::render(
     vkCmdDraw(commandBuffer, 18, 1, 0, 0);
 }
 
-void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
+void SpotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
@@ -253,7 +255,7 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
     }
 }
 
-void spotLight::update(
+void SpotLight::update(
     uint32_t frameNumber,
     VkCommandBuffer commandBuffer)
 {
@@ -273,7 +275,7 @@ void spotLight::update(
     }
 }
 
-void spotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
+void SpotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
 {
     std::vector<VkDescriptorPoolSize> poolSize = {
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)},
@@ -287,7 +289,7 @@ void spotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
+void SpotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
 {
     moon::interfaces::Light::createTextureDescriptorSetLayout(device,&textureDescriptorSetLayout);
     moon::interfaces::Light::createBufferDescriptorSetLayout(device,&descriptorSetLayout);
@@ -311,7 +313,7 @@ void spotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
     CHECK(vkAllocateDescriptorSets(device, &bufferAllocInfo, descriptorSets.data()));
 }
 
-void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
+void SpotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
 {
     for (size_t i = 0; i < imageCount; i++)
     {
@@ -347,7 +349,7 @@ void spotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
     }
 }
 
-void spotLight::printStatus() const
+void SpotLight::printStatus() const
 {
     std::cout << "translation\t" << translation.im()[0] << '\t' << translation.im()[1] << '\t' << translation.im()[2] << '\n';
     std::cout << "rotation\t" << rotation.re() << '\t' << rotation.im()[0] << '\t' << rotation.im()[1] << '\t' << rotation.im()[2] << '\n';
@@ -356,26 +358,26 @@ void spotLight::printStatus() const
 
 //isotropicLight
 
-isotropicLight::isotropicLight(const vector<float,4>& color, float radius)
+IsotropicLight::IsotropicLight(const vector<float,4>& color, float radius)
 {
     const auto proj = perspective(radians(91.0f), 1.0f, 0.01f, radius);
 
-    lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
     lightSource.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
 
-    lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
     lightSource.back()->rotate(radians(-90.0f),vector<float,3>(1.0f,0.0f,0.0f));
 
-    lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
     lightSource.back()->rotate(radians(0.0f),vector<float,3>(0.0f,1.0f,0.0f));
 
-    lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
     lightSource.back()->rotate(radians(90.0f),vector<float,3>(0.0f,1.0f,0.0f));
 
-    lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
     lightSource.back()->rotate(radians(-90.0f),vector<float,3>(0.0f,1.0f,0.0f));
 
-    lightSource.push_back(new spotLight(color, proj,true,false,spotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
     lightSource.back()->rotate(radians(180.0f),vector<float,3>(1.0f,0.0f,0.0f));
 
     // colors for debug if color = {0, 0, 0, 0}
@@ -389,41 +391,41 @@ isotropicLight::isotropicLight(const vector<float,4>& color, float radius)
     }
 }
 
-isotropicLight::~isotropicLight(){}
+IsotropicLight::~IsotropicLight(){}
 
-vector<float,4> isotropicLight::getLightColor() const {
+vector<float,4> IsotropicLight::getLightColor() const {
     return lightColor;
 }
 
-vector<float,3> isotropicLight::getTranslate() const {
+vector<float,3> IsotropicLight::getTranslate() const {
     return translation.im();
 }
 
-std::vector<spotLight*> isotropicLight::get() const {
+std::vector<SpotLight*> IsotropicLight::get() const {
     return lightSource;
 }
 
-void isotropicLight:: setProjectionMatrix(const matrix<float,4,4> & projection)
+void IsotropicLight:: setProjectionMatrix(const matrix<float,4,4> & projection)
 {
     projectionMatrix = projection;
     for(auto& source: lightSource)
         source->setProjectionMatrix(projectionMatrix);
 }
 
-void isotropicLight::setLightColor(const vector<float,4> &color)
+void IsotropicLight::setLightColor(const vector<float,4> &color)
 {
     this->lightColor = color;
     for(auto& source: lightSource)
         source->setLightColor(color);
 }
 
-void isotropicLight::setLightDropFactor(const float& dropFactor){
+void IsotropicLight::setLightDropFactor(const float& dropFactor){
     lightDropFactor = dropFactor;
     for(auto& source: lightSource)
         source->setLightDropFactor(lightDropFactor);
 }
 
-void isotropicLight::updateModelMatrix()
+void IsotropicLight::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
@@ -434,50 +436,52 @@ void isotropicLight::updateModelMatrix()
         source->setGlobalTransform(modelMatrix);
 }
 
-isotropicLight& isotropicLight::setGlobalTransform(const matrix<float,4,4> & transform)
+IsotropicLight& IsotropicLight::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
     return *this;
 }
 
-isotropicLight& isotropicLight::translate(const vector<float,3> & translate)
+IsotropicLight& IsotropicLight::translate(const vector<float,3> & translate)
 {
     translation += quaternion<float>(0.0f, vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
     return *this;
 }
 
-isotropicLight& isotropicLight::rotate(const float & ang ,const vector<float,3> & ax)
+IsotropicLight& IsotropicLight::rotate(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
     return *this;
 }
 
-isotropicLight& isotropicLight::scale(const vector<float,3> & scale)
+IsotropicLight& IsotropicLight::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
     return *this;
 }
 
-void isotropicLight::rotateX(const float & ang ,const vector<float,3> & ax)
+void IsotropicLight::rotateX(const float & ang ,const vector<float,3> & ax)
 {
     rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
     updateModelMatrix();
 }
 
-void isotropicLight::rotateY(const float & ang ,const vector<float,3> & ax)
+void IsotropicLight::rotateY(const float & ang ,const vector<float,3> & ax)
 {
     rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
     updateModelMatrix();
 }
 
-void isotropicLight::setTranslation(const vector<float,3>& translate)
+void IsotropicLight::setTranslation(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
+}
+
 }

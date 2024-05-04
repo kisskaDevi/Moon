@@ -6,7 +6,9 @@
 
 #include <cstring>
 
-baseObject::baseObject(moon::interfaces::Model* model, uint32_t firstInstance, uint32_t instanceCount)
+namespace moon::transformational {
+
+BaseObject::BaseObject(moon::interfaces::Model* model, uint32_t firstInstance, uint32_t instanceCount)
 {
     pipelineBitMask = moon::interfaces::ObjectType::base | (outlining.Enable ? moon::interfaces::ObjectProperty::outlining : moon::interfaces::ObjectProperty::non);
     pModel = model;
@@ -14,11 +16,11 @@ baseObject::baseObject(moon::interfaces::Model* model, uint32_t firstInstance, u
     this->instanceCount = instanceCount;
 }
 
-baseObject::~baseObject(){
-    baseObject::destroy(device);
+BaseObject::~BaseObject(){
+    BaseObject::destroy(device);
 }
 
-void baseObject::destroy(VkDevice device)
+void BaseObject::destroy(VkDevice device)
 {
     destroyBuffers(device, uniformBuffersHost);
     destroyBuffers(device, uniformBuffersDevice);
@@ -28,14 +30,14 @@ void baseObject::destroy(VkDevice device)
     created = false;
 }
 
-void baseObject::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
+void BaseObject::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
         buffer.updateFlag = true;
     }
 }
 
-void baseObject::updateModelMatrix()
+void BaseObject::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
@@ -45,82 +47,82 @@ void baseObject::updateModelMatrix()
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-baseObject& baseObject::setGlobalTransform(const matrix<float,4,4> & transform)
+BaseObject& BaseObject::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
     return *this;
 }
 
-baseObject& baseObject::translate(const vector<float,3> & translate)
+BaseObject& BaseObject::translate(const vector<float,3> & translate)
 {
     translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
     return *this;
 }
 
-baseObject& baseObject::setTranslation(const vector<float,3>& translate)
+BaseObject& BaseObject::setTranslation(const vector<float,3>& translate)
 {
     translation = quaternion<float>(0.0f,translate);
     updateModelMatrix();
     return *this;
 }
 
-baseObject& baseObject::rotate(const float & ang ,const vector<float,3> & ax)
+BaseObject& BaseObject::rotate(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
     return *this;
 }
 
-baseObject& baseObject::rotate(const quaternion<float>& quat)
+BaseObject& BaseObject::rotate(const quaternion<float>& quat)
 {
     rotation = quat * rotation;
     updateModelMatrix();
     return *this;
 }
 
-baseObject& baseObject::scale(const vector<float,3> & scale)
+BaseObject& BaseObject::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
     return *this;
 }
 
-const vector<float,3> baseObject::getTranslation() const{
+const vector<float,3> BaseObject::getTranslation() const{
     return translation.im();
 }
 
-const quaternion<float> baseObject::getRotation() const{
+const quaternion<float> BaseObject::getRotation() const{
     return rotation;
 }
 
-const vector<float,3> baseObject::getScale() const{
+const vector<float,3> BaseObject::getScale() const{
     return scaling;
 }
 
-baseObject& baseObject::setConstantColor(const vector<float,4> &color){
+BaseObject& BaseObject::setConstantColor(const vector<float,4> &color){
     this->constantColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
-baseObject& baseObject::setColorFactor(const vector<float,4> & color){
+BaseObject& BaseObject::setColorFactor(const vector<float,4> & color){
     this->colorFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
-baseObject& baseObject::setBloomColor(const vector<float,4> & color){
+BaseObject& BaseObject::setBloomColor(const vector<float,4> & color){
     this->bloomColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
-baseObject& baseObject::setBloomFactor(const vector<float,4> &color){
+BaseObject& BaseObject::setBloomFactor(const vector<float,4> &color){
     this->bloomFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
 
-void baseObject::updateAnimation(uint32_t imageNumber, float frameTime){
+void BaseObject::updateAnimation(uint32_t imageNumber, float frameTime){
     animationTimer += frameTime;
     if(uint32_t index = getInstanceNumber(imageNumber); pModel->hasAnimation(index)){
         if(float end = pModel->animationEnd(index, animationIndex); !changeAnimationFlag){
@@ -137,23 +139,23 @@ void baseObject::updateAnimation(uint32_t imageNumber, float frameTime){
     }
 }
 
-void baseObject::changeAnimation(uint32_t newAnimationIndex, float changeAnimationTime){
+void BaseObject::changeAnimation(uint32_t newAnimationIndex, float changeAnimationTime){
     changeAnimationFlag = true;
     startTimer = animationTimer;
     this->changeAnimationTime = changeAnimationTime;
     this->newAnimationIndex = newAnimationIndex;
 }
 
-void baseObject::setAnimation(uint32_t animationIndex, float animationTime){
+void BaseObject::setAnimation(uint32_t animationIndex, float animationTime){
     this->animationIndex = animationIndex;
     this->animationTimer = animationTime;
 }
 
-uint32_t baseObject::getAnimationIndex(){
+uint32_t BaseObject::getAnimationIndex(){
     return animationIndex;
 }
 
-void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
+void BaseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
@@ -182,7 +184,7 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
     }
 }
 
-void baseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void BaseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     if(uniformBuffersHost[frameNumber].updateFlag){
         UniformBuffer ubo{};
@@ -199,7 +201,7 @@ void baseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
     }
 }
 
-void baseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
+void BaseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
 {
     std::vector<VkDescriptorPoolSize> poolSizes = {
         VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)}
@@ -213,7 +215,7 @@ void baseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
+void BaseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
 {
     moon::interfaces::Object::createDescriptorSetLayout(device,&descriptorSetLayout);
 
@@ -244,7 +246,7 @@ void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
     }
 }
 
-void baseObject::create(
+void BaseObject::create(
     moon::utils::PhysicalDevice device,
     VkCommandPool commandPool,
     uint32_t imageCount)
@@ -262,41 +264,41 @@ void baseObject::create(
     }
 }
 
-void baseObject::printStatus() const
+void BaseObject::printStatus() const
 {
     std::cout << "translation\t" << translation.im()[0] << '\t' << translation.im()[1] << '\t' << translation.im()[2] << '\n';
     std::cout << "rotation\t" << rotation.re() << '\t' << rotation.im()[0] << '\t' << rotation.im()[1] << '\t' << rotation.im()[2] << '\n';
     std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
 }
 
-void skyboxObject::destroy(VkDevice device){
+void SkyboxObject::destroy(VkDevice device){
     if(texture){
         texture->destroy(device);
     }
-    baseObject::destroy(device);
+    BaseObject::destroy(device);
 }
 
-skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) :
-    baseObject(),
+SkyboxObject::SkyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) :
+    BaseObject(),
     texture(new moon::utils::CubeTexture(TEXTURE_PATH)){
     pipelineBitMask = moon::interfaces::ObjectType::skybox;
 }
 
-skyboxObject::~skyboxObject(){
-    skyboxObject::destroy(device);
+SkyboxObject::~SkyboxObject(){
+    SkyboxObject::destroy(device);
     delete texture;
 }
 
-skyboxObject& skyboxObject::setMipLevel(float mipLevel){
+SkyboxObject& SkyboxObject::setMipLevel(float mipLevel){
     texture->setMipLevel(mipLevel);
     return *this;
 }
 
-skyboxObject& skyboxObject::translate(const vector<float,3> &) {
+SkyboxObject& SkyboxObject::translate(const vector<float,3> &) {
     return *this;
 }
 
-void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
+void SkyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
     std::vector<VkDescriptorPoolSize> poolSizes = {
         VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)},
         VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)}
@@ -310,7 +312,7 @@ void skyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
+void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
     moon::interfaces::Object::createSkyboxDescriptorSetLayout(device,&descriptorSetLayout);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
@@ -354,7 +356,7 @@ void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
     }
 }
 
-void skyboxObject::create(
+void SkyboxObject::create(
     moon::utils::PhysicalDevice device,
     VkCommandPool commandPool,
     uint32_t imageCount)
@@ -378,4 +380,6 @@ void skyboxObject::create(
         created = true;
         this->device = device.getLogical();
     }
+}
+
 }

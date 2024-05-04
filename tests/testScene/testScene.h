@@ -19,14 +19,14 @@ namespace moon::interfaces { class Model;}
 namespace moon::graphicsManager { class GraphicsManager;}
 namespace moon::imguiGraphics { class ImguiGraphics;}
 namespace moon::deferredGraphics { class DeferredGraphics;}
-
-class spotLight;
-class isotropicLight;
-class baseObject;
-class group;
-class baseCamera;
-class skyboxObject;
-class transformational;
+namespace moon::transformational {
+class SpotLight;
+class IsotropicLight;
+class BaseObject;
+class Group;
+class BaseCamera;
+class SkyboxObject;
+}
 
 class testScene : public scene
 {
@@ -60,24 +60,24 @@ private:
     uint32_t resourceCount{0};
     uint32_t imageCount{0};
 
-    std::unordered_map<std::string, std::shared_ptr<baseCamera>> cameras;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseCamera>> cameras;
     std::unordered_map<std::string, std::shared_ptr<moon::deferredGraphics::DeferredGraphics>> graphics;
 #ifdef IMGUI_GRAPHICS
     std::shared_ptr<moon::imguiGraphics::ImguiGraphics> gui;
 #endif
 
     std::unordered_map<std::string, std::shared_ptr<moon::interfaces::Model>> models;
-    std::unordered_map<std::string, std::shared_ptr<baseObject>>        objects;
-    std::unordered_map<std::string, std::shared_ptr<baseObject>>        staticObjects;
-    std::unordered_map<std::string, std::shared_ptr<skyboxObject>>      skyboxObjects;
-    std::unordered_map<std::string, std::shared_ptr<group>>             groups;
-    std::unordered_map<std::string, std::shared_ptr<isotropicLight>>    lightPoints;
-    std::vector<std::shared_ptr<spotLight>>                             lightSources;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseObject>> objects;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseObject>> staticObjects;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::SkyboxObject>> skyboxObjects;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::Group>> groups;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::IsotropicLight>> lightPoints;
+    std::vector<std::shared_ptr<moon::transformational::SpotLight>> lightSources;
+    moon::transformational::BaseObject* controledObject{nullptr};
 
     bool            controledObjectEnableOutlighting{true};
     float           controledObjectOutlightingColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
     std::string     controledObjectName{"none"};
-    baseObject*     controledObject{nullptr};
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);

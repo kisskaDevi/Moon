@@ -8,13 +8,15 @@
 #include "quaternion.h"
 #include "buffer.h"
 
+namespace moon::transformational {
+
 struct UniformBufferObject{
     alignas(16) matrix<float,4,4>   view;
     alignas(16) matrix<float,4,4>   proj;
     alignas(16) vector<float,4>     eyePosition;
 };
 
-class baseCamera : public transformational, public moon::interfaces::Camera
+class BaseCamera : public Transformational, public moon::interfaces::Camera
 {
 private:
     matrix<float,4,4>       projMatrix{1.0f};
@@ -36,27 +38,27 @@ protected:
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
     void updateViewMatrix();
 public:
-    baseCamera();
-    baseCamera(float angle, float aspect, float near);
-    baseCamera(float angle, float aspect, float near, float far);
-    ~baseCamera();
+    BaseCamera();
+    BaseCamera(float angle, float aspect, float near);
+    BaseCamera(float angle, float aspect, float near, float far);
+    ~BaseCamera();
     void destroy(VkDevice device) override;
     void recreate(float angle, float aspect, float near, float far);
     void recreate(float angle, float aspect, float near);
 
-    baseCamera& setGlobalTransform(const matrix<float,4,4> & transform) override;
-    baseCamera& translate(const vector<float,3> & translate) override;
-    baseCamera& rotate(const float & ang ,const vector<float,3> & ax) override;
-    baseCamera& scale(const vector<float,3> & scale) override;
+    BaseCamera& setGlobalTransform(const matrix<float,4,4> & transform) override;
+    BaseCamera& translate(const vector<float,3> & translate) override;
+    BaseCamera& rotate(const float & ang ,const vector<float,3> & ax) override;
+    BaseCamera& scale(const vector<float,3> & scale) override;
 
-    baseCamera& rotate(const quaternion<float>& quat);
-    baseCamera& rotateX(const float & ang ,const vector<float,3> & ax);
-    baseCamera& rotateY(const float & ang ,const vector<float,3> & ax);
+    BaseCamera& rotate(const quaternion<float>& quat);
+    BaseCamera& rotateX(const float & ang ,const vector<float,3> & ax);
+    BaseCamera& rotateY(const float & ang ,const vector<float,3> & ax);
 
-    baseCamera& setProjMatrix(const matrix<float,4,4> & proj);
-    baseCamera& setTranslation(const vector<float,3> & translate);
-    baseCamera& setRotation(const float & ang ,const vector<float,3> & ax);
-    baseCamera& setRotation(const quaternion<float>& rotation);
+    BaseCamera& setProjMatrix(const matrix<float,4,4> & proj);
+    BaseCamera& setTranslation(const vector<float,3> & translate);
+    BaseCamera& setRotation(const float & ang ,const vector<float,3> & ax);
+    BaseCamera& setRotation(const quaternion<float>& rotation);
 
     void create(moon::utils::PhysicalDevice device, uint32_t imageCount) override;
     void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
@@ -71,4 +73,5 @@ public:
     matrix<float,4,4>       getViewMatrix() const;
 };
 
+}
 #endif // BASECAMERA_H

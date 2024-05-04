@@ -3,13 +3,12 @@
 
 #include <numeric>
 
-group::group()
-{}
+namespace moon::transformational {
 
-group::~group()
-{}
+Group::Group(){}
+Group::~Group(){}
 
-void group::updateModelMatrix()
+void Group::updateModelMatrix()
 {
     dualQuaternion<float> dQuat = convert(rotation,translation);
     matrix<float,4,4> transformMatrix = convert(dQuat);
@@ -17,7 +16,7 @@ void group::updateModelMatrix()
     modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
 }
 
-group& group::rotate(const float & ang ,const vector<float,3> & ax)
+Group& Group::rotate(const float & ang ,const vector<float,3> & ax)
 {
     rotation = convert(ang, vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
@@ -28,7 +27,7 @@ group& group::rotate(const float & ang ,const vector<float,3> & ax)
     return *this;
 }
 
-group& group::translate(const vector<float,3> & translate)
+Group& Group::translate(const vector<float,3> & translate)
 {
     translation += quaternion<float>(0.0f,translate);
     updateModelMatrix();
@@ -39,7 +38,7 @@ group& group::translate(const vector<float,3> & translate)
     return *this;
 }
 
-group& group::scale(const vector<float,3> & scale)
+Group& Group::scale(const vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
@@ -50,7 +49,7 @@ group& group::scale(const vector<float,3> & scale)
     return *this;
 }
 
-group& group::setGlobalTransform(const matrix<float,4,4> & transform)
+Group& Group::setGlobalTransform(const matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
@@ -61,7 +60,7 @@ group& group::setGlobalTransform(const matrix<float,4,4> & transform)
     return *this;
 }
 
-void group::addObject(transformational* object)
+void Group::addObject(Transformational* object)
 {
     objects.push_back(object);
     updateModelMatrix();
@@ -69,7 +68,7 @@ void group::addObject(transformational* object)
     object->setGlobalTransform(modelMatrix);
 }
 
-void group::delObject(transformational* object)
+void Group::delObject(Transformational* object)
 {
     for(auto objIt = objects.begin(); objIt != objects.end(); objIt++){
         if(*objIt == object){
@@ -78,9 +77,11 @@ void group::delObject(transformational* object)
     }
 }
 
-bool group::findObject(transformational* object)
+bool Group::findObject(Transformational* object)
 {
     return std::accumulate(objects.begin(),objects.end(), false, [&object](const bool& a, const auto& obj){
         return a + (obj == object);
     });
+}
+
 }

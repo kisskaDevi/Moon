@@ -3,6 +3,8 @@
 
 #include "attachments.h"
 
+namespace moon::deferredGraphics {
+
 struct GBufferAttachments{
     moon::utils::Attachments         position;
     moon::utils::Attachments         normal;
@@ -48,4 +50,5 @@ struct DeferredAttachments{
     constexpr static uint32_t GBufferOffset() {return 3;}
 };
 
+}
 #endif // DEFERREDATTACHMENTS_H

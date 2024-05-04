@@ -3,7 +3,10 @@
 #include "vkdefault.h"
 
 #include <filesystem>
-void graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
+
+namespace moon::deferredGraphics {
+
+void Graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
     uint8_t key = mask;
 
     auto vertShaderCode = moon::utils::shaderModule::readFile(vertShadersPath);
@@ -74,4 +77,6 @@ void graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::uti
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
+}
+
 }

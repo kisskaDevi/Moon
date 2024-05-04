@@ -3,8 +3,10 @@
 #include "object.h"
 #include "deferredAttachments.h"
 
-graphics::graphics(
-    graphicsParameters parameters,
+namespace moon::deferredGraphics {
+
+Graphics::Graphics(
+    GraphicsParameters parameters,
     bool enable,
     bool enableTransparency,
     bool transparencyPass,
@@ -24,12 +26,12 @@ graphics::graphics(
     ambientLighting.Parent = &lighting;
 }
 
-graphics& graphics::setMinAmbientFactor(const float& minAmbientFactor){
+Graphics& Graphics::setMinAmbientFactor(const float& minAmbientFactor){
     ambientLighting.minAmbientFactor = minAmbientFactor;
     return *this;
 }
 
-void graphics::destroy()
+void Graphics::destroy()
 {
     base.Destroy(device);
     outlining.DestroyPipeline(device);
@@ -43,7 +45,7 @@ void graphics::destroy()
 }
 
 
-void graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
+void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, DeferredAttachments* pAttachments){
         VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -77,7 +79,7 @@ void graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
     aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.depth, enable, &deferredAttachments.GBuffer.depth);
 }
 
-void graphics::createRenderPass()
+void Graphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(deferredAttachments.image.format),
@@ -168,7 +170,7 @@ void graphics::createRenderPass()
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void graphics::createFramebuffers()
+void Graphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for (size_t imageIndex = 0; imageIndex < image.Count; imageIndex++){
@@ -189,7 +191,7 @@ void graphics::createFramebuffers()
     }
 }
 
-void graphics::createPipelines()
+void Graphics::createPipelines()
 {
     base.ShadersPath = shadersPath;
     outlining.ShadersPath = shadersPath;
@@ -204,19 +206,19 @@ void graphics::createPipelines()
     ambientLighting.createPipeline(device,&image,renderPass);
 }
 
-void graphics::createDescriptorPool()
+void Graphics::createDescriptorPool()
 {
     createBaseDescriptorPool();
     createLightingDescriptorPool();
 }
 
-void graphics::createDescriptorSets()
+void Graphics::createDescriptorSets()
 {
     createBaseDescriptorSets();
     createLightingDescriptorSets();
 }
 
-void graphics::create(moon::utils::AttachmentsDatabase& aDatabase)
+void Graphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -228,7 +230,7 @@ void graphics::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void graphics::updateDescriptorSets(
+void Graphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -238,7 +240,7 @@ void graphics::updateDescriptorSets(
     updateLightingDescriptorSets(bDatabase);
 }
 
-void graphics::updateCommandBuffer(uint32_t frameNumber){
+void Graphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues;
@@ -268,4 +270,6 @@ void graphics::updateCommandBuffer(uint32_t frameNumber){
         ambientLighting.render(frameNumber,commandBuffers[frameNumber]);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

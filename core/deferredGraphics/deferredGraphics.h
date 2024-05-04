@@ -2,7 +2,6 @@
 #define DEFERREDGRAPHICS_H
 
 #include "graphicsInterface.h"
-#include "link.h"
 #include "workflow.h"
 
 #include "buffer.h"
@@ -17,12 +16,15 @@ class Camera;
 class Object;
 class Light;
 }
-
 namespace moon::utils {
 class Texture;
 class DepthMap;
 struct Node;
 }
+
+namespace moon::deferredGraphics {
+
+class Link;
 
 struct StorageBufferObject{
     alignas(16) vector<float,4>    mousePosition;
@@ -30,7 +32,7 @@ struct StorageBufferObject{
     alignas(4)  float              depth;
 };
 
-class deferredGraphics: public moon::graphicsManager::GraphicsInterface{
+class DeferredGraphics: public moon::graphicsManager::GraphicsInterface{
 private:
     std::filesystem::path                       shadersPath;
     std::filesystem::path                       workflowsShadersPath;
@@ -40,8 +42,8 @@ private:
     moon::utils::BuffersDatabase bDatabase;
     moon::utils::AttachmentsDatabase aDatabase;
     std::unordered_map<std::string, moon::workflows::Workflow*> workflows;
-    std::unordered_map<std::string, bool>       enable;
-    class link                                  Link;
+    std::unordered_map<std::string, bool> enable;
+    Link* deferredLink;
 
     moon::utils::Buffers                        storageBuffersHost;
 
@@ -73,8 +75,8 @@ private:
     void updateBuffers(uint32_t imageIndex);
 
 public:
-    deferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
-    ~deferredGraphics();
+    DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    ~DeferredGraphics();
 
     void destroy() override;
     void create() override;
@@ -91,13 +93,13 @@ public:
     void updateCmdFlags();
 
     bool getEnable(const std::string& name);
-    deferredGraphics& setEnable(const std::string& name, bool enable);
-    deferredGraphics& setExtent(VkExtent2D extent);
-    deferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
-    deferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
-    deferredGraphics& setScatteringRefraction(bool enable);
-    deferredGraphics& setBlitFactor(float blitFactor);
-    deferredGraphics& setBlurDepth(float blurDepth);
+    DeferredGraphics& setEnable(const std::string& name, bool enable);
+    DeferredGraphics& setExtent(VkExtent2D extent);
+    DeferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
+    DeferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
+    DeferredGraphics& setScatteringRefraction(bool enable);
+    DeferredGraphics& setBlitFactor(float blitFactor);
+    DeferredGraphics& setBlurDepth(float blurDepth);
 
     void create(moon::interfaces::Model* pModel);
     void destroy(moon::interfaces::Model* pModel);
@@ -115,4 +117,5 @@ public:
     void readStorageBuffer(uint32_t imageIndex, uint32_t& primitiveNumber, float& depth);
 };
 
+}
 #endif // DEFERREDGRAPHICS_H

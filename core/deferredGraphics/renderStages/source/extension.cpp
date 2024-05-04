@@ -5,18 +5,20 @@
 #include "model.h"
 #include "vector.h"
 
+namespace moon::deferredGraphics {
+
 struct OutliningPushConst{
     alignas(16) vector<float,4>     stencilColor;
     alignas(4)  float               width;
 };
 
-void graphics::OutliningExtension::DestroyPipeline(VkDevice device)
+void Graphics::OutliningExtension::DestroyPipeline(VkDevice device)
 {
     if(Pipeline)         {vkDestroyPipeline(device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
     if(PipelineLayout)   {vkDestroyPipelineLayout(device, PipelineLayout, nullptr); PipelineLayout = VK_NULL_HANDLE;}
 }
 
-void graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+void Graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
     auto vertShaderCode = moon::utils::shaderModule::readFile(ShadersPath / "outlining/outliningVert.spv");
     auto fragShaderCode = moon::utils::shaderModule::readFile(ShadersPath / "outlining/outliningFrag.spv");
     VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
@@ -104,7 +106,7 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
 
-void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
+void Graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers)
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     for(auto object: *Parent->objects){
@@ -141,3 +143,4 @@ void graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
     }
 }
 
+}

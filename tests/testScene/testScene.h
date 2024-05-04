@@ -18,8 +18,8 @@
 namespace moon::interfaces { class Model;}
 namespace moon::graphicsManager { class GraphicsManager;}
 namespace moon::imguiGraphics { class ImguiGraphics;}
+namespace moon::deferredGraphics { class DeferredGraphics;}
 
-class deferredGraphics;
 class spotLight;
 class isotropicLight;
 class baseObject;
@@ -62,7 +62,7 @@ private:
     uint32_t imageCount{0};
 
     std::unordered_map<std::string, std::shared_ptr<baseCamera>> cameras;
-    std::unordered_map<std::string, std::shared_ptr<deferredGraphics>> graphics;
+    std::unordered_map<std::string, std::shared_ptr<moon::deferredGraphics::DeferredGraphics>> graphics;
 #ifdef IMGUI_GRAPHICS
     std::shared_ptr<moon::imguiGraphics::ImguiGraphics> gui;
 #endif

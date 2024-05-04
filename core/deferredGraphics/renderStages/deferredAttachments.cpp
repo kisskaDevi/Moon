@@ -1,5 +1,6 @@
 #include "deferredAttachments.h"
 
+namespace moon::deferredGraphics {
 
 GBufferAttachments::GBufferAttachments()
 {}
@@ -20,7 +21,7 @@ GBufferAttachments& GBufferAttachments::operator=(const GBufferAttachments& othe
     return *this;
 }
 
-DeferredAttachments::DeferredAttachments()
+moon::deferredGraphics::DeferredAttachments::DeferredAttachments()
 {}
 
 DeferredAttachments::DeferredAttachments(const DeferredAttachments& other):
@@ -57,4 +58,6 @@ void DeferredAttachments::deleteSampler(VkDevice device){
     GBuffer.normal.deleteSampler(device);
     GBuffer.position.deleteSampler(device);
     GBuffer.depth.deleteSampler(device);
+}
+
 }

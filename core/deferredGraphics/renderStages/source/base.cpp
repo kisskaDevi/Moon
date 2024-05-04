@@ -5,7 +5,9 @@
 #include "model.h"
 #include "object.h"
 
-void graphics::Base::Destroy(VkDevice device)
+namespace moon::deferredGraphics {
+
+void Graphics::Base::Destroy(VkDevice device)
 {
     for(auto& PipelineLayout: PipelineLayoutDictionary){
         if(PipelineLayout.second) {vkDestroyPipelineLayout(device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
@@ -20,7 +22,7 @@ void graphics::Base::Destroy(VkDevice device)
     if(DescriptorPool)                  {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
-void graphics::Base::createDescriptorSetLayout(VkDevice device)
+void Graphics::Base::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -38,7 +40,7 @@ void graphics::Base::createDescriptorSetLayout(VkDevice device)
     moon::interfaces::Model::createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
 }
 
-void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     std::vector<VkBool32> transparencyData = {
         static_cast<VkBool32>(enableTransparency),
@@ -148,7 +150,7 @@ void graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void graphics::createBaseDescriptorPool()
+void Graphics::createBaseDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{});
@@ -165,7 +167,7 @@ void graphics::createBaseDescriptorPool()
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &base.DescriptorPool));
 }
 
-void graphics::createBaseDescriptorSets()
+void Graphics::createBaseDescriptorSets()
 {
     base.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, base.SceneDescriptorSetLayout);
@@ -177,7 +179,7 @@ void graphics::createBaseDescriptorSets()
     CHECK(vkAllocateDescriptorSets(device, &allocInfo, base.DescriptorSets.data()));
 }
 
-void graphics::updateBaseDescriptorSets(
+void Graphics::updateBaseDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -223,7 +225,7 @@ void graphics::updateBaseDescriptorSets(
     }
 }
 
-void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
 {
     for(auto object: *objects){
         if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
@@ -255,4 +257,6 @@ void graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
             object->setPrimitiveCount(primitiveCount - object->getFirstPrimitive());
         }
     }
+}
+
 }

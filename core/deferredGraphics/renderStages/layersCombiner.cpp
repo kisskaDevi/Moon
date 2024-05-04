@@ -2,7 +2,9 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-layersCombiner::layersCombiner(layersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction) :
+namespace moon::deferredGraphics {
+
+LayersCombiner::LayersCombiner(LayersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction) :
     parameters(parameters), enable(enable)
 {
     combiner.transparentLayersCount = transparentLayersCount == 0 ? 1 : transparentLayersCount;
@@ -10,19 +12,19 @@ layersCombiner::layersCombiner(layersCombinerParameters parameters, bool enable,
     combiner.enableScatteringRefraction = enableScatteringRefraction;
 }
 
-void layersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
+void LayersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
     combiner.transparentLayersCount = transparentLayersCount;
 }
 
-void layersCombiner::setScatteringRefraction(bool enable){
+void LayersCombiner::setScatteringRefraction(bool enable){
     combiner.enableScatteringRefraction = enable;
 }
 
-void layersCombiner::setBlurDepth(float blurDepth){
+void LayersCombiner::setBlurDepth(float blurDepth){
     this->blurDepth = blurDepth;
 }
 
-void layersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
+void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo image, uint32_t attachmentsCount, moon::utils::Attachments* pAttachments){
         for(size_t index=0; index < attachmentsCount; index++){
@@ -32,13 +34,13 @@ void layersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
         }
     };
 
-    createAttachments(physicalDevice, device, image, layersCombinerAttachments::size(), &frame);
+    createAttachments(physicalDevice, device, image, LayersCombinerAttachments::size(), &frame);
     aDatabase.addAttachmentData(parameters.out.color, enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
     aDatabase.addAttachmentData(parameters.out.blur, enable, &frame.blur);
 }
 
-void layersCombiner::destroy(){
+void LayersCombiner::destroy(){
     combiner.destroy(device);
     moon::workflows::Workflow::destroy();
 
@@ -46,7 +48,7 @@ void layersCombiner::destroy(){
     frame.deleteSampler(device);
 }
 
-void layersCombiner::createRenderPass(){
+void LayersCombiner::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
         moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
@@ -87,7 +89,7 @@ void layersCombiner::createRenderPass(){
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void layersCombiner::createFramebuffers(){
+void LayersCombiner::createFramebuffers(){
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> attachments = {
@@ -107,14 +109,14 @@ void layersCombiner::createFramebuffers(){
     }
 }
 
-void layersCombiner::createPipelines(){
+void LayersCombiner::createPipelines(){
     combiner.vertShaderPath = shadersPath / "layersCombiner/layersCombinerVert.spv";
     combiner.fragShaderPath = shadersPath / "layersCombiner/layersCombinerFrag.spv";
     combiner.createDescriptorSetLayout(device);
     combiner.createPipeline(device,&image,renderPass);
 }
 
-void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
+void LayersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::bufferFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -139,7 +141,7 @@ void layersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void layersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+void LayersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
     uint32_t specializationData = transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
         specializationMapEntry.constantID = 0;
@@ -177,14 +179,14 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::Imag
     VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
     VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment(layersCombinerAttachments::size(), moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE));
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment(LayersCombinerAttachments::size(), moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE));
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(layersCombinerPushConst);
+        pushConstantRange.back().size = sizeof(LayersCombinerPushConst);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
@@ -215,15 +217,15 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::Imag
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void layersCombiner::createDescriptorPool(){
+void LayersCombiner::createDescriptorPool(){
     moon::workflows::Workflow::createDescriptorPool(device, &combiner, image.Count, (9 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
 }
 
-void layersCombiner::createDescriptorSets(){
+void LayersCombiner::createDescriptorSets(){
     moon::workflows::Workflow::createDescriptorSets(device, &combiner, image.Count);
 }
 
-void layersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
+void LayersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -235,7 +237,7 @@ void layersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void layersCombiner::updateDescriptorSets(
+void LayersCombiner::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -395,7 +397,7 @@ void layersCombiner::updateDescriptorSets(
     }
 }
 
-void layersCombiner::updateCommandBuffer(uint32_t frameNumber){
+void LayersCombiner::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue, frame.blur.clearValue};
@@ -411,15 +413,17 @@ void layersCombiner::updateCommandBuffer(uint32_t frameNumber){
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        layersCombinerPushConst pushConst{};
+        LayersCombinerPushConst pushConst{};
             pushConst.enableScatteringRefraction = static_cast<int>(combiner.enableScatteringRefraction);
             pushConst.enableTransparentLayers = static_cast<int>(combiner.enableTransparentLayers);
             pushConst.blurDepth = blurDepth;
-        vkCmdPushConstants(commandBuffers[frameNumber], combiner.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(layersCombinerPushConst), &pushConst);
+        vkCmdPushConstants(commandBuffers[frameNumber], combiner.PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LayersCombinerPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.Pipeline);
         vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.PipelineLayout, 0, 1, &combiner.DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

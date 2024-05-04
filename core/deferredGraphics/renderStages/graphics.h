@@ -11,14 +11,15 @@ namespace moon::interfaces {
 class   Object;
 class   Light;
 }
-
 namespace moon::utils {
 class   DepthMap;
 class   Texture;
 class   CubeTexture;
 }
 
-struct graphicsParameters{
+namespace moon::deferredGraphics {
+
+struct GraphicsParameters{
     struct{
         std::string camera;
     }in;
@@ -34,10 +35,10 @@ struct graphicsParameters{
     }out;
 };
 
-class graphics : public moon::workflows::Workflow
+class Graphics : public moon::workflows::Workflow
 {
 private:
-    graphicsParameters parameters;
+    GraphicsParameters parameters;
 
     uint32_t                        primitiveCount{0};
     DeferredAttachments             deferredAttachments;
@@ -136,7 +137,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    graphics(graphicsParameters parameters,
+    Graphics(GraphicsParameters parameters,
              bool enable,
              bool enableTransparency,
              bool transparencyPass,
@@ -150,7 +151,8 @@ public:
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    graphics& setMinAmbientFactor(const float& minAmbientFactor);
+    Graphics& setMinAmbientFactor(const float& minAmbientFactor);
 };
 
+}
 #endif // GRAPHICS_H

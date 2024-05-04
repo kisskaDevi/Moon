@@ -8,12 +8,14 @@
 #include "attachments.h"
 #include "vector.h"
 
-struct linkPushConstant{
+namespace moon::deferredGraphics {
+
+struct LinkPushConstant{
     vector<float,2> offset{0.0f, 0.0f};
     vector<float,2> size{1.0f, 1.0f};
 };
 
-class link : public moon::graphicsManager::Linkable
+class Link : public moon::graphicsManager::Linkable
 {
 private:
     std::filesystem::path           shadersPath;
@@ -27,10 +29,10 @@ private:
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    DescriptorSets;
 
-    linkPushConstant                pushConstant;
+    LinkPushConstant                pushConstant;
 
 public:
-    link() = default;
+    Link() = default;
     void destroy();
     void setDeviceProp(VkDevice device);
     void setImageCount(const uint32_t& count);
@@ -47,4 +49,5 @@ public:
     void updateDescriptorSets(const moon::utils::Attachments* attachment);
 };
 
+}
 #endif // LINK_H

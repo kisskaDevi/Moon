@@ -2,7 +2,9 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-void link::destroy(){
+namespace moon::deferredGraphics {
+
+void Link::destroy(){
     if(Pipeline)            {vkDestroyPipeline(device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
     if(PipelineLayout)      {vkDestroyPipelineLayout(device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
     if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
@@ -10,29 +12,29 @@ void link::destroy(){
     DescriptorSets.clear();
 }
 
-void link::setDeviceProp(VkDevice device){
+void Link::setDeviceProp(VkDevice device){
     this->device = device;
 }
 
-void link::setImageCount(const uint32_t& count){
+void Link::setImageCount(const uint32_t& count){
     this->imageCount = count;
 }
 
-void link::setShadersPath(const std::filesystem::path &shadersPath){
+void Link::setShadersPath(const std::filesystem::path &shadersPath){
     this->shadersPath = shadersPath;
 }
 
-void link::setRenderPass(VkRenderPass renderPass)
+void Link::setRenderPass(VkRenderPass renderPass)
 {
     this->renderPass = renderPass;
 }
 
-void link::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
+void Link::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
     pushConstant.offset = offset;
     pushConstant.size = size;
 }
 
-void link::createDescriptorSetLayout() {
+void Link::createDescriptorSetLayout() {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
@@ -42,7 +44,7 @@ void link::createDescriptorSetLayout() {
     CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void link::createPipeline(moon::utils::ImageInfo* pInfo) {
+void Link::createPipeline(moon::utils::ImageInfo* pInfo) {
 
     auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/deferredLinkableVert.spv");
     auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/deferredLinkableFrag.spv");
@@ -66,7 +68,7 @@ void link::createPipeline(moon::utils::ImageInfo* pInfo) {
         pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(linkPushConstant);
+        pushConstantRange.back().size = sizeof(LinkPushConstant);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
@@ -98,7 +100,7 @@ void link::createPipeline(moon::utils::ImageInfo* pInfo) {
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void link::createDescriptorPool() {
+void Link::createDescriptorPool() {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -109,7 +111,7 @@ void link::createDescriptorPool() {
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &DescriptorPool));
 }
 
-void link::createDescriptorSets() {
+void Link::createDescriptorSets() {
     DescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> layouts(imageCount, DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -120,7 +122,7 @@ void link::createDescriptorSets() {
     CHECK(vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data()));
 }
 
-void link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
+void Link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
     for (size_t image = 0; image < this->imageCount; image++)
     {
         VkDescriptorImageInfo imageInfo;
@@ -141,10 +143,12 @@ void link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
     }
 }
 
-void link::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
+void Link::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
 {
-    vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(linkPushConstant), &pushConstant);
+    vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LinkPushConstant), &pushConstant);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[imageNumber], 0, nullptr);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+}
+
 }

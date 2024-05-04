@@ -63,7 +63,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
 
     cameras["base"] = std::make_shared<baseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{WIDTH, HEIGHT});
+    graphics["base"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(ExternalPath / "core/deferredGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{WIDTH, HEIGHT});
     app->setGraphics(graphics["base"].get());
     graphics["base"]->bind(cameras["base"].get());
     graphics["base"]->
@@ -153,7 +153,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     ImGui::SetNextItemWidth(100.0f);
     ImGui::InputText("filename", screenshot.data(), screenshot.size());
 
-    auto switcher = [this](std::shared_ptr<deferredGraphics> graphics, const std::string& name){
+    auto switcher = [this](std::shared_ptr<moon::deferredGraphics::DeferredGraphics> graphics, const std::string& name){
         if(auto val = graphics->getEnable(name); ImGui::RadioButton(name.c_str(), val)){
             graphics->setEnable(name, !val);
             framebufferResized = true;

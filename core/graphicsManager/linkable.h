@@ -7,6 +7,7 @@ namespace moon::graphicsManager {
 
 class Linkable{
 public:
+    virtual ~Linkable(){};
     virtual void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const = 0;
     virtual void setRenderPass(VkRenderPass renderPass) = 0;
 };

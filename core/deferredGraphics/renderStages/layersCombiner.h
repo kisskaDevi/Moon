@@ -3,13 +3,15 @@
 
 #include "workflow.h"
 
-struct layersCombinerPushConst{
+namespace moon::deferredGraphics {
+
+struct LayersCombinerPushConst{
     alignas(4) int enableScatteringRefraction{true};
     alignas(4) int enableTransparentLayers{true};
     alignas(4) float blurDepth{1.0f};
 };
 
-struct layersCombinerAttachments{
+struct LayersCombinerAttachments{
     moon::utils::Attachments color;
     moon::utils::Attachments bloom;
     moon::utils::Attachments blur;
@@ -32,7 +34,7 @@ struct layersCombinerAttachments{
     }
 };
 
-struct layersCombinerParameters{
+struct LayersCombinerParameters{
     struct{
         std::string camera;
         std::string color;
@@ -54,12 +56,12 @@ struct layersCombinerParameters{
     }out;
 };
 
-class layersCombiner : public moon::workflows::Workflow
+class LayersCombiner : public moon::workflows::Workflow
 {
 private:
-    layersCombinerParameters parameters;
+    LayersCombinerParameters parameters;
 
-    layersCombinerAttachments frame;
+    LayersCombinerAttachments frame;
     bool enable{true};
 
     float blurDepth{1.0f};
@@ -80,7 +82,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    layersCombiner(layersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction);
+    LayersCombiner(LayersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
@@ -92,4 +94,5 @@ public:
     void setBlurDepth(float blurDepth);
 };
 
+}
 #endif // LAYERSCOMBINER_H

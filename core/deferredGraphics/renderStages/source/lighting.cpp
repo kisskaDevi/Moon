@@ -5,7 +5,9 @@
 #include "depthMap.h"
 #include "operations.h"
 
-void graphics::Lighting::Destroy(VkDevice device)
+namespace moon::deferredGraphics {
+
+void Graphics::Lighting::Destroy(VkDevice device)
 {
     for(auto& descriptorSetLayout: BufferDescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
@@ -29,7 +31,7 @@ void graphics::Lighting::Destroy(VkDevice device)
     }
 }
 
-void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
+void Graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -49,14 +51,14 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
     moon::utils::DepthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
-void graphics::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void Graphics::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
     createPipeline(moon::interfaces::LightType::spot, device, pInfo, pRenderPass, spotVert, spotFrag);
 }
 
-void graphics::createLightingDescriptorPool()
+void Graphics::createLightingDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, static_cast<uint32_t>(5 * image.Count)});
@@ -70,7 +72,7 @@ void graphics::createLightingDescriptorPool()
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &lighting.DescriptorPool));
 }
 
-void graphics::createLightingDescriptorSets()
+void Graphics::createLightingDescriptorSets()
 {
     lighting.DescriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, lighting.DescriptorSetLayout);
@@ -82,7 +84,7 @@ void graphics::createLightingDescriptorSets()
     CHECK(vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data()));
 }
 
-void graphics::updateLightingDescriptorSets(const moon::utils::BuffersDatabase& bDatabase)
+void Graphics::updateLightingDescriptorSets(const moon::utils::BuffersDatabase& bDatabase)
 {
     for (uint32_t i = 0; i < image.Count; i++){
         std::vector<VkDescriptorImageInfo> imageInfos;
@@ -132,10 +134,12 @@ void graphics::updateLightingDescriptorSets(const moon::utils::BuffersDatabase& 
     }
 }
 
-void graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
+void Graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
     for(auto& lightSource: *lightSources){
         uint8_t mask = lightSource->getPipelineBitMask();
         lightSource->render(frameNumber, commandBuffer, {DescriptorSets[frameNumber], (*depthMaps)[lightSource]->getDescriptorSets()[frameNumber]}, PipelineLayoutDictionary[mask], PipelinesDictionary[mask]);
     }
+}
+
 }

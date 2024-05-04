@@ -97,7 +97,7 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
 #endif
 
 #ifdef IMGUI_GRAPHICS
-    gui = std::make_shared<imguiGraphics>(window, app->getInstance(), app->getImageCount());
+    gui = std::make_shared<moon::imguiGraphics::ImguiGraphics>(window, app->getInstance(), app->getImageCount());
     app->setGraphics(gui.get());
     gui->create();
 #endif

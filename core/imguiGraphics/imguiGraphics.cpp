@@ -6,18 +6,20 @@
 
 #include "operations.h"
 
-imguiGraphics::imguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t imageCount) :
+namespace moon::imguiGraphics {
+
+ImguiGraphics::ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t imageCount) :
     window(window),
     instance(instance),
     imageCount(imageCount) {
     link = &Link;
 }
 
-imguiGraphics::~imguiGraphics(){
-    imguiGraphics::destroy();
+ImguiGraphics::~ImguiGraphics(){
+    ImguiGraphics::destroy();
 }
 
-void imguiGraphics::destroy() {
+void ImguiGraphics::destroy() {
     if(descriptorPool){
         vkDestroyDescriptorPool(device.getLogical(), descriptorPool, VK_NULL_HANDLE);
         descriptorPool = VK_NULL_HANDLE;
@@ -33,7 +35,7 @@ void imguiGraphics::destroy() {
     ImGui::DestroyContext();
 }
 
-void imguiGraphics::setupImguiContext(){
+void ImguiGraphics::setupImguiContext(){
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -41,7 +43,7 @@ void imguiGraphics::setupImguiContext(){
     ImGui::StyleColorsDark();
 }
 
-void imguiGraphics::createDescriptorPool(){
+void ImguiGraphics::createDescriptorPool(){
     std::vector<VkDescriptorPoolSize> descriptorPoolSize = {{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }};
     VkDescriptorPoolCreateInfo pool_info{};
         pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -52,7 +54,7 @@ void imguiGraphics::createDescriptorPool(){
     CHECK(vkCreateDescriptorPool(device.getLogical(), &pool_info, VK_NULL_HANDLE, &descriptorPool));
 }
 
-void imguiGraphics::createCommandPool()
+void ImguiGraphics::createCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -61,7 +63,7 @@ void imguiGraphics::createCommandPool()
     CHECK(vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool));
 }
 
-void imguiGraphics::uploadFonts()
+void ImguiGraphics::uploadFonts()
 {
     VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
     ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
@@ -69,7 +71,7 @@ void imguiGraphics::uploadFonts()
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void imguiGraphics::create() {
+void ImguiGraphics::create() {
     setupImguiContext();
     createDescriptorPool();
     createCommandPool();
@@ -95,8 +97,10 @@ void imguiGraphics::create() {
     uploadFonts();
 }
 
-void imguiGraphics::update(uint32_t) {}
+void ImguiGraphics::update(uint32_t) {}
 
-std::vector<std::vector<VkSemaphore>> imguiGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>&, uint32_t){
+std::vector<std::vector<VkSemaphore>> ImguiGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>&, uint32_t){
     return externalSemaphore;
+}
+
 }

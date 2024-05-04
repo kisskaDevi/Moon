@@ -16,9 +16,9 @@
 #define IMGUI_GRAPHICS
 
 namespace moon::graphicsManager { class GraphicsManager;}
+namespace moon::imguiGraphics { class ImguiGraphics;}
 
 class rayTracingGraphics;
-class imguiGraphics;
 
 class testCuda : public scene
 {
@@ -42,7 +42,7 @@ private:
     std::shared_ptr<controller> board;
     std::shared_ptr<rayTracingGraphics> graphics;
 #ifdef IMGUI_GRAPHICS
-    std::shared_ptr<imguiGraphics> gui;
+    std::shared_ptr<moon::imguiGraphics::ImguiGraphics> gui;
 #endif
 
     bool enableBB{true};

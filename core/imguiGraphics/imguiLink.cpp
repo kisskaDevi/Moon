@@ -3,11 +3,13 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
-const VkRenderPass &imguiLink::getRenderPass(){
+namespace moon::imguiGraphics {
+
+const VkRenderPass &ImguiLink::getRenderPass(){
     return renderPass;
 }
 
-void imguiLink::draw(VkCommandBuffer commandBuffer, uint32_t) const {
+void ImguiLink::draw(VkCommandBuffer commandBuffer, uint32_t) const {
     // Rendering
     ImGui::Render();
     ImDrawData* draw_data = ImGui::GetDrawData();
@@ -16,6 +18,8 @@ void imguiLink::draw(VkCommandBuffer commandBuffer, uint32_t) const {
     ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
 }
 
-void imguiLink::setRenderPass(VkRenderPass renderPass) {
+void ImguiLink::setRenderPass(VkRenderPass renderPass) {
     this->renderPass = renderPass;
+}
+
 }

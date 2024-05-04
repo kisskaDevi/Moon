@@ -9,7 +9,9 @@
 
 struct GLFWwindow;
 
-class imguiGraphics: public moon::graphicsManager::GraphicsInterface
+namespace moon::imguiGraphics {
+
+class ImguiGraphics: public moon::graphicsManager::GraphicsInterface
 {
 private:
     GLFWwindow*         window{nullptr};
@@ -17,7 +19,7 @@ private:
     uint32_t            imageCount{0};
     VkDescriptorPool    descriptorPool{VK_NULL_HANDLE};
     VkCommandPool       commandPool{VK_NULL_HANDLE};
-    imguiLink           Link;
+    ImguiLink           Link;
 
 
     void setupImguiContext();
@@ -25,8 +27,8 @@ private:
     void createCommandPool();
     void uploadFonts();
 public:
-    imguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);
-    ~imguiGraphics();
+    ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);
+    ~ImguiGraphics();
 
     void create() override;
     void destroy() override;
@@ -34,4 +36,5 @@ public:
     std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 };
 
+}
 #endif // IMGUIGRAPHICS_H

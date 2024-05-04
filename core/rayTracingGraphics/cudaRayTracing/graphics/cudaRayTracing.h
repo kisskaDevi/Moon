@@ -11,6 +11,7 @@
 
 #include "hitableArray.h"
 #include "hitableList.h"
+
 namespace cuda {
     struct frameRecord{
         cuda::hitRecord hit;
@@ -20,9 +21,8 @@ namespace cuda {
 
     class cudaRayTracing {
     public:
-        using container_host = std::vector<const cuda::primitive*>;
-        using kdTree_host = kdNode<container_host::iterator>;
-        using container_dev = kdTree;
+        using container_host = kdTree<std::vector<const cuda::primitive*>>;
+        using container_dev = hitableKDTree;
 
     private:
         uint32_t width;
@@ -42,8 +42,6 @@ namespace cuda {
 
         devicep<container_dev> devContainer;
         container_host hostContainer;
-        kdTree_host hostTree;
-        size_t maxDepth{0};
 
     public:
 
@@ -56,7 +54,7 @@ namespace cuda {
         }
         void bind(cuda::model* m) {
             for(const auto& primitive : m->primitives){
-                hostContainer.push_back(&primitive);
+                hostContainer.storage.push_back(&primitive);
             }
         }
         void setCamera(cuda::devicep<cuda::camera>* cam){
@@ -74,9 +72,8 @@ namespace cuda {
 
         void buildTree();
 
-        kdTree_host* getTree(size_t& maxDepth){
-            maxDepth = this->maxDepth;
-            return &hostTree;
+        kdTree<std::vector<const cuda::primitive*>>& getTree(){
+            return hostContainer;
         }
     };
 

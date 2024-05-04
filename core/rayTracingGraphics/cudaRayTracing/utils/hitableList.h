@@ -40,11 +40,6 @@ namespace cuda {
         static void create(hitableList* dpointer, const hitableList& host);
         static void destroy(hitableList* dpointer);
     };
-
-    __host__ __device__ inline void sort(hitableList::iterator begin, size_t size, cbox& box){
-        hitableList::iterator end = begin + size;
-        box = calcBox(begin, end);
-    }
 }
 
 #endif

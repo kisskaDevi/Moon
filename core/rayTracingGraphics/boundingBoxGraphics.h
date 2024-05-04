@@ -4,7 +4,8 @@
 #include "attachments.h"
 #include "buffer.h"
 
-#include "hitable/hitable.h"
+#include "utils/devicep.h"
+#include "math/box.h"
 #include "transformational/camera.h"
 
 #include <filesystem>
@@ -55,7 +56,8 @@ public:
     void render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     const attachments& getAttachments() const;
-    void bind(cuda::cbox box);
+    void clear();
+    void bind(const cuda::cbox& box);
     void bind(cuda::devicep<cuda::camera>* camera);
 
     void setEnable(bool enable){this->enable = enable;}

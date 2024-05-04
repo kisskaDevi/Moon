@@ -38,6 +38,7 @@ set(HEADERS
     math/quaternion.h
     math/ray.h
     math/vec4.h
+    math/box.h
     models/model.h
     graphics/cudaRayTracing.h
     transformational/camera.h
@@ -50,6 +51,7 @@ set(HEADERS
     utils/devicep.h
     utils/kdTree.h
     utils/stack.h
+    utils/primitive.h
 )
 
 set(CUDA_ARCH compute_86)

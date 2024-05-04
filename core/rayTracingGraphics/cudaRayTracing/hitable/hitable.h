@@ -1,13 +1,8 @@
 #ifndef HITABLEH
 #define HITABLEH
 
-#include "math/ray.h"
+#include "math/box.h"
 #include "materials/material.h"
-#include "utils/devicep.h"
-
-#include <stdint.h>
-#include <algorithm>
-#include <vector>
 
 namespace cuda {
 
@@ -35,92 +30,15 @@ namespace cuda {
         }
     };
 
-    struct box{
-        vec4f min{std::numeric_limits<float>::max()};
-        vec4f max{std::numeric_limits<float>::lowest()};
-
-        __host__ __device__ float surfaceArea() const {
-            const float dx = max.x() - min.x();
-            const float dy = max.y() - min.y();
-            const float dz = max.z() - min.z();
-            return 2.0f * (dx * dy + dz * dy + dx * dz);
-        }
-
-        __host__ __device__ bool intersect(const ray &r) const {
-            float dx = 1.0f / r.getDirection().x();
-            float dy = 1.0f / r.getDirection().y();
-            float dz = 1.0f / r.getDirection().z();
-
-            float t1 = (min.x() - r.getOrigin().x()) * dx;
-            float t2 = (max.x() - r.getOrigin().x()) * dx;
-            float t3 = (min.y() - r.getOrigin().y()) * dy;
-            float t4 = (max.y() - r.getOrigin().y()) * dy;
-            float t5 = (min.z() - r.getOrigin().z()) * dz;
-            float t6 = (max.z() - r.getOrigin().z()) * dz;
-
-            float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
-            float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
-
-            // if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
-            if (tmax < 0)
-            {
-                return false;
-            }
-            // if tmin > tmax, ray doesn't intersect AABB
-            if (tmin > tmax)
-            {
-                return false;
-            }
-            return true;
-        }
-    };
-
-    struct cbox : public box{
-        vec4f color{0.0f, 0.0f, 0.0f, 0.0f};
-        __host__ __device__ cbox() = default;
-        __host__ __device__ cbox(const box& b) : box(b){}
-        __host__ __device__ cbox(const box& b, const vec4f& color) : box(b), color(color){}
-    };
-
     class hitable {
     public:
         __host__ __device__ virtual ~hitable() {};
         __host__ __device__ virtual bool hit(const ray& r, hitCoords& coords) const = 0;
         __host__ __device__ virtual void calcHitRecord(const ray& r, const hitCoords& coords, hitRecord& rec) const = 0;
-        __host__ __device__ virtual box calcBox() const = 0;
+        __host__ __device__ virtual box getBox() const = 0;
 
         static void destroy(hitable* dpointer);
     };
-
-    struct primitive{
-        devicep<hitable> hit;
-        cbox bbox;
-
-        box calcBox() const {
-            return bbox;
-        }
-    };
-
-    template <typename iterator>
-    __host__ __device__ box calcBox(iterator begin, iterator end){
-        box resbox;
-        for(auto it = begin; it != end; it++){
-            const box& itbox = (*it)->calcBox();
-            resbox.min = cuda::min(itbox.min, resbox.min);
-            resbox.max = cuda::max(itbox.max, resbox.max);
-        }
-        return resbox;
-    }
-
-    inline void sort(std::vector<const cuda::primitive*>::iterator begin, size_t size, cbox& box){
-        std::vector<const cuda::primitive*>::iterator end = begin + size;
-        box = calcBox(begin, end);
-
-        vec4f limits = box.max - box.min;
-        std::sort(begin, end, [i = limits.maxValueIndex(3)](const cuda::primitive* a, const cuda::primitive* b){
-            return a->calcBox().min[i] < b->calcBox().min[i];
-        });
-    }
 }
 
 #endif

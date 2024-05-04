@@ -45,6 +45,9 @@ private:
 #endif
 
     bool enableBB{true};
+    bool primitivesBB{false};
+    bool treeBB{true};
+    bool onlyLeafsBB{false};
     bool enableBloom{true};
 
     std::unordered_map<std::string, cuda::model> models;

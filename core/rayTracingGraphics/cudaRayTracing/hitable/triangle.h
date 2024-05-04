@@ -31,7 +31,7 @@ namespace cuda {
 
         static void create(triangle* dpointer, const triangle& host);
         static void destroy(triangle* dpointer);
-        __host__ __device__ box calcBox() const override;
+        __host__ __device__ box getBox() const override;
     };
 
 }

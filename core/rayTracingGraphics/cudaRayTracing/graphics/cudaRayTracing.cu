@@ -2,7 +2,7 @@
 #include "operations.h"
 #include "ray.h"
 #include "material.h"
-#include <iostream>
+
 namespace cuda {
 
 cudaRayTracing::cudaRayTracing(){}
@@ -16,22 +16,15 @@ void cudaRayTracing::create()
 }
 
 void cudaRayTracing::buildTree(){
+    hostContainer.makeTree();
+
     devContainer = cuda::make_devicep<container_dev>(container_dev());
+    add(devContainer.get(), extractHitables(hostContainer.storage));
 
-    hostTree = kdTree_host(hostContainer.begin(), hostContainer.size());
-    maxDepth = findMaxDepth(&hostTree, maxDepth);
-    std::vector<hitable*> hitables;
-    for(const auto& p : hostContainer){
-        hitables.push_back(p->hit());
-    }
-    add(devContainer.get(), hitables);
-
-    std::vector<uint32_t> nodeCounter;
-    buildSizesVector(&hostTree, nodeCounter);
-    buffer<uint32_t> devNodeCounter(nodeCounter.size(), (uint32_t*) nodeCounter.data());
-
-    if(std::is_same<container_dev, kdTree>::value){
-        makeTree((kdTree*)devContainer.get(), devNodeCounter.get());
+    if(std::is_same<container_dev, hitableKDTree>::value){
+        const auto linearSizes = hostContainer.getLinearSizes();
+        buffer<uint32_t> devNodeCounter(linearSizes.size(), (uint32_t*) linearSizes.data());
+        makeTree((hitableKDTree*)devContainer.get(), devNodeCounter.get());
     }
 }
 

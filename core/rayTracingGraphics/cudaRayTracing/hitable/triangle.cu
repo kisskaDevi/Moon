@@ -71,7 +71,7 @@ void triangle::destroy(triangle* dpointer){
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__host__ __device__ box triangle::calcBox() const {
+__host__ __device__ box triangle::getBox() const {
     box bbox;
     bbox.min = min(vertexBuffer[index[0]].point, min(vertexBuffer[index[1]].point, vertexBuffer[index[2]].point));
     bbox.max = max(vertexBuffer[index[0]].point, max(vertexBuffer[index[1]].point, vertexBuffer[index[2]].point));

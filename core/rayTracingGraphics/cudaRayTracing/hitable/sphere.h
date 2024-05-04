@@ -23,7 +23,7 @@ namespace cuda {
 
         static void create(sphere* dpointer, const sphere& host);
         static void destroy(sphere* dpointer);
-        __host__ __device__ box calcBox() const override;
+        __host__ __device__ box getBox() const override;
     };
 
 }

@@ -20,7 +20,7 @@ namespace cuda {
             typedef type value_type;
 
             __host__ __device__ baseIterator() {};
-            __host__ __device__ baseIterator(type* ptr) : ptr(ptr){}
+            __host__ __device__ baseIterator(type* ptr) : ptr(ptr) {}
 
             __host__ __device__ hitable*& operator*() const { return (*ptr)(); }
             __host__ __device__ hitable** operator->() { return ptr(); }
@@ -29,12 +29,9 @@ namespace cuda {
             __host__ __device__ friend bool operator== (const baseIterator& a, const baseIterator& b) { return a.ptr == b.ptr; };
             __host__ __device__ friend bool operator!= (const baseIterator& a, const baseIterator& b) { return a.ptr != b.ptr; };
             __host__ __device__ friend baseIterator operator+ (baseIterator it, size_t s) {
-                for(; s > 0; s--){
-                    it.ptr = it.ptr->get_next();
-                }
+                for(; s > 0; s--) it.ptr = it.ptr->get_next();
                 return it;
             };
-            __host__ __device__ friend size_t operator- (const baseIterator& a, const baseIterator& b) {return a.ptr - b.ptr;};
         };
 
         __host__ __device__ virtual ~hitableContainer(){}

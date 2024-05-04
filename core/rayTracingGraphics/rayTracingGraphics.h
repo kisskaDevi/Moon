@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <random>
+#include <stack>
 
 #include "cudaRayTracing.h"
 #include "boundingBoxGraphics.h"
@@ -91,12 +92,6 @@ public:
 
     void bind(cuda::model* m) {
         rayTracer.bind(m);
-        for(auto& primitive: m->primitives){
-            std::random_device device;
-            std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-            primitive.bbox.color = cuda::vec4f(1.0, 0.0, 0.0, 1.0f);
-            // bbGraphics.bind(primitive.bbox);
-        }
     }
 
     void setCamera(cuda::devicep<cuda::camera>* cam){
@@ -108,7 +103,6 @@ public:
         rayTracer.clearFrame();
     }
 
-
     void create() override;
     void destroy() override;
     void update(uint32_t imageIndex) override;
@@ -117,30 +111,40 @@ public:
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
 
-    void bindNextNode(cuda::cudaRayTracing::kdTree_host* node, size_t maxDepth, size_t& depth){
-        depth++;
-
-        //if(!(node->left || node->right)){
-            std::random_device device;
-            std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-            node->box.color = cuda::vec4f(dist(device), dist(device), dist(device), 1.0f);
-            bbGraphics.bind(node->box);
-        //}
-
-        if(node->left){
-            bindNextNode(node->left, maxDepth, depth);
-        }
-        if(node->right){
-            bindNextNode(node->right, maxDepth, depth);
-        }
-        depth--;
-    }
     void buildTree(){
         rayTracer.buildTree();
-        size_t maxDepth;
-        size_t depth = 0;
-        const auto root = rayTracer.getTree(maxDepth);
-        bindNextNode(root, maxDepth, depth);
+    }
+
+    void buildBoundingBoxes(bool primitive, bool tree, bool onlyLeafs){
+        bbGraphics.clear();
+
+        if(tree){
+            std::stack<cuda::kdNode<std::vector<const cuda::primitive*>::iterator>*> stack;
+            stack.push(rayTracer.getTree().getRoot());
+            for(;!stack.empty();){
+                const auto top = stack.top();
+                stack.pop();
+
+                if(!onlyLeafs || !(top->left || top->right)){
+                    std::random_device device;
+                    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+                    cuda::cbox box(top->bbox, cuda::vec4f(dist(device), dist(device), dist(device), 1.0f));
+                    bbGraphics.bind(box);
+                }
+
+                if(top->right) stack.push(top->right);
+                if(top->left) stack.push(top->left);
+            }
+        }
+
+        if(primitive){
+            for(auto& primitive: rayTracer.getTree().storage){
+                std::random_device device;
+                std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+                cuda::cbox box(primitive->bbox, cuda::vec4f(1.0, 0.0, 0.0, 1.0f));
+                bbGraphics.bind(box);
+            }
+        }
     }
 };
 

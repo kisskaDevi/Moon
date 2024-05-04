@@ -7,49 +7,48 @@
 namespace cuda{
 
 template <typename iterator>
+__host__ __device__ box calcBox(iterator begin, iterator end){
+    box resbox;
+    for(auto it = begin; it != end; it++){
+        const box itbox = (*it)->getBox();
+        resbox.min = cuda::min(itbox.min, resbox.min);
+        resbox.max = cuda::max(itbox.max, resbox.max);
+    }
+    return resbox;
+}
+
+template <typename iterator>
 struct kdNode{
     kdNode* left{nullptr};
     kdNode* right{nullptr};
     iterator begin;
     size_t size{0};
-    cbox box;
+    box bbox;
 
-    static const size_t itemsInNode = 10;
-
-    __host__ __device__ void del(){
-        if(left){
-            delete left;
-        }
-        if(right){
-            delete right;
-        }
-    }
+    static constexpr size_t itemsInNode = 10;
+    static constexpr size_t stackSize = 50;
 
     __host__ __device__ kdNode(){}
     __host__ __device__ kdNode(const kdNode& other) = delete;
     __host__ __device__ kdNode& operator=(const kdNode& other) = delete;
 
-    __host__ __device__ kdNode(kdNode&& other) = default;
+    __host__ __device__ kdNode(kdNode&& other) : left(other.left), right(other.right), begin(other.begin), size(other.size), bbox(other.bbox) {
+        other.left = nullptr; other.right = nullptr; other.size = 0;
+    }
     __host__ __device__ kdNode& operator=(kdNode&& other)
     {
-        left = other.left;
-        other.left = nullptr;
-        right = other.right;
-        other.right = nullptr;
-        begin = other.begin;
-        size = other.size;
-        box = other.box;
+        left = other.left; right = other.right; begin = other.begin; size = other.size; bbox = other.bbox;
+        other.left = nullptr; other.right = nullptr; other.size = 0;
         return *this;
     }
 
-    __host__ __device__ kdNode(iterator begin, size_t size) : begin(begin), size(size){
-        sort(begin, size, box);
-
-        if(size > itemsInNode)
+    __host__ kdNode(iterator begin, size_t size) : begin(begin), size(size), bbox(calcBox(begin, begin + size)){
+        if(const iterator end = begin + size; size > itemsInNode)
         {
+            sortByBox(begin, end, bbox);
+
             float bestSAH = std::numeric_limits<float>::max();
             size_t bestSize = 0, itSize = 0;
-            const iterator end = begin + size;
             for(auto curr = begin; curr != end; curr++){
                 size_t leftN = ++itSize;
                 size_t rightN = size - itSize;
@@ -68,33 +67,29 @@ struct kdNode{
         }
     }
 
-    __host__ __device__ ~kdNode() { del(); }
+    __host__ __device__ ~kdNode() {
+        if(left) delete left;
+        if(right) delete right;
+    }
 
     __host__ __device__ bool hit(const ray& r, hitCoords& coord) const {
-        stack<const kdNode*, 50> selected;
-        for(stack<const kdNode*, 50> treeTraverse(this); !treeTraverse.empty();){
+        stack<const kdNode*, kdNode::stackSize> selected;
+        for(stack<const kdNode*, kdNode::stackSize> treeTraverse(this); !treeTraverse.empty();){
             const kdNode* curr = treeTraverse.top();
             treeTraverse.pop();
 
-            if(curr->box.intersect(r)){
-                if(curr->left){
-                    treeTraverse.push(curr->left);
-                }
-                if(curr->right){
-                    treeTraverse.push(curr->right);
-                }
-                if(!(curr->left || curr->right)){
-                    selected.push(curr);
-                }
+            if(curr->bbox.intersect(r)){
+                if(curr->left)                      treeTraverse.push(curr->left);
+                if(curr->right)                     treeTraverse.push(curr->right);
+                if(!(curr->left || curr->right))    selected.push(curr);
             }
         }
         for(;!selected.empty();){
             const kdNode* curr = selected.top();
             selected.pop();
             for(iterator it = curr->begin; it != (curr->begin + curr->size); it++){
-                if ((*it)->hit(r, coord)) {
+                if ((*it)->hit(r, coord))
                     coord.obj = *it;
-                }
             }
         }
 
@@ -115,15 +110,42 @@ size_t findMaxDepth(kdNode<iterator>* node, size_t& index){
 }
 
 template <typename iterator>
-void buildSizesVector(kdNode<iterator>* node, std::vector<uint32_t>& nodeCounter){
+void buildSizesVector(kdNode<iterator>* node, std::vector<uint32_t>& linearSizes){
     if(node){
-        nodeCounter.push_back(node->size);
-        buildSizesVector(node->left, nodeCounter);
-        buildSizesVector(node->right, nodeCounter);
+        linearSizes.push_back(node->size);
+        buildSizesVector(node->left, linearSizes);
+        buildSizesVector(node->right, linearSizes);
     }
 }
 
-class kdTree : public hitableContainer {
+template <typename container>
+class kdTree{
+private:
+    kdNode<typename container::iterator>* root{nullptr};
+    size_t maxDepth{0};
+
+public:
+    container storage;
+
+    __host__ kdTree() {}
+    __host__ ~kdTree(){
+        if(root) delete root;
+    }
+    __host__ void makeTree(){
+        root = new kdNode<typename container::iterator>(storage.begin(), storage.size());
+        maxDepth = findMaxDepth(root, maxDepth);
+    }
+    kdNode<typename container::iterator>* getRoot() const {
+        return root;
+    }
+    std::vector<uint32_t> getLinearSizes() const {
+        std::vector<uint32_t> linearSizes;
+        buildSizesVector(root, linearSizes);
+        return linearSizes;
+    }
+};
+
+class hitableKDTree : public hitableContainer {
 public:
     using container = hitableArray;
 
@@ -134,16 +156,12 @@ private:
 public:
     using iterator = container::iterator;
 
-    __host__ __device__ kdTree() {
+    __host__ __device__ hitableKDTree() {
         storage = new container();
     };
-    __host__ __device__ ~kdTree(){
-        if(storage){
-            delete storage;
-        }
-        if(root){
-            delete root;
-        }
+    __host__ __device__ ~hitableKDTree(){
+        if(storage) delete storage;
+        if(root)    delete root;
     }
 
     __host__ __device__ bool hit(const ray& r, hitCoords& coord) const override{
@@ -158,23 +176,18 @@ public:
         return (*storage)[i];
     }
 
-    __host__ __device__ void makeTree() {
-        root = new kdNode<container::iterator>(storage->begin(), storage->size());
-    }
-
     __host__ __device__ void makeTree(uint32_t* offsets) {
         size_t nodesCounter = 0, offset = 0;
 
-        for(stack<kdNode<container::iterator>*, 50> makeStack(root = new kdNode<container::iterator>()); !makeStack.empty();){
+        for(stack<kdNode<container::iterator>*, kdNode<container::iterator>::stackSize> makeStack(root = new kdNode<container::iterator>()); !makeStack.empty();){
             kdNode<container::iterator>* curr = makeStack.top();
             makeStack.pop();
 
             curr->begin = storage->begin() + offset;
             curr->size = offsets[nodesCounter++];
-            sort(curr->begin, curr->size, curr->box);
+            curr->bbox = calcBox(curr->begin, curr->begin + curr->size);
 
-            if(curr->size > kdNode<container::iterator>::itemsInNode)
-            {
+            if(curr->size > kdNode<container::iterator>::itemsInNode) {
                 makeStack.push(curr->right = new kdNode<container::iterator>());
                 makeStack.push(curr->left = new kdNode<container::iterator>());
             } else {
@@ -189,11 +202,11 @@ public:
     __host__ __device__ iterator begin() const {return storage->begin(); }
     __host__ __device__ iterator end() const {return storage->end(); }
 
-    static void create(kdTree* dpointer, const kdTree& host);
-    static void destroy(kdTree* dpointer);
+    static void create(hitableKDTree* dpointer, const hitableKDTree& host);
+    static void destroy(hitableKDTree* dpointer);
 };
 
-void makeTree(kdTree* container, uint32_t* offsets);
+void makeTree(hitableKDTree* container, uint32_t* offsets);
 }
 
 #endif // KDTREE_H

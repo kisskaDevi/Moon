@@ -286,8 +286,12 @@ const attachments& boundingBoxGraphics::getAttachments() const {
     return frame;
 }
 
-void boundingBoxGraphics::bind(cuda::cbox box){
+void boundingBoxGraphics::bind(const cuda::cbox& box){
     boxes.push_back(box);
+}
+
+void boundingBoxGraphics::clear(){
+    boxes.clear();
 }
 
 void boundingBoxGraphics::bind(cuda::devicep<cuda::camera>* camera){

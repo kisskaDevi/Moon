@@ -85,7 +85,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
     };
 
     for(const auto& [name, sphere]: spheres){
-        models[name] = cuda::model(cuda::primitive{cuda::make_devicep<cuda::hitable>(sphere), sphere.calcBox()});
+        models[name] = cuda::model(cuda::primitive{cuda::make_devicep<cuda::hitable>(sphere), sphere.getBox()});
     }
 
     const auto boxIndexBuffer = createBoxIndexBuffer();
@@ -184,6 +184,7 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     }
     graphics->create();
     graphics->buildTree();
+    graphics->buildBoundingBoxes(false, true, false);
 
 #ifdef IMGUI_GRAPHICS
     gui = std::make_shared<imguiGraphics>(window, app->getInstance(), app->getImageCount());
@@ -254,7 +255,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
         graphics->clearFrame();
     }
 
-    if(ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f)){
+    if(ImGui::SliderFloat("bloom factor", &blitFactor, 1.0f, 3.0f)){
         graphics->setBlitFactor(blitFactor);
     }
 
@@ -262,14 +263,29 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     std::string camPos = std::to_string(o.x()) + " " + std::to_string(o.y()) + " " + std::to_string(o.z());
     ImGui::Text("%s", camPos.c_str());
 
-    if(ImGui::RadioButton("enable BB", enableBB)){
+    if(ImGui::RadioButton("bloom", enableBloom)){
+        enableBloom = !enableBloom;
+        framebufferResized = true;
+    }
+
+    if(ImGui::RadioButton("BB", enableBB)){
         enableBB = !enableBB;
         framebufferResized = true;
     }
 
-    if(ImGui::RadioButton("enable bloom", enableBloom)){
-        enableBloom = !enableBloom;
-        framebufferResized = true;
+    if(ImGui::RadioButton("primitives BB", primitivesBB)){
+        primitivesBB = !primitivesBB;
+        graphics->buildBoundingBoxes(primitivesBB, treeBB, onlyLeafsBB);
+    }
+
+    if(ImGui::RadioButton("tree BB", treeBB)){
+        treeBB = !treeBB;
+        graphics->buildBoundingBoxes(primitivesBB, treeBB, onlyLeafsBB);
+    }
+
+    if(ImGui::RadioButton("only leafs BB", onlyLeafsBB)){
+        onlyLeafsBB = !onlyLeafsBB;
+        graphics->buildBoundingBoxes(primitivesBB, treeBB, onlyLeafsBB);
     }
 
     ImGui::End();

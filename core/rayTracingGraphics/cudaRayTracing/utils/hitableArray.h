@@ -36,11 +36,6 @@ namespace cuda {
     private:
         pointer* array{ nullptr };
     };
-
-    __host__ __device__ inline void sort(hitableArray::iterator begin, size_t size, cbox& box){
-        hitableArray::iterator end = begin + size;
-        box = calcBox(begin, end);
-    }
 }
 
 #endif // HITABLEARRAY_H

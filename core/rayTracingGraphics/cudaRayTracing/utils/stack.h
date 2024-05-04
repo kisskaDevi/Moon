@@ -5,23 +5,22 @@
 
 namespace cuda{
 
-template <typename type, size_t size = 20>
+template <typename type, size_t container_capacity = 20>
 class stack {
-public:
-
 private:
     size_t container_size{0};
-    type static_storage[size];
+    type static_storage[container_capacity];
 
 public:
     __host__ __device__ stack(){}
     __host__ __device__ ~stack(){}
     __host__ __device__ stack(const type& data){ push(data); }
-    __host__ __device__ size_t fill() const { return container_size; }
+    __host__ __device__ constexpr size_t capacity() const { return container_capacity; }
+    __host__ __device__ size_t size() const { return container_size; }
     __host__ __device__ bool empty() const { return container_size == 0; }
 
     __host__ __device__ bool push(const type& data){
-        if(container_size >= size){
+        if(container_size >= container_capacity){
             return false;
         }
 

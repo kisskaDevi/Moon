@@ -1,33 +1,34 @@
 #include "utils/kdTree.h"
+#include "utils/operations.h"
 
 namespace cuda {
 
-__global__ void createTreeKernel(kdTree* tree, uint32_t* offsets)
+__global__ void createTreeKernel(hitableKDTree* tree, uint32_t* offsets)
 {
     tree->makeTree(offsets);
 }
 
-void makeTree(kdTree* container, uint32_t* offsets){
+void makeTree(hitableKDTree* container, uint32_t* offsets){
     createTreeKernel<<<1,1>>>(container, offsets);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void createKernel(kdTree* p) {
-    p = new (p) kdTree();
+__global__ void createKernel(hitableKDTree* p) {
+    p = new (p) hitableKDTree();
 }
 
-void kdTree::create(kdTree* dpointer, const kdTree& host){
+void hitableKDTree::create(hitableKDTree* dpointer, const hitableKDTree& host){
     createKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void destroyKernel(kdTree* p) {
-    p->~kdTree();
+__global__ void destroyKernel(hitableKDTree* p) {
+    p->~hitableKDTree();
 }
 
-void kdTree::destroy(kdTree* dpointer){
+void hitableKDTree::destroy(hitableKDTree* dpointer){
     destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());

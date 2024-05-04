@@ -1,9 +1,8 @@
 #ifndef MODELH
 #define MODELH
 
-#include <vector>
-
 #include "utils/buffer.h"
+#include "utils/primitive.h"
 #include "hitable/triangle.h"
 
 namespace cuda {
@@ -20,8 +19,6 @@ namespace cuda {
         model& operator=(model&& m);
 
         ~model();
-
-        void setBoxesColor(const vec4f& color);
     };
 }
 

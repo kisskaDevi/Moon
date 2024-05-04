@@ -58,7 +58,7 @@ void sphere::destroy(sphere* dpointer){
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__host__ __device__ box sphere::calcBox() const {
+__host__ __device__ box sphere::getBox() const {
     box bbox;
     bbox.min = center - vec4f(radius, radius, radius, 0.0f);
     bbox.max = center + vec4f(radius, radius, radius, 0.0f);

@@ -10,7 +10,9 @@
 #include <iostream>
 #include <vector>
 
-plyModel::plyModel(
+namespace moon::models {
+
+PlyModel::PlyModel(
         std::filesystem::path filename,
         vector<float, 4> baseColorFactor,
         vector<float, 4> diffuseFactor,
@@ -27,15 +29,15 @@ plyModel::plyModel(
     materialBlock.workflow = workflow;
 }
 
-moon::interfaces::MaterialBlock &plyModel::getMaterialBlock(){
+moon::interfaces::MaterialBlock &PlyModel::getMaterialBlock(){
     return materialBlock;
 }
 
-plyModel::~plyModel() {
-    plyModel::destroy(device);
+PlyModel::~PlyModel() {
+    PlyModel::destroy(device);
 }
 
-void plyModel::destroy(VkDevice device) {
+void PlyModel::destroy(VkDevice device) {
     destroyStagingBuffer(device);
 
     vertices.destroy(device);
@@ -65,22 +67,22 @@ void plyModel::destroy(VkDevice device) {
     created = false;
 }
 
-void plyModel::destroyStagingBuffer(VkDevice device) {
+void PlyModel::destroyStagingBuffer(VkDevice device) {
     vertexStaging.destroy(device);
     indexStaging.destroy(device);
 }
 
-const VkBuffer* plyModel::getVertices() const {
+const VkBuffer* PlyModel::getVertices() const {
     return &vertices.instance;
 }
-const VkBuffer* plyModel::getIndices() const {
+const VkBuffer* PlyModel::getIndices() const {
     return &indices.instance;
 }
-const vector<float,3> plyModel::getMaxSize() const {
+const vector<float,3> PlyModel::getMaxSize() const {
     return maxSize;
 }
 
-void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) {
+void PlyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer) {
     tinyply::PlyFile file;
     std::ifstream file_stream(filename, std::ios::binary);
     file.parse_header(file_stream);
@@ -166,7 +168,7 @@ void plyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     moon::utils::Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
 }
 
-void plyModel::createDescriptorPool(VkDevice device) {
+void PlyModel::createDescriptorPool(VkDevice device) {
     uint32_t imageSamplerCount = 5;
     uint32_t meshCount = 1;
 
@@ -182,7 +184,7 @@ void plyModel::createDescriptorPool(VkDevice device) {
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void plyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture) {
+void PlyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture) {
     moon::interfaces::Model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
     moon::interfaces::Model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
 
@@ -261,7 +263,7 @@ void plyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyT
     }
 }
 
-void plyModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandPool)
+void PlyModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandPool)
 {
     if(!created)
     {
@@ -282,7 +284,7 @@ void plyModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandP
     }
 }
 
-void plyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {
+void PlyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {
     static_cast<void>(frameIndex);
 
     std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
@@ -299,7 +301,7 @@ void plyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipe
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
-void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) {
+void PlyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) {
     std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
     std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
     nodeDescriptorSets.push_back(uniformBuffer.descriptorSet);
@@ -307,4 +309,6 @@ void plyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayou
 
     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(moon::interfaces::BoundingBox), &bb);
     vkCmdDraw(commandBuffer, 24, 1, 0, 0);
+}
+
 }

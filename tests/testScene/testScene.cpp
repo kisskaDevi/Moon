@@ -277,15 +277,15 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
 void testScene::loadModels()
 {
-    models["bee"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Bee.glb", 2 * resourceCount);
-    models["ufo"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/RetroUFO.glb");
-    models["box"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Box/glTF-Binary/Box.glb");
-    models["sponza"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf");
-    models["duck"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Duck/glTF-Binary/Duck.glb");
-    models["DragonAttenuation"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
-    models["DamagedHelmet"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    models["robot"] = std::make_shared<gltfModel>(ExternalPath / "dependences/model/glb/Robot.glb", resourceCount);
-    models["floor"] = std::make_shared<plyModel>(ExternalPath / "dependences/model/ply/cube.ply");
+    models["bee"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glb/Bee.glb", 2 * resourceCount);
+    models["ufo"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glb/RetroUFO.glb");
+    models["box"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Box/glTF-Binary/Box.glb");
+    models["sponza"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf");
+    models["duck"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/Duck/glTF-Binary/Duck.glb");
+    models["DragonAttenuation"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DragonAttenuation/glTF-Binary/DragonAttenuation.glb");
+    models["DamagedHelmet"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    models["robot"] = std::make_shared<moon::models::GltfModel>(ExternalPath / "dependences/model/glb/Robot.glb", resourceCount);
+    models["floor"] = std::make_shared<moon::models::PlyModel>(ExternalPath / "dependences/model/ply/cube.ply");
 
     for(auto& [_,model]: models){
         graphics["base"]->create(model.get());

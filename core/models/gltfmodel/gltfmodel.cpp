@@ -8,6 +8,8 @@
 
 #include <cstring>
 
+namespace moon::models {
+
 namespace {
 
     VkSamplerAddressMode getVkWrapMode(int32_t wrapMode){
@@ -145,18 +147,94 @@ namespace {
         }
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+
+    void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant)
+    {
+        if (node->mesh)
+        {
+            for (Mesh::Primitive* primitive : node->mesh->primitives)
+            {
+                std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+                std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
+                nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
+                nodeDescriptorSets.push_back(primitive->material->descriptorSet);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
+
+                moon::interfaces::MaterialBlock material{};
+                material.primitive = primitiveCount++;
+                material.emissiveFactor = primitive->material->emissiveFactor;
+                material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
+                material.normalTextureSet = primitive->material->normalTexture != nullptr ? primitive->material->texCoordSets.normal : -1;
+                material.occlusionTextureSet = primitive->material->occlusionTexture != nullptr ? primitive->material->texCoordSets.occlusion : -1;
+                material.emissiveTextureSet = primitive->material->emissiveTexture != nullptr ? primitive->material->texCoordSets.emissive : -1;
+                material.alphaMask = static_cast<float>(primitive->material->alphaMode == moon::interfaces::Material::ALPHAMODE_MASK);
+                material.alphaMaskCutoff = primitive->material->alphaCutoff;
+                if (primitive->material->pbrWorkflows.metallicRoughness) {
+                    material.workflow = static_cast<float>(moon::interfaces::PBR_WORKFLOW_METALLIC_ROUGHNESS);
+                    material.baseColorFactor = primitive->material->baseColorFactor;
+                    material.metallicFactor = primitive->material->metallicFactor;
+                    material.roughnessFactor = primitive->material->roughnessFactor;
+                    material.PhysicalDescriptorTextureSet = primitive->material->metallicRoughnessTexture != nullptr ? primitive->material->texCoordSets.metallicRoughness : -1;
+                    material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
+                }
+                if (primitive->material->pbrWorkflows.specularGlossiness) {
+                    material.workflow = static_cast<float>(moon::interfaces::PBR_WORKFLOW_SPECULAR_GLOSINESS);
+                    material.PhysicalDescriptorTextureSet = primitive->material->extension.specularGlossinessTexture != nullptr ? primitive->material->texCoordSets.specularGlossiness : -1;
+                    material.colorTextureSet = primitive->material->extension.diffuseTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
+                    material.diffuseFactor = primitive->material->extension.diffuseFactor;
+                    material.specularFactor = vector<float, 4>(
+                        primitive->material->extension.specularFactor[0],
+                        primitive->material->extension.specularFactor[1],
+                        primitive->material->extension.specularFactor[2],
+                        1.0f);
+                }
+                std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &material, sizeof(moon::interfaces::MaterialBlock));
+
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
+
+                if (primitive->indexCount > 0){
+                    vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+                }else{
+                    vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+                }
+            }
+        }
+        for (auto child : node->children){
+            renderNode(child, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets, primitiveCount, pushConstantSize, pushConstantOffset, pushConstant);
+        }
+    }
+
+    void renderNodeBB(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
+    {
+        if (node->mesh)
+        {
+            for (Mesh::Primitive* primitive : node->mesh->primitives)
+            {
+                std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+                std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
+                nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);
+
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(moon::interfaces::BoundingBox), (void*) &primitive->bb);
+                vkCmdDraw(commandBuffer, 24, 1, 0, 0);
+            }
+        }
+        for (auto child : node->children){
+            renderNodeBB(child, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets);
+        }
+    }
 }
 
-gltfModel::gltfModel(std::filesystem::path filename, uint32_t instanceCount)
+GltfModel::GltfModel(std::filesystem::path filename, uint32_t instanceCount)
     : filename(filename){
     instances.resize(instanceCount);
 }
 
-gltfModel::~gltfModel() {
-    gltfModel::destroy(device);
+GltfModel::~GltfModel() {
+    GltfModel::destroy(device);
 }
 
-void gltfModel::destroy(VkDevice device)
+void GltfModel::destroy(VkDevice device)
 {
     destroyStagingBuffer(device);
 
@@ -203,7 +281,7 @@ void gltfModel::destroy(VkDevice device)
     created = false;
 };
 
-void gltfModel::destroyStagingBuffer(VkDevice device)
+void GltfModel::destroyStagingBuffer(VkDevice device)
 {
     for(auto& texture: textures){
         texture.destroyStagingBuffer(device);
@@ -216,15 +294,15 @@ void gltfModel::destroyStagingBuffer(VkDevice device)
     indexStaging.destroy(device);
 }
 
-const VkBuffer* gltfModel::getVertices() const{
+const VkBuffer* GltfModel::getVertices() const{
     return &vertices.instance;
 }
 
-const VkBuffer* gltfModel::getIndices() const{
+const VkBuffer* GltfModel::getIndices() const{
     return &indices.instance;
 }
 
-void gltfModel::loadSkins(tinygltf::Model &gltfModel){
+void GltfModel::loadSkins(tinygltf::Model &gltfModel){
     for(auto& instance : instances){
         for (const tinygltf::Skin& source: gltfModel.skins) {
             Skin* newSkin = new Skin{};
@@ -258,7 +336,7 @@ void gltfModel::loadSkins(tinygltf::Model &gltfModel){
     }
 }
 
-void gltfModel::loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel)
+void GltfModel::loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel)
 {
     for(const tinygltf::Texture &tex : gltfModel.textures){
         const tinygltf::Image& gltfimage = gltfModel.images[tex.source];
@@ -287,7 +365,7 @@ void gltfModel::loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, V
     }
 }
 
-void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
+void GltfModel::loadMaterials(tinygltf::Model &gltfModel)
 {
     for (tinygltf::Material &mat : gltfModel.materials)
     {
@@ -384,7 +462,7 @@ void gltfModel::loadMaterials(tinygltf::Model &gltfModel)
     materials.push_back(moon::interfaces::Material());
 }
 
-void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
+void GltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
 {
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
@@ -426,7 +504,7 @@ void gltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
     }
 }
 
-void gltfModel::createDescriptorPool(VkDevice device)
+void GltfModel::createDescriptorPool(VkDevice device)
 {
     uint32_t imageSamplerCount = std::accumulate(materials.begin(), materials.end(), 0, [](const uint32_t& count, const auto& material){
         static_cast<void>(material);
@@ -450,7 +528,7 @@ void gltfModel::createDescriptorPool(VkDevice device)
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void gltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture)
+void GltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture)
 {
     moon::interfaces::Model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
     moon::interfaces::Model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
@@ -466,7 +544,7 @@ void gltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* empty
     }
 }
 
-void gltfModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandPool)
+void GltfModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandPool)
 {
     if(!created)
     {
@@ -487,91 +565,16 @@ void gltfModel::create(moon::utils::PhysicalDevice device, VkCommandPool command
     }
 }
 
-void renderNode(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant)
-{
-    if (node->mesh)
-    {
-        for (Mesh::Primitive* primitive : node->mesh->primitives)
-        {
-            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
-            std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
-            nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
-            nodeDescriptorSets.push_back(primitive->material->descriptorSet);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount+2, nodeDescriptorSets.data(), 0, NULL);
-
-            moon::interfaces::MaterialBlock material{};
-                material.primitive = primitiveCount++;
-                material.emissiveFactor = primitive->material->emissiveFactor;
-                material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
-                material.normalTextureSet = primitive->material->normalTexture != nullptr ? primitive->material->texCoordSets.normal : -1;
-                material.occlusionTextureSet = primitive->material->occlusionTexture != nullptr ? primitive->material->texCoordSets.occlusion : -1;
-                material.emissiveTextureSet = primitive->material->emissiveTexture != nullptr ? primitive->material->texCoordSets.emissive : -1;
-                material.alphaMask = static_cast<float>(primitive->material->alphaMode == moon::interfaces::Material::ALPHAMODE_MASK);
-                material.alphaMaskCutoff = primitive->material->alphaCutoff;
-            if (primitive->material->pbrWorkflows.metallicRoughness) {
-                material.workflow = static_cast<float>(moon::interfaces::PBR_WORKFLOW_METALLIC_ROUGHNESS);
-                material.baseColorFactor = primitive->material->baseColorFactor;
-                material.metallicFactor = primitive->material->metallicFactor;
-                material.roughnessFactor = primitive->material->roughnessFactor;
-                material.PhysicalDescriptorTextureSet = primitive->material->metallicRoughnessTexture != nullptr ? primitive->material->texCoordSets.metallicRoughness : -1;
-                material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
-            }
-            if (primitive->material->pbrWorkflows.specularGlossiness) {
-                material.workflow = static_cast<float>(moon::interfaces::PBR_WORKFLOW_SPECULAR_GLOSINESS);
-                material.PhysicalDescriptorTextureSet = primitive->material->extension.specularGlossinessTexture != nullptr ? primitive->material->texCoordSets.specularGlossiness : -1;
-                material.colorTextureSet = primitive->material->extension.diffuseTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
-                material.diffuseFactor = primitive->material->extension.diffuseFactor;
-                material.specularFactor = vector<float, 4>(
-                    primitive->material->extension.specularFactor[0],
-                    primitive->material->extension.specularFactor[1],
-                    primitive->material->extension.specularFactor[2],
-                    1.0f);
-            }
-            std::memcpy(reinterpret_cast<char*>(pushConstant) + pushConstantOffset, &material, sizeof(moon::interfaces::MaterialBlock));
-
-            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantSize, pushConstant);
-
-            if (primitive->indexCount > 0){
-                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-            }else{
-                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-            }
-        }
-    }
-    for (auto child : node->children){
-        renderNode(child, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets, primitiveCount, pushConstantSize, pushConstantOffset, pushConstant);
-    }
-}
-
-void gltfModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t &primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant){
+void GltfModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t &primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant){
     for (auto node: instances[frameIndex].nodes){
         renderNode(node, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets, primitiveCount, pushConstantSize, pushConstantOffset, pushConstant);
     }
 }
 
-void renderNodeBB(Node *node, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets)
-{
-    if (node->mesh)
-    {
-        for (Mesh::Primitive* primitive : node->mesh->primitives)
-        {
-            std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
-            std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
-            nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);
-
-            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(moon::interfaces::BoundingBox), (void*) &primitive->bb);
-            vkCmdDraw(commandBuffer, 24, 1, 0, 0);
-        }
-    }
-    for (auto child : node->children){
-        renderNodeBB(child, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets);
-    }
-}
-
-void gltfModel::renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets){
+void GltfModel::renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets){
     for (auto node: instances[frameIndex].nodes){
         renderNodeBB(node, commandBuffer, pipelineLayout, descriptorSetsCount, descriptorSets);
     }
 }
 
+}

@@ -15,6 +15,8 @@
 
 #define MAX_NUM_JOINTS 128u
 
+namespace moon::models {
+
 struct Mesh{
     struct Primitive{
         uint32_t firstIndex{0};
@@ -92,7 +94,7 @@ struct Animation
     float end = std::numeric_limits<float>::min();
 };
 
-class gltfModel : public moon::interfaces::Model
+class GltfModel : public moon::interfaces::Model
 {
 private:
     std::filesystem::path filename;
@@ -133,8 +135,8 @@ private:
     void createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture);
 
 public:
-    gltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
-    ~gltfModel() override;
+    GltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
+    ~GltfModel() override;
 
     void destroy(VkDevice device) override;
 
@@ -152,4 +154,5 @@ public:
     void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) override;
 };
 
+}
 #endif // GLTFMODEL_H

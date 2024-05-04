@@ -26,7 +26,6 @@ class baseObject;
 class group;
 class baseCamera;
 class skyboxObject;
-class plyModel;
 class transformational;
 
 class testScene : public scene

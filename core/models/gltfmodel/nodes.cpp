@@ -3,6 +3,8 @@
 
 #include <numeric>
 
+namespace moon::models {
+
 namespace {
     matrix<float,4,4> localMatrix(Node* node){
         return translate(node->translation) * rotate(node->rotation) * scale(node->scale) * node->matrix;
@@ -57,7 +59,7 @@ namespace {
     }
 }
 
-Node* gltfModel::nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes)
+Node* GltfModel::nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes)
 {
     Node* nodeFound = nullptr;
     for (const auto &node : nodes) {
@@ -125,7 +127,7 @@ uint32_t Node::meshCount() const {
     });
 }
 
-void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model &model, uint32_t& indexStart)
+void GltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model &model, uint32_t& indexStart)
 {
     Node* newNode = new Node{};
     newNode->index = nodeIndex;
@@ -197,7 +199,7 @@ void gltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
     }
 }
 
-void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer)
+void GltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer)
 {
     for (const auto& children: node.children) {
         loadVertexBuffer(model.nodes[children], model, indexBuffer, vertexBuffer);
@@ -280,4 +282,6 @@ void gltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
             }
         }
     }
+}
+
 }

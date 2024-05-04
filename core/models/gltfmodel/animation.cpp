@@ -1,18 +1,20 @@
 #include "gltfmodel.h"
 
-bool gltfModel::hasAnimation(uint32_t frameIndex) const {
+namespace moon::models {
+
+bool GltfModel::hasAnimation(uint32_t frameIndex) const {
     return instances[instances.size() > frameIndex ? frameIndex : 0].animations.size() > 0;
 }
 
-float gltfModel::animationStart(uint32_t frameIndex, uint32_t index) const {
+float GltfModel::animationStart(uint32_t frameIndex, uint32_t index) const {
     return instances[frameIndex].animations[index].start;
 }
 
-float gltfModel::animationEnd(uint32_t frameIndex, uint32_t index) const {
+float GltfModel::animationEnd(uint32_t frameIndex, uint32_t index) const {
     return instances[frameIndex].animations[index].end;
 }
 
-void gltfModel::loadAnimations(tinygltf::Model& gltfModel)
+void GltfModel::loadAnimations(tinygltf::Model& gltfModel)
 {
     for(auto& instance: instances){
         for (tinygltf::Animation &anim : gltfModel.animations) {
@@ -116,7 +118,7 @@ void gltfModel::loadAnimations(tinygltf::Model& gltfModel)
     }
 }
 
-void gltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
+void GltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
 {
     if (instances[frameIndex].animations.empty()) {
         std::cout << ".glTF does not contain animation." << std::endl;
@@ -170,7 +172,7 @@ void gltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
     }
 }
 
-void gltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime)
+void GltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime)
 {
     if (instances[frameIndex].animations.empty()) {
         std::cout << ".glTF does not contain animation." << std::endl;
@@ -227,4 +229,6 @@ void gltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t
             node->update();
         }
     }
+}
+
 }

@@ -10,7 +10,9 @@
 
 #define MAX_NUM_JOINTS 128u
 
-class plyModel : public moon::interfaces::Model{
+namespace moon::models {
+
+class PlyModel : public moon::interfaces::Model{
 private:
     std::filesystem::path filename;
     bool created{false};
@@ -52,7 +54,7 @@ private:
     void createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture);
 
 public:
-    plyModel(std::filesystem::path filename,
+    PlyModel(std::filesystem::path filename,
              vector<float, 4> baseColorFactor = vector<float, 4>(1.0f,1.0f,1.0f,1.0f),
              vector<float, 4> diffuseFactor = vector<float, 4>(1.0f),
              vector<float, 4> specularFactor = vector<float, 4>(1.0f),
@@ -62,7 +64,7 @@ public:
 
     moon::interfaces::MaterialBlock& getMaterialBlock();
 
-    ~plyModel() override;
+    ~PlyModel() override;
     void destroy(VkDevice device) override;
     void create(moon::utils::PhysicalDevice device, VkCommandPool commandPool) override;
 
@@ -80,4 +82,5 @@ public:
     void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) override;
 };
 
+}
 #endif // PLYMODEL_H

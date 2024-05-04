@@ -6,12 +6,14 @@
 class light;
 namespace moon::utils { class DepthMap;}
 
-struct scatteringPushConst{
+namespace moon::workflows {
+
+struct ScatteringPushConst{
     alignas(4) uint32_t  width{0};
     alignas(4) uint32_t  height{0};
 };
 
-struct scatteringParameters{
+struct ScatteringParameters{
     struct{
         std::string camera;
         std::string depth;
@@ -21,15 +23,15 @@ struct scatteringParameters{
     }out;
 };
 
-class scattering : public workflow
+class Scattering : public Workflow
 {
 private:
-    scatteringParameters parameters;
+    ScatteringParameters parameters;
 
     moon::utils::Attachments frame;
     bool enable{true};
 
-    struct Lighting : workbody{
+    struct Lighting : Workbody{
         VkDescriptorSetLayout                               ShadowDescriptorSetLayout{VK_NULL_HANDLE};
         std::unordered_map<uint8_t, VkDescriptorSetLayout>  BufferDescriptorSetLayoutDictionary;
         std::unordered_map<uint8_t, VkDescriptorSetLayout>  DescriptorSetLayoutDictionary;
@@ -52,7 +54,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    scattering(scatteringParameters parameters,
+    Scattering(ScatteringParameters parameters,
                bool enable, std::vector<light*>* lightSources = nullptr,
                std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
@@ -64,4 +66,5 @@ public:
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 
+}
 #endif // SCATTERING_H

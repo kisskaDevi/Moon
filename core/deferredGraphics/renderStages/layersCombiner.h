@@ -54,7 +54,7 @@ struct layersCombinerParameters{
     }out;
 };
 
-class layersCombiner : public workflow
+class layersCombiner : public moon::workflows::Workflow
 {
 private:
     layersCombinerParameters parameters;
@@ -64,7 +64,7 @@ private:
 
     float blurDepth{1.0f};
 
-    struct Combiner : public workbody{
+    struct Combiner : public moon::workflows::Workbody{
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 

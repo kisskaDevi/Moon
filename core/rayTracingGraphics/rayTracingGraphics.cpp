@@ -72,11 +72,11 @@ void rayTracingGraphics::create()
 
     moon::utils::ImageInfo bloomInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
 
-    bloomParameters bloomParams;
+    moon::workflows::BloomParameters bloomParams;
     bloomParams.in.bloom = bloom.id;
     bloomParams.out.bloom = "finalBloom";
 
-    bloomGraph = bloomGraphics(bloomParams, bloomEnable, 6, VK_IMAGE_LAYOUT_UNDEFINED);
+    bloomGraph = moon::workflows::BloomGraphics(bloomParams, bloomEnable, 6, VK_IMAGE_LAYOUT_UNDEFINED);
     bloomGraph.setShadersPath(workflowsShadersPath);
     bloomGraph.setDeviceProp(device.instance, device.getLogical());
     bloomGraph.setImageProp(&bloomInfo);

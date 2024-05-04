@@ -15,7 +15,6 @@ class model;
 class camera;
 class object;
 class light;
-class workflow;
 
 namespace moon::utils {
 class Texture;
@@ -38,7 +37,7 @@ private:
 
     moon::utils::BuffersDatabase bDatabase;
     moon::utils::AttachmentsDatabase aDatabase;
-    std::unordered_map<std::string, workflow*>  workflows;
+    std::unordered_map<std::string, moon::workflows::Workflow*> workflows;
     std::unordered_map<std::string, bool>       enable;
     class link                                  Link;
 

@@ -40,7 +40,7 @@ void layersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
 
 void layersCombiner::destroy(){
     combiner.destroy(device);
-    workflow::destroy();
+    moon::workflows::Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -216,11 +216,11 @@ void layersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::Imag
 }
 
 void layersCombiner::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &combiner, image.Count, (9 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
+    moon::workflows::Workflow::createDescriptorPool(device, &combiner, image.Count, (9 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
 }
 
 void layersCombiner::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &combiner, image.Count);
+    moon::workflows::Workflow::createDescriptorSets(device, &combiner, image.Count);
 }
 
 void layersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)

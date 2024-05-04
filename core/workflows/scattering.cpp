@@ -4,7 +4,9 @@
 #include "operations.h"
 #include "depthMap.h"
 
-scattering::scattering(scatteringParameters parameters,
+namespace moon::workflows {
+
+Scattering::Scattering(ScatteringParameters parameters,
                        bool enable, std::vector<light*>* lightSources,
                        std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
     parameters(parameters), enable(enable)
@@ -13,8 +15,8 @@ scattering::scattering(scatteringParameters parameters,
     lighting.depthMaps = depthMaps;
 }
 
-void scattering::Lighting::destroy(VkDevice device){
-    workbody::destroy(device);
+void Scattering::Lighting::destroy(VkDevice device){
+    Workbody::destroy(device);
     if(ShadowDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, ShadowDescriptorSetLayout, nullptr); ShadowDescriptorSetLayout = VK_NULL_HANDLE;}
     for(auto& descriptorSetLayout: BufferDescriptorSetLayoutDictionary){
         if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
@@ -34,21 +36,21 @@ void scattering::Lighting::destroy(VkDevice device){
     }
 }
 
-void scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+void Scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.scattering, enable, &frame);
 }
 
-void scattering::destroy()
+void Scattering::destroy()
 {
     lighting.destroy(device);
-    workflow::destroy();
+    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
 }
 
-void scattering::createRenderPass()
+void Scattering::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(VK_FORMAT_R32G32B32A32_SFLOAT)
@@ -86,7 +88,7 @@ void scattering::createRenderPass()
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void scattering::createFramebuffers()
+void Scattering::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
@@ -102,7 +104,7 @@ void scattering::createFramebuffers()
     }
 }
 
-void scattering::createPipelines()
+void Scattering::createPipelines()
 {
     lighting.vertShaderPath = shadersPath / "scattering/scatteringVert.spv";
     lighting.fragShaderPath = shadersPath / "scattering/scatteringFrag.spv";
@@ -110,7 +112,7 @@ void scattering::createPipelines()
     lighting.createPipeline(device,&image,renderPass);
 }
 
-void scattering::Lighting::createDescriptorSetLayout(VkDevice device)
+void Scattering::Lighting::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -127,12 +129,12 @@ void scattering::Lighting::createDescriptorSetLayout(VkDevice device)
     moon::utils::DepthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
-void scattering::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void Scattering::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     createPipeline(lightType::spot, device, pInfo, pRenderPass);
 }
 
-void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void Scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
     auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
@@ -167,7 +169,7 @@ void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::u
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(scatteringPushConst);
+        pushConstantRange.back().size = sizeof(ScatteringPushConst);
     std::vector<VkDescriptorSetLayout> SetLayouts = {
         DescriptorSetLayout,
         ShadowDescriptorSetLayout,
@@ -204,15 +206,15 @@ void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::u
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void scattering::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &lighting, image.Count, image.Count, image.Count);
+void Scattering::createDescriptorPool(){
+    Workflow::createDescriptorPool(device, &lighting, image.Count, image.Count, image.Count);
 }
 
-void scattering::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &lighting, image.Count);
+void Scattering::createDescriptorSets(){
+    Workflow::createDescriptorSets(device, &lighting, image.Count);
 }
 
-void scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
+void Scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -224,7 +226,7 @@ void scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void scattering::updateDescriptorSets(
+void Scattering::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -256,7 +258,7 @@ void scattering::updateDescriptorSets(
     }
 }
 
-void scattering::updateCommandBuffer(uint32_t frameNumber){
+void Scattering::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue};
@@ -274,12 +276,14 @@ void scattering::updateCommandBuffer(uint32_t frameNumber){
 
     for(auto& lightSource: *lighting.lightSources){
         if(lightSource->isScatteringEnable()){
-            scatteringPushConst pushConst{image.Extent.width, image.Extent.height};
+            ScatteringPushConst pushConst{image.Extent.width, image.Extent.height};
             uint8_t mask = lightSource->getPipelineBitMask();
-            vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(scatteringPushConst), &pushConst);
+            vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
             lightSource->render(frameNumber, commandBuffers[frameNumber], {lighting.DescriptorSets[frameNumber], (*lighting.depthMaps)[lightSource]->getDescriptorSets()[frameNumber]}, lighting.PipelineLayoutDictionary[mask], lighting.PipelinesDictionary[mask]);
         }
     }
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

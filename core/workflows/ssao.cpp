@@ -2,6 +2,8 @@
 #include "operations.h"
 #include "vkdefault.h"
 
+namespace moon::workflows {
+
 SSAOGraphics::SSAOGraphics(SSAOParameters parameters, bool enable) :
     parameters(parameters), enable(enable)
 {}
@@ -14,7 +16,7 @@ void SSAOGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase
 void SSAOGraphics::destroy()
 {
     ssao.destroy(device);
-    workflow::destroy();
+    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -150,11 +152,11 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice device, moon::utils::ImageInfo*
 }
 
 void SSAOGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &ssao, image.Count, 4 * image.Count, image.Count);
+    Workflow::createDescriptorPool(device, &ssao, image.Count, 4 * image.Count, image.Count);
 }
 
 void SSAOGraphics::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &ssao, image.Count);
+    Workflow::createDescriptorSets(device, &ssao, image.Count);
 }
 
 void SSAOGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -249,4 +251,6 @@ void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber){
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

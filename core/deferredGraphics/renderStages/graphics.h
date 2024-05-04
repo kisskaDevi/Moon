@@ -35,7 +35,7 @@ struct graphicsParameters{
     }out;
 };
 
-class graphics : public workflow
+class graphics : public moon::workflows::Workflow
 {
 private:
     graphicsParameters parameters;

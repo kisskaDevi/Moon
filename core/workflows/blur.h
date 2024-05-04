@@ -3,7 +3,9 @@
 
 #include "workflow.h"
 
-struct gaussianBlurParameters{
+namespace moon::workflows {
+
+struct GaussianBlurParameters{
     struct{
         std::string blur;
     }in;
@@ -12,10 +14,10 @@ struct gaussianBlurParameters{
     }out;
 };
 
-class gaussianBlur : public workflow
+class GaussianBlur : public Workflow
 {
 private:
-    gaussianBlurParameters parameters;
+    GaussianBlurParameters parameters;
 
     moon::utils::Attachments bufferAttachment;
     moon::utils::Attachments frame;
@@ -23,14 +25,14 @@ private:
 
     float blurDepth{1.0f};
 
-    struct blur : public workbody{
+    struct Blur : public Workbody{
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
         uint32_t subpassNumber{0};
     };
-    blur xblur;
-    blur yblur;
+    Blur xblur;
+    Blur yblur;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
@@ -41,14 +43,15 @@ private:
 
     void createBufferAttachments();
 public:
-    gaussianBlur(gaussianBlurParameters parameters, bool enable);
+    GaussianBlur(GaussianBlurParameters parameters, bool enable);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
-    gaussianBlur& setBlurDepth(float blurDepth);
+    GaussianBlur& setBlurDepth(float blurDepth);
 };
 
+}
 #endif // BLUR_H

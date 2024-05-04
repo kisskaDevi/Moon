@@ -3,7 +3,9 @@
 
 #include "workflow.h"
 
-struct selectorParameters{
+namespace moon::workflows {
+
+struct SelectorParameters{
     struct{
         std::string storageBuffer;
         std::string position;
@@ -16,15 +18,15 @@ struct selectorParameters{
     }out;
 };
 
-class selectorGraphics : public workflow
+class SelectorGraphics : public Workflow
 {
 private:
-    selectorParameters parameters;
+    SelectorParameters parameters;
 
     moon::utils::Attachments frame;
     bool enable{true};
 
-    struct Selector : public workbody{
+    struct Selector : public Workbody{
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device)override;
 
@@ -38,7 +40,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    selectorGraphics(selectorParameters parameters, bool enable, uint32_t transparentLayersCount = 1);
+    SelectorGraphics(SelectorParameters parameters, bool enable, uint32_t transparentLayersCount = 1);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
@@ -46,4 +48,5 @@ public:
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 
+}
 #endif // SELECTOR_H

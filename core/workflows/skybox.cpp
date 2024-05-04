@@ -3,35 +3,37 @@
 #include "vkdefault.h"
 #include "object.h"
 
-skyboxGraphics::skyboxGraphics(skyboxParameters parameters, bool enable, std::vector<object*>* objects) :
+namespace moon::workflows {
+
+SkyboxGraphics::SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<object*>* objects) :
     parameters(parameters), enable(enable)
 {
     skybox.objects = objects;
 }
 
-void skyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, image, 2, &frame);
     aDatabase.addAttachmentData(parameters.out.baseColor, enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
 }
 
-void skyboxGraphics::Skybox::destroy(VkDevice device)
+void SkyboxGraphics::Skybox::destroy(VkDevice device)
 {
-    workbody::destroy(device);
+    Workbody::destroy(device);
     if(ObjectDescriptorSetLayout)   {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
-void skyboxGraphics::destroy()
+void SkyboxGraphics::destroy()
 {
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
 
     skybox.destroy(device);
 
-    workflow::destroy();
+    Workflow::destroy();
 }
 
-void skyboxGraphics::createRenderPass()
+void SkyboxGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(image.Format),
@@ -71,7 +73,7 @@ void skyboxGraphics::createRenderPass()
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void skyboxGraphics::createFramebuffers()
+void SkyboxGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
@@ -91,7 +93,7 @@ void skyboxGraphics::createFramebuffers()
     }
 }
 
-void skyboxGraphics::createPipelines()
+void SkyboxGraphics::createPipelines()
 {
     skybox.vertShaderPath = shadersPath / "skybox/skyboxVert.spv";
     skybox.fragShaderPath = shadersPath / "skybox/skyboxFrag.spv";
@@ -99,7 +101,7 @@ void skyboxGraphics::createPipelines()
     skybox.createPipeline(device,&image,renderPass);
 }
 
-void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
+void SkyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -112,7 +114,7 @@ void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
     object::createSkyboxDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
 }
 
-void skyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void SkyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
     auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
@@ -167,15 +169,15 @@ void skyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageI
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void skyboxGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &skybox, image.Count, 0, image.Count);
+void SkyboxGraphics::createDescriptorPool(){
+    Workflow::createDescriptorPool(device, &skybox, image.Count, 0, image.Count);
 }
 
-void skyboxGraphics::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &skybox, image.Count);
+void SkyboxGraphics::createDescriptorSets(){
+    Workflow::createDescriptorSets(device, &skybox, image.Count);
 }
 
-void skyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
+void SkyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -187,7 +189,7 @@ void skyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void skyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase&)
+void SkyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase&)
 {
     if(!enable) return;
 
@@ -207,7 +209,7 @@ void skyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bD
     }
 }
 
-void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
+void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue};
@@ -234,4 +236,6 @@ void skyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
     }
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

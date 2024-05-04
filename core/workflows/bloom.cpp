@@ -2,7 +2,9 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-bloomGraphics::bloomGraphics(bloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, VkImageLayout inputImageLayout, float blitFactor, float xSamplerStep, float ySamplerStep):
+namespace moon::workflows {
+
+BloomGraphics::BloomGraphics(BloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, VkImageLayout inputImageLayout, float blitFactor, float xSamplerStep, float ySamplerStep):
     parameters(parameters),
     enable(enable),
     blitFactor(blitFactor),
@@ -13,11 +15,11 @@ bloomGraphics::bloomGraphics(bloomParameters parameters, bool enable, uint32_t b
     bloom.blitAttachmentsCount = blitAttachmentsCount;
 }
 
-bloomGraphics& bloomGraphics::setBlitFactor(const float& blitFactor){this->blitFactor = blitFactor; return *this;}
-bloomGraphics& bloomGraphics::setSamplerStepX(const float& xSamplerStep){this->xSamplerStep = xSamplerStep; return *this;}
-bloomGraphics& bloomGraphics::setSamplerStepY(const float& ySamplerStep){this->ySamplerStep = ySamplerStep; return *this;}
+BloomGraphics& BloomGraphics::setBlitFactor(const float& blitFactor){this->blitFactor = blitFactor; return *this;}
+BloomGraphics& BloomGraphics::setSamplerStepX(const float& xSamplerStep){this->xSamplerStep = xSamplerStep; return *this;}
+BloomGraphics& BloomGraphics::setSamplerStepY(const float& ySamplerStep){this->ySamplerStep = ySamplerStep; return *this;}
 
-void bloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
+void BloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
     frames.resize(bloom.blitAttachmentsCount);
     moon::utils::createAttachments(physicalDevice, device, image, bloom.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
@@ -26,10 +28,10 @@ void bloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabas
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &bufferAttachment);
 }
 
-void bloomGraphics::destroy(){
+void BloomGraphics::destroy(){
     filter.destroy(device);
     bloom.destroy(device);
-    workflow::destroy();
+    Workflow::destroy();
 
     for(auto& attachment: frames){
         attachment.deleteAttachment(device);
@@ -40,7 +42,7 @@ void bloomGraphics::destroy(){
     bufferAttachment.deleteSampler(device);
 }
 
-void bloomGraphics::createRenderPass(){
+void BloomGraphics::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(image.Format,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
     };
@@ -77,7 +79,7 @@ void bloomGraphics::createRenderPass(){
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void bloomGraphics::createFramebuffers(){
+void BloomGraphics::createFramebuffers(){
     framebuffers.resize(image.Count * (frames.size() + 1));
     for(size_t i = 0; i < frames.size(); i++){
         for (size_t j = 0; j < image.Count; j++){
@@ -105,7 +107,7 @@ void bloomGraphics::createFramebuffers(){
     }
 }
 
-void bloomGraphics::createPipelines(){
+void BloomGraphics::createPipelines(){
     filter.vertShaderPath = shadersPath / "customFilter/customFilterVert.spv";
     filter.fragShaderPath = shadersPath / "customFilter/customFilterFrag.spv";
     filter.createDescriptorSetLayout(device);
@@ -117,7 +119,7 @@ void bloomGraphics::createPipelines(){
     bloom.createPipeline(device,&image,renderPass);
 }
 
-void bloomGraphics::Filter::createDescriptorSetLayout(VkDevice device){
+void BloomGraphics::Filter::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
@@ -127,7 +129,7 @@ void bloomGraphics::Filter::createDescriptorSetLayout(VkDevice device){
     CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void bloomGraphics::Filter::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void BloomGraphics::Filter::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
     auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
@@ -154,7 +156,7 @@ void bloomGraphics::Filter::createPipeline(VkDevice device, moon::utils::ImageIn
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(bloomPushConst);
+        pushConstantRange.back().size = sizeof(BloomPushConst);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
@@ -185,7 +187,7 @@ void bloomGraphics::Filter::createPipeline(VkDevice device, moon::utils::ImageIn
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void bloomGraphics::Bloom::createDescriptorSetLayout(VkDevice device){
+void BloomGraphics::Bloom::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
@@ -195,7 +197,7 @@ void bloomGraphics::Bloom::createDescriptorSetLayout(VkDevice device){
     CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void bloomGraphics::Bloom::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void BloomGraphics::Bloom::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     uint32_t specializationData = blitAttachmentsCount;
     VkSpecializationMapEntry specializationMapEntry{};
@@ -234,7 +236,7 @@ void bloomGraphics::Bloom::createPipeline(VkDevice device, moon::utils::ImageInf
         pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(bloomPushConst);
+        pushConstantRange.back().size = sizeof(BloomPushConst);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
@@ -265,17 +267,17 @@ void bloomGraphics::Bloom::createPipeline(VkDevice device, moon::utils::ImageInf
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void bloomGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &filter, 0, image.Count, image.Count);
-    workflow::createDescriptorPool(device, &bloom, 0, bloom.blitAttachmentsCount * image.Count, bloom.blitAttachmentsCount * image.Count);
+void BloomGraphics::createDescriptorPool(){
+    Workflow::createDescriptorPool(device, &filter, 0, image.Count, image.Count);
+    Workflow::createDescriptorPool(device, &bloom, 0, bloom.blitAttachmentsCount * image.Count, bloom.blitAttachmentsCount * image.Count);
 }
 
-void bloomGraphics::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &filter, image.Count);
-    workflow::createDescriptorSets(device, &bloom, image.Count);
+void BloomGraphics::createDescriptorSets(){
+    Workflow::createDescriptorSets(device, &filter, image.Count);
+    Workflow::createDescriptorSets(device, &bloom, image.Count);
 }
 
-void bloomGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
+void BloomGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -287,7 +289,7 @@ void bloomGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void bloomGraphics::updateDescriptorSets(
+void BloomGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase&,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -340,7 +342,7 @@ void bloomGraphics::updateDescriptorSets(
     }
 }
 
-void bloomGraphics::updateCommandBuffer(uint32_t frameNumber){
+void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     VkImageSubresourceRange ImageSubresourceRange{};
@@ -382,7 +384,7 @@ void bloomGraphics::updateCommandBuffer(uint32_t frameNumber){
     moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 }
 
-void bloomGraphics::render(VkCommandBuffer commandBuffer, moon::utils::Attachments image, uint32_t frameNumber, uint32_t framebufferIndex, workbody* worker)
+void BloomGraphics::render(VkCommandBuffer commandBuffer, moon::utils::Attachments image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker)
 {
     std::vector<VkClearValue> clearValues(1,VkClearValue{});
     for(uint32_t index = 0; index < clearValues.size(); index++){
@@ -400,12 +402,14 @@ void bloomGraphics::render(VkCommandBuffer commandBuffer, moon::utils::Attachmen
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        bloomPushConst pushConst{xSamplerStep, ySamplerStep, blitFactor};
-        vkCmdPushConstants(commandBuffer, worker->PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(bloomPushConst), &pushConst);
+        BloomPushConst pushConst{xSamplerStep, ySamplerStep, blitFactor};
+        vkCmdPushConstants(commandBuffer, worker->PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(BloomPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, worker->Pipeline);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, worker->PipelineLayout, 0, 1, &worker->DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
+}
+
 }

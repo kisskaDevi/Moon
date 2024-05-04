@@ -2,27 +2,29 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-selectorGraphics::selectorGraphics(selectorParameters parameters, bool enable, uint32_t transparentLayersCount) :
+namespace moon::workflows {
+
+SelectorGraphics::SelectorGraphics(SelectorParameters parameters, bool enable, uint32_t transparentLayersCount) :
     parameters(parameters), enable(enable)
 {
     selector.transparentLayersCount = transparentLayersCount > 0 ? transparentLayersCount : 1;
 }
 
-void selectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+void SelectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.selector, enable, &frame);
 }
 
-void selectorGraphics::destroy()
+void SelectorGraphics::destroy()
 {
     selector.destroy(device);
-    workflow::destroy();
+    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
 }
 
-void selectorGraphics::createRenderPass()
+void SelectorGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(image.Format)
@@ -60,7 +62,7 @@ void selectorGraphics::createRenderPass()
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void selectorGraphics::createFramebuffers()
+void SelectorGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
@@ -76,7 +78,7 @@ void selectorGraphics::createFramebuffers()
     }
 }
 
-void selectorGraphics::createPipelines()
+void SelectorGraphics::createPipelines()
 {
     selector.vertShaderPath = shadersPath / "selector/selectorVert.spv";
     selector.fragShaderPath = shadersPath / "selector/selectorFrag.spv";
@@ -84,7 +86,7 @@ void selectorGraphics::createPipelines()
     selector.createPipeline(device,&image,renderPass);
 }
 
-void selectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
+void SelectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(VkDescriptorSetLayoutBinding{});
@@ -105,7 +107,7 @@ void selectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void selectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     uint32_t specializationData = transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
@@ -168,7 +170,7 @@ void selectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::Im
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void selectorGraphics::createDescriptorPool(){
+void SelectorGraphics::createDescriptorPool(){
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, image.Count});
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count});
@@ -184,11 +186,11 @@ void selectorGraphics::createDescriptorPool(){
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &selector.DescriptorPool));
 }
 
-void selectorGraphics::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &selector, image.Count);
+void SelectorGraphics::createDescriptorSets(){
+    Workflow::createDescriptorSets(device, &selector, image.Count);
 }
 
-void selectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
+void SelectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -200,7 +202,7 @@ void selectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void selectorGraphics::updateDescriptorSets(
+void SelectorGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -267,7 +269,7 @@ void selectorGraphics::updateDescriptorSets(
     }
 }
 
-void selectorGraphics::updateCommandBuffer(uint32_t frameNumber){
+void SelectorGraphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue};
@@ -288,4 +290,6 @@ void selectorGraphics::updateCommandBuffer(uint32_t frameNumber){
     vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

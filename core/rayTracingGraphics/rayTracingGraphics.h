@@ -37,7 +37,7 @@ private:
 
     cuda::cudaRayTracing rayTracer;
     boundingBoxGraphics bbGraphics;
-    bloomGraphics bloomGraph;
+    moon::workflows::BloomGraphics bloomGraph;
     rayTracingLink Link;
 
     moon::utils::Texture* emptyTexture{nullptr};

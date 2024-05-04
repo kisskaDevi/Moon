@@ -2,25 +2,27 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-postProcessingGraphics::postProcessingGraphics(postProcessingParameters parameters, bool enable) :
+namespace moon::workflows {
+
+PostProcessingGraphics::PostProcessingGraphics(PostProcessingParameters parameters, bool enable) :
     parameters(parameters), enable{enable}
 {}
 
-void postProcessingGraphics::destroy()
+void PostProcessingGraphics::destroy()
 {
     postProcessing.destroy(device);
-    workflow::destroy();
+    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
 }
 
-void postProcessingGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+void PostProcessingGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.postProcessing, enable, &frame);
 }
 
-void postProcessingGraphics::createRenderPass()
+void PostProcessingGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(image.Format)
@@ -58,7 +60,7 @@ void postProcessingGraphics::createRenderPass()
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void postProcessingGraphics::createFramebuffers()
+void PostProcessingGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
     for (size_t Image = 0; Image < framebuffers.size(); Image++)
@@ -75,7 +77,7 @@ void postProcessingGraphics::createFramebuffers()
     }
 }
 
-void postProcessingGraphics::createPipelines()
+void PostProcessingGraphics::createPipelines()
 {
     postProcessing.vertShaderPath = shadersPath / "postProcessing/postProcessingVert.spv";
     postProcessing.fragShaderPath = shadersPath / "postProcessing/postProcessingFrag.spv";
@@ -83,7 +85,7 @@ void postProcessingGraphics::createPipelines()
     postProcessing.createPipeline(device,&image,renderPass);
 }
 
-void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice device)
+void PostProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -98,7 +100,7 @@ void postProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice 
     CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void PostProcessingGraphics::PostProcessing::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
 
     auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
@@ -151,15 +153,15 @@ void postProcessingGraphics::PostProcessing::createPipeline(VkDevice device, moo
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void postProcessingGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &postProcessing, 0, 5 * image.Count, image.Count);
+void PostProcessingGraphics::createDescriptorPool(){
+    Workflow::createDescriptorPool(device, &postProcessing, 0, 5 * image.Count, image.Count);
 }
 
-void postProcessingGraphics::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &postProcessing, image.Count);
+void PostProcessingGraphics::createDescriptorSets(){
+    Workflow::createDescriptorSets(device, &postProcessing, image.Count);
 }
 
-void postProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
+void PostProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -171,7 +173,7 @@ void postProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void postProcessingGraphics::updateDescriptorSets(
+void PostProcessingGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase&,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -229,7 +231,7 @@ void postProcessingGraphics::updateDescriptorSets(
     }
 }
 
-void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
+void PostProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues;
@@ -251,4 +253,6 @@ void postProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

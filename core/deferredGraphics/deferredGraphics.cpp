@@ -68,7 +68,7 @@ void deferredGraphics::destroyCommandPool(){
 
 void deferredGraphics::destroy(){
     for(auto& [_,map]: depthMaps){
-        static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
+        static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
         delete map;
         map = nullptr;
     }
@@ -126,7 +126,7 @@ void deferredGraphics::create()
     for(auto& [lightSource,map]: depthMaps){
         depthMaps[lightSource] = new moon::utils::DepthMap(device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
-            static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
+            static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
         }
     }
 }
@@ -147,17 +147,17 @@ void deferredGraphics::createGraphicsPasses(){
     graphicsParams.out.depth = "GBuffer.depth";
     graphicsParams.out.transparency = "transparency";
 
-    skyboxParameters skyboxParams;
+    moon::workflows::SkyboxParameters skyboxParams;
     skyboxParams.in.camera = graphicsParams.in.camera;
     skyboxParams.out.baseColor = "skybox.color";
     skyboxParams.out.bloom = "skybox.bloom";
 
-    scatteringParameters scatteringParams;
+    moon::workflows::ScatteringParameters scatteringParams;
     scatteringParams.in.camera = graphicsParams.in.camera;
     scatteringParams.in.depth = graphicsParams.out.depth;
     scatteringParams.out.scattering = "scattering";
 
-    SSLRParameters SSLRParams;
+    moon::workflows::SSLRParameters SSLRParams;
     SSLRParams.in.camera = graphicsParams.in.camera;
     SSLRParams.in.position = graphicsParams.out.position;
     SSLRParams.in.normal = graphicsParams.out.normal;
@@ -184,19 +184,19 @@ void deferredGraphics::createGraphicsPasses(){
     layersCombinerParams.out.bloom = "combined.bloom";
     layersCombinerParams.out.blur = "combined.blur";
 
-    bloomParameters bloomParams;
+    moon::workflows::BloomParameters bloomParams;
     bloomParams.in.bloom = layersCombinerParams.out.bloom;
     bloomParams.out.bloom = "bloomFinal";
 
-    gaussianBlurParameters blurParams;
+    moon::workflows::GaussianBlurParameters blurParams;
     blurParams.in.blur = layersCombinerParams.out.blur;
     blurParams.out.blur = "blured";
 
-    boundingBoxParameters bbParams;
+    moon::workflows::BoundingBoxParameters bbParams;
     bbParams.in.camera = graphicsParams.in.camera;
     bbParams.out.boundingBox = "boundingBox";
 
-    SSAOParameters SSAOParams;
+    moon::workflows::SSAOParameters SSAOParams;
     SSAOParams.in.camera = graphicsParams.in.camera;
     SSAOParams.in.position = graphicsParams.out.position;
     SSAOParams.in.normal = graphicsParams.out.normal;
@@ -205,7 +205,7 @@ void deferredGraphics::createGraphicsPasses(){
     SSAOParams.in.defaultDepthTexture = "white";
     SSAOParams.out.ssao = "ssao";
 
-    postProcessingParameters postProcessingParams;
+    moon::workflows::PostProcessingParameters postProcessingParams;
     postProcessingParams.in.baseColor = layersCombinerParams.out.color;
     postProcessingParams.in.bloom = bloomParams.out.bloom;
     postProcessingParams.in.blur = blurParams.out.blur;
@@ -213,7 +213,7 @@ void deferredGraphics::createGraphicsPasses(){
     postProcessingParams.in.ssao = SSAOParams.out.ssao;
     postProcessingParams.out.postProcessing = "final";
 
-    selectorParameters selectorParams;
+    moon::workflows::SelectorParameters selectorParams;
     selectorParams.in.storageBuffer = "storage";
     selectorParams.in.position = graphicsParams.out.position;
     selectorParams.in.depth = graphicsParams.out.depth;
@@ -227,7 +227,7 @@ void deferredGraphics::createGraphicsPasses(){
     workflows["LayersCombiner"] = new layersCombiner(layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
     workflows["LayersCombiner"]->setShadersPath(shadersPath);
 
-    workflows["PostProcessing"] = new postProcessingGraphics(postProcessingParams, enable["PostProcessing"]);
+    workflows["PostProcessing"] = new moon::workflows::PostProcessingGraphics(postProcessingParams, enable["PostProcessing"]);
     workflows["PostProcessing"]->setShadersPath(shadersPath);
 
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
@@ -237,23 +237,23 @@ void deferredGraphics::createGraphicsPasses(){
         workflows[key]->setShadersPath(shadersPath);
     };
 
-    workflows["Blur"] = new gaussianBlur(blurParams, enable["Blur"]);
+    workflows["Blur"] = new moon::workflows::GaussianBlur(blurParams, enable["Blur"]);
     workflows["Blur"]->setShadersPath(workflowsShadersPath);
-    workflows["Bloom"] = new bloomGraphics(bloomParams, enable["Bloom"], blitAttachmentsCount);
+    workflows["Bloom"] = new moon::workflows::BloomGraphics(bloomParams, enable["Bloom"], blitAttachmentsCount);
     workflows["Bloom"]->setShadersPath(workflowsShadersPath);
-    workflows["Skybox"] = new skyboxGraphics(skyboxParams, enable["Skybox"], &objects);
+    workflows["Skybox"] = new moon::workflows::SkyboxGraphics(skyboxParams, enable["Skybox"], &objects);
     workflows["Skybox"]->setShadersPath(workflowsShadersPath);
-    workflows["SSLR"] = new SSLRGraphics(SSLRParams, enable["SSLR"]);
+    workflows["SSLR"] = new moon::workflows::SSLRGraphics(SSLRParams, enable["SSLR"]);
     workflows["SSLR"]->setShadersPath(workflowsShadersPath);
-    workflows["SSAO"] = new SSAOGraphics(SSAOParams, enable["SSAO"]);
+    workflows["SSAO"] = new moon::workflows::SSAOGraphics(SSAOParams, enable["SSAO"]);
     workflows["SSAO"]->setShadersPath(workflowsShadersPath);
-    workflows["Shadow"] = new shadowGraphics(enable["Shadow"], &objects, &depthMaps);
+    workflows["Shadow"] = new moon::workflows::ShadowGraphics(enable["Shadow"], &objects, &depthMaps);
     workflows["Shadow"]->setShadersPath(workflowsShadersPath);
-    workflows["Scattering"] = new scattering(scatteringParams, enable["Scattering"], &lights, &depthMaps);
+    workflows["Scattering"] = new moon::workflows::Scattering(scatteringParams, enable["Scattering"], &lights, &depthMaps);
     workflows["Scattering"]->setShadersPath(workflowsShadersPath);
-    workflows["BoundingBox"] = new boundingBoxGraphics(bbParams, enable["BoundingBox"], &objects);
+    workflows["BoundingBox"] = new moon::workflows::BoundingBoxGraphics(bbParams, enable["BoundingBox"], &objects);
     workflows["BoundingBox"]->setShadersPath(workflowsShadersPath);
-    workflows["Selector"] = new selectorGraphics(selectorParams, enable["Selector"]);
+    workflows["Selector"] = new moon::workflows::SelectorGraphics(selectorParams, enable["Selector"]);
     workflows["Selector"]->setShadersPath(workflowsShadersPath);
 
 
@@ -463,7 +463,7 @@ void deferredGraphics::bind(light* lightSource){
     if(depthMaps.count(lightSource) == 0){
         depthMaps[lightSource] = new moon::utils::DepthMap(device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
-            static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
+            static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
         }
     }
     lightSource->create(device, commandPool, imageCount);
@@ -478,7 +478,7 @@ bool deferredGraphics::remove(light* lightSource){
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 
     if(depthMaps.count(lightSource)){
-        static_cast<shadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(depthMaps[lightSource]);
+        static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(depthMaps[lightSource]);
         delete depthMaps[lightSource];
         depthMaps.erase(lightSource);
     }
@@ -533,14 +533,14 @@ deferredGraphics& deferredGraphics::setScatteringRefraction(bool enable){
 
 deferredGraphics& deferredGraphics::setBlitFactor(float blitFactor){
     if(enable["Bloom"] && blitFactor >= 1.0f){
-        static_cast<bloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
+        static_cast<moon::workflows::BloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
         updateCmdFlags();
     }
     return *this;
 }
 
 deferredGraphics& deferredGraphics::setBlurDepth(float blurDepth){
-    static_cast<gaussianBlur*>(workflows["Blur"])->setBlurDepth(blurDepth);
+    static_cast<moon::workflows::GaussianBlur*>(workflows["Blur"])->setBlurDepth(blurDepth);
     static_cast<layersCombiner*>(workflows["LayersCombiner"])->setBlurDepth(blurDepth);
     updateCmdFlags();
     return *this;

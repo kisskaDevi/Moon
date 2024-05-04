@@ -5,7 +5,9 @@
 
 class object;
 
-struct skyboxAttachments
+namespace moon::workflows {
+
+struct SkyboxAttachments
 {
     moon::utils::Attachments color;
     moon::utils::Attachments bloom;
@@ -26,7 +28,7 @@ struct skyboxAttachments
     }
 };
 
-struct skyboxParameters{
+struct SkyboxParameters{
     struct{
         std::string camera;
     }in;
@@ -36,15 +38,15 @@ struct skyboxParameters{
     }out;
 };
 
-class skyboxGraphics : public workflow
+class SkyboxGraphics : public Workflow
 {
 private:
-    skyboxParameters parameters;
+    SkyboxParameters parameters;
 
-    skyboxAttachments frame;
+    SkyboxAttachments frame;
     bool enable;
 
-    struct Skybox : public workbody{
+    struct Skybox : public Workbody{
         VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
 
         std::vector<object*>*   objects;
@@ -61,7 +63,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    skyboxGraphics(skyboxParameters parameters, bool enable, std::vector<object*>* object = nullptr);
+    SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<object*>* object = nullptr);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
@@ -69,4 +71,5 @@ public:
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 
+}
 #endif // SKYBOX_H

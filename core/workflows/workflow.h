@@ -7,7 +7,9 @@
 
 #include <filesystem>
 
-class workbody{
+namespace moon::workflows {
+
+class Workbody{
 public:
     std::filesystem::path           vertShaderPath;
     std::filesystem::path           fragShaderPath;
@@ -18,13 +20,13 @@ public:
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    DescriptorSets;
 
-    virtual ~workbody(){};
+    virtual ~Workbody(){};
     virtual void destroy(VkDevice device);
     virtual void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) = 0;
     virtual void createDescriptorSetLayout(VkDevice device) = 0;
 };
 
-class workflow
+class Workflow
 {
 protected:
     VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
@@ -36,12 +38,12 @@ protected:
     std::vector<VkFramebuffer>      framebuffers;
     std::vector<VkCommandBuffer>    commandBuffers;
 public:
-    virtual ~workflow(){};
+    virtual ~Workflow(){};
     virtual void destroy();
 
-    workflow& setShadersPath(const std::filesystem::path &path);
-    workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
-    workflow& setImageProp(moon::utils::ImageInfo* pInfo);
+    Workflow& setShadersPath(const std::filesystem::path &path);
+    Workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
+    Workflow& setImageProp(moon::utils::ImageInfo* pInfo);
 
     virtual void create(moon::utils::AttachmentsDatabase& aDatabase) = 0;
     virtual void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) = 0;
@@ -53,8 +55,9 @@ public:
     VkCommandBuffer& getCommandBuffer(uint32_t frameNumber);
     void freeCommandBuffer(VkCommandPool commandPool);
 
-    static void createDescriptorPool(VkDevice device, workbody* workbody, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets);
-    static void createDescriptorSets(VkDevice device, workbody* workbody, const uint32_t& imageCount);
+    static void createDescriptorPool(VkDevice device, Workbody* workbody, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets);
+    static void createDescriptorSets(VkDevice device, Workbody* workbody, const uint32_t& imageCount);
 };
 
+}
 #endif // WORKFLOW_H

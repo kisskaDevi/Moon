@@ -5,7 +5,9 @@
 
 class object;
 
-struct boundingBoxParameters{
+namespace moon::workflows {
+
+struct BoundingBoxParameters{
     struct{
         std::string camera;
     }in;
@@ -14,15 +16,15 @@ struct boundingBoxParameters{
     }out;
 };
 
-class boundingBoxGraphics : public workflow
+class BoundingBoxGraphics : public Workflow
 {
 private:
-    boundingBoxParameters parameters;
+    BoundingBoxParameters parameters;
 
     moon::utils::Attachments frame;
     bool enable{true};
 
-    struct boundingBox : workbody{
+    struct BoundingBox : Workbody{
         VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
 
@@ -41,7 +43,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    boundingBoxGraphics(boundingBoxParameters parameters, bool enable, std::vector<object*>* objects = nullptr);
+    BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<object*>* objects = nullptr);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
@@ -51,4 +53,5 @@ public:
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 
+}
 #endif // BOUNDINGBOX_H

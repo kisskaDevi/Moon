@@ -2,6 +2,8 @@
 #include "operations.h"
 #include "vkdefault.h"
 
+namespace moon::workflows {
+
 SSLRGraphics::SSLRGraphics(SSLRParameters parameters, bool enable) :
     parameters(parameters), enable(enable)
 {}
@@ -14,7 +16,7 @@ void SSLRGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase
 void SSLRGraphics::destroy()
 {
     sslr.destroy(device);
-    workflow::destroy();
+    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -154,11 +156,11 @@ void SSLRGraphics::SSLR::createPipeline(VkDevice device, moon::utils::ImageInfo*
 }
 
 void SSLRGraphics::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &sslr, image.Count, 8 * image.Count, image.Count);
+    Workflow::createDescriptorPool(device, &sslr, image.Count, 8 * image.Count, image.Count);
 }
 
 void SSLRGraphics::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &sslr, image.Count);
+    Workflow::createDescriptorSets(device, &sslr, image.Count);
 }
 
 void SSLRGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -301,4 +303,6 @@ void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber){
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
+}
+
 }

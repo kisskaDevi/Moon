@@ -8,13 +8,15 @@ class object;
 class light;
 namespace moon::utils { class DepthMap;}
 
-class shadowGraphics : public workflow
+namespace moon::workflows {
+
+class ShadowGraphics : public Workflow
 {
 private:
     std::unordered_map<moon::utils::DepthMap*,std::vector<VkFramebuffer>> framebuffers;
     bool enable{true};
 
-    struct Shadow : public workbody{
+    struct Shadow : public Workbody{
         void destroy(VkDevice device) override;
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
@@ -33,7 +35,7 @@ private:
     void createPipelines();
     moon::utils::Attachments* createAttachments();
 public:
-    shadowGraphics(bool enable,
+    ShadowGraphics(bool enable,
                    std::vector<object*>* objects = nullptr,
                    std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
@@ -46,4 +48,5 @@ public:
     void destroyFramebuffers(moon::utils::DepthMap* depthMap);
 };
 
+}
 #endif // SHADOW_H

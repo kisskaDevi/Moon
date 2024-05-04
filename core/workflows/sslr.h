@@ -3,6 +3,8 @@
 
 #include "workflow.h"
 
+namespace moon::workflows {
+
 struct SSLRParameters{
     struct{
         std::string camera;
@@ -18,7 +20,7 @@ struct SSLRParameters{
     }out;
 };
 
-class SSLRGraphics : public workflow
+class SSLRGraphics : public Workflow
 {
 private:
     SSLRParameters parameters;
@@ -26,7 +28,7 @@ private:
     moon::utils::Attachments frame;
     bool enable;
 
-    struct SSLR : public workbody{
+    struct SSLR : public Workbody{
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }sslr;
@@ -46,4 +48,5 @@ public:
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 
+}
 #endif // SSLR_H

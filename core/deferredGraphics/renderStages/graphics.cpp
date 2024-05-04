@@ -36,7 +36,7 @@ void graphics::destroy()
     lighting.Destroy(device);
     ambientLighting.DestroyPipeline(device);
 
-    workflow::destroy();
+    moon::workflows::Workflow::destroy();
 
     deferredAttachments.deleteAttachment(device);
     deferredAttachments.deleteSampler(device);

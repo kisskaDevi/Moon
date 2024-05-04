@@ -3,7 +3,9 @@
 
 #include "workflow.h"
 
-struct postProcessingParameters{
+namespace moon::workflows {
+
+struct PostProcessingParameters{
     struct{
         std::string baseColor;
         std::string blur;
@@ -16,15 +18,15 @@ struct postProcessingParameters{
     }out;
 };
 
-class postProcessingGraphics : public workflow
+class PostProcessingGraphics : public Workflow
 {
 private:
-    postProcessingParameters parameters;
+    PostProcessingParameters parameters;
 
     moon::utils::Attachments frame;
     bool enable{true};
 
-    struct PostProcessing : public workbody{
+    struct PostProcessing : public Workbody{
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }postProcessing;
@@ -36,7 +38,7 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    postProcessingGraphics(postProcessingParameters parameters, bool enable);
+    PostProcessingGraphics(PostProcessingParameters parameters, bool enable);
 
     void destroy() override;
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
@@ -44,4 +46,5 @@ public:
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 
+}
 #endif // POSTPROCESSING_H

@@ -2,28 +2,30 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-gaussianBlur::gaussianBlur(gaussianBlurParameters parameters, bool enable) :
+namespace moon::workflows {
+
+GaussianBlur::GaussianBlur(GaussianBlurParameters parameters, bool enable) :
     parameters(parameters), enable(enable)
 {}
 
-void gaussianBlur::createBufferAttachments(){
+void GaussianBlur::createBufferAttachments(){
     bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
     VkSamplerCreateInfo samplerInfo = moon::utils::vkDefault::samler();
     CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler));
 }
 
-void gaussianBlur::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
+void GaussianBlur::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
     createBufferAttachments();
     moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.blur, enable, &frame);
 }
 
-void gaussianBlur::destroy(){
+void GaussianBlur::destroy(){
     xblur.destroy(device);
     yblur.destroy(device);
 
-    workflow::destroy();
+    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -32,7 +34,7 @@ void gaussianBlur::destroy(){
     bufferAttachment.deleteSampler(device);
 }
 
-void gaussianBlur::createRenderPass(){
+void GaussianBlur::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(image.Format),
         moon::utils::Attachments::imageDescription(image.Format)
@@ -94,7 +96,7 @@ void gaussianBlur::createRenderPass(){
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void gaussianBlur::createFramebuffers(){
+void GaussianBlur::createFramebuffers(){
     for (auto attIt = frame.instances.begin(), buffIt = bufferAttachment.instances.begin();
          attIt != frame.instances.end() && buffIt != bufferAttachment.instances.end();
          attIt++, buffIt++)
@@ -113,7 +115,7 @@ void gaussianBlur::createFramebuffers(){
     }
 }
 
-void gaussianBlur::blur::createDescriptorSetLayout(VkDevice device){
+void GaussianBlur::Blur::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -123,7 +125,7 @@ void gaussianBlur::blur::createDescriptorSetLayout(VkDevice device){
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void gaussianBlur::createPipelines(){
+void GaussianBlur::createPipelines(){
     xblur.subpassNumber = 0;
     xblur.vertShaderPath = shadersPath / "gaussianBlur/xBlurVert.spv";
     xblur.fragShaderPath = shadersPath / "gaussianBlur/xBlurFrag.spv";
@@ -137,7 +139,7 @@ void gaussianBlur::createPipelines(){
     yblur.createPipeline(device,&image,renderPass);
 }
 
-void gaussianBlur::blur::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+void GaussianBlur::Blur::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
     VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, moon::utils::shaderModule::readFile(vertShaderPath));
     VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, moon::utils::shaderModule::readFile(fragShaderPath));
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
@@ -196,17 +198,17 @@ void gaussianBlur::blur::createPipeline(VkDevice device, moon::utils::ImageInfo*
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void gaussianBlur::createDescriptorPool(){
-    workflow::createDescriptorPool(device, &xblur, 0, image.Count, image.Count);
-    workflow::createDescriptorPool(device, &yblur, 0, image.Count, image.Count);
+void GaussianBlur::createDescriptorPool(){
+    Workflow::createDescriptorPool(device, &xblur, 0, image.Count, image.Count);
+    Workflow::createDescriptorPool(device, &yblur, 0, image.Count, image.Count);
 }
 
-void gaussianBlur::createDescriptorSets(){
-    workflow::createDescriptorSets(device, &xblur, image.Count);
-    workflow::createDescriptorSets(device, &yblur, image.Count);
+void GaussianBlur::createDescriptorSets(){
+    Workflow::createDescriptorSets(device, &xblur, image.Count);
+    Workflow::createDescriptorSets(device, &yblur, image.Count);
 }
 
-void gaussianBlur::create(moon::utils::AttachmentsDatabase& aDatabasep)
+void GaussianBlur::create(moon::utils::AttachmentsDatabase& aDatabasep)
 {
     if(enable){
         createAttachments(aDatabasep);
@@ -218,7 +220,7 @@ void gaussianBlur::create(moon::utils::AttachmentsDatabase& aDatabasep)
     }
 }
 
-void gaussianBlur::updateDescriptorSets(
+void GaussianBlur::updateDescriptorSets(
     const moon::utils::BuffersDatabase&,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -251,7 +253,7 @@ void gaussianBlur::updateDescriptorSets(
     updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, yblur.DescriptorSets);
 }
 
-void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
+void GaussianBlur::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues(2, VkClearValue{frame.clearValue.color});
@@ -285,7 +287,9 @@ void gaussianBlur::updateCommandBuffer(uint32_t frameNumber){
     vkCmdEndRenderPass(commandBuffers[frameNumber]);
 }
 
-gaussianBlur& gaussianBlur::setBlurDepth(float blurDepth){
+GaussianBlur& GaussianBlur::setBlurDepth(float blurDepth){
     this->blurDepth = blurDepth;
     return *this;
+}
+
 }

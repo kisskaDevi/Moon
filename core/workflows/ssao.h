@@ -3,6 +3,8 @@
 
 #include "workflow.h"
 
+namespace moon::workflows {
+
 struct SSAOParameters{
     struct{
         std::string camera;
@@ -17,7 +19,7 @@ struct SSAOParameters{
     }out;
 };
 
-class SSAOGraphics : public workflow
+class SSAOGraphics : public Workflow
 {
 private:
     SSAOParameters parameters;
@@ -25,7 +27,7 @@ private:
     moon::utils::Attachments frame;
     bool enable{true};
 
-    struct SSAO : public workbody{
+    struct SSAO : public Workbody{
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device)override;
     }ssao;
@@ -44,4 +46,6 @@ public:
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
+
+}
 #endif // SSAO_H

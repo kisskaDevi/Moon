@@ -6,7 +6,9 @@
 #include "model.h"
 #include "depthMap.h"
 
-moon::utils::Attachments* shadowGraphics::createAttachments()
+namespace moon::workflows {
+
+moon::utils::Attachments* ShadowGraphics::createAttachments()
 {
     moon::utils::Attachments* pAttachments = new moon::utils::Attachments;
     pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
@@ -15,29 +17,29 @@ moon::utils::Attachments* shadowGraphics::createAttachments()
     return pAttachments;
 }
 
-void shadowGraphics::Shadow::destroy(VkDevice device)
+void ShadowGraphics::Shadow::destroy(VkDevice device)
 {
-    workbody::destroy(device);
+    Workbody::destroy(device);
     if(lightUniformBufferSetLayout)     {vkDestroyDescriptorSetLayout(device, lightUniformBufferSetLayout, nullptr); lightUniformBufferSetLayout = VK_NULL_HANDLE;}
     if(ObjectDescriptorSetLayout)       {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
     if(PrimitiveDescriptorSetLayout)    {vkDestroyDescriptorSetLayout(device, PrimitiveDescriptorSetLayout, nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
     if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
-shadowGraphics::shadowGraphics(bool enable, std::vector<object*>* objects, std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
+ShadowGraphics::ShadowGraphics(bool enable, std::vector<object*>* objects, std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
     enable(enable)
 {
     shadow.objects = objects;
     shadow.depthMaps = depthMaps;
 }
 
-void shadowGraphics::destroy()
+void ShadowGraphics::destroy()
 {
     shadow.destroy(device);
-    workflow::destroy();
+    Workflow::destroy();
 }
 
-void shadowGraphics::createRenderPass()
+void ShadowGraphics::createRenderPass()
 {
     VkAttachmentDescription attachments = moon::utils::Attachments::depthDescription(VK_FORMAT_D32_SFLOAT);
     VkAttachmentReference depthRef{0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
@@ -55,14 +57,14 @@ void shadowGraphics::createRenderPass()
     CHECK(vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass));
 }
 
-void shadowGraphics::createPipelines()
+void ShadowGraphics::createPipelines()
 {
     shadow.vertShaderPath = shadersPath / "shadow/shadowMapVert.spv";
     shadow.createDescriptorSetLayout(device);
     shadow.createPipeline(device,&image,renderPass);
 }
 
-void shadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
+void ShadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
 {
     light::createBufferDescriptorSetLayout(device, &lightUniformBufferSetLayout);
     object::createDescriptorSetLayout(device, &ObjectDescriptorSetLayout);
@@ -70,7 +72,7 @@ void shadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
     model::createMaterialDescriptorSetLayout(device, &MaterialDescriptorSetLayout);
 }
 
-void shadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
     VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device,vertShaderCode);
@@ -141,7 +143,7 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageI
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void shadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
+void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
 {
     depthMap->get() = createAttachments();
     depthMap->updateDescriptorSets(device, image.Count);
@@ -160,7 +162,7 @@ void shadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
 }
 
 
-void shadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap)
+void ShadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap)
 {
     if(depthMap->get()){
         depthMap->get()->deleteAttachment(device);
@@ -174,7 +176,7 @@ void shadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap)
     }
 }
 
-void shadowGraphics::create(moon::utils::AttachmentsDatabase&)
+void ShadowGraphics::create(moon::utils::AttachmentsDatabase&)
 {
     if(enable){
         createRenderPass();
@@ -182,7 +184,7 @@ void shadowGraphics::create(moon::utils::AttachmentsDatabase&)
     }
 }
 
-void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
+void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
     if(!enable) return;
 
@@ -191,7 +193,7 @@ void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
     }
 }
 
-void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, moon::utils::DepthMap* depthMap)
+void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, moon::utils::DepthMap* depthMap)
 {
     std::vector<VkClearValue> clearValues;
     clearValues.push_back(VkClearValue{depthMap->get()->clearValue.color});
@@ -236,4 +238,6 @@ void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
     }
 
     vkCmdEndRenderPass(commandBuffer);
+}
+
 }

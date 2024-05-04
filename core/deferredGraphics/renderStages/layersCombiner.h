@@ -10,14 +10,14 @@ struct layersCombinerPushConst{
 };
 
 struct layersCombinerAttachments{
-    attachments color;
-    attachments bloom;
-    attachments blur;
+    moon::utils::Attachments color;
+    moon::utils::Attachments bloom;
+    moon::utils::Attachments blur;
 
     static inline uint32_t size() {
         return 3;
     }
-    inline attachments* operator&(){
+    inline moon::utils::Attachments* operator&(){
         return &color;
     }
     void deleteAttachment(VkDevice device){
@@ -65,7 +65,7 @@ private:
     float blurDepth{1.0f};
 
     struct Combiner : public workbody{
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
         uint32_t transparentLayersCount{1};
@@ -73,7 +73,7 @@ private:
         bool enableScatteringRefraction{true};
     }combiner;
 
-    void createAttachments(attachmentsDatabase& aDatabase);
+    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -83,8 +83,8 @@ public:
     layersCombiner(layersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction);
 
     void destroy() override;
-    void create(attachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) override;
+    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
     void setTransparentLayersCount(uint32_t transparentLayersCount);

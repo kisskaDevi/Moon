@@ -9,6 +9,7 @@
 #include <filesystem>
 
 class shadowGraphics;
+namespace moon::utils { class Texture;}
 
 struct LightBufferObject
 {
@@ -29,9 +30,9 @@ enum spotType
 class spotLight : public transformational, public light
 {
 private:
-    texture*                            tex{nullptr};
-    texture*                            emptyTextureBlack{nullptr};
-    texture*                            emptyTextureWhite{nullptr};
+    moon::utils::Texture*               tex{nullptr};
+    moon::utils::Texture*               emptyTextureBlack{nullptr};
+    moon::utils::Texture*               emptyTextureWhite{nullptr};
 
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};
@@ -53,15 +54,15 @@ private:
     VkDescriptorSetLayout               textureDescriptorSetLayout{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>        textureDescriptorSets;
 
-    std::vector<buffer> uniformBuffersHost;
-    std::vector<buffer> uniformBuffersDevice;
+    std::vector<moon::utils::Buffer> uniformBuffersHost;
+    std::vector<moon::utils::Buffer> uniformBuffersDevice;
 
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSets(VkDevice device, uint32_t imageCount);
     void updateDescriptorSets(VkDevice device, uint32_t imageCount);
 
-    void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
+    void updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers);
     void updateModelMatrix();
 public:
     spotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, spotType type = spotType::circle);
@@ -82,7 +83,7 @@ public:
 
     void                setLightColor(const vector<float,4> & color);
     void                setLightDropFactor(const float& dropFactor);
-    void                setTexture(texture* tex);
+    void                setTexture(moon::utils::Texture* tex);
     void                setProjectionMatrix(const matrix<float,4,4> & projection);
 
     matrix<float,4,4>   getModelMatrix() const;
@@ -92,7 +93,7 @@ public:
     void destroy(VkDevice device) override;
 
     void create(
-            physicalDevice device,
+            moon::utils::PhysicalDevice device,
             VkCommandPool commandPool,
             uint32_t imageCount) override;
 

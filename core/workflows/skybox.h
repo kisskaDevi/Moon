@@ -7,13 +7,13 @@ class object;
 
 struct skyboxAttachments
 {
-    attachments color;
-    attachments bloom;
+    moon::utils::Attachments color;
+    moon::utils::Attachments bloom;
 
     inline uint32_t size() const{
         return 2;
     }
-    inline attachments* operator&(){
+    inline moon::utils::Attachments* operator&(){
         return &color;
     }
     void deleteAttachment(VkDevice device){
@@ -50,11 +50,11 @@ private:
         std::vector<object*>*   objects;
 
         void destroy(VkDevice device) override;
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }skybox;
 
-    void createAttachments(attachmentsDatabase& aDatabase);
+    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -64,8 +64,8 @@ public:
     skyboxGraphics(skyboxParameters parameters, bool enable, std::vector<object*>* object = nullptr);
 
     void destroy() override;
-    void create(attachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) override;
+    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 

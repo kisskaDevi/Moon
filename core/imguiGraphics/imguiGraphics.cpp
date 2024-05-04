@@ -1,7 +1,5 @@
 #include "imguiGraphics.h"
 
-#include <string>
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
@@ -65,9 +63,9 @@ void imguiGraphics::createCommandPool()
 
 void imguiGraphics::uploadFonts()
 {
-    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+    VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
     ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-    SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+    moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
@@ -91,7 +89,7 @@ void imguiGraphics::create() {
         initInfo.ImageCount = imageCount;
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = VK_NULL_HANDLE;
-        initInfo.CheckVkResultFn = [](VkResult result){debug::checkResult(result,"");};
+        initInfo.CheckVkResultFn = [](VkResult result){moon::utils::debug::checkResult(result,"");};
     ImGui_ImplVulkan_Init(&initInfo, Link.getRenderPass());
 
     uploadFonts();

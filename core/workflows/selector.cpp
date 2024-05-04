@@ -8,8 +8,8 @@ selectorGraphics::selectorGraphics(selectorParameters parameters, bool enable, u
     selector.transparentLayersCount = transparentLayersCount > 0 ? transparentLayersCount : 1;
 }
 
-void selectorGraphics::createAttachments(attachmentsDatabase& aDatabase){
-    ::createAttachments(physicalDevice, device, image, 1, &frame);
+void selectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.selector, enable, &frame);
 }
 
@@ -25,7 +25,7 @@ void selectorGraphics::destroy()
 void selectorGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(image.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -93,10 +93,10 @@ void selectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
     bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     bindings.back().pImmutableSamplers = nullptr;
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -105,7 +105,7 @@ void selectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
 }
 
-void selectorGraphics::Selector::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+void selectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     uint32_t specializationData = transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
@@ -118,27 +118,27 @@ void selectorGraphics::Selector::createPipeline(VkDevice device, imageInfo* pInf
         specializationInfo.dataSize = sizeof(specializationData);
         specializationInfo.pData = &specializationData;
 
-    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
+    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
+    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        vkDefault::vertrxShaderStage(vertShaderModule),
-        vkDefault::fragmentShaderStage(fragShaderModule)
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
     shaderStages.back().pSpecializationInfo = &specializationInfo;
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)};
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -188,7 +188,7 @@ void selectorGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &selector, image.Count);
 }
 
-void selectorGraphics::create(attachmentsDatabase& aDatabase)
+void selectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -200,7 +200,9 @@ void selectorGraphics::create(attachmentsDatabase& aDatabase)
     }
 }
 
-void selectorGraphics::updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase)
+void selectorGraphics::updateDescriptorSets(
+    const moon::utils::BuffersDatabase& bDatabase,
+    const moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 

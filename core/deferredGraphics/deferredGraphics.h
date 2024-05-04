@@ -11,13 +11,17 @@
 #include <unordered_map>
 #include <filesystem>
 
-struct node;
 class model;
 class camera;
 class object;
 class light;
 class workflow;
-class depthMap;
+
+namespace moon::utils {
+class Texture;
+class DepthMap;
+struct Node;
+}
 
 struct StorageBufferObject{
     alignas(16) vector<float,4>    mousePosition;
@@ -32,18 +36,18 @@ private:
     VkExtent2D                                  extent{0,0};
     VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
-    buffersDatabase bDatabase;
-    attachmentsDatabase aDatabase;
+    moon::utils::BuffersDatabase bDatabase;
+    moon::utils::AttachmentsDatabase aDatabase;
     std::unordered_map<std::string, workflow*>  workflows;
     std::unordered_map<std::string, bool>       enable;
     class link                                  Link;
 
-    buffers                                     storageBuffersHost;
+    moon::utils::Buffers                        storageBuffersHost;
 
     VkCommandPool                               commandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer>                copyCommandBuffers;
     std::vector<bool>                           updateCommandBufferFlags;
-    std::vector<node*>                          nodes;
+    std::vector<moon::utils::Node*>             nodes;
 
     uint32_t                                    blitAttachmentsCount{8};
     uint32_t                                    TransparentLayersCount{2};
@@ -51,8 +55,8 @@ private:
     camera*                                     cameraObject{nullptr};
     std::vector<object*>                        objects;
     std::vector<light*>                         lights;
-    std::unordered_map<light*, depthMap*>       depthMaps;
-    std::unordered_map<std::string, texture*>   emptyTextures;
+    std::unordered_map<light*, moon::utils::DepthMap*> depthMaps;
+    std::unordered_map<std::string, moon::utils::Texture*> emptyTextures;
 
     void createStorageBuffers(uint32_t imageCount);
     void createGraphicsPasses();

@@ -32,11 +32,11 @@ void graphics::Lighting::Destroy(VkDevice device)
 void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -46,10 +46,10 @@ void graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 
     light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
     light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
-    depthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
+    moon::utils::DepthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
-void graphics::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+void graphics::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     std::filesystem::path spotVert = ShadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = ShadersPath / "spotLightingPass/spotLightingFrag.spv";
@@ -82,7 +82,7 @@ void graphics::createLightingDescriptorSets()
     CHECK(vkAllocateDescriptorSets(device, &allocInfo, lighting.DescriptorSets.data()));
 }
 
-void graphics::updateLightingDescriptorSets(const buffersDatabase& bDatabase)
+void graphics::updateLightingDescriptorSets(const moon::utils::BuffersDatabase& bDatabase)
 {
     for (uint32_t i = 0; i < image.Count; i++){
         std::vector<VkDescriptorImageInfo> imageInfos;

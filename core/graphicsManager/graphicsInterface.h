@@ -8,18 +8,18 @@
 #include "vector.h"
 
 class linkable;
-class swapChain;
+namespace moon::utils { class SwapChain;}
 
 class graphicsInterface{
 protected:
-    VkFormat                            format{VK_FORMAT_UNDEFINED};
-    uint32_t                            imageCount{0};
-    std::map<uint32_t, physicalDevice>  devices;
-    physicalDevice                      device;
-    swapChain*                          swapChainKHR;
-    linkable*                           link{nullptr};
-    vector<float,2>                     offset{0.0f, 0.0f};
-    vector<float,2>                     size{1.0f, 1.0f};
+    VkFormat                                         format{VK_FORMAT_UNDEFINED};
+    uint32_t                                         imageCount{0};
+    std::map<uint32_t, moon::utils::PhysicalDevice>  devices;
+    moon::utils::PhysicalDevice                      device;
+    moon::utils::SwapChain*                          swapChainKHR;
+    linkable*                                        link{nullptr};
+    vector<float,2>                                  offset{0.0f, 0.0f};
+    vector<float,2>                                  size{1.0f, 1.0f};
 
 public:
     virtual ~graphicsInterface(){};
@@ -30,7 +30,7 @@ public:
         this->size = size;
     }
 
-    virtual void setSwapChain(class swapChain* swapChain){
+    virtual void setSwapChain(moon::utils::SwapChain* swapChain){
         this->swapChainKHR = swapChain;
     }
 
@@ -39,7 +39,7 @@ public:
         imageCount = resourceCount;
     }
 
-    virtual void setDevices(const std::map<uint32_t, physicalDevice>& devices, uint32_t deviceIndex = 0xffffffff){
+    virtual void setDevices(const std::map<uint32_t, moon::utils::PhysicalDevice>& devices, uint32_t deviceIndex = 0xffffffff){
         this->devices = devices;
         device = devices.at(deviceIndex);
     }

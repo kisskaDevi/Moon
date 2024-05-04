@@ -1,7 +1,9 @@
 #include "node.h"
 #include "operations.h"
 
-stage::stage(   std::vector<VkCommandBuffer> commandBuffers,
+namespace moon::utils {
+
+Stage::Stage(   std::vector<VkCommandBuffer> commandBuffers,
                 VkPipelineStageFlags waitStage,
                 VkQueue queue) :
     commandBuffers(commandBuffers),
@@ -9,7 +11,7 @@ stage::stage(   std::vector<VkCommandBuffer> commandBuffers,
     queue(queue)
 {}
 
-VkResult stage::submit(){
+VkResult Stage::submit(){
     std::vector<VkPipelineStageFlags> waitStages(waitSemaphores.size(), waitStage);
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -23,11 +25,11 @@ VkResult stage::submit(){
     return vkQueueSubmit(queue, 1, &submitInfo, fence);
 }
 
-node::node(const std::vector<stage>& stages, node* next) :
+Node::Node(const std::vector<Stage>& stages, Node* next) :
     stages(stages), next(next)
 {}
 
-void node::destroy(VkDevice device){
+void Node::destroy(VkDevice device){
     if(next){
         next->destroy(device); delete next; next = nullptr;
     }
@@ -36,23 +38,23 @@ void node::destroy(VkDevice device){
     }
 }
 
-node* node::back(){
+Node* Node::back(){
     return next ? next->back() : this;
 }
 
-void node::setExternalSemaphore(const std::vector<std::vector<VkSemaphore>>& externalSemaphore){
+void Node::setExternalSemaphore(const std::vector<std::vector<VkSemaphore>>& externalSemaphore){
     for(uint32_t i = 0; i < externalSemaphore.size(); i++){
         stages[i].waitSemaphores = externalSemaphore[i];
     }
 }
 
-void node::setExternalFence(const std::vector<VkFence>& externalFence){
+void Node::setExternalFence(const std::vector<VkFence>& externalFence){
     for(uint32_t i = 0; i < externalFence.size(); i++){
         stages[i].fence = externalFence[i];
     }
 }
 
-std::vector<std::vector<VkSemaphore>> node::getBackSemaphores(){
+std::vector<std::vector<VkSemaphore>> Node::getBackSemaphores(){
     std::vector<std::vector<VkSemaphore>> semaphores;
     for(const auto& stage: stages){
         semaphores.push_back(stage.signalSemaphores);
@@ -60,9 +62,9 @@ std::vector<std::vector<VkSemaphore>> node::getBackSemaphores(){
     return semaphores;
 }
 
-VkResult node::createSemaphores(VkDevice device){
+VkResult Node::createSemaphores(VkDevice device){
     VkResult result = VK_SUCCESS;
-    auto createSemaphore = [this, &result](VkDevice device, VkSemaphoreCreateInfo* semaphoreInfo, stage* stage){
+    auto createSemaphore = [this, &result](VkDevice device, VkSemaphoreCreateInfo* semaphoreInfo, Stage* stage){
         signalSemaphores.push_back(VkSemaphore{});
         result = vkCreateSemaphore(device, semaphoreInfo, nullptr, &signalSemaphores.back());
         CHECK(result);
@@ -85,11 +87,13 @@ VkResult node::createSemaphores(VkDevice device){
     return result;
 }
 
-void node::submit(){
+void Node::submit(){
     for(auto& stage: stages){
         stage.submit();
     }
     if(next){
         next->submit();
     }
+}
+
 }

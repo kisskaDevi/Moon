@@ -34,9 +34,9 @@ void rayTracingLink::setPositionInWindow(const vector<float,2>& offset, const ve
 
 void rayTracingLink::createDescriptorSetLayout() {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
     textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -44,25 +44,27 @@ void rayTracingLink::createDescriptorSetLayout() {
     vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout);
 }
 
-void rayTracingLink::createPipeline(imageInfo* pInfo) {
+void rayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo)
+{
+    auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/linkableVert.spv");
+    auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/linkableFrag.spv");
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)};
 
-    auto vertShaderCode = ShaderModule::readFile(shadersPath / "linkable/linkableVert.spv");
-    auto fragShaderCode = ShaderModule::readFile(shadersPath / "linkable/linkableFrag.spv");
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vkDefault::vertrxShaderStage(vertShaderModule), vkDefault::fragmentShaderStage(fragShaderModule)};
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
-
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)};
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -124,7 +126,7 @@ void rayTracingLink::createDescriptorSets() {
     vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data());
 }
 
-void rayTracingLink::updateDescriptorSets(const attachmentsDatabase& aDatabase) {
+void rayTracingLink::updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase) {
     for (size_t image = 0; image < this->imageCount; image++)
     {
         VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo(parameters.in.color, image);

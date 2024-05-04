@@ -6,7 +6,7 @@
 
 scattering::scattering(scatteringParameters parameters,
                        bool enable, std::vector<light*>* lightSources,
-                       std::unordered_map<light*, depthMap*>* depthMaps) :
+                       std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
     parameters(parameters), enable(enable)
 {
     lighting.lightSources = lightSources;
@@ -34,8 +34,8 @@ void scattering::Lighting::destroy(VkDevice device){
     }
 }
 
-void scattering::createAttachments(attachmentsDatabase& aDatabase){
-    ::createAttachments(physicalDevice, device, image, 1, &frame);
+void scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.scattering, enable, &frame);
 }
 
@@ -51,7 +51,7 @@ void scattering::destroy()
 void scattering::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(VK_FORMAT_R32G32B32A32_SFLOAT)
+        moon::utils::Attachments::imageDescription(VK_FORMAT_R32G32B32A32_SFLOAT)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -113,8 +113,8 @@ void scattering::createPipelines()
 void scattering::Lighting::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -124,33 +124,33 @@ void scattering::Lighting::createDescriptorSetLayout(VkDevice device)
 
     light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[lightType::spot]);
     light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[lightType::spot]);
-    depthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
+    moon::utils::DepthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
 }
 
-void scattering::Lighting::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+void scattering::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
     createPipeline(lightType::spot, device, pInfo, pRenderPass);
 }
 
-void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
+    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
+    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        vkDefault::vertrxShaderStage(vertShaderModule),
-        vkDefault::fragmentShaderStage(fragShaderModule)
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -161,7 +161,7 @@ void scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, imageIn
         colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MIN;
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(1,&colorBlendAttachment);
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(1,&colorBlendAttachment);
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -212,7 +212,7 @@ void scattering::createDescriptorSets(){
     workflow::createDescriptorSets(device, &lighting, image.Count);
 }
 
-void scattering::create(attachmentsDatabase& aDatabase)
+void scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -225,8 +225,8 @@ void scattering::create(attachmentsDatabase& aDatabase)
 }
 
 void scattering::updateDescriptorSets(
-    const buffersDatabase& bDatabase,
-    const attachmentsDatabase& aDatabase)
+    const moon::utils::BuffersDatabase& bDatabase,
+    const moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 

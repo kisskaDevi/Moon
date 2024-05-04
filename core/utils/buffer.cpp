@@ -2,25 +2,27 @@
 #include "operations.h"
 #include <cstring>
 
-void buffer::destroy(VkDevice device){
+namespace moon::utils {
+
+void Buffer::destroy(VkDevice device){
     if(map){
         vkUnmapMemory(device, memory);
         map = nullptr;
     }
-    Buffer::destroy(device, instance, memory);
+    buffer::destroy(device, instance, memory);
 }
 
-void destroyBuffers(VkDevice device, std::vector<buffer>& uniformBuffers){
+void destroyBuffers(VkDevice device, std::vector<Buffer>& uniformBuffers){
     for(auto& buffer: uniformBuffers){
         buffer.destroy(device);
     }
     uniformBuffers.clear();
 };
 
-void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, size_t bufferSize, void* data, VkBufferUsageFlagBits usage, buffer& staging, buffer& deviceLocal)
+void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, size_t bufferSize, void* data, VkBufferUsageFlagBits usage, Buffer& staging, Buffer& deviceLocal)
 {
-    Buffer::create(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging.instance, &staging.memory);
-    Buffer::create(physicalDevice, device, bufferSize, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &deviceLocal.instance, &deviceLocal.memory);
+    buffer::create(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging.instance, &staging.memory);
+    buffer::create(physicalDevice, device, bufferSize, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &deviceLocal.instance, &deviceLocal.memory);
 
     Memory::instance().nameMemory(staging.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, staging");
     Memory::instance().nameMemory(deviceLocal.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", createBuffer, deviceLocal");
@@ -30,10 +32,10 @@ void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuf
     vkUnmapMemory(device, staging.memory);
     staging.map = nullptr;
 
-    Buffer::copy(commandBuffer, bufferSize, staging.instance, deviceLocal.instance);
+    buffer::copy(commandBuffer, bufferSize, staging.instance, deviceLocal.instance);
 };
 
-void buffers::create(VkPhysicalDevice                physicalDevice,
+void Buffers::create(VkPhysicalDevice                physicalDevice,
                      VkDevice                        device,
                      VkDeviceSize                    size,
                      VkBufferUsageFlags              usage,
@@ -42,7 +44,7 @@ void buffers::create(VkPhysicalDevice                physicalDevice,
 {
     instances.resize(instancesCount);
     for (auto& buffer: instances){
-        Buffer::create(physicalDevice,
+        buffer::create(physicalDevice,
                        device,
                        size,
                        usage,
@@ -53,19 +55,19 @@ void buffers::create(VkPhysicalDevice                physicalDevice,
     }
 }
 
-void buffers::map(VkDevice device)
+void Buffers::map(VkDevice device)
 {
     for (auto& buffer: instances){
         CHECK(vkMapMemory(device, buffer.memory, 0, buffer.size, 0, &buffer.map));
     }
 }
 
-void buffers::copy(size_t imageIndex, void *data)
+void Buffers::copy(size_t imageIndex, void *data)
 {
     std::memcpy(instances[imageIndex].map, data, instances[imageIndex].size);
 }
 
-void buffers::destroy(VkDevice device)
+void Buffers::destroy(VkDevice device)
 {
     for (auto& buffer: instances){
         buffer.destroy(device);
@@ -76,12 +78,12 @@ void buffers::destroy(VkDevice device)
     instances.clear();
 }
 
-void buffersDatabase::destroy()
+void BuffersDatabase::destroy()
 {
     buffersMap.clear();
 }
 
-bool buffersDatabase::addBufferData(const std::string& id, const buffers* pBuffer)
+bool BuffersDatabase::addBufferData(const std::string& id, const Buffers* pBuffer)
 {
     if(buffersMap.count(id) > 0) return false;
 
@@ -89,17 +91,17 @@ bool buffersDatabase::addBufferData(const std::string& id, const buffers* pBuffe
     return true;
 }
 
-const buffers* buffersDatabase::get(const std::string& id) const
+const Buffers* BuffersDatabase::get(const std::string& id) const
 {
     return buffersMap.count(id) > 0 ? buffersMap.at(id) : nullptr;
 }
 
-VkBuffer buffersDatabase::buffer(const std::string& id, const uint32_t imageIndex) const
+VkBuffer BuffersDatabase::buffer(const std::string& id, const uint32_t imageIndex) const
 {
     return buffersMap.count(id) > 0 && buffersMap.at(id) ? buffersMap.at(id)->instances[imageIndex].instance : VK_NULL_HANDLE;
 }
 
-VkDescriptorBufferInfo buffersDatabase::descriptorBufferInfo(const std::string& id, const uint32_t imageIndex) const
+VkDescriptorBufferInfo BuffersDatabase::descriptorBufferInfo(const std::string& id, const uint32_t imageIndex) const
 {
     VkDescriptorBufferInfo bufferInfo{};
     bufferInfo.buffer = buffersMap.at(id)->instances[imageIndex].instance;
@@ -108,3 +110,4 @@ VkDescriptorBufferInfo buffersDatabase::descriptorBufferInfo(const std::string& 
     return bufferInfo;
 }
 
+}

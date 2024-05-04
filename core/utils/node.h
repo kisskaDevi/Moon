@@ -4,7 +4,9 @@
 #include <vulkan.h>
 #include <vector>
 
-struct stage{
+namespace moon::utils {
+
+struct Stage{
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> waitSemaphores;
     std::vector<VkSemaphore> signalSemaphores;
@@ -12,22 +14,22 @@ struct stage{
     VkQueue queue{VK_NULL_HANDLE};
     VkFence fence{VK_NULL_HANDLE};
 
-    stage(  std::vector<VkCommandBuffer> commandBuffers,
+    Stage(  std::vector<VkCommandBuffer> commandBuffers,
             VkPipelineStageFlags waitStages,
             VkQueue queue);
 
     VkResult submit();
 };
 
-struct node{
-    std::vector<stage> stages;
+struct Node{
+    std::vector<Stage> stages;
     std::vector<VkSemaphore> signalSemaphores;
-    node* next{nullptr};
+    Node* next{nullptr};
 
-    node(const std::vector<stage>& stages, node* next);
+    Node(const std::vector<Stage>& stages, Node* next);
     void destroy(VkDevice device);
 
-    node* back();
+    Node* back();
 
     void setExternalSemaphore(const std::vector<std::vector<VkSemaphore>>& externalSemaphore);
     void setExternalFence(const std::vector<VkFence>& externalFence);
@@ -37,4 +39,5 @@ struct node{
     void submit();
 };
 
+}
 #endif // NODE_H

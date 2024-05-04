@@ -6,18 +6,20 @@
 #include <cmath>
 #include <cstring>
 
-void iamge::destroy(VkDevice device){
+namespace moon::utils {
+
+void Iamge::destroy(VkDevice device){
     destroyStagingBuffer(device);
-    Texture::destroy(device, textureImage, textureImageMemory);
+    texture::destroy(device, textureImage, textureImageMemory);
     if(textureImageView)    {vkDestroyImageView(device, textureImageView, nullptr); textureImageView = VK_NULL_HANDLE;}
     if(textureSampler)      {vkDestroySampler(device,textureSampler,nullptr); textureSampler = VK_NULL_HANDLE;}
 }
 
-void iamge::destroyStagingBuffer(VkDevice device){
+void Iamge::destroyStagingBuffer(VkDevice device){
     stagingBuffer.destroy(device);
 }
 
-VkResult iamge::create(
+VkResult Iamge::create(
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer,
@@ -35,7 +37,7 @@ VkResult iamge::create(
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
-    Buffer::create(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
+    buffer::create(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
     Memory::instance().nameMemory(stagingBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", iamge::create, stagingBuffer");
 
     for(uint32_t i = 0, singleImageSize = static_cast<uint32_t>(imageSize/imageCount); i< imageCount; i++)
@@ -47,7 +49,7 @@ VkResult iamge::create(
         stagingBuffer.map = nullptr;
     }
 
-    result = Texture::create(   physicalDevice,
+    result = texture::create(   physicalDevice,
                                 device,
                                 flags,
                                 {static_cast<uint32_t>(texWidth),static_cast<uint32_t>(texHeight),1},
@@ -64,28 +66,28 @@ VkResult iamge::create(
 
     Memory::instance().nameMemory(textureImageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, textureImageMemory");
 
-    Texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
-    Texture::copy(commandBuffer, stagingBuffer.instance, textureImage, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),1},imageCount);
+    texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
+    texture::copy(commandBuffer, stagingBuffer.instance, textureImage, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),1},imageCount);
     if(mipLevels == 1){
-        Texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, 0, imageCount);
+        texture::transitionLayout(commandBuffer, textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, 0, imageCount);
     } else {
-        Texture::generateMipmaps(physicalDevice, commandBuffer, textureImage, format, texWidth, texHeight, mipLevels, 0, imageCount);
+        texture::generateMipmaps(physicalDevice, commandBuffer, textureImage, format, texWidth, texHeight, mipLevels, 0, imageCount);
     }
     return result;
 }
 
-texture::texture(const std::filesystem::path& path) : path({path})
+Texture::Texture(const std::filesystem::path& path) : path({path})
 {}
 
-void texture::destroy(VkDevice device){
+void Texture::destroy(VkDevice device){
     image.destroy(device);
 }
 
-void texture::destroyStagingBuffer(VkDevice device){
+void Texture::destroyStagingBuffer(VkDevice device){
     image.destroyStagingBuffer(device);
 }
 
-VkResult texture::createTextureImage(
+VkResult Texture::createTextureImage(
     VkPhysicalDevice    physicalDevice,
     VkDevice            device,
     VkCommandBuffer     commandBuffer,
@@ -99,7 +101,7 @@ VkResult texture::createTextureImage(
     return result;
 }
 
-VkResult texture::createTextureImage(
+VkResult Texture::createTextureImage(
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer)
@@ -117,7 +119,7 @@ VkResult texture::createTextureImage(
     return result;
 }
 
-VkResult texture::createEmptyTextureImage(
+VkResult Texture::createEmptyTextureImage(
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer,
@@ -136,9 +138,9 @@ VkResult texture::createEmptyTextureImage(
     return result;
 }
 
-VkResult texture::createTextureImageView(VkDevice device)
+VkResult Texture::createTextureImageView(VkDevice device)
 {
-    return Texture::createView( device,
+    return texture::createView( device,
                                 VK_IMAGE_VIEW_TYPE_2D,
                                 image.format,
                                 VK_IMAGE_ASPECT_COLOR_BIT,
@@ -149,7 +151,7 @@ VkResult texture::createTextureImageView(VkDevice device)
                                 &image.textureImageView);
 }
 
-VkResult texture::createTextureSampler(VkDevice device, struct textureSampler TextureSampler)
+VkResult Texture::createTextureSampler(VkDevice device, struct TextureSampler TextureSampler)
 {
     VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -171,22 +173,20 @@ VkResult texture::createTextureSampler(VkDevice device, struct textureSampler Te
     return vkCreateSampler(device, &samplerInfo, nullptr, &image.textureSampler);
 }
 
-void texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
-void texture::setTextureFormat(VkFormat format){image.format = format;}
+void Texture::setMipLevel(float mipLevel){this->mipLevel = mipLevel;}
+void Texture::setTextureFormat(VkFormat format){image.format = format;}
 
-const VkImageView* texture::getTextureImageView() const {return &image.textureImageView;}
-const VkSampler* texture::getTextureSampler() const {return &image.textureSampler;}
+const VkImageView* Texture::getTextureImageView() const {return &image.textureImageView;}
+const VkSampler* Texture::getTextureSampler() const {return &image.textureSampler;}
 
-//cubeTexture
-
-cubeTexture::cubeTexture(const std::vector<std::filesystem::path>& path)
+CubeTexture::CubeTexture(const std::vector<std::filesystem::path>& path)
 {
     for(const auto& p: path){
         this->path.push_back(p);
     }
 }
 
-void cubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
+void CubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
 {
     int texWidth = 0, texHeight = 0, texChannels = 0;
     stbi_uc *buffer[6];
@@ -207,9 +207,9 @@ void cubeTexture::createTextureImage(VkPhysicalDevice physicalDevice, VkDevice d
     }
 }
 
-void cubeTexture::createTextureImageView(VkDevice device)
+void CubeTexture::createTextureImageView(VkDevice device)
 {
-    Texture::createView(    device,
+    texture::createView(    device,
                             VK_IMAGE_VIEW_TYPE_CUBE,
                             image.format,
                             VK_IMAGE_ASPECT_COLOR_BIT,
@@ -220,12 +220,12 @@ void cubeTexture::createTextureImageView(VkDevice device)
                             &image.textureImageView);
 }
 
-texture* createEmptyTexture(const physicalDevice& device, VkCommandPool commandPool, bool isBlack){
-    texture* tex = new texture;
+Texture* createEmptyTexture(const PhysicalDevice& device, VkCommandPool commandPool, bool isBlack){
+    Texture* tex = new Texture;
 
-    VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+    VkCommandBuffer commandBuffer = singleCommandBuffer::create(device.getLogical(),commandPool);
     tex->createEmptyTextureImage(device.instance, device.getLogical(), commandBuffer, isBlack);
-    SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+    singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
     tex->destroyStagingBuffer(device.getLogical());
     tex->createTextureImageView(device.getLogical());
     tex->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
@@ -233,3 +233,4 @@ texture* createEmptyTexture(const physicalDevice& device, VkCommandPool commandP
     return tex;
 };
 
+}

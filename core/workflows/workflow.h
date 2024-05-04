@@ -7,8 +7,6 @@
 
 #include <filesystem>
 
-class texture;
-
 class workbody{
 public:
     std::filesystem::path           vertShaderPath;
@@ -22,7 +20,7 @@ public:
 
     virtual ~workbody(){};
     virtual void destroy(VkDevice device);
-    virtual void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) = 0;
+    virtual void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) = 0;
     virtual void createDescriptorSetLayout(VkDevice device) = 0;
 };
 
@@ -32,7 +30,7 @@ protected:
     VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
     VkDevice                        device{VK_NULL_HANDLE};
     std::filesystem::path           shadersPath;
-    imageInfo                       image;
+    moon::utils::ImageInfo                       image;
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
@@ -43,10 +41,10 @@ public:
 
     workflow& setShadersPath(const std::filesystem::path &path);
     workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
-    workflow& setImageProp(imageInfo* pInfo);
+    workflow& setImageProp(moon::utils::ImageInfo* pInfo);
 
-    virtual void create(attachmentsDatabase& aDatabase) = 0;
-    virtual void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) = 0;
+    virtual void create(moon::utils::AttachmentsDatabase& aDatabase) = 0;
+    virtual void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) = 0;
     virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
 
     void createCommandBuffers(VkCommandPool commandPool);

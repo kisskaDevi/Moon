@@ -114,8 +114,8 @@ void deferredGraphics::create()
 {
     createCommandPool();
 
-    emptyTextures["black"] = ::createEmptyTexture(device, commandPool);
-    emptyTextures["white"] = ::createEmptyTexture(device, commandPool, false);
+    emptyTextures["black"] = moon::utils::createEmptyTexture(device, commandPool);
+    emptyTextures["white"] = moon::utils::createEmptyTexture(device, commandPool, false);
     aDatabase.addEmptyTexture("black", emptyTextures["black"]);
     aDatabase.addEmptyTexture("white", emptyTextures["white"]);
 
@@ -124,7 +124,7 @@ void deferredGraphics::create()
     updateDescriptorSets();
 
     for(auto& [lightSource,map]: depthMaps){
-        depthMaps[lightSource] = new depthMap(device, commandPool, imageCount);
+        depthMaps[lightSource] = new moon::utils::DepthMap(device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
             static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
         }
@@ -258,25 +258,25 @@ void deferredGraphics::createGraphicsPasses(){
 
 
     for(auto& [_,workflow]: workflows){
-        imageInfo info{imageCount, format, extent, MSAASamples};
+        moon::utils::ImageInfo info{imageCount, format, extent, MSAASamples};
         workflow->setDeviceProp(device.instance, device.getLogical());
         workflow->setImageProp(&info);
     }
 
-    imageInfo scatterInfo{imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples};
+    moon::utils::ImageInfo scatterInfo{imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples};
     workflows["Scattering"]->setImageProp(&scatterInfo);
 
-    imageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples};
+    moon::utils::ImageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples};
     workflows["Shadow"]->setImageProp(&shadowsInfo);
 
-    imageInfo postProcessingInfo{imageCount, format, extent, MSAASamples};
+    moon::utils::ImageInfo postProcessingInfo{imageCount, format, extent, MSAASamples};
     workflows["PostProcessing"]->setImageProp(&postProcessingInfo);
 
     for(auto& [_,workflow]: workflows){
         workflow->create(aDatabase);
     }
 
-    imageInfo linkInfo{imageCount, format, swapChainKHR->getExtent(), MSAASamples};
+    moon::utils::ImageInfo linkInfo{imageCount, format, swapChainKHR->getExtent(), MSAASamples};
     Link.setShadersPath(shadersPath);
     Link.setDeviceProp(device.getLogical());
     Link.setImageCount(imageCount);
@@ -327,21 +327,21 @@ void deferredGraphics::createCommandBuffers(){
     nodes.resize(imageCount);
     for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
         nodes[imageIndex]
-         = new node({
-            stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device.getQueue(0,0))
-        }, new node({
-            stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0)),
-            stage(  {workflows["Skybox"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0))
-        }, new node({
-            stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
-            stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
-        }, new node({
-            stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
-            stage(  {workflows["SSLR"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
-        }, new node({
-            stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
-        }, new node({
-            stage(  {workflows["Selector"]->getCommandBuffer(imageIndex),
+         = new moon::utils::Node({
+            moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device.getQueue(0,0))
+        }, new moon::utils::Node({
+            moon::utils::Stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0)),
+            moon::utils::Stage(  {workflows["Skybox"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0))
+        }, new moon::utils::Node({
+            moon::utils::Stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
+            moon::utils::Stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+        }, new moon::utils::Node({
+            moon::utils::Stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
+            moon::utils::Stage(  {workflows["SSLR"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+        }, new moon::utils::Node({
+            moon::utils::Stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+        }, new moon::utils::Node({
+            moon::utils::Stage(  {workflows["Selector"]->getCommandBuffer(imageIndex),
                      workflows["SSAO"]->getCommandBuffer(imageIndex),
                      workflows["Bloom"]->getCommandBuffer(imageIndex),
                      workflows["Blur"]->getCommandBuffer(imageIndex),
@@ -461,7 +461,7 @@ void deferredGraphics::remove(camera* cameraObject){
 
 void deferredGraphics::bind(light* lightSource){
     if(depthMaps.count(lightSource) == 0){
-        depthMaps[lightSource] = new depthMap(device, commandPool, imageCount);
+        depthMaps[lightSource] = new moon::utils::DepthMap(device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
             static_cast<shadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
         }

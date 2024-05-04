@@ -9,6 +9,8 @@
 
 struct GLFWwindow;
 
+namespace moon::utils {
+
 class Memory {
 private:
     struct Description{
@@ -58,10 +60,10 @@ namespace debug {
             std::string     message);
 }
 
-#define CHECK(res) debug::checkResult(res, "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-#define CHECK_M(res, message) debug::checkResult(res, "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__) + " " + message);
+#define CHECK(res) moon::utils::debug::checkResult(res, "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+#define CHECK_M(res, message) moon::utils::debug::checkResult(res, "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__) + " " + message);
 
-namespace ValidationLayer{
+namespace validationLayer{
 
     bool checkSupport(
             const std::vector<const char*>              validationLayers);
@@ -76,13 +78,13 @@ namespace ValidationLayer{
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void*                                       pUserData);
 
-    void DestroyDebugUtilsMessengerEXT(
+    void destroyDebugUtilsMessengerEXT(
             VkInstance                                  instance,
             VkDebugUtilsMessengerEXT                    debugMessenger,
             const VkAllocationCallbacks*                pAllocator);
 }
 
-namespace PhysicalDevice {
+namespace physicalDevice {
 
     void printMemoryProperties(
             VkPhysicalDeviceMemoryProperties memoryProperties);
@@ -123,7 +125,7 @@ namespace PhysicalDevice {
             const std::vector<const char*>& deviceExtensions);
 }
 
-namespace Buffer{
+namespace buffer{
 
     VkResult create(
             VkPhysicalDevice                physicalDevice,
@@ -146,7 +148,7 @@ namespace Buffer{
             VkDeviceMemory&                 memory);
 }
 
-namespace Texture {
+namespace texture {
 
     void transitionLayout(
             VkCommandBuffer                 commandBuffer,
@@ -170,7 +172,6 @@ namespace Texture {
             VkBuffer                        dstBuffer,
             VkExtent3D                      extent,
             uint32_t                        layerCount);
-
 
     VkResult create(
             VkPhysicalDevice                physicalDevice,
@@ -239,7 +240,7 @@ namespace Texture {
             float                           blitFactor);
 }
 
-namespace SingleCommandBuffer {
+namespace singleCommandBuffer {
 
     VkCommandBuffer create(
             VkDevice                        device,
@@ -258,22 +259,22 @@ namespace SingleCommandBuffer {
             uint32_t                        commandBufferCount,
             VkCommandBuffer*                commandBuffer);
 
-    class scoped{
+    class Scoped{
     private:
         VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
         VkDevice device{VK_NULL_HANDLE};
         VkQueue queue{VK_NULL_HANDLE};
         VkCommandPool commandPool{VK_NULL_HANDLE};
     public:
-        scoped(VkDevice device, VkQueue queue, VkCommandPool commandPool);
-        ~scoped();
-        scoped(const scoped&) = delete;
-        scoped& operator=(const scoped&) = delete;
+        Scoped(VkDevice device, VkQueue queue, VkCommandPool commandPool);
+        ~Scoped();
+        Scoped(const Scoped&) = delete;
+        Scoped& operator=(const Scoped&) = delete;
         VkCommandBuffer& get();
     };
 }
 
-namespace SwapChain {
+namespace swapChain {
 
     struct SupportDetails{
         VkSurfaceCapabilitiesKHR        capabilities{};
@@ -301,7 +302,7 @@ namespace SwapChain {
             const VkSurfaceCapabilitiesKHR&         capabilities);
 }
 
-namespace Image{
+namespace image{
 
     VkFormat supportedFormat(
             VkPhysicalDevice                physicalDevice,
@@ -313,7 +314,7 @@ namespace Image{
             VkPhysicalDevice                physicalDevice);
 }
 
-namespace ShaderModule {
+namespace shaderModule {
 
     std::vector<char> readFile(
             const std::filesystem::path&    filename);
@@ -323,4 +324,5 @@ namespace ShaderModule {
             const std::vector<char>&        code);
 }
 
+}
 #endif

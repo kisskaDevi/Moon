@@ -26,7 +26,7 @@ std::vector<VkVertexInputAttributeDescription> model::Vertex::getAttributeDescri
 void model::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
 {
     std::vector<VkDescriptorSetLayoutBinding> binding;
-    binding.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+    binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
     VkDescriptorSetLayoutCreateInfo uniformBlockLayoutInfo{};
         uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
@@ -37,11 +37,11 @@ void model::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout
 void model::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
 {
     std::vector<VkDescriptorSetLayoutBinding> binding;
-    binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
     VkDescriptorSetLayoutCreateInfo materialLayoutInfo{};
         materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         materialLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());

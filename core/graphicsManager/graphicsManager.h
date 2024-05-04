@@ -29,7 +29,7 @@ public:
     uint32_t   getImageIndex() const;
     uint32_t   getImageCount() const;
 
-    std::vector<physicalDeviceProperties> getDeviceInfo() const;
+    std::vector<moon::utils::PhysicalDeviceProperties> getDeviceInfo() const;
     void setDevice(uint32_t deviceIndex);
     void setGraphics(graphicsInterface* graphics);
 
@@ -52,10 +52,9 @@ private:
     VkDebugUtilsMessengerEXT                    debugMessenger{VK_NULL_HANDLE};
     VkSurfaceKHR                                surface{VK_NULL_HANDLE};
 
-    std::map<uint32_t, physicalDevice>          devices;
-    physicalDevice*                             activeDevice{nullptr};
-
-    swapChain                                   swapChainKHR;
+    std::map<uint32_t, moon::utils::PhysicalDevice> devices;
+    moon::utils::PhysicalDevice*                    activeDevice{nullptr};
+    moon::utils::SwapChain                          swapChainKHR;
 
     std::vector<graphicsInterface*>             graphics;
     graphicsLinker                              linker;

@@ -23,15 +23,15 @@ class SSLRGraphics : public workflow
 private:
     SSLRParameters parameters;
 
-    attachments frame;
+    moon::utils::Attachments frame;
     bool enable;
 
     struct SSLR : public workbody{
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }sslr;
 
-    void createAttachments(attachmentsDatabase& aDatabase);
+    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -41,8 +41,8 @@ public:
     SSLRGraphics(SSLRParameters parameters, bool enable);
 
     void destroy() override;
-    void create(attachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) override;
+    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 

@@ -5,12 +5,12 @@
 
 #include <cstring>
 
-void rayTracingGraphics::imageResource::create(const std::string& id, physicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
+void rayTracingGraphics::imageResource::create(const std::string& id, moon::utils::PhysicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
     this->id = id;
 
     host = new uint32_t[extent.width * extent.height];
 
-    Buffer::create(
+    moon::utils::buffer::create(
         phDevice.instance,
         phDevice.getLogical(),
         sizeof(uint32_t) * extent.width * extent.height,
@@ -29,11 +29,11 @@ void rayTracingGraphics::imageResource::create(const std::string& id, physicalDe
         extent,
         imageCount
         );
-    VkSamplerCreateInfo SamplerInfo = vkDefault::samler();
+    VkSamplerCreateInfo SamplerInfo = moon::utils::vkDefault::samler();
     vkCreateSampler(phDevice.getLogical(), &SamplerInfo, nullptr, &device.sampler);
 }
 
-void rayTracingGraphics::imageResource::destroy(physicalDevice phDevice){
+void rayTracingGraphics::imageResource::destroy(moon::utils::PhysicalDevice phDevice){
     if(host){
         delete[] host;
         host = nullptr;
@@ -48,9 +48,9 @@ void rayTracingGraphics::imageResource::moveFromHostToHostDevice(VkExtent2D exte
 }
 
 void rayTracingGraphics::imageResource::copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex){
-    Texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
-    Texture::copy(commandBuffer, hostDevice.instance, device.instances[imageIndex].image, {extent.width, extent.height, 1}, 1);
-    Texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
+    moon::utils::texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
+    moon::utils::texture::copy(commandBuffer, hostDevice.instance, device.instances[imageIndex].image, {extent.width, extent.height, 1}, 1);
+    moon::utils::texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
 }
 
 void rayTracingGraphics::create()
@@ -70,7 +70,7 @@ void rayTracingGraphics::create()
     bloom.create("bloom", device, format, extent, imageCount);
     aDatabase.addAttachmentData(bloom.id, true, &bloom.device);
 
-    imageInfo bloomInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
+    moon::utils::ImageInfo bloomInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
 
     bloomParameters bloomParams;
     bloomParams.in.bloom = bloom.id;
@@ -84,12 +84,12 @@ void rayTracingGraphics::create()
     bloomGraph.createCommandBuffers(commandPool);
     bloomGraph.updateDescriptorSets(bDatabase, aDatabase);
 
-    imageInfo bbInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
+    moon::utils::ImageInfo bbInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
     std::string bbId = "bb";
     bbGraphics.create(device.instance, device.getLogical(), bbInfo, shadersPath);
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
-    imageInfo swapChainInfo{ imageCount, format, swapChainKHR->getExtent(), VK_SAMPLE_COUNT_1_BIT};
+    moon::utils::ImageInfo swapChainInfo{ imageCount, format, swapChainKHR->getExtent(), VK_SAMPLE_COUNT_1_BIT};
     rayTracingLinkParameters linkParams;
     linkParams.in.color = color.id;
     linkParams.in.bloom = bloomParams.out.bloom;
@@ -133,11 +133,11 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
     bloom.moveFromHostToHostDevice(extent);
 
     std::vector<VkCommandBuffer> commandBuffers;
-    commandBuffers.push_back(SingleCommandBuffer::create(device.getLogical(),commandPool));
+    commandBuffers.push_back(moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool));
     color.copyToDevice(commandBuffers.back(), extent, imageIndex);
     bloom.copyToDevice(commandBuffers.back(), extent, imageIndex);
     bbGraphics.render(commandBuffers.back(), imageIndex);
-    SingleCommandBuffer::submit(device.getLogical(), device.getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
+    moon::utils::singleCommandBuffer::submit(device.getLogical(), device.getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
 
     bloomGraph.beginCommandBuffer(imageIndex);
     bloomGraph.updateCommandBuffer(imageIndex);

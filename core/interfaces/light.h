@@ -4,8 +4,7 @@
 #include <vulkan.h>
 #include <vector>
 
-class texture;
-struct physicalDevice;
+namespace moon::utils { struct PhysicalDevice;}
 
 enum lightType : uint8_t {
     spot = 0x1
@@ -38,7 +37,7 @@ public:
     virtual void destroy(VkDevice device) = 0;
 
     virtual void create(
-            physicalDevice device,
+            moon::utils::PhysicalDevice device,
             VkCommandPool commandPool,
             uint32_t imageCount) = 0;
 

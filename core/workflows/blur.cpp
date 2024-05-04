@@ -8,14 +8,14 @@ gaussianBlur::gaussianBlur(gaussianBlurParameters parameters, bool enable) :
 
 void gaussianBlur::createBufferAttachments(){
     bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
-    VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+    VkSamplerCreateInfo samplerInfo = moon::utils::vkDefault::samler();
     CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler));
 }
 
-void gaussianBlur::createAttachments(attachmentsDatabase& aDatabase)
+void gaussianBlur::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
     createBufferAttachments();
-    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.blur, enable, &frame);
 }
 
@@ -34,8 +34,8 @@ void gaussianBlur::destroy(){
 
 void gaussianBlur::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(image.Format),
-        attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(image.Format),
+        moon::utils::Attachments::imageDescription(image.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -115,7 +115,7 @@ void gaussianBlur::createFramebuffers(){
 
 void gaussianBlur::blur::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -137,28 +137,28 @@ void gaussianBlur::createPipelines(){
     yblur.createPipeline(device,&image,renderPass);
 }
 
-void gaussianBlur::blur::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass){
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, ShaderModule::readFile(vertShaderPath));
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, ShaderModule::readFile(fragShaderPath));
+void gaussianBlur::blur::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, moon::utils::shaderModule::readFile(vertShaderPath));
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, moon::utils::shaderModule::readFile(fragShaderPath));
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        vkDefault::vertrxShaderStage(vertShaderModule),
-        vkDefault::fragmentShaderStage(fragShaderModule)
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)};
     if(subpassNumber == 0){
-        colorBlendAttachment.push_back(vkDefault::colorBlendAttachmentState(VK_FALSE));
+        colorBlendAttachment.push_back(moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE));
     }
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
         pushConstantRange.push_back(VkPushConstantRange{});
@@ -206,7 +206,7 @@ void gaussianBlur::createDescriptorSets(){
     workflow::createDescriptorSets(device, &yblur, image.Count);
 }
 
-void gaussianBlur::create(attachmentsDatabase& aDatabasep)
+void gaussianBlur::create(moon::utils::AttachmentsDatabase& aDatabasep)
 {
     if(enable){
         createAttachments(aDatabasep);
@@ -219,12 +219,12 @@ void gaussianBlur::create(attachmentsDatabase& aDatabasep)
 }
 
 void gaussianBlur::updateDescriptorSets(
-    const buffersDatabase&,
-    const attachmentsDatabase& aDatabase)
+    const moon::utils::BuffersDatabase&,
+    const moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 
-    auto updateDescriptorSets = [](VkDevice device, const attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
+    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
         auto imageIt = attachment->instances.begin();
         auto setIt = descriptorSets.begin();
         for (;imageIt != attachment->instances.end() && setIt != descriptorSets.end(); imageIt++, setIt++){

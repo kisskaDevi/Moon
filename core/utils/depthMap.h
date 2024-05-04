@@ -4,31 +4,34 @@
 #include "attachments.h"
 #include "device.h"
 
-class texture;
+namespace moon::utils {
 
-class depthMap {
+class Texture;
+
+class DepthMap {
 private:
-    attachments*                    map{nullptr};
+    Attachments*                    map{nullptr};
     VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptorSets;
 
-    texture*                        emptyTextureBlack{nullptr};
-    texture*                        emptyTextureWhite{nullptr};
+    Texture*                        emptyTextureBlack{nullptr};
+    Texture*                        emptyTextureWhite{nullptr};
     VkDevice                        device{VK_NULL_HANDLE};
 
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSets(VkDevice device, uint32_t imageCount);
 public:
-    depthMap(physicalDevice device, VkCommandPool commandPool, uint32_t imageCount);
-    ~depthMap();
+    DepthMap(PhysicalDevice device, VkCommandPool commandPool, uint32_t imageCount);
+    ~DepthMap();
     void destroy(VkDevice device);
 
     const std::vector<VkDescriptorSet>& getDescriptorSets() const;
     void updateDescriptorSets(VkDevice device, uint32_t imageCount);
-    attachments* &get();
+    Attachments* &get();
 
     static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
 };
 
+}
 #endif // DEPTHMAP_H

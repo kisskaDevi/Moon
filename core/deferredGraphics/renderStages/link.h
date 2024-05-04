@@ -41,10 +41,10 @@ public:
     void setRenderPass(VkRenderPass renderPass) override;
 
     void createDescriptorSetLayout();
-    void createPipeline(imageInfo* pInfo);
+    void createPipeline(moon::utils::ImageInfo* pInfo);
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(const attachments* attachment);
+    void updateDescriptorSets(const moon::utils::Attachments* attachment);
 };
 
 #endif // LINK_H

@@ -4,16 +4,16 @@
 #include "attachments.h"
 
 struct GBufferAttachments{
-    attachments         position;
-    attachments         normal;
-    attachments         color;
-    attachments         depth;
+    moon::utils::Attachments         position;
+    moon::utils::Attachments         normal;
+    moon::utils::Attachments         color;
+    moon::utils::Attachments         depth;
 
     GBufferAttachments();
     GBufferAttachments(const GBufferAttachments& other);
     GBufferAttachments& operator=(const GBufferAttachments& other);
 
-    inline const attachments& operator[](uint32_t index) const {
+    inline const moon::utils::Attachments& operator[](uint32_t index) const {
         return *(&position + index);
     }
 
@@ -25,16 +25,16 @@ struct GBufferAttachments{
 };
 
 struct DeferredAttachments{
-    attachments         image;
-    attachments         blur;
-    attachments         bloom;
+    moon::utils::Attachments         image;
+    moon::utils::Attachments         blur;
+    moon::utils::Attachments         bloom;
     GBufferAttachments  GBuffer;
 
     DeferredAttachments();
     DeferredAttachments(const DeferredAttachments& other);
     DeferredAttachments& operator=(const DeferredAttachments& other);
 
-    inline const attachments& operator[](uint32_t index) const {
+    inline const moon::utils::Attachments& operator[](uint32_t index) const {
         return *(&image + index);
     }
 

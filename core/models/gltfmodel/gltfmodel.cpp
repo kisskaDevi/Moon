@@ -91,7 +91,7 @@ namespace {
         }
     }
 
-    void createMaterialDescriptorSet(VkDevice device, Material* material, texture* emptyTexture, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+    void createMaterialDescriptorSet(VkDevice device, Material* material, moon::utils::Texture* emptyTexture, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
     {
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -100,7 +100,7 @@ namespace {
             descriptorSetAllocInfo.descriptorSetCount = 1;
         CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material->descriptorSet));
 
-        auto getDescriptorImageInfo = [&emptyTexture](texture* tex){
+        auto getDescriptorImageInfo = [&emptyTexture](moon::utils::Texture* tex){
             VkDescriptorImageInfo descriptorImageInfo{};
             descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             descriptorImageInfo.imageView   = tex ? *tex->getTextureImageView() : *emptyTexture->getTextureImageView();
@@ -274,13 +274,13 @@ void gltfModel::loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, V
         }
         const unsigned char* buffer = gltfimage.component == 3 ? textureStaging.back() : gltfimage.image.data();
 
-        textureSampler TextureSampler{};
+        moon::utils::TextureSampler TextureSampler{};
             TextureSampler.minFilter = tex.sampler == -1 ? VK_FILTER_LINEAR : getVkFilterMode(gltfModel.samplers[tex.sampler].minFilter);
             TextureSampler.magFilter = tex.sampler == -1 ? VK_FILTER_LINEAR : getVkFilterMode(gltfModel.samplers[tex.sampler].magFilter);
             TextureSampler.addressModeU = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : getVkWrapMode(gltfModel.samplers[tex.sampler].wrapS);
             TextureSampler.addressModeV = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : getVkWrapMode(gltfModel.samplers[tex.sampler].wrapT);
             TextureSampler.addressModeW = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : TextureSampler.addressModeV;
-        textures.emplace_back(texture());
+        textures.emplace_back(moon::utils::Texture());
         textures.back().createTextureImage(physicalDevice, device, commandBuffer, gltfimage.width, gltfimage.height, (void**) &buffer);
         textures.back().createTextureImageView(device);
         textures.back().createTextureSampler(device,TextureSampler);
@@ -450,7 +450,7 @@ void gltfModel::createDescriptorPool(VkDevice device)
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void gltfModel::createDescriptorSet(VkDevice device, texture* emptyTexture)
+void gltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture)
 {
     model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
     model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
@@ -466,7 +466,7 @@ void gltfModel::createDescriptorSet(VkDevice device, texture* emptyTexture)
     }
 }
 
-void gltfModel::create(physicalDevice device, VkCommandPool commandPool)
+void gltfModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandPool)
 {
     if(!created)
     {
@@ -477,9 +477,9 @@ void gltfModel::create(physicalDevice device, VkCommandPool commandPool)
         emptyTexture = createEmptyTexture(device, commandPool);
         this->device = device.getLogical();
 
-        VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
         loadFromFile(device.instance, device.getLogical(), commandBuffer);
-        SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
+        moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
         destroyStagingBuffer(device.getLogical());
         createDescriptorPool(device.getLogical());
         createDescriptorSet(device.getLogical(), emptyTexture);

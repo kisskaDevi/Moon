@@ -16,14 +16,14 @@ void graphics::OutliningExtension::DestroyPipeline(VkDevice device)
     if(PipelineLayout)   {vkDestroyPipelineLayout(device, PipelineLayout, nullptr); PipelineLayout = VK_NULL_HANDLE;}
 }
 
-void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass){
-    auto vertShaderCode = ShaderModule::readFile(ShadersPath / "outlining/outliningVert.spv");
-    auto fragShaderCode = ShaderModule::readFile(ShadersPath / "outlining/outliningFrag.spv");
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
+void graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+    auto vertShaderCode = moon::utils::shaderModule::readFile(ShadersPath / "outlining/outliningVert.spv");
+    auto fragShaderCode = moon::utils::shaderModule::readFile(ShadersPath / "outlining/outliningFrag.spv");
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        vkDefault::vertrxShaderStage(vertShaderModule),
-        vkDefault::fragmentShaderStage(fragShaderModule)
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
     auto bindingDescription = model::Vertex::getBindingDescription();
@@ -36,13 +36,13 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
     depthStencil.stencilTestEnable = VK_TRUE;
     depthStencil.back.compareOp = VK_COMPARE_OP_NOT_EQUAL;
@@ -55,11 +55,11 @@ void graphics::OutliningExtension::createPipeline(VkDevice device, imageInfo* pI
     depthStencil.front = depthStencil.back;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
-        vkDefault::colorBlendAttachmentState(VK_FALSE),
-        vkDefault::colorBlendAttachmentState(VK_FALSE),
-        vkDefault::colorBlendAttachmentState(VK_FALSE)
+        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
+        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
+        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)
     };
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     struct PushConstBlock{ OutliningPushConst outlining; MaterialBlock material;};
     std::vector<VkPushConstantRange> pushConstantRange;

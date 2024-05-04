@@ -7,7 +7,7 @@
 #include <vulkan.h>
 
 class linkable;
-class swapChain;
+namespace moon::utils { class SwapChain;}
 
 class graphicsLinker
 {
@@ -18,7 +18,7 @@ private:
     VkDevice                        device;
 
     std::vector<linkable*>          linkables;
-    swapChain*                      swapChainKHR{nullptr};
+    moon::utils::SwapChain*         swapChainKHR{nullptr};
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
@@ -33,7 +33,7 @@ public:
     ~graphicsLinker();
     void destroy();
 
-    void setSwapChain(swapChain* swapChainKHR);
+    void setSwapChain(moon::utils::SwapChain* swapChainKHR);
     void setDevice(VkDevice device);
     void addLinkable(linkable* link);
 

@@ -21,15 +21,15 @@ class postProcessingGraphics : public workflow
 private:
     postProcessingParameters parameters;
 
-    attachments frame;
+    moon::utils::Attachments frame;
     bool enable{true};
 
     struct PostProcessing : public workbody{
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
     }postProcessing;
 
-    void createAttachments(attachmentsDatabase& aDatabase);
+    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -39,8 +39,8 @@ public:
     postProcessingGraphics(postProcessingParameters parameters, bool enable);
 
     void destroy() override;
-    void create(attachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) override;
+    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 

@@ -24,14 +24,14 @@ void boundingBoxGraphics::destroy(){
     frame.deleteSampler(device);
 }
 
-void boundingBoxGraphics::createAttachments(attachmentsDatabase& aDatabase){
-    ::createAttachments(physicalDevice, device, image, 1, &frame);
+void boundingBoxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.boundingBox, enable, &frame);
 }
 
 void boundingBoxGraphics::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(image.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -91,7 +91,7 @@ void boundingBoxGraphics::createPipelines(){
 
 void boundingBoxGraphics::boundingBox::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -103,14 +103,14 @@ void boundingBoxGraphics::boundingBox::createDescriptorSetLayout(VkDevice device
     model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
 }
 
-void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass){
-    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
+void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
+    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        vkDefault::vertrxShaderStage(vertShaderModule),
-        vkDefault::fragmentShaderStage(fragShaderModule)
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
     auto bindingDescription = model::Vertex::getBindingDescription();
@@ -122,13 +122,13 @@ void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
     rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
     rasterizer.cullMode = VK_CULL_MODE_NONE;
@@ -136,9 +136,9 @@ void boundingBoxGraphics::boundingBox::createPipeline(VkDevice device, imageInfo
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
-        vkDefault::colorBlendAttachmentState(VK_FALSE)
+        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)
     };
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -205,7 +205,7 @@ void boundingBoxGraphics::createDescriptorSets(){
     vkAllocateDescriptorSets(device, &allocInfo, box.DescriptorSets.data());
 }
 
-void boundingBoxGraphics::create(attachmentsDatabase& aDatabase)
+void boundingBoxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -218,8 +218,8 @@ void boundingBoxGraphics::create(attachmentsDatabase& aDatabase)
 }
 
 void boundingBoxGraphics::updateDescriptorSets(
-    const buffersDatabase& bDatabase,
-    const attachmentsDatabase&)
+    const moon::utils::BuffersDatabase& bDatabase,
+    const moon::utils::AttachmentsDatabase&)
 {
     if(!enable) return;
 

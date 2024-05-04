@@ -14,12 +14,12 @@ struct CameraBuffer{
 boundingBoxGraphics::boundingBoxGraphics() {}
 
 void boundingBoxGraphics::createAttachments() {
-    ::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
 }
 
 void boundingBoxGraphics::boundingBoxGraphics::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(image.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -72,7 +72,7 @@ void boundingBoxGraphics::createFramebuffers(){
 
 void boundingBoxGraphics::createDescriptorSetLayout(){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -82,23 +82,23 @@ void boundingBoxGraphics::createDescriptorSetLayout(){
 }
 
 void boundingBoxGraphics::createPipeline(){
-    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
+    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
+    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        vkDefault::vertrxShaderStage(vertShaderModule),
-        vkDefault::fragmentShaderStage(fragShaderModule)
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport({0,0}, image.Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, image.Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, image.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, image.Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
     rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
     rasterizer.cullMode = VK_CULL_MODE_NONE;
@@ -106,9 +106,9 @@ void boundingBoxGraphics::createPipeline(){
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
-        vkDefault::colorBlendAttachmentState(VK_FALSE)
+        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)
     };
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -213,7 +213,7 @@ void boundingBoxGraphics::destroy(){
     cameraBuffers.destroy(device);
 }
 
-void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, const std::filesystem::path& shadersPath){
+void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath){
     if(!enable) return;
 
     this->physicalDevice = physicalDevice;
@@ -282,7 +282,7 @@ void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
     vkCmdEndRenderPass(commandBuffer);
 }
 
-const attachments& boundingBoxGraphics::getAttachments() const {
+const moon::utils::Attachments& boundingBoxGraphics::getAttachments() const {
     return frame;
 }
 

@@ -15,7 +15,7 @@ class boundingBoxGraphics
 private:
     VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
     VkDevice                        device{VK_NULL_HANDLE};
-    imageInfo                       image;
+    moon::utils::ImageInfo          image;
 
     std::filesystem::path           vertShaderPath;
     std::filesystem::path           fragShaderPath;
@@ -29,12 +29,12 @@ private:
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;
 
-    attachments frame;
+    moon::utils::Attachments frame;
     bool enable{true};
 
     std::vector<cuda::cbox> boxes;
     cuda::devicep<cuda::camera>* camera;
-    buffers cameraBuffers;
+    moon::utils::Buffers cameraBuffers;
 
     void createAttachments();
     void createRenderPass();
@@ -51,11 +51,11 @@ public:
     ~boundingBoxGraphics();
 
     void destroy();
-    void create(VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, const std::filesystem::path& shadersPath);
+    void create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath);
     void update(uint32_t imageIndex);
     void render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    const attachments& getAttachments() const;
+    const moon::utils::Attachments& getAttachments() const;
     void clear();
     void bind(const cuda::cbox& box);
     void bind(cuda::devicep<cuda::camera>* camera);

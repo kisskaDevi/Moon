@@ -55,10 +55,10 @@ public:
     void setRenderPass(VkRenderPass renderPass) override;
 
     void createDescriptorSetLayout();
-    void createPipeline(imageInfo* pInfo);
+    void createPipeline(moon::utils::ImageInfo* pInfo);
     void createDescriptorPool();
     void createDescriptorSets();
-    void updateDescriptorSets(const attachmentsDatabase& aDatabase);
+    void updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase);
 };
 
 #endif

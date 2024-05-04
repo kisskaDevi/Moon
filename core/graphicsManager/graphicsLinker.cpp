@@ -34,7 +34,7 @@ void graphicsLinker::destroy(){
     updateCommandBufferFlags.clear();
 }
 
-void graphicsLinker::setSwapChain(swapChain* swapChainKHR){
+void graphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
     this->swapChainKHR = swapChainKHR;
     this->imageCount = swapChainKHR->getImageCount();
     this->imageExtent = swapChainKHR->getExtent();
@@ -52,7 +52,7 @@ void graphicsLinker::addLinkable(linkable* link){
 
 void graphicsLinker::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(imageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        moon::utils::Attachments::imageDescription(imageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;

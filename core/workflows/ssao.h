@@ -22,15 +22,15 @@ class SSAOGraphics : public workflow
 private:
     SSAOParameters parameters;
 
-    attachments frame;
+    moon::utils::Attachments frame;
     bool enable{true};
 
     struct SSAO : public workbody{
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass) override;
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device)override;
     }ssao;
 
-    void createAttachments(attachmentsDatabase& aDatabase);
+    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -40,8 +40,8 @@ public:
     SSAOGraphics(SSAOParameters parameters, bool enable);
 
     void destroy() override;
-    void create(attachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) override;
+    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 #endif // SSAO_H

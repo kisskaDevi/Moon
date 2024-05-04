@@ -25,7 +25,7 @@ struct Mesh{
         Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material* material, BoundingBox bb);
     };
 
-    class UniformBuffer : public buffer {
+    class UniformBuffer : public moon::utils::Buffer {
     public:
         UniformBuffer() = default;
         VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
@@ -97,11 +97,11 @@ class gltfModel : public model
 private:
     std::filesystem::path filename;
     bool created{false};
-    texture* emptyTexture{nullptr};
+    moon::utils::Texture* emptyTexture{nullptr};
     VkDevice device{VK_NULL_HANDLE};
 
-    buffer vertices, indices;
-    buffer vertexStaging, indexStaging;
+    moon::utils::Buffer vertices, indices;
+    moon::utils::Buffer vertexStaging, indexStaging;
     std::vector<unsigned char*> textureStaging;
 
     VkDescriptorSetLayout        nodeDescriptorSetLayout = VK_NULL_HANDLE;
@@ -114,9 +114,9 @@ private:
         std::vector<Animation>  animations;
     };
 
-    std::vector<instance>       instances;
-    std::vector<texture>        textures;
-    std::vector<Material>       materials;
+    std::vector<instance>               instances;
+    std::vector<moon::utils::Texture>   textures;
+    std::vector<Material>               materials;
 
     void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
     void loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);
@@ -130,7 +130,7 @@ private:
     void destroyStagingBuffer(VkDevice device);
 
     void createDescriptorPool(VkDevice device);
-    void createDescriptorSet(VkDevice device, texture* emptyTexture);
+    void createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture);
 
 public:
     gltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
@@ -140,7 +140,7 @@ public:
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
-    void create(physicalDevice device, VkCommandPool commandPool) override;
+    void create(moon::utils::PhysicalDevice device, VkCommandPool commandPool) override;
 
     bool hasAnimation(uint32_t frameIndex) const override;
     float animationStart(uint32_t frameIndex, uint32_t index) const override;

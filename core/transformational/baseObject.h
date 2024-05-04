@@ -47,15 +47,15 @@ protected:
     bool created{false};
     VkDevice device{VK_NULL_HANDLE};
 
-    std::vector<buffer> uniformBuffersHost;
-    std::vector<buffer> uniformBuffersDevice;
+    std::vector<moon::utils::Buffer> uniformBuffersHost;
+    std::vector<moon::utils::Buffer> uniformBuffersDevice;
 
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
 
 private:
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSet(VkDevice device, uint32_t imageCount);
-    void updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers);
+    void updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers);
     void updateModelMatrix();
 
 public:
@@ -82,7 +82,7 @@ public:
     void destroy(VkDevice device) override;
 
     void create(
-        physicalDevice device,
+        moon::utils::PhysicalDevice device,
         VkCommandPool commandPool,
         uint32_t imageCount) override;
 
@@ -100,7 +100,7 @@ public:
 
 class skyboxObject : public baseObject{
 private:
-    cubeTexture* texture{nullptr};
+    moon::utils::CubeTexture* texture{nullptr};
 
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSet(VkDevice device, uint32_t imageCount);
@@ -114,7 +114,7 @@ public:
     void destroy(VkDevice device) override;
 
     void create(
-        physicalDevice device,
+        moon::utils::PhysicalDevice device,
         VkCommandPool commandPool,
         uint32_t imageCount) override;
 };

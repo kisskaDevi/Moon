@@ -9,8 +9,8 @@ skyboxGraphics::skyboxGraphics(skyboxParameters parameters, bool enable, std::ve
     skybox.objects = objects;
 }
 
-void skyboxGraphics::createAttachments(attachmentsDatabase& aDatabase){
-    ::createAttachments(physicalDevice, device, image, 2, &frame);
+void skyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
+    moon::utils::createAttachments(physicalDevice, device, image, 2, &frame);
     aDatabase.addAttachmentData(parameters.out.baseColor, enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
 }
@@ -34,8 +34,8 @@ void skyboxGraphics::destroy()
 void skyboxGraphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(image.Format),
-        attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(image.Format),
+        moon::utils::Attachments::imageDescription(image.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -102,7 +102,7 @@ void skyboxGraphics::createPipelines()
 void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -112,28 +112,30 @@ void skyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
     object::createSkyboxDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
 }
 
-void skyboxGraphics::Skybox::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+void skyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = ShaderModule::readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = ShaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = ShaderModule::create(&device, fragShaderCode);
+    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
+    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
+    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        vkDefault::vertrxShaderStage(vertShaderModule),
-        vkDefault::fragmentShaderStage(fragShaderModule)
+        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
+        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
     };
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilDisable();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_TRUE), vkDefault::colorBlendAttachmentState(VK_TRUE)};
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
+        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
+        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE)};
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkDescriptorSetLayout> SetLayouts = {DescriptorSetLayout, ObjectDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -173,7 +175,7 @@ void skyboxGraphics::createDescriptorSets(){
     workflow::createDescriptorSets(device, &skybox, image.Count);
 }
 
-void skyboxGraphics::create(attachmentsDatabase& aDatabase)
+void skyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -185,7 +187,7 @@ void skyboxGraphics::create(attachmentsDatabase& aDatabase)
     }
 }
 
-void skyboxGraphics::updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase&)
+void skyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase&)
 {
     if(!enable) return;
 

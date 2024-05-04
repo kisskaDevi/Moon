@@ -6,11 +6,11 @@
 #include "model.h"
 #include "depthMap.h"
 
-attachments* shadowGraphics::createAttachments()
+moon::utils::Attachments* shadowGraphics::createAttachments()
 {
-    attachments* pAttachments = new attachments;
+    moon::utils::Attachments* pAttachments = new moon::utils::Attachments;
     pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
-    VkSamplerCreateInfo samplerInfo = vkDefault::samler();
+    VkSamplerCreateInfo samplerInfo = moon::utils::vkDefault::samler();
     CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments->sampler));
     return pAttachments;
 }
@@ -24,7 +24,7 @@ void shadowGraphics::Shadow::destroy(VkDevice device)
     if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout, nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
-shadowGraphics::shadowGraphics(bool enable, std::vector<object*>* objects, std::unordered_map<light*, depthMap*>* depthMaps) :
+shadowGraphics::shadowGraphics(bool enable, std::vector<object*>* objects, std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
     enable(enable)
 {
     shadow.objects = objects;
@@ -39,7 +39,7 @@ void shadowGraphics::destroy()
 
 void shadowGraphics::createRenderPass()
 {
-    VkAttachmentDescription attachments = attachments::depthDescription(VK_FORMAT_D32_SFLOAT);
+    VkAttachmentDescription attachments = moon::utils::Attachments::depthDescription(VK_FORMAT_D32_SFLOAT);
     VkAttachmentReference depthRef{0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
     VkSubpassDescription subpass{};
@@ -70,11 +70,11 @@ void shadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
     model::createMaterialDescriptorSetLayout(device, &MaterialDescriptorSetLayout);
 }
 
-void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass)
+void shadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
 {
-    auto vertShaderCode = ShaderModule::readFile(vertShaderPath);
-    VkShaderModule vertShaderModule = ShaderModule::create(&device,vertShaderCode);
-    VkPipelineShaderStageCreateInfo vertShaderStageInfo = vkDefault::vertrxShaderStage(vertShaderModule);
+    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
+    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device,vertShaderCode);
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo = moon::utils::vkDefault::vertrxShaderStage(vertShaderModule);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vertShaderStageInfo};
 
     auto bindingDescription = model::Vertex::getBindingDescription();
@@ -86,20 +86,20 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = vkDefault::scissor({0,0}, pInfo->Extent);
-    VkPipelineViewportStateCreateInfo viewportState = vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = vkDefault::rasterizationState();
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_TRUE;
     rasterizer.depthBiasConstantFactor = 4.0f;
     rasterizer.depthBiasSlopeFactor = 1.5f;
-    VkPipelineMultisampleStateCreateInfo multisampling = vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = vkDefault::depthStencilEnable();
+    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilEnable();
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {vkDefault::colorBlendAttachmentState(VK_FALSE)};
-    VkPipelineColorBlendStateCreateInfo colorBlending = vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)};
+    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -141,7 +141,7 @@ void shadowGraphics::Shadow::createPipeline(VkDevice device, imageInfo* pInfo, V
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void shadowGraphics::createFramebuffers(depthMap* depthMap)
+void shadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
 {
     depthMap->get() = createAttachments();
     depthMap->updateDescriptorSets(device, image.Count);
@@ -160,7 +160,7 @@ void shadowGraphics::createFramebuffers(depthMap* depthMap)
 }
 
 
-void shadowGraphics::destroyFramebuffers(depthMap* depthMap)
+void shadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap)
 {
     if(depthMap->get()){
         depthMap->get()->deleteAttachment(device);
@@ -174,7 +174,7 @@ void shadowGraphics::destroyFramebuffers(depthMap* depthMap)
     }
 }
 
-void shadowGraphics::create(attachmentsDatabase&)
+void shadowGraphics::create(moon::utils::AttachmentsDatabase&)
 {
     if(enable){
         createRenderPass();
@@ -191,7 +191,7 @@ void shadowGraphics::updateCommandBuffer(uint32_t frameNumber)
     }
 }
 
-void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, depthMap* depthMap)
+void shadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, light* lightSource, moon::utils::DepthMap* depthMap)
 {
     std::vector<VkClearValue> clearValues;
     clearValues.push_back(VkClearValue{depthMap->get()->clearValue.color});

@@ -71,7 +71,7 @@ int main()
         }
     }
 
-    debug::checkResult(app.deviceWaitIdle(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    moon::utils::debug::checkResult(app.deviceWaitIdle(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 
     glfwDestroyWindow(window);
     glfwTerminate();

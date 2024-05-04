@@ -7,14 +7,17 @@
 #include <filesystem>
 #include <unordered_map>
 
-class   texture;
-class   cubeTexture;
 class   object;
 class   light;
 struct  Node;
 struct  Material;
 struct  MaterialBlock;
-class   depthMap;
+
+namespace moon::utils {
+class   DepthMap;
+class   Texture;
+class   CubeTexture;
+}
 
 struct graphicsParameters{
     struct{
@@ -61,7 +64,7 @@ private:
         std::vector<object*>*                           objects{nullptr};
 
         void Destroy(VkDevice device);
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
         void createDescriptorSetLayout(VkDevice device);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount);
     }base;
@@ -75,7 +78,7 @@ private:
         VkPipeline                      Pipeline{VK_NULL_HANDLE};
 
         void DestroyPipeline(VkDevice device);
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }outlining;
 
@@ -94,11 +97,11 @@ private:
         std::vector<VkDescriptorSet>                        DescriptorSets;
 
         std::vector<light*>*                                lightSources;
-        std::unordered_map<light*, depthMap*>*              depthMaps;
+        std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps;
 
         void Destroy(VkDevice device);
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
-        void createPipeline(uint8_t mask, VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
+        void createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
         void createDescriptorSetLayout(VkDevice device);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffer);
     }lighting;
@@ -113,21 +116,21 @@ private:
         VkPipeline                                          Pipeline{VK_NULL_HANDLE};
 
         void DestroyPipeline(VkDevice device);
-        void createPipeline(VkDevice device, imageInfo* pInfo, VkRenderPass pRenderPass);
+        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }ambientLighting;
 
     void createBaseDescriptorPool();
     void createBaseDescriptorSets();
-    void updateBaseDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase);
+    void updateBaseDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
 
     void createLightingDescriptorPool();
     void createLightingDescriptorSets();
-    void updateLightingDescriptorSets(const buffersDatabase& bDatabase);
+    void updateLightingDescriptorSets(const moon::utils::BuffersDatabase& bDatabase);
 
     void setAttachments();
 
-    void createAttachments(attachmentsDatabase& aDatabase);
+    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
@@ -141,11 +144,11 @@ public:
              uint32_t transparencyNumber,
              std::vector<object*>* object = nullptr,
              std::vector<light*>* lightSources = nullptr,
-             std::unordered_map<light*, depthMap*>* depthMaps = nullptr);
+             std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
     void destroy()override;
-    void create(attachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const buffersDatabase& bDatabase, const attachmentsDatabase& aDatabase) override;
+    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 
     graphics& setMinAmbientFactor(const float& minAmbientFactor);

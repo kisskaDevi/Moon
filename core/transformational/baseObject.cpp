@@ -28,7 +28,7 @@ void baseObject::destroy(VkDevice device)
     created = false;
 }
 
-void baseObject::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
+void baseObject::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
         buffer.updateFlag = true;
@@ -157,7 +157,7 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-        Buffer::create(   physicalDevice,
+        moon::utils::buffer::create(   physicalDevice,
                         device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -166,11 +166,11 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.memory);
         CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(UniformBuffer), 0, &buffer.map));
 
-        Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
+        moon::utils::Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-        Buffer::create(   physicalDevice,
+        moon::utils::buffer::create(   physicalDevice,
                         device,
                         sizeof(UniformBuffer),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -178,7 +178,7 @@ void baseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                         &buffer.instance,
                         &buffer.memory);
 
-        Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+        moon::utils::Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
@@ -195,7 +195,7 @@ void baseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 
         uniformBuffersHost[frameNumber].updateFlag = false;
 
-        Buffer::copy(commandBuffer, sizeof(UniformBuffer), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+        moon::utils::buffer::copy(commandBuffer, sizeof(UniformBuffer), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
     }
 }
 
@@ -245,7 +245,7 @@ void baseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
 }
 
 void baseObject::create(
-    physicalDevice device,
+    moon::utils::PhysicalDevice device,
     VkCommandPool commandPool,
     uint32_t imageCount)
 {
@@ -276,7 +276,9 @@ void skyboxObject::destroy(VkDevice device){
     baseObject::destroy(device);
 }
 
-skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) : baseObject(), texture(new cubeTexture(TEXTURE_PATH)){
+skyboxObject::skyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) :
+    baseObject(),
+    texture(new moon::utils::CubeTexture(TEXTURE_PATH)){
     pipelineBitMask = objectType::skybox;
 }
 
@@ -353,7 +355,7 @@ void skyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
 }
 
 void skyboxObject::create(
-    physicalDevice device,
+    moon::utils::PhysicalDevice device,
     VkCommandPool commandPool,
     uint32_t imageCount)
 {
@@ -363,9 +365,9 @@ void skyboxObject::create(
         CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
 
         if(texture){
-            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+            VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
             texture->createTextureImage(device.instance, device.getLogical(), commandBuffer);
-            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+            moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
             texture->createTextureImageView(device.getLogical());
             texture->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
             texture->destroyStagingBuffer(device.getLogical());

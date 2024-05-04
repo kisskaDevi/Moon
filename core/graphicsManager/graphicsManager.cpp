@@ -7,8 +7,8 @@
 #include <string>
 
 graphicsManager::graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures){
-    debug::checkResult(createInstance(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    moon::utils::debug::checkResult(createInstance(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    moon::utils::debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
 
 graphicsManager::graphicsManager(GLFWwindow* window, int32_t imageCount, int32_t resourceCount, const VkPhysicalDeviceFeatures& deviceFeatures)
@@ -22,16 +22,16 @@ graphicsManager::~graphicsManager(){
     destroy();
 
     if(activeDevice->getLogical())                  { vkDestroyDevice(activeDevice->getLogical(), nullptr); activeDevice->getLogical() = VK_NULL_HANDLE;}
-    if(enableValidationLayers && debugMessenger)    { ValidationLayer::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
+    if(enableValidationLayers && debugMessenger)    { moon::utils::validationLayer::destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
     if(surface)                                     { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
     if(instance)                                    { vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
 }
 
 void graphicsManager::create(GLFWwindow* window){
-    debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(createSwapChain(window, imageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    debug::checkResult(createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    moon::utils::debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    moon::utils::debug::checkResult(createSwapChain(window, imageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    moon::utils::debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
+    moon::utils::debug::checkResult(createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
 }
 
 VkResult graphicsManager::createInstance(){
@@ -43,7 +43,7 @@ VkResult graphicsManager::createInstance(){
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
-    enableValidationLayers &= ValidationLayer::checkSupport(validationLayers);
+    enableValidationLayers &= moon::utils::validationLayer::checkSupport(validationLayers);
 
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -56,7 +56,7 @@ VkResult graphicsManager::createInstance(){
         debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        debugCreateInfo.pfnUserCallback = ValidationLayer::debugCallback;
+        debugCreateInfo.pfnUserCallback = moon::utils::validationLayer::debugCallback;
     VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
@@ -69,7 +69,7 @@ VkResult graphicsManager::createInstance(){
     CHECK(result)
 
     if (enableValidationLayers){
-        ValidationLayer::setupDebugMessenger(instance, &debugMessenger);
+        moon::utils::validationLayer::setupDebugMessenger(instance, &debugMessenger);
     }
 
     return result;
@@ -89,7 +89,7 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
     CHECK(result);
 
     for (const auto phDevice : phDevices){
-        const auto device = physicalDevice(phDevice, deviceExtensions);
+        const auto device = moon::utils::PhysicalDevice(phDevice, deviceExtensions);
         devices[device.properties.index] = std::move(device);
         if(!activeDevice){
             activeDevice = &devices[device.properties.index];
@@ -104,7 +104,7 @@ VkResult graphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
         return VK_ERROR_DEVICE_LOST;
     }
 
-    device logical(deviceFeatures);
+    moon::utils::Device logical(deviceFeatures);
     result = activeDevice->createDevice(logical,{{0,2}});
     CHECK(result);
 
@@ -158,8 +158,8 @@ void graphicsManager::setGraphics(graphicsInterface* graphics){
     linker.addLinkable(this->graphics.back()->getLinkable());
 }
 
-std::vector<physicalDeviceProperties> graphicsManager::getDeviceInfo() const {
-    std::vector<physicalDeviceProperties> deviceProperties;
+std::vector<moon::utils::PhysicalDeviceProperties> graphicsManager::getDeviceInfo() const {
+    std::vector<moon::utils::PhysicalDeviceProperties> deviceProperties;
     for(const auto& [_,device]: devices){
         deviceProperties.push_back(device.properties);
     }

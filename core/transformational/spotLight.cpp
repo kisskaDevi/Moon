@@ -17,7 +17,7 @@ spotLight::spotLight(const vector<float,4>& color, const matrix<float,4,4> & pro
 }
 
 spotLight::spotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, spotType type):
-    tex(new texture(TEXTURE_PATH)),
+    tex(new moon::utils::Texture(TEXTURE_PATH)),
     projectionMatrix(projection),
     type(type)
 {
@@ -59,7 +59,7 @@ void spotLight::destroy(VkDevice device)
     created = false;
 }
 
-void spotLight::updateUniformBuffersFlags(std::vector<buffer>& uniformBuffers)
+void spotLight::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
         buffer.updateFlag = true;
@@ -148,7 +148,7 @@ spotLight& spotLight::rotateY(const float & ang ,const vector<float,3> & ax)
     return *this;
 }
 
-void spotLight::setTexture(texture* tex) {
+void spotLight::setTexture(moon::utils::Texture* tex) {
     this->tex = tex;
 }
 
@@ -180,7 +180,7 @@ vector<float,4> spotLight::getLightColor() const {
 }
 
 void spotLight::create(
-    physicalDevice device,
+    moon::utils::PhysicalDevice device,
     VkCommandPool commandPool,
     uint32_t imageCount)
 {
@@ -193,9 +193,9 @@ void spotLight::create(
         emptyTextureWhite = createEmptyTexture(device, commandPool, false);
 
         if(tex){
-            VkCommandBuffer commandBuffer = SingleCommandBuffer::create(device.getLogical(),commandPool);
+            VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
             tex->createTextureImage(device.instance, device.getLogical(), commandBuffer);
-            SingleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+            moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
             tex->destroyStagingBuffer(device.getLogical());
             tex->createTextureImageView(device.getLogical());
             tex->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
@@ -228,7 +228,7 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-        Buffer::create(  physicalDevice,
+        moon::utils::buffer::create(  physicalDevice,
                         device,
                         sizeof(LightBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -237,11 +237,11 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
                         &buffer.memory);
         CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map));
 
-       Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
+        moon::utils::Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-       Buffer::create(  physicalDevice,
+        moon::utils::buffer::create(  physicalDevice,
                         device,
                         sizeof(LightBufferObject),
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -249,7 +249,7 @@ void spotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
                         &buffer.instance,
                         &buffer.memory);
 
-       Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+        moon::utils::Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
@@ -269,7 +269,7 @@ void spotLight::update(
 
         uniformBuffersHost[frameNumber].updateFlag = false;
 
-        Buffer::copy(commandBuffer, sizeof(LightBufferObject), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+        moon::utils::buffer::copy(commandBuffer, sizeof(LightBufferObject), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
     }
 }
 

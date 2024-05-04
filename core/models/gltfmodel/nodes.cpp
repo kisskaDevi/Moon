@@ -85,7 +85,7 @@ Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t ve
 Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> matrix)
 {
     this->uniformBlock.matrix = matrix;
-    Buffer::create( physicalDevice,
+    moon::utils::buffer::create( physicalDevice,
                     device,
                     sizeof(uniformBlock),
                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -94,7 +94,7 @@ Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> m
                     &uniformBuffer.memory);
     CHECK(vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map));
 
-    Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Mesh::Mesh, uniformBuffer");
+    moon::utils::Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Mesh::Mesh, uniformBuffer");
 };
 
 void Mesh::destroy(VkDevice device){

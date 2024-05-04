@@ -1,7 +1,6 @@
 #ifndef BASECAMERA_H
 #define BASECAMERA_H
 
-#include <vector>
 #include <vulkan.h>
 
 #include "camera.h"
@@ -31,8 +30,8 @@ protected:
     bool                    created{false};
     VkDevice                device{VK_NULL_HANDLE};
 
-    buffers                 uniformBuffersHost;
-    buffers                 uniformBuffersDevice;
+    moon::utils::Buffers    uniformBuffersHost;
+    moon::utils::Buffers    uniformBuffersDevice;
 
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
     void updateViewMatrix();
@@ -59,10 +58,10 @@ public:
     baseCamera& setRotation(const float & ang ,const vector<float,3> & ax);
     baseCamera& setRotation(const quaternion<float>& rotation);
 
-    void create(physicalDevice device, uint32_t imageCount) override;
+    void create(moon::utils::PhysicalDevice device, uint32_t imageCount) override;
     void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 
-    const buffers& getBuffers() const override;
+    const moon::utils::Buffers& getBuffers() const override;
 
     vector<float,3>         getTranslation()const;
     quaternion<float>       getRotationX()const;

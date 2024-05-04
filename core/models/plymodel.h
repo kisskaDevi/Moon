@@ -14,11 +14,11 @@ class plyModel : public model{
 private:
     std::filesystem::path filename;
     bool created{false};
-    texture* emptyTexture{nullptr};
+    moon::utils::Texture* emptyTexture{nullptr};
     VkDevice device{VK_NULL_HANDLE};
 
-    buffer vertices, indices;
-    buffer vertexStaging, indexStaging;
+    moon::utils::Buffer vertices, indices;
+    moon::utils::Buffer vertexStaging, indexStaging;
 
     uint32_t indexCount{0};
 
@@ -29,7 +29,7 @@ private:
     Material material;
     MaterialBlock materialBlock{};
 
-    class UniformBuffer : public buffer {
+    class UniformBuffer : public moon::utils::Buffer {
     public:
         UniformBuffer() = default;
         VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
@@ -49,7 +49,7 @@ private:
     void destroyStagingBuffer(VkDevice device);
 
     void createDescriptorPool(VkDevice device);
-    void createDescriptorSet(VkDevice device, texture* emptyTexture);
+    void createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture);
 
 public:
     plyModel(std::filesystem::path filename,
@@ -64,7 +64,7 @@ public:
 
     ~plyModel() override;
     void destroy(VkDevice device) override;
-    void create(physicalDevice device, VkCommandPool commandPool) override;
+    void create(moon::utils::PhysicalDevice device, VkCommandPool commandPool) override;
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;

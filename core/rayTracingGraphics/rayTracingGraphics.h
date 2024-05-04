@@ -23,11 +23,11 @@ private:
     struct imageResource{
         std::string id;
         uint32_t* host{nullptr};
-        buffer hostDevice;
-        attachments device;
+        moon::utils::Buffer hostDevice;
+        moon::utils::Attachments device;
 
-        void create(const std::string& id, physicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount);
-        void destroy(physicalDevice phDevice);
+        void create(const std::string& id, moon::utils::PhysicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount);
+        void destroy(moon::utils::PhysicalDevice phDevice);
         void moveFromHostToHostDevice(VkExtent2D extent);
         void copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex);
     };
@@ -40,14 +40,14 @@ private:
     bloomGraphics bloomGraph;
     rayTracingLink Link;
 
-    texture* emptyTexture{nullptr};
+    moon::utils::Texture* emptyTexture{nullptr};
 
     std::filesystem::path shadersPath;
     std::filesystem::path workflowsShadersPath;
     VkExtent2D extent;
 
-    attachmentsDatabase aDatabase;
-    buffersDatabase bDatabase;
+    moon::utils::AttachmentsDatabase aDatabase;
+    moon::utils::BuffersDatabase bDatabase;
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 

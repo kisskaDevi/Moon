@@ -26,7 +26,7 @@ workflow& workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice devi
     this->device = device;
     return *this;
 }
-workflow& workflow::setImageProp(imageInfo* pInfo){
+workflow& workflow::setImageProp(moon::utils::ImageInfo* pInfo){
     this->image = *pInfo;
     return *this;
 }

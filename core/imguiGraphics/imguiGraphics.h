@@ -8,9 +8,6 @@
 #include "imguiLink.h"
 
 struct GLFWwindow;
-struct physicalDevice;
-class swapChain;
-class linkable;
 
 class imguiGraphics: public graphicsInterface
 {

@@ -5,8 +5,10 @@
 #include <vector>
 #include <vector.h>
 
-class texture;
-struct physicalDevice;
+namespace moon::utils {
+class Texture;
+struct PhysicalDevice;
+}
 
 struct BoundingBox{
     alignas(16) vector<float,3> min{0.0f,0.0f,0.0f};
@@ -24,11 +26,11 @@ struct Material {
     float roughnessFactor{1.0f};
     vector<float,4> baseColorFactor{1.0f};
     vector<float,4> emissiveFactor{1.0f};
-    texture*   baseColorTexture{nullptr};
-    texture*   metallicRoughnessTexture{nullptr};
-    texture*   normalTexture{nullptr};
-    texture*   occlusionTexture{nullptr};
-    texture*   emissiveTexture{nullptr};
+    moon::utils::Texture* baseColorTexture{nullptr};
+    moon::utils::Texture* metallicRoughnessTexture{nullptr};
+    moon::utils::Texture* normalTexture{nullptr};
+    moon::utils::Texture* occlusionTexture{nullptr};
+    moon::utils::Texture* emissiveTexture{nullptr};
     struct TexCoordSets {
         uint8_t baseColor{0};
         uint8_t metallicRoughness{0};
@@ -38,8 +40,8 @@ struct Material {
         uint8_t emissive{0};
     } texCoordSets;
     struct Extension {
-        texture* specularGlossinessTexture{nullptr};
-        texture* diffuseTexture{nullptr};
+        moon::utils::Texture* specularGlossinessTexture{nullptr};
+        moon::utils::Texture* diffuseTexture{nullptr};
         vector<float,4> diffuseFactor{1.0f};
         vector<float,3> specularFactor{0.0f};
     } extension;
@@ -103,7 +105,7 @@ public:
     virtual void updateAnimation(uint32_t frameIndex, uint32_t index, float time) = 0;
     virtual void changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t newIndex, float startTime, float time, float changeAnimationTime) = 0;
 
-    virtual void create(physicalDevice device, VkCommandPool commandPool) = 0;
+    virtual void create(moon::utils::PhysicalDevice device, VkCommandPool commandPool) = 0;
 
     virtual void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;
     virtual void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) = 0;

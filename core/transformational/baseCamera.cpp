@@ -42,7 +42,7 @@ void baseCamera::destroy(VkDevice device)
     created = false;
 }
 
-void updateUniformBuffersFlags(buffers& uniformBuffers)
+void updateUniformBuffersFlags(moon::utils::Buffers& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers.instances){
         buffer.updateFlag = true;
@@ -158,7 +158,7 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                               imageCount);
     uniformBuffersHost.map(device);
     for (auto& buffer: uniformBuffersHost.instances){
-        Memory::instance().nameMemory(  buffer.memory,
+        moon::utils::Memory::instance().nameMemory(  buffer.memory,
                                         std::string(__FILE__) +
                                         " in line " + std::to_string(__LINE__) +
                                         ", baseCamera::createUniformBuffers, uniformBuffersHost " +
@@ -171,7 +171,7 @@ void baseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                 imageCount);
     for (auto& buffer: uniformBuffersDevice.instances){
-        Memory::instance().nameMemory(buffer.memory,
+        moon::utils::Memory::instance().nameMemory(buffer.memory,
                                     std::string(__FILE__) +
                                     " in line " + std::to_string(__LINE__) +
                                     ", baseCamera::createUniformBuffers, uniformBuffersDevice " +
@@ -190,11 +190,11 @@ void baseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 
         uniformBuffersHost.instances[frameNumber].updateFlag = false;
 
-        Buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffersHost.instances[frameNumber].instance, uniformBuffersDevice.instances[frameNumber].instance);
+        moon::utils::buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffersHost.instances[frameNumber].instance, uniformBuffersDevice.instances[frameNumber].instance);
     }
 }
 
-void baseCamera::create(physicalDevice device, uint32_t imageCount)
+void baseCamera::create(moon::utils::PhysicalDevice device, uint32_t imageCount)
 {
     if(!created){
         createUniformBuffers(device.instance,device.getLogical(),imageCount);
@@ -203,6 +203,6 @@ void baseCamera::create(physicalDevice device, uint32_t imageCount)
     }
 }
 
-const buffers& baseCamera::getBuffers() const {
+const moon::utils::Buffers& baseCamera::getBuffers() const {
     return uniformBuffersDevice;
 }

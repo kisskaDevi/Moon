@@ -3,7 +3,14 @@
 #include "object.h"
 #include "deferredAttachments.h"
 
-graphics::graphics(graphicsParameters parameters, bool enable, bool enableTransparency, bool transparencyPass, uint32_t transparencyNumber, std::vector<object*>* object, std::vector<light*>* lightSources, std::unordered_map<light*, depthMap*>* depthMaps) :
+graphics::graphics(
+    graphicsParameters parameters,
+    bool enable,
+    bool enableTransparency,
+    bool transparencyPass,
+    uint32_t transparencyNumber,
+    std::vector<object*>* object, std::vector<light*>* lightSources,
+    std::unordered_map<light*, moon::utils::DepthMap*>* depthMaps) :
     parameters(parameters), enable(enable)
 {
     base.enableTransparency = enableTransparency;
@@ -36,9 +43,9 @@ void graphics::destroy()
 }
 
 
-void graphics::createAttachments(attachmentsDatabase& aDatabase)
+void graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const imageInfo& image, DeferredAttachments* pAttachments){
+    auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, DeferredAttachments* pAttachments){
         VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         pAttachments->image.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
         pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
@@ -46,7 +53,7 @@ void graphics::createAttachments(attachmentsDatabase& aDatabase)
         pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
         pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
         pAttachments->GBuffer.color.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
-        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, Image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.Extent, image.Count);
+        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, moon::utils::image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.Extent, image.Count);
 
         VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -73,13 +80,13 @@ void graphics::createAttachments(attachmentsDatabase& aDatabase)
 void graphics::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments = {
-        attachments::imageDescription(deferredAttachments.image.format),
-        attachments::imageDescription(deferredAttachments.blur.format),
-        attachments::imageDescription(deferredAttachments.bloom.format),
-        attachments::imageDescription(deferredAttachments.GBuffer.position.format),
-        attachments::imageDescription(deferredAttachments.GBuffer.normal.format),
-        attachments::imageDescription(deferredAttachments.GBuffer.color.format),
-        attachments::depthStencilDescription(deferredAttachments.GBuffer.depth.format)
+        moon::utils::Attachments::imageDescription(deferredAttachments.image.format),
+        moon::utils::Attachments::imageDescription(deferredAttachments.blur.format),
+        moon::utils::Attachments::imageDescription(deferredAttachments.bloom.format),
+        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.position.format),
+        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.normal.format),
+        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.color.format),
+        moon::utils::Attachments::depthStencilDescription(deferredAttachments.GBuffer.depth.format)
     };
 
     uint32_t gOffset = DeferredAttachments::GBufferOffset();
@@ -209,7 +216,7 @@ void graphics::createDescriptorSets()
     createLightingDescriptorSets();
 }
 
-void graphics::create(attachmentsDatabase& aDatabase)
+void graphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(enable){
         createAttachments(aDatabase);
@@ -222,8 +229,8 @@ void graphics::create(attachmentsDatabase& aDatabase)
 }
 
 void graphics::updateDescriptorSets(
-    const buffersDatabase& bDatabase,
-    const attachmentsDatabase& aDatabase)
+    const moon::utils::BuffersDatabase& bDatabase,
+    const moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(!enable) return;
 

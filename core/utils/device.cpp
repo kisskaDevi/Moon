@@ -1,17 +1,19 @@
 #include "device.h"
 #include "operations.h"
 
-queueFamily::queueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport):
+namespace moon::utils {
+
+QueueFamily::QueueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport):
 index(index), flags(flag), queueCount(queueCount), presentSupport(presentSupport){
     queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));
 }
 
-queueFamily::queueFamily(const queueFamily& other):
+QueueFamily::QueueFamily(const QueueFamily& other):
 index(other.index), flags(other.flags), queueCount(other.queueCount), presentSupport(other.presentSupport){
     queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));
 }
 
-queueFamily& queueFamily::operator=(const queueFamily& other){
+QueueFamily& QueueFamily::operator=(const QueueFamily& other){
     index = other.index;
     flags = other.flags;
     queueCount = other.queueCount;
@@ -20,11 +22,11 @@ queueFamily& queueFamily::operator=(const queueFamily& other){
     return *this;
 }
 
-bool queueFamily::availableQueueFlag(VkQueueFlags flag) const {
+bool QueueFamily::availableQueueFlag(VkQueueFlags flag) const {
     return (flag & flags) == flag;
 }
 
-physicalDevice::physicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions):
+PhysicalDevice::PhysicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions):
     instance(physicalDevice),
     deviceExtensions(deviceExtensions)
 {
@@ -41,11 +43,11 @@ physicalDevice::physicalDevice(VkPhysicalDevice physicalDevice, std::vector<cons
     properties.name = physicalDeviceProperties.deviceName;
 
     for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
-        queueFamilies[index] = queueFamily{index,queueFamilyProperties[index].queueFlags,queueFamilyProperties[index].queueCount, false};
+        queueFamilies[index] = QueueFamily{index,queueFamilyProperties[index].queueFlags,queueFamilyProperties[index].queueCount, false};
     }
 }
 
-bool physicalDevice::presentSupport(VkSurfaceKHR surface)
+bool PhysicalDevice::presentSupport(VkSurfaceKHR surface)
 {
     VkBool32 presentSupport = false;
     if(surface){
@@ -59,7 +61,7 @@ bool physicalDevice::presentSupport(VkSurfaceKHR surface)
     return presentSupport;
 }
 
-VkResult physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap)
+VkResult PhysicalDevice::createDevice(Device logical, std::map<uint32_t,uint32_t> queueSizeMap)
 {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     for(auto queueSize: queueSizeMap){
@@ -95,19 +97,19 @@ VkResult physicalDevice::createDevice(device logical, std::map<uint32_t,uint32_t
     return result;
 }
 
-VkDevice& physicalDevice::getLogical(){
+VkDevice& PhysicalDevice::getLogical(){
     return logical.back().instance;
 }
 
-const VkDevice& physicalDevice::getLogical() const{
+const VkDevice& PhysicalDevice::getLogical() const{
     return logical.back().instance;
 }
 
-bool physicalDevice::createdLogical() const {
+bool PhysicalDevice::createdLogical() const {
     return !logical.empty();
 }
 
-physicalDevice& physicalDevice::operator=(const physicalDevice& other){
+PhysicalDevice& PhysicalDevice::operator=(const PhysicalDevice& other){
     instance = other.instance;
     properties.index = other.properties.index;
     properties.type = other.properties.type;
@@ -118,7 +120,7 @@ physicalDevice& physicalDevice::operator=(const physicalDevice& other){
     return *this;
 }
 
-physicalDevice::physicalDevice(const physicalDevice& other):
+PhysicalDevice::PhysicalDevice(const PhysicalDevice& other):
     instance(other.instance),
     properties(other.properties),
     queueFamilies(other.queueFamilies),
@@ -126,6 +128,8 @@ physicalDevice::physicalDevice(const physicalDevice& other):
     deviceExtensions(other.deviceExtensions)
 {}
 
-VkQueue physicalDevice::getQueue(uint32_t familyIndex, uint32_t queueIndex) const {
+VkQueue PhysicalDevice::getQueue(uint32_t familyIndex, uint32_t queueIndex) const {
     return logical.back().queueMap.at(familyIndex)[queueIndex];
+}
+
 }

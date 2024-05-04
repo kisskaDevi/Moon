@@ -3,7 +3,9 @@
 #include "texture.h"
 #include "operations.h"
 
-void depthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
+namespace moon::utils {
+
+void DepthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
     std::vector<VkDescriptorPoolSize> poolSize = {
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)}
     };
@@ -15,7 +17,7 @@ void depthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void depthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
+void DepthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
     createDescriptorSetLayout(device,&descriptorSetLayout);
 
     descriptorSets.resize(imageCount);
@@ -28,7 +30,7 @@ void depthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
     CHECK(vkAllocateDescriptorSets(device, &shadowAllocInfo, descriptorSets.data()));
 }
 
-depthMap::depthMap(physicalDevice device, VkCommandPool commandPool, uint32_t imageCount){
+DepthMap::DepthMap(PhysicalDevice device, VkCommandPool commandPool, uint32_t imageCount){
     emptyTextureBlack = createEmptyTexture(device, commandPool);
     emptyTextureWhite = createEmptyTexture(device, commandPool, false);
     this->device = device.getLogical();
@@ -38,10 +40,10 @@ depthMap::depthMap(physicalDevice device, VkCommandPool commandPool, uint32_t im
     updateDescriptorSets(device.getLogical(), imageCount);
 }
 
-depthMap::~depthMap(){
+DepthMap::~DepthMap(){
     destroy(device);
 }
-void depthMap::destroy(VkDevice device){
+void DepthMap::destroy(VkDevice device){
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
@@ -57,11 +59,11 @@ void depthMap::destroy(VkDevice device){
     }
 }
 
-const std::vector<VkDescriptorSet>& depthMap::getDescriptorSets() const{
+const std::vector<VkDescriptorSet>& DepthMap::getDescriptorSets() const{
     return descriptorSets;
 }
 
-void depthMap::updateDescriptorSets(VkDevice device, uint32_t imageCount){
+void DepthMap::updateDescriptorSets(VkDevice device, uint32_t imageCount){
     for (size_t i = 0; i < imageCount; i++)
     {
         VkDescriptorImageInfo shadowImageInfo{};
@@ -81,11 +83,11 @@ void depthMap::updateDescriptorSets(VkDevice device, uint32_t imageCount){
     }
 }
 
-attachments* &depthMap::get(){
+Attachments* &DepthMap::get(){
     return map;
 }
 
-void depthMap::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
+void DepthMap::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -93,4 +95,6 @@ void depthMap::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout*
         layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
         layoutInfo.pBindings = binding.data();
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout));
+}
+
 }

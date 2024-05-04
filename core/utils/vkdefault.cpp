@@ -1,5 +1,7 @@
 #include "vkdefault.h"
 
+namespace moon::utils {
+
 VkSamplerCreateInfo vkDefault::samler(){
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -222,4 +224,6 @@ VkDescriptorSetLayoutBinding vkDefault::inAttachmentFragmentLayoutBinding(const 
         layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         layoutBinding.pImmutableSamplers = VK_NULL_HANDLE;
     return layoutBinding;
+}
+
 }

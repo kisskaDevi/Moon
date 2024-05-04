@@ -6,7 +6,8 @@
 #include <vector.h>
 
 class model;
-struct physicalDevice;
+
+namespace moon::utils { struct PhysicalDevice;}
 
 enum objectType : uint8_t {
     base = 0x1,
@@ -76,7 +77,7 @@ public:
         VkDevice device) = 0;
 
     virtual void create(
-        physicalDevice device,
+        moon::utils::PhysicalDevice device,
         VkCommandPool commandPool,
         uint32_t imageCount) = 0;
 

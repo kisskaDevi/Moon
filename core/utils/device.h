@@ -6,45 +6,47 @@
 #include <vector>
 #include <map>
 
-struct queueFamily{
+namespace moon::utils {
+
+struct QueueFamily{
     uint32_t index;
     VkQueueFlags flags;
     uint32_t queueCount;
     VkBool32 presentSupport;
     std::vector<float> queuePriorities;
 
-    queueFamily() = default;
-    queueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport);
-    queueFamily(const queueFamily& other);
+    QueueFamily() = default;
+    QueueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport);
+    QueueFamily(const QueueFamily& other);
 
-    queueFamily& operator=(const queueFamily& other);
+    QueueFamily& operator=(const QueueFamily& other);
 
     bool availableQueueFlag(VkQueueFlags flag) const;
 };
 
-struct device{
+struct Device{
     VkDevice                    instance{VK_NULL_HANDLE};
     VkPhysicalDeviceFeatures    deviceFeatures{};
     std::map<uint32_t, std::vector<VkQueue>> queueMap;
 
-    device() = default;
-    device(VkPhysicalDeviceFeatures deviceFeatures):
+    Device() = default;
+    Device(VkPhysicalDeviceFeatures deviceFeatures):
         deviceFeatures(deviceFeatures)
     {}
 };
 
-struct physicalDeviceProperties{
+struct PhysicalDeviceProperties{
     uint32_t index{0x7FFFFFFF};
     VkPhysicalDeviceType type{VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM};
     std::string name{};
 };
 
-struct physicalDevice{
+struct PhysicalDevice{
     VkPhysicalDevice instance{VK_NULL_HANDLE};
-    physicalDeviceProperties properties{};
+    PhysicalDeviceProperties properties{};
 
-    std::map<uint32_t, queueFamily> queueFamilies;
-    std::vector<device> logical;
+    std::map<uint32_t, QueueFamily> queueFamilies;
+    std::vector<Device> logical;
     std::vector<const char*> deviceExtensions;
 
 #ifdef NDEBUG
@@ -54,18 +56,19 @@ struct physicalDevice{
 #endif
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
-    physicalDevice() = default;
-    physicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions = {});
+    PhysicalDevice() = default;
+    PhysicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions = {});
 
-    physicalDevice& operator=(const physicalDevice& other);
-    physicalDevice(const physicalDevice& other);
+    PhysicalDevice& operator=(const PhysicalDevice& other);
+    PhysicalDevice(const PhysicalDevice& other);
 
     bool presentSupport(VkSurfaceKHR surface);
-    VkResult createDevice(device logical, std::map<uint32_t,uint32_t> queueSizeMap);
+    VkResult createDevice(Device logical, std::map<uint32_t,uint32_t> queueSizeMap);
     VkDevice& getLogical();
     const VkDevice& getLogical() const;
     VkQueue getQueue(uint32_t familyIndex, uint32_t queueIndex) const;
     bool createdLogical() const;
 };
 
+}
 #endif // DEVICE_H

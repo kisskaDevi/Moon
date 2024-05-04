@@ -3,7 +3,7 @@
 
 #include <vulkan.h>
 
-namespace vkDefault {
+namespace moon::utils::vkDefault {
 
 VkSamplerCreateInfo samler();
 
@@ -27,6 +27,6 @@ VkDescriptorSetLayoutBinding bufferVertexLayoutBinding(const uint32_t& binding, 
 VkDescriptorSetLayoutBinding bufferFragmentLayoutBinding(const uint32_t& binding, const uint32_t& count);
 VkDescriptorSetLayoutBinding imageFragmentLayoutBinding(const uint32_t& binding, const uint32_t& count);
 VkDescriptorSetLayoutBinding inAttachmentFragmentLayoutBinding(const uint32_t& binding, const uint32_t& count);
-}
 
+}
 #endif // VKDEFAULT_H

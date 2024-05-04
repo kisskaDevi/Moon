@@ -15,7 +15,8 @@
 
 #define IMGUI_GRAPHICS
 
-class graphicsManager;
+namespace moon::graphicsManager { class GraphicsManager;}
+
 class rayTracingGraphics;
 class imguiGraphics;
 
@@ -32,7 +33,7 @@ private:
     float                   blitFactor = 1.5f;
     std::string             screenshot;
 
-    graphicsManager *app{nullptr};
+    moon::graphicsManager::GraphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
     cuda::devicep<cuda::camera> cam;
     cuda::camera hostcam = cuda::camera(cuda::ray(cuda::vec4f(2.0f, 0.0f, 2.0f, 1.0f), cuda::vec4f(-1.0f, 0.0f, -1.0f, 0.0f)), 1.0f);
@@ -56,7 +57,7 @@ private:
     void keyboardEvent(float frameTime);
 
 public:
-    testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
+    testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
     ~testCuda() = default;
     void create(uint32_t WIDTH, uint32_t HEIGHT) override;
     void resize(uint32_t WIDTH, uint32_t HEIGHT) override;

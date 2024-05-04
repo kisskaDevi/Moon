@@ -13,7 +13,7 @@ struct linkPushConstant{
     vector<float,2> size{1.0f, 1.0f};
 };
 
-class link : public linkable
+class link : public moon::graphicsManager::Linkable
 {
 private:
     std::filesystem::path           shadersPath;

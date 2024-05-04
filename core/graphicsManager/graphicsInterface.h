@@ -7,22 +7,25 @@
 #include "device.h"
 #include "vector.h"
 
-class linkable;
 namespace moon::utils { class SwapChain;}
 
-class graphicsInterface{
+namespace moon::graphicsManager {
+
+class Linkable;
+
+class GraphicsInterface{
 protected:
     VkFormat                                         format{VK_FORMAT_UNDEFINED};
     uint32_t                                         imageCount{0};
     std::map<uint32_t, moon::utils::PhysicalDevice>  devices;
     moon::utils::PhysicalDevice                      device;
     moon::utils::SwapChain*                          swapChainKHR;
-    linkable*                                        link{nullptr};
+    Linkable*                                        link{nullptr};
     vector<float,2>                                  offset{0.0f, 0.0f};
     vector<float,2>                                  size{1.0f, 1.0f};
 
 public:
-    virtual ~graphicsInterface(){};
+    virtual ~GraphicsInterface(){};
     virtual void destroy() = 0;
 
     virtual void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
@@ -44,7 +47,7 @@ public:
         device = devices.at(deviceIndex);
     }
 
-    virtual linkable* getLinkable(){
+    virtual Linkable* getLinkable(){
         return link;
     }
 
@@ -58,4 +61,5 @@ public:
         uint32_t imageIndex) = 0;
 };
 
+}
 #endif // GRAPHICSINTERFACE_H

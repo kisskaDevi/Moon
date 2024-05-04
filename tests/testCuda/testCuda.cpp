@@ -142,7 +142,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
 #endif
 }
 
-testCuda::testCuda(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized) :
+testCuda::testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized) :
     framebufferResized(framebufferResized),
     ExternalPath(ExternalPath),
     app(app),

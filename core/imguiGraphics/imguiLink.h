@@ -3,7 +3,7 @@
 
 #include "linkable.h"
 
-class imguiLink : public linkable
+class imguiLink : public moon::graphicsManager::Linkable
 {
 private:
     VkRenderPass renderPass{VK_NULL_HANDLE};

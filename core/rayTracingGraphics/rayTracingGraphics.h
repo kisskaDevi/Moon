@@ -18,7 +18,7 @@
 
 namespace cuda { class model;}
 
-class rayTracingGraphics : public graphicsInterface {
+class rayTracingGraphics : public moon::graphicsManager::GraphicsInterface {
 private:
     struct imageResource{
         std::string id;

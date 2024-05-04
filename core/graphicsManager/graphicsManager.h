@@ -15,12 +15,14 @@
 
 //#define NDEBUG
 
-class graphicsManager
+namespace moon::graphicsManager {
+
+class GraphicsManager
 {
 public:
-    graphicsManager(GLFWwindow* window, int32_t imageCount = -1, int32_t resourceCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    graphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    ~graphicsManager();
+    GraphicsManager(GLFWwindow* window, int32_t imageCount = -1, int32_t resourceCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    GraphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    ~GraphicsManager();
 
     VkInstance getInstance() const;
     VkExtent2D getImageExtent() const;
@@ -31,7 +33,7 @@ public:
 
     std::vector<moon::utils::PhysicalDeviceProperties> getDeviceInfo() const;
     void setDevice(uint32_t deviceIndex);
-    void setGraphics(graphicsInterface* graphics);
+    void setGraphics(GraphicsInterface* graphics);
 
     void create(GLFWwindow* window);
     void destroy();
@@ -56,8 +58,8 @@ private:
     moon::utils::PhysicalDevice*                    activeDevice{nullptr};
     moon::utils::SwapChain                          swapChainKHR;
 
-    std::vector<graphicsInterface*>             graphics;
-    graphicsLinker                              linker;
+    std::vector<GraphicsInterface*>             graphics;
+    GraphicsLinker                              linker;
 
     std::vector<VkSemaphore>                    availableSemaphores;
     std::vector<VkFence>                        fences;
@@ -80,4 +82,5 @@ private:
     void destroySyncObjects();
 };
 
+}
 #endif // GRAPHICSMANAGER_H

@@ -15,13 +15,11 @@
 // #define SECOND_VIEW_WINDOW
 #define IMGUI_GRAPHICS
 
-namespace moon::interfaces {
-class Model;
-}
+namespace moon::interfaces { class Model;}
+namespace moon::graphicsManager { class GraphicsManager;}
 
 class deferredGraphics;
 class imguiGraphics;
-class graphicsManager;
 class spotLight;
 class isotropicLight;
 class baseObject;
@@ -56,7 +54,7 @@ private:
 #endif
 
     GLFWwindow* window{nullptr};
-    graphicsManager* app{nullptr};
+    moon::graphicsManager::GraphicsManager* app{nullptr};
     std::shared_ptr<controller> mouse{nullptr};
     std::shared_ptr<controller> board{nullptr};
 
@@ -90,7 +88,7 @@ private:
     void createLight();
     void createObjects();
 public:
-    testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
+    testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
 
     void create(uint32_t WIDTH, uint32_t HEIGHT) override;
     void resize(uint32_t WIDTH, uint32_t HEIGHT) override;

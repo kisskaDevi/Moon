@@ -6,10 +6,13 @@
 
 #include <vulkan.h>
 
-class linkable;
 namespace moon::utils { class SwapChain;}
 
-class graphicsLinker
+namespace moon::graphicsManager {
+
+class Linkable;
+
+class GraphicsLinker
 {
 private:
     uint32_t                        imageCount;
@@ -17,7 +20,7 @@ private:
     VkFormat                        imageFormat;
     VkDevice                        device;
 
-    std::vector<linkable*>          linkables;
+    std::vector<Linkable*>          linkables;
     moon::utils::SwapChain*         swapChainKHR{nullptr};
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
@@ -29,13 +32,13 @@ private:
 
     std::vector<VkSemaphore>        signalSemaphores;
 public:
-    graphicsLinker() = default;
-    ~graphicsLinker();
+    GraphicsLinker() = default;
+    ~GraphicsLinker();
     void destroy();
 
     void setSwapChain(moon::utils::SwapChain* swapChainKHR);
     void setDevice(VkDevice device);
-    void addLinkable(linkable* link);
+    void addLinkable(Linkable* link);
 
     void createRenderPass();
     void createFramebuffers();
@@ -53,4 +56,5 @@ public:
     void updateCmdFlags();
 };
 
+}
 #endif // GRAPHICSLINKER_H

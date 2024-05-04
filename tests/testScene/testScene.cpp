@@ -26,7 +26,7 @@
 #include <limits>
 #include <cstring>
 
-testScene::testScene(graphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized):
+testScene::testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized):
     framebufferResized(framebufferResized),
     ExternalPath(ExternalPath),
     window(window),

@@ -32,7 +32,7 @@ VkPhysicalDeviceFeatures physicalDeviceFeatures(){
 }
 
 GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName = "");
-std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, scene* testScene);
+std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, moon::graphicsManager::GraphicsManager* app, scene* testScene);
 
 using clk = std::chrono::high_resolution_clock;
 template<typename type> type period(clk::time_point time){
@@ -47,7 +47,7 @@ int main()
 
     GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.PNG");
 
-    graphicsManager app(window, imageCount, resCount, physicalDeviceFeatures());
+    moon::graphicsManager::GraphicsManager app(window, imageCount, resCount, physicalDeviceFeatures());
 
 #if defined(TESTCUDA)
     testCuda testScene(&app, window, ExternalPath, framebufferResized);
@@ -79,7 +79,7 @@ int main()
     return 0;
 }
 
-std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, graphicsManager* app, scene* testScene)
+std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, moon::graphicsManager::GraphicsManager* app, scene* testScene)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);

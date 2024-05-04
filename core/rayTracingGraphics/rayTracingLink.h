@@ -22,7 +22,7 @@ struct rayTracingLinkParameters{
     struct{}out;
 };
 
-class rayTracingLink : public linkable{
+class rayTracingLink : public moon::graphicsManager::Linkable{
 private:
     rayTracingLinkParameters        parameters;
     std::filesystem::path           shadersPath;

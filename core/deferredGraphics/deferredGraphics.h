@@ -30,7 +30,7 @@ struct StorageBufferObject{
     alignas(4)  float              depth;
 };
 
-class deferredGraphics: public graphicsInterface{
+class deferredGraphics: public moon::graphicsManager::GraphicsInterface{
 private:
     std::filesystem::path                       shadersPath;
     std::filesystem::path                       workflowsShadersPath;

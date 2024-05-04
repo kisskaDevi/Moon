@@ -3,11 +3,13 @@
 #include "swapChain.h"
 #include "linkable.h"
 
-graphicsLinker::~graphicsLinker(){
+namespace moon::graphicsManager {
+
+GraphicsLinker::~GraphicsLinker(){
     destroy();
 }
 
-void graphicsLinker::destroy(){
+void GraphicsLinker::destroy(){
     if(renderPass) {
         vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;
     }
@@ -34,23 +36,23 @@ void graphicsLinker::destroy(){
     updateCommandBufferFlags.clear();
 }
 
-void graphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
+void GraphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
     this->swapChainKHR = swapChainKHR;
     this->imageCount = swapChainKHR->getImageCount();
     this->imageExtent = swapChainKHR->getExtent();
     this->imageFormat = swapChainKHR->getFormat();
 }
 
-void graphicsLinker::setDevice(VkDevice device){
+void GraphicsLinker::setDevice(VkDevice device){
     this->device = device;
 }
 
-void graphicsLinker::addLinkable(linkable* link){
+void GraphicsLinker::addLinkable(Linkable* link){
     linkables.push_back(link);
     updateCmdFlags();
 }
 
-void graphicsLinker::createRenderPass(){
+void GraphicsLinker::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(imageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     };
@@ -87,7 +89,7 @@ void graphicsLinker::createRenderPass(){
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void graphicsLinker::createFramebuffers(){
+void GraphicsLinker::createFramebuffers(){
     framebuffers.resize(imageCount);
     for (size_t Image = 0; Image < framebuffers.size(); Image++)
     {
@@ -103,7 +105,7 @@ void graphicsLinker::createFramebuffers(){
     }
 }
 
-void graphicsLinker::createCommandPool()
+void GraphicsLinker::createCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -112,7 +114,7 @@ void graphicsLinker::createCommandPool()
     CHECK(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool));
 }
 
-void graphicsLinker::createCommandBuffers(){
+void GraphicsLinker::createCommandBuffers(){
     commandBuffers.resize(imageCount);
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -124,7 +126,7 @@ void graphicsLinker::createCommandBuffers(){
     updateCommandBufferFlags.resize(imageCount, true);
 }
 
-void graphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber){
+void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber){
     if(updateCommandBufferFlags[resourceNumber])
     {
         CHECK(vkResetCommandBuffer(commandBuffers[resourceNumber],0));
@@ -160,7 +162,7 @@ void graphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t image
     }
 }
 
-void graphicsLinker::createSyncObjects(){
+void GraphicsLinker::createSyncObjects(){
     signalSemaphores.resize(imageCount);
 
     for (auto& signalSemaphore: signalSemaphores){
@@ -170,7 +172,7 @@ void graphicsLinker::createSyncObjects(){
     }
 }
 
-const VkSemaphore& graphicsLinker::submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue){
+const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue){
     VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -185,14 +187,16 @@ const VkSemaphore& graphicsLinker::submit(uint32_t frameNumber, const std::vecto
     return signalSemaphores[frameNumber];
 }
 
-const VkRenderPass& graphicsLinker::getRenderPass() const {
+const VkRenderPass& GraphicsLinker::getRenderPass() const {
     return renderPass;
 }
 
-const VkCommandBuffer& graphicsLinker::getCommandBuffer(uint32_t frameNumber) const {
+const VkCommandBuffer& GraphicsLinker::getCommandBuffer(uint32_t frameNumber) const {
     return commandBuffers[frameNumber];
 }
 
-void graphicsLinker::updateCmdFlags(){
+void GraphicsLinker::updateCmdFlags(){
     std::fill(updateCommandBufferFlags.begin(), updateCommandBufferFlags.end(), true);
+}
+
 }

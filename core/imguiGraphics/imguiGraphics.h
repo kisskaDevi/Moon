@@ -9,7 +9,7 @@
 
 struct GLFWwindow;
 
-class imguiGraphics: public graphicsInterface
+class imguiGraphics: public moon::graphicsManager::GraphicsInterface
 {
 private:
     GLFWwindow*         window{nullptr};

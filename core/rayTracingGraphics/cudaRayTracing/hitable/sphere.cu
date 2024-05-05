@@ -1,13 +1,13 @@
 #include "sphere.h"
 #include "operations.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-__host__ __device__ sphere::sphere(const vec4f& cen, float r, const vec4f& color, const properties& props) : center(cen), radius(r), color(color), props(props) {}
+__host__ __device__ Sphere::Sphere(const vec4f& cen, float r, const vec4f& color, const Properties& props) : center(cen), radius(r), color(color), props(props) {}
 
-__host__ __device__ sphere::sphere(const vec4f& cen, float r, const vec4f& color) : center(cen), radius(r), color(color) {}
+__host__ __device__ Sphere::Sphere(const vec4f& cen, float r, const vec4f& color) : center(cen), radius(r), color(color) {}
 
-__host__ __device__ bool sphere::hit(const ray& r, hitCoords& coord) const {
+__host__ __device__ bool Sphere::hit(const ray& r, HitCoords& coord) const {
     vec4f oc = r.getOrigin() - center;
     float a = 1.0f / r.getDirection().length2();
     float b = - dot(oc, r.getDirection()) * a;
@@ -31,37 +31,38 @@ __host__ __device__ bool sphere::hit(const ray& r, hitCoords& coord) const {
     return result;
 }
 
-__host__ __device__ void sphere::calcHitRecord(const ray& r, const hitCoords& coord, hitRecord& rec) const {
+__host__ __device__ void Sphere::calcHitRecord(const ray& r, const HitCoords& coord, HitRecord& rec) const {
     rec.point = r.point(coord.tmax);
     rec.normal = (rec.point - center) / radius;
     rec.color = color;
     rec.props = props;
 }
 
-__global__ void createKernel(sphere* sph, vec4f cen, float r, vec4f color, const properties props) {
-    sph = new (sph) sphere(cen, r, color, props);
+__global__ void createKernel(Sphere* sph, vec4f cen, float r, vec4f color, const Properties props) {
+    sph = new (sph) Sphere(cen, r, color, props);
 }
 
-void sphere::create(sphere* dpointer, const sphere& host){
+void Sphere::create(Sphere* dpointer, const Sphere& host){
     createKernel<<<1,1>>>(dpointer, host.center, host.radius, host.color, host.props);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void destroyKernel(sphere* p) {
-    p->~sphere();
+__global__ void destroyKernel(Sphere* p) {
+    p->~Sphere();
 }
 
-void sphere::destroy(sphere* dpointer){
+void Sphere::destroy(Sphere* dpointer){
     destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__host__ __device__ box sphere::getBox() const {
+__host__ __device__ box Sphere::getBox() const {
     box bbox;
     bbox.min = center - vec4f(radius, radius, radius, 0.0f);
     bbox.max = center + vec4f(radius, radius, radius, 0.0f);
     return bbox;
 }
+
 }

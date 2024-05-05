@@ -34,8 +34,14 @@ private:
 
     moon::graphicsManager::GraphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
-    cuda::devicep<cuda::camera> cam;
-    cuda::camera hostcam = cuda::camera(cuda::ray(cuda::vec4f(2.0f, 0.0f, 2.0f, 1.0f), cuda::vec4f(-1.0f, 0.0f, -1.0f, 0.0f)), 1.0f);
+    cuda::rayTracing::Devicep<cuda::rayTracing::Camera> cam;
+    cuda::rayTracing::Camera hostcam =
+        cuda::rayTracing::Camera(
+            cuda::rayTracing::ray(
+                cuda::rayTracing::vec4f(2.0f, 0.0f, 2.0f, 1.0f),
+                cuda::rayTracing::vec4f(-1.0f, 0.0f, -1.0f, 0.0f)
+            ),
+        1.0f);
 
     std::shared_ptr<controller> mouse;
     std::shared_ptr<controller> board;
@@ -50,7 +56,7 @@ private:
     bool onlyLeafsBB{false};
     bool enableBloom{true};
 
-    std::unordered_map<std::string, cuda::model> models;
+    std::unordered_map<std::string, cuda::rayTracing::Model> models;
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);

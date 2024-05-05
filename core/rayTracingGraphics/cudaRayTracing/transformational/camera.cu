@@ -1,15 +1,15 @@
 #include "camera.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-__host__ __device__ void camera::update(){
+__host__ __device__ void Camera::update(){
     horizontal = aspect * vec4f::getHorizontal(viewRay.getDirection());
     vertical = vec4f::getVertical(viewRay.getDirection());
 }
 
-__host__ __device__ camera::camera(){}
+__host__ __device__ Camera::Camera(){}
 
-__host__ __device__ camera::camera(
+__host__ __device__ Camera::Camera(
     const ray viewRay,
     float aspect,
     float matrixScale,
@@ -26,18 +26,18 @@ __host__ __device__ camera::camera(
     update();
 }
 
-__host__ __device__ camera::camera(const ray& viewRay, float aspect) : viewRay(viewRay), aspect(aspect){
+__host__ __device__ Camera::Camera(const ray& viewRay, float aspect) : viewRay(viewRay), aspect(aspect){
     update();
 }
 
-__device__ ray camera::getPixelRay(float u, float v, curandState* local_rand_state) const {
+__device__ ray Camera::getPixelRay(float u, float v, curandState* local_rand_state) const {
     const float t = focus / (matrixOffset - focus);
     u = matrixScale * t * u + apertura * float(curand_uniform(local_rand_state));
     v = matrixScale * t * v + apertura * float(curand_uniform(local_rand_state));
     return ray(viewRay.point(matrixOffset), t * matrixOffset * viewRay.getDirection() - (u * horizontal + v * vertical));
 }
 
-__host__ __device__ ray camera::getPixelRay(float u, float v) const {
+__host__ __device__ ray Camera::getPixelRay(float u, float v) const {
     const float t = focus / (matrixOffset - focus);
     u = matrixScale * t * u;
     v = matrixScale * t * v;

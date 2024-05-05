@@ -8,7 +8,7 @@
 
 #define pi 3.14159265358979323846f
 
-namespace cuda {
+namespace cuda::rayTracing {
 
 template<typename T>
 class vec4 {

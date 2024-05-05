@@ -2,14 +2,14 @@
 
 #include "operations.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-__host__ __device__ hitableArray::~hitableArray() {
+__host__ __device__ HitableArray::~HitableArray() {
     delete[] array;
     container_size = 0;
 }
 
-__host__ __device__ bool hitableArray::hit(const ray& r, hitCoords& coord) const {
+__host__ __device__ bool HitableArray::hit(const ray& r, HitCoords& coord) const {
     for(iterator it = begin(); it != end(); it++){
         if ((*it)->hit(r, coord)) {
             coord.obj = *it;
@@ -18,8 +18,8 @@ __host__ __device__ bool hitableArray::hit(const ray& r, hitCoords& coord) const
     return coord.obj;
 }
 
-__host__ __device__ void hitableArray::add(hitable* object) {
-    pointer* newArray = new pointer[container_size + 1];
+__host__ __device__ void HitableArray::add(Hitable* object) {
+    Pointer* newArray = new Pointer[container_size + 1];
     for(size_t i = 0; i < container_size; i++){
         newArray[i] = array[i];
     }
@@ -29,25 +29,25 @@ __host__ __device__ void hitableArray::add(hitable* object) {
     container_size++;
 }
 
-__host__ __device__ hitable*& hitableArray::operator[](uint32_t i) const {
+__host__ __device__ Hitable*& HitableArray::operator[](uint32_t i) const {
     return array[i].p;
 }
 
-__global__ void createKernel(hitableArray* p) {
-    p = new (p) hitableArray();
+__global__ void createKernel(HitableArray* p) {
+    p = new (p) HitableArray();
 }
 
-void hitableArray::create(hitableArray* dpointer, const hitableArray& host){
+void HitableArray::create(HitableArray* dpointer, const HitableArray& host){
     createKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void destroyKernel(hitableArray* p) {
-    p->~hitableArray();
+__global__ void destroyKernel(HitableArray* p) {
+    p->~HitableArray();
 }
 
-void hitableArray::destroy(hitableArray* dpointer){
+void HitableArray::destroy(HitableArray* dpointer){
     destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());

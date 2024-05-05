@@ -3,7 +3,9 @@
 #include <fstream>
 #include <iostream>
 
-void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line) {
+namespace cuda::rayTracing {
+
+void debug::check_cuda(cudaError_t result, char const* const func, const char* const file, int const line) {
 	if (result) {
 		std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " << file << ":" << line << " '" << func << "' \n";
 		cudaDeviceReset();
@@ -44,3 +46,5 @@ namespace cuda::Image {
         delete[] hostFrameBuffer;
     }
 }
+
+    }

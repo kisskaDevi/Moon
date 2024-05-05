@@ -3,18 +3,18 @@
 
 #include <stddef.h>
 
-namespace cuda{
+namespace cuda::rayTracing {
 
 template <typename type, size_t container_capacity = 20>
-class stack {
+class Stack {
 private:
     size_t container_size{0};
     type static_storage[container_capacity];
 
 public:
-    __host__ __device__ stack(){}
-    __host__ __device__ ~stack(){}
-    __host__ __device__ stack(const type& data){ push(data); }
+    __host__ __device__ Stack(){}
+    __host__ __device__ ~Stack(){}
+    __host__ __device__ Stack(const type& data){ push(data); }
     __host__ __device__ constexpr size_t capacity() const { return container_capacity; }
     __host__ __device__ size_t size() const { return container_size; }
     __host__ __device__ bool empty() const { return container_size == 0; }
@@ -47,5 +47,4 @@ public:
 };
 
 }
-
 #endif // STACK_H

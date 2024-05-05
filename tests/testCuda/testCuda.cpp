@@ -18,11 +18,17 @@
 
 #include <cstring>
 
-using namespace cuda;
+using namespace cuda::rayTracing;
 
 enum sign{ minus, plus };
 
-std::vector<cuda::vertex> createBoxVertexBuffer(vec4f scale, vec4f translate, sign normalSign, cuda::properties props, std::vector<vec4f> colors) {
+std::vector<Vertex> createBoxVertexBuffer(
+    vec4f scale,
+    vec4f translate,
+    sign normalSign,
+    Properties props,
+    std::vector<vec4f> colors)
+{
     float plus = normalSign == sign::plus ? 1.0f : -1.0f, minus = -plus;
     vec4f v[8] =
         {
@@ -42,10 +48,10 @@ std::vector<cuda::vertex> createBoxVertexBuffer(vec4f scale, vec4f translate, si
         };
     size_t indices[6][4] = { {0,1,2,3}, {4,5,6,7}, {0,1,4,5}, {2,3,6,7}, {0,2,4,6}, {1,3,5,7} };
 
-    std::vector<cuda::vertex> vertexBuffer;
+    std::vector<Vertex> vertexBuffer;
     for (size_t i = 0; i < 6; i++) {
         for (size_t j = 0; j < 4; j++) {
-            vertexBuffer.push_back(cuda::vertex(v[indices[i][j]], n[i], colors[i], props));
+            vertexBuffer.push_back(Vertex(v[indices[i][j]], n[i], colors[i], props));
         }
     }
     return vertexBuffer;
@@ -62,35 +68,35 @@ std::vector<uint32_t> createBoxIndexBuffer() {
     };
 }
 
-void createWorld(std::unordered_map<std::string, cuda::model>& models)
+void createWorld(std::unordered_map<std::string, Model>& models)
 {
-    const std::unordered_map<std::string, cuda::sphere> spheres = {
-        {"sphere_0",  cuda::sphere(vec4f( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
-        {"sphere_1",  cuda::sphere(vec4f( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
-        {"sphere_2",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
-        {"sphere_3",  cuda::sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
-        {"sphere_4",  cuda::sphere(vec4f(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_5",  cuda::sphere(vec4f( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_6",  cuda::sphere(vec4f( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_7",  cuda::sphere(vec4f(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_8",  cuda::sphere(vec4f(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_9",  cuda::sphere(vec4f(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_10", cuda::sphere(vec4f( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_11", cuda::sphere(vec4f(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_12", cuda::sphere(vec4f( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_13", cuda::sphere(vec4f(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_14", cuda::sphere(vec4f( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_15", cuda::sphere(vec4f(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_16", cuda::sphere(vec4f( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})}
+    const std::unordered_map<std::string, Sphere> spheres = {
+        {"sphere_0",  Sphere(vec4f( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
+        {"sphere_1",  Sphere(vec4f( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
+        {"sphere_2",  Sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
+        {"sphere_3",  Sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
+        {"sphere_4",  Sphere(vec4f(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_5",  Sphere(vec4f( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_6",  Sphere(vec4f( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_7",  Sphere(vec4f(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_8",  Sphere(vec4f(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_9",  Sphere(vec4f(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_10", Sphere(vec4f( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_11", Sphere(vec4f(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_12", Sphere(vec4f( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_13", Sphere(vec4f(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_14", Sphere(vec4f( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_15", Sphere(vec4f(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_16", Sphere(vec4f( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})}
     };
 
     for(const auto& [name, sphere]: spheres){
-        models[name] = cuda::model(cuda::primitive{cuda::make_devicep<cuda::hitable>(sphere), sphere.getBox()});
+        models[name] = Model(Primitive{make_devicep<Hitable>(sphere), sphere.getBox()});
     }
 
     const auto boxIndexBuffer = createBoxIndexBuffer();
 
-    models["environment_box"] = cuda::model(
+    models["environment_box"] = Model(
         createBoxVertexBuffer(
             vec4f(3.0f, 3.0f, 1.5f, 1.0f),
             vec4f(0.0f, 0.0f, 1.5f, 0.0f),
@@ -99,7 +105,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
             { vec4f(0.5f, 0.5f, 0.5f, 1.0f), vec4f(0.5f, 0.5f, 0.5f, 1.0f), vec4f(0.8f, 0.4f, 0.8f, 1.0f), vec4f(0.4f, 0.4f, 0.4f, 1.0f), vec4f(0.9f, 0.5f, 0.0f, 1.0f), vec4f(0.1f, 0.4f, 0.9f, 1.0f) }),
             boxIndexBuffer);
 
-    models["glass_box"] = cuda::model(
+    models["glass_box"] = Model(
         createBoxVertexBuffer(
             vec4f(0.4f, 0.4f, 0.4f, 1.0f),
             vec4f(1.5f, 0.0f, 0.41f, 0.0f),
@@ -108,7 +114,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
             std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
-    models["glass_box_inside"] = cuda::model(
+    models["glass_box_inside"] = Model(
         createBoxVertexBuffer(
             vec4f(0.3f, 0.3f, 0.3f, 1.0f),
             vec4f(1.5f, 0.0f, 0.41f, 0.0f),
@@ -117,7 +123,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
             std::vector<vec4f>(6, vec4f(1.0f))),
         boxIndexBuffer);
 
-    models["upper_light_plane"] = cuda::model(
+    models["upper_light_plane"] = Model(
         createBoxVertexBuffer(
             vec4f(2.0f, 2.0f, 0.01f, 1.0f),
             vec4f(0.0f, 0.0f, 3.0f, 0.0f),
@@ -130,7 +136,7 @@ void createWorld(std::unordered_map<std::string, cuda::model>& models)
     size_t num = 100;
     for (int i = 0; i < num; i++) {
         float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
-        models["box_" + std::to_string(i)] = cuda::model(
+        models["box_" + std::to_string(i)] = Model(
             createBoxVertexBuffer(
                 vec4f(0.1f, 0.1f, 0.1f, 1.0f),
                 vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f + 2.8 * std::abs(std::sin(phi)), 0.0f),
@@ -161,8 +167,8 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     extent = {WIDTH, HEIGHT};
     createWorld(models);
 
-    hostcam = cuda::camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
-    cam = cuda::make_devicep<cuda::camera>(hostcam);
+    hostcam = Camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
+    cam = make_devicep<Camera>(hostcam);
     graphics = std::make_shared<moon::rayTracingGraphics::RayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
     graphics->setCamera(&cam);
@@ -196,8 +202,8 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
-    hostcam = cuda::camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
-    cam = std::move(cuda::make_devicep<cuda::camera>(hostcam));
+    hostcam = Camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
+    cam = std::move(make_devicep<Camera>(hostcam));
     graphics->setExtent({extent[0],extent[1]});
 
     graphics->destroy();
@@ -208,7 +214,7 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 
 void testCuda::updateFrame(uint32_t, float frameTime)
 {
-    hostcam = cuda::to_host(cam);
+    hostcam = to_host(cam);
     glfwPollEvents();
 
 #ifdef IMGUI_GRAPHICS
@@ -294,7 +300,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     mouseEvent(frameTime);
     keyboardEvent(frameTime);
 #endif
-    cuda::to_device(hostcam, cam);
+    to_device(hostcam, cam);
 }
 
 void testCuda::mouseEvent(float)

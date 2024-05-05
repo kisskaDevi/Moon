@@ -3,7 +3,7 @@
 
 #include "utils/operations.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
 namespace{
 template<typename T>
@@ -40,7 +40,7 @@ type* create(const type& host){
 }
 
 template<typename type>
-class devicep{
+class Devicep{
 private:
     type* pointer{nullptr};
 
@@ -54,39 +54,39 @@ private:
         }
     }
 public:
-    devicep(type* other){
+    Devicep(type* other){
         del();
         pointer = other;
     }
 
-    explicit devicep(const type& host){
+    explicit Devicep(const type& host){
         del();
         pointer = create(host);
     }
 
-    devicep(size_t size){
+    Devicep(size_t size){
         del();
         checkCudaErrors(cudaMalloc((void**)&pointer, size * sizeof(type)));
     }
 
-    devicep() = default;
-    devicep(const devicep& other) = delete;
-    devicep& operator=(const devicep& other) = delete;
+    Devicep() = default;
+    Devicep(const Devicep& other) = delete;
+    Devicep& operator=(const Devicep& other) = delete;
 
-    devicep(devicep&& other){
+    Devicep(Devicep&& other){
         del();
         pointer = other.pointer;
         other.pointer = nullptr;
     }
 
-    devicep& operator=(devicep&& other){
+    Devicep& operator=(Devicep&& other){
         del();
         pointer = other.pointer;
         other.pointer = nullptr;
         return *this;
     }
 
-    ~devicep(){
+    ~Devicep(){
         del();
     }
 
@@ -100,12 +100,12 @@ public:
 };
 
 template<typename ptype, typename type>
-devicep<ptype> make_devicep(const type& host){
-    return devicep<ptype>(create(host));
+Devicep<ptype> make_devicep(const type& host){
+    return Devicep<ptype>(create(host));
 }
 
 template<typename type>
-type to_host(const devicep<type>& dp, size_t offset = 0){
+type to_host(const Devicep<type>& dp, size_t offset = 0){
     type host;
     checkCudaErrors(cudaMemcpy(&host, dp.get() + offset, sizeof(type), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaGetLastError());
@@ -114,11 +114,11 @@ type to_host(const devicep<type>& dp, size_t offset = 0){
 }
 
 template<typename type>
-void to_device(const type& host, const devicep<type>& dp, size_t offset = 0){
+void to_device(const type& host, const Devicep<type>& dp, size_t offset = 0){
     checkCudaErrors(cudaMemcpy(dp.get() + offset, &host, sizeof(type), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
-}
 
+}
 #endif // DEVICEP_H

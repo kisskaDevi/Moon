@@ -2,7 +2,7 @@
 #define BOX_H
 #include "ray.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
 struct box{
     vec4f min{std::numeric_limits<float>::max()};

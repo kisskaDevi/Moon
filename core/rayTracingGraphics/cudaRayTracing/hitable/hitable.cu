@@ -1,15 +1,16 @@
 #include "hitable.h"
 #include "operations.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-__global__ void destroyKernel(hitable* p) {
-    p->~hitable();
+__global__ void destroyKernel(Hitable* p) {
+    p->~Hitable();
 }
 
-void hitable::destroy(hitable* dpointer){
+void Hitable::destroy(Hitable* dpointer){
     destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
+
 }

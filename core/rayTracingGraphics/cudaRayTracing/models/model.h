@@ -5,21 +5,21 @@
 #include "utils/primitive.h"
 #include "hitable/triangle.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-    struct model {
-        buffer<vertex> vertexBuffer;
-        std::vector<primitive> primitives;
+struct Model {
+    Buffer<Vertex> vertexBuffer;
+    std::vector<Primitive> primitives;
 
-        model(const std::vector<vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer);
-        model(std::vector<primitive>&& primitives);
-        model(primitive&& primitive);
-        model() = default;
-        model(model&& m);
-        model& operator=(model&& m);
+    Model(const std::vector<Vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer);
+    Model(std::vector<Primitive>&& primitives);
+    Model(Primitive&& primitive);
+    Model() = default;
+    Model(Model&& m);
+    Model& operator=(Model&& m);
 
-        ~model();
-    };
+    ~Model();
+};
+
 }
-
 #endif

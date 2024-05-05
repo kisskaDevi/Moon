@@ -3,7 +3,7 @@
 
 #include "models/model.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
 }
 

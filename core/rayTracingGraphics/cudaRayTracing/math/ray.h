@@ -2,7 +2,7 @@
 #define RAYH
 #include "vec4.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
 class ray {
 private:

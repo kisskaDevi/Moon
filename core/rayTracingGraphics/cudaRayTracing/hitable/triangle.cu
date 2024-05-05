@@ -1,13 +1,13 @@
 #include "triangle.h"
 #include "operations.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-__host__ __device__ triangle::triangle(const size_t& i0, const size_t& i1, const size_t& i2, const vertex* vertexBuffer)
+__host__ __device__ Triangle::Triangle(const size_t& i0, const size_t& i1, const size_t& i2, const Vertex* vertexBuffer)
     : index{i0,i1,i2}, vertexBuffer(vertexBuffer)
 {};
 
-__host__ __device__ bool triangle::hit(const ray& r, hitCoords& coord) const {
+__host__ __device__ bool Triangle::hit(const ray& r, HitCoords& coord) const {
     const vec4f a = vertexBuffer[index[1]].point - r.getOrigin();
     const vec4f b = vertexBuffer[index[1]].point - vertexBuffer[index[2]].point;
     const vec4f c = vertexBuffer[index[1]].point - vertexBuffer[index[0]].point;
@@ -36,7 +36,7 @@ __host__ __device__ bool triangle::hit(const ray& r, hitCoords& coord) const {
     return false;
 }
 
-__host__ __device__ void triangle::calcHitRecord(const ray& r, const hitCoords& coord, hitRecord& rec) const {
+__host__ __device__ void Triangle::calcHitRecord(const ray& r, const HitCoords& coord, HitRecord& rec) const {
     const float s = 1.0f - coord.u - coord.v;
     rec.point = r.point(coord.tmax);
     rec.normal = normal(coord.v * vertexBuffer[index[0]].normal + coord.u * vertexBuffer[index[2]].normal + s * vertexBuffer[index[1]].normal);
@@ -51,30 +51,31 @@ __host__ __device__ void triangle::calcHitRecord(const ray& r, const hitCoords& 
     };
 }
 
-__global__ void createKernel(triangle* tr, const size_t i0, const size_t i1, const size_t i2, const vertex* vertexBuffer) {
-    tr = new (tr) triangle(i0, i1, i2, vertexBuffer);
+__global__ void createKernel(Triangle* tr, const size_t i0, const size_t i1, const size_t i2, const Vertex* vertexBuffer) {
+    tr = new (tr) Triangle(i0, i1, i2, vertexBuffer);
 }
 
-void triangle::create(triangle* dpointer, const triangle& host){
+void Triangle::create(Triangle* dpointer, const Triangle& host){
     createKernel<<<1,1>>>(dpointer, host.index[0], host.index[1], host.index[2], host.vertexBuffer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void destroyKernel(triangle* p) {
-    p->~triangle();
+__global__ void destroyKernel(Triangle* p) {
+    p->~Triangle();
 }
 
-void triangle::destroy(triangle* dpointer){
+void Triangle::destroy(Triangle* dpointer){
     destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__host__ __device__ box triangle::getBox() const {
+__host__ __device__ box Triangle::getBox() const {
     box bbox;
     bbox.min = min(vertexBuffer[index[0]].point, min(vertexBuffer[index[1]].point, vertexBuffer[index[2]].point));
     bbox.max = max(vertexBuffer[index[0]].point, max(vertexBuffer[index[1]].point, vertexBuffer[index[2]].point));
     return bbox;
 }
+
 }

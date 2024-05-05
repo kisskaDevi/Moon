@@ -16,7 +16,7 @@
 #include "boundingBoxGraphics.h"
 #include <bloom.h>
 
-namespace cuda { class model;}
+namespace cuda::rayTracing { class Model;}
 
 namespace moon::rayTracingGraphics {
 
@@ -37,7 +37,7 @@ private:
     ImageResource color;
     ImageResource bloom;
 
-    cuda::cudaRayTracing rayTracer;
+    cuda::rayTracing::RayTracing rayTracer;
     BoundingBoxGraphics bbGraphics;
     moon::workflows::BloomGraphics bloomGraph;
     RayTracingLink Link;
@@ -92,11 +92,11 @@ public:
         rayTracer.setExtent(extent.width, extent.height);
     }
 
-    void bind(cuda::model* m) {
+    void bind(cuda::rayTracing::Model* m) {
         rayTracer.bind(m);
     }
 
-    void setCamera(cuda::devicep<cuda::camera>* cam){
+    void setCamera(cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* cam){
         rayTracer.setCamera(cam);
         bbGraphics.bind(cam);
     }
@@ -121,7 +121,7 @@ public:
         bbGraphics.clear();
 
         if(tree){
-            std::stack<cuda::kdNode<std::vector<const cuda::primitive*>::iterator>*> stack;
+            std::stack<cuda::rayTracing::KDNode<std::vector<const cuda::rayTracing::Primitive*>::iterator>*> stack;
             stack.push(rayTracer.getTree().getRoot());
             for(;!stack.empty();){
                 const auto top = stack.top();
@@ -130,7 +130,7 @@ public:
                 if(!onlyLeafs || !(top->left || top->right)){
                     std::random_device device;
                     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-                    cuda::cbox box(top->bbox, cuda::vec4f(dist(device), dist(device), dist(device), 1.0f));
+                    cuda::rayTracing::cbox box(top->bbox, cuda::rayTracing::vec4f(dist(device), dist(device), dist(device), 1.0f));
                     bbGraphics.bind(box);
                 }
 
@@ -143,7 +143,7 @@ public:
             for(auto& primitive: rayTracer.getTree().storage){
                 std::random_device device;
                 std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-                cuda::cbox box(primitive->bbox, cuda::vec4f(1.0, 0.0, 0.0, 1.0f));
+                cuda::rayTracing::cbox box(primitive->bbox, cuda::rayTracing::vec4f(1.0, 0.0, 0.0, 1.0f));
                 bbGraphics.bind(box);
             }
         }

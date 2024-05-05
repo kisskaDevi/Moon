@@ -3,7 +3,7 @@
 
 #include "quaternion.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
 template<typename type>
 class dualQuaternion

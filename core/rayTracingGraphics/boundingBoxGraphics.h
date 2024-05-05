@@ -34,8 +34,8 @@ private:
     moon::utils::Attachments frame;
     bool enable{true};
 
-    std::vector<cuda::cbox> boxes;
-    cuda::devicep<cuda::camera>* camera;
+    std::vector<cuda::rayTracing::cbox> boxes;
+    cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* camera;
     moon::utils::Buffers cameraBuffers;
 
     void createAttachments();
@@ -59,8 +59,8 @@ public:
 
     const moon::utils::Attachments& getAttachments() const;
     void clear();
-    void bind(const cuda::cbox& box);
-    void bind(cuda::devicep<cuda::camera>* camera);
+    void bind(const cuda::rayTracing::cbox& box);
+    void bind(cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* camera);
 
     void setEnable(bool enable){this->enable = enable;}
     bool getEnable(){return enable;}

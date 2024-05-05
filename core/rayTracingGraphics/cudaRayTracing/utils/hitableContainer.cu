@@ -2,13 +2,13 @@
 
 #include "operations.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-__global__ void addKernel(hitableContainer* container, hitable* object) {
+__global__ void addKernel(HitableContainer* container, Hitable* object) {
     container->add(object);
 }
 
-void add(hitableContainer* container, const std::vector<hitable*>& objects) {
+void add(HitableContainer* container, const std::vector<Hitable*>& objects) {
     for (auto& object : objects) {
         addKernel<<<1,1>>>(container, object);
     }
@@ -16,11 +16,11 @@ void add(hitableContainer* container, const std::vector<hitable*>& objects) {
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void destroyKernel(hitableContainer* p) {
-    p->~hitableContainer();
+__global__ void destroyKernel(HitableContainer* p) {
+    p->~HitableContainer();
 }
 
-void hitableContainer::destroy(hitableContainer* dpointer){
+void HitableContainer::destroy(HitableContainer* dpointer){
     destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());

@@ -3,46 +3,46 @@
 #include "ray.h"
 #include "material.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-cudaRayTracing::cudaRayTracing(){}
-cudaRayTracing::~cudaRayTracing(){}
+RayTracing::RayTracing(){}
+RayTracing::~RayTracing(){}
 
-void cudaRayTracing::create()
+void RayTracing::create()
 {
-    record = cuda::buffer<frameRecord>(width * height);
-    baseColor = cuda::buffer<uint32_t>(width * height);
-    bloomColor = cuda::buffer<uint32_t>(width * height);
+    record = Buffer<FrameRecord>(width * height);
+    baseColor = Buffer<uint32_t>(width * height);
+    bloomColor = Buffer<uint32_t>(width * height);
 }
 
-void cudaRayTracing::buildTree(){
+void RayTracing::buildTree(){
     hostContainer.makeTree();
 
-    devContainer = cuda::make_devicep<container_dev>(container_dev());
+    devContainer = make_devicep<Container_dev>(Container_dev());
     add(devContainer.get(), extractHitables(hostContainer.storage));
 
-    if(std::is_same<container_dev, hitableKDTree>::value){
+    if(std::is_same<Container_dev, HitableKDTree>::value){
         const auto linearSizes = hostContainer.getLinearSizes();
-        buffer<uint32_t> devNodeCounter(linearSizes.size(), (uint32_t*) linearSizes.data());
-        makeTree((hitableKDTree*)devContainer.get(), devNodeCounter.get());
+        Buffer<uint32_t> devNodeCounter(linearSizes.size(), (uint32_t*) linearSizes.data());
+        makeTree((HitableKDTree*)devContainer.get(), devNodeCounter.get());
     }
 }
 
-__device__ bool isEmit(const cuda::hitRecord& rec){
+__device__ bool isEmit(const HitRecord& rec){
     return (rec.rayDepth == 1 && rec.props.emissionFactor >= 0.98f) || (rec.scattering.getDirection().length2() > 0.0f && rec.lightIntensity >= 0.95f);
 }
 
-struct frameBuffer {
+struct FrameBuffer {
     vec4f base{0.0f};
     vec4f bloom{0.0f};
 };
 
 template<typename ContainerType>
-__device__ frameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterations, cuda::camera* cam, float u, float v, cuda::hitRecord& rec, ContainerType* container, curandState* randState) {
-    frameBuffer result;
+__device__ FrameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterations, Camera* cam, float u, float v, HitRecord& rec, ContainerType* container, curandState* randState) {
+    FrameBuffer result;
     do {
         ray r = rec.rayDepth++ ? rec.scattering : cam->getPixelRay(u, v, randState);
-        if (hitCoords coords; container->hit(r, coords)) {
+        if (HitCoords coords; container->hit(r, coords)) {
             if(vec4 color = rec.color; coords.check()){
                 coords.obj->calcHitRecord(r, coords, rec);
                 rec.lightIntensity *= rec.props.absorptionFactor;
@@ -54,7 +54,7 @@ __device__ frameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterat
         if(scattering.length2() == 0.0f || rec.rayDepth >= maxRayIterations){
             result.base = rec.props.emissionFactor >= 0.98f ? rec.color : vec4f(0.0f, 0.0f, 0.0f, 1.0f);
             result.bloom = isEmit(rec) ? rec.color : vec4f(0.0f, 0.0f, 0.0f, 0.0f);
-            rec = cuda::hitRecord{};
+            rec = HitRecord{};
             break;
         }
         rec.scattering = ray(rec.point, scattering);
@@ -63,7 +63,7 @@ __device__ frameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterat
 }
 
 template <typename ContainerType>
-__global__ void render(bool clear, size_t width, size_t height, size_t minRayIterations, size_t maxRayIterations, uint32_t* baseColor, uint32_t* bloomColor, frameRecord* record, cuda::camera* cam, ContainerType* container)
+__global__ void render(bool clear, size_t width, size_t height, size_t minRayIterations, size_t maxRayIterations, uint32_t* baseColor, uint32_t* bloomColor, FrameRecord* record, Camera* cam, ContainerType* container)
 {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -76,10 +76,10 @@ __global__ void render(bool clear, size_t width, size_t height, size_t minRayIte
         float v = 2.0f * float(j) / float(height) - 1.0f;
 
         if(clear){
-            record[pixel] = frameRecord{};
+            record[pixel] = FrameRecord{};
         }
 
-        frameBuffer frame = getFrame(minRayIterations, maxRayIterations, cam, u, v, record[pixel].hit, container, &randState);
+        FrameBuffer frame = getFrame(minRayIterations, maxRayIterations, cam, u, v, record[pixel].hit, container, &randState);
         record[pixel].color += frame.base;
         record[pixel].bloom += frame.bloom;
 
@@ -90,17 +90,17 @@ __global__ void render(bool clear, size_t width, size_t height, size_t minRayIte
     }
 }
 
-__global__ void updateKernel(cuda::camera* cam){
+__global__ void updateKernel(Camera* cam){
     cam->update();
 }
 
-void cudaRayTracing::update(){
+void RayTracing::update(){
     updateKernel<<<1, 1>>>(cam->get());
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-bool cudaRayTracing::calculateImage(uint32_t* hostBaseColor, uint32_t* hostBloomColor)
+bool RayTracing::calculateImage(uint32_t* hostBaseColor, uint32_t* hostBloomColor)
 {
     dim3 blocks(width / xThreads + 1, height / yThreads + 1, 1);
     dim3 threads(xThreads, yThreads, 1);

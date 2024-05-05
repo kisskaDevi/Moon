@@ -4,10 +4,21 @@
 #include "math/vec4.h"
 #include <string>
 
-#define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__)
-void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line);
+namespace cuda::rayTracing {
 
-namespace cuda::Image{
+#define checkCudaErrors(val) debug::check_cuda( (val), #val, __FILE__, __LINE__)
+
+namespace debug {
+
+    void check_cuda(
+        cudaError_t             result,
+        char const* const       func,
+        const char* const       file,
+        int const               line);
+}
+
+namespace image {
+
     void outPPM(
         vec4f*                  frameBuffer,
         size_t                  width,
@@ -21,4 +32,5 @@ namespace cuda::Image{
         const std::string&      filename);
 }
 
+}
 #endif

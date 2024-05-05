@@ -116,7 +116,7 @@ void BoundingBoxGraphics::createPipeline(){
     pushConstantRange.push_back(VkPushConstantRange{});
     pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
     pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(cuda::cbox);
+    pushConstantRange.back().size = sizeof(cuda::rayTracing::cbox);
 
     std::vector<VkDescriptorSetLayout> setLayouts = {descriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -239,7 +239,7 @@ void BoundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
 void BoundingBoxGraphics::update(uint32_t imageIndex){
     if(!enable) return;
 
-    cuda::camera hostCam = cuda::to_host(*camera);
+    cuda::rayTracing::Camera hostCam = cuda::rayTracing::to_host(*camera);
     const float fov = 2.0f * std::atan(hostCam.matrixScale / hostCam.matrixOffset);
     const auto& u =  normal(hostCam.horizontal);
     const auto& v =  normal(hostCam.vertical);
@@ -277,7 +277,7 @@ void BoundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, NULL);
     for(auto box: boxes){
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::cbox), &box);
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::rayTracing::cbox), &box);
         vkCmdDraw(commandBuffer, 24, 1, 0, 0);
     }
 
@@ -288,7 +288,7 @@ const moon::utils::Attachments& BoundingBoxGraphics::getAttachments() const {
     return frame;
 }
 
-void BoundingBoxGraphics::bind(const cuda::cbox& box){
+void BoundingBoxGraphics::bind(const cuda::rayTracing::cbox& box){
     boxes.push_back(box);
 }
 
@@ -296,7 +296,7 @@ void BoundingBoxGraphics::clear(){
     boxes.clear();
 }
 
-void BoundingBoxGraphics::bind(cuda::devicep<cuda::camera>* camera){
+void BoundingBoxGraphics::bind(cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* camera){
     this->camera = camera;
 }
 

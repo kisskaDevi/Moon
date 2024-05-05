@@ -12,70 +12,71 @@
 #include "hitableArray.h"
 #include "hitableList.h"
 
-namespace cuda {
-    struct frameRecord{
-        cuda::hitRecord hit;
-        vec4f color;
-        vec4f bloom;
-    };
+namespace cuda::rayTracing {
 
-    class cudaRayTracing {
-    public:
-        using container_host = kdTree<std::vector<const cuda::primitive*>>;
-        using container_dev = hitableKDTree;
+struct FrameRecord{
+    HitRecord hit;
+    vec4f color;
+    vec4f bloom;
+};
 
-    private:
-        uint32_t width;
-        uint32_t height;
-        cuda::buffer<frameRecord> record;
-        cuda::buffer<uint32_t> baseColor;
-        cuda::buffer<uint32_t> bloomColor;
+class RayTracing {
+public:
+    using Container_host = KDTree<std::vector<const Primitive*>>;
+    using Container_dev = HitableKDTree;
 
-        uint32_t xThreads{ 8 };
-        uint32_t yThreads{ 8 };
-        uint32_t minRayIterations{ 2 };
-        uint32_t maxRayIterations{ 12 };
+private:
+    uint32_t width;
+    uint32_t height;
+    Buffer<FrameRecord> record;
+    Buffer<uint32_t> baseColor;
+    Buffer<uint32_t> bloomColor;
 
-        bool clear{false};
+    uint32_t xThreads{ 8 };
+    uint32_t yThreads{ 8 };
+    uint32_t minRayIterations{ 2 };
+    uint32_t maxRayIterations{ 12 };
 
-        devicep<cuda::camera>* cam{nullptr};
+    bool clear{false};
 
-        devicep<container_dev> devContainer;
-        container_host hostContainer;
+    Devicep<Camera>* cam{nullptr};
 
-    public:
+    Devicep<Container_dev> devContainer;
+    Container_host hostContainer;
 
-        cudaRayTracing();
-        ~cudaRayTracing();
+public:
 
-        void setExtent(uint32_t width, uint32_t height){
-            this->width = width;
-            this->height = height;
+    RayTracing();
+    ~RayTracing();
+
+    void setExtent(uint32_t width, uint32_t height){
+        this->width = width;
+        this->height = height;
+    }
+    void bind(Model* m) {
+        for(const auto& primitive : m->primitives){
+            hostContainer.storage.push_back(&primitive);
         }
-        void bind(cuda::model* m) {
-            for(const auto& primitive : m->primitives){
-                hostContainer.storage.push_back(&primitive);
-            }
-        }
-        void setCamera(cuda::devicep<cuda::camera>* cam){
-            this->cam = cam;
-        }
+    }
+    void setCamera(Devicep<Camera>* cam){
+        this->cam = cam;
+    }
 
-        void create();
-        void update();
+    void create();
+    void update();
 
-        bool calculateImage(uint32_t* baseColor, uint32_t* bloomColor);
+    bool calculateImage(uint32_t* baseColor, uint32_t* bloomColor);
 
-        void clearFrame(){
-            clear = true;
-        }
+    void clearFrame(){
+        clear = true;
+    }
 
-        void buildTree();
+    void buildTree();
 
-        kdTree<std::vector<const cuda::primitive*>>& getTree(){
-            return hostContainer;
-        }
-    };
+    KDTree<std::vector<const Primitive*>>& getTree(){
+        return hostContainer;
+    }
+};
 
 }
 

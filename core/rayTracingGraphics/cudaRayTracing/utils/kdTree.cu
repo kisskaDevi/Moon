@@ -1,36 +1,37 @@
 #include "utils/kdTree.h"
 #include "utils/operations.h"
 
-namespace cuda {
+namespace cuda::rayTracing {
 
-__global__ void createTreeKernel(hitableKDTree* tree, uint32_t* offsets)
+__global__ void createTreeKernel(HitableKDTree* tree, uint32_t* offsets)
 {
     tree->makeTree(offsets);
 }
 
-void makeTree(hitableKDTree* container, uint32_t* offsets){
+void makeTree(HitableKDTree* container, uint32_t* offsets){
     createTreeKernel<<<1,1>>>(container, offsets);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void createKernel(hitableKDTree* p) {
-    p = new (p) hitableKDTree();
+__global__ void createKernel(HitableKDTree* p) {
+    p = new (p) HitableKDTree();
 }
 
-void hitableKDTree::create(hitableKDTree* dpointer, const hitableKDTree& host){
+void HitableKDTree::create(HitableKDTree* dpointer, const HitableKDTree& host){
     createKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__global__ void destroyKernel(hitableKDTree* p) {
-    p->~hitableKDTree();
+__global__ void destroyKernel(HitableKDTree* p) {
+    p->~HitableKDTree();
 }
 
-void hitableKDTree::destroy(hitableKDTree* dpointer){
+void HitableKDTree::destroy(HitableKDTree* dpointer){
     destroyKernel<<<1,1>>>(dpointer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }
+
 }

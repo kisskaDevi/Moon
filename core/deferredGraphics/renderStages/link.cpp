@@ -29,7 +29,7 @@ void Link::setRenderPass(VkRenderPass renderPass)
     this->renderPass = renderPass;
 }
 
-void Link::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
+void Link::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size){
     pushConstant.offset = offset;
     pushConstant.size = size;
 }

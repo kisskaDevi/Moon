@@ -33,7 +33,7 @@ protected:
     struct Outlining{
         bool Enable{false};
         float Width{0.0f};
-        vector<float,4> Color{0.0f};
+        moon::math::Vector<float,4> Color{0.0f};
     }outlining;
 
     Model* pModel{nullptr};
@@ -61,10 +61,10 @@ public:
     void setOutlining(
         const bool& enable,
         const float& width = 0,
-        const vector<float,4>& color = {0.0f});
+        const moon::math::Vector<float,4>& color = {0.0f});
     bool getOutliningEnable() const;
     float getOutliningWidth() const;
-    vector<float,4> getOutliningColor() const;
+    moon::math::Vector<float,4> getOutliningColor() const;
 
     bool comparePrimitive(uint32_t primitive);
     void setFirstPrimitive(uint32_t firstPrimitive);

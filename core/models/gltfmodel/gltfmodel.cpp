@@ -40,16 +40,16 @@ namespace {
 
     void calculateNodeTangent(std::vector<moon::interfaces::Model::Vertex>& vertexBuffer, std::vector<uint32_t>& indexBuffer){
         for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
-            vector<float,3> dv1   = vertexBuffer[indexBuffer[i+1]].pos - vertexBuffer[indexBuffer[i+0]].pos;
-            vector<float,3> dv2   = vertexBuffer[indexBuffer[i+2]].pos - vertexBuffer[indexBuffer[i+0]].pos;
+            moon::math::Vector<float,3> dv1   = vertexBuffer[indexBuffer[i+1]].pos - vertexBuffer[indexBuffer[i+0]].pos;
+            moon::math::Vector<float,3> dv2   = vertexBuffer[indexBuffer[i+2]].pos - vertexBuffer[indexBuffer[i+0]].pos;
 
-            vector<float,2> duv1  = vertexBuffer[indexBuffer[i+1]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
-            vector<float,2> duv2  = vertexBuffer[indexBuffer[i+2]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
+            moon::math::Vector<float,2> duv1  = vertexBuffer[indexBuffer[i+1]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
+            moon::math::Vector<float,2> duv2  = vertexBuffer[indexBuffer[i+2]].uv0 - vertexBuffer[indexBuffer[i+0]].uv0;
 
             float det = 1.0f/(duv1[0]*duv2[1] - duv1[1]*duv2[0]);
 
-            vector<float,3> tangent = normalize( det*(duv2[1]*dv1-duv1[1]*dv2));
-            vector<float,3> bitangent = normalize( det*(duv1[0]*dv2-duv2[0]*dv1));
+            moon::math::Vector<float,3> tangent = normalize( det*(duv2[1]*dv1-duv1[1]*dv2));
+            moon::math::Vector<float,3> bitangent = normalize( det*(duv1[0]*dv2-duv2[0]*dv1));
 
             if(dot(cross(tangent,bitangent),vertexBuffer[indexBuffer[i+0]].normal)<0.0f){
                 tangent = -1.0f * tangent;
@@ -182,7 +182,7 @@ namespace {
                     material.PhysicalDescriptorTextureSet = primitive->material->extension.specularGlossinessTexture != nullptr ? primitive->material->texCoordSets.specularGlossiness : -1;
                     material.colorTextureSet = primitive->material->extension.diffuseTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
                     material.diffuseFactor = primitive->material->extension.diffuseFactor;
-                    material.specularFactor = vector<float, 4>(
+                    material.specularFactor = moon::math::Vector<float, 4>(
                         primitive->material->extension.specularFactor[0],
                         primitive->material->extension.specularFactor[1],
                         primitive->material->extension.specularFactor[2],
@@ -319,7 +319,7 @@ void GltfModel::loadSkins(tinygltf::Model &gltfModel){
                 const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
 
                 newSkin->inverseBindMatrices.resize(accessor.count);
-                std::memcpy((void*)newSkin->inverseBindMatrices.data(), (void*)&buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(matrix<float,4,4>));
+                std::memcpy((void*)newSkin->inverseBindMatrices.data(), (void*)&buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(moon::math::Matrix<float,4,4>));
                 for(auto& matrix: newSkin->inverseBindMatrices){
                     matrix = transpose(matrix);
                 }
@@ -386,7 +386,7 @@ void GltfModel::loadMaterials(tinygltf::Model &gltfModel)
         }
         if (mat.values.find("baseColorFactor") != mat.values.end()) {
             auto color = mat.values["baseColorFactor"].ColorFactor();
-            material.baseColorFactor = vector<float, 4>(
+            material.baseColorFactor = moon::math::Vector<float, 4>(
                 static_cast<float>(color[0]),
                 static_cast<float>(color[1]),
                 static_cast<float>(color[2]),
@@ -419,7 +419,7 @@ void GltfModel::loadMaterials(tinygltf::Model &gltfModel)
         }
         if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
             auto color = mat.additionalValues["emissiveFactor"].ColorFactor();
-            material.emissiveFactor = vector<float, 4>(
+            material.emissiveFactor = moon::math::Vector<float, 4>(
                 static_cast<float>(color[0]),
                 static_cast<float>(color[1]),
                 static_cast<float>(color[2]), 1.0f);

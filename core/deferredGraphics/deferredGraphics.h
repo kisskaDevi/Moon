@@ -27,9 +27,9 @@ namespace moon::deferredGraphics {
 class Link;
 
 struct StorageBufferObject{
-    alignas(16) vector<float,4>    mousePosition;
-    alignas(4)  uint32_t           number;
-    alignas(4)  float              depth;
+    alignas(16) moon::math::Vector<float,4> mousePosition;
+    alignas(4)  uint32_t number;
+    alignas(4)  float depth;
 };
 
 class DeferredGraphics: public moon::graphicsManager::GraphicsInterface{
@@ -83,7 +83,7 @@ public:
 
     void update(uint32_t imageIndex) override;
 
-    void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size) override;
+    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
 
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,

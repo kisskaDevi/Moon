@@ -33,12 +33,12 @@ class testScene : public scene
 private:
     bool& framebufferResized;
 
-    std::filesystem::path   ExternalPath;
-    vector<uint32_t,2>      extent{0};
-    vector<double,2>        mousePos{0.0};
-    float                   globalTime{0.0f};
-    bool                    enableScatteringRefraction{true};
-    int                     ufoCounter{0};
+    std::filesystem::path ExternalPath;
+    moon::math::Vector<uint32_t,2> extent{0};
+    moon::math::Vector<double,2> mousePos{0.0};
+    float globalTime{0.0f};
+    bool enableScatteringRefraction{true};
+    int ufoCounter{0};
 
     float                   blitFactor = 1.5f;
     float                   farBlurDepth = 1.0f;

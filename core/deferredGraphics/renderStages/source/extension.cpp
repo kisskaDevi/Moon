@@ -8,8 +8,8 @@
 namespace moon::deferredGraphics {
 
 struct OutliningPushConst{
-    alignas(16) vector<float,4>     stencilColor;
-    alignas(4)  float               width;
+    alignas(16) moon::math::Vector<float,4> stencilColor;
+    alignas(4)  float width;
 };
 
 void Graphics::OutliningExtension::DestroyPipeline(VkDevice device)

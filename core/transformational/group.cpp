@@ -10,15 +10,15 @@ Group::~Group(){}
 
 void Group::updateModelMatrix()
 {
-    dualQuaternion<float> dQuat = convert(rotation,translation);
-    matrix<float,4,4> transformMatrix = convert(dQuat);
+    moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
+    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
 
-    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
+    modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
 }
 
-Group& Group::rotate(const float & ang ,const vector<float,3> & ax)
+Group& Group::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotation = convert(ang, vector<float,3>(normalize(ax)))*rotation;
+    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax)))*rotation;
     updateModelMatrix();
 
     for(auto& object: objects){
@@ -27,9 +27,9 @@ Group& Group::rotate(const float & ang ,const vector<float,3> & ax)
     return *this;
 }
 
-Group& Group::translate(const vector<float,3> & translate)
+Group& Group::translate(const moon::math::Vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,translate);
+    translation += moon::math::Quaternion<float>(0.0f,translate);
     updateModelMatrix();
 
     for(auto& object: objects){
@@ -38,7 +38,7 @@ Group& Group::translate(const vector<float,3> & translate)
     return *this;
 }
 
-Group& Group::scale(const vector<float,3> & scale)
+Group& Group::scale(const moon::math::Vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
@@ -49,7 +49,7 @@ Group& Group::scale(const vector<float,3> & scale)
     return *this;
 }
 
-Group& Group::setGlobalTransform(const matrix<float,4,4> & transform)
+Group& Group::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();

@@ -9,8 +9,8 @@
 namespace moon::rayTracingGraphics {
 
 struct CameraBuffer{
-    alignas(16) matrix<float,4,4> proj;
-    alignas(16) matrix<float,4,4> view;
+    alignas(16) moon::math::Matrix<float,4,4> proj;
+    alignas(16) moon::math::Matrix<float,4,4> view;
 };
 
 BoundingBoxGraphics::BoundingBoxGraphics() {}
@@ -246,8 +246,8 @@ void BoundingBoxGraphics::update(uint32_t imageIndex){
     const auto& n = -normal(hostCam.viewRay.getDirection());
     const auto& c = hostCam.viewRay.getOrigin();
 
-    matrix<float,4,4> projMatrix = perspective(fov, hostCam.aspect, hostCam.matrixOffset);
-    matrix<float,4,4> viewMatrix = {
+    moon::math::Matrix<float,4,4> projMatrix = moon::math::perspective(fov, hostCam.aspect, hostCam.matrixOffset);
+    moon::math::Matrix<float,4,4> viewMatrix = {
         u[0], u[1], u[2], - (c[0]*u[0] + c[1]*u[1] + c[2]*u[2]),
         v[0], v[1], v[2], - (c[0]*v[0] + c[1]*v[1] + c[2]*v[2]),
         n[0], n[1], n[2], - (c[0]*n[0] + c[1]*n[1] + c[2]*n[2]),

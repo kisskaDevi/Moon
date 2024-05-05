@@ -8,7 +8,7 @@
 
 namespace moon::transformational {
 
-SpotLight::SpotLight(const vector<float,4>& color, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
+SpotLight::SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
     lightColor(color),
     projectionMatrix(projection),
     type(type)
@@ -18,7 +18,7 @@ SpotLight::SpotLight(const vector<float,4>& color, const matrix<float,4,4> & pro
     this->enableScattering = enableScattering;
 }
 
-SpotLight::SpotLight(const std::filesystem::path & TEXTURE_PATH, const matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
+SpotLight::SpotLight(const std::filesystem::path & TEXTURE_PATH, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
     tex(new moon::utils::Texture(TEXTURE_PATH)),
     projectionMatrix(projection),
     type(type)
@@ -70,81 +70,81 @@ void SpotLight::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& unif
 
 void SpotLight::updateModelMatrix()
 {
-    dualQuaternion<float> dQuat = convert(rotation,translation);
-    matrix<float,4,4> transformMatrix = convert(dQuat);
+    moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
+    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
 
-    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
+    modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-SpotLight& SpotLight::setGlobalTransform(const matrix<float,4,4> & transform)
+SpotLight& SpotLight::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::translate(const vector<float,3> & translate)
+SpotLight& SpotLight::translate(const moon::math::Vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,translate);
+    translation += moon::math::Quaternion<float>(0.0f,translate);
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::rotate(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
+    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::rotate(const quaternion<float>& quat)
+SpotLight& SpotLight::rotate(const moon::math::Quaternion<float>& quat)
 {
     rotation = quat*rotation;
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::scale(const vector<float,3> & scale)
+SpotLight& SpotLight::scale(const moon::math::Vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::setTranslation(const vector<float,3>& translate)
+SpotLight& SpotLight::setTranslation(const moon::math::Vector<float,3>& translate)
 {
-    translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
+    translation = moon::math::Quaternion<float>(0.0f,moon::math::Vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::setRotation(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::setRotation(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotation = convert(ang,vector<float,3>(normalize(ax)));
+    rotation = convert(ang,moon::math::Vector<float,3>(normalize(ax)));
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::setRotation(const quaternion<float>& rotation)
+SpotLight& SpotLight::setRotation(const moon::math::Quaternion<float>& rotation)
 {
     this->rotation = rotation;
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::rotateX(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
+    rotationX = convert(ang,moon::math::Vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
     updateModelMatrix();
     return *this;
 }
 
-SpotLight& SpotLight::rotateY(const float & ang ,const vector<float,3> & ax)
+SpotLight& SpotLight::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
+    rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
     updateModelMatrix();
     return *this;
@@ -154,12 +154,12 @@ void SpotLight::setTexture(moon::utils::Texture* tex) {
     this->tex = tex;
 }
 
-void SpotLight::setProjectionMatrix(const matrix<float,4,4> & projection)  {
+void SpotLight::setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection)  {
     projectionMatrix = projection;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-void SpotLight::setLightColor(const vector<float,4> &color){
+void SpotLight::setLightColor(const moon::math::Vector<float,4> &color){
     lightColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
 }
@@ -169,15 +169,15 @@ void SpotLight::setLightDropFactor(const float& dropFactor){
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-matrix<float,4,4> SpotLight::getModelMatrix() const {
+moon::math::Matrix<float,4,4> SpotLight::getModelMatrix() const {
     return modelMatrix;
 }
 
-vector<float,3> SpotLight::getTranslate() const {
+moon::math::Vector<float,3> SpotLight::getTranslate() const {
     return translation.im();
 }
 
-vector<float,4> SpotLight::getLightColor() const {
+moon::math::Vector<float,4> SpotLight::getLightColor() const {
     return lightColor;
 }
 
@@ -264,9 +264,9 @@ void SpotLight::update(
             buffer.proj = transpose(projectionMatrix);
             buffer.view = transpose(inverse(modelMatrix));
             buffer.projView = transpose(projectionMatrix * inverse(modelMatrix));
-            buffer.position = modelMatrix * vector<float,4>(0.0f,0.0f,0.0f,1.0f);
+            buffer.position = modelMatrix * moon::math::Vector<float,4>(0.0f,0.0f,0.0f,1.0f);
             buffer.lightColor = lightColor;
-            buffer.lightProp = vector<float,4>(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
+            buffer.lightProp = moon::math::Vector<float,4>(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
         std::memcpy(uniformBuffersHost[frameNumber].map, &buffer, sizeof(buffer));
 
         uniformBuffersHost[frameNumber].updateFlag = false;
@@ -358,46 +358,46 @@ void SpotLight::printStatus() const
 
 //isotropicLight
 
-IsotropicLight::IsotropicLight(const vector<float,4>& color, float radius)
+IsotropicLight::IsotropicLight(const moon::math::Vector<float,4>& color, float radius)
 {
-    const auto proj = perspective(radians(91.0f), 1.0f, 0.01f, radius);
+    const auto proj = moon::math::perspective(moon::math::radians(91.0f), 1.0f, 0.01f, radius);
 
     lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
-    lightSource.back()->rotate(radians(90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource.back()->rotate(moon::math::radians(90.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
 
     lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
-    lightSource.back()->rotate(radians(-90.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource.back()->rotate(moon::math::radians(-90.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
 
     lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
-    lightSource.back()->rotate(radians(0.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource.back()->rotate(moon::math::radians(0.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
 
     lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
-    lightSource.back()->rotate(radians(90.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource.back()->rotate(moon::math::radians(90.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
 
     lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
-    lightSource.back()->rotate(radians(-90.0f),vector<float,3>(0.0f,1.0f,0.0f));
+    lightSource.back()->rotate(moon::math::radians(-90.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
 
     lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
-    lightSource.back()->rotate(radians(180.0f),vector<float,3>(1.0f,0.0f,0.0f));
+    lightSource.back()->rotate(moon::math::radians(180.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
 
     // colors for debug if color = {0, 0, 0, 0}
     if(dot(color,color) == 0.0f){
-        lightSource.at(0)->setLightColor(vector<float,4>(1.0f,0.0f,0.0f,1.0f));
-        lightSource.at(1)->setLightColor(vector<float,4>(0.0f,1.0f,0.0f,1.0f));
-        lightSource.at(2)->setLightColor(vector<float,4>(0.0f,0.0f,1.0f,1.0f));
-        lightSource.at(3)->setLightColor(vector<float,4>(0.3f,0.6f,0.9f,1.0f));
-        lightSource.at(4)->setLightColor(vector<float,4>(0.6f,0.9f,0.3f,1.0f));
-        lightSource.at(5)->setLightColor(vector<float,4>(0.9f,0.3f,0.6f,1.0f));
+        lightSource.at(0)->setLightColor(moon::math::Vector<float,4>(1.0f,0.0f,0.0f,1.0f));
+        lightSource.at(1)->setLightColor(moon::math::Vector<float,4>(0.0f,1.0f,0.0f,1.0f));
+        lightSource.at(2)->setLightColor(moon::math::Vector<float,4>(0.0f,0.0f,1.0f,1.0f));
+        lightSource.at(3)->setLightColor(moon::math::Vector<float,4>(0.3f,0.6f,0.9f,1.0f));
+        lightSource.at(4)->setLightColor(moon::math::Vector<float,4>(0.6f,0.9f,0.3f,1.0f));
+        lightSource.at(5)->setLightColor(moon::math::Vector<float,4>(0.9f,0.3f,0.6f,1.0f));
     }
 }
 
 IsotropicLight::~IsotropicLight(){}
 
-vector<float,4> IsotropicLight::getLightColor() const {
+moon::math::Vector<float,4> IsotropicLight::getLightColor() const {
     return lightColor;
 }
 
-vector<float,3> IsotropicLight::getTranslate() const {
+moon::math::Vector<float,3> IsotropicLight::getTranslate() const {
     return translation.im();
 }
 
@@ -405,14 +405,14 @@ std::vector<SpotLight*> IsotropicLight::get() const {
     return lightSource;
 }
 
-void IsotropicLight:: setProjectionMatrix(const matrix<float,4,4> & projection)
+void IsotropicLight:: setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection)
 {
     projectionMatrix = projection;
     for(auto& source: lightSource)
         source->setProjectionMatrix(projectionMatrix);
 }
 
-void IsotropicLight::setLightColor(const vector<float,4> &color)
+void IsotropicLight::setLightColor(const moon::math::Vector<float,4> &color)
 {
     this->lightColor = color;
     for(auto& source: lightSource)
@@ -427,60 +427,60 @@ void IsotropicLight::setLightDropFactor(const float& dropFactor){
 
 void IsotropicLight::updateModelMatrix()
 {
-    dualQuaternion<float> dQuat = convert(rotation,translation);
-    matrix<float,4,4> transformMatrix = convert(dQuat);
+    moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
+    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
 
-    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
+    modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
 
     for(auto& source: lightSource)
         source->setGlobalTransform(modelMatrix);
 }
 
-IsotropicLight& IsotropicLight::setGlobalTransform(const matrix<float,4,4> & transform)
+IsotropicLight& IsotropicLight::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
     return *this;
 }
 
-IsotropicLight& IsotropicLight::translate(const vector<float,3> & translate)
+IsotropicLight& IsotropicLight::translate(const moon::math::Vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f, vector<float,3>(translate[0],translate[1],translate[2]));
+    translation += moon::math::Quaternion<float>(0.0f, moon::math::Vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
     return *this;
 }
 
-IsotropicLight& IsotropicLight::rotate(const float & ang ,const vector<float,3> & ax)
+IsotropicLight& IsotropicLight::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
+    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
     updateModelMatrix();
     return *this;
 }
 
-IsotropicLight& IsotropicLight::scale(const vector<float,3> & scale)
+IsotropicLight& IsotropicLight::scale(const moon::math::Vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
     return *this;
 }
 
-void IsotropicLight::rotateX(const float & ang ,const vector<float,3> & ax)
+void IsotropicLight::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
+    rotationX = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
     updateModelMatrix();
 }
 
-void IsotropicLight::rotateY(const float & ang ,const vector<float,3> & ax)
+void IsotropicLight::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
+    rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
     updateModelMatrix();
 }
 
-void IsotropicLight::setTranslation(const vector<float,3>& translate)
+void IsotropicLight::setTranslation(const moon::math::Vector<float,3>& translate)
 {
-    translation = quaternion<float>(0.0f,vector<float,3>(translate[0],translate[1],translate[2]));
+    translation = moon::math::Quaternion<float>(0.0f, moon::math::Vector<float,3>(translate[0],translate[1],translate[2]));
     updateModelMatrix();
 }
 

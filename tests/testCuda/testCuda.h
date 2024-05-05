@@ -25,8 +25,8 @@ private:
     bool& framebufferResized;
 
     std::filesystem::path   ExternalPath;
-    vector<uint32_t,2>      extent{0};
-    vector<double,2>        mousePos{0.0};
+    moon::math::Vector<uint32_t,2> extent{0};
+    moon::math::Vector<double,2> mousePos{0.0};
 
     float                   focus = 0.049f;
     float                   blitFactor = 1.5f;

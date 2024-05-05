@@ -29,7 +29,7 @@ void RayTracingLink::setRenderPass(VkRenderPass renderPass)
     this->renderPass = renderPass;
 }
 
-void RayTracingLink::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
+void RayTracingLink::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size){
     pushConstant.offset = offset;
     pushConstant.size = size;
 }

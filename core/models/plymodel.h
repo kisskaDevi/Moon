@@ -38,14 +38,14 @@ private:
     } uniformBuffer;
 
     struct UniformBlock {
-        matrix<float,4,4> mat;
-        matrix<float,4,4> jointMatrix[MAX_NUM_JOINTS]{};
+        moon::math::Matrix<float,4,4> mat;
+        moon::math::Matrix<float,4,4> jointMatrix[MAX_NUM_JOINTS]{};
         float jointcount{0};
     } uniformBlock;
 
     moon::interfaces::BoundingBox bb;
 
-    vector<float,3> maxSize{0.0f};
+    moon::math::Vector<float,3> maxSize{0.0f};
 
     void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
     void destroyStagingBuffer(VkDevice device);
@@ -55,9 +55,9 @@ private:
 
 public:
     PlyModel(std::filesystem::path filename,
-             vector<float, 4> baseColorFactor = vector<float, 4>(1.0f,1.0f,1.0f,1.0f),
-             vector<float, 4> diffuseFactor = vector<float, 4>(1.0f),
-             vector<float, 4> specularFactor = vector<float, 4>(1.0f),
+             moon::math::Vector<float, 4> baseColorFactor = moon::math::Vector<float, 4>(1.0f,1.0f,1.0f,1.0f),
+             moon::math::Vector<float, 4> diffuseFactor = moon::math::Vector<float, 4>(1.0f),
+             moon::math::Vector<float, 4> specularFactor = moon::math::Vector<float, 4>(1.0f),
              float metallicFactor = 0.0f,
              float roughnessFactor = 0.5f,
              float workflow = 1.0f);
@@ -70,7 +70,7 @@ public:
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
-    const vector<float,3> getMaxSize() const;
+    const moon::math::Vector<float,3> getMaxSize() const;
 
     bool hasAnimation(uint32_t) const override {return false;}
     float animationStart(uint32_t, uint32_t) const override {return 0.0f;}

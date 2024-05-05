@@ -11,8 +11,8 @@
 namespace moon::deferredGraphics {
 
 struct LinkPushConstant{
-    vector<float,2> offset{0.0f, 0.0f};
-    vector<float,2> size{1.0f, 1.0f};
+    moon::math::Vector<float,2> offset{0.0f, 0.0f};
+    moon::math::Vector<float,2> size{1.0f, 1.0f};
 };
 
 class Link : public moon::graphicsManager::Linkable
@@ -37,7 +37,7 @@ public:
     void setDeviceProp(VkDevice device);
     void setImageCount(const uint32_t& count);
     void setShadersPath(const std::filesystem::path& shadersPath);
-    void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size);
+    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size);
 
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
     void setRenderPass(VkRenderPass renderPass) override;

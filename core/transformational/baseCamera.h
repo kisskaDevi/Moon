@@ -11,22 +11,22 @@
 namespace moon::transformational {
 
 struct UniformBufferObject{
-    alignas(16) matrix<float,4,4>   view;
-    alignas(16) matrix<float,4,4>   proj;
-    alignas(16) vector<float,4>     eyePosition;
+    alignas(16) moon::math::Matrix<float,4,4>   view;
+    alignas(16) moon::math::Matrix<float,4,4>   proj;
+    alignas(16) moon::math::Vector<float,4>     eyePosition;
 };
 
 class BaseCamera : public Transformational, public moon::interfaces::Camera
 {
 private:
-    matrix<float,4,4>       projMatrix{1.0f};
-    matrix<float,4,4>       viewMatrix{1.0f};
-    matrix<float,4,4>       globalTransformation{1.0f};
+    moon::math::Matrix<float,4,4>       projMatrix{1.0f};
+    moon::math::Matrix<float,4,4>       viewMatrix{1.0f};
+    moon::math::Matrix<float,4,4>       globalTransformation{1.0f};
 
-    quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
-    quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
-    quaternion<float>       rotationX{1.0f,0.0f,0.0f,0.0f};
-    quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
+    moon::math::Quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
+    moon::math::Quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
+    moon::math::Quaternion<float>       rotationX{1.0f,0.0f,0.0f,0.0f};
+    moon::math::Quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
 
 protected:
     bool                    created{false};
@@ -46,31 +46,31 @@ public:
     void recreate(float angle, float aspect, float near, float far);
     void recreate(float angle, float aspect, float near);
 
-    BaseCamera& setGlobalTransform(const matrix<float,4,4> & transform) override;
-    BaseCamera& translate(const vector<float,3> & translate) override;
-    BaseCamera& rotate(const float & ang ,const vector<float,3> & ax) override;
-    BaseCamera& scale(const vector<float,3> & scale) override;
+    BaseCamera& setGlobalTransform(const moon::math::Matrix<float,4,4> & transform) override;
+    BaseCamera& translate(const moon::math::Vector<float,3> & translate) override;
+    BaseCamera& rotate(const float & ang ,const moon::math::Vector<float,3> & ax) override;
+    BaseCamera& scale(const moon::math::Vector<float,3> & scale) override;
 
-    BaseCamera& rotate(const quaternion<float>& quat);
-    BaseCamera& rotateX(const float & ang ,const vector<float,3> & ax);
-    BaseCamera& rotateY(const float & ang ,const vector<float,3> & ax);
+    BaseCamera& rotate(const moon::math::Quaternion<float>& quat);
+    BaseCamera& rotateX(const float & ang ,const moon::math::Vector<float,3> & ax);
+    BaseCamera& rotateY(const float & ang ,const moon::math::Vector<float,3> & ax);
 
-    BaseCamera& setProjMatrix(const matrix<float,4,4> & proj);
-    BaseCamera& setTranslation(const vector<float,3> & translate);
-    BaseCamera& setRotation(const float & ang ,const vector<float,3> & ax);
-    BaseCamera& setRotation(const quaternion<float>& rotation);
+    BaseCamera& setProjMatrix(const moon::math::Matrix<float,4,4> & proj);
+    BaseCamera& setTranslation(const moon::math::Vector<float,3> & translate);
+    BaseCamera& setRotation(const float & ang ,const moon::math::Vector<float,3> & ax);
+    BaseCamera& setRotation(const moon::math::Quaternion<float>& rotation);
 
     void create(moon::utils::PhysicalDevice device, uint32_t imageCount) override;
     void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 
     const moon::utils::Buffers& getBuffers() const override;
 
-    vector<float,3>         getTranslation()const;
-    quaternion<float>       getRotationX()const;
-    quaternion<float>       getRotationY()const;
+    moon::math::Vector<float,3>         getTranslation()const;
+    moon::math::Quaternion<float>       getRotationX()const;
+    moon::math::Quaternion<float>       getRotationY()const;
 
-    matrix<float,4,4>       getProjMatrix() const;
-    matrix<float,4,4>       getViewMatrix() const;
+    moon::math::Matrix<float,4,4>       getProjMatrix() const;
+    moon::math::Matrix<float,4,4>       getViewMatrix() const;
 };
 
 }

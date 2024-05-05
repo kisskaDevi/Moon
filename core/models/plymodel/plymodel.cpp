@@ -14,9 +14,9 @@ namespace moon::models {
 
 PlyModel::PlyModel(
         std::filesystem::path filename,
-        vector<float, 4> baseColorFactor,
-        vector<float, 4> diffuseFactor,
-        vector<float, 4> specularFactor,
+        moon::math::Vector<float, 4> baseColorFactor,
+        moon::math::Vector<float, 4> diffuseFactor,
+        moon::math::Vector<float, 4> specularFactor,
         float metallicFactor,
         float roughnessFactor,
         float workflow) : filename(filename)
@@ -78,7 +78,7 @@ const VkBuffer* PlyModel::getVertices() const {
 const VkBuffer* PlyModel::getIndices() const {
     return &indices.instance;
 }
-const vector<float,3> PlyModel::getMaxSize() const {
+const moon::math::Vector<float,3> PlyModel::getMaxSize() const {
     return maxSize;
 }
 
@@ -104,17 +104,17 @@ void PlyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
             std::memcpy((void*)&vertexBuffer[vertexIndex].pos, (void*)&vertices->buffer.get()[bufferIndex], 3 * sizeof(float));
         }
         for(uint32_t i = 0; i < vertexBuffer.size(); i++){
-            maxSize = vector<float,3>(
+            maxSize = moon::math::Vector<float,3>(
                 std::max(maxSize[0],std::abs(vertexBuffer[i].pos[0])),
                 std::max(maxSize[1],std::abs(vertexBuffer[i].pos[1])),
                 std::max(maxSize[2],std::abs(vertexBuffer[i].pos[2]))
                 );
-            bb.max = vector<float,3>(
+            bb.max = moon::math::Vector<float,3>(
                 std::max(bb.max[0],vertexBuffer[i].pos[0]),
                 std::max(bb.max[1],vertexBuffer[i].pos[1]),
                 std::max(bb.max[2],vertexBuffer[i].pos[2])
             );
-            bb.min = vector<float,3>(
+            bb.min = moon::math::Vector<float,3>(
                 std::min(bb.min[0],vertexBuffer[i].pos[0]),
                 std::min(bb.min[1],vertexBuffer[i].pos[1]),
                 std::min(bb.min[2],vertexBuffer[i].pos[2])
@@ -132,7 +132,7 @@ void PlyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
         }
     } else if(vertices) {
         for(uint32_t i = 0; i < indexBuffer.size(); i += 3){
-            const vector<float, 3> n = normalize(cross(
+            const moon::math::Vector<float, 3> n = normalize(cross(
                 vertexBuffer[indexBuffer[i + 1]].pos - vertexBuffer[indexBuffer[i + 0]].pos,
                 vertexBuffer[indexBuffer[i + 2]].pos - vertexBuffer[indexBuffer[i + 1]].pos
             ));
@@ -154,7 +154,7 @@ void PlyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     createBuffer(physicalDevice, device, commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexStaging, this->vertices);
     createBuffer(physicalDevice, device, commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexStaging, indices);
 
-    this->uniformBlock.mat = matrix<float,4,4>(1.0f);
+    this->uniformBlock.mat = moon::math::Matrix<float,4,4>(1.0f);
     moon::utils::buffer::create( physicalDevice,
                     device,
                     sizeof(uniformBlock),

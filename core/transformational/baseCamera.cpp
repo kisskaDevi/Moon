@@ -11,25 +11,25 @@ BaseCamera::BaseCamera(){}
 
 BaseCamera::BaseCamera(float angle, float aspect, float near)
 {
-    matrix<float,4,4> proj = perspective(radians(angle), aspect, near);
+    moon::math::Matrix<float,4,4> proj = moon::math::perspective(moon::math::radians(angle), aspect, near);
     setProjMatrix(proj);
 }
 
 BaseCamera::BaseCamera(float angle, float aspect, float near, float far)
 {
-    matrix<float,4,4> proj = perspective(radians(angle), aspect, near, far);
+    moon::math::Matrix<float,4,4> proj = moon::math::perspective(moon::math::radians(angle), aspect, near, far);
     setProjMatrix(proj);
 }
 
 void BaseCamera::recreate(float angle, float aspect, float near, float far)
 {
-    matrix<float,4,4> proj = perspective(radians(angle), aspect, near, far);
+    moon::math::Matrix<float,4,4> proj = moon::math::perspective(moon::math::radians(angle), aspect, near, far);
     setProjMatrix(proj);
 }
 
 void BaseCamera::recreate(float angle, float aspect, float near)
 {
-    matrix<float,4,4> proj = perspective(radians(angle), aspect, near);
+    moon::math::Matrix<float,4,4> proj = moon::math::perspective(moon::math::radians(angle), aspect, near);
     setProjMatrix(proj);
 }
 
@@ -53,102 +53,102 @@ void updateUniformBuffersFlags(moon::utils::Buffers& uniformBuffers)
 
 void BaseCamera::updateViewMatrix()
 {
-    dualQuaternion<float> dQuat = convert(rotation, translation);
-    matrix<float,4,4> transformMatrix = convert(dQuat);
-    viewMatrix = inverse(matrix<float,4,4>(globalTransformation * transformMatrix));
+    moon::math::DualQuaternion<float> dQuat = convert(rotation, translation);
+    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
+    viewMatrix = inverse(moon::math::Matrix<float,4,4>(globalTransformation * transformMatrix));
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-BaseCamera& BaseCamera::setProjMatrix(const matrix<float,4,4> & proj)
+BaseCamera& BaseCamera::setProjMatrix(const moon::math::Matrix<float,4,4> & proj)
 {
     projMatrix = proj;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
 
-BaseCamera& BaseCamera::setGlobalTransform(const matrix<float,4,4> & transform)
+BaseCamera& BaseCamera::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::translate(const vector<float,3> & translate)
+BaseCamera& BaseCamera::translate(const moon::math::Vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,translate);
+    translation += moon::math::Quaternion<float>(0.0f,translate);
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::rotate(const float & ang ,const vector<float,3> & ax)
+BaseCamera& BaseCamera::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
+    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::scale(const vector<float,3> &){
+BaseCamera& BaseCamera::scale(const moon::math::Vector<float,3> &){
     return *this;
 }
 
-BaseCamera& BaseCamera::rotate(const quaternion<float>& quat)
+BaseCamera& BaseCamera::rotate(const moon::math::Quaternion<float>& quat)
 {
     rotation = quat * rotation;
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::rotateX(const float & ang ,const vector<float,3> & ax)
+BaseCamera& BaseCamera::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotationX = convert(ang,vector<float,3>(normalize(ax))) * rotationX;
+    rotationX = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::rotateY(const float & ang ,const vector<float,3> & ax)
+BaseCamera& BaseCamera::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotationY = convert(ang,vector<float,3>(normalize(ax))) * rotationY;
+    rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::setTranslation(const vector<float,3> & translate)
+BaseCamera& BaseCamera::setTranslation(const moon::math::Vector<float,3> & translate)
 {
-    translation = quaternion<float>(0.0f,translate);
+    translation = moon::math::Quaternion<float>(0.0f,translate);
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::setRotation(const float & ang ,const vector<float,3> & ax)
+BaseCamera& BaseCamera::setRotation(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotation = convert(ang,vector<float,3>(normalize(ax)));
+    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax)));
     updateViewMatrix();
     return *this;
 }
 
-BaseCamera& BaseCamera::setRotation(const quaternion<float>& rotation)
+BaseCamera& BaseCamera::setRotation(const moon::math::Quaternion<float>& rotation)
 {
     this->rotation = rotation;
     updateViewMatrix();
     return *this;
 }
 
-matrix<float,4,4> BaseCamera::getProjMatrix() const
+moon::math::Matrix<float,4,4> BaseCamera::getProjMatrix() const
 {
     return projMatrix;
 }
 
-matrix<float,4,4> BaseCamera::getViewMatrix() const
+moon::math::Matrix<float,4,4> BaseCamera::getViewMatrix() const
 {
     return viewMatrix;
 }
 
-vector<float,3>     BaseCamera::getTranslation() const  {   return translation.im();}
-quaternion<float>   BaseCamera::getRotationX()const     {   return rotationX;}
-quaternion<float>   BaseCamera::getRotationY()const     {   return rotationY;}
+moon::math::Vector<float,3>     BaseCamera::getTranslation() const  {   return translation.im();}
+moon::math::Quaternion<float>   BaseCamera::getRotationX()const     {   return rotationX;}
+moon::math::Quaternion<float>   BaseCamera::getRotationY()const     {   return rotationY;}
 
 void BaseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
@@ -187,7 +187,7 @@ void BaseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
         UniformBufferObject baseUBO{};
             baseUBO.view = transpose(viewMatrix);
             baseUBO.proj = transpose(projMatrix);
-            baseUBO.eyePosition = vector<float,4>(translation.im()[0], translation.im()[1], translation.im()[2], 1.0);
+            baseUBO.eyePosition = moon::math::Vector<float,4>(translation.im()[0], translation.im()[1], translation.im()[2], 1.0);
         std::memcpy(uniformBuffersHost.instances[frameNumber].map, &baseUBO, sizeof(baseUBO));
 
         uniformBuffersHost.instances[frameNumber].updateFlag = false;

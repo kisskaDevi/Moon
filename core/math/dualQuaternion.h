@@ -3,61 +3,63 @@
 
 #include "quaternion.h"
 
+namespace moon::math {
+
 template<typename type>
-class dualQuaternion
+class DualQuaternion
 {
 private:
-  quaternion<type> p;
-  quaternion<type> q;
+  Quaternion<type> p;
+  Quaternion<type> q;
 public:
-  dualQuaternion() = default;
-  dualQuaternion(const dualQuaternion<type>& other);
-  dualQuaternion(const quaternion<type>& p, const quaternion<type>& q);
-  dualQuaternion<type>& operator=(const dualQuaternion<type>& other);
+  DualQuaternion() = default;
+  DualQuaternion(const DualQuaternion<type>& other);
+  DualQuaternion(const Quaternion<type>& p, const Quaternion<type>& q);
+  DualQuaternion<type>& operator=(const DualQuaternion<type>& other);
 
-  quaternion<type>          rotation()const;
-  quaternion<type>          translation()const;
+  Quaternion<type>          rotation()const;
+  Quaternion<type>          translation()const;
 
-  bool                      operator==(const dualQuaternion<type>& other)const;
-  bool                      operator!=(const dualQuaternion<type>& other)const;
-  dualQuaternion<type>      operator+ (const dualQuaternion<type>& other)const;
-  dualQuaternion<type>      operator- (const dualQuaternion<type>& other)const;
-  dualQuaternion<type>      operator* (const dualQuaternion<type>& other)const;
-  dualQuaternion<type>&     operator+=(const dualQuaternion<type>& other);
-  dualQuaternion<type>&     operator-=(const dualQuaternion<type>& other);
-  dualQuaternion<type>&     operator*=(const dualQuaternion<type>& other);
+  bool                      operator==(const DualQuaternion<type>& other)const;
+  bool                      operator!=(const DualQuaternion<type>& other)const;
+  DualQuaternion<type>      operator+ (const DualQuaternion<type>& other)const;
+  DualQuaternion<type>      operator- (const DualQuaternion<type>& other)const;
+  DualQuaternion<type>      operator* (const DualQuaternion<type>& other)const;
+  DualQuaternion<type>&     operator+=(const DualQuaternion<type>& other);
+  DualQuaternion<type>&     operator-=(const DualQuaternion<type>& other);
+  DualQuaternion<type>&     operator*=(const DualQuaternion<type>& other);
 
-  dualQuaternion<type>&     normalize();
-  dualQuaternion<type>&     conjugate();
-  dualQuaternion<type>&     invert();
+  DualQuaternion<type>&     normalize();
+  DualQuaternion<type>&     conjugate();
+  DualQuaternion<type>&     invert();
 
-  template<typename T> friend dualQuaternion<T>   normalize(const dualQuaternion<T>& quat);
-  template<typename T> friend dualQuaternion<T>   conjugate(const dualQuaternion<T>& quat);
-  template<typename T> friend dualQuaternion<T>   invert(const dualQuaternion<T>& quat);
+  template<typename T> friend DualQuaternion<T>   normalize(const DualQuaternion<T>& quat);
+  template<typename T> friend DualQuaternion<T>   conjugate(const DualQuaternion<T>& quat);
+  template<typename T> friend DualQuaternion<T>   invert(const DualQuaternion<T>& quat);
 
-  template<typename T> friend dualQuaternion<T> operator* (const T& c, const dualQuaternion<T>& quat);
-  template<typename T> friend std::ostream& operator<< (std::ostream & out, const dualQuaternion<T>& quat);
+  template<typename T> friend DualQuaternion<T> operator* (const T& c, const DualQuaternion<T>& quat);
+  template<typename T> friend std::ostream& operator<< (std::ostream & out, const DualQuaternion<T>& quat);
 
-  template<typename T> friend dualQuaternion<T> convert(const quaternion<T>& rotation, const quaternion<T>& translation);
+  template<typename T> friend DualQuaternion<T> convert(const Quaternion<T>& rotation, const Quaternion<T>& translation);
 
-  template<typename T> friend dualQuaternion<T> convert(const matrix<T,4,4>& SE3);
-  template<typename T> friend matrix<T,4,4> convert(const dualQuaternion<T>& quat);
+  template<typename T> friend DualQuaternion<T> convert(const Matrix<T,4,4>& SE3);
+  template<typename T> friend Matrix<T,4,4> convert(const DualQuaternion<T>& quat);
 
-  template<typename T> friend dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>& quat2, const T& t);
+  template<typename T> friend DualQuaternion<T> slerp(const DualQuaternion<T>& quat1, const DualQuaternion<T>& quat2, const T& t);
 };
 
 template<typename type>
-dualQuaternion<type>::dualQuaternion(const quaternion<type>& p, const quaternion<type>& q):
+DualQuaternion<type>::DualQuaternion(const Quaternion<type>& p, const Quaternion<type>& q):
     p(p),q(q)
 {}
 
 template<typename type>
-dualQuaternion<type>::dualQuaternion(const dualQuaternion<type>& other):
+DualQuaternion<type>::DualQuaternion(const DualQuaternion<type>& other):
     p(other.p),q(other.q)
 {}
 
 template<typename type>
-dualQuaternion<type>& dualQuaternion<type>::operator=(const dualQuaternion<type>& other)
+DualQuaternion<type>& DualQuaternion<type>::operator=(const DualQuaternion<type>& other)
 {
     p = other.p;
     q = other.q;
@@ -65,54 +67,54 @@ dualQuaternion<type>& dualQuaternion<type>::operator=(const dualQuaternion<type>
 }
 
 template<typename type>
-quaternion<type>          dualQuaternion<type>::rotation()const
+Quaternion<type>          DualQuaternion<type>::rotation()const
 {
     return p;
 }
 
 template<typename type>
-quaternion<type>          dualQuaternion<type>::translation()const
+Quaternion<type>          DualQuaternion<type>::translation()const
 {
-    quaternion<type> copy(p);
+    Quaternion<type> copy(p);
     copy.conjugate();
     return type(2)*q*copy;
 }
 
 template<typename type>
-bool                      dualQuaternion<type>::operator==(const dualQuaternion<type>& other)const
+bool                      DualQuaternion<type>::operator==(const DualQuaternion<type>& other)const
 {
     return p==other.p&&q==other.q;
 }
 
 template<typename type>
-bool                      dualQuaternion<type>::operator!=(const dualQuaternion<type>& other)const
+bool                      DualQuaternion<type>::operator!=(const DualQuaternion<type>& other)const
 {
     return !(p==other.p&&q==other.q);
 }
 
 template<typename type>
-dualQuaternion<type>      dualQuaternion<type>::operator+ (const dualQuaternion<type>& other)const
+DualQuaternion<type>      DualQuaternion<type>::operator+ (const DualQuaternion<type>& other)const
 {
-    return dualQuaternion<type>(p+other.p,q+other.q);
+    return DualQuaternion<type>(p+other.p,q+other.q);
 }
 
 template<typename type>
-dualQuaternion<type>      dualQuaternion<type>::operator- (const dualQuaternion<type>& other)const
+DualQuaternion<type>      DualQuaternion<type>::operator- (const DualQuaternion<type>& other)const
 {
-    return dualQuaternion<type>(p-other.p,q-other.q);
+    return DualQuaternion<type>(p-other.p,q-other.q);
 }
 
 template<typename type>
-dualQuaternion<type>      dualQuaternion<type>::operator* (const dualQuaternion<type>& other)const
+DualQuaternion<type>      DualQuaternion<type>::operator* (const DualQuaternion<type>& other)const
 {
-    return dualQuaternion<type>(
+    return DualQuaternion<type>(
         p*other.p,
         p*other.q+q*other.p
     );
 }
 
 template<typename type>
-dualQuaternion<type>&     dualQuaternion<type>::operator+=(const dualQuaternion<type>& other)
+DualQuaternion<type>&     DualQuaternion<type>::operator+=(const DualQuaternion<type>& other)
 {
     p += other.p;
     q += other.q;
@@ -120,7 +122,7 @@ dualQuaternion<type>&     dualQuaternion<type>::operator+=(const dualQuaternion<
 }
 
 template<typename type>
-dualQuaternion<type>&     dualQuaternion<type>::operator-=(const dualQuaternion<type>& other)
+DualQuaternion<type>&     DualQuaternion<type>::operator-=(const DualQuaternion<type>& other)
 {
     p -= other.p;
     q -= other.q;
@@ -128,29 +130,29 @@ dualQuaternion<type>&     dualQuaternion<type>::operator-=(const dualQuaternion<
 }
 
 template<typename type>
-dualQuaternion<type>&     dualQuaternion<type>::operator*=(const dualQuaternion<type>& other)
+DualQuaternion<type>&     DualQuaternion<type>::operator*=(const DualQuaternion<type>& other)
 {
-    dualQuaternion<type> copy(*this);
+    DualQuaternion<type> copy(*this);
     *this = copy*other;
 
     return *this;
 }
 
 template<typename T>
-std::ostream& operator<< (std::ostream & out, const dualQuaternion<T>& quat)
+std::ostream& operator<< (std::ostream & out, const DualQuaternion<T>& quat)
 {
     out<<quat.p<<"\t\t"<<quat.q;
     return out;
 }
 
 template<typename T>
-dualQuaternion<T> operator* (const T& c,const dualQuaternion<T>& quat)
+DualQuaternion<T> operator* (const T& c,const DualQuaternion<T>& quat)
 {
-    return dualQuaternion<T>(c*quat.p,c*quat.q);
+    return DualQuaternion<T>(c*quat.p,c*quat.q);
 }
 
 template<typename type>
-dualQuaternion<type>&   dualQuaternion<type>::normalize()
+DualQuaternion<type>&   DualQuaternion<type>::normalize()
 {
     if(type norma = p.re()*p.re()+dot(p.im(),p.im()); norma != 0){
         norma = type(1)/std::sqrt(norma);
@@ -161,7 +163,7 @@ dualQuaternion<type>&   dualQuaternion<type>::normalize()
 }
 
 template<typename type>
-dualQuaternion<type>&   dualQuaternion<type>::conjugate()
+DualQuaternion<type>&   DualQuaternion<type>::conjugate()
 {
     p.conjugate();
     type(-1)*q.conjugate();
@@ -169,7 +171,7 @@ dualQuaternion<type>&   dualQuaternion<type>::conjugate()
 }
 
 template<typename type>
-dualQuaternion<type>&   dualQuaternion<type>::invert()
+DualQuaternion<type>&   DualQuaternion<type>::invert()
 {
     p.invert();
     q = type(-1)*p*q*p;
@@ -178,9 +180,9 @@ dualQuaternion<type>&   dualQuaternion<type>::invert()
 }
 
 template<typename T>
-dualQuaternion<T>   normalize(const dualQuaternion<T>& quat)
+DualQuaternion<T>   normalize(const DualQuaternion<T>& quat)
 {
-    const dualQuaternion<T>& res(quat);
+    const DualQuaternion<T>& res(quat);
     if(quat.p.s*quat.q.s+quat.p.x*quat.q.x+quat.p.y*quat.q.y+quat.p.z*quat.q.z==0){
         T norma = quat.p.s*quat.p.s+quat.p.x*quat.p.x+quat.p.y*quat.p.y+quat.p.z*quat.p.z;
         norma = std::sqrt(norma);
@@ -199,15 +201,15 @@ dualQuaternion<T>   normalize(const dualQuaternion<T>& quat)
 }
 
 template<typename T>
-dualQuaternion<T>   conjugate(const dualQuaternion<T>& quat)
+DualQuaternion<T>   conjugate(const DualQuaternion<T>& quat)
 {
-    return dualQuaternion<T>(conjugate(quat.p),T(-1)*conjugate(quat.q));
+    return DualQuaternion<T>(conjugate(quat.p),T(-1)*conjugate(quat.q));
 }
 
 template<typename T>
-dualQuaternion<T>   invert(const dualQuaternion<T>& quat)
+DualQuaternion<T>   invert(const DualQuaternion<T>& quat)
 {
-    dualQuaternion<T> res(quat);
+    DualQuaternion<T> res(quat);
     res.p.invert();
     res.q = T(-1)*res.p*res.q*res.p;
 
@@ -215,20 +217,20 @@ dualQuaternion<T>   invert(const dualQuaternion<T>& quat)
 }
 
 template<typename T>
-dualQuaternion<T>   convert(const quaternion<T>& rotation, const quaternion<T>& translation)
+DualQuaternion<T>   convert(const Quaternion<T>& rotation, const Quaternion<T>& translation)
 {
-    return dualQuaternion<T>(rotation,T(0.5)*translation*rotation);
+    return DualQuaternion<T>(rotation,T(0.5)*translation*rotation);
 }
 
 template<typename T>
-matrix<T,4,4> convert(const dualQuaternion<T>& quat)
+Matrix<T,4,4> convert(const DualQuaternion<T>& quat)
 {
-    quaternion<T> rotatrion = quat.rotation();
-    quaternion<T> translation = quat.translation();
+    Quaternion<T> rotatrion = quat.rotation();
+    Quaternion<T> translation = quat.translation();
 
-    matrix<T,3,3> R = convert(rotatrion);
+    Matrix<T,3,3> R = convert(rotatrion);
 
-    matrix<T,4,4> SE3;
+    Matrix<T,4,4> SE3;
 
     SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = translation.im()[0];
     SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = translation.im()[1];
@@ -239,34 +241,34 @@ matrix<T,4,4> convert(const dualQuaternion<T>& quat)
 }
 
 template<typename T>
-dualQuaternion<T> convert(const matrix<T,4,4>& SE3)
+DualQuaternion<T> convert(const Matrix<T,4,4>& SE3)
 {
-    matrix<T,3,3> R;
+    Matrix<T,3,3> R;
 
     R[0][0] = SE3[0][0];    R[0][1] = SE3[0][1];    R[0][2] = SE3[0][2];
     R[1][0] = SE3[1][0];    R[1][1] = SE3[1][1];    R[1][2] = SE3[1][2];
     R[2][0] = SE3[2][0];    R[2][1] = SE3[2][1];    R[2][2] = SE3[2][2];
 
-    quaternion<T> rotatrion = convert(R);
-    quaternion<T> translation = quaternion<T>(T(0),SE3[0][3],SE3[1][3],SE3[2][3]);
+    Quaternion<T> rotatrion = convert(R);
+    Quaternion<T> translation = Quaternion<T>(T(0),SE3[0][3],SE3[1][3],SE3[2][3]);
 
     return convert(rotatrion,translation);
 }
 
 
 template<typename T>
-dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>& quat2, const T& t)
+DualQuaternion<T> slerp(const DualQuaternion<T>& quat1, const DualQuaternion<T>& quat2, const T& t)
 {
-    quaternion<T> r1 = quat1.rotation();
-    quaternion<T> r2 = quat2.rotation();
-    quaternion<T> t1 = quat1.translation();
-    quaternion<T> t2 = quat2.translation();
+    Quaternion<T> r1 = quat1.rotation();
+    Quaternion<T> r2 = quat2.rotation();
+    Quaternion<T> t1 = quat1.translation();
+    Quaternion<T> t2 = quat2.translation();
 
-    dualQuaternion<T> dQuat(conjugate(r1) * r2, T(0.5) * conjugate(r1) * (t2 - t1) * r2);
+    DualQuaternion<T> dQuat(conjugate(r1) * r2, T(0.5) * conjugate(r1) * (t2 - t1) * r2);
     dQuat.normalize();
 
-    vector<T,3> l = normalize(dQuat.p.im());
-    vector<T,3> tr = T(0.5)* vector<T,3>(dQuat.translation().im());
+    Vector<T,3> l = normalize(dQuat.p.im());
+    Vector<T,3> tr = T(0.5) * Vector<T,3>(dQuat.translation().im());
 
     T d = dot(tr,l);
     T theta = std::acos(dQuat.p.re());
@@ -275,14 +277,16 @@ dualQuaternion<T> slerp(const dualQuaternion<T>& quat1, const dualQuaternion<T>&
         return theta == T(0) ? t : std::sin(t * theta)/std::tan(theta);
     };
 
-    dualQuaternion<T> sigma(
-        quaternion<T>(std::cos(t * theta), std::sin(t * theta) * l),
-        quaternion<T>(std::sin(t * theta) * (- d*t), std::cos(t * theta) * (l * d*t) + std::sin(t * theta) * cross(tr,l) + ratio(theta,t) * (tr - d*l))
+    DualQuaternion<T> sigma(
+        Quaternion<T>(std::cos(t * theta), std::sin(t * theta) * l),
+        Quaternion<T>(std::sin(t * theta) * (- d*t), std::cos(t * theta) * (l * d*t) + std::sin(t * theta) * cross(tr,l) + ratio(theta,t) * (tr - d*l))
     );
 
     return quat1*sigma;
 }
 
-extern template class dualQuaternion<float>;
-extern template class dualQuaternion<double>;
+extern template class DualQuaternion<float>;
+extern template class DualQuaternion<double>;
+
+}
 #endif // DUALQUATERNION_H

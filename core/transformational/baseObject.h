@@ -17,26 +17,26 @@ namespace moon::transformational {
 
 struct UniformBuffer
 {
-    alignas(16) matrix<float,4,4> modelMatrix;
-    alignas(16) vector<float,4>   constantColor;
-    alignas(16) vector<float,4>   colorFactor;
-    alignas(16) vector<float,4>   bloomColor;
-    alignas(16) vector<float,4>   bloomFactor;
+    alignas(16) moon::math::Matrix<float,4,4> modelMatrix;
+    alignas(16) moon::math::Vector<float,4>   constantColor;
+    alignas(16) moon::math::Vector<float,4>   colorFactor;
+    alignas(16) moon::math::Vector<float,4>   bloomColor;
+    alignas(16) moon::math::Vector<float,4>   bloomFactor;
 };
 
 class BaseObject : public moon::interfaces::Object, public Transformational
 {
 private:
-    quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
-    quaternion<float>               rotation{1.0f,0.0f,0.0f,0.0f};
-    vector<float,3>                 scaling{1.0f,1.0f,1.0f};
-    matrix<float,4,4>               globalTransformation{1.0f};
-    matrix<float,4,4>               modelMatrix{1.0f};
+    moon::math::Quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
+    moon::math::Quaternion<float>               rotation{1.0f,0.0f,0.0f,0.0f};
+    moon::math::Vector<float,3>                 scaling{1.0f,1.0f,1.0f};
+    moon::math::Matrix<float,4,4>               globalTransformation{1.0f};
+    moon::math::Matrix<float,4,4>               modelMatrix{1.0f};
 
-    vector<float,4>                 colorFactor{1.0f};
-    vector<float,4>                 constantColor{0.0f};
-    vector<float,4>                 bloomFactor{1.0f};
-    vector<float,4>                 bloomColor{0.0f};
+    moon::math::Vector<float,4>                 colorFactor{1.0f};
+    moon::math::Vector<float,4>                 constantColor{0.0f};
+    moon::math::Vector<float,4>                 bloomFactor{1.0f};
+    moon::math::Vector<float,4>                 bloomColor{0.0f};
 
     bool changeAnimationFlag{false};
     uint32_t animationIndex{0};
@@ -65,21 +65,21 @@ public:
     BaseObject(moon::interfaces::Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
     virtual ~BaseObject();
 
-    BaseObject& setGlobalTransform(const matrix<float,4,4>& transform) override;
-    BaseObject& translate(const vector<float,3>& translate) override;
-    BaseObject& rotate(const float& ang, const vector<float,3>& ax) override;
-    BaseObject& rotate(const quaternion<float>& quat);
-    BaseObject& scale(const vector<float,3>& scale) override;
-    BaseObject& setTranslation(const vector<float,3>& translate);
+    BaseObject& setGlobalTransform(const moon::math::Matrix<float,4,4>& transform) override;
+    BaseObject& translate(const moon::math::Vector<float,3>& translate) override;
+    BaseObject& rotate(const float& ang, const moon::math::Vector<float,3>& ax) override;
+    BaseObject& rotate(const moon::math::Quaternion<float>& quat);
+    BaseObject& scale(const moon::math::Vector<float,3>& scale) override;
+    BaseObject& setTranslation(const moon::math::Vector<float,3>& translate);
 
-    const vector<float,3> getTranslation() const;
-    const quaternion<float> getRotation() const;
-    const vector<float,3> getScale() const;
+    const moon::math::Vector<float,3> getTranslation() const;
+    const moon::math::Quaternion<float> getRotation() const;
+    const moon::math::Vector<float,3> getScale() const;
 
-    BaseObject& setConstantColor(const vector<float,4> & color);
-    BaseObject& setColorFactor(const vector<float,4> & color);
-    BaseObject& setBloomColor(const vector<float,4> & color);
-    BaseObject& setBloomFactor(const vector<float,4> & color);
+    BaseObject& setConstantColor(const moon::math::Vector<float,4> & color);
+    BaseObject& setColorFactor(const moon::math::Vector<float,4> & color);
+    BaseObject& setBloomColor(const moon::math::Vector<float,4> & color);
+    BaseObject& setBloomFactor(const moon::math::Vector<float,4> & color);
 
     void destroy(VkDevice device) override;
 
@@ -111,7 +111,7 @@ public:
     ~SkyboxObject();
 
     SkyboxObject& setMipLevel(float mipLevel);
-    SkyboxObject& translate(const vector<float,3>& translate) override;
+    SkyboxObject& translate(const moon::math::Vector<float,3>& translate) override;
 
     void destroy(VkDevice device) override;
 

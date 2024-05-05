@@ -377,7 +377,7 @@ void DeferredGraphics::update(uint32_t imageIndex) {
     updateCommandBuffer(imageIndex);
 }
 
-void DeferredGraphics::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size) {
+void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) {
     this->offset = offset;
     this->size = size;
     deferredLink->setPositionInWindow(offset, size);
@@ -429,7 +429,7 @@ void DeferredGraphics::createStorageBuffers(uint32_t imageCount){
 
 void DeferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
     StorageBufferObject StorageUBO{};
-        StorageUBO.mousePosition = vector<float,4>(mousex,mousey,0.0f,0.0f);
+        StorageUBO.mousePosition = moon::math::Vector<float,4>(mousex,mousey,0.0f,0.0f);
         StorageUBO.number = std::numeric_limits<uint32_t>::max();
         StorageUBO.depth = 1.0f;
     std::memcpy(storageBuffersHost.instances[currentImage].map, &StorageUBO, sizeof(StorageUBO));

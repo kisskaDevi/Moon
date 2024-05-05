@@ -64,7 +64,7 @@ public:
         link = &Link;
     }
 
-    void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size) override {
+    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override {
         this->offset = offset;
         this->size = size;
         Link.setPositionInWindow(offset, size);

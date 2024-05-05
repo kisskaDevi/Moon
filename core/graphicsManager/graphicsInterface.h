@@ -21,14 +21,14 @@ protected:
     moon::utils::PhysicalDevice                      device;
     moon::utils::SwapChain*                          swapChainKHR;
     Linkable*                                        link{nullptr};
-    vector<float,2>                                  offset{0.0f, 0.0f};
-    vector<float,2>                                  size{1.0f, 1.0f};
+    moon::math::Vector<float,2>                      offset{0.0f, 0.0f};
+    moon::math::Vector<float,2>                      size{1.0f, 1.0f};
 
 public:
     virtual ~GraphicsInterface(){};
     virtual void destroy() = 0;
 
-    virtual void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
+    virtual void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size){
         this->offset = offset;
         this->size = size;
     }

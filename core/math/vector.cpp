@@ -1,10 +1,14 @@
 #include "vector.h"
 
-template class vector<float, 2>;
-template class vector<double, 2>;
+namespace moon::math {
 
-template class vector<float, 3>;
-template class vector<double, 3>;
+template class Vector<float, 2>;
+template class Vector<double, 2>;
 
-template class vector<float, 4>;
-template class vector<double, 4>;
+template class Vector<float, 3>;
+template class Vector<double, 3>;
+
+template class Vector<float, 4>;
+template class Vector<double, 4>;
+
+}

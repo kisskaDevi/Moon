@@ -4,7 +4,7 @@
 
 namespace moon::interfaces {
 
-BoundingBox::BoundingBox(vector<float,3> min, vector<float,3> max)
+BoundingBox::BoundingBox(moon::math::Vector<float,3> min, moon::math::Vector<float,3> max)
     : min(min), max(max) {};
 
 VkVertexInputBindingDescription Model::Vertex::getBindingDescription(){

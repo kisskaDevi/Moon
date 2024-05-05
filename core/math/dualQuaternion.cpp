@@ -1,4 +1,8 @@
 #include "dualQuaternion.h"
 
-template class dualQuaternion<float>;
-template class dualQuaternion<double>;
+namespace moon::math {
+
+template class DualQuaternion<float>;
+template class DualQuaternion<double>;
+
+}

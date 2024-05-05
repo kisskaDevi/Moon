@@ -66,14 +66,14 @@ void GltfModel::loadAnimations(tinygltf::Model& gltfModel)
 
                     switch (accessor.type) {
                         case TINYGLTF_TYPE_VEC3: {
-                            const vector<float,3> *buf = static_cast<const vector<float,3>*>(dataPtr);
+                            const moon::math::Vector<float,3> *buf = static_cast<const moon::math::Vector<float,3>*>(dataPtr);
                             for (size_t index = 0; index < accessor.count; index++) {
-                                sampler.outputsVec4.push_back(vector<float,4>(buf[index][0],buf[index][1],buf[index][2], 0.0f));
+                                sampler.outputsVec4.push_back(moon::math::Vector<float,4>(buf[index][0],buf[index][1],buf[index][2], 0.0f));
                             }
                             break;
                         }
                         case TINYGLTF_TYPE_VEC4: {
-                            const vector<float,4> *buf = static_cast<const vector<float,4>*>(dataPtr);
+                            const moon::math::Vector<float,4> *buf = static_cast<const moon::math::Vector<float,4>*>(dataPtr);
                             for (size_t index = 0; index < accessor.count; index++) {
                                 sampler.outputsVec4.push_back(buf[index]);
                             }
@@ -143,18 +143,18 @@ void GltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
                 if (u <= 1.0f) {
                     switch (channel.path) {
                         case Animation::AnimationChannel::PathType::TRANSLATION: {
-                            vector<float,4> trans = mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-                            channel.node->translation = vector<float,3>(trans[0],trans[1],trans[2]);
+                            moon::math::Vector<float,4> trans = mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+                            channel.node->translation = moon::math::Vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::SCALE: {
-                            vector<float,4> trans = mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-                            channel.node->scale = vector<float,3>(trans[0],trans[1],trans[2]);
+                            moon::math::Vector<float,4> trans = mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+                            channel.node->scale = moon::math::Vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::ROTATION: {
-                            quaternion<float> q1(sampler.outputsVec4[i + 0][3], {sampler.outputsVec4[i + 0][0], sampler.outputsVec4[i + 0][1], sampler.outputsVec4[i + 0][2]});
-                            quaternion<float> q2(sampler.outputsVec4[i + 1][3], {sampler.outputsVec4[i + 1][0], sampler.outputsVec4[i + 1][1], sampler.outputsVec4[i + 1][2]});
+                            moon::math::Quaternion<float> q1(sampler.outputsVec4[i + 0][3], {sampler.outputsVec4[i + 0][0], sampler.outputsVec4[i + 0][1], sampler.outputsVec4[i + 0][2]});
+                            moon::math::Quaternion<float> q2(sampler.outputsVec4[i + 1][3], {sampler.outputsVec4[i + 1][0], sampler.outputsVec4[i + 1][1], sampler.outputsVec4[i + 1][2]});
 
                             channel.node->rotation = normalize(slerp(q1, q2, u));
                             break;
@@ -203,18 +203,18 @@ void GltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t
                 if (u <= 1.0f) {
                     switch (channel.path) {
                         case Animation::AnimationChannel::PathType::TRANSLATION: {
-                            vector<float,4> trans = mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
-                            channel.node->translation = vector<float,3>(trans[0],trans[1],trans[2]);
+                            moon::math::Vector<float,4> trans = mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                            channel.node->translation = moon::math::Vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::SCALE: {
-                            vector<float,4> trans = mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
-                            channel.node->scale = vector<float,3>(trans[0],trans[1],trans[2]);
+                            moon::math::Vector<float,4> trans = mix(samplerOld.outputsVec4[i], samplerNew.outputsVec4[0], u);
+                            channel.node->scale = moon::math::Vector<float,3>(trans[0],trans[1],trans[2]);
                             break;
                         }
                         case Animation::AnimationChannel::PathType::ROTATION: {
-                            quaternion<float> q1(samplerOld.outputsVec4[i + 0][3], {samplerOld.outputsVec4[i + 0][0], samplerOld.outputsVec4[i + 0][1], samplerOld.outputsVec4[i + 0][2]});
-                            quaternion<float> q2(samplerNew.outputsVec4[0][3], {samplerNew.outputsVec4[0][0], samplerNew.outputsVec4[0][1], samplerNew.outputsVec4[0][2]});
+                            moon::math::Quaternion<float> q1(samplerOld.outputsVec4[i + 0][3], {samplerOld.outputsVec4[i + 0][0], samplerOld.outputsVec4[i + 0][1], samplerOld.outputsVec4[i + 0][2]});
+                            moon::math::Quaternion<float> q2(samplerNew.outputsVec4[0][3], {samplerNew.outputsVec4[0][0], samplerNew.outputsVec4[0][1], samplerNew.outputsVec4[0][2]});
                             channel.node->rotation = normalize(slerp(q1, q2, u));
                             break;
                         }

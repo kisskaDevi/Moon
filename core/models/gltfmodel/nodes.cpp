@@ -6,12 +6,12 @@
 namespace moon::models {
 
 namespace {
-    matrix<float,4,4> localMatrix(Node* node){
+    moon::math::Matrix<float,4,4> localMatrix(Node* node){
         return translate(node->translation) * rotate(node->rotation) * scale(node->scale) * node->matrix;
     }
 
-    matrix<float,4,4> getMatrix(Node* node) {
-        return (node->parent ? getMatrix(node->parent) : matrix<float,4,4>(1.0f)) * localMatrix(node);
+    moon::math::Matrix<float,4,4> getMatrix(Node* node) {
+        return (node->parent ? getMatrix(node->parent) : moon::math::Matrix<float,4,4>(1.0f)) * localMatrix(node);
     }
 
     Node* findNodeFromIndex(Node* node, uint32_t index){
@@ -28,9 +28,9 @@ namespace {
     }
 
     template <typename type>
-    vector<float,4> loadJoint(const void* bufferJoints, int jointByteStride, size_t vertex){
+    moon::math::Vector<float,4> loadJoint(const void* bufferJoints, int jointByteStride, size_t vertex){
         const type *buf = static_cast<const type*>(bufferJoints);
-        return vector<float,4>(
+        return moon::math::Vector<float,4>(
             buf[vertex * jointByteStride + 0],
             buf[vertex * jointByteStride + 1],
             buf[vertex * jointByteStride + 2],
@@ -84,7 +84,7 @@ Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t ve
     : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material), bb(bb)
 {}
 
-Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, matrix<float,4,4> matrix)
+Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, moon::math::Matrix<float,4,4> matrix)
 {
     this->uniformBlock.matrix = matrix;
     moon::utils::buffer::create( physicalDevice,
@@ -132,17 +132,17 @@ void GltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
     Node* newNode = new Node{};
     newNode->index = nodeIndex;
     newNode->parent = parent;
-    newNode->matrix = matrix<float,4,4>(1.0f);
+    newNode->matrix = moon::math::Matrix<float,4,4>(1.0f);
 
     if (model.nodes[nodeIndex].translation.size() == 3) {
-        newNode->translation = vector<float,3>(
+        newNode->translation = moon::math::Vector<float,3>(
             static_cast<float>(model.nodes[nodeIndex].translation[0]),
             static_cast<float>(model.nodes[nodeIndex].translation[1]),
             static_cast<float>(model.nodes[nodeIndex].translation[2])
         );
     }
     if (model.nodes[nodeIndex].rotation.size() == 4) {
-        newNode->rotation = quaternion<float>(
+        newNode->rotation = moon::math::Quaternion<float>(
             static_cast<float>(model.nodes[nodeIndex].rotation[3]),
             static_cast<float>(model.nodes[nodeIndex].rotation[0]),
             static_cast<float>(model.nodes[nodeIndex].rotation[1]),
@@ -150,7 +150,7 @@ void GltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
         );
     }
     if (model.nodes[nodeIndex].scale.size() == 3) {
-        newNode->scale = vector<float,3>(
+        newNode->scale = moon::math::Vector<float,3>(
             static_cast<float>(model.nodes[nodeIndex].scale[0]),
             static_cast<float>(model.nodes[nodeIndex].scale[1]),
             static_cast<float>(model.nodes[nodeIndex].scale[2])
@@ -158,7 +158,7 @@ void GltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
     }
     if (model.nodes[nodeIndex].matrix.size() == 16) {
         const double* m = model.nodes[nodeIndex].matrix.data();
-        newNode->matrix = matrix<float,4,4>(0.0f);
+        newNode->matrix = moon::math::Matrix<float,4,4>(0.0f);
         for(uint32_t i = 0; i < 4; i++){
             for(uint32_t j = 0; j < 4; j++)
             newNode->matrix[i][j] = static_cast<float>(m[4*i + j]);
@@ -181,8 +181,8 @@ void GltfModel::loadNode(instance* instance, VkPhysicalDevice physicalDevice, Vk
             newNode->mesh->primitives.push_back(
                 new Mesh::Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? &materials[primitive.material] : &materials.back(),
                     moon::interfaces::BoundingBox(
-                        vector<float,3>(static_cast<float>(posAccessor.minValues[0]), static_cast<float>(posAccessor.minValues[1]), static_cast<float>(posAccessor.minValues[2])),
-                        vector<float,3>(static_cast<float>(posAccessor.maxValues[0]), static_cast<float>(posAccessor.maxValues[1]), static_cast<float>(posAccessor.maxValues[2]))
+                        moon::math::Vector<float,3>(static_cast<float>(posAccessor.minValues[0]), static_cast<float>(posAccessor.minValues[1]), static_cast<float>(posAccessor.minValues[2])),
+                        moon::math::Vector<float,3>(static_cast<float>(posAccessor.maxValues[0]), static_cast<float>(posAccessor.maxValues[1]), static_cast<float>(posAccessor.maxValues[2]))
                     )
                 )
             );
@@ -226,12 +226,12 @@ void GltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
 
             for (uint32_t index = 0; index < vertexCount; index++) {
                 Vertex vert{};
-                vert.pos = pos.first ? vector<float,3>(pos.first[index * pos.second + 0], pos.first[index * pos.second + 1], pos.first[index * pos.second + 2]) : vector<float,3>(0.0f);
-                vert.normal = normalize(vector<float,3>(normals.first ? vector<float,3>(normals.first[index * normals.second], normals.first[index * normals.second + 1], normals.first[index * normals.second + 2]) : vector<float,3>(0.0f)));
-                vert.uv0 = texCoordSet0.first ? vector<float,2>(texCoordSet0.first[index * texCoordSet0.second], texCoordSet0.first[index * texCoordSet0.second + 1]) : vector<float,2>(0.0f);
-                vert.uv1 = texCoordSet1.first ? vector<float,2>(texCoordSet1.first[index * texCoordSet1.second], texCoordSet1.first[index * texCoordSet1.second + 1]) : vector<float,2>(0.0f);
-                vert.joint0 = vector<float,4>(0.0f, 0.0f, 0.0f, 0.0f);
-                vert.weight0 = vector<float,4>(1.0f, 0.0f, 0.0f, 0.0f);
+                vert.pos = pos.first ? moon::math::Vector<float,3>(pos.first[index * pos.second + 0], pos.first[index * pos.second + 1], pos.first[index * pos.second + 2]) : moon::math::Vector<float,3>(0.0f);
+                vert.normal = normalize(moon::math::Vector<float,3>(normals.first ? moon::math::Vector<float,3>(normals.first[index * normals.second], normals.first[index * normals.second + 1], normals.first[index * normals.second + 2]) : moon::math::Vector<float,3>(0.0f)));
+                vert.uv0 = texCoordSet0.first ? moon::math::Vector<float,2>(texCoordSet0.first[index * texCoordSet0.second], texCoordSet0.first[index * texCoordSet0.second + 1]) : moon::math::Vector<float,2>(0.0f);
+                vert.uv1 = texCoordSet1.first ? moon::math::Vector<float,2>(texCoordSet1.first[index * texCoordSet1.second], texCoordSet1.first[index * texCoordSet1.second + 1]) : moon::math::Vector<float,2>(0.0f);
+                vert.joint0 = moon::math::Vector<float,4>(0.0f, 0.0f, 0.0f, 0.0f);
+                vert.weight0 = moon::math::Vector<float,4>(1.0f, 0.0f, 0.0f, 0.0f);
 
                 if (joints.first && weights.first)
                 {
@@ -246,14 +246,14 @@ void GltfModel::loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Mod
                         }
                     }
 
-                    vert.weight0 = vector<float,4>(
+                    vert.weight0 = moon::math::Vector<float,4>(
                         weights.first[index * weights.second + 0],
                         weights.first[index * weights.second + 1],
                         weights.first[index * weights.second + 2],
                         weights.first[index * weights.second + 3]
                     );
                     if (dot(vert.weight0,vert.weight0) == 0.0f) {
-                        vert.weight0 = vector<float,4>(1.0f, 0.0f, 0.0f, 0.0f);
+                        vert.weight0 = moon::math::Vector<float,4>(1.0f, 0.0f, 0.0f, 0.0f);
                     }
                 }
                 vertexBuffer.push_back(vert);

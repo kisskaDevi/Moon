@@ -13,21 +13,21 @@ class Group : public Transformational
 private:
     std::vector<Transformational *>     objects;
 
-    quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
-    quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
-    vector<float,3>         scaling{1.0f,1.0f,1.0f};
-    matrix<float,4,4>       globalTransformation{1.0f};
-    matrix<float,4,4>       modelMatrix{1.0f};
+    moon::math::Quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
+    moon::math::Quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
+    moon::math::Vector<float,3>         scaling{1.0f,1.0f,1.0f};
+    moon::math::Matrix<float,4,4>       globalTransformation{1.0f};
+    moon::math::Matrix<float,4,4>       modelMatrix{1.0f};
 
     void updateModelMatrix();
 public:
     Group();
     ~Group();
 
-    Group& setGlobalTransform(const matrix<float,4,4> & transform);
-    Group& translate(const vector<float,3> & translate);
-    Group& rotate(const float & ang ,const vector<float,3> & ax);
-    Group& scale(const vector<float,3> & scale);
+    Group& setGlobalTransform(const moon::math::Matrix<float,4,4> & transform);
+    Group& translate(const moon::math::Vector<float,3> & translate);
+    Group& rotate(const float & ang ,const moon::math::Vector<float,3> & ax);
+    Group& scale(const moon::math::Vector<float,3> & scale);
 
     void addObject(Transformational* object);
     void delObject(Transformational* object);

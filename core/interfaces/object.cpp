@@ -34,7 +34,7 @@ uint32_t Object::getInstanceNumber(uint32_t imageNumber) const {
     return firstInstance + (instanceCount > imageNumber ? imageNumber : 0);
 }
 
-void Object::setOutlining(const bool& enable, const float& width, const vector<float,4>& color){
+void Object::setOutlining(const bool& enable, const float& width, const moon::math::Vector<float,4>& color){
     outlining.Enable = enable;
     outlining.Width = width > 0.0f ? width : outlining.Width;
     outlining.Color = dot(color,color) > 0.0f ? color : outlining.Color;
@@ -50,7 +50,7 @@ float Object::getOutliningWidth() const {
     return outlining.Width;
 }
 
-vector<float,4> Object::getOutliningColor() const {
+moon::math::Vector<float,4> Object::getOutliningColor() const {
     return outlining.Color;
 }
 

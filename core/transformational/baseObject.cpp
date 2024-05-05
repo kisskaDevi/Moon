@@ -39,84 +39,84 @@ void BaseObject::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uni
 
 void BaseObject::updateModelMatrix()
 {
-    dualQuaternion<float> dQuat = convert(rotation,translation);
-    matrix<float,4,4> transformMatrix = convert(dQuat);
+    moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
+    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
 
-    modelMatrix = globalTransformation * transformMatrix * ::scale(scaling);
+    modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
 
     updateUniformBuffersFlags(uniformBuffersHost);
 }
 
-BaseObject& BaseObject::setGlobalTransform(const matrix<float,4,4> & transform)
+BaseObject& BaseObject::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
     updateModelMatrix();
     return *this;
 }
 
-BaseObject& BaseObject::translate(const vector<float,3> & translate)
+BaseObject& BaseObject::translate(const moon::math::Vector<float,3> & translate)
 {
-    translation += quaternion<float>(0.0f,translate);
+    translation += moon::math::Quaternion<float>(0.0f,translate);
     updateModelMatrix();
     return *this;
 }
 
-BaseObject& BaseObject::setTranslation(const vector<float,3>& translate)
+BaseObject& BaseObject::setTranslation(const moon::math::Vector<float,3>& translate)
 {
-    translation = quaternion<float>(0.0f,translate);
+    translation = moon::math::Quaternion<float>(0.0f,translate);
     updateModelMatrix();
     return *this;
 }
 
-BaseObject& BaseObject::rotate(const float & ang ,const vector<float,3> & ax)
+BaseObject& BaseObject::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
-    rotation = convert(ang,vector<float,3>(normalize(ax)))*rotation;
+    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
     updateModelMatrix();
     return *this;
 }
 
-BaseObject& BaseObject::rotate(const quaternion<float>& quat)
+BaseObject& BaseObject::rotate(const moon::math::Quaternion<float>& quat)
 {
     rotation = quat * rotation;
     updateModelMatrix();
     return *this;
 }
 
-BaseObject& BaseObject::scale(const vector<float,3> & scale)
+BaseObject& BaseObject::scale(const moon::math::Vector<float,3> & scale)
 {
     scaling = scale;
     updateModelMatrix();
     return *this;
 }
 
-const vector<float,3> BaseObject::getTranslation() const{
+const moon::math::Vector<float,3> BaseObject::getTranslation() const{
     return translation.im();
 }
 
-const quaternion<float> BaseObject::getRotation() const{
+const moon::math::Quaternion<float> BaseObject::getRotation() const{
     return rotation;
 }
 
-const vector<float,3> BaseObject::getScale() const{
+const moon::math::Vector<float,3> BaseObject::getScale() const{
     return scaling;
 }
 
-BaseObject& BaseObject::setConstantColor(const vector<float,4> &color){
+BaseObject& BaseObject::setConstantColor(const moon::math::Vector<float,4> &color){
     this->constantColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
-BaseObject& BaseObject::setColorFactor(const vector<float,4> & color){
+BaseObject& BaseObject::setColorFactor(const moon::math::Vector<float,4> & color){
     this->colorFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
-BaseObject& BaseObject::setBloomColor(const vector<float,4> & color){
+BaseObject& BaseObject::setBloomColor(const moon::math::Vector<float,4> & color){
     this->bloomColor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
 }
-BaseObject& BaseObject::setBloomFactor(const vector<float,4> &color){
+BaseObject& BaseObject::setBloomFactor(const moon::math::Vector<float,4> &color){
     this->bloomFactor = color;
     updateUniformBuffersFlags(uniformBuffersHost);
     return *this;
@@ -294,7 +294,7 @@ SkyboxObject& SkyboxObject::setMipLevel(float mipLevel){
     return *this;
 }
 
-SkyboxObject& SkyboxObject::translate(const vector<float,3> &) {
+SkyboxObject& SkyboxObject::translate(const moon::math::Vector<float,3> &) {
     return *this;
 }
 

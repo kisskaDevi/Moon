@@ -3,8 +3,10 @@
 
 #include "matrix.h"
 
+namespace moon::math {
+
 template<typename type>
-class quaternion
+class Quaternion
 {
 private:
     type s;
@@ -13,52 +15,52 @@ private:
     type z;
 
 public:
-    quaternion();
-    quaternion(const quaternion<type>& other);
-    quaternion(const type& s,const type& x,const type& y,const type& z);
-    quaternion(const type& s,const vector<type, 3>& v);
-    quaternion<type>& operator=(const quaternion<type>& other);
-    ~quaternion() = default;
+    Quaternion();
+    Quaternion(const Quaternion<type>& other);
+    Quaternion(const type& s,const type& x,const type& y,const type& z);
+    Quaternion(const type& s,const Vector<type, 3>& v);
+    Quaternion<type>& operator=(const Quaternion<type>& other);
+    ~Quaternion() = default;
 
     type                re() const;
-    vector<type, 3>     im() const;
+    Vector<type, 3>     im() const;
 
-    bool                operator==(const quaternion<type>& other) const;
-    bool                operator!=(const quaternion<type>& other) const;
-    quaternion<type>    operator+ (const quaternion<type>& other) const;
-    quaternion<type>    operator- (const quaternion<type>& other) const;
-    quaternion<type>    operator* (const quaternion<type>& other) const;
-    quaternion<type>&   operator+=(const quaternion<type>& other);
-    quaternion<type>&   operator-=(const quaternion<type>& other);
-    quaternion<type>&   operator*=(const quaternion<type>& other);
+    bool                operator==(const Quaternion<type>& other) const;
+    bool                operator!=(const Quaternion<type>& other) const;
+    Quaternion<type>    operator+ (const Quaternion<type>& other) const;
+    Quaternion<type>    operator- (const Quaternion<type>& other) const;
+    Quaternion<type>    operator* (const Quaternion<type>& other) const;
+    Quaternion<type>&   operator+=(const Quaternion<type>& other);
+    Quaternion<type>&   operator-=(const Quaternion<type>& other);
+    Quaternion<type>&   operator*=(const Quaternion<type>& other);
 
-    quaternion<type>&   normalize();
-    quaternion<type>&   conjugate();
-    quaternion<type>&   invert();
+    Quaternion<type>&   normalize();
+    Quaternion<type>&   conjugate();
+    Quaternion<type>&   invert();
 
-    template<typename T> friend quaternion<T>   normalize(const quaternion<T>& quat);
-    template<typename T> friend quaternion<T>   conjugate(const quaternion<T>& quat);
-    template<typename T> friend quaternion<T>   invert(const quaternion<T>& quat);
+    template<typename T> friend Quaternion<T>   normalize(const Quaternion<T>& quat);
+    template<typename T> friend Quaternion<T>   conjugate(const Quaternion<T>& quat);
+    template<typename T> friend Quaternion<T>   invert(const Quaternion<T>& quat);
 
-    template<typename T> friend quaternion<T> operator* (const T& c, const quaternion<T>& quat);
-    template<typename T> friend std::ostream& operator<< (std::ostream & out, const quaternion<T>& quat);
+    template<typename T> friend Quaternion<T> operator* (const T& c, const Quaternion<T>& quat);
+    template<typename T> friend std::ostream& operator<< (std::ostream & out, const Quaternion<T>& quat);
 
-    template<typename T> friend quaternion<T> convert(const matrix<T,3,3>& O3);
-    template<typename T> friend matrix<T,3,3> convert(const quaternion<T>& quat);
-    template<typename T> friend matrix<T,4,4> convert4x4(const quaternion<T>& quat);
+    template<typename T> friend Quaternion<T> convert(const Matrix<T,3,3>& O3);
+    template<typename T> friend Matrix<T,3,3> convert(const Quaternion<T>& quat);
+    template<typename T> friend Matrix<T,4,4> convert4x4(const Quaternion<T>& quat);
 
-    template<typename T> friend quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
-    template<typename T> friend quaternion<T> convert(const T& angle, const ::vector<T,3>& axis);
+    template<typename T> friend Quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
+    template<typename T> friend Quaternion<T> convert(const T& angle, const Vector<T,3>& axis);
 
-    template<typename T> friend ::vector<T,3> convertToEulerAngles(const quaternion<T>& quat);
-    template<typename T> friend quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat);
+    template<typename T> friend Vector<T,3> convertToEulerAngles(const Quaternion<T>& quat);
+    template<typename T> friend Quaternion<T> convertToAnglesAndAxis(const Quaternion<T>& quat);
 
-    template<typename T> friend quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, const T& t);
+    template<typename T> friend Quaternion<T> slerp(const Quaternion<T>& quat1, const Quaternion<T>& quat2, const T& t);
 };
 
 
 template<typename type>
-quaternion<type>::quaternion():
+Quaternion<type>::Quaternion():
     s(static_cast<type>(0)),
     x(static_cast<type>(0)),
     y(static_cast<type>(0)),
@@ -66,7 +68,7 @@ quaternion<type>::quaternion():
 {}
 
 template<typename type>
-quaternion<type>::quaternion(const quaternion<type>& other):
+Quaternion<type>::Quaternion(const Quaternion<type>& other):
     s(other.s),
     x(other.x),
     y(other.y),
@@ -74,7 +76,7 @@ quaternion<type>::quaternion(const quaternion<type>& other):
 {}
 
 template<typename type>
-quaternion<type>::quaternion(const type& s,const type& x,const type& y,const type& z):
+Quaternion<type>::Quaternion(const type& s,const type& x,const type& y,const type& z):
     s(s),
     x(x),
     y(y),
@@ -82,7 +84,7 @@ quaternion<type>::quaternion(const type& s,const type& x,const type& y,const typ
 {}
 
 template<typename type>
-quaternion<type>::quaternion(const type& s, const ::vector<type, 3>& v):
+Quaternion<type>::Quaternion(const type& s, const Vector<type, 3>& v):
     s(s),
     x(static_cast<type>(v[0])),
     y(static_cast<type>(v[1])),
@@ -90,7 +92,7 @@ quaternion<type>::quaternion(const type& s, const ::vector<type, 3>& v):
 {}
 
 template<typename type>
-quaternion<type>& quaternion<type>::operator=(const quaternion<type>& other)
+Quaternion<type>& Quaternion<type>::operator=(const Quaternion<type>& other)
 {
     s = other.s;
     x = other.x;
@@ -100,45 +102,45 @@ quaternion<type>& quaternion<type>::operator=(const quaternion<type>& other)
 }
 
 template<typename type>
-type                quaternion<type>::re()const
+type                Quaternion<type>::re()const
 {
     return s;
 }
 
 template<typename type>
-vector<type, 3>    quaternion<type>::im()const
+Vector<type, 3>    Quaternion<type>::im()const
 {
-    return ::vector<type, 3>(x,y,z);
+    return Vector<type, 3>(x,y,z);
 }
 
 template<typename type>
-bool                quaternion<type>::operator==(const quaternion<type>& other)const
+bool                Quaternion<type>::operator==(const Quaternion<type>& other)const
 {
     return x==other.x&&y==other.y&&z==other.z&&s==other.s;
 }
 
 template<typename type>
-bool                quaternion<type>::operator!=(const quaternion<type>& other)const
+bool                Quaternion<type>::operator!=(const Quaternion<type>& other)const
 {
     return !(x==other.x&&y==other.y&&z==other.z&&s==other.s);
 }
 
 template<typename type>
-quaternion<type>    quaternion<type>::operator+(const quaternion<type>& other)const
+Quaternion<type>    Quaternion<type>::operator+(const Quaternion<type>& other)const
 {
-    return quaternion<type>(s+other.s,x+other.x,y+other.y,z+other.z);
+    return Quaternion<type>(s+other.s,x+other.x,y+other.y,z+other.z);
 }
 
 template<typename type>
-quaternion<type>    quaternion<type>::operator-(const quaternion<type>& other)const
+Quaternion<type>    Quaternion<type>::operator-(const Quaternion<type>& other)const
 {
-    return quaternion<type>(s-other.s,x-other.x,y-other.y,z-other.z);
+    return Quaternion<type>(s-other.s,x-other.x,y-other.y,z-other.z);
 }
 
 template<typename type>
-quaternion<type>    quaternion<type>::operator*(const quaternion<type>& other)const
+Quaternion<type>    Quaternion<type>::operator*(const Quaternion<type>& other)const
 {
-    return quaternion<type>(
+    return Quaternion<type>(
         s*other.s - (x*other.x + y*other.y + z*other.z),
         s*other.x + other.s*x + (y*other.z-z*other.y),
         s*other.y + other.s*y + (z*other.x-x*other.z),
@@ -147,7 +149,7 @@ quaternion<type>    quaternion<type>::operator*(const quaternion<type>& other)co
 }
 
 template<typename type>
-quaternion<type>&   quaternion<type>::operator+=(const quaternion<type>& other)
+Quaternion<type>&   Quaternion<type>::operator+=(const Quaternion<type>& other)
 {
     s += other.s;
     x += other.x;
@@ -157,7 +159,7 @@ quaternion<type>&   quaternion<type>::operator+=(const quaternion<type>& other)
 }
 
 template<typename type>
-quaternion<type>&   quaternion<type>::operator-=(const quaternion<type>& other)
+Quaternion<type>&   Quaternion<type>::operator-=(const Quaternion<type>& other)
 {
     s -= other.s;
     x -= other.x;
@@ -167,29 +169,29 @@ quaternion<type>&   quaternion<type>::operator-=(const quaternion<type>& other)
 }
 
 template<typename type>
-quaternion<type>&   quaternion<type>::operator*=(const quaternion<type>& other)
+Quaternion<type>&   Quaternion<type>::operator*=(const Quaternion<type>& other)
 {
-    quaternion<type> copy(*this);
+    Quaternion<type> copy(*this);
     *this = copy*other;
 
     return *this;
 }
 
 template<typename T>
-std::ostream& operator<< (std::ostream & out, const quaternion<T>& quat)
+std::ostream& operator<< (std::ostream & out, const Quaternion<T>& quat)
 {
     out<<quat.s<<'\t'<<quat.x<<'\t'<<quat.y<<'\t'<<quat.z;
     return out;
 }
 
 template<typename T>
-quaternion<T> operator* (const T& c,const quaternion<T>& quat)
+Quaternion<T> operator* (const T& c,const Quaternion<T>& quat)
 {
-    return quaternion<T>(c*quat.s,c*quat.x,c*quat.y,c*quat.z);
+    return Quaternion<T>(c*quat.s,c*quat.x,c*quat.y,c*quat.z);
 }
 
 template<typename type>
-quaternion<type>&   quaternion<type>::normalize()
+Quaternion<type>&   Quaternion<type>::normalize()
 {
     type norma = s*s+x*x+y*y+z*z;
     norma = std::sqrt(norma);
@@ -201,7 +203,7 @@ quaternion<type>&   quaternion<type>::normalize()
 }
 
 template<typename type>
-quaternion<type>&   quaternion<type>::conjugate()
+Quaternion<type>&   Quaternion<type>::conjugate()
 {
     x = -x;
     y = -y;
@@ -210,10 +212,10 @@ quaternion<type>&   quaternion<type>::conjugate()
 }
 
 template<typename type>
-quaternion<type>&   quaternion<type>::invert()
+Quaternion<type>&   Quaternion<type>::invert()
 {
-    quaternion<type> quat(*this);
-    quaternion<type> ivNorma = quat*this->conjugate();
+    Quaternion<type> quat(*this);
+    Quaternion<type> ivNorma = quat*this->conjugate();
     ivNorma.s = std::sqrt(ivNorma.s);
     *this = ivNorma*(*this);
     return *this;
@@ -221,31 +223,31 @@ quaternion<type>&   quaternion<type>::invert()
 
 
 template<typename T>
-quaternion<T>   normalize(const quaternion<T>& quat)
+Quaternion<T>   normalize(const Quaternion<T>& quat)
 {
     T norma = quat.s*quat.s+quat.x*quat.x+quat.y*quat.y+quat.z*quat.z;
     norma = std::sqrt(norma);
-    return quaternion<T>(quat.s/norma,quat.x/norma,quat.y/norma,quat.z/norma);
+    return Quaternion<T>(quat.s/norma,quat.x/norma,quat.y/norma,quat.z/norma);
 }
 
 template<typename T>
-quaternion<T>   conjugate(const quaternion<T>& quat)
+Quaternion<T>   conjugate(const Quaternion<T>& quat)
 {
-    return quaternion<T>(quat.s,-quat.x,-quat.y,-quat.z);
+    return Quaternion<T>(quat.s,-quat.x,-quat.y,-quat.z);
 }
 
 template<typename T>
-quaternion<T>   invert(const quaternion<T>& quat)
+Quaternion<T>   invert(const Quaternion<T>& quat)
 {
-    quaternion<T> ivNorma = quat*conjugate(quat);
+    Quaternion<T> ivNorma = quat*conjugate(quat);
     ivNorma.s = std::sqrt(ivNorma.s);
     return ivNorma*conjugate(quat);
 }
 
 template<typename T>
-quaternion<T> convert(const matrix<T,3,3>& O3)
+Quaternion<T> convert(const Matrix<T,3,3>& O3)
 {
-    quaternion<T> quat;
+    Quaternion<T> quat;
 
     quat.s = std::sqrt(1.0f+O3[0][0]+O3[1][1]+O3[2][2])/2.0f;
 
@@ -257,9 +259,9 @@ quaternion<T> convert(const matrix<T,3,3>& O3)
 }
 
 template<typename T>
-matrix<T,3,3> convert(const quaternion<T>& quat)
+Matrix<T,3,3> convert(const Quaternion<T>& quat)
 {
-    matrix<T,3,3> R;
+    Matrix<T,3,3> R;
 
     R[0][0] = T(1) - T(2)*(quat.y*quat.y + quat.z*quat.z);      R[0][1] = T(2)*(quat.x*quat.y - quat.z*quat.s);         R[0][2] = T(2)*(quat.x*quat.z + quat.y*quat.s);
     R[1][0] = T(2)*(quat.x*quat.y + quat.z*quat.s);             R[1][1] = T(1) - T(2)*(quat.x*quat.x + quat.z*quat.z);  R[1][2] = T(2)*(quat.y*quat.z - quat.x*quat.s);
@@ -269,9 +271,9 @@ matrix<T,3,3> convert(const quaternion<T>& quat)
 }
 
 template<typename T>
-matrix<T,4,4> convert4x4(const quaternion<T>& quat)
+Matrix<T,4,4> convert4x4(const Quaternion<T>& quat)
 {
-    matrix<T,4,4> R{0.0f};
+    Matrix<T,4,4> R{0.0f};
 
     R[0][0] = T(1) - T(2)*(quat.y*quat.y + quat.z*quat.z);      R[0][1] = T(2)*(quat.x*quat.y - quat.z*quat.s);         R[0][2] = T(2)*(quat.x*quat.z + quat.y*quat.s);
     R[1][0] = T(2)*(quat.x*quat.y + quat.z*quat.s);             R[1][1] = T(1) - T(2)*(quat.x*quat.x + quat.z*quat.z);  R[1][2] = T(2)*(quat.y*quat.z - quat.x*quat.s);
@@ -282,7 +284,7 @@ matrix<T,4,4> convert4x4(const quaternion<T>& quat)
 }
 
 template<typename T>
-quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
+Quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
 {
     T cosy = std::cos(yaw*T(0.5));
     T siny = std::sin(yaw*T(0.5));
@@ -296,32 +298,32 @@ quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
     T y = cosr*sinp*cosy + sinr*cosp*siny;
     T z = cosr*cosp*siny - sinr*sinp*cosy;
 
-    return quaternion<T>(s,x,y,z);
+    return Quaternion<T>(s,x,y,z);
 }
 
 template<typename T>
-quaternion<T> convert(const T& angle, const vector<T,3>& axis)
+Quaternion<T> convert(const T& angle, const Vector<T,3>& axis)
 {
-    return quaternion<T>(std::cos(angle*T(0.5)),std::sin(angle*T(0.5))*vector<T,3>(axis[0],axis[1],axis[2]));
+    return Quaternion<T>(std::cos(angle*T(0.5)),std::sin(angle*T(0.5))*Vector<T,3>(axis[0],axis[1],axis[2]));
 }
 
 template<typename T>
-vector<T,3> convertToEulerAngles(const quaternion<T>& quat)
+Vector<T,3> convertToEulerAngles(const Quaternion<T>& quat)
 {
-    return  vector<T,3>(std::atan((quat.s*quat.x+quat.y*quat.z)*T(2)/(T(1)-(quat.x*quat.x+quat.y*quat.y)*T(2))),
+    return  Vector<T,3>(std::atan((quat.s*quat.x+quat.y*quat.z)*T(2)/(T(1)-(quat.x*quat.x+quat.y*quat.y)*T(2))),
                             std::asin((quat.s*quat.y-quat.x*quat.z)*T(2)),
                             std::atan((quat.s*quat.z+quat.y*quat.x)*T(2)/(T(1)-(quat.z*quat.z+quat.y*quat.y)*T(2))));
 }
 
 template<typename T>
-quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat)
+Quaternion<T> convertToAnglesAndAxis(const Quaternion<T>& quat)
 {
-    return quaternion<T>(   std::acos(quat.s)*T(2),
-                            vector<T,3>(quat.x,quat.y,quat.z)/std::sqrt(T(1)-quat.s*quat.s));
+    return Quaternion<T>(   std::acos(quat.s)*T(2),
+                            Vector<T,3>(quat.x,quat.y,quat.z)/std::sqrt(T(1)-quat.s*quat.s));
 }
 
 template<typename T>
-quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, const T& t)
+Quaternion<T> slerp(const Quaternion<T>& quat1, const Quaternion<T>& quat2, const T& t)
 {
     T q1q2 = quat1.s*quat2.s + quat1.x*quat2.x + quat1.y*quat2.y + quat1.z*quat2.z;
     T modq1 = std::sqrt(quat1.s*quat1.s + quat1.x*quat1.x + quat1.y*quat1.y + quat1.z*quat1.z);
@@ -337,10 +339,12 @@ quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, cons
 }
 
 template<typename type>
-matrix<type,4,4> rotate(quaternion<type> qu){
+Matrix<type,4,4> rotate(Quaternion<type> qu){
     return convert4x4(qu);
 }
 
-extern template class quaternion<float>;
-extern template class quaternion<double>;
+extern template class Quaternion<float>;
+extern template class Quaternion<double>;
+
+}
 #endif // QUATERNION_H

@@ -13,11 +13,11 @@ struct PhysicalDevice;
 namespace moon::interfaces {
 
 struct BoundingBox{
-    alignas(16) vector<float,3> min{0.0f,0.0f,0.0f};
-    alignas(16) vector<float,3> max{0.0f,0.0f,0.0f};
+    alignas(16) moon::math::Vector<float,3> min{0.0f,0.0f,0.0f};
+    alignas(16) moon::math::Vector<float,3> max{0.0f,0.0f,0.0f};
 
     BoundingBox() = default;
-    BoundingBox(vector<float,3> min, vector<float,3> max);
+    BoundingBox(moon::math::Vector<float,3> min, moon::math::Vector<float,3> max);
 };
 
 struct Material {
@@ -26,8 +26,8 @@ struct Material {
     float alphaCutoff{1.0f};
     float metallicFactor{1.0f};
     float roughnessFactor{1.0f};
-    vector<float,4> baseColorFactor{1.0f};
-    vector<float,4> emissiveFactor{1.0f};
+    moon::math::Vector<float,4> baseColorFactor{1.0f};
+    moon::math::Vector<float,4> emissiveFactor{1.0f};
     moon::utils::Texture* baseColorTexture{nullptr};
     moon::utils::Texture* metallicRoughnessTexture{nullptr};
     moon::utils::Texture* normalTexture{nullptr};
@@ -44,8 +44,8 @@ struct Material {
     struct Extension {
         moon::utils::Texture* specularGlossinessTexture{nullptr};
         moon::utils::Texture* diffuseTexture{nullptr};
-        vector<float,4> diffuseFactor{1.0f};
-        vector<float,3> specularFactor{0.0f};
+        moon::math::Vector<float,4> diffuseFactor{1.0f};
+        moon::math::Vector<float,3> specularFactor{0.0f};
     } extension;
     struct PbrWorkflows {
         bool metallicRoughness = true;
@@ -56,10 +56,10 @@ struct Material {
 
 struct MaterialBlock
 {
-    vector<float,4>   baseColorFactor{0.0f};
-    vector<float,4>   emissiveFactor{0.0f};
-    vector<float,4>   diffuseFactor{0.0f};
-    vector<float,4>   specularFactor{0.0f};
+    moon::math::Vector<float,4>   baseColorFactor{0.0f};
+    moon::math::Vector<float,4>   emissiveFactor{0.0f};
+    moon::math::Vector<float,4>   diffuseFactor{0.0f};
+    moon::math::Vector<float,4>   specularFactor{0.0f};
     float       workflow{0.0f};
     int         colorTextureSet{-1};
     int         PhysicalDescriptorTextureSet{-1};
@@ -82,14 +82,14 @@ class Model
 {
 public:
     struct Vertex{
-        alignas(16) vector<float,3> pos{0.0f};
-        alignas(16) vector<float,3> normal{0.0f};
-        alignas(16) vector<float,2> uv0{0.0f};
-        alignas(16) vector<float,2> uv1{0.0f};
-        alignas(16) vector<float,4> joint0{0.0f};
-        alignas(16) vector<float,4> weight0{0.0f};
-        alignas(16) vector<float,3> tangent{0.0f};
-        alignas(16) vector<float,3> bitangent{0.0f};
+        alignas(16) moon::math::Vector<float,3> pos{0.0f};
+        alignas(16) moon::math::Vector<float,3> normal{0.0f};
+        alignas(16) moon::math::Vector<float,2> uv0{0.0f};
+        alignas(16) moon::math::Vector<float,2> uv1{0.0f};
+        alignas(16) moon::math::Vector<float,4> joint0{0.0f};
+        alignas(16) moon::math::Vector<float,4> weight0{0.0f};
+        alignas(16) moon::math::Vector<float,3> tangent{0.0f};
+        alignas(16) moon::math::Vector<float,3> bitangent{0.0f};
 
         static VkVertexInputBindingDescription getBindingDescription();
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();

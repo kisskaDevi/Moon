@@ -5,7 +5,9 @@
 
 #include <cstring>
 
-void rayTracingGraphics::imageResource::create(const std::string& id, moon::utils::PhysicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
+namespace moon::rayTracingGraphics {
+
+void RayTracingGraphics::ImageResource::create(const std::string& id, moon::utils::PhysicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
     this->id = id;
 
     host = new uint32_t[extent.width * extent.height];
@@ -33,7 +35,7 @@ void rayTracingGraphics::imageResource::create(const std::string& id, moon::util
     vkCreateSampler(phDevice.getLogical(), &SamplerInfo, nullptr, &device.sampler);
 }
 
-void rayTracingGraphics::imageResource::destroy(moon::utils::PhysicalDevice phDevice){
+void RayTracingGraphics::ImageResource::destroy(moon::utils::PhysicalDevice phDevice){
     if(host){
         delete[] host;
         host = nullptr;
@@ -43,17 +45,17 @@ void rayTracingGraphics::imageResource::destroy(moon::utils::PhysicalDevice phDe
     device.deleteSampler(phDevice.getLogical());
 }
 
-void rayTracingGraphics::imageResource::moveFromHostToHostDevice(VkExtent2D extent){
+void RayTracingGraphics::ImageResource::moveFromHostToHostDevice(VkExtent2D extent){
     std::memcpy(hostDevice.map, host, sizeof(uint32_t) * extent.width * extent.height);
 }
 
-void rayTracingGraphics::imageResource::copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex){
+void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex){
     moon::utils::texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
     moon::utils::texture::copy(commandBuffer, hostDevice.instance, device.instances[imageIndex].image, {extent.width, extent.height, 1}, 1);
     moon::utils::texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
 }
 
-void rayTracingGraphics::create()
+void RayTracingGraphics::create()
 {
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -90,7 +92,7 @@ void rayTracingGraphics::create()
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
     moon::utils::ImageInfo swapChainInfo{ imageCount, format, swapChainKHR->getExtent(), VK_SAMPLE_COUNT_1_BIT};
-    rayTracingLinkParameters linkParams;
+    RayTracingLinkParameters linkParams;
     linkParams.in.color = color.id;
     linkParams.in.bloom = bloomParams.out.bloom;
     linkParams.in.boundingBox = bbId;
@@ -108,7 +110,7 @@ void rayTracingGraphics::create()
     rayTracer.create();
 }
 
-void rayTracingGraphics::destroy() {
+void RayTracingGraphics::destroy() {
     if(emptyTexture){
         emptyTexture->destroy(device.getLogical());
         delete emptyTexture;
@@ -125,7 +127,7 @@ void rayTracingGraphics::destroy() {
     aDatabase.destroy();
 }
 
-std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)
+std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)
 {
     rayTracer.calculateImage(color.host, bloom.host);
 
@@ -156,7 +158,9 @@ std::vector<std::vector<VkSemaphore>> rayTracingGraphics::submit(const std::vect
     return std::vector<std::vector<VkSemaphore>>();
 }
 
-void rayTracingGraphics::update(uint32_t imageIndex) {
+void RayTracingGraphics::update(uint32_t imageIndex) {
     rayTracer.update();
     bbGraphics.update(imageIndex);
+}
+
 }

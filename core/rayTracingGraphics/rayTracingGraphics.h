@@ -18,9 +18,11 @@
 
 namespace cuda { class model;}
 
-class rayTracingGraphics : public moon::graphicsManager::GraphicsInterface {
+namespace moon::rayTracingGraphics {
+
+class RayTracingGraphics : public moon::graphicsManager::GraphicsInterface {
 private:
-    struct imageResource{
+    struct ImageResource{
         std::string id;
         uint32_t* host{nullptr};
         moon::utils::Buffer hostDevice;
@@ -32,13 +34,13 @@ private:
         void copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex);
     };
 
-    imageResource color;
-    imageResource bloom;
+    ImageResource color;
+    ImageResource bloom;
 
     cuda::cudaRayTracing rayTracer;
-    boundingBoxGraphics bbGraphics;
+    BoundingBoxGraphics bbGraphics;
     moon::workflows::BloomGraphics bloomGraph;
-    rayTracingLink Link;
+    RayTracingLink Link;
 
     moon::utils::Texture* emptyTexture{nullptr};
 
@@ -54,7 +56,7 @@ private:
     bool bloomEnable = true;
 
 public:
-    rayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
+    RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
         : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
     {
         setExtent(extent);
@@ -68,8 +70,8 @@ public:
         Link.setPositionInWindow(offset, size);
     }
 
-    ~rayTracingGraphics(){
-        rayTracingGraphics::destroy();
+    ~RayTracingGraphics(){
+        RayTracingGraphics::destroy();
         bbGraphics.destroy();
     }
 
@@ -148,5 +150,6 @@ public:
     }
 };
 
+}
 #endif // !RAYTRACINGGRAPHICS
 

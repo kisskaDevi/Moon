@@ -163,7 +163,7 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     hostcam = cuda::camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
     cam = cuda::make_devicep<cuda::camera>(hostcam);
-    graphics = std::make_shared<rayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{extent[0],extent[1]});
+    graphics = std::make_shared<moon::rayTracingGraphics::RayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
     graphics->setCamera(&cam);
     graphics->setEnableBoundingBox(enableBB);

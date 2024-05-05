@@ -17,8 +17,7 @@
 
 namespace moon::graphicsManager { class GraphicsManager;}
 namespace moon::imguiGraphics { class ImguiGraphics;}
-
-class rayTracingGraphics;
+namespace moon::rayTracingGraphics { class RayTracingGraphics;}
 
 class testCuda : public scene
 {
@@ -40,7 +39,7 @@ private:
 
     std::shared_ptr<controller> mouse;
     std::shared_ptr<controller> board;
-    std::shared_ptr<rayTracingGraphics> graphics;
+    std::shared_ptr<moon::rayTracingGraphics::RayTracingGraphics> graphics;
 #ifdef IMGUI_GRAPHICS
     std::shared_ptr<moon::imguiGraphics::ImguiGraphics> gui;
 #endif

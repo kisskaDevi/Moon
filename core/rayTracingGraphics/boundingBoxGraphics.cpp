@@ -6,18 +6,20 @@
 
 #include <cstring>
 
+namespace moon::rayTracingGraphics {
+
 struct CameraBuffer{
     alignas(16) matrix<float,4,4> proj;
     alignas(16) matrix<float,4,4> view;
 };
 
-boundingBoxGraphics::boundingBoxGraphics() {}
+BoundingBoxGraphics::BoundingBoxGraphics() {}
 
-void boundingBoxGraphics::createAttachments() {
+void BoundingBoxGraphics::createAttachments() {
     moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
 }
 
-void boundingBoxGraphics::boundingBoxGraphics::createRenderPass(){
+void BoundingBoxGraphics::BoundingBoxGraphics::createRenderPass(){
     std::vector<VkAttachmentDescription> attachments = {
         moon::utils::Attachments::imageDescription(image.Format)
     };
@@ -54,7 +56,7 @@ void boundingBoxGraphics::boundingBoxGraphics::createRenderPass(){
     CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
 }
 
-void boundingBoxGraphics::createFramebuffers(){
+void BoundingBoxGraphics::createFramebuffers(){
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> pAttachments = {frame.instances[i].imageView};
@@ -70,7 +72,7 @@ void boundingBoxGraphics::createFramebuffers(){
     }
 }
 
-void boundingBoxGraphics::createDescriptorSetLayout(){
+void BoundingBoxGraphics::createDescriptorSetLayout(){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
@@ -81,7 +83,7 @@ void boundingBoxGraphics::createDescriptorSetLayout(){
     CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout));
 }
 
-void boundingBoxGraphics::createPipeline(){
+void BoundingBoxGraphics::createPipeline(){
     auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
     auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
     VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
@@ -148,7 +150,7 @@ void boundingBoxGraphics::createPipeline(){
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void boundingBoxGraphics::createDescriptorPool(){
+void BoundingBoxGraphics::createDescriptorPool(){
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{});
     poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -161,7 +163,7 @@ void boundingBoxGraphics::createDescriptorPool(){
     vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
 }
 
-void boundingBoxGraphics::createDescriptorSets(){
+void BoundingBoxGraphics::createDescriptorSets(){
     descriptorSets.resize(image.Count);
     std::vector<VkDescriptorSetLayout> layouts(image.Count, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -191,11 +193,11 @@ void boundingBoxGraphics::createDescriptorSets(){
     }
 }
 
-boundingBoxGraphics::~boundingBoxGraphics(){
+BoundingBoxGraphics::~BoundingBoxGraphics(){
     destroy();
 }
 
-void boundingBoxGraphics::destroy(){
+void BoundingBoxGraphics::destroy(){
     if(pipeline)            {vkDestroyPipeline(device, pipeline, nullptr); pipeline = VK_NULL_HANDLE;}
     if(pipelineLayout)      {vkDestroyPipelineLayout(device, pipelineLayout,nullptr); pipelineLayout = VK_NULL_HANDLE;}
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
@@ -213,7 +215,7 @@ void boundingBoxGraphics::destroy(){
     cameraBuffers.destroy(device);
 }
 
-void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath){
+void BoundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath){
     if(!enable) return;
 
     this->physicalDevice = physicalDevice;
@@ -234,7 +236,7 @@ void boundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
     createDescriptorSets();
 }
 
-void boundingBoxGraphics::update(uint32_t imageIndex){
+void BoundingBoxGraphics::update(uint32_t imageIndex){
     if(!enable) return;
 
     cuda::camera hostCam = cuda::to_host(*camera);
@@ -256,7 +258,7 @@ void boundingBoxGraphics::update(uint32_t imageIndex){
     cameraBuffers.copy(imageIndex, &buffer);
 }
 
-void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const {
+void BoundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const {
     if(!enable) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue};
@@ -282,18 +284,20 @@ void boundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
     vkCmdEndRenderPass(commandBuffer);
 }
 
-const moon::utils::Attachments& boundingBoxGraphics::getAttachments() const {
+const moon::utils::Attachments& BoundingBoxGraphics::getAttachments() const {
     return frame;
 }
 
-void boundingBoxGraphics::bind(const cuda::cbox& box){
+void BoundingBoxGraphics::bind(const cuda::cbox& box){
     boxes.push_back(box);
 }
 
-void boundingBoxGraphics::clear(){
+void BoundingBoxGraphics::clear(){
     boxes.clear();
 }
 
-void boundingBoxGraphics::bind(cuda::devicep<cuda::camera>* camera){
+void BoundingBoxGraphics::bind(cuda::devicep<cuda::camera>* camera){
     this->camera = camera;
+}
+
 }

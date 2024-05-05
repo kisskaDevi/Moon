@@ -6,7 +6,7 @@
 namespace cuda {
 
 template<typename type>
-class quaternion
+class Quaternion
 {
 private:
     type s;
@@ -15,51 +15,51 @@ private:
     type z;
 
 public:
-    __host__ __device__ quaternion();
-    __host__ __device__ quaternion(const quaternion<type>& other);
-    __host__ __device__ quaternion(const type& s, const type& x, const type& y, const type& z);
-    __host__ __device__ quaternion(const type& s, const vec4<type>& v);
-    __host__ __device__ quaternion<type>& operator=(const quaternion<type>& other);
-    __host__ __device__ ~quaternion();
+    __host__ __device__ Quaternion();
+    __host__ __device__ Quaternion(const Quaternion<type>& other);
+    __host__ __device__ Quaternion(const type& s, const type& x, const type& y, const type& z);
+    __host__ __device__ Quaternion(const type& s, const vec4<type>& v);
+    __host__ __device__ Quaternion<type>& operator=(const Quaternion<type>& other);
+    __host__ __device__ ~Quaternion();
 
     __host__ __device__ type                scalar()const;
     __host__ __device__ vec4<type>          vector()const;
 
-    __host__ __device__ bool                operator==(const quaternion<type>& other)const;
-    __host__ __device__ bool                operator!=(const quaternion<type>& other)const;
-    __host__ __device__ quaternion<type>    operator+ (const quaternion<type>& other)const;
-    __host__ __device__ quaternion<type>    operator- (const quaternion<type>& other)const;
-    __host__ __device__ quaternion<type>    operator* (const quaternion<type>& other)const;
-    __host__ __device__ quaternion<type>&   operator+=(const quaternion<type>& other);
-    __host__ __device__ quaternion<type>&   operator-=(const quaternion<type>& other);
-    __host__ __device__ quaternion<type>&   operator*=(const quaternion<type>& other);
+    __host__ __device__ bool                operator==(const Quaternion<type>& other)const;
+    __host__ __device__ bool                operator!=(const Quaternion<type>& other)const;
+    __host__ __device__ Quaternion<type>    operator+ (const Quaternion<type>& other)const;
+    __host__ __device__ Quaternion<type>    operator- (const Quaternion<type>& other)const;
+    __host__ __device__ Quaternion<type>    operator* (const Quaternion<type>& other)const;
+    __host__ __device__ Quaternion<type>&   operator+=(const Quaternion<type>& other);
+    __host__ __device__ Quaternion<type>&   operator-=(const Quaternion<type>& other);
+    __host__ __device__ Quaternion<type>&   operator*=(const Quaternion<type>& other);
 
-    __host__ __device__ quaternion<type>& normalize();
-    __host__ __device__ quaternion<type>& conjugate();
-    __host__ __device__ quaternion<type>& invert();
+    __host__ __device__ Quaternion<type>& normalize();
+    __host__ __device__ Quaternion<type>& conjugate();
+    __host__ __device__ Quaternion<type>& invert();
 
-    template<typename T> __host__ __device__ friend quaternion<T>   normalize(const quaternion<T>& quat);
-    template<typename T> __host__ __device__ friend quaternion<T>   conjugate(const quaternion<T>& quat);
-    template<typename T> __host__ __device__ friend quaternion<T>   invert(const quaternion<T>& quat);
+    template<typename T> __host__ __device__ friend Quaternion<T>   normalize(const Quaternion<T>& quat);
+    template<typename T> __host__ __device__ friend Quaternion<T>   conjugate(const Quaternion<T>& quat);
+    template<typename T> __host__ __device__ friend Quaternion<T>   invert(const Quaternion<T>& quat);
 
-    template<typename T> __host__ __device__ friend quaternion<T> operator* (const T& c, const quaternion<T>& quat);
-    template<typename T> friend std::ostream& operator<< (std::ostream& out, const quaternion<T>& quat);
+    template<typename T> __host__ __device__ friend Quaternion<T> operator* (const T& c, const Quaternion<T>& quat);
+    template<typename T> friend std::ostream& operator<< (std::ostream& out, const Quaternion<T>& quat);
 
-    //template<typename T> friend quaternion<T> convert(const glm::mat<3, 3, T, glm::defaultp>& O3);
-    //template<typename T> friend glm::mat3x3 convert(const quaternion<T>& quat);
+    //template<typename T> friend Quaternion<T> convert(const glm::mat<3, 3, T, glm::defaultp>& O3);
+    //template<typename T> friend glm::mat3x3 convert(const Quaternion<T>& quat);
 
-    template<typename T> __host__ __device__ friend quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
-    template<typename T> __host__ __device__ friend quaternion<T> convert(const T& angle, const vec4<type>& axis);
+    template<typename T> __host__ __device__ friend Quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
+    template<typename T> __host__ __device__ friend Quaternion<T> convert(const T& angle, const vec4<type>& axis);
 
-    template<typename T> __host__ __device__ friend vec4<type> convertToEulerAngles(const quaternion<T>& quat);
-    template<typename T> __host__ __device__ friend quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat);
+    template<typename T> __host__ __device__ friend vec4<type> convertToEulerAngles(const Quaternion<T>& quat);
+    template<typename T> __host__ __device__ friend Quaternion<T> convertToAnglesAndAxis(const Quaternion<T>& quat);
 
-    template<typename T> __host__ __device__ friend quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, const T& t);
+    template<typename T> __host__ __device__ friend Quaternion<T> slerp(const Quaternion<T>& quat1, const Quaternion<T>& quat2, const T& t);
 };
 
 
 template<typename type>
-__host__ __device__ quaternion<type>::quaternion() :
+__host__ __device__ Quaternion<type>::Quaternion() :
     s(static_cast<type>(0)),
     x(static_cast<type>(0)),
     y(static_cast<type>(0)),
@@ -67,7 +67,7 @@ __host__ __device__ quaternion<type>::quaternion() :
 {}
 
 template<typename type>
-__host__ __device__ quaternion<type>::quaternion(const quaternion<type>& other) :
+__host__ __device__ Quaternion<type>::Quaternion(const Quaternion<type>& other) :
     s(other.s),
     x(other.x),
     y(other.y),
@@ -75,7 +75,7 @@ __host__ __device__ quaternion<type>::quaternion(const quaternion<type>& other) 
 {}
 
 template<typename type>
-__host__ __device__ quaternion<type>::quaternion(const type& s, const type& x, const type& y, const type& z) :
+__host__ __device__ Quaternion<type>::Quaternion(const type& s, const type& x, const type& y, const type& z) :
     s(s),
     x(x),
     y(y),
@@ -83,7 +83,7 @@ __host__ __device__ quaternion<type>::quaternion(const type& s, const type& x, c
 {}
 
 template<typename type>
-__host__ __device__ quaternion<type>::quaternion(const type& s, const vec4<type>& v) :
+__host__ __device__ Quaternion<type>::Quaternion(const type& s, const vec4<type>& v) :
     s(s),
     x(static_cast<type>(v.x())),
     y(static_cast<type>(v.y())),
@@ -91,7 +91,7 @@ __host__ __device__ quaternion<type>::quaternion(const type& s, const vec4<type>
 {}
 
 template<typename type>
-__host__ __device__ quaternion<type>& quaternion<type>::operator=(const quaternion<type>& other)
+__host__ __device__ Quaternion<type>& Quaternion<type>::operator=(const Quaternion<type>& other)
 {
     s = other.s;
     x = other.x;
@@ -101,49 +101,49 @@ __host__ __device__ quaternion<type>& quaternion<type>::operator=(const quaterni
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>::~quaternion()
+__host__ __device__ Quaternion<type>::~Quaternion()
 {}
 
 template<typename type>
-__host__ __device__ type quaternion<type>::scalar()const
+__host__ __device__ type Quaternion<type>::scalar()const
 {
     return s;
 }
 
 template<typename type>
-__host__ __device__ vec4<type> quaternion<type>::vector()const
+__host__ __device__ vec4<type> Quaternion<type>::vector()const
 {
     return vec4<type>(x, y, z, static_cast<type>(0));
 }
 
 template<typename type>
-__host__ __device__ bool quaternion<type>::operator==(const quaternion<type>& other)const
+__host__ __device__ bool Quaternion<type>::operator==(const Quaternion<type>& other)const
 {
     return x == other.x && y == other.y && z == other.z && s == other.s;
 }
 
 template<typename type>
-__host__ __device__ bool quaternion<type>::operator!=(const quaternion<type>& other)const
+__host__ __device__ bool Quaternion<type>::operator!=(const Quaternion<type>& other)const
 {
     return !(x == other.x && y == other.y && z == other.z && s == other.s);
 }
 
 template<typename type>
-__host__ __device__ quaternion<type> quaternion<type>::operator+(const quaternion<type>& other)const
+__host__ __device__ Quaternion<type> Quaternion<type>::operator+(const Quaternion<type>& other)const
 {
-    return quaternion<type>(s + other.s, x + other.x, y + other.y, z + other.z);
+    return Quaternion<type>(s + other.s, x + other.x, y + other.y, z + other.z);
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>    quaternion<type>::operator-(const quaternion<type>& other)const
+__host__ __device__ Quaternion<type>    Quaternion<type>::operator-(const Quaternion<type>& other)const
 {
-    return quaternion<type>(s - other.s, x - other.x, y - other.y, z - other.z);
+    return Quaternion<type>(s - other.s, x - other.x, y - other.y, z - other.z);
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>    quaternion<type>::operator*(const quaternion<type>& other)const
+__host__ __device__ Quaternion<type>    Quaternion<type>::operator*(const Quaternion<type>& other)const
 {
-    return quaternion<type>(
+    return Quaternion<type>(
         s * other.s - (x * other.x + y * other.y + z * other.z),
         s * other.x + other.s * x + (y * other.z - z * other.y),
         s * other.y + other.s * y + (z * other.x - x * other.z),
@@ -152,7 +152,7 @@ __host__ __device__ quaternion<type>    quaternion<type>::operator*(const quater
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>& quaternion<type>::operator+=(const quaternion<type>& other)
+__host__ __device__ Quaternion<type>& Quaternion<type>::operator+=(const Quaternion<type>& other)
 {
     s += other.s;
     x += other.x;
@@ -162,7 +162,7 @@ __host__ __device__ quaternion<type>& quaternion<type>::operator+=(const quatern
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>& quaternion<type>::operator-=(const quaternion<type>& other)
+__host__ __device__ Quaternion<type>& Quaternion<type>::operator-=(const Quaternion<type>& other)
 {
     s -= other.s;
     x -= other.x;
@@ -172,29 +172,29 @@ __host__ __device__ quaternion<type>& quaternion<type>::operator-=(const quatern
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>& quaternion<type>::operator*=(const quaternion<type>& other)
+__host__ __device__ Quaternion<type>& Quaternion<type>::operator*=(const Quaternion<type>& other)
 {
-    quaternion<type> copy(*this);
+    Quaternion<type> copy(*this);
     *this = copy * other;
 
     return *this;
 }
 
 template<typename T>
-std::ostream& operator<< (std::ostream& out, const quaternion<T>& quat)
+std::ostream& operator<< (std::ostream& out, const Quaternion<T>& quat)
 {
     out << quat.s << '\t' << quat.x << '\t' << quat.y << '\t' << quat.z;
     return out;
 }
 
 template<typename T>
-__host__ __device__ quaternion<T> operator* (const T& c, const quaternion<T>& quat)
+__host__ __device__ Quaternion<T> operator* (const T& c, const Quaternion<T>& quat)
 {
-    return quaternion<T>(c * quat.s, c * quat.x, c * quat.y, c * quat.z);
+    return Quaternion<T>(c * quat.s, c * quat.x, c * quat.y, c * quat.z);
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>& quaternion<type>::normalize()
+__host__ __device__ Quaternion<type>& Quaternion<type>::normalize()
 {
     type norma = s * s + x * x + y * y + z * z;
     norma = std::sqrt(norma);
@@ -206,7 +206,7 @@ __host__ __device__ quaternion<type>& quaternion<type>::normalize()
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>& quaternion<type>::conjugate()
+__host__ __device__ Quaternion<type>& Quaternion<type>::conjugate()
 {
     x = -x;
     y = -y;
@@ -215,41 +215,41 @@ __host__ __device__ quaternion<type>& quaternion<type>::conjugate()
 }
 
 template<typename type>
-__host__ __device__ quaternion<type>& quaternion<type>::invert()
+__host__ __device__ Quaternion<type>& Quaternion<type>::invert()
 {
-    quaternion<type> quat(*this);
-    quaternion<type> ivNorma = quat * this->conjugate();
+    Quaternion<type> quat(*this);
+    Quaternion<type> ivNorma = quat * this->conjugate();
     ivNorma.s = std::sqrt(ivNorma.s);
     *this = ivNorma * (*this);
     return *this;
 }
 
 template<typename T>
-__host__ __device__ quaternion<T> normalize(const quaternion<T>& quat)
+__host__ __device__ Quaternion<T> normalize(const Quaternion<T>& quat)
 {
     T norma = quat.s * quat.s + quat.x * quat.x + quat.y * quat.y + quat.z * quat.z;
     norma = std::sqrt(norma);
-    return quaternion<T>(quat.s / norma, quat.x / norma, quat.y / norma, quat.z / norma);
+    return Quaternion<T>(quat.s / norma, quat.x / norma, quat.y / norma, quat.z / norma);
 }
 
 template<typename T>
-__host__ __device__ quaternion<T> conjugate(const quaternion<T>& quat)
+__host__ __device__ Quaternion<T> conjugate(const Quaternion<T>& quat)
 {
-    return quaternion<T>(quat.s, -quat.x, -quat.y, -quat.z);
+    return Quaternion<T>(quat.s, -quat.x, -quat.y, -quat.z);
 }
 
 template<typename T>
-__host__ __device__ quaternion<T>   invert(const quaternion<T>& quat)
+__host__ __device__ Quaternion<T>   invert(const Quaternion<T>& quat)
 {
-    quaternion<T> ivNorma = quat * conjugate(quat);
+    Quaternion<T> ivNorma = quat * conjugate(quat);
     ivNorma.s = std::sqrt(ivNorma.s);
     return ivNorma * conjugate(quat);
 }
 
 // template<typename T>
-// quaternion<T> convert(const glm::mat<3, 3, T, glm::defaultp>& O3)
+// Quaternion<T> convert(const glm::mat<3, 3, T, glm::defaultp>& O3)
 // {
-//     quaternion<T> quat;
+//     Quaternion<T> quat;
 //
 //     quat.s = std::sqrt(1.0f + O3[0][0] + O3[1][1] + O3[2][2]) / 2.0f;
 //
@@ -261,7 +261,7 @@ __host__ __device__ quaternion<T>   invert(const quaternion<T>& quat)
 // }
 //
 // template<typename T>
-// glm::mat3x3 convert(const quaternion<T>& quat)
+// glm::mat3x3 convert(const Quaternion<T>& quat)
 // {
 //     glm::mat3x3 R;
 //
@@ -273,7 +273,7 @@ __host__ __device__ quaternion<T>   invert(const quaternion<T>& quat)
 // }
 
 template<typename T>
-__host__ __device__ quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
+__host__ __device__ Quaternion<T> convert(const T& yaw, const T& pitch, const T& roll)
 {
     T cosy = std::cos(yaw * T(0.5));
     T siny = std::sin(yaw * T(0.5));
@@ -287,17 +287,17 @@ __host__ __device__ quaternion<T> convert(const T& yaw, const T& pitch, const T&
     T y = cosr * sinp * cosy + sinr * cosp * siny;
     T z = cosr * cosp * siny - sinr * sinp * cosy;
 
-    return quaternion<T>(s, x, y, z);
+    return Quaternion<T>(s, x, y, z);
 }
 
 template<typename T>
-__host__ __device__ quaternion<T> convert(const T& angle, const vec4<T>& axis)
+__host__ __device__ Quaternion<T> convert(const T& angle, const vec4<T>& axis)
 {
-    return quaternion<T>(std::cos(angle * T(0.5)), std::sin(angle * T(0.5)) * vec4<T>(axis.x(), axis.y(), axis.z(), T(0)));
+    return Quaternion<T>(std::cos(angle * T(0.5)), std::sin(angle * T(0.5)) * vec4<T>(axis.x(), axis.y(), axis.z(), T(0)));
 }
 
 template<typename T>
-__host__ __device__ vec4<T> convertToEulerAngles(const quaternion<T>& quat)
+__host__ __device__ vec4<T> convertToEulerAngles(const Quaternion<T>& quat)
 {
     return  vec4<T>(
         std::atan((quat.s * quat.x + quat.y * quat.z) * T(2) / (T(1) - (quat.x * quat.x + quat.y * quat.y) * T(2))),
@@ -308,14 +308,14 @@ __host__ __device__ vec4<T> convertToEulerAngles(const quaternion<T>& quat)
 }
 
 template<typename T>
-__host__ __device__ quaternion<T> convertToAnglesAndAxis(const quaternion<T>& quat)
+__host__ __device__ Quaternion<T> convertToAnglesAndAxis(const Quaternion<T>& quat)
 {
-    return quaternion<T>(std::acos(quat.s) * T(2),
+    return Quaternion<T>(std::acos(quat.s) * T(2),
         vec4<T>(quat.x, quat.y, quat.z, T(0)) / std::sqrt(T(1) - quat.s * quat.s));
 }
 
 template<typename T>
-__host__ __device__ quaternion<T> slerp(const quaternion<T>& quat1, const quaternion<T>& quat2, const T& t)
+__host__ __device__ Quaternion<T> slerp(const Quaternion<T>& quat1, const Quaternion<T>& quat2, const T& t)
 {
     T q1q2 = quat1.s * quat2.s + quat1.x * quat2.x + quat1.y * quat2.y + quat1.z * quat2.z;
     T modq1 = std::sqrt(quat1.s * quat1.s + quat1.x * quat1.x + quat1.y * quat1.y + quat1.z * quat1.z);

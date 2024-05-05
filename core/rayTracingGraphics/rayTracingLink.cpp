@@ -2,7 +2,9 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-void rayTracingLink::destroy(){
+namespace moon::rayTracingGraphics {
+
+void RayTracingLink::destroy(){
     if(Pipeline)            {vkDestroyPipeline(device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
     if(PipelineLayout)      {vkDestroyPipelineLayout(device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
     if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
@@ -10,29 +12,29 @@ void rayTracingLink::destroy(){
     DescriptorSets.clear();
 }
 
-void rayTracingLink::setDeviceProp(VkDevice device){
+void RayTracingLink::setDeviceProp(VkDevice device){
     this->device = device;
 }
 
-void rayTracingLink::setImageCount(const uint32_t& count){
+void RayTracingLink::setImageCount(const uint32_t& count){
     this->imageCount = count;
 }
 
-void rayTracingLink::setShadersPath(const std::filesystem::path &shadersPath){
+void RayTracingLink::setShadersPath(const std::filesystem::path &shadersPath){
     this->shadersPath = shadersPath;
 }
 
-void rayTracingLink::setRenderPass(VkRenderPass renderPass)
+void RayTracingLink::setRenderPass(VkRenderPass renderPass)
 {
     this->renderPass = renderPass;
 }
 
-void rayTracingLink::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
+void RayTracingLink::setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size){
     pushConstant.offset = offset;
     pushConstant.size = size;
 }
 
-void rayTracingLink::createDescriptorSetLayout() {
+void RayTracingLink::createDescriptorSetLayout() {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -44,7 +46,7 @@ void rayTracingLink::createDescriptorSetLayout() {
     vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout);
 }
 
-void rayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo)
+void RayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo)
 {
     auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/linkableVert.spv");
     auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/linkableFrag.spv");
@@ -70,7 +72,7 @@ void rayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo)
     pushConstantRange.push_back(VkPushConstantRange{});
     pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
     pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(linkPushConstant);
+    pushConstantRange.back().size = sizeof(LinkPushConstant);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
@@ -102,7 +104,7 @@ void rayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo)
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void rayTracingLink::createDescriptorPool() {
+void RayTracingLink::createDescriptorPool() {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
     poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
@@ -115,7 +117,7 @@ void rayTracingLink::createDescriptorPool() {
     vkCreateDescriptorPool(device, &poolInfo, nullptr, &DescriptorPool);
 }
 
-void rayTracingLink::createDescriptorSets() {
+void RayTracingLink::createDescriptorSets() {
     DescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> layouts(imageCount, DescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -126,7 +128,7 @@ void rayTracingLink::createDescriptorSets() {
     vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data());
 }
 
-void rayTracingLink::updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase) {
+void RayTracingLink::updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase) {
     for (size_t image = 0; image < this->imageCount; image++)
     {
         VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo(parameters.in.color, image);
@@ -162,10 +164,12 @@ void rayTracingLink::updateDescriptorSets(const moon::utils::AttachmentsDatabase
     }
 }
 
-void rayTracingLink::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
+void RayTracingLink::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
 {
-    vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(linkPushConstant), &pushConstant);
+    vkCmdPushConstants(commandBuffer, PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LinkPushConstant), &pushConstant);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[imageNumber], 0, nullptr);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+}
+
 }

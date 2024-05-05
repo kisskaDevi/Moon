@@ -8,12 +8,14 @@
 #include "attachments.h"
 #include "vector.h"
 
-struct linkPushConstant{
+namespace moon::rayTracingGraphics {
+
+struct LinkPushConstant{
     vector<float,2> offset{0.0f, 0.0f};
     vector<float,2> size{1.0f, 1.0f};
 };
 
-struct rayTracingLinkParameters{
+struct RayTracingLinkParameters{
     struct{
         std::string color;
         std::string bloom;
@@ -22,9 +24,9 @@ struct rayTracingLinkParameters{
     struct{}out;
 };
 
-class rayTracingLink : public moon::graphicsManager::Linkable{
+class RayTracingLink : public moon::graphicsManager::Linkable{
 private:
-    rayTracingLinkParameters        parameters;
+    RayTracingLinkParameters        parameters;
     std::filesystem::path           shadersPath;
     uint32_t                        imageCount{0};
     VkDevice                        device{VK_NULL_HANDLE};
@@ -36,18 +38,18 @@ private:
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    DescriptorSets;
 
-    linkPushConstant                pushConstant;
+    LinkPushConstant                pushConstant;
 
 public:
-    rayTracingLink() = default;
-    rayTracingLink(const rayTracingLinkParameters& parameters) : parameters(parameters){};
+    RayTracingLink() = default;
+    RayTracingLink(const RayTracingLinkParameters& parameters) : parameters(parameters){};
     void destroy();
 
     void setDeviceProp(VkDevice device);
     void setImageCount(const uint32_t& count);
     void setShadersPath(const std::filesystem::path& shadersPath);
     void setPositionInWindow(const vector<float,2>& offset, const vector<float,2>& size);
-    void setParameters(const rayTracingLinkParameters& parameters){
+    void setParameters(const RayTracingLinkParameters& parameters){
         this->parameters = parameters;
     };
 
@@ -61,4 +63,5 @@ public:
     void updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase);
 };
 
+}
 #endif

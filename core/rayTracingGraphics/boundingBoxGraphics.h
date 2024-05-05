@@ -10,7 +10,9 @@
 
 #include <filesystem>
 
-class boundingBoxGraphics
+namespace moon::rayTracingGraphics {
+
+class BoundingBoxGraphics
 {
 private:
     VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
@@ -47,8 +49,8 @@ private:
     void createDescriptorSets();
 
 public:
-    boundingBoxGraphics();
-    ~boundingBoxGraphics();
+    BoundingBoxGraphics();
+    ~BoundingBoxGraphics();
 
     void destroy();
     void create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath);
@@ -64,4 +66,5 @@ public:
     bool getEnable(){return enable;}
 };
 
+}
 #endif // BOUNDINGBOXGRAPHICS_H

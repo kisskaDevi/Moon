@@ -15,14 +15,14 @@ struct Properties
     float absorptionFactor{ 1.0f };
 };
 
-__device__ inline vec4f scatter(const ray& r, const vec4f& norm, const Properties& props, curandState* local_rand_state)
+__device__ inline vec4f scatter(const ray& r, const vec4f& norm, const Properties& props, curandState* randState)
 {
     vec4f scattered = vec4f(0.0f, 0.0f, 0.0f, 0.0f);
     if(props.emissionFactor < 0.98f)
     {
         const vec4f& d = r.getDirection();
 
-        if (curand_uniform(local_rand_state) <= props.refractProb) {
+        if (curand_uniform(randState) <= props.refractProb) {
             const vec4f n = (dot(d, norm) <= 0.0f) ? norm : - norm;
             const float eta = (dot(d, norm) <= 0.0f) ? (1.0f / props.refractiveIndex) : props.refractiveIndex;
 
@@ -37,20 +37,20 @@ __device__ inline vec4f scatter(const ray& r, const vec4f& norm, const Propertie
             if (scattered.length2() == 0.0f) {
                 if (props.fuzz > 0.0f) {
                     vec4f reflect = normal(d + 2.0f * std::abs(dot(d, n)) * n);
-                    scattered = reflect + props.fuzz * random_in_unit_sphere(reflect, props.angle, local_rand_state);
+                    scattered = reflect + props.fuzz * random_in_unit_sphere(reflect, props.angle, randState);
                     scattered = (dot(n, scattered) > 0.0f ? 1.0f : 0.0f) * scattered;
                 } else {
-                    scattered = random_in_unit_sphere(norm, props.angle, local_rand_state);
+                    scattered = random_in_unit_sphere(norm, props.angle, randState);
                     scattered = (dot(n, scattered) > 0.0f ? 1.0f : -1.0f) * scattered;
                 }
             }
         } else {
             if (props.fuzz > 0.0f) {
                 vec4f reflect = normal(d + 2.0f * std::abs(dot(d, norm)) * norm);
-                scattered = reflect + props.fuzz * random_in_unit_sphere(reflect, props.angle, local_rand_state);
+                scattered = reflect + props.fuzz * random_in_unit_sphere(reflect, props.angle, randState);
                 scattered = (dot(norm, scattered) > 0.0f ? 1.0f : 0.0f) * scattered;
             } else {
-                scattered = random_in_unit_sphere(norm, props.angle, local_rand_state);
+                scattered = random_in_unit_sphere(norm, props.angle, randState);
                 scattered = (dot(norm, scattered) > 0.0f ? 1.0f : -1.0f) * scattered;
             }
         }

@@ -8,11 +8,27 @@ namespace cuda::rayTracing {
 RayTracing::RayTracing(){}
 RayTracing::~RayTracing(){}
 
+
+__global__ void initCurandState(size_t width, size_t height, curandState* randState)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int j = threadIdx.y + blockIdx.y * blockDim.y;
+
+    if (int pixel = j * width + i; (i < width) && (j < height)) {
+        curand_init(clock64(), pixel, 0, &randState[pixel]);
+    }
+}
+
 void RayTracing::create()
 {
     record = Buffer<FrameRecord>(width * height);
     baseColor = Buffer<uint32_t>(width * height);
     bloomColor = Buffer<uint32_t>(width * height);
+    randState = Buffer<curandState>(width * height);
+
+    dim3 blocks(width / xThreads + 1, height / yThreads + 1, 1);
+    dim3 threads(xThreads, yThreads, 1);
+    initCurandState<<<blocks, threads>>>(width, height, randState.get());
 }
 
 void RayTracing::buildTree(){
@@ -63,14 +79,14 @@ __device__ FrameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterat
 }
 
 template <typename ContainerType>
-__global__ void render(bool clear, size_t width, size_t height, size_t minRayIterations, size_t maxRayIterations, uint32_t* baseColor, uint32_t* bloomColor, FrameRecord* record, Camera* cam, ContainerType* container)
+__global__ void render(bool clear, size_t width, size_t height, size_t minRayIterations, size_t maxRayIterations, uint32_t* baseColor, uint32_t* bloomColor, FrameRecord* record, Camera* cam, ContainerType* container, curandState* randState)
 {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
     if (int pixel = j * width + i; (i < width) && (j < height)) {
-        curandState randState;
-        curand_init(clock64(), pixel, 0, &randState);
+        // curandState randState;
+        // curand_init(clock64(), pixel, 0, &randState);
 
         float u = 1.0f - 2.0f * float(i) / float(width);
         float v = 2.0f * float(j) / float(height) - 1.0f;
@@ -79,7 +95,7 @@ __global__ void render(bool clear, size_t width, size_t height, size_t minRayIte
             record[pixel] = FrameRecord{};
         }
 
-        FrameBuffer frame = getFrame(minRayIterations, maxRayIterations, cam, u, v, record[pixel].hit, container, &randState);
+        FrameBuffer frame = getFrame(minRayIterations, maxRayIterations, cam, u, v, record[pixel].hit, container, &randState[pixel]);
         record[pixel].color += frame.base;
         record[pixel].bloom += frame.bloom;
 
@@ -114,7 +130,8 @@ bool RayTracing::calculateImage(uint32_t* hostBaseColor, uint32_t* hostBloomColo
         bloomColor.get(),
         record.get(),
         cam->get(),
-        devContainer.get());
+        devContainer.get(),
+        randState.get());
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     clear = false;

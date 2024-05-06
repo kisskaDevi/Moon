@@ -31,6 +31,7 @@ private:
     Buffer<FrameRecord> record;
     Buffer<uint32_t> baseColor;
     Buffer<uint32_t> bloomColor;
+    Buffer<curandState> randState;
 
     uint32_t xThreads{ 8 };
     uint32_t yThreads{ 8 };

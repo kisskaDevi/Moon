@@ -11,7 +11,7 @@ struct Vertex {
     vec4f color{0.0f, 0.0f, 0.0f, 0.0f};
     Properties props;
     __host__ __device__ Vertex() {}
-    __host__ __device__ Vertex(vec4f point, vec4f normal, vec4f color, const Properties& props):
+    __host__ __device__ Vertex(const vec4f& point, const vec4f& normal, const vec4f& color, const Properties& props):
         point(point), normal(normal), color(color), props(props)
     {}
 };

@@ -82,7 +82,7 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
         {"sphere_3",  Sphere(vec4f( 0.0f, -1.0f,  0.51f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
         {"sphere_4",  Sphere(vec4f(-1.5f,  0.0f,  0.51f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
         {"sphere_5",  Sphere(vec4f( 1.5f, -1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_6",  Sphere(vec4f( 1.5f,  1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_6",  Sphere(vec4f( 1.5f,  1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 10.0f})},
         {"sphere_7",  Sphere(vec4f(-1.5f, -1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
         {"sphere_8",  Sphere(vec4f(-1.5f,  1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
         {"sphere_9",  Sphere(vec4f(-0.5f, -0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},

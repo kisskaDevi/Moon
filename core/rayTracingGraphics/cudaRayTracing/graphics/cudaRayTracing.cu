@@ -70,7 +70,7 @@ __device__ FrameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterat
 
         vec4f scattering = scatter(r, rec.normal, rec.props, randState);
         if(scattering.length2() == 0.0f || rec.rayDepth >= maxRayIterations){
-            result.base = rec.props.emissionFactor >= 0.98f ? rec.color : vec4f(0.0f, 0.0f, 0.0f, 1.0f);
+            result.base = rec.props.emissionFactor >= 0.98f ? rec.props.emissionFactor * rec.color : vec4f(0.0f, 0.0f, 0.0f, 1.0f);
             result.bloom = isEmit(rec) ? rec.color : vec4f(0.0f, 0.0f, 0.0f, 0.0f);
             rec = HitRecord{};
             break;

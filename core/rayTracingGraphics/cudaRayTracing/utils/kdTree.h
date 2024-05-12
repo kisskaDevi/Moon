@@ -118,6 +118,15 @@ void buildSizesVector(KDNode<iterator>* node, std::vector<uint32_t>& linearSizes
     }
 }
 
+template <typename iterator>
+void buildBoxesVector(KDNode<iterator>* node, std::vector<box>& linearBoxes){
+    if(node){
+        linearBoxes.push_back(node->bbox);
+        buildBoxesVector(node->left, linearBoxes);
+        buildBoxesVector(node->right, linearBoxes);
+    }
+}
+
 template <typename container>
 class KDTree{
 private:
@@ -143,6 +152,11 @@ public:
         buildSizesVector(root, linearSizes);
         return linearSizes;
     }
+    std::vector<box> getLinearBoxes() const {
+        std::vector<box> linearBoxes;
+        buildBoxesVector(root, linearBoxes);
+        return linearBoxes;
+    }
 };
 
 class HitableKDTree : public HitableContainer {
@@ -155,13 +169,14 @@ private:
 
 public:
     using iterator = container::iterator;
+    using KDNodeType = KDNode<container::iterator>;
 
     __host__ __device__ HitableKDTree() {
         storage = new container();
     };
     __host__ __device__ ~HitableKDTree(){
         if(storage) delete storage;
-        if(root)    delete root;
+        if(root)    delete [] root;
     }
 
     __host__ __device__ bool hit(const ray& r, HitCoords& coord) const override{
@@ -176,20 +191,20 @@ public:
         return (*storage)[i];
     }
 
-    __host__ __device__ void makeTree(uint32_t* offsets) {
-        size_t nodesCounter = 0, offset = 0;
+    __host__ __device__ void makeTree(uint32_t* offsets, box* boxes, KDNodeType* nodes) {
+        size_t offsetCounter = 0, offset = 0, nodesCounter = 0;
 
-        for(Stack<KDNode<container::iterator>*, KDNode<container::iterator>::stackSize> makeStack(root = new KDNode<container::iterator>()); !makeStack.empty();){
+        for(Stack<KDNode<container::iterator>*, KDNode<container::iterator>::stackSize> makeStack(root = &nodes[nodesCounter++]); !makeStack.empty();){
             KDNode<container::iterator>* curr = makeStack.top();
             makeStack.pop();
 
             curr->begin = storage->begin() + offset;
-            curr->size = offsets[nodesCounter++];
-            curr->bbox = calcBox(curr->begin, curr->begin + curr->size);
+            curr->size = offsets[offsetCounter];
+            curr->bbox = boxes[offsetCounter++];
 
             if(curr->size > KDNode<container::iterator>::itemsInNode) {
-                makeStack.push(curr->right = new KDNode<container::iterator>());
-                makeStack.push(curr->left = new KDNode<container::iterator>());
+                makeStack.push(curr->right = &nodes[nodesCounter++]);
+                makeStack.push(curr->left = &nodes[nodesCounter++]);
             } else {
                 offset += curr->size;
             }
@@ -206,7 +221,7 @@ public:
     static void destroy(HitableKDTree* dpointer);
 };
 
-void makeTree(HitableKDTree* container, uint32_t* offsets);
+void makeTree(HitableKDTree* container, uint32_t* offsets, box* boxes, size_t size);
 
 }
 #endif // KDTREE_H

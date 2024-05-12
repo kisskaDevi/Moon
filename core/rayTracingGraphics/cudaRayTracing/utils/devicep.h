@@ -97,6 +97,12 @@ public:
     type* operator()() const {
         return get();
     }
+
+    type* release() {
+        type* temp = pointer;
+        pointer = nullptr;
+        return temp;
+    }
 };
 
 template<typename ptype, typename type>

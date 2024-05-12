@@ -42,6 +42,10 @@ private:
     Devicep<Container_dev> devContainer;
     Container_host hostContainer;
 
+    Buffer<uint32_t> devNodeCounter;
+    Buffer<box> devNodeBox;
+    Buffer<HitableKDTree::KDNodeType> devNodes;
+
 public:
 
     RayTracing();

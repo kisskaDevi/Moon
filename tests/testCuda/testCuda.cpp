@@ -76,23 +76,23 @@ std::vector<uint32_t> createBoxIndexBuffer() {
 void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracing::Object>>& objects, const std::filesystem::path& ExternalPath)
 {
     const std::unordered_map<std::string, Sphere> spheres = {
-        {"sphere_0",  Sphere(vec4f( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
-        {"sphere_1",  Sphere(vec4f( 0.0f,  1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
-        {"sphere_2",  Sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
-        {"sphere_3",  Sphere(vec4f( 0.0f, -1.0f,  0.5f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
-        {"sphere_4",  Sphere(vec4f(-1.5f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_5",  Sphere(vec4f( 1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_6",  Sphere(vec4f( 1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_7",  Sphere(vec4f(-1.5f, -1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_8",  Sphere(vec4f(-1.5f,  1.5f,  0.2f,  1.0f), 0.20f, vec4f(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_9",  Sphere(vec4f(-0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_10", Sphere(vec4f( 0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_11", Sphere(vec4f(-0.5f,  0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_12", Sphere(vec4f( 0.5f, -0.5f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_13", Sphere(vec4f(-1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_14", Sphere(vec4f( 1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_15", Sphere(vec4f(-1.0f,  1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_16", Sphere(vec4f( 1.0f, -1.0f,  0.2f,  1.0f), 0.20f, vec4f(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})}
+        {"sphere_0",  Sphere(vec4f( 0.0f,  0.0f,  0.51f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
+        {"sphere_1",  Sphere(vec4f( 0.0f,  1.0f,  0.51f,  1.0f), 0.50f, vec4f(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
+        {"sphere_2",  Sphere(vec4f( 0.0f, -1.0f,  0.51f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
+        {"sphere_3",  Sphere(vec4f( 0.0f, -1.0f,  0.51f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
+        {"sphere_4",  Sphere(vec4f(-1.5f,  0.0f,  0.51f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_5",  Sphere(vec4f( 1.5f, -1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_6",  Sphere(vec4f( 1.5f,  1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_7",  Sphere(vec4f(-1.5f, -1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_8",  Sphere(vec4f(-1.5f,  1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_9",  Sphere(vec4f(-0.5f, -0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_10", Sphere(vec4f( 0.5f,  0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_11", Sphere(vec4f(-0.5f,  0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_12", Sphere(vec4f( 0.5f, -0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_13", Sphere(vec4f(-1.0f, -1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_14", Sphere(vec4f( 1.0f,  1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_15", Sphere(vec4f(-1.0f,  1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
+        {"sphere_16", Sphere(vec4f( 1.0f, -1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})}
     };
 
     for(const auto& [name, sphere]: spheres){
@@ -121,12 +121,22 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
     objects["upper_light_plane"] = std::make_unique<Object>(
         new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
                      ObjModelInfo(Properties{ 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f}, vec4f{1.0f})),
-        trans(vec4f{0.0f, 0.0f, 3.0f, 0.0f}) * scale(vec4f{2.0f, 2.0f, 0.01f, 1.0f}));
+        trans(vec4f{0.0f, 0.0f, 3.0f, 0.0f}) * scale(vec4f{1.0f, 1.0f, 0.01f, 1.0f}));
 
-    objects["duck"] = std::make_unique<Object>(
+    objects["monkey"] = std::make_unique<Object>(
+        new ObjModel(ExternalPath / "dependences/model/obj/monkey/monkey.obj",
+                     ObjModelInfo(Properties{ 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f}, true)),
+        trans(vec4f{0.0f, 0.0f, 2.0f, 0.0f}) * scale(vec4f{0.7f}));
+
+    objects["duck2"] = std::make_unique<Object>(
         new ObjModel(ExternalPath / "dependences/model/obj/duck/duck.obj",
                      ObjModelInfo(Properties{ 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}, vec4f{0.8f, 0.8f, 0.0f, 1.0f}, true)),
-        trans(vec4f{0.0f, 0.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
+        trans(vec4f{2.0f, 2.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
+
+    objects["duck3"] = std::make_unique<Object>(
+        new ObjModel(ExternalPath / "dependences/model/obj/duck/duck.obj",
+                     ObjModelInfo(Properties{ 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}, vec4f{0.8f, 0.8f, 0.0f, 1.0f}, true)),
+        trans(vec4f{-2.0f, -2.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
 
 #if 1
     size_t num = 50;

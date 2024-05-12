@@ -1,15 +1,17 @@
 #include "utils/kdTree.h"
 #include "utils/operations.h"
+#include "utils/buffer.h"
 
 namespace cuda::rayTracing {
 
-__global__ void createTreeKernel(HitableKDTree* tree, uint32_t* offsets)
+__global__ void createTreeKernel(HitableKDTree* tree, uint32_t* offsets, box* boxes, HitableKDTree::KDNodeType* nodes)
 {
-    tree->makeTree(offsets);
+    tree->makeTree(offsets, boxes, nodes);
 }
 
-void makeTree(HitableKDTree* container, uint32_t* offsets){
-    createTreeKernel<<<1,1>>>(container, offsets);
+void makeTree(HitableKDTree* container, uint32_t* offsets, box* boxes, size_t size){
+    Buffer<HitableKDTree::KDNodeType> nodes(size);
+    createTreeKernel<<<1,1>>>(container, offsets, boxes, nodes.release());
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }

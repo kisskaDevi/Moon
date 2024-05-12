@@ -39,8 +39,10 @@ void RayTracing::buildTree(){
 
     if(std::is_same<Container_dev, HitableKDTree>::value){
         const auto linearSizes = hostContainer.getLinearSizes();
+        const auto linearBoxes = hostContainer.getLinearBoxes();
         Buffer<uint32_t> devNodeCounter(linearSizes.size(), (uint32_t*) linearSizes.data());
-        makeTree((HitableKDTree*)devContainer.get(), devNodeCounter.get());
+        Buffer<box> devNodeBox(linearBoxes.size(), (box*) linearBoxes.data());
+        makeTree((HitableKDTree*)devContainer.get(), devNodeCounter.get(), devNodeBox.get(), linearSizes.size());
     }
 }
 

@@ -33,8 +33,9 @@ public:
         return *this;
     }
 
-    type* get() {return memory();}
-    size_t getSize() {return size;}
+    type* get() { return memory();}
+    size_t getSize() { return size;}
+    type* release() { return memory.release();}
 };
 
 }

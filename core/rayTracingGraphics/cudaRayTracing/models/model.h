@@ -4,10 +4,12 @@
 #include "utils/buffer.h"
 #include "utils/primitive.h"
 #include "hitable/triangle.h"
+#include "math/mat4.h"
 
 namespace cuda::rayTracing {
 
-struct Model {
+class Model {
+public:
     Buffer<Vertex> vertexBuffer;
     std::vector<Primitive> primitives;
 
@@ -19,6 +21,8 @@ struct Model {
     Model& operator=(Model&& m);
 
     ~Model();
+
+    virtual void load(const mat4f& transform) {}
 };
 
 }

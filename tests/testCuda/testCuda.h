@@ -11,7 +11,7 @@
 #include "vector.h"
 
 #include "transformational/camera.h"
-#include "models/model.h"
+#include "transformational/object.h"
 
 #define IMGUI_GRAPHICS
 
@@ -24,7 +24,7 @@ class testCuda : public scene
 private:
     bool& framebufferResized;
 
-    std::filesystem::path   ExternalPath;
+    std::filesystem::path ExternalPath;
     moon::math::Vector<uint32_t,2> extent{0};
     moon::math::Vector<double,2> mousePos{0.0};
 
@@ -56,7 +56,7 @@ private:
     bool onlyLeafsBB{false};
     bool enableBloom{true};
 
-    std::unordered_map<std::string, cuda::rayTracing::Model> models;
+    std::unordered_map<std::string, std::unique_ptr<cuda::rayTracing::Object>> objects;
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);

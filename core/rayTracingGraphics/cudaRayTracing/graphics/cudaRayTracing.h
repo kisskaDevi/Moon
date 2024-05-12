@@ -3,14 +3,11 @@
 
 #include "math/vec4.h"
 #include "transformational/camera.h"
+#include "transformational/object.h"
 #include "utils/buffer.h"
 #include "utils/kdTree.h"
-#include "models/model.h"
 
 #include <stdint.h>
-
-#include "hitableArray.h"
-#include "hitableList.h"
 
 namespace cuda::rayTracing {
 
@@ -54,8 +51,9 @@ public:
         this->width = width;
         this->height = height;
     }
-    void bind(Model* m) {
-        for(const auto& primitive : m->primitives){
+    void bind(Object* obj) {
+        obj->model->load(obj->transform);
+        for(const auto& primitive : obj->model->primitives){
             hostContainer.storage.push_back(&primitive);
         }
     }

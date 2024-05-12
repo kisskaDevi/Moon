@@ -14,9 +14,14 @@
 #endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include <stb_image_write.h>
+
+#include <models/objmodel.h>
 
 #include <cstring>
+
+#include <math/quat2.h>
+#include <math/mat4.h>
 
 using namespace cuda::rayTracing;
 
@@ -68,7 +73,7 @@ std::vector<uint32_t> createBoxIndexBuffer() {
     };
 }
 
-void createWorld(std::unordered_map<std::string, Model>& models)
+void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracing::Object>>& objects, const std::filesystem::path& ExternalPath)
 {
     const std::unordered_map<std::string, Sphere> spheres = {
         {"sphere_0",  Sphere(vec4f( 0.0f,  0.0f,  0.5f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
@@ -91,59 +96,47 @@ void createWorld(std::unordered_map<std::string, Model>& models)
     };
 
     for(const auto& [name, sphere]: spheres){
-        models[name] = Model(Primitive{make_devicep<Hitable>(sphere), sphere.getBox()});
+        objects[name] = std::make_unique<Object>(
+            new Model(Primitive{make_devicep<Hitable>(sphere), sphere.getBox()})
+        );
     }
 
     const auto boxIndexBuffer = createBoxIndexBuffer();
 
-    models["environment_box"] = Model(
-        createBoxVertexBuffer(
-            vec4f(3.0f, 3.0f, 1.5f, 1.0f),
-            vec4f(0.0f, 0.0f, 1.5f, 0.0f),
-            sign::minus,
-            { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f },
-            { vec4f(0.5f, 0.5f, 0.5f, 1.0f), vec4f(0.5f, 0.5f, 0.5f, 1.0f), vec4f(0.8f, 0.4f, 0.8f, 1.0f), vec4f(0.4f, 0.4f, 0.4f, 1.0f), vec4f(0.9f, 0.5f, 0.0f, 1.0f), vec4f(0.1f, 0.4f, 0.9f, 1.0f) }),
-            boxIndexBuffer);
+    objects["environment_box"] = std::make_unique<Object>(
+        new ObjModel(ExternalPath / "dependences/model/obj/box/box_in.obj",
+                     ObjModelInfo(Properties{ 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f }, vec4f{1.0f})),
+        trans(vec4f{0.0f, 0.0f, 1.5f, 0.0f}) * scale(vec4f{3.0f, 3.0f, 1.5f, 1.0f}));
 
-    models["glass_box"] = Model(
-        createBoxVertexBuffer(
-            vec4f(0.4f, 0.4f, 0.4f, 1.0f),
-            vec4f(1.5f, 0.0f, 0.41f, 0.0f),
-            sign::plus,
-            { 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f},
-            std::vector<vec4f>(6, vec4f(1.0f))),
-        boxIndexBuffer);
+    objects["glass_box"] = std::make_unique<Object>(
+        new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
+                     ObjModelInfo(Properties{ 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f})),
+        trans(vec4f{1.5f, 0.0f, 0.41f, 0.0f}) * scale(vec4f{0.4f}));
 
-    models["glass_box_inside"] = Model(
-        createBoxVertexBuffer(
-            vec4f(0.3f, 0.3f, 0.3f, 1.0f),
-            vec4f(1.5f, 0.0f, 0.41f, 0.0f),
-            sign::plus,
-            { 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f},
-            std::vector<vec4f>(6, vec4f(1.0f))),
-        boxIndexBuffer);
+    objects["glass_box_inside"] = std::make_unique<Object>(
+        new ObjModel(ExternalPath / "dependences/model/obj/box/box_in.obj",
+                     ObjModelInfo(Properties{ 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f})),
+        trans(vec4f{1.5f, 0.0f, 0.41f, 0.0f}) * scale(vec4f{0.3f}));
 
-    models["upper_light_plane"] = Model(
-        createBoxVertexBuffer(
-            vec4f(2.0f, 2.0f, 0.01f, 1.0f),
-            vec4f(0.0f, 0.0f, 3.0f, 0.0f),
-            sign::plus,
-            { 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f},
-            std::vector<vec4f>(6, vec4f(1.0f))),
-        boxIndexBuffer);
+    objects["upper_light_plane"] = std::make_unique<Object>(
+        new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
+                     ObjModelInfo(Properties{ 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f}, vec4f{1.0f})),
+        trans(vec4f{0.0f, 0.0f, 3.0f, 0.0f}) * scale(vec4f{2.0f, 2.0f, 0.01f, 1.0f}));
+
+    objects["duck"] = std::make_unique<Object>(
+        new ObjModel(ExternalPath / "dependences/model/obj/duck/duck.obj",
+                     ObjModelInfo(Properties{ 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}, vec4f{0.8f, 0.8f, 0.0f, 1.0f}, true)),
+        trans(vec4f{0.0f, 0.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
 
 #if 1
-    size_t num = 100;
+    size_t num = 50;
     for (int i = 0; i < num; i++) {
         float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
-        models["box_" + std::to_string(i)] = Model(
-            createBoxVertexBuffer(
-                vec4f(0.1f, 0.1f, 0.1f, 1.0f),
-                vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f + 2.8 * std::abs(std::sin(phi)), 0.0f),
-                sign::plus,
-                { 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f, 0.9},
-                std::vector<vec4f>(6, vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
-            boxIndexBuffer);
+        objects["box_" + std::to_string(i)] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
+                         ObjModelInfo(Properties{ 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f, 0.9},
+                                      vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
+            trans(vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f + 2.8 * std::abs(std::sin(phi)), 0.0f)) * scale(vec4f{0.1f}));
     }
 #endif
 }
@@ -165,7 +158,7 @@ testCuda::testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* wind
 void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
-    createWorld(models);
+    createWorld(objects, ExternalPath);
 
     hostcam = Camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
     cam = make_devicep<Camera>(hostcam);
@@ -173,8 +166,8 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     app->setGraphics(graphics.get());
     graphics->setCamera(&cam);
     graphics->setEnableBoundingBox(enableBB);
-    for(auto& [name, model]: models){
-        graphics->bind(&model);
+    for(auto& [name, object]: objects){
+        graphics->bind(object.get());
 
 #ifdef false
         std::cout << name << std::endl;

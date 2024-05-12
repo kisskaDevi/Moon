@@ -16,7 +16,7 @@
 #include "boundingBoxGraphics.h"
 #include <bloom.h>
 
-namespace cuda::rayTracing { class Model;}
+namespace cuda::rayTracing { class Object;}
 
 namespace moon::rayTracingGraphics {
 
@@ -92,8 +92,8 @@ public:
         rayTracer.setExtent(extent.width, extent.height);
     }
 
-    void bind(cuda::rayTracing::Model* m) {
-        rayTracer.bind(m);
+    void bind(cuda::rayTracing::Object* obj) {
+        rayTracer.bind(obj);
     }
 
     void setCamera(cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* cam){

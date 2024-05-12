@@ -34,11 +34,12 @@ set(HEADERS
     hitable/sphere.h
     hitable/triangle.h
     materials/material.h
-    math/dualQuaternion.h
-    math/quaternion.h
+    math/quat2.h
+    math/quat.h
     math/ray.h
     math/vec4.h
     math/box.h
+    math/mat4.h
     models/model.h
     graphics/cudaRayTracing.h
     transformational/camera.h
@@ -79,11 +80,13 @@ set(INCLUDE_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/utils
     ${CMAKE_CURRENT_LIST_DIR}/graphics
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+    ${OBJ_DIR}
 )
 
 include_directories(${INCLUDE_DIRS})
 
-add_library(cudaRayTracing STATIC ${SOURCES} ${HEADERS})
+add_library(cudaRayTracing STATIC ${SOURCES} ${HEADERS}
+    models/objmodel.h)
 target_include_directories(cudaRayTracing PUBLIC ${INCLUDE_DIRS})
 set_target_properties(${PROJECT_NAME}
    PROPERTIES

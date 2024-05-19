@@ -78,7 +78,7 @@ void RayTracingGraphics::create()
     bloomParams.in.bloom = bloom.id;
     bloomParams.out.bloom = "finalBloom";
 
-    bloomGraph = moon::workflows::BloomGraphics(bloomParams, bloomEnable, 6, VK_IMAGE_LAYOUT_UNDEFINED);
+    bloomGraph = moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED);
     bloomGraph.setShadersPath(workflowsShadersPath);
     bloomGraph.setDeviceProp(device.instance, device.getLogical());
     bloomGraph.setImageProp(&bloomInfo);

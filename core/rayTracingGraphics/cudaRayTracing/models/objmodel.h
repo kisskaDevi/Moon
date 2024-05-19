@@ -4,24 +4,27 @@
 
 #include <filesystem>
 #include <vector>
+#include <string>
 
+#ifndef TINYOBJLOADER_IMPLEMENTATION
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+#endif
+
+#include "utils/texture.h"
 
 namespace cuda::rayTracing {
 
 struct ObjModelInfo{
     Properties props{};
     vec4f color{0.0f};
-    bool mergeVertices{false};
-    bool useModelColors{false};
+    bool mergeNormals{false};
 
     ObjModelInfo(
         Properties props = {},
         vec4f color = {0.0f},
-        bool mergeVertices = false,
-        bool useModelColors = false) :
-        props(props), color(color), mergeVertices(mergeVertices), useModelColors(useModelColors)
+        bool mergeNormals = false) :
+        props(props), color(color), mergeNormals(mergeNormals)
     {}
 };
 
@@ -30,79 +33,73 @@ private:
     std::filesystem::path path;
     ObjModelInfo info;
 
+    Texture texture;
+
 public:
     ObjModel(const std::filesystem::path& path, const ObjModelInfo& info = {}) :
         path(path),
         info(info)
     {}
 
-    ObjModel(const std::vector<Vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer) : Model(vertexBuffer, indexBuffer) {}
+    ObjModel(const std::vector<Vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer, Texture& texture)
+        : Model(vertexBuffer, indexBuffer, {texture.object}), texture(std::move(texture))
+    {}
 
     void load(const mat4f& transform) override {
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> materials;
+        const auto dir = path.parent_path();
 
-        if (std::string warn, err; !tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str()))
-            throw std::runtime_error(warn + err);
+        tinyobj::ObjReader objReader;
+        objReader.ParseFromFile(path.string());
 
-        std::unordered_map<std::string, uint32_t> verticesMap;
+        std::vector<std::string> diffuse_texnames;
+        for(const auto& material : objReader.GetMaterials()){
+            diffuse_texnames.push_back(material.diffuse_texname);
+        }
+
+        if(!diffuse_texnames.empty()){
+            texture = Texture(dir / diffuse_texnames.front());
+        }
+
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
 
-        for (const auto& shape : shapes) {
+        const auto& attrib = objReader.GetAttrib();
+        for (const auto& shape : objReader.GetShapes()) {
             for (const auto& index : shape.mesh.indices) {
                 Vertex vertex{};
 
-                if(attrib.vertices.size() > 0){
-                    vertex.point = {
+                if(attrib.vertices.size()){
+                    vertex.point = transform * vec4f{
                         attrib.vertices[3 * index.vertex_index + 0],
                         attrib.vertices[3 * index.vertex_index + 1],
                         attrib.vertices[3 * index.vertex_index + 2],
                         1.0f
                     };
-                    vertex.point = transform * vertex.point;
                 }
 
-                if (info.useModelColors && attrib.colors.size() > 0) {
-                    vertex.color += {
-                        attrib.colors[3 * index.vertex_index + 0],
-                        attrib.colors[3 * index.vertex_index + 1],
-                        attrib.colors[3 * index.vertex_index + 2],
-                        1.0f
-                    };
-                } else {
-                    vertex.color = info.color;
+                if(attrib.texcoords.size()){
+                    vertex.u = attrib.texcoords[2 * index.texcoord_index + 0];
+                    vertex.v = attrib.texcoords[2 * index.texcoord_index + 1];
                 }
 
-                if(attrib.normals.size() > 0){
-                    vertex.normal = {
+                if(attrib.normals.size()){
+                    vertex.normal = transform * vec4f{
                         attrib.normals[3 * index.normal_index + 0],
                         attrib.normals[3 * index.normal_index + 1],
                         attrib.normals[3 * index.normal_index + 2],
                         0.0f
                     };
-                    vertex.normal = transform * vertex.normal;
                 }
 
+                vertex.color = info.color;
                 vertex.props = info.props;
 
-                uint32_t newindex = indices.size();
-                if(info.mergeVertices){
-                    std::string id = std::to_string(vertex.point.x()) + "_" + std::to_string(vertex.point.y()) + "_" + std::to_string(vertex.point.z());
-                    if(verticesMap.count(id) > 0){
-                        newindex = verticesMap[id];
-                    } else {
-                        verticesMap[id] = newindex;
-                    }
-                }
-
-                indices.push_back(newindex);
+                indices.push_back(indices.size());
                 vertices.push_back(vertex);
             }
         }
 
-        if(attrib.normals.size() == 0){
+        if(attrib.normals.empty()){
             for(uint32_t i = 0; i < indices.size(); i += 3){
                 const vec4f n = normal(cross(
                     vertices[indices[i + 1]].point - vertices[indices[i + 0]].point,
@@ -113,12 +110,30 @@ public:
                 vertices[indices[i + 1]].normal += n;
                 vertices[indices[i + 2]].normal += n;
             }
-            for(uint32_t i = 0; i < vertices.size(); i++){
-                vertices[i].normal = normal(vertices[i].normal);
+        }
+
+        std::unordered_map<std::string, vec4f> normalMap;
+        if(info.mergeNormals){
+            for(auto& vertex : vertices){
+                std::string id = std::to_string(vertex.point.x()) + "_" + std::to_string(vertex.point.y()) + "_" + std::to_string(vertex.point.z());
+                if(normalMap.count(id)){
+                    normalMap[id] += vertex.normal;
+                } else {
+                    normalMap[id] = vertex.normal;
+                }
             }
         }
 
-        *this = ObjModel(vertices, indices);
+        for(auto& vertex : vertices){
+            if(info.mergeNormals){
+                std::string id = std::to_string(vertex.point.x()) + "_" + std::to_string(vertex.point.y()) + "_" + std::to_string(vertex.point.z());
+                vertex.normal = normal(normalMap[id]);
+            } else {
+                vertex.normal = normal(vertex.normal);
+            }
+        }
+
+        *this = ObjModel(vertices, indices, texture);
     }
 };
 

@@ -10,13 +10,14 @@ template <typename type>
 class Buffer
 {
 private:
-    Devicep<type> memory{ nullptr };
+    Devicep<type> memory;
     size_t size{ 0 };
 
 public:
-    Buffer() = default;
+    Buffer() {};
     ~Buffer() = default;
-    Buffer(const size_t& size, const type* mem = nullptr) : memory(size), size(size) {
+    Buffer(const size_t& size, const type* mem = nullptr)
+        : memory(size), size(size) {
         if(mem){
             cudaMemcpy(memory.get(), mem, size * sizeof(type), cudaMemcpyHostToDevice);
             checkCudaErrors(cudaGetLastError());
@@ -26,12 +27,8 @@ public:
     Buffer(const Buffer& other) = delete;
     Buffer& operator=(const Buffer& other) = delete;
 
-    Buffer(Buffer&& other) : memory(std::move(other.memory)), size(std::move(other.size)){}
-    Buffer& operator=(Buffer&& other){
-        memory = std::move(other.memory);
-        size = std::move(other.size);
-        return *this;
-    }
+    Buffer(Buffer&& other) = default;
+    Buffer& operator=(Buffer&& other) = default;
 
     type* get() { return memory();}
     size_t getSize() { return size;}

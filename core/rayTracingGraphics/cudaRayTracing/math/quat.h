@@ -18,7 +18,7 @@ public:
     __host__ __device__ quat(const T& s, const T& x, const T& y, const T& z) { e[0] = s; e[1] = x; e[2] = y; e[3] = z;}
     __host__ __device__ quat(const T& angle, const vec4<T>& axis) {
         float s = std::cos(angle*T(0.5));
-        vec4f ax = std::sin(angle*T(0.5)) * vec4f(axis[0], axis[1], axis[2], axis[3]);
+        vec4f ax = std::sin(angle*T(0.5)) * normal(vec4f(axis[0], axis[1], axis[2], 0.0));
         *this = quat(s, ax[0], ax[1], ax[2]);
     }
 

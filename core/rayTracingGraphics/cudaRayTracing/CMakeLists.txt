@@ -41,6 +41,7 @@ set(HEADERS
     math/box.h
     math/mat4.h
     models/model.h
+    models/objmodel.h
     graphics/cudaRayTracing.h
     transformational/camera.h
     transformational/object.h
@@ -53,6 +54,7 @@ set(HEADERS
     utils/kdTree.h
     utils/stack.h
     utils/primitive.h
+    utils/texture.h
 )
 
 set(CUDA_ARCH compute_86)
@@ -81,12 +83,12 @@ set(INCLUDE_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/graphics
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     ${OBJ_DIR}
+    ${STB_DIR}
 )
 
 include_directories(${INCLUDE_DIRS})
 
-add_library(cudaRayTracing STATIC ${SOURCES} ${HEADERS}
-    models/objmodel.h)
+add_library(cudaRayTracing STATIC ${SOURCES} ${HEADERS})
 target_include_directories(cudaRayTracing PUBLIC ${INCLUDE_DIRS})
 set_target_properties(${PROJECT_NAME}
    PROPERTIES

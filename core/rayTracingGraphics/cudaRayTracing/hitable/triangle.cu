@@ -3,8 +3,8 @@
 
 namespace cuda::rayTracing {
 
-__host__ __device__ Triangle::Triangle(const size_t& i0, const size_t& i1, const size_t& i2, const Vertex* vertexBuffer)
-    : index{i0,i1,i2}, vertexBuffer(vertexBuffer)
+__host__ __device__ Triangle::Triangle(const size_t& i0, const size_t& i1, const size_t& i2, const Vertex* vertexBuffer, cudaTextureObject_t texture)
+    : index{i0,i1,i2}, vertexBuffer(vertexBuffer), texture(texture)
 {};
 
 __host__ __device__ bool Triangle::hit(const ray& r, HitCoords& coord) const {
@@ -36,27 +36,40 @@ __host__ __device__ bool Triangle::hit(const ray& r, HitCoords& coord) const {
     return false;
 }
 
-__host__ __device__ void Triangle::calcHitRecord(const ray& r, const HitCoords& coord, HitRecord& rec) const {
+#define interpolate(coord, val) coord.v * vertexBuffer[index[0]].val + coord.u * vertexBuffer[index[2]].val + s * vertexBuffer[index[1]].val
+
+__device__ void Triangle::calcHitRecord(const ray& r, const HitCoords& coord, HitRecord& rec) const {
     const float s = 1.0f - coord.u - coord.v;
-    rec.point = r.point(coord.tmax);
-    rec.normal = normal(coord.v * vertexBuffer[index[0]].normal + coord.u * vertexBuffer[index[2]].normal + s * vertexBuffer[index[1]].normal);
-    rec.color = coord.v * vertexBuffer[index[0]].color + coord.u * vertexBuffer[index[2]].color + s * vertexBuffer[index[1]].color;
-    rec.props = {
-        coord.v * vertexBuffer[index[0]].props.refractiveIndex + coord.u * vertexBuffer[index[2]].props.refractiveIndex + s * vertexBuffer[index[1]].props.refractiveIndex,
-        coord.v * vertexBuffer[index[0]].props.refractProb + coord.u * vertexBuffer[index[2]].props.refractProb + s * vertexBuffer[index[1]].props.refractProb,
-        coord.v * vertexBuffer[index[0]].props.fuzz + coord.u * vertexBuffer[index[2]].props.fuzz + s * vertexBuffer[index[1]].props.fuzz,
-        coord.v * vertexBuffer[index[0]].props.angle + coord.u * vertexBuffer[index[2]].props.angle + s * vertexBuffer[index[1]].props.angle,
-        coord.v * vertexBuffer[index[0]].props.emissionFactor + coord.u * vertexBuffer[index[2]].props.emissionFactor + s * vertexBuffer[index[1]].props.emissionFactor,
-        coord.v * vertexBuffer[index[0]].props.absorptionFactor + coord.u * vertexBuffer[index[2]].props.absorptionFactor + s * vertexBuffer[index[1]].props.absorptionFactor
+    rec.vertex.point = r.point(coord.tmax);
+    rec.vertex.normal = normal(interpolate(coord, normal));
+    rec.vertex.u = interpolate(coord, u);
+    rec.vertex.v = interpolate(coord, v);
+    uchar4 texv = {0, 0, 0, 0};
+    if(texture != 0){
+        texv = tex2D<uchar4>(texture, rec.vertex.u, 1.0f - rec.vertex.v);
+    }
+    rec.vertex.color = texture == 0 ? interpolate(coord, color) :
+        vec4f(
+            (float)texv.x / 255.0f,
+            (float)texv.y / 255.0f,
+            (float)texv.z / 255.0f,
+            1.0f);
+    rec.vertex.props = {
+        interpolate(coord, props.refractiveIndex),
+        interpolate(coord, props.refractProb),
+        interpolate(coord, props.fuzz),
+        interpolate(coord, props.angle),
+        interpolate(coord, props.emissionFactor),
+        interpolate(coord, props.absorptionFactor)
     };
 }
 
-__global__ void createKernel(Triangle* tr, const size_t i0, const size_t i1, const size_t i2, const Vertex* vertexBuffer) {
-    tr = new (tr) Triangle(i0, i1, i2, vertexBuffer);
+__global__ void createKernel(Triangle* tr, const size_t i0, const size_t i1, const size_t i2, const Vertex* vertexBuffer, cudaTextureObject_t texture) {
+    tr = new (tr) Triangle(i0, i1, i2, vertexBuffer, texture);
 }
 
 void Triangle::create(Triangle* dpointer, const Triangle& host){
-    createKernel<<<1,1>>>(dpointer, host.index[0], host.index[1], host.index[2], host.vertexBuffer);
+    createKernel<<<1,1>>>(dpointer, host.index[0], host.index[1], host.index[2], host.vertexBuffer, host.texture);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }

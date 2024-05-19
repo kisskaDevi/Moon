@@ -31,11 +31,11 @@ __host__ __device__ bool Sphere::hit(const ray& r, HitCoords& coord) const {
     return result;
 }
 
-__host__ __device__ void Sphere::calcHitRecord(const ray& r, const HitCoords& coord, HitRecord& rec) const {
-    rec.point = r.point(coord.tmax);
-    rec.normal = (rec.point - center) / radius;
-    rec.color = color;
-    rec.props = props;
+__device__ void Sphere::calcHitRecord(const ray& r, const HitCoords& coord, HitRecord& rec) const {
+    rec.vertex.point = r.point(coord.tmax);
+    rec.vertex.normal = (rec.vertex.point - center) / radius;
+    rec.vertex.color = color;
+    rec.vertex.props = props;
 }
 
 __global__ void createKernel(Sphere* sph, vec4f cen, float r, vec4f color, const Properties props) {

@@ -8,7 +8,13 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+set(INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${GLTF_DIR}
+    ${PLY_DIR}/source
+)
+
+include_directories(${INCLUDE_DIRS})
 
 set(SOURCES
     gltfmodel/nodes.cpp
@@ -23,5 +29,5 @@ set(HEADERS
 )
 
 add_library(models STATIC ${SOURCES} ${HEADERS})
-target_include_directories(models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(models PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(models PUBLIC interfaces utils)

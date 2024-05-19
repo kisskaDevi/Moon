@@ -47,7 +47,7 @@ void RayTracing::buildTree(){
 }
 
 __device__ bool isEmit(const HitRecord& rec){
-    return (rec.rayDepth == 1 && rec.props.emissionFactor >= 0.98f) || (rec.scattering.getDirection().length2() > 0.0f && rec.lightIntensity >= 0.95f);
+    return (rec.rayDepth == 1 && rec.vertex.props.emissionFactor >= 0.98f) || (rec.scattering.getDirection().length2() > 0.0f && rec.lightIntensity >= 0.95f);
 }
 
 struct FrameBuffer {
@@ -61,21 +61,26 @@ __device__ FrameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterat
     do {
         ray r = rec.rayDepth++ ? rec.scattering : cam->getPixelRay(u, v, randState);
         if (HitCoords coords; container->hit(r, coords)) {
-            if(vec4 color = rec.color; coords.check()){
+            if(vec4 color = rec.vertex.color; coords.check()){
                 coords.obj->calcHitRecord(r, coords, rec);
-                rec.lightIntensity *= rec.props.absorptionFactor;
-                rec.color = min(vec4f(rec.lightIntensity * rec.color.x(), rec.lightIntensity * rec.color.y(), rec.lightIntensity * rec.color.z(), rec.color.a()), color);
+                rec.lightIntensity *= rec.vertex.props.absorptionFactor;
+                rec.vertex.color = min(
+                    vec4f(rec.lightIntensity * rec.vertex.color.x(),
+                          rec.lightIntensity * rec.vertex.color.y(),
+                          rec.lightIntensity * rec.vertex.color.z(),
+                          rec.vertex.color.a()),
+                    color);
             }
         }
 
-        vec4f scattering = scatter(r, rec.normal, rec.props, randState);
+        vec4f scattering = scatter(r, rec.vertex.normal, rec.vertex.props, randState);
         if(scattering.length2() == 0.0f || rec.rayDepth >= maxRayIterations){
-            result.base = rec.props.emissionFactor >= 0.98f ? rec.props.emissionFactor * rec.color : vec4f(0.0f, 0.0f, 0.0f, 1.0f);
-            result.bloom = isEmit(rec) ? rec.color : vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+            result.base = rec.vertex.props.emissionFactor >= 0.98f ? rec.vertex.props.emissionFactor * rec.vertex.color : vec4f(0.0f, 0.0f, 0.0f, 1.0f);
+            result.bloom = isEmit(rec) ? rec.vertex.color : vec4f(0.0f, 0.0f, 0.0f, 0.0f);
             rec = HitRecord{};
             break;
         }
-        rec.scattering = ray(rec.point, scattering);
+        rec.scattering = ray(rec.vertex.point, scattering);
     } while (rec.rayDepth < minRayIterations);
     return result;
 }

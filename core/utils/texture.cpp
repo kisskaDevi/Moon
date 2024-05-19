@@ -2,7 +2,11 @@
 #include "operations.h"
 #include "device.h"
 
+#ifndef STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#endif
+
 #include <cmath>
 #include <cstring>
 

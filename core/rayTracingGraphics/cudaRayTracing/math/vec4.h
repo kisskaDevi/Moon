@@ -6,8 +6,6 @@
 
 #include <iostream>
 
-#define pi 3.14159265358979323846f
-
 namespace cuda::rayTracing {
 
 template<typename T>
@@ -176,7 +174,7 @@ __host__ __device__ inline vec4<T> cross(const vec4<T>& v1, const vec4<T>& v2) {
 
 template<typename T>
 __device__ inline vec4<T> random_in_unit_sphere(const vec4<T>& direction, const T& angle, curandState* randState) {
-    T phi = 2 * pi * curand_uniform(randState);
+    T phi = 2 * M_PI * curand_uniform(randState);
     T theta = angle * curand_uniform(randState);
 
     T x = std::sin(theta) * std::cos(phi);

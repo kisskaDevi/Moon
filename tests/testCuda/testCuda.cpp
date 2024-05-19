@@ -3,7 +3,6 @@
 #include "rayTracingGraphics.h"
 #include "graphicsManager.h"
 
-#include "triangle.h"
 #include "sphere.h"
 
 #ifdef IMGUI_GRAPHICS
@@ -13,142 +12,128 @@
 #include <imgui_impl_vulkan.h>
 #endif
 
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#endif
 
 #include <models/objmodel.h>
 
 #include <cstring>
+#include <random>
 
 #include <math/quat2.h>
 #include <math/mat4.h>
 
 using namespace cuda::rayTracing;
-
-enum sign{ minus, plus };
-
-std::vector<Vertex> createBoxVertexBuffer(
-    vec4f scale,
-    vec4f translate,
-    sign normalSign,
-    Properties props,
-    std::vector<vec4f> colors)
-{
-    float plus = normalSign == sign::plus ? 1.0f : -1.0f, minus = -plus;
-    vec4f v[8] =
-        {
-            scale * vec4f(-1.0f, -1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4f(-1.0f,  1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4f(1.0f, -1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4f(1.0f,  1.0f, -1.0f, 1.0f) + translate,
-            scale * vec4f(-1.0f, -1.0f,  1.0f, 1.0f) + translate,
-            scale * vec4f(-1.0f,  1.0f,  1.0f, 1.0f) + translate,
-            scale * vec4f(1.0f, -1.0f,  1.0f, 1.0f) + translate,
-            scale * vec4f(1.0f,  1.0f,  1.0f, 1.0f) + translate
-        };
-    vec4f n[6] =
-        {
-            vec4f(0.0f, 0.0f, minus, 0.0f), vec4f(0.0f, 0.0f, plus, 0.0f), vec4f(minus, 0.0f, 0.0f, 0.0f),
-            vec4f(plus, 0.0f, 0.0f, 0.0f), vec4f(0.0f, minus, 0.0f, 0.0f), vec4f(0.0f, plus, 0.0f, 0.0f)
-        };
-    size_t indices[6][4] = { {0,1,2,3}, {4,5,6,7}, {0,1,4,5}, {2,3,6,7}, {0,2,4,6}, {1,3,5,7} };
-
-    std::vector<Vertex> vertexBuffer;
-    for (size_t i = 0; i < 6; i++) {
-        for (size_t j = 0; j < 4; j++) {
-            vertexBuffer.push_back(Vertex(v[indices[i][j]], n[i], colors[i], props));
-        }
-    }
-    return vertexBuffer;
-}
-
-std::vector<uint32_t> createBoxIndexBuffer() {
-    return std::vector<uint32_t>{
-        0, 1, 2, 3, 1, 2,
-        4, 5, 6, 7, 5, 6,
-        8, 9, 11, 10, 11, 8,
-        12, 13, 15, 14, 15, 12,
-        16, 17, 19, 16, 18, 19,
-        20, 21, 23, 20, 22, 23
-    };
-}
+float pi = M_PI;
 
 void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracing::Object>>& objects, const std::filesystem::path& ExternalPath)
 {
-    const std::unordered_map<std::string, Sphere> spheres = {
-        {"sphere_0",  Sphere(vec4f( 0.0f,  0.0f,  0.51f,  1.0f), 0.50f, vec4f(0.80f, 0.30f, 0.30f, 1.00f), { 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f})},
-        {"sphere_1",  Sphere(vec4f( 0.0f,  1.0f,  0.51f,  1.0f), 0.50f, vec4f(0.80f, 0.80f, 0.80f, 1.00f), { 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f})},
-        {"sphere_2",  Sphere(vec4f( 0.0f, -1.0f,  0.51f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
-        {"sphere_3",  Sphere(vec4f( 0.0f, -1.0f,  0.51f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
-        {"sphere_4",  Sphere(vec4f(-1.5f,  0.0f,  0.51f,  1.0f), 0.50f, vec4f(1.00f, 0.90f, 0.70f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_5",  Sphere(vec4f( 1.5f, -1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.99f, 0.80f, 0.20f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_6",  Sphere(vec4f( 1.5f,  1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.20f, 0.80f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 10.0f})},
-        {"sphere_7",  Sphere(vec4f(-1.5f, -1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.99f, 0.40f, 0.85f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_8",  Sphere(vec4f(-1.5f,  1.5f,  0.21f,  1.0f), 0.20f, vec4f(0.40f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_9",  Sphere(vec4f(-0.5f, -0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_10", Sphere(vec4f( 0.5f,  0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.80f, 0.70f, 0.99f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_11", Sphere(vec4f(-0.5f,  0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.59f, 0.50f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_12", Sphere(vec4f( 0.5f, -0.5f,  0.21f,  1.0f), 0.20f, vec4f(0.90f, 0.99f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_13", Sphere(vec4f(-1.0f, -1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.65f, 0.00f, 0.91f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_14", Sphere(vec4f( 1.0f,  1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.80f, 0.90f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_15", Sphere(vec4f(-1.0f,  1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.90f, 0.50f, 0.50f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})},
-        {"sphere_16", Sphere(vec4f( 1.0f, -1.0f,  0.21f,  1.0f), 0.20f, vec4f(0.50f, 0.59f, 0.90f, 1.00f), {0.0f, 0.0f, 0.0f, 0.0f, 1.0f})}
-    };
+    {
+        std::unordered_map<std::string, Sphere> spheres = {
+            {"glass_sphere_outside",  Sphere(vec4f( 0.0f, -1.0f,  0.51f,  1.0f), 0.50f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})},
+            {"glass_sphere_inside",  Sphere(vec4f( 0.0f, -1.0f,  0.51f,  1.0f), 0.45f, vec4f(0.90f, 0.90f, 0.90f, 1.00f), { 1.0f / 1.5f, 0.96f, 0.001f, 0.0f, 0.0f, 0.99f})}
+        };
 
-    for(const auto& [name, sphere]: spheres){
-        objects[name] = std::make_unique<Object>(
-            new Model(Primitive{make_devicep<Hitable>(sphere), sphere.getBox()})
-        );
+        std::random_device dev;
+        std::uniform_real_distribution<float> color(0.0f, 1.0f);
+        std::uniform_real_distribution<float> xy(-3.0f, 3.0f);
+        std::uniform_real_distribution<float> z(0.0f, 3.0f);
+        std::uniform_real_distribution<float> power(8.0f, 10.0f);
+        for(int i = 0 ; i < 100; i++){
+            spheres.insert({"sphere_" + std::to_string(i),
+             Sphere(
+                 vec4f(xy(dev), xy(dev), z(dev),  1.0f),
+                 0.05f,
+                 vec4f(color(dev), color(dev), color(dev), 1.00f),
+                 {0.0f, 0.0f, 0.0f, 0.0f, power(dev)})
+            });
+        }
+
+        for(const auto& [name, sphere]: spheres){
+            objects[name] = std::make_unique<Object>(
+                new Model(Primitive{make_devicep<Hitable>(sphere), sphere.getBox()})
+            );
+        }
     }
 
-    const auto boxIndexBuffer = createBoxIndexBuffer();
+    {
+        objects["teapot"] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/teapot/teapot.obj",
+                         ObjModelInfo(Properties{ 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}, vec4f(0.80f, 0.80f, 0.80f, 1.00f))),
+            trans(vec4f(0.0f, 1.5f, 0.51f, 1.0f)) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.05f}));
 
-    objects["environment_box"] = std::make_unique<Object>(
-        new ObjModel(ExternalPath / "dependences/model/obj/box/box_in.obj",
-                     ObjModelInfo(Properties{ 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f }, vec4f{1.0f})),
-        trans(vec4f{0.0f, 0.0f, 1.5f, 0.0f}) * scale(vec4f{3.0f, 3.0f, 1.5f, 1.0f}));
+        objects["environment_box"] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/box/box_in.obj",
+                         ObjModelInfo(Properties{ 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f }, vec4f{1.0f})),
+            trans(vec4f{0.0f, 0.0f, 1.5f, 0.0f}) * scale(vec4f{3.0f, 3.0f, 1.5f, 1.0f}));
 
-    objects["glass_box"] = std::make_unique<Object>(
-        new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
-                     ObjModelInfo(Properties{ 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f})),
-        trans(vec4f{1.5f, 0.0f, 0.41f, 0.0f}) * scale(vec4f{0.4f}));
-
-    objects["glass_box_inside"] = std::make_unique<Object>(
-        new ObjModel(ExternalPath / "dependences/model/obj/box/box_in.obj",
-                     ObjModelInfo(Properties{ 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f})),
-        trans(vec4f{1.5f, 0.0f, 0.41f, 0.0f}) * scale(vec4f{0.3f}));
-
-    objects["upper_light_plane"] = std::make_unique<Object>(
-        new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
-                     ObjModelInfo(Properties{ 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 1.0f}, vec4f{1.0f})),
-        trans(vec4f{0.0f, 0.0f, 3.0f, 0.0f}) * scale(vec4f{1.0f, 1.0f, 0.01f, 1.0f}));
-
-    objects["monkey"] = std::make_unique<Object>(
-        new ObjModel(ExternalPath / "dependences/model/obj/monkey/monkey.obj",
-                     ObjModelInfo(Properties{ 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f}, true)),
-        trans(vec4f{0.0f, 0.0f, 2.0f, 0.0f}) * scale(vec4f{0.7f}));
-
-    objects["duck2"] = std::make_unique<Object>(
-        new ObjModel(ExternalPath / "dependences/model/obj/duck/duck.obj",
-                     ObjModelInfo(Properties{ 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}, vec4f{0.8f, 0.8f, 0.0f, 1.0f}, true)),
-        trans(vec4f{2.0f, 2.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
-
-    objects["duck3"] = std::make_unique<Object>(
-        new ObjModel(ExternalPath / "dependences/model/obj/duck/duck.obj",
-                     ObjModelInfo(Properties{ 1.0f, 0.0f, 3.0f, 0.05f * pi, 0.0f, 0.7f}, vec4f{0.8f, 0.8f, 0.0f, 1.0f}, true)),
-        trans(vec4f{-2.0f, -2.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
-
-#if 1
-    size_t num = 50;
-    for (int i = 0; i < num; i++) {
-        float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
-        objects["box_" + std::to_string(i)] = std::make_unique<Object>(
+        objects["glass_box_outside"] = std::make_unique<Object>(
             new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
-                         ObjModelInfo(Properties{ 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f, 0.9},
-                                      vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), std::abs(std::sin(phi) * std::cos(phi)), 1.0f))),
-            trans(vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 0.1f + 2.8 * std::abs(std::sin(phi)), 0.0f)) * scale(vec4f{0.1f}));
+                         ObjModelInfo(Properties{ 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f})),
+            trans(vec4f{1.5f, 0.0f, 0.41f, 0.0f}) * scale(vec4f{0.4f}));
+
+        objects["glass_box_inside"] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/box/box_in.obj",
+                         ObjModelInfo(Properties{ 1.0f / 1.5f, 1.0f, 0.01f, 0.01f * pi, 0.0f, 0.99f}, vec4f{1.0f})),
+            trans(vec4f{1.5f, 0.0f, 0.41f, 0.0f}) * scale(vec4f{0.38f}));
+
+        objects["upper_light_plane"] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
+                         ObjModelInfo(Properties{ 0.0f, 0.0f, 0.0f, 0.0, 10.0f, 1.0f}, vec4f{1.0f})),
+            trans(vec4f{0.0f, 0.0f, 3.0f, 0.0f}) * scale(vec4f{1.0f, 1.0f, 0.01f, 1.0f}));
+
+        objects["monkey"] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/monkey/monkey.obj",
+                         ObjModelInfo(Properties{ 1.0f, 0.0f, 0.0f, pi, 0.0f, 0.7f}, vec4f(0.80f, 0.30f, 0.30f, 1.00f), true)),
+            trans(vec4f{0.0f, 0.0f, 0.5f, 0.0f}) * toMat(quatf(0.5f * pi, vec4f{0.5f, 0.0f, 1.0f, 0.0f})) * scale(vec4f{0.5f}));
+
+        objects["duck1"] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/duck/duck.obj",
+                         ObjModelInfo(Properties{ 1.0f, 0.0f, 0.0f, 0.5f * pi, 0.0f, 0.7f}, vec4f{0.8f, 0.8f, 0.0f, 1.0f}, true)),
+            trans(vec4f{2.0f, 2.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
+
+        objects["duck2"] = std::make_unique<Object>(
+            new ObjModel(ExternalPath / "dependences/model/obj/duck/duck.obj",
+                         ObjModelInfo(Properties{ 1.0f, 0.0f, 0.0f, 0.5f * pi, 0.0f, 0.7f}, vec4f{0.8f, 0.8f, 0.0f, 1.0f}, true)),
+            trans(vec4f{-2.0f, -2.0f, 2.0f, 0.0f}) * toMat(quatf(0.5f *pi, vec4f{1.0f, 0.0f, 0.0f, 0.0})) * scale(vec4f{0.7f}));
     }
-#endif
+
+    {
+        vec4f tr[4] = {
+            vec4f{2.0f, 2.0f, 0.02f, 0.0f},
+            vec4f{-2.0f, 2.0f, 0.02f, 0.0f},
+            vec4f{2.0f, -2.0f, 0.02f, 0.0f},
+            vec4f{-2.0f, -2.0f, 0.02f, 0.0f}
+        };
+        vec4f col[4] = {
+            vec4f{0.2, 0.9, 0.4, 1.0},
+            vec4f{0.9, 0.5, 0.2, 1.0},
+            vec4f{0.9, 0.4, 0.9, 1.0},
+            vec4f{0.0, 0.7, 0.9, 1.0}
+        };
+        for(int i = 0; i < 4; i++){
+            objects["corner_light_plane_" + std::to_string(i)] = std::make_unique<Object>(
+                new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
+                             ObjModelInfo(Properties{ 0.0f, 0.0f, 0.0f, 0.0f, 10.0f, 1.0f}, col[i])),
+                trans(tr[i]) * scale(vec4f{0.4f, 0.4f, 0.01f, 1.0f}));
+        }
+    }
+
+    {
+        size_t num = 50;
+        for (int i = 0; i < num; i++) {
+            float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
+            objects["box_" + std::to_string(i)] = std::make_unique<Object>(
+                new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
+                             ObjModelInfo(Properties{ 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f, 0.9},
+                                          vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), 0.5f + 0.5 * std::sin(phi), 1.0f))),
+                trans(vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 1.5f + 1.4 * std::sin(phi), 0.0f))
+                    * toMat(quatf(phi, vec4f{std::cos(phi), std::sin(phi) * std::sin(phi), std::sin(phi) * std::cos(phi), 0.0}))
+                    * scale(vec4f{0.1f}));
+        }
+    }
 }
 
 testCuda::testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized) :
@@ -172,24 +157,15 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 
     hostcam = Camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
     cam = make_devicep<Camera>(hostcam);
-    graphics = std::make_shared<moon::rayTracingGraphics::RayTracingGraphics>(ExternalPath / "core/rayTracingGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{extent[0],extent[1]});
+    graphics = std::make_shared<moon::rayTracingGraphics::RayTracingGraphics>(
+        ExternalPath / "core/rayTracingGraphics/spv",
+        ExternalPath / "core/workflows/spv",
+        VkExtent2D{extent[0],extent[1]});
     app->setGraphics(graphics.get());
     graphics->setCamera(&cam);
     graphics->setEnableBoundingBox(enableBB);
     for(auto& [name, object]: objects){
         graphics->bind(object.get());
-
-#ifdef false
-        std::cout << name << std::endl;
-        for(const auto& primitive: model.primitives){
-            const auto& box = primitive.box;
-            std::cout << "--------------------------------\n";
-            std::cout << "box " << &primitive - &model.primitives[0] << std::endl;
-            std::cout << "min:\t" << box.min.x() << "\t" << box.min.y() << "\t" << box.min.z() << "\n";
-            std::cout << "max:\t" << box.max.x() << "\t" << box.max.y() << "\t" << box.max.z() << "\n";
-        }
-        std::cout << "===============================\n";
-#endif
     }
     graphics->create();
     graphics->buildTree();
@@ -274,11 +250,6 @@ void testCuda::updateFrame(uint32_t, float frameTime)
 
     if(ImGui::RadioButton("bloom", enableBloom)){
         enableBloom = !enableBloom;
-        framebufferResized = true;
-    }
-
-    if(ImGui::RadioButton("BB", enableBB)){
-        enableBB = !enableBB;
         framebufferResized = true;
     }
 

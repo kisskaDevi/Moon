@@ -1,13 +1,15 @@
 #include "models/model.h"
-
+#include "hitable/triangle.h"
+#include <iostream>
 namespace cuda::rayTracing {
 
 Model::~Model(){}
 
-Model::Model(const std::vector<Vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer)
+Model::Model(const std::vector<Vertex>& vertexBuffer, const std::vector<uint32_t>& indexBuffer, const std::vector<cudaTextureObject_t>& textures)
     : vertexBuffer(Buffer<Vertex>(vertexBuffer.size(), vertexBuffer.data()))
 {
     for (size_t index = 0; index < indexBuffer.size(); index += 3) {
+        cudaTextureObject_t tex = textures.empty() ? 0 : textures.front();
         Triangle tr(indexBuffer[index + 0], indexBuffer[index + 1], indexBuffer[index + 2], vertexBuffer.data());
         primitives.push_back({
             make_devicep<Hitable>(
@@ -15,7 +17,8 @@ Model::Model(const std::vector<Vertex>& vertexBuffer, const std::vector<uint32_t
                     indexBuffer[index + 0],
                     indexBuffer[index + 1],
                     indexBuffer[index + 2],
-                    this->vertexBuffer.get()
+                    this->vertexBuffer.get(),
+                    tex
                 )
             ),
             tr.getBox()

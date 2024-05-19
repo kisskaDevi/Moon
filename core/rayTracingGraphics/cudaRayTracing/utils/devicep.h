@@ -48,47 +48,45 @@ private:
         if(pointer){
             if constexpr (has_destroy<type>::v){
                 type::destroy(pointer);
+            } else {
+                checkCudaErrors(cudaFree((void*)pointer));
             }
-            checkCudaErrors(cudaFree((void*)pointer));
             pointer = nullptr;
         }
     }
 public:
-    Devicep(type* other){
-        del();
+    explicit Devicep(type* other){
         pointer = other;
     }
 
     explicit Devicep(const type& host){
-        del();
         pointer = create(host);
     }
 
-    Devicep(size_t size){
-        del();
-        checkCudaErrors(cudaMalloc((void**)&pointer, size * sizeof(type)));
+    explicit Devicep(size_t size){
+        if(size){
+            checkCudaErrors(cudaMalloc((void**)&pointer, size * sizeof(type)));
+        }
     }
 
-    Devicep() = default;
+    Devicep() {};
     Devicep(const Devicep& other) = delete;
     Devicep& operator=(const Devicep& other) = delete;
 
     Devicep(Devicep&& other){
-        del();
+        type* pCopy = pointer;
         pointer = other.pointer;
-        other.pointer = nullptr;
+        other.pointer = pCopy;
     }
 
     Devicep& operator=(Devicep&& other){
-        del();
+        type* pCopy = pointer;
         pointer = other.pointer;
-        other.pointer = nullptr;
+        other.pointer = pCopy;
         return *this;
     }
 
-    ~Devicep(){
-        del();
-    }
+    ~Devicep(){ del();}
 
     type* get() const {
         return pointer;

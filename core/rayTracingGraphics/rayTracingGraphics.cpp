@@ -7,6 +7,19 @@
 
 namespace moon::rayTracingGraphics {
 
+RayTracingGraphics::RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
+    : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
+{
+    setExtent(extent);
+    Link.setShadersPath(shadersPath);
+    link = &Link;
+}
+
+RayTracingGraphics::~RayTracingGraphics(){
+    RayTracingGraphics::destroy();
+    bbGraphics.destroy();
+}
+
 void RayTracingGraphics::ImageResource::create(const std::string& id, moon::utils::PhysicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
     this->id = id;
 
@@ -163,4 +176,73 @@ void RayTracingGraphics::update(uint32_t imageIndex) {
     bbGraphics.update(imageIndex);
 }
 
+void RayTracingGraphics::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) {
+    this->offset = offset;
+    this->size = size;
+    Link.setPositionInWindow(offset, size);
+}
+
+void RayTracingGraphics::setEnableBoundingBox(bool enable){
+    bbGraphics.setEnable(enable);
+}
+
+void RayTracingGraphics::setEnableBloom(bool enable){
+    bloomEnable = enable;
+}
+
+void RayTracingGraphics::setBlitFactor(const float& blitFactor){
+    bloomGraph.setBlitFactor(blitFactor);
+}
+
+void RayTracingGraphics::setExtent(VkExtent2D extent){
+    this->extent = extent;
+    rayTracer.setExtent(extent.width, extent.height);
+}
+
+void RayTracingGraphics::bind(cuda::rayTracing::Object* obj) {
+    rayTracer.bind(obj);
+}
+
+void RayTracingGraphics::setCamera(cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* cam){
+    rayTracer.setCamera(cam);
+    bbGraphics.bind(cam);
+}
+
+void RayTracingGraphics::clearFrame(){
+    rayTracer.clearFrame();
+}
+
+void RayTracingGraphics::buildTree(){
+    rayTracer.buildTree();
+}
+
+void RayTracingGraphics::buildBoundingBoxes(bool primitive, bool tree, bool onlyLeafs){
+    bbGraphics.clear();
+
+    if(tree){
+        std::stack<cuda::rayTracing::KDNode<std::vector<const cuda::rayTracing::Primitive*>::iterator>*> stack;
+        stack.push(rayTracer.getTree().getRoot());
+        for(;!stack.empty();){
+            const auto top = stack.top();
+            stack.pop();
+
+            if(!onlyLeafs || !(top->left || top->right)){
+                std::random_device device;
+                std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+                cuda::rayTracing::cbox box(top->bbox, cuda::rayTracing::vec4f(dist(device), dist(device), dist(device), 1.0f));
+                bbGraphics.bind(std::move(box));
+            }
+
+            if(top->right) stack.push(top->right);
+            if(top->left) stack.push(top->left);
+        }
+    }
+
+    if(primitive){
+        for(auto& primitive: rayTracer.getTree().storage){
+            cuda::rayTracing::cbox box(primitive->bbox, cuda::rayTracing::vec4f(1.0, 0.0, 0.0, 1.0f));
+            bbGraphics.bind(box);
+        }
+    }
+}
 }

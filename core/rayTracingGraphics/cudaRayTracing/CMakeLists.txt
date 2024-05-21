@@ -19,7 +19,9 @@ set(SOURCES
     hitable/sphere.cu
     hitable/triangle.cu
     hitable/hitable.cu
+    materials/material.cu
     models/model.cu
+    models/objmodel.cu
     graphics/cudaRayTracing.cu
     transformational/camera.cu
     utils/hitableArray.cu
@@ -27,6 +29,8 @@ set(SOURCES
     utils/hitableList.cu
     utils/operations.cu
     utils/kdTree.cu
+    utils/primitive.cu
+    utils/texture.cu
 )
 
 set(HEADERS

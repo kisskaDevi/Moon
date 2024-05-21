@@ -15,8 +15,7 @@ struct Vertex {
     Properties props;
     __host__ __device__ Vertex() {}
     __host__ __device__ Vertex(const vec4f& point, const vec4f& normal, const vec4f& color, const Properties& props):
-        point(point), normal(normal), color(color), props(props)
-    {}
+        point(point), normal(normal), color(color), props(props) {}
 };
 
 struct HitRecord{
@@ -35,9 +34,7 @@ struct HitCoords{
     float v{0.0f};
     Hitable* obj{nullptr};
 
-    __host__ __device__ bool check() const {
-        return obj && tmax != std::numeric_limits<float>::max();
-    }
+    __host__ __device__ bool check() const { return obj && tmax != std::numeric_limits<float>::max();}
 };
 
 class Hitable {

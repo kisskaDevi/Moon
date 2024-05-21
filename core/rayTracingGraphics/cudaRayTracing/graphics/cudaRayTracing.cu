@@ -8,6 +8,37 @@ namespace cuda::rayTracing {
 RayTracing::RayTracing(){}
 RayTracing::~RayTracing(){}
 
+void RayTracing::setExtent(uint32_t width, uint32_t height){
+    this->width = width;
+    this->height = height;
+}
+
+void RayTracing::bind(Object* obj) {
+    obj->model->load(obj->transform);
+    for(const auto& primitive : obj->model->primitives){
+        hostContainer.storage.push_back(&primitive);
+    }
+}
+
+void RayTracing::setCamera(Devicep<Camera>* cam){ this->cam = cam;}
+void RayTracing::clearFrame(){clear = true;}
+KDTree<std::vector<const Primitive*>>& RayTracing::getTree(){return hostContainer;}
+
+struct FrameBuffer {
+    vec4f base{0.0f};
+    vec4f bloom{0.0f};
+
+    __device__ FrameBuffer& operator+=(const FrameBuffer& other){
+        base += other.base;
+        bloom += other.bloom;
+        return *this;
+    }
+};
+
+struct FrameRecord{
+    HitRecord hit;
+    FrameBuffer frame;
+};
 
 __global__ void initCurandState(size_t width, size_t height, curandState* randState)
 {
@@ -50,11 +81,6 @@ __device__ bool isEmit(const HitRecord& rec){
     return (rec.rayDepth == 1 && rec.vertex.props.emissionFactor >= 0.98f) || (rec.scattering.getDirection().length2() > 0.0f && rec.lightIntensity >= 0.95f);
 }
 
-struct FrameBuffer {
-    vec4f base{0.0f};
-    vec4f bloom{0.0f};
-};
-
 template<typename ContainerType>
 __device__ FrameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterations, Camera* cam, float u, float v, HitRecord& rec, ContainerType* container, curandState* randState) {
     FrameBuffer result;
@@ -85,6 +111,14 @@ __device__ FrameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterat
     return result;
 }
 
+__device__ uint32_t convertVec4ToUint(const vec4f& v){
+    vec4f normVec = v / std::max(1.0f, v.a());
+    return uint32_t(255.0f * normVec[2]) << 0  |
+           uint32_t(255.0f * normVec[1]) << 8  |
+           uint32_t(255.0f * normVec[0]) << 16 |
+           uint32_t(255) << 24;
+}
+
 template <typename ContainerType>
 __global__ void render(bool clear, size_t width, size_t height, size_t minRayIterations, size_t maxRayIterations, uint32_t* baseColor, uint32_t* bloomColor, FrameRecord* record, Camera* cam, ContainerType* container, curandState* randState)
 {
@@ -92,24 +126,15 @@ __global__ void render(bool clear, size_t width, size_t height, size_t minRayIte
     int j = threadIdx.y + blockIdx.y * blockDim.y;
 
     if (int pixel = j * width + i; (i < width) && (j < height)) {
-        // curandState randState;
-        // curand_init(clock64(), pixel, 0, &randState);
-
         float u = 1.0f - 2.0f * float(i) / float(width);
         float v = 2.0f * float(j) / float(height) - 1.0f;
 
-        if(clear){
-            record[pixel] = FrameRecord{};
-        }
+        if(clear) record[pixel] = FrameRecord{};
 
-        FrameBuffer frame = getFrame(minRayIterations, maxRayIterations, cam, u, v, record[pixel].hit, container, &randState[pixel]);
-        record[pixel].color += frame.base;
-        record[pixel].bloom += frame.bloom;
+        record[pixel].frame += getFrame(minRayIterations, maxRayIterations, cam, u, v, record[pixel].hit, container, &randState[pixel]);
 
-        vec4f base = record[pixel].color / ::max(1.0f, record[pixel].color.a());
-        baseColor[pixel] = uint32_t(255.0f*base[2]) << 0 | uint32_t(255.0f*base[1]) << 8 | uint32_t(255.0f*base[0]) << 16 | uint32_t(255) << 24;
-        vec4f bloom = record[pixel].bloom / ::max(1.0f, record[pixel].bloom.a());
-        bloomColor[pixel] = uint32_t(255.0f*bloom[2]) << 0 | uint32_t(255.0f*bloom[1]) << 8 | uint32_t(255.0f*bloom[0]) << 16 | uint32_t(255) << 24;
+        baseColor[pixel] = convertVec4ToUint(record[pixel].frame.base);
+        bloomColor[pixel] = convertVec4ToUint(record[pixel].frame.bloom);
     }
 }
 

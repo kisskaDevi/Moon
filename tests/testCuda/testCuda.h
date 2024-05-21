@@ -29,7 +29,7 @@ private:
     moon::math::Vector<double,2> mousePos{0.0};
 
     float                   focus = 0.049f;
-    float                   blitFactor = 1.5f;
+    float                   blitFactor = 1.0f;
     std::string             screenshot;
 
     moon::graphicsManager::GraphicsManager *app{nullptr};

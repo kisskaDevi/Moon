@@ -83,13 +83,13 @@ public:
     __host__ __device__ vec4<T>& normalize() { return *this *= (1.0f / length());}
 
     __host__ __device__ static vec4<T> getHorizontal(const vec4<T>& d) {
-        T D = std::sqrt(d.x() * d.x() + d.y() * d.y());
-        return D > 0.0f ? vec4<T>(d.y() / D, -d.x() / D, 0.0f, 0.0f) : vec4<T>(1.0f, 0.0, 0.0f, 0.0f);
+        T D = std::sqrt(d[0] * d[0] + d[1] * d[1]);
+        return D > 0.0f ? vec4<T>(d[1] / D, -d[0] / D, 0.0f, 0.0f) : vec4<T>(1.0f, 0.0, 0.0f, 0.0f);
     }
 
     __host__ __device__ static vec4<T> getVertical(const vec4<T>& d) {
-        T z = std::sqrt(d.x() * d.x() + d.y() * d.y());
-        return z > 0.0f ? vec4<T>(-d.z() * d.x() / z / d.length(), -d.z() * d.y() / z / d.length(), z, 0.0f) : vec4<T>(0.0f, 1.0, 0.0f, 0.0f);
+        T z = std::sqrt(d[0] * d[0] + d[1] * d[1]);
+        return z > 0.0f ? vec4<T>(-d[2] * d[0] / z / d.length(), -d[2] * d[1] / z / d.length(), z, 0.0f) : vec4<T>(0.0f, 1.0, 0.0f, 0.0f);
     }
 
     __host__ __device__ size_t maxValueIndex(size_t lessThen = 4) const {
@@ -112,7 +112,7 @@ public:
 
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const vec4<T>& t) {
-    os << t.x() << '\t' << t.y() << '\t' << t.z() << '\t' << t.w();
+    os << t[0] << '\t' << t[1] << '\t' << t[2] << '\t' << t[3];
     return os;
 }
 
@@ -159,7 +159,7 @@ __host__ __device__ vec4<T> operator*(const vec4<T>& v, T t) {
 
 template<typename T>
 __host__ __device__ T dot(const vec4<T>& v1, const vec4<T>& v2) {
-    return v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z() + v1.w() * v2.w();
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
 }
 
 template<typename T>
@@ -169,7 +169,7 @@ __host__ __device__ vec4<T> normal(const vec4<T>& v) {
 
 template<typename T>
 __host__ __device__ inline vec4<T> cross(const vec4<T>& v1, const vec4<T>& v2) {
-    return vec4<T>(v1.y() * v2.z() - v1.z() * v2.y(), v1.z() * v2.x() - v1.x() * v2.z(), v1.x() * v2.y() - v1.y() * v2.x(), 0.0f);
+    return vec4<T>(v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0], 0.0f);
 }
 
 template<typename T>
@@ -186,24 +186,24 @@ __device__ inline vec4<T> random_in_unit_sphere(const vec4<T>& direction, const 
 
 template<typename T>
 __host__ __device__ inline vec4<T> max(const vec4<T>& v1, const vec4<T>& v2) {
-    return vec4<T>( v1.x() >= v2.x() ? v1.x() : v2.x(),
-                    v1.y() >= v2.y() ? v1.y() : v2.y(),
-                    v1.z() >= v2.z() ? v1.z() : v2.z(),
-                    v1.w() >= v2.w() ? v1.w() : v2.w());
+    return vec4<T>( v1[0] >= v2[0] ? v1[0] : v2[0],
+                    v1[1] >= v2[1] ? v1[1] : v2[1],
+                    v1[2] >= v2[2] ? v1[2] : v2[2],
+                    v1[3] >= v2[3] ? v1[3] : v2[3]);
 }
 
 template<typename T>
 __host__ __device__ inline vec4<T> min(const vec4<T>& v1, const vec4<T>& v2) {
-    return vec4<T>( v1.x() < v2.x() ? v1.x() : v2.x(),
-                    v1.y() < v2.y() ? v1.y() : v2.y(),
-                    v1.z() < v2.z() ? v1.z() : v2.z(),
-                    v1.w() < v2.w() ? v1.w() : v2.w());
+    return vec4<T>( v1[0] < v2[0] ? v1[0] : v2[0],
+                    v1[1] < v2[1] ? v1[1] : v2[1],
+                    v1[2] < v2[2] ? v1[2] : v2[2],
+                    v1[3] < v2[3] ? v1[3] : v2[3]);
 }
 
 template<typename T>
 __host__ __device__ inline T det3(const vec4<T>& a, const vec4<T>& b, const vec4<T>& c) {
-    return a.x() * b.y() * c.z() + b.x() * c.y() * a.z() + c.x() * a.y() * b.z() -
-           (a.x() * c.y() * b.z() + b.x() * a.y() * c.z() + c.x() * b.y() * a.z());
+    return a[0] * b[1] * c[2] + b[0] * c[1] * a[2] + c[0] * a[1] * b[2] -
+           (a[0] * c[1] * b[2] + b[0] * a[1] * c[2] + c[0] * b[1] * a[2]);
 }
 
 using vec4f = vec4<float>;

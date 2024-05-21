@@ -56,55 +56,10 @@ private:
     bool bloomEnable = true;
 
 public:
-    RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
-        : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
-    {
-        setExtent(extent);
-        Link.setShadersPath(shadersPath);
-        link = &Link;
-    }
+    RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent);
+    ~RayTracingGraphics();
 
-    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override {
-        this->offset = offset;
-        this->size = size;
-        Link.setPositionInWindow(offset, size);
-    }
-
-    ~RayTracingGraphics(){
-        RayTracingGraphics::destroy();
-        bbGraphics.destroy();
-    }
-
-    void setEnableBoundingBox(bool enable){
-        bbGraphics.setEnable(enable);
-    }
-
-    void setEnableBloom(bool enable){
-        bloomEnable = enable;
-    }
-
-    void setBlitFactor(const float& blitFactor){
-        bloomGraph.setBlitFactor(blitFactor);
-    }
-
-    void setExtent(VkExtent2D extent){
-        this->extent = extent;
-        rayTracer.setExtent(extent.width, extent.height);
-    }
-
-    void bind(cuda::rayTracing::Object* obj) {
-        rayTracer.bind(obj);
-    }
-
-    void setCamera(cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* cam){
-        rayTracer.setCamera(cam);
-        bbGraphics.bind(cam);
-    }
-
-    void clearFrame(){
-        rayTracer.clearFrame();
-    }
-
+    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
     void create() override;
     void destroy() override;
     void update(uint32_t imageIndex) override;
@@ -113,41 +68,17 @@ public:
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
 
-    void buildTree(){
-        rayTracer.buildTree();
-    }
+    void setEnableBoundingBox(bool enable);
+    void setEnableBloom(bool enable);
+    void setBlitFactor(const float& blitFactor);
+    void setExtent(VkExtent2D extent);
 
-    void buildBoundingBoxes(bool primitive, bool tree, bool onlyLeafs){
-        bbGraphics.clear();
+    void setCamera(cuda::rayTracing::Devicep<cuda::rayTracing::Camera>* cam);
+    void bind(cuda::rayTracing::Object* obj);
 
-        if(tree){
-            std::stack<cuda::rayTracing::KDNode<std::vector<const cuda::rayTracing::Primitive*>::iterator>*> stack;
-            stack.push(rayTracer.getTree().getRoot());
-            for(;!stack.empty();){
-                const auto top = stack.top();
-                stack.pop();
-
-                if(!onlyLeafs || !(top->left || top->right)){
-                    std::random_device device;
-                    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-                    cuda::rayTracing::cbox box(top->bbox, cuda::rayTracing::vec4f(dist(device), dist(device), dist(device), 1.0f));
-                    bbGraphics.bind(box);
-                }
-
-                if(top->right) stack.push(top->right);
-                if(top->left) stack.push(top->left);
-            }
-        }
-
-        if(primitive){
-            for(auto& primitive: rayTracer.getTree().storage){
-                std::random_device device;
-                std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-                cuda::rayTracing::cbox box(primitive->bbox, cuda::rayTracing::vec4f(1.0, 0.0, 0.0, 1.0f));
-                bbGraphics.bind(box);
-            }
-        }
-    }
+    void clearFrame();
+    void buildTree();
+    void buildBoundingBoxes(bool primitive, bool tree, bool onlyLeafs);
 };
 
 }

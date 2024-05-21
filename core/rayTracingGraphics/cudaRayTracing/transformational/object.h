@@ -10,9 +10,7 @@ struct Object{
     mat4f transform = mat4f::identity();
 
     Object(Model* model, const mat4f& transform = mat4f::identity()) : model(model), transform(transform) {}
-    ~Object(){
-        if(model){ delete model; }
-    }
+    ~Object(){ if(model) delete model;}
 };
 
 }

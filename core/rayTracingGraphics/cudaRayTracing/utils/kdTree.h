@@ -79,17 +79,16 @@ struct KDNode{
             treeTraverse.pop();
 
             if(curr->bbox.intersect(r)){
-                if(curr->left)                      treeTraverse.push(curr->left);
-                if(curr->right)                     treeTraverse.push(curr->right);
-                if(!(curr->left || curr->right))    selected.push(curr);
+                if (curr->left)                      treeTraverse.push(curr->left);
+                if (curr->right)                     treeTraverse.push(curr->right);
+                if (!(curr->left || curr->right))    selected.push(curr);
             }
         }
         for(;!selected.empty();){
             const KDNode* curr = selected.top();
             selected.pop();
             for(iterator it = curr->begin; it != (curr->begin + curr->size); it++){
-                if ((*it)->hit(r, coord))
-                    coord.obj = *it;
+                if ((*it)->hit(r, coord)) coord.obj = *it;
             }
         }
 

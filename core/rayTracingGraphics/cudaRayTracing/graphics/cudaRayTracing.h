@@ -11,11 +11,7 @@
 
 namespace cuda::rayTracing {
 
-struct FrameRecord{
-    HitRecord hit;
-    vec4f color;
-    vec4f bloom;
-};
+struct FrameRecord;
 
 class RayTracing {
 public:
@@ -51,34 +47,17 @@ public:
     RayTracing();
     ~RayTracing();
 
-    void setExtent(uint32_t width, uint32_t height){
-        this->width = width;
-        this->height = height;
-    }
-    void bind(Object* obj) {
-        obj->model->load(obj->transform);
-        for(const auto& primitive : obj->model->primitives){
-            hostContainer.storage.push_back(&primitive);
-        }
-    }
-    void setCamera(Devicep<Camera>* cam){
-        this->cam = cam;
-    }
+    void setExtent(uint32_t width, uint32_t height);
+    void bind(Object* obj);
+    void setCamera(Devicep<Camera>* cam);
 
     void create();
     void update();
 
     bool calculateImage(uint32_t* baseColor, uint32_t* bloomColor);
-
-    void clearFrame(){
-        clear = true;
-    }
-
+    void clearFrame();
     void buildTree();
-
-    KDTree<std::vector<const Primitive*>>& getTree(){
-        return hostContainer;
-    }
+    Container_host& getTree();
 };
 
 }

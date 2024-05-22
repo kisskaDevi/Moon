@@ -26,7 +26,7 @@ public:
     __host__ __device__ T a() const { return e[3]; }
 
     __host__ __device__ const vec4<T>& operator+() const { return *this; }
-    __host__ __device__ vec4<T> operator-() const { return vec4<T>(-x(), -y(), -z(), -w()); }
+    __host__ __device__ vec4<T> operator-() const { return vec4<T>(-e[0], -e[1], -e[2], -e[3]); }
     __host__ __device__ T operator[](int i) const { return e[i]; }
     __host__ __device__ T& operator[](int i) { return e[i]; };
 
@@ -71,11 +71,7 @@ public:
     }
 
     __host__ __device__ vec4<T>& operator/=(const T t){
-        e[0] /= t;
-        e[1] /= t;
-        e[2] /= t;
-        e[3] /= t;
-        return *this;
+        return *this *= (T(1) / t);
     }
 
     __host__ __device__ T length2() const { return x() * x() + y() * y() + z() * z() + w() * w(); }
@@ -117,7 +113,7 @@ std::ostream& operator<<(std::ostream& os, const vec4<T>& t) {
 }
 
 template<typename T>
-__host__ __device__ inline vec4<T> operator+(const vec4<T>& v1, const vec4<T>& v2) {
+__host__ __device__ vec4<T> operator+(const vec4<T>& v1, const vec4<T>& v2) {
     vec4<T> copy(v1);
     return copy += v2;
 }
@@ -168,12 +164,12 @@ __host__ __device__ vec4<T> normal(const vec4<T>& v) {
 }
 
 template<typename T>
-__host__ __device__ inline vec4<T> cross(const vec4<T>& v1, const vec4<T>& v2) {
+__host__ __device__ vec4<T> cross(const vec4<T>& v1, const vec4<T>& v2) {
     return vec4<T>(v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0], 0.0f);
 }
 
 template<typename T>
-__device__ inline vec4<T> random_in_unit_sphere(const vec4<T>& direction, const T& angle, curandState* randState) {
+__device__ vec4<T> random_in_unit_sphere(const vec4<T>& direction, const T& angle, curandState* randState) {
     T phi = 2 * M_PI * curand_uniform(randState);
     T theta = angle * curand_uniform(randState);
 
@@ -185,7 +181,7 @@ __device__ inline vec4<T> random_in_unit_sphere(const vec4<T>& direction, const 
 }
 
 template<typename T>
-__host__ __device__ inline vec4<T> max(const vec4<T>& v1, const vec4<T>& v2) {
+__host__ __device__ vec4<T> max(const vec4<T>& v1, const vec4<T>& v2) {
     return vec4<T>( v1[0] >= v2[0] ? v1[0] : v2[0],
                     v1[1] >= v2[1] ? v1[1] : v2[1],
                     v1[2] >= v2[2] ? v1[2] : v2[2],
@@ -193,7 +189,7 @@ __host__ __device__ inline vec4<T> max(const vec4<T>& v1, const vec4<T>& v2) {
 }
 
 template<typename T>
-__host__ __device__ inline vec4<T> min(const vec4<T>& v1, const vec4<T>& v2) {
+__host__ __device__ vec4<T> min(const vec4<T>& v1, const vec4<T>& v2) {
     return vec4<T>( v1[0] < v2[0] ? v1[0] : v2[0],
                     v1[1] < v2[1] ? v1[1] : v2[1],
                     v1[2] < v2[2] ? v1[2] : v2[2],
@@ -201,8 +197,8 @@ __host__ __device__ inline vec4<T> min(const vec4<T>& v1, const vec4<T>& v2) {
 }
 
 template<typename T>
-__host__ __device__ inline T det3(const vec4<T>& a, const vec4<T>& b, const vec4<T>& c) {
-    return a[0] * b[1] * c[2] + b[0] * c[1] * a[2] + c[0] * a[1] * b[2] -
+__host__ __device__ T det3(const vec4<T>& a, const vec4<T>& b, const vec4<T>& c) {
+    return  a[0] * b[1] * c[2] + b[0] * c[1] * a[2] + c[0] * a[1] * b[2] -
            (a[0] * c[1] * b[2] + b[0] * a[1] * c[2] + c[0] * b[1] * a[2]);
 }
 

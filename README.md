@@ -1,16 +1,22 @@
-# Moon: vulkan render
+# Moon
 
-<p align="center"><img src="./screenshots/screenshot_1.PNG"></p>
+# Vulkan Render
+
+<p align="center"><img src="./screenshots/vulkan_render.png"></p>
+
+# Cuda Ray Tracing
+
+<p align="center"><img src="./screenshots/cuda_ray_tracing.jpg"></p>
 
 ## About
 
-This repository contains a number of modules, that makes 3D render using [Vulkan API](https://www.vulkan.org/). All render moduls are implemented as static libraries and located in [core](core) directory, check READMEs in modules directories for more detailed information. Tests are located in [tests](tests) directory and implemented as executable applications, that demonstrate rendering functionality. Almost all build dependences could be cloning by [clone script](dependences/libs/clone.py), for more build informations check [requirements](#Requirements) and [build](#Build-tests-applications) paragraphs.
+This repository contains a number of modules, that makes 3D render using [Vulkan API](https://www.vulkan.org/). All render moduls are implemented as static libraries and located in [core](core) directory, check READMEs in modules directories for more detailed information. Tests are located in [tests](tests) directory and implemented as executable applications, that demonstrate rendering functionality. Almost all build dependences could be cloning by [clone script](scripts/clone.py), for more build informations check [requirements](#Requirements) and [build](#Build-tests-applications) paragraphs.
 
 Links to another readme:
 * [Deferred Graphics](core/deferredGraphics/README.md)
 * [Graphics Manager](core/graphicsManager/README.md)
 * [Imgui Graphics](core/imguiGraphics/README.md)
-* [Cuda Ray Tracing](core/cudaRayTracing/README.md)
+* [Cuda Ray Tracing](core/rayTracingGraphics/README.md)
 
 ## Build tests applications
 From working directory:

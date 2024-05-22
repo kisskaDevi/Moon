@@ -38,13 +38,12 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
 
         std::random_device dev;
         std::uniform_real_distribution<float> color(0.0f, 1.0f);
-        std::uniform_real_distribution<float> xy(-3.0f, 3.0f);
-        std::uniform_real_distribution<float> z(0.0f, 3.0f);
+        std::uniform_real_distribution<float> xyz(-3.0f, 3.0f);
         std::uniform_real_distribution<float> power(8.0f, 10.0f);
         for(int i = 0 ; i < 100; i++){
             spheres.insert({"sphere_" + std::to_string(i),
              Sphere(
-                 vec4f(xy(dev), xy(dev), z(dev),  1.0f),
+                 vec4f(xyz(dev), xyz(dev), std::abs(xyz(dev)),  1.0f),
                  0.02f,
                  vec4f(color(dev), color(dev), color(dev), 1.00f),
                  {0.0f, 0.0f, 0.0f, 0.0f, power(dev)})
@@ -267,12 +266,12 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     to_device(hostcam, cam);
 }
 
-void testCuda::mouseEvent(float)
+void testCuda::mouseEvent(float frameTime)
 {
     double x = 0, y = 0;
     glfwGetCursorPos(window,&x,&y);
     if(mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
-        float& ms = mouse->sensitivity;
+        const float ms = mouse->sensitivity * frameTime * 40;
         float dcos = std::cos(ms * static_cast<float>(mousePos[0] - x));
         float dsin = std::sin(ms * static_cast<float>(mousePos[0] - x));
         float dz = ms * static_cast<float>(mousePos[1] - y);
@@ -285,14 +284,14 @@ void testCuda::mouseEvent(float)
     mousePos = {x,y};
 }
 
-void testCuda::keyboardEvent(float)
+void testCuda::keyboardEvent(float frameTime)
 {
     auto moveCamera = [this](vec4f deltaOrigin){
         hostcam.viewRay = ray(hostcam.viewRay.getOrigin() + deltaOrigin, hostcam.viewRay.getDirection());
         graphics->clearFrame();
     };
 
-    const float& bs = board->sensitivity;
+    const float bs = board->sensitivity * frameTime * 40;
     if(board->pressed(GLFW_KEY_W)) moveCamera( bs * hostcam.viewRay.getDirection());
     if(board->pressed(GLFW_KEY_S)) moveCamera(-bs * hostcam.viewRay.getDirection());
     if(board->pressed(GLFW_KEY_D)) moveCamera( bs * vec4f::getHorizontal(hostcam.viewRay.getDirection()));

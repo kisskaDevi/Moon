@@ -42,6 +42,8 @@ struct KDNode{
         return *this;
     }
 
+    __host__ __device__ iterator end() const { return begin + size;}
+
     __host__ KDNode(iterator begin, size_t size) : begin(begin), size(size), bbox(calcBox(begin, begin + size)){
         if(const iterator end = begin + size; size > itemsInNode)
         {
@@ -72,22 +74,21 @@ struct KDNode{
         if(right) delete right;
     }
 
-    __host__ __device__ bool hit(const ray& r, HitCoords& coord) const {
+    __host__ __device__ bool hit(const ray& r, HitCoords& coord) {
         Stack<const KDNode*, KDNode::stackSize> selected;
-        for(Stack<const KDNode*, KDNode::stackSize> treeTraverse(this); !treeTraverse.empty();){
-            const KDNode* curr = treeTraverse.top();
-            treeTraverse.pop();
-
-            if(curr->bbox.intersect(r)){
-                if (curr->left)                      treeTraverse.push(curr->left);
-                if (curr->right)                     treeTraverse.push(curr->right);
-                if (!(curr->left || curr->right))    selected.push(curr);
+        for(Stack<const KDNode*, KDNode::stackSize> traversed(this); !traversed.empty();){
+            if(const KDNode* curr = traversed.top(); traversed.pop() && curr->bbox.intersect(r)){
+                if (!curr->left && !curr->right){
+                    selected.push(curr);
+                } else {
+                    traversed.push(curr->left);
+                    traversed.push(curr->right);
+                }
             }
         }
-        for(;!selected.empty();){
-            const KDNode* curr = selected.top();
-            selected.pop();
-            for(iterator it = curr->begin; it != (curr->begin + curr->size); it++){
+
+        for(auto curr = selected.top(); selected.pop(); curr = selected.top()){
+            for(iterator it = curr->begin; it != curr->end(); it++){
                 if ((*it)->hit(r, coord)) coord.obj = *it;
             }
         }

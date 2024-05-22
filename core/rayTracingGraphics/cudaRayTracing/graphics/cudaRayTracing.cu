@@ -91,10 +91,10 @@ __device__ FrameBuffer getFrame(uint32_t minRayIterations, uint32_t maxRayIterat
                 coords.obj->calcHitRecord(r, coords, rec);
                 rec.lightIntensity *= rec.vertex.props.absorptionFactor;
                 rec.vertex.color = min(
-                    vec4f(rec.lightIntensity * rec.vertex.color.x(),
-                          rec.lightIntensity * rec.vertex.color.y(),
-                          rec.lightIntensity * rec.vertex.color.z(),
-                          rec.vertex.color.a()),
+                    vec4f(rec.lightIntensity * rec.vertex.color[0],
+                          rec.lightIntensity * rec.vertex.color[1],
+                          rec.lightIntensity * rec.vertex.color[2],
+                          rec.vertex.color[3]),
                     color);
             }
         }

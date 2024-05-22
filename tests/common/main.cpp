@@ -40,8 +40,8 @@ template<typename type> type period(clk::time_point time){
 
 int main()
 {
-    uint32_t WIDTH = 800;
-    uint32_t HEIGHT = 800;
+    uint32_t WIDTH = 1024;
+    uint32_t HEIGHT = 720;
     const std::filesystem::path ExternalPath = std::filesystem::absolute(std::filesystem::path(__FILE__).replace_filename("../../"));
 
     GLFWwindow* window = initializeWindow(WIDTH, HEIGHT, ExternalPath / "dependences/texture/icon.PNG");

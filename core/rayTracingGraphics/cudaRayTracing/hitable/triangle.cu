@@ -11,29 +11,20 @@ __host__ __device__ bool Triangle::hit(const ray& r, HitCoords& coord) const {
     const vec4f a = vertexBuffer[index[1]].point - r.getOrigin();
     const vec4f b = vertexBuffer[index[1]].point - vertexBuffer[index[2]].point;
     const vec4f c = vertexBuffer[index[1]].point - vertexBuffer[index[0]].point;
-    const vec4f d = r.getDirection();
+    const vec4f& d = r.getDirection();
 
     float det = det3(d, b, c);
-    if (det == 0.0f) {
-        return false;
-    }
+    if (det == 0.0f) return false;
     det = 1.0f / det;
 
     const float t = det3(a, b, c) * det;
-    if(t > coord.tmax || t < coord.tmin){
-        return false;
-    }
+    if(t > coord.tmax || t < coord.tmin) return false;
 
-    const float u = det3(d, a, c) * det;
-    const float v = det3(d, b, a) * det;
-    const float s = 1.0f - u - v;
+    const float u = det3(d, a, c) * det, v = det3(d, b, a) * det;
+    if (u < 0.0f || v < 0.0f || u + v > 1.0f) return false;
 
-    if (u >= 0.0f && v >= 0.0f && s >= 0.0f) {
-        coord = {coord.tmin, t, u, v};
-        return true;
-    }
-
-    return false;
+    coord = {coord.tmin, t, u , v};
+    return true;
 }
 
 #define interpolate(coord, val) coord.v * vertexBuffer[index[0]].val + coord.u * vertexBuffer[index[2]].val + s * vertexBuffer[index[1]].val
@@ -44,16 +35,12 @@ __device__ void Triangle::calcHitRecord(const ray& r, const HitCoords& coord, Hi
     rec.vertex.normal = normal(interpolate(coord, normal));
     rec.vertex.u = interpolate(coord, u);
     rec.vertex.v = interpolate(coord, v);
-    uchar4 texv = {0, 0, 0, 0};
-    if(texture != 0){
-        texv = tex2D<uchar4>(texture, rec.vertex.u, 1.0f - rec.vertex.v);
+    if(texture){
+        uchar4 color = tex2D<uchar4>(texture, rec.vertex.u, 1.0f - rec.vertex.v);
+        rec.vertex.color = vec4f(color.x, color.y, color.z, color.w) / 255.0f;
+    } else {
+        rec.vertex.color = interpolate(coord, color);
     }
-    rec.vertex.color = texture == 0 ? interpolate(coord, color) :
-        vec4f(
-            (float)texv.x / 255.0f,
-            (float)texv.y / 255.0f,
-            (float)texv.z / 255.0f,
-            1.0f);
     rec.vertex.props = {
         interpolate(coord, props.refractiveIndex),
         interpolate(coord, props.refractProb),

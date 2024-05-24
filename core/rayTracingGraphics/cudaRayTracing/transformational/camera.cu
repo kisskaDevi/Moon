@@ -7,8 +7,6 @@ __host__ __device__ void Camera::update(){
     vertical = vec4f::getVertical(viewRay.getDirection());
 }
 
-__host__ __device__ Camera::Camera(){}
-
 __host__ __device__ Camera::Camera(
     const ray viewRay,
     float aspect,

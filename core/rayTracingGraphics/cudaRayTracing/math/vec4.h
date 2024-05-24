@@ -1,6 +1,7 @@
 #ifndef VEC4H
 #define VEC4H
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <curand_kernel.h>
 
@@ -181,19 +182,19 @@ __device__ vec4<T> random_in_unit_sphere(const vec4<T>& direction, const T& angl
 }
 
 template<typename T>
+__host__ __device__ vec4<T> min(const vec4<T>& v1, const vec4<T>& v2) {
+    return vec4<T>( v1[0] < v2[0] ? v1[0] : v2[0],
+                   v1[1] < v2[1] ? v1[1] : v2[1],
+                   v1[2] < v2[2] ? v1[2] : v2[2],
+                   v1[3] < v2[3] ? v1[3] : v2[3]);
+}
+
+template<typename T>
 __host__ __device__ vec4<T> max(const vec4<T>& v1, const vec4<T>& v2) {
     return vec4<T>( v1[0] >= v2[0] ? v1[0] : v2[0],
                     v1[1] >= v2[1] ? v1[1] : v2[1],
                     v1[2] >= v2[2] ? v1[2] : v2[2],
                     v1[3] >= v2[3] ? v1[3] : v2[3]);
-}
-
-template<typename T>
-__host__ __device__ vec4<T> min(const vec4<T>& v1, const vec4<T>& v2) {
-    return vec4<T>( v1[0] < v2[0] ? v1[0] : v2[0],
-                    v1[1] < v2[1] ? v1[1] : v2[1],
-                    v1[2] < v2[2] ? v1[2] : v2[2],
-                    v1[3] < v2[3] ? v1[3] : v2[3]);
 }
 
 template<typename T>

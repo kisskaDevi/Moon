@@ -12,7 +12,7 @@ void Texture::create(const std::filesystem::path& texturePath){
     path = texturePath.empty() ? path : texturePath;
 
     int texWidth = 0, texHeight = 0, texChannels = 0;
-    uint8_t* datd = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    uint8_t* datd = stbi_load(path.string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
     buffer = Buffer<uint8_t>(4 * texWidth * texHeight, datd);
 

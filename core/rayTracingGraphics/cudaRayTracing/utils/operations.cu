@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "math/vec4.h"
+
 namespace cuda::rayTracing {
 
 void debug::check_cuda(cudaError_t result, char const* const func, const char* const file, int const line) {
@@ -14,7 +16,7 @@ void debug::check_cuda(cudaError_t result, char const* const func, const char* c
 }
 
 namespace cuda::Image {
-    void outPPM(vec4f* frameBuffer, size_t width, size_t height, const std::string& filename) {
+    void outPPM(void* frameBuffer, size_t width, size_t height, const std::string& filename) {
         vec4f* hostFrameBuffer = new vec4f[width * height];
         cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4f), cudaMemcpyDeviceToHost);
 
@@ -31,7 +33,7 @@ namespace cuda::Image {
         delete[] hostFrameBuffer;
     }
 
-    void outPGM(vec4f* frameBuffer, size_t width, size_t height, const std::string& filename) {
+    void outPGM(void* frameBuffer, size_t width, size_t height, const std::string& filename) {
         vec4f* hostFrameBuffer = new vec4f[width * height];
         cudaMemcpy(hostFrameBuffer, frameBuffer, width * height * sizeof(vec4f), cudaMemcpyDeviceToHost);
 

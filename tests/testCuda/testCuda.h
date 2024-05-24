@@ -10,14 +10,17 @@
 #include "controller.h"
 #include "vector.h"
 
-#include "transformational/camera.h"
-#include "transformational/object.h"
-
 #define IMGUI_GRAPHICS
 
 namespace moon::graphicsManager { class GraphicsManager;}
 namespace moon::imguiGraphics { class ImguiGraphics;}
 namespace moon::rayTracingGraphics { class RayTracingGraphics;}
+namespace cuda::rayTracing {
+struct Object;
+struct Camera;
+}
+
+#include "utils/devicep.h"
 
 class testCuda : public scene
 {
@@ -34,14 +37,7 @@ private:
 
     moon::graphicsManager::GraphicsManager *app{nullptr};
     GLFWwindow* window{nullptr};
-    cuda::rayTracing::Devicep<cuda::rayTracing::Camera> cam;
-    cuda::rayTracing::Camera hostcam =
-        cuda::rayTracing::Camera(
-            cuda::rayTracing::ray(
-                cuda::rayTracing::vec4f(2.0f, 0.0f, 2.0f, 1.0f),
-                cuda::rayTracing::vec4f(-1.0f, 0.0f, -1.0f, 0.0f)
-            ),
-        1.0f);
+    std::unique_ptr<cuda::rayTracing::Camera> hostcam;
 
     std::shared_ptr<controller> mouse;
     std::shared_ptr<controller> board;
@@ -56,6 +52,7 @@ private:
     bool onlyLeafsBB{false};
     bool enableBloom{true};
 
+    cuda::rayTracing::Devicep<cuda::rayTracing::Camera> cam;
     std::unordered_map<std::string, std::unique_ptr<cuda::rayTracing::Object>> objects;
 
     void mouseEvent(float frameTime);
@@ -63,7 +60,7 @@ private:
 
 public:
     testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
-    ~testCuda() = default;
+    ~testCuda();
     void create(uint32_t WIDTH, uint32_t HEIGHT) override;
     void resize(uint32_t WIDTH, uint32_t HEIGHT) override;
     void updateFrame(uint32_t frameNumber, float frameTime) override;

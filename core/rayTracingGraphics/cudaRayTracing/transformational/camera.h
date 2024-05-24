@@ -18,7 +18,8 @@ struct Camera {
 
     __host__ __device__ void update();
 
-    __host__ __device__ Camera();
+    __host__ __device__ Camera() {};
+    __host__ __device__ ~Camera() {};
 
     __host__ __device__ Camera(
         const ray viewRay,

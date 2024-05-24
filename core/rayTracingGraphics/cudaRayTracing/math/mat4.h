@@ -42,9 +42,9 @@ public:
     }
 
     __host__ __device__ mat4<T>& operator*=(const mat4<T>& m2){
-        for(size_t i = 0; i < 4; i++){
+        for(int i = 0; i < 4; i++){
             vec4<T> copy = row[i];
-            for(size_t j = 0; j < 4; j++){
+            for(int j = 0; j < 4; j++){
                 row[i][j] = dot(copy, vec4<T>(m2[0][j], m2[1][j], m2[2][j], m2[3][j]));
             }
         }
@@ -60,7 +60,7 @@ public:
 
     static mat4<T> identity(){
         mat4<T> m(0);
-        for(size_t i = 0; i < 4; i++){
+        for(int i = 0; i < 4; i++){
             m[i][i] = T(1);
         }
         return m;

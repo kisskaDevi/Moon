@@ -24,6 +24,8 @@
 
 #include <math/quat2.h>
 #include <math/mat4.h>
+#include "transformational/camera.h"
+#include "transformational/object.h"
 
 using namespace cuda::rayTracing;
 float pi = M_PI;
@@ -92,10 +94,10 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
             vec4f{-2.0f, -2.0f, 0.02f, 0.0f}
         };
         vec4f col[4] = {
-            vec4f{0.2, 0.9, 0.4, 1.0},
-            vec4f{0.9, 0.5, 0.2, 1.0},
-            vec4f{0.9, 0.4, 0.9, 1.0},
-            vec4f{0.0, 0.7, 0.9, 1.0}
+            vec4f{0.2f, 0.9f, 0.4f, 1.0f},
+            vec4f{0.9f, 0.5f, 0.2f, 1.0f},
+            vec4f{0.9f, 0.4f, 0.9f, 1.0f},
+            vec4f{0.0f, 0.7f, 0.9f, 1.0f}
         };
         for(int i = 0; i < 4; i++){
             objects["corner_light_plane_" + std::to_string(i)] = std::make_unique<Object>(
@@ -112,9 +114,9 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
             objects["box_" + std::to_string(i)] = std::make_unique<Object>(
                 new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
                              ObjModelInfo(Properties{ 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f, 0.9},
-                                          vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), 0.5f + 0.5 * std::sin(phi), 1.0f))),
-                trans(vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 1.5f + 1.4 * std::sin(phi), 0.0f))
-                    * toMat(quatf(phi, vec4f{std::cos(phi), std::sin(phi) * std::sin(phi), std::sin(phi) * std::cos(phi), 0.0}))
+                                          vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), 0.5f + 0.5f * std::sin(phi), 1.0f))),
+                trans(vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 1.5f + 1.4f * std::sin(phi), 0.0f))
+                    * toMat(quatf(phi, vec4f{std::cos(phi), std::sin(phi) * std::sin(phi), std::sin(phi) * std::cos(phi), 0.0f}))
                     * scale(vec4f{0.1f}));
         }
     }
@@ -132,7 +134,19 @@ testCuda::testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* wind
     std::memcpy(screenshot.data(), "screenshot", 10);
     board->sensitivity = 0.1f;
     mouse->sensitivity = 0.02f;
+
+    cam = Devicep<cuda::rayTracing::Camera>();
+
+    hostcam = std::make_unique<cuda::rayTracing::Camera>(
+        cuda::rayTracing::Camera(
+            cuda::rayTracing::ray(
+                cuda::rayTracing::vec4f(2.0f, 0.0f, 2.0f, 1.0f),
+                cuda::rayTracing::vec4f(-1.0f, 0.0f, -1.0f, 0.0f)
+                ),
+            1.0f));
 }
+
+testCuda::~testCuda() = default;
 
 void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
@@ -151,8 +165,8 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     }
     graphics->buildTree();
 
-    hostcam = Camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
-    cam = make_devicep<Camera>(hostcam);
+    hostcam->aspect = float(extent[0]) / float(extent[1]);
+    cam = make_devicep<Camera>(*hostcam);
 
     graphics->buildBoundingBoxes(false, true, false);
     graphics->setBlitFactor(blitFactor);
@@ -169,8 +183,8 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 {
     extent = {WIDTH, HEIGHT};
-    hostcam = Camera(hostcam.viewRay, float(extent[0]) / float(extent[1]));
-    cam = std::move(make_devicep<Camera>(hostcam));
+    hostcam->aspect = float(extent[0]) / float(extent[1]);
+    cam = make_devicep<Camera>(*hostcam);
     graphics->setExtent({extent[0],extent[1]});
 
     graphics->destroy();
@@ -182,7 +196,7 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
 
 void testCuda::updateFrame(uint32_t, float frameTime)
 {
-    hostcam = to_host(cam);
+    *hostcam = to_host(cam);
     glfwPollEvents();
 
 #ifdef IMGUI_GRAPHICS
@@ -225,7 +239,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     ImGui::Text("%s", title.c_str());
 
     if(ImGui::SliderFloat("focus", &focus, 0.03f, 0.1f, "%.5f")){
-        hostcam.focus = focus;
+        hostcam->focus = focus;
         graphics->clearFrame();
     }
 
@@ -233,7 +247,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
         graphics->setBlitFactor(blitFactor);
     }
 
-    vec4f o = hostcam.viewRay.getOrigin();
+    vec4f o = hostcam->viewRay.getOrigin();
     std::string camPos = std::to_string(o.x()) + " " + std::to_string(o.y()) + " " + std::to_string(o.z());
     ImGui::Text("%s", camPos.c_str());
 
@@ -263,7 +277,7 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     mouseEvent(frameTime);
     keyboardEvent(frameTime);
 #endif
-    to_device(hostcam, cam);
+    to_device(*hostcam, cam);
 }
 
 void testCuda::mouseEvent(float frameTime)
@@ -275,9 +289,9 @@ void testCuda::mouseEvent(float frameTime)
         float dcos = std::cos(ms * static_cast<float>(mousePos[0] - x));
         float dsin = std::sin(ms * static_cast<float>(mousePos[0] - x));
         float dz = ms * static_cast<float>(mousePos[1] - y);
-        const vec4f& d = hostcam.viewRay.getDirection();
-        const vec4f& o = hostcam.viewRay.getOrigin();
-        hostcam.viewRay = ray(o, vec4f(d.x() * dcos - d.y() * dsin, d.y() * dcos + d.x() * dsin, d.z() + dz, 0.0f));
+        const vec4f& d = hostcam->viewRay.getDirection();
+        const vec4f& o = hostcam->viewRay.getOrigin();
+        hostcam->viewRay = ray(o, vec4f(d.x() * dcos - d.y() * dsin, d.y() * dcos + d.x() * dsin, d.z() + dz, 0.0f));
 
         graphics->clearFrame();
     }
@@ -287,17 +301,17 @@ void testCuda::mouseEvent(float frameTime)
 void testCuda::keyboardEvent(float frameTime)
 {
     auto moveCamera = [this](vec4f deltaOrigin){
-        hostcam.viewRay = ray(hostcam.viewRay.getOrigin() + deltaOrigin, hostcam.viewRay.getDirection());
+        hostcam->viewRay = ray(hostcam->viewRay.getOrigin() + deltaOrigin, hostcam->viewRay.getDirection());
         graphics->clearFrame();
     };
 
     const float bs = board->sensitivity * frameTime * 40;
-    if(board->pressed(GLFW_KEY_W)) moveCamera( bs * hostcam.viewRay.getDirection());
-    if(board->pressed(GLFW_KEY_S)) moveCamera(-bs * hostcam.viewRay.getDirection());
-    if(board->pressed(GLFW_KEY_D)) moveCamera( bs * vec4f::getHorizontal(hostcam.viewRay.getDirection()));
-    if(board->pressed(GLFW_KEY_A)) moveCamera(-bs * vec4f::getHorizontal(hostcam.viewRay.getDirection()));
-    if(board->pressed(GLFW_KEY_X)) moveCamera( bs * vec4f::getVertical(hostcam.viewRay.getDirection()));
-    if(board->pressed(GLFW_KEY_Z)) moveCamera(-bs * vec4f::getVertical(hostcam.viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_W)) moveCamera( bs * hostcam->viewRay.getDirection());
+    if(board->pressed(GLFW_KEY_S)) moveCamera(-bs * hostcam->viewRay.getDirection());
+    if(board->pressed(GLFW_KEY_D)) moveCamera( bs * vec4f::getHorizontal(hostcam->viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_A)) moveCamera(-bs * vec4f::getHorizontal(hostcam->viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_X)) moveCamera( bs * vec4f::getVertical(hostcam->viewRay.getDirection()));
+    if(board->pressed(GLFW_KEY_Z)) moveCamera(-bs * vec4f::getVertical(hostcam->viewRay.getDirection()));
 
     if(board->released(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window,GLFW_TRUE);
 }

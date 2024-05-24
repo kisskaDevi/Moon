@@ -16,7 +16,7 @@
 #include "boundingBoxGraphics.h"
 #include <bloom.h>
 
-namespace cuda::rayTracing { class Object;}
+namespace cuda::rayTracing { struct Object;}
 
 namespace moon::rayTracingGraphics {
 

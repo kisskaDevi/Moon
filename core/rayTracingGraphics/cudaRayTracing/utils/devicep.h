@@ -1,7 +1,7 @@
 #ifndef DEVICEP_H
 #define DEVICEP_H
 
-#include "utils/operations.h"
+#include "operations.h"
 
 namespace cuda::rayTracing {
 

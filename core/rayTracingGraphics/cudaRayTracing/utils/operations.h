@@ -1,8 +1,8 @@
 #ifndef CUDA_OPERATIONSH
 #define CUDA_OPERATIONSH
 
-#include "math/vec4.h"
 #include <string>
+#include <curand_kernel.h>
 
 namespace cuda::rayTracing {
 
@@ -20,13 +20,13 @@ namespace debug {
 namespace image {
 
     void outPPM(
-        vec4f*                  frameBuffer,
+        void*                   frameBuffer,
         size_t                  width,
         size_t                  height,
         const std::string&      filename);
 
     void outPGM(
-        vec4f*                  frameBuffer,
+        void*                   frameBuffer,
         size_t                  width,
         size_t                  height,
         const std::string&      filename);

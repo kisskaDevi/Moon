@@ -66,8 +66,8 @@ void RayTracing::buildTree(){
     hostContainer.makeTree();
 
     devContainer = make_devicep<Container_dev>(Container_dev());
-    auto hitables = extractHitables(hostContainer.storage);
-    add(devContainer.get(), hitables);
+    const auto hitables = extractHitables(hostContainer.storage);
+    HitableContainer::add(devContainer.get(), hitables);
 
     if(std::is_same<Container_dev, HitableKDTree>::value){
         const std::vector<NodeDescriptor> nodeDescriptors = hostContainer.buildNodeDescriptors();

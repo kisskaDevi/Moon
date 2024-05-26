@@ -16,7 +16,7 @@ struct Primitive{
 };
 
 void sortByBox(std::vector<const Primitive*>::iterator begin, std::vector<const Primitive*>::iterator end, const box& bbox);
-std::vector<Hitable*> extractHitables(const std::vector<const Primitive*>& storage);
+std::vector<const Hitable*> extractHitables(const std::vector<const Primitive*>& storage);
 
 }
 #endif // PRIMITIVE_H

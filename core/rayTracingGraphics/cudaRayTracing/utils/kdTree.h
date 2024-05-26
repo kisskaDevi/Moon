@@ -194,16 +194,16 @@ public:
         return root->hit(r, coord);
     }
 
-    __host__ __device__ void add(Hitable** objects, size_t size = 1) override{
+    __host__ __device__ void add(const Hitable*const* objects, size_t size = 1) override{
         storage->add(objects, size);
     }
 
-    __host__ __device__ Hitable*& operator[](uint32_t i) const override{
+    __host__ __device__ const Hitable*& operator[](uint32_t i) const override{
         return (*storage)[i];
     }
 
     __host__ __device__ void makeTree(KDNodeType* nodesBuffer, NodeDescriptor nodeDescriptor) {
-        KDNode<container::iterator>* curr = &nodesBuffer[nodeDescriptor.curr];
+        KDNodeType* curr = &nodesBuffer[nodeDescriptor.curr];
 
         curr->begin = storage->begin() + nodeDescriptor.offset;
         curr->size = nodeDescriptor.size;

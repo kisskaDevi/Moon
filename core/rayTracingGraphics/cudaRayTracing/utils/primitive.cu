@@ -11,8 +11,8 @@ void sortByBox(std::vector<const Primitive*>::iterator begin, std::vector<const 
     });
 }
 
-std::vector<Hitable*> extractHitables(const std::vector<const Primitive*>& storage){
-    std::vector<Hitable*> hitables;
+std::vector<const Hitable*> extractHitables(const std::vector<const Primitive*>& storage){
+    std::vector<const Hitable*> hitables;
     for(const auto& p : storage){
         hitables.push_back(p->hit());
     }

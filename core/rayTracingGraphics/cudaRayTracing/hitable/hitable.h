@@ -32,7 +32,7 @@ struct HitCoords{
     float tmax{std::numeric_limits<float>::max()};
     float u{0.0f};
     float v{0.0f};
-    Hitable* obj{nullptr};
+    const Hitable* obj{nullptr};
 
     __host__ __device__ bool check() const { return obj && tmax != std::numeric_limits<float>::max();}
 };

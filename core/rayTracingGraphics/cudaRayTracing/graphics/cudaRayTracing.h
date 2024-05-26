@@ -1,7 +1,6 @@
 #ifndef CUDARAYTRACING
 #define CUDARAYTRACING
 
-#include "math/vec4.h"
 #include "transformational/camera.h"
 #include "transformational/object.h"
 #include "utils/buffer.h"

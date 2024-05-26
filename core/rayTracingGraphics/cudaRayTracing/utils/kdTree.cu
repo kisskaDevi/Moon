@@ -4,14 +4,24 @@
 
 namespace cuda::rayTracing {
 
-__global__ void createTreeKernel(HitableKDTree* tree, uint32_t* offsets, box* boxes, HitableKDTree::KDNodeType* nodes)
+__global__ void setRootKernel(HitableKDTree* tree, HitableKDTree::KDNodeType* nodes)
 {
-    tree->makeTree(offsets, boxes, nodes);
+    tree->setRoot(&nodes[0]);
 }
 
-void makeTree(HitableKDTree* container, uint32_t* offsets, box* boxes, size_t size){
+__global__ void createTreeKernel(HitableKDTree* tree, uint32_t* offsets, uint32_t* sizes, box* boxes, uint32_t* current, uint32_t* left, uint32_t* right, HitableKDTree::KDNodeType* nodes)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    tree->makeTree(offsets, sizes, boxes, nodes, current, left, right, i);
+}
+
+void makeTree(HitableKDTree* container, uint32_t* offsets, uint32_t* sizes, box* boxes, uint32_t* current, uint32_t* left, uint32_t* right, size_t size){
     Buffer<HitableKDTree::KDNodeType> nodes(size);
-    createTreeKernel<<<1,1>>>(container, offsets, boxes, nodes.release());
+    setRootKernel<<<1,1>>>(container, nodes.get());
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+
+    createTreeKernel<<<size,1>>>(container, offsets, sizes, boxes, current, left, right, nodes.release());
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }

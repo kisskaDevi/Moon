@@ -66,14 +66,21 @@ void RayTracing::buildTree(){
     hostContainer.makeTree();
 
     devContainer = make_devicep<Container_dev>(Container_dev());
-    add(devContainer.get(), extractHitables(hostContainer.storage));
+    auto hitables = extractHitables(hostContainer.storage);
+    add(devContainer.get(), hitables);
 
     if(std::is_same<Container_dev, HitableKDTree>::value){
+        const auto linearOffsets = hostContainer.getLinearOffsets();
         const auto linearSizes = hostContainer.getLinearSizes();
         const auto linearBoxes = hostContainer.getLinearBoxes();
+        const auto nodes = hostContainer.buildLeftRight();
+        Buffer<uint32_t> devNodeOffsets(linearOffsets.size(), (uint32_t*) linearOffsets.data());
         Buffer<uint32_t> devNodeCounter(linearSizes.size(), (uint32_t*) linearSizes.data());
         Buffer<box> devNodeBox(linearBoxes.size(), (box*) linearBoxes.data());
-        makeTree((HitableKDTree*)devContainer.get(), devNodeCounter.get(), devNodeBox.get(), linearSizes.size());
+        Buffer<uint32_t> devNodeLeft(nodes.left.size(), (uint32_t*) nodes.left.data());
+        Buffer<uint32_t> devNodeRight(nodes.right.size(), (uint32_t*) nodes.right.data());
+        Buffer<uint32_t> devNodeCurr(nodes.curr.size(), (uint32_t*) nodes.curr.data());
+        makeTree((HitableKDTree*)devContainer.get(), devNodeOffsets.get(), devNodeCounter.get(), devNodeBox.get(), devNodeCurr.get(), devNodeLeft.get(), devNodeRight.get(), linearSizes.size());
     }
 }
 

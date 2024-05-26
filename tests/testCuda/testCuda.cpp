@@ -113,7 +113,13 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
             float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
             objects["box_" + std::to_string(i)] = std::make_unique<Object>(
                 new ObjModel(ExternalPath / "dependences/model/obj/box/box.obj",
-                             ObjModelInfo(Properties{ 0.0f, 0.0f, std::sin(phi), std::abs(std::sin(phi) * std::cos(phi)) * pi, 0.0f, 0.9},
+                             ObjModelInfo(
+                                 Properties{0.0f,
+                                            0.0f,
+                                            std::sin(phi) * std::sin(phi),
+                                            std::abs(std::sin(phi) + std::cos(phi)) * pi,
+                                            0.0f,
+                                            0.9},
                                           vec4f(std::abs(std::cos(phi)), std::abs(std::sin(phi)), 0.5f + 0.5f * std::sin(phi), 1.0f))),
                 trans(vec4f(2.8f * std::cos(phi), 2.8f * std::sin(phi), 1.5f + 1.4f * std::sin(phi), 0.0f))
                     * toMat(quatf(phi, vec4f{std::cos(phi), std::sin(phi) * std::sin(phi), std::sin(phi) * std::cos(phi), 0.0f}))

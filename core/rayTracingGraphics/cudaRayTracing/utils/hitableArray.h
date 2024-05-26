@@ -20,7 +20,7 @@ public:
 
     __host__ __device__ bool hit(const ray& r, HitCoords& coord) const override;
 
-    __host__ __device__ void add(Hitable* object) override;
+    __host__ __device__ void add(Hitable** objects, size_t size = 1) override;
 
     __host__ __device__ Hitable*& operator[](uint32_t i) const override;
 

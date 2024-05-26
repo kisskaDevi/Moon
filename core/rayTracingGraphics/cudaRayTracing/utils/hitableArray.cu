@@ -18,15 +18,17 @@ __host__ __device__ bool HitableArray::hit(const ray& r, HitCoords& coord) const
     return coord.obj;
 }
 
-__host__ __device__ void HitableArray::add(Hitable* object) {
-    Pointer* newArray = new Pointer[container_size + 1];
+__host__ __device__ void HitableArray::add(Hitable** object, size_t size) {
+    Pointer* newArray = new Pointer[container_size + size];
     for(size_t i = 0; i < container_size; i++){
         newArray[i] = array[i];
     }
-    newArray[container_size].p = object;
+    for(size_t i = 0; i < size; i++){
+        newArray[container_size + i].p = object[i];
+    }
     delete[] array;
     array = newArray;
-    container_size++;
+    container_size += size;
 }
 
 __host__ __device__ Hitable*& HitableArray::operator[](uint32_t i) const {

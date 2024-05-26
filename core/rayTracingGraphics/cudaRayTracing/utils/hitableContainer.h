@@ -37,7 +37,7 @@ public:
     __host__ __device__ virtual ~HitableContainer(){}
     __host__ __device__ virtual bool hit(const ray& r, HitCoords& coord) const = 0;
 
-    __host__ __device__ virtual void add(Hitable* objects) = 0;
+    __host__ __device__ virtual void add(Hitable** objects, size_t size = 1) = 0;
 
     __host__ __device__ virtual Hitable*& operator[](uint32_t i) const = 0;
     __host__ __device__ virtual size_t size() const { return container_size; }
@@ -45,7 +45,7 @@ public:
     static void destroy(HitableContainer* dpointer);
 };
 
-void add(HitableContainer* container, const std::vector<Hitable*>& objects);
+void add(HitableContainer* container, std::vector<Hitable*>& objects);
 
 }
 #endif // HITABLECONTAINER_H

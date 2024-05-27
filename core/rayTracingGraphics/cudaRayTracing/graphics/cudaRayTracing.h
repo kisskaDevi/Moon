@@ -43,9 +43,6 @@ private:
 
 public:
 
-    RayTracing();
-    ~RayTracing();
-
     void setExtent(uint32_t width, uint32_t height);
     void bind(Object* obj);
     void setCamera(Devicep<Camera>* cam);

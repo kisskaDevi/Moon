@@ -30,7 +30,7 @@ public:
     Buffer(Buffer&& other) = default;
     Buffer& operator=(Buffer&& other) = default;
 
-    type* get() { return memory();}
+    type* get() { return memory;}
     size_t getSize() { return size;}
     type* release() { return memory.release();}
 };

@@ -2,11 +2,9 @@
 #include "operations.h"
 #include "ray.h"
 #include "material.h"
+#include "utils/timer.h"
 
 namespace cuda::rayTracing {
-
-RayTracing::RayTracing(){}
-RayTracing::~RayTracing(){}
 
 void RayTracing::setExtent(uint32_t width, uint32_t height){
     this->width = width;
@@ -63,16 +61,24 @@ void RayTracing::create()
 }
 
 void RayTracing::buildTree(){
+    Timer timer("RayTracing::buildTree");
+
     hostContainer.makeTree();
+
+    timer.elapsedTime("RayTracing::buildTree : make host tree");
 
     devContainer = make_devicep<Container_dev>(Container_dev());
     const auto hitables = extractHitables(hostContainer.storage);
-    HitableContainer::add(devContainer.get(), hitables);
+    HitableContainer::add(devContainer, hitables);
+
+    timer.elapsedTime("RayTracing::buildTree : copy hitables to device");
 
     if(std::is_same<Container_dev, HitableKDTree>::value){
         const std::vector<NodeDescriptor> nodeDescriptors = hostContainer.buildNodeDescriptors();
         Buffer<NodeDescriptor> devNodeDescriptors(nodeDescriptors.size(), (NodeDescriptor*) nodeDescriptors.data());
         makeTree((HitableKDTree*)devContainer.get(), devNodeDescriptors.get(), nodeDescriptors.size());
+
+        timer.elapsedTime("RayTracing::buildTree : make device tree");
     }
 }
 

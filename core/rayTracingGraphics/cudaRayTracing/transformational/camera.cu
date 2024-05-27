@@ -24,14 +24,10 @@ __host__ __device__ Camera::Camera(
     update();
 }
 
-__host__ __device__ Camera::Camera(const ray& viewRay, float aspect) : viewRay(viewRay), aspect(aspect){
-    update();
-}
-
-__device__ ray Camera::getPixelRay(float u, float v, curandState* local_rand_state) const {
+__device__ ray Camera::getPixelRay(float u, float v, curandState* randState) const {
     const float t = focus / (matrixOffset - focus);
-    u = matrixScale * t * u + apertura * float(curand_uniform(local_rand_state));
-    v = matrixScale * t * v + apertura * float(curand_uniform(local_rand_state));
+    u = matrixScale * t * u + apertura * float(curand_uniform(randState));
+    v = matrixScale * t * v + apertura * float(curand_uniform(randState));
     return ray(viewRay.point(matrixOffset), t * matrixOffset * viewRay.getDirection() - (u * horizontal + v * vertical));
 }
 

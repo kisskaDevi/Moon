@@ -26,6 +26,7 @@
 #include <math/mat4.h>
 #include "transformational/camera.h"
 #include "transformational/object.h"
+#include "timer.h"
 
 using namespace cuda::rayTracing;
 float pi = M_PI;
@@ -108,7 +109,7 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
     }
 
     {
-        size_t num = 50;
+        size_t num = 100;
         for (int i = 0; i < num; i++) {
             float phi = 2.0f * pi * static_cast<float>(i) / static_cast<float>(num);
             objects["box_" + std::to_string(i)] = std::make_unique<Object>(
@@ -156,8 +157,12 @@ testCuda::~testCuda() = default;
 
 void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
 {
+    Timer timer("testCuda::create");
+
     extent = {WIDTH, HEIGHT};
     createWorld(objects, ExternalPath);
+
+    timer.elapsedTime("testCuda::create : createWorld");
 
     graphics = std::make_shared<moon::rayTracingGraphics::RayTracingGraphics>(
         ExternalPath / "core/rayTracingGraphics/spv",
@@ -166,10 +171,23 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     app->setGraphics(graphics.get());
     graphics->create();
 
+#ifdef IMGUI_GRAPHICS
+    gui = std::make_shared<moon::imguiGraphics::ImguiGraphics>(window, app->getInstance(), app->getImageCount());
+    app->setGraphics(gui.get());
+    gui->create();
+#endif
+
+    timer.elapsedTime("testCuda::create : create graphics");
+
     for(auto& [name, object]: objects){
         graphics->bind(object.get());
     }
+
+    timer.elapsedTime("testCuda::create : bind objects");
+
     graphics->buildTree();
+
+    timer.elapsedTime("testCuda::create : build tree");
 
     hostcam->aspect = float(extent[0]) / float(extent[1]);
     cam = make_devicep<Camera>(*hostcam);
@@ -178,12 +196,6 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics->setBlitFactor(blitFactor);
     graphics->setCamera(&cam);
     graphics->setEnableBoundingBox(enableBB);
-
-#ifdef IMGUI_GRAPHICS
-    gui = std::make_shared<moon::imguiGraphics::ImguiGraphics>(window, app->getInstance(), app->getImageCount());
-    app->setGraphics(gui.get());
-    gui->create();
-#endif
 }
 
 void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)

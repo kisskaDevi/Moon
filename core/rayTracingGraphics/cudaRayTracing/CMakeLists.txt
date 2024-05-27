@@ -26,7 +26,6 @@ set(SOURCES
     transformational/camera.cu
     utils/hitableArray.cu
     utils/hitableContainer.cu
-
     utils/operations.cu
     utils/kdTree.cu
     utils/primitive.cu
@@ -52,7 +51,7 @@ set(HEADERS
     utils/buffer.h
     utils/hitableArray.h
     utils/hitableContainer.h
-
+    utils/timer.h
     utils/operations.h
     utils/devicep.h
     utils/kdTree.h

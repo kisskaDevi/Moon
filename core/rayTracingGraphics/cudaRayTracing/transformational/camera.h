@@ -23,15 +23,13 @@ struct Camera {
 
     __host__ __device__ Camera(
         const ray viewRay,
-        float aspect,
-        float matrixScale,
-        float matrixOffset,
-        float focus,
-        float apertura);
+        float aspect = 1.0f,
+        float matrixScale = 0.04f,
+        float matrixOffset = 0.05f,
+        float focus = 0.049f,
+        float apertura = 0.0005f);
 
-    __host__ __device__ Camera(const ray& viewRay, float aspect);
-
-    __device__ ray getPixelRay(float u, float v, curandState* local_rand_state) const ;
+    __device__ ray getPixelRay(float u, float v, curandState* randState) const ;
     __host__ __device__ ray getPixelRay(float u, float v) const ;
 };
 

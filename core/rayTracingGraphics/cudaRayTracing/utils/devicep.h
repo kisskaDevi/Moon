@@ -92,7 +92,7 @@ public:
         return pointer;
     }
 
-    type* operator()() const {
+    operator type*() const {
         return get();
     }
 

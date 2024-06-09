@@ -5,7 +5,9 @@
 namespace cuda::rayTracing {
 
 __host__ __device__ HitableArray::~HitableArray() {
-    delete[] array;
+    if (array) {
+        delete[] array;
+    }
     container_size = 0;
 }
 
@@ -26,7 +28,9 @@ __host__ __device__ void HitableArray::add(const Hitable*const* object, size_t s
     for(size_t i = 0; i < size; i++){
         newArray[container_size + i].p = object[i];
     }
-    delete[] array;
+    if (array) {
+        delete[] array;
+    }
     array = newArray;
     container_size += size;
 }

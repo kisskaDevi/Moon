@@ -1,6 +1,7 @@
 #include "hitableContainer.h"
 
-#include "operations.h"
+#include "utils/operations.h"
+#include "utils/buffer.h"
 
 namespace cuda::rayTracing {
 
@@ -9,7 +10,8 @@ __global__ void addKernel(HitableContainer* container, const Hitable* const* obj
 }
 
 void HitableContainer::add(HitableContainer* dpointer, const std::vector<const Hitable*>& objects) {
-    addKernel<<<1,1>>>(dpointer, objects.data(), objects.size());
+    Buffer<const Hitable*> devBuffer(objects.size(), objects.data());
+    addKernel<<<1,1>>>(dpointer, devBuffer.get(), devBuffer.getSize());
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 }

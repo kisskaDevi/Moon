@@ -128,8 +128,6 @@ private:
     void createLightingDescriptorSets();
     void updateLightingDescriptorSets(const moon::utils::BuffersDatabase& bDatabase);
 
-    void setAttachments();
-
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();

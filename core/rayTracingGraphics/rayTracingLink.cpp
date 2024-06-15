@@ -46,15 +46,10 @@ void RayTracingLink::createDescriptorSetLayout() {
     vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout);
 }
 
-void RayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo)
-{
-    auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/linkableVert.spv");
-    auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "linkable/linkableFrag.spv");
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
-        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)};
+void RayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo) {
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "linkable/linkableVert.spv");
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "linkable/linkableFrag.spv");
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
     VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
@@ -99,9 +94,6 @@ void RayTracingLink::createPipeline(moon::utils::ImageInfo* pInfo)
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.back().pDepthStencilState = &depthStencil;
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline);
-
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 void RayTracingLink::createDescriptorPool() {

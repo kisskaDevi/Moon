@@ -68,12 +68,9 @@ void ShadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
     materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 }
 
-void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
-{
-    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device,vertShaderCode);
-    VkPipelineShaderStageCreateInfo vertShaderStageInfo = moon::utils::vkDefault::vertrxShaderStage(vertShaderModule);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vertShaderStageInfo};
+void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) {
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader };
 
     auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
     auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
@@ -130,8 +127,6 @@ void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageI
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipeline.create(device, pipelineInfo));
-
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)

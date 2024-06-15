@@ -8,14 +8,9 @@ struct LightPassPushConst{
 };
 
 void Graphics::AmbientLighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
-    auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "ambientLightingPass/ambientLightingVert.spv");
-    auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "ambientLightingPass/ambientLightingFrag.spv");
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
-        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
-    };
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "ambientLightingPass/ambientLightingVert.spv");
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "ambientLightingPass/ambientLightingFrag.spv");
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
     VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
@@ -61,9 +56,6 @@ void Graphics::AmbientLighting::createPipeline(VkDevice device, moon::utils::Ima
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipeline.create(device, pipelineInfo));
-
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
 
 void Graphics::AmbientLighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const {

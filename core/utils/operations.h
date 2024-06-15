@@ -320,7 +320,7 @@ namespace shaderModule {
             const std::filesystem::path&    filename);
 
     VkShaderModule create(
-            VkDevice*                       device,
+            VkDevice                        device,
             const std::vector<char>&        code);
 }
 

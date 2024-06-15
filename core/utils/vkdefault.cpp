@@ -1,4 +1,5 @@
 #include "vkdefault.h"
+#include "operations.h"
 
 namespace moon::utils {
 
@@ -21,24 +22,6 @@ VkSamplerCreateInfo vkDefault::samler(){
         SamplerInfo.maxLod = 0.0f;
         SamplerInfo.mipLodBias = 0.0f;
     return SamplerInfo;
-}
-
-VkPipelineShaderStageCreateInfo vkDefault::fragmentShaderStage(VkShaderModule shaderModule){
-    VkPipelineShaderStageCreateInfo shaderStages{};
-        shaderStages.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages.module = shaderModule;
-        shaderStages.pName = "main";
-    return shaderStages;
-}
-
-VkPipelineShaderStageCreateInfo vkDefault::vertrxShaderStage(VkShaderModule shaderModule){
-    VkPipelineShaderStageCreateInfo shaderStages{};
-        shaderStages.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages.module = shaderModule;
-        shaderStages.pName = "main";
-    return shaderStages;
 }
 
 VkPipelineInputAssemblyStateCreateInfo vkDefault::inputAssembly(){
@@ -321,5 +304,69 @@ vkDefault::DescriptorSetLayout::operator const VkDescriptorSetLayout* () const {
     return &descriptorSetLayout;
 }
 
+vkDefault::ShaderModule::~ShaderModule() {
+    destroy();
+}
+
+vkDefault::ShaderModule::ShaderModule(VkDevice device, const std::filesystem::path& shaderPath) :
+    shaderModule(moon::utils::shaderModule::create(device, moon::utils::shaderModule::readFile(shaderPath))), device(device)
+{}
+
+void vkDefault::ShaderModule::destroy() {
+    if (shaderModule) {
+        vkDestroyShaderModule(device, shaderModule, nullptr);
+        shaderModule = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::ShaderModule::operator const VkShaderModule& () const {
+    return shaderModule;
+}
+
+vkDefault::FragmentShaderModule::~FragmentShaderModule() {
+    destroy();
+}
+
+void vkDefault::FragmentShaderModule::destroy() {
+    vkDefault::ShaderModule::destroy();
+    pipelineShaderStageCreateInfo = VkPipelineShaderStageCreateInfo{};
+    specializationInfo = VkSpecializationInfo{};
+}
+
+vkDefault::FragmentShaderModule::FragmentShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo) :
+    ShaderModule(device, shaderPath), specializationInfo(specializationInfo) {
+    pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pipelineShaderStageCreateInfo.module = shaderModule;
+    pipelineShaderStageCreateInfo.pName = "main";
+    pipelineShaderStageCreateInfo.pSpecializationInfo = &this->specializationInfo;
+}
+
+vkDefault::FragmentShaderModule::operator const VkPipelineShaderStageCreateInfo& () const {
+    return pipelineShaderStageCreateInfo;
+}
+
+vkDefault::VertrxShaderModule::~VertrxShaderModule() {
+    destroy();
+}
+
+void vkDefault::VertrxShaderModule::destroy() {
+    vkDefault::ShaderModule::destroy();
+    pipelineShaderStageCreateInfo = VkPipelineShaderStageCreateInfo{};
+    specializationInfo = VkSpecializationInfo{};
+}
+
+vkDefault::VertrxShaderModule::VertrxShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo) :
+    ShaderModule(device, shaderPath), specializationInfo(specializationInfo) {
+    pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    pipelineShaderStageCreateInfo.module = shaderModule;
+    pipelineShaderStageCreateInfo.pName = "main";
+    pipelineShaderStageCreateInfo.pSpecializationInfo = &this->specializationInfo;
+}
+
+vkDefault::VertrxShaderModule::operator const VkPipelineShaderStageCreateInfo& () const {
+    return pipelineShaderStageCreateInfo;
+}
 
 }

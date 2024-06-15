@@ -3,14 +3,12 @@
 
 #include <vulkan.h>
 #include <vector>
+#include <filesystem>
 #include <unordered_map>
 
 namespace moon::utils::vkDefault {
 
 VkSamplerCreateInfo samler();
-
-VkPipelineShaderStageCreateInfo fragmentShaderStage(VkShaderModule shaderModule);
-VkPipelineShaderStageCreateInfo vertrxShaderStage(VkShaderModule shaderModule);
 
 VkPipelineVertexInputStateCreateInfo vertexInputState();
 VkViewport viewport(VkOffset2D offset, VkExtent2D extent);
@@ -116,6 +114,89 @@ public:
 };
 
 using DescriptorSetLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::DescriptorSetLayout>;
+
+class ShaderModule {
+protected:
+	VkShaderModule shaderModule{ VK_NULL_HANDLE };
+	VkDevice device{ VK_NULL_HANDLE };
+public:
+	virtual ~ShaderModule();
+	ShaderModule() = default;
+	ShaderModule(const ShaderModule&) = delete;
+	ShaderModule& operator=(const ShaderModule&) = delete;
+	ShaderModule(ShaderModule&& other) {
+		std::swap(shaderModule, other.shaderModule);
+		std::swap(device, other.device);
+	}
+	ShaderModule& operator=(ShaderModule&& other) {
+		destroy();
+		std::swap(shaderModule, other.shaderModule);
+		std::swap(device, other.device);
+		return *this;
+	}
+
+	ShaderModule(VkDevice device, const std::filesystem::path& shaderPath);
+	virtual void destroy();
+	operator const VkShaderModule& () const;
+};
+
+class FragmentShaderModule : public ShaderModule {
+private:
+	VkSpecializationInfo specializationInfo{};
+	VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo{};
+public:
+	~FragmentShaderModule();
+	FragmentShaderModule() = default;
+	FragmentShaderModule(const FragmentShaderModule&) = delete;
+	FragmentShaderModule& operator=(const FragmentShaderModule&) = delete;
+	FragmentShaderModule(FragmentShaderModule&& other) {
+		std::swap(shaderModule, other.shaderModule);
+		std::swap(device, other.device);
+		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
+		std::swap(specializationInfo, other.specializationInfo);
+	}
+	FragmentShaderModule& operator=(FragmentShaderModule&& other) {
+		destroy();
+		std::swap(shaderModule, other.shaderModule);
+		std::swap(device, other.device);
+		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
+		std::swap(specializationInfo, other.specializationInfo);
+		return *this;
+	}
+
+	FragmentShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo = VkSpecializationInfo{});
+	void destroy();
+	operator const VkPipelineShaderStageCreateInfo& () const;
+};
+
+class VertrxShaderModule : public ShaderModule {
+private:
+	VkSpecializationInfo specializationInfo{};
+	VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo{};
+public:
+	~VertrxShaderModule();
+	VertrxShaderModule() = default;
+	VertrxShaderModule(const VertrxShaderModule&) = delete;
+	VertrxShaderModule& operator=(const VertrxShaderModule&) = delete;
+	VertrxShaderModule(VertrxShaderModule&& other) {
+		std::swap(shaderModule, other.shaderModule);
+		std::swap(device, other.device);
+		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
+		std::swap(specializationInfo, other.specializationInfo);
+	}
+	VertrxShaderModule& operator=(VertrxShaderModule&& other) {
+		destroy();
+		std::swap(shaderModule, other.shaderModule);
+		std::swap(device, other.device);
+		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
+		std::swap(specializationInfo, other.specializationInfo);
+		return *this;
+	}
+
+	VertrxShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo = VkSpecializationInfo{});
+	void destroy();
+	operator const VkPipelineShaderStageCreateInfo& () const;
+};
 
 }
 #endif // VKDEFAULT_H

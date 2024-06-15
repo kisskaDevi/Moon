@@ -84,14 +84,9 @@ void BoundingBoxGraphics::createDescriptorSetLayout(){
 }
 
 void BoundingBoxGraphics::createPipeline(){
-    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
-        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
-    };
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, image.Extent);
     VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, image.Extent);
@@ -145,9 +140,6 @@ void BoundingBoxGraphics::createPipeline(){
     pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &pipeline));
-
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 void BoundingBoxGraphics::createDescriptorPool(){

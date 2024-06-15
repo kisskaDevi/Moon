@@ -9,14 +9,9 @@ namespace moon::deferredGraphics {
 void Graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
     uint8_t key = mask;
 
-    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShadersPath);
-    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShadersPath);
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
-        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
-    };
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShadersPath);
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShadersPath);
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
     VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
@@ -70,9 +65,6 @@ void Graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::uti
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipelineMap[key].create(device, pipelineInfo));
-
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 }

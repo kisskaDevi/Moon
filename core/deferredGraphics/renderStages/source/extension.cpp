@@ -18,14 +18,9 @@ struct OutliningPushConstBlock {
 }
 
 void Graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
-    auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "outlining/outliningVert.spv");
-    auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "outlining/outliningFrag.spv");
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
-        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
-    };
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "outlining/outliningVert.spv");
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "outlining/outliningFrag.spv");
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
     auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
@@ -93,9 +88,6 @@ void Graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     CHECK(pipeline.create(device, pipelineInfo));
-
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
 
 void Graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const

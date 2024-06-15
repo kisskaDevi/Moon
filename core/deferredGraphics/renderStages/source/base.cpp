@@ -46,15 +46,9 @@ void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         specializationInfo.dataSize = sizeof(VkBool32) * transparencyData.size();
         specializationInfo.pData = transparencyData.data();
 
-    auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "base/baseVert.spv");
-    auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "base/baseFrag.spv");
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
-        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
-    };
-    shaderStages.back().pSpecializationInfo = &specializationInfo;
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "base/baseVert.spv");
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "base/baseFrag.spv", specializationInfo);
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vertShader, fragShader};
 
     auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
     auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
@@ -125,9 +119,6 @@ void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
     CHECK(pipelineLayoutMap[outliningMask].create(device, descriptorSetLayout, pushConstantRange));
         pipelineInfo.back().layout = pipelineLayoutMap[outliningMask];
     CHECK(pipelineMap[outliningMask].create(device, pipelineInfo));
-
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 void Graphics::createBaseDescriptorPool()

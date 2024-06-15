@@ -116,15 +116,9 @@ void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::Im
         specializationInfo.dataSize = sizeof(specializationData);
         specializationInfo.pData = &specializationData;
 
-    auto vertShaderCode = moon::utils::shaderModule::readFile(vertShaderPath);
-    auto fragShaderCode = moon::utils::shaderModule::readFile(fragShaderPath);
-    VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
-    VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
-        moon::utils::vkDefault::vertrxShaderStage(vertShaderModule),
-        moon::utils::vkDefault::fragmentShaderStage(fragShaderModule)
-    };
-    shaderStages.back().pSpecializationInfo = &specializationInfo;
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath, specializationInfo);
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
     VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
@@ -159,9 +153,6 @@ void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::Im
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipeline.create(device, pipelineInfo));
-
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 void SelectorGraphics::createDescriptorPool(){

@@ -23,6 +23,9 @@ public:
     std::vector<VkDescriptorSet>    DescriptorSets;
 
     virtual ~Workbody(){};
+    Workbody() = default;
+    Workbody(Workbody&&) = default;
+    Workbody& operator=(Workbody&&) = default;
     virtual void destroy(VkDevice device);
     virtual void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) = 0;
     virtual void createDescriptorSetLayout(VkDevice device) = 0;

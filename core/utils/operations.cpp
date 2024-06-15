@@ -748,14 +748,14 @@ std::vector<char> shaderModule::readFile(const std::filesystem::path& filename)
     return buffer;
 }
 
-VkShaderModule shaderModule::create(VkDevice* device, const std::vector<char>& code)
+VkShaderModule shaderModule::create(VkDevice device, const std::vector<char>& code)
 {
     VkShaderModule shaderModule{VK_NULL_HANDLE};
     VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = code.size();
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-    CHECK(vkCreateShaderModule(*device, &createInfo, nullptr, &shaderModule));
+    CHECK(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
 
     return shaderModule;
 }

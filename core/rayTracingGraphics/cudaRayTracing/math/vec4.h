@@ -1,5 +1,5 @@
-#ifndef VEC4H
-#define VEC4H
+#ifndef VEC4_H
+#define VEC4_H
 
 #define _USE_MATH_DEFINES
 #include <math.h>

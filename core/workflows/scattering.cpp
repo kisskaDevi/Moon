@@ -17,23 +17,6 @@ Scattering::Scattering(ScatteringParameters parameters,
 
 void Scattering::Lighting::destroy(VkDevice device){
     Workbody::destroy(device);
-    if(ShadowDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, ShadowDescriptorSetLayout, nullptr); ShadowDescriptorSetLayout = VK_NULL_HANDLE;}
-    for(auto& descriptorSetLayout: BufferDescriptorSetLayoutDictionary){
-        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
-    }
-    for(auto& descriptorSetLayout: DescriptorSetLayoutDictionary){
-        if(descriptorSetLayout.second){ vkDestroyDescriptorSetLayout(device, descriptorSetLayout.second, nullptr); descriptorSetLayout.second = VK_NULL_HANDLE;}
-    }
-    for(auto& PipelineLayout: PipelineLayoutDictionary){
-        if(PipelineLayout.second) {
-            vkDestroyPipelineLayout(device, PipelineLayout.second, nullptr);
-            PipelineLayout.second = VK_NULL_HANDLE;}
-    }
-    for(auto& Pipeline: PipelinesDictionary){
-        if(Pipeline.second) {
-            vkDestroyPipeline(device, Pipeline.second, nullptr);
-            Pipeline.second = VK_NULL_HANDLE;}
-    }
 }
 
 void Scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
@@ -118,15 +101,11 @@ void Scattering::Lighting::createDescriptorSetLayout(VkDevice device)
         bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
+    CHECK(descriptorSetLayout.create(device, bindings));
 
-    moon::interfaces::Light::createBufferDescriptorSetLayout(device,&BufferDescriptorSetLayoutDictionary[moon::interfaces::LightType::spot]);
-    moon::interfaces::Light::createTextureDescriptorSetLayout(device,&DescriptorSetLayoutDictionary[moon::interfaces::LightType::spot]);
-    moon::utils::DepthMap::createDescriptorSetLayout(device, &ShadowDescriptorSetLayout);
+    bufferDescriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
+    descriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createTextureDescriptorSetLayout(device);
+    shadowDescriptorSetLayout = moon::utils::DepthMap::createDescriptorSetLayout(device);
 }
 
 void Scattering::Lighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -170,37 +149,32 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::u
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(ScatteringPushConst);
-    std::vector<VkDescriptorSetLayout> SetLayouts = {
-        DescriptorSetLayout,
-        ShadowDescriptorSetLayout,
-        BufferDescriptorSetLayoutDictionary[mask],
-        DescriptorSetLayoutDictionary[mask]
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
+        descriptorSetLayout,
+        shadowDescriptorSetLayout,
+        bufferDescriptorSetLayoutMap[mask],
+        descriptorSetLayoutMap[mask]
     };
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
-        pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
-        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[mask]));
+    CHECK(pipelineLayoutMap[mask].create(device, descriptorSetLayouts, pushConstantRange));
 
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.pNext = nullptr;
-        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineInfo.pStages = shaderStages.data();
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssembly;
-        pipelineInfo.pViewportState = &viewportState;
-        pipelineInfo.pRasterizationState = &rasterizer;
-        pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = PipelineLayoutDictionary[mask];
-        pipelineInfo.renderPass = pRenderPass;
-        pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &PipelinesDictionary[mask]));
+    std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
+    pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
+        pipelineInfo.back().sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.back().pNext = nullptr;
+        pipelineInfo.back().stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.back().pStages = shaderStages.data();
+        pipelineInfo.back().pVertexInputState = &vertexInputInfo;
+        pipelineInfo.back().pInputAssemblyState = &inputAssembly;
+        pipelineInfo.back().pViewportState = &viewportState;
+        pipelineInfo.back().pRasterizationState = &rasterizer;
+        pipelineInfo.back().pMultisampleState = &multisampling;
+        pipelineInfo.back().pColorBlendState = &colorBlending;
+        pipelineInfo.back().layout = pipelineLayoutMap[mask];
+        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().subpass = 0;
+        pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.back().pDepthStencilState = &depthStencil;
+    CHECK(pipelinesMap[mask].create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -278,8 +252,8 @@ void Scattering::updateCommandBuffer(uint32_t frameNumber){
         if(lightSource->isScatteringEnable()){
             ScatteringPushConst pushConst{image.Extent.width, image.Extent.height};
             uint8_t mask = lightSource->getPipelineBitMask();
-            vkCmdPushConstants(commandBuffers[frameNumber], lighting.PipelineLayoutDictionary[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
-            lightSource->render(frameNumber, commandBuffers[frameNumber], {lighting.DescriptorSets[frameNumber], (*lighting.depthMaps)[lightSource]->getDescriptorSets()[frameNumber]}, lighting.PipelineLayoutDictionary[mask], lighting.PipelinesDictionary[mask]);
+            vkCmdPushConstants(commandBuffers[frameNumber], lighting.pipelineLayoutMap[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
+            lightSource->render(frameNumber, commandBuffers[frameNumber], {lighting.DescriptorSets[frameNumber], (*lighting.depthMaps)[lightSource]->getDescriptorSets()[frameNumber]}, lighting.pipelineLayoutMap[mask], lighting.pipelinesMap[mask]);
         }
     }
 

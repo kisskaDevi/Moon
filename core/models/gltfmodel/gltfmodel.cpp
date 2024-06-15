@@ -245,14 +245,6 @@ void GltfModel::destroy(VkDevice device)
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
         descriptorPool = VK_NULL_HANDLE;
     }
-    if(nodeDescriptorSetLayout != VK_NULL_HANDLE){
-        vkDestroyDescriptorSetLayout(device, nodeDescriptorSetLayout,nullptr);
-        nodeDescriptorSetLayout = VK_NULL_HANDLE;
-    }
-    if(materialDescriptorSetLayout != VK_NULL_HANDLE){
-        vkDestroyDescriptorSetLayout(device, materialDescriptorSetLayout,nullptr);
-        materialDescriptorSetLayout = VK_NULL_HANDLE;
-    }
 
     for(auto& instance : instances){
         for (auto& node : instance.nodes){
@@ -530,8 +522,8 @@ void GltfModel::createDescriptorPool(VkDevice device)
 
 void GltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture)
 {
-    moon::interfaces::Model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
-    moon::interfaces::Model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
+    nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
+    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 
     for(auto& instance : instances){
         for (auto& node : instance.nodes){

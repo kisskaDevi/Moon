@@ -38,9 +38,6 @@ void SpotLight::destroy(VkDevice device)
     destroyBuffers(device, uniformBuffersHost);
     destroyBuffers(device, uniformBuffersDevice);
 
-    if(textureDescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, textureDescriptorSetLayout,  nullptr); textureDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
-
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
     if(emptyTextureBlack){
@@ -291,8 +288,8 @@ void SpotLight::createDescriptorPool(VkDevice device, uint32_t imageCount)
 
 void SpotLight::createDescriptorSets(VkDevice device, uint32_t imageCount)
 {
-    moon::interfaces::Light::createTextureDescriptorSetLayout(device,&textureDescriptorSetLayout);
-    moon::interfaces::Light::createBufferDescriptorSetLayout(device,&descriptorSetLayout);
+    textureDescriptorSetLayout = moon::interfaces::Light::createTextureDescriptorSetLayout(device);
+    descriptorSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
 
     textureDescriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> textLayouts(imageCount, textureDescriptorSetLayout);

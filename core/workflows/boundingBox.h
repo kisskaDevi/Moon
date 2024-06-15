@@ -2,6 +2,7 @@
 #define BOUNDINGBOX_H
 
 #include "workflow.h"
+#include "vkdefault.h"
 
 namespace moon::interfaces { class Object;}
 
@@ -25,8 +26,8 @@ private:
     bool enable{true};
 
     struct BoundingBox : Workbody{
-        VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
+        moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
+        moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
 
         std::vector<moon::interfaces::Object*>*   objects;
 

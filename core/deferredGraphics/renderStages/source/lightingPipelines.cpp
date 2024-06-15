@@ -44,17 +44,13 @@ void Graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::uti
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    std::vector<VkDescriptorSetLayout> SetLayouts = {
-        DescriptorSetLayout,
-        ShadowDescriptorSetLayout,
-        BufferDescriptorSetLayoutDictionary[key],
-        DescriptorSetLayoutDictionary[key]
+    std::vector<VkDescriptorSetLayout> descriptorSetLayout = {
+        lightingDescriptorSetLayout,
+        shadowDescriptorSetLayout,
+        bufferDescriptorSetLayoutMap[key],
+        textureDescriptorSetLayoutMap[key]
     };
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
-        pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[key]));
+    CHECK(pipelineLayoutMap[key].create(device, descriptorSetLayout));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -68,12 +64,12 @@ void Graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::uti
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = PipelineLayoutDictionary[key];
+        pipelineInfo.back().layout = pipelineLayoutMap[key];
         pipelineInfo.back().renderPass = pRenderPass;
         pipelineInfo.back().subpass = 1;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelinesDictionary[key]));
+    CHECK(pipelineMap[key].create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);

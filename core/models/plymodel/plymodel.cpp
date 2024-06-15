@@ -47,14 +47,6 @@ void PlyModel::destroy(VkDevice device) {
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
         descriptorPool = VK_NULL_HANDLE;
     }
-    if(nodeDescriptorSetLayout != VK_NULL_HANDLE){
-        vkDestroyDescriptorSetLayout(device, nodeDescriptorSetLayout,nullptr);
-        nodeDescriptorSetLayout = VK_NULL_HANDLE;
-    }
-    if(materialDescriptorSetLayout != VK_NULL_HANDLE){
-        vkDestroyDescriptorSetLayout(device, materialDescriptorSetLayout,nullptr);
-        materialDescriptorSetLayout = VK_NULL_HANDLE;
-    }
 
     uniformBuffer.destroy(device);
 
@@ -185,14 +177,14 @@ void PlyModel::createDescriptorPool(VkDevice device) {
 }
 
 void PlyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture) {
-    moon::interfaces::Model::createMaterialDescriptorSetLayout(device, &materialDescriptorSetLayout);
-    moon::interfaces::Model::createNodeDescriptorSetLayout(device, &nodeDescriptorSetLayout);
+    nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
+    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 
     {
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             descriptorSetAllocInfo.descriptorPool = descriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = &nodeDescriptorSetLayout;
+            descriptorSetAllocInfo.pSetLayouts = nodeDescriptorSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
         CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &uniformBuffer.descriptorSet));
 
@@ -212,7 +204,7 @@ void PlyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyT
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             descriptorSetAllocInfo.descriptorPool = descriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = &materialDescriptorSetLayout;
+            descriptorSetAllocInfo.pSetLayouts = materialDescriptorSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
         CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material.descriptorSet));
 

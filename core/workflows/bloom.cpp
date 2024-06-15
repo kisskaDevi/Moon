@@ -121,12 +121,9 @@ void BloomGraphics::createPipelines(){
 
 void BloomGraphics::Filter::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
-        textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        textureLayoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+
+    CHECK(descriptorSetLayout.create(device, bindings));
 }
 
 void BloomGraphics::Filter::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -157,31 +154,27 @@ void BloomGraphics::Filter::createPipeline(VkDevice device, moon::utils::ImageIn
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(BloomPushConst);
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-        pipelineLayoutInfo.pushConstantRangeCount = 1;
-        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
+    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
 
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.pNext = nullptr;
-        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineInfo.pStages = shaderStages.data();
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssembly;
-        pipelineInfo.pViewportState = &viewportState;
-        pipelineInfo.pRasterizationState = &rasterizer;
-        pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = PipelineLayout;
-        pipelineInfo.renderPass = pRenderPass;
-        pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
+    std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
+    pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
+        pipelineInfo.back().sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.back().pNext = nullptr;
+        pipelineInfo.back().stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.back().pStages = shaderStages.data();
+        pipelineInfo.back().pVertexInputState = &vertexInputInfo;
+        pipelineInfo.back().pInputAssemblyState = &inputAssembly;
+        pipelineInfo.back().pViewportState = &viewportState;
+        pipelineInfo.back().pRasterizationState = &rasterizer;
+        pipelineInfo.back().pMultisampleState = &multisampling;
+        pipelineInfo.back().pColorBlendState = &colorBlending;
+        pipelineInfo.back().layout = pipelineLayout;
+        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().subpass = 0;
+        pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.back().pDepthStencilState = &depthStencil;
+    CHECK(pipeline.create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -189,12 +182,9 @@ void BloomGraphics::Filter::createPipeline(VkDevice device, moon::utils::ImageIn
 
 void BloomGraphics::Bloom::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
-    VkDescriptorSetLayoutCreateInfo textureLayoutInfo{};
-        textureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        textureLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        textureLayoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &textureLayoutInfo, nullptr, &DescriptorSetLayout));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
+
+    CHECK(descriptorSetLayout.create(device, bindings));
 }
 
 void BloomGraphics::Bloom::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -237,31 +227,27 @@ void BloomGraphics::Bloom::createPipeline(VkDevice device, moon::utils::ImageInf
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(BloomPushConst);
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-        pipelineLayoutInfo.pushConstantRangeCount = 1;
-        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
+    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
 
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.pNext = nullptr;
-        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineInfo.pStages = shaderStages.data();
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssembly;
-        pipelineInfo.pViewportState = &viewportState;
-        pipelineInfo.pRasterizationState = &rasterizer;
-        pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = PipelineLayout;
-        pipelineInfo.renderPass = pRenderPass;
-        pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
+    std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
+    pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
+        pipelineInfo.back().sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.back().pNext = nullptr;
+        pipelineInfo.back().stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.back().pStages = shaderStages.data();
+        pipelineInfo.back().pVertexInputState = &vertexInputInfo;
+        pipelineInfo.back().pInputAssemblyState = &inputAssembly;
+        pipelineInfo.back().pViewportState = &viewportState;
+        pipelineInfo.back().pRasterizationState = &rasterizer;
+        pipelineInfo.back().pMultisampleState = &multisampling;
+        pipelineInfo.back().pColorBlendState = &colorBlending;
+        pipelineInfo.back().layout = pipelineLayout;
+        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().subpass = 0;
+        pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.back().pDepthStencilState = &depthStencil;
+    CHECK(pipeline.create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -403,10 +389,10 @@ void BloomGraphics::render(VkCommandBuffer commandBuffer, moon::utils::Attachmen
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         BloomPushConst pushConst{xSamplerStep, ySamplerStep, blitFactor};
-        vkCmdPushConstants(commandBuffer, worker->PipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(BloomPushConst), &pushConst);
+        vkCmdPushConstants(commandBuffer, worker->pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(BloomPushConst), &pushConst);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, worker->Pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, worker->PipelineLayout, 0, 1, &worker->DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, worker->pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, worker->pipelineLayout, 0, 1, &worker->DescriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);

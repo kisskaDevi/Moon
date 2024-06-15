@@ -2,6 +2,7 @@
 #define SHADOW_H
 
 #include "workflow.h"
+#include "vkdefault.h"
 #include <unordered_map>
 
 namespace moon::interfaces {
@@ -23,10 +24,10 @@ private:
         void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
         void createDescriptorSetLayout(VkDevice device) override;
 
-        VkDescriptorSetLayout   lightUniformBufferSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout   PrimitiveDescriptorSetLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout   MaterialDescriptorSetLayout{VK_NULL_HANDLE};
+        moon::utils::vkDefault::DescriptorSetLayout lightUniformBufferSetLayout;
+        moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
+        moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
+        moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
 
         std::vector<moon::interfaces::Object*>* objects;
         std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;

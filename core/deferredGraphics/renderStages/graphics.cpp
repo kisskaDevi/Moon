@@ -22,8 +22,8 @@ Graphics::Graphics(
     lighting.lightSources = lightSources;
     lighting.depthMaps = depthMaps;
 
-    outlining.Parent = &base;
-    ambientLighting.Parent = &lighting;
+    outlining.parent = &base;
+    ambientLighting.parent = &lighting;
 }
 
 Graphics& Graphics::setMinAmbientFactor(const float& minAmbientFactor){
@@ -33,10 +33,8 @@ Graphics& Graphics::setMinAmbientFactor(const float& minAmbientFactor){
 
 void Graphics::destroy()
 {
-    base.Destroy(device);
-    outlining.DestroyPipeline(device);
-    lighting.Destroy(device);
-    ambientLighting.DestroyPipeline(device);
+    base.destroy(device);
+    lighting.destroy(device);
 
     moon::workflows::Workflow::destroy();
 
@@ -193,10 +191,10 @@ void Graphics::createFramebuffers()
 
 void Graphics::createPipelines()
 {
-    base.ShadersPath = shadersPath;
-    outlining.ShadersPath = shadersPath;
-    lighting.ShadersPath = shadersPath;
-    ambientLighting.ShadersPath = shadersPath;
+    base.shadersPath = shadersPath;
+    outlining.shadersPath = shadersPath;
+    lighting.shadersPath = shadersPath;
+    ambientLighting.shadersPath = shadersPath;
 
     base.createDescriptorSetLayout(device);
     base.createPipeline(device,&image,renderPass);

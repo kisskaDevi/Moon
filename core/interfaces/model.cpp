@@ -25,30 +25,28 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
     return attributeDescriptions;
 }
 
-void Model::createNodeDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
-{
+moon::utils::vkDefault::DescriptorSetLayout Model::createNodeDescriptorSetLayout(VkDevice device) {
+    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
+
     std::vector<VkDescriptorSetLayoutBinding> binding;
-    binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    VkDescriptorSetLayoutCreateInfo uniformBlockLayoutInfo{};
-        uniformBlockLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        uniformBlockLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
-        uniformBlockLayoutInfo.pBindings = binding.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &uniformBlockLayoutInfo, nullptr, descriptorSetLayout));
+        binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+
+    CHECK(descriptorSetLayout.create(device, binding));
+    return descriptorSetLayout;
 }
 
-void Model::createMaterialDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout)
-{
+moon::utils::vkDefault::DescriptorSetLayout Model::createMaterialDescriptorSetLayout(VkDevice device) {
+    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
+
     std::vector<VkDescriptorSetLayoutBinding> binding;
-    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    VkDescriptorSetLayoutCreateInfo materialLayoutInfo{};
-        materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        materialLayoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
-        materialLayoutInfo.pBindings = binding.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &materialLayoutInfo, nullptr, descriptorSetLayout));
+        binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+        binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+        binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+        binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+        binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+
+    CHECK(descriptorSetLayout.create(device, binding));
+    return descriptorSetLayout;
 }
 
 }

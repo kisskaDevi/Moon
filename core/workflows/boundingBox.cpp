@@ -14,8 +14,6 @@ BoundingBoxGraphics::BoundingBoxGraphics(BoundingBoxParameters parameters, bool 
 
 void BoundingBoxGraphics::BoundingBox::destroy(VkDevice device){
     Workbody::destroy(device);
-    if(ObjectDescriptorSetLayout)       {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(PrimitiveDescriptorSetLayout)    {vkDestroyDescriptorSetLayout(device, PrimitiveDescriptorSetLayout, nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
 void BoundingBoxGraphics::destroy(){
@@ -93,16 +91,12 @@ void BoundingBoxGraphics::createPipelines(){
 
 void BoundingBoxGraphics::BoundingBox::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
+    CHECK(descriptorSetLayout.create(device, bindings));
 
-    moon::interfaces::Object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
-    moon::interfaces::Model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
+    objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
+    primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
 }
 
 void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
@@ -143,22 +137,16 @@ void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::uti
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
-    pushConstantRange.push_back(VkPushConstantRange{});
-    pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-    pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(BoundingBox);
-    std::vector<VkDescriptorSetLayout> setLayouts = {
-        DescriptorSetLayout,
-        ObjectDescriptorSetLayout,
-        PrimitiveDescriptorSetLayout
+        pushConstantRange.push_back(VkPushConstantRange{});
+        pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange.back().offset = 0;
+        pushConstantRange.back().size = sizeof(BoundingBox);
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
+        descriptorSetLayout,
+        objectDescriptorSetLayout,
+        primitiveDescriptorSetLayout
     };
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
-    pipelineLayoutInfo.pSetLayouts = setLayouts.data();
-    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
+    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -172,12 +160,12 @@ void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::uti
     pipelineInfo.back().pRasterizationState = &rasterizer;
     pipelineInfo.back().pMultisampleState = &multisampling;
     pipelineInfo.back().pColorBlendState = &colorBlending;
-    pipelineInfo.back().layout = PipelineLayout;
+    pipelineInfo.back().layout = pipelineLayout;
     pipelineInfo.back().renderPass = pRenderPass;
     pipelineInfo.back().subpass = 0;
     pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline));
+    CHECK(pipeline.create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -198,7 +186,7 @@ void BoundingBoxGraphics::createDescriptorPool(){
 
 void BoundingBoxGraphics::createDescriptorSets(){
     box.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, box.DescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, box.descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = box.DescriptorPool;
@@ -266,7 +254,7 @@ void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
 void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers){
     for(auto object: *objects){
         if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
-            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
@@ -278,7 +266,7 @@ void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuf
             object->getModel()->renderBB(
                 object->getInstanceNumber(frameNumber),
                 commandBuffers,
-                PipelineLayout,
+                pipelineLayout,
                 static_cast<uint32_t>(descriptorSets.size()),
                 descriptorSets.data());
         }

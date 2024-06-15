@@ -89,22 +89,18 @@ void SelectorGraphics::createPipelines()
 void SelectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(VkDescriptorSetLayoutBinding{});
-    bindings.back().binding = static_cast<uint32_t>(bindings.size() - 1);
-    bindings.back().descriptorCount = 1;
-    bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings.back().pImmutableSamplers = nullptr;
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
+        bindings.push_back(VkDescriptorSetLayoutBinding{});
+        bindings.back().binding = static_cast<uint32_t>(bindings.size() - 1);
+        bindings.back().descriptorCount = 1;
+        bindings.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bindings.back().stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        bindings.back().pImmutableSamplers = nullptr;
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
+    CHECK(descriptorSetLayout.create(device, bindings));
 }
 
 void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -142,29 +138,27 @@ void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::Im
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)};
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
+    CHECK(pipelineLayout.create(device, descriptorSetLayouts));
 
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.pNext = nullptr;
-    pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-    pipelineInfo.pStages = shaderStages.data();
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssembly;
-    pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pRasterizationState = &rasterizer;
-    pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = PipelineLayout;
-    pipelineInfo.renderPass = pRenderPass;
-    pipelineInfo.subpass = 0;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-    pipelineInfo.pDepthStencilState = &depthStencil;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &Pipeline));
+    std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
+    pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
+        pipelineInfo.back().sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.back().pNext = nullptr;
+        pipelineInfo.back().stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.back().pStages = shaderStages.data();
+        pipelineInfo.back().pVertexInputState = &vertexInputInfo;
+        pipelineInfo.back().pInputAssemblyState = &inputAssembly;
+        pipelineInfo.back().pViewportState = &viewportState;
+        pipelineInfo.back().pRasterizationState = &rasterizer;
+        pipelineInfo.back().pMultisampleState = &multisampling;
+        pipelineInfo.back().pColorBlendState = &colorBlending;
+        pipelineInfo.back().layout = pipelineLayout;
+        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().subpass = 0;
+        pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.back().pDepthStencilState = &depthStencil;
+    CHECK(pipeline.create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -285,8 +279,8 @@ void SelectorGraphics::updateCommandBuffer(uint32_t frameNumber){
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, selector.Pipeline);
-    vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, selector.PipelineLayout, 0, 1, &selector.DescriptorSets[frameNumber], 0, nullptr);
+    vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, selector.pipeline);
+    vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, selector.pipelineLayout, 0, 1, &selector.DescriptorSets[frameNumber], 0, nullptr);
     vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);

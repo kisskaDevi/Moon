@@ -2,6 +2,7 @@
 #define SCATTERING_H
 
 #include "workflow.h"
+#include "vkdefault.h"
 
 namespace moon::interfaces { class Light;}
 namespace moon::utils { class DepthMap;}
@@ -32,13 +33,15 @@ private:
     bool enable{true};
 
     struct Lighting : Workbody{
-        VkDescriptorSetLayout                               ShadowDescriptorSetLayout{VK_NULL_HANDLE};
-        std::unordered_map<uint8_t, VkDescriptorSetLayout>  BufferDescriptorSetLayoutDictionary;
-        std::unordered_map<uint8_t, VkDescriptorSetLayout>  DescriptorSetLayoutDictionary;
-        std::unordered_map<uint8_t, VkPipelineLayout>       PipelineLayoutDictionary;
-        std::unordered_map<uint8_t, VkPipeline>             PipelinesDictionary;
-        std::vector<moon::interfaces::Light*>*              lightSources;
-        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
+        moon::utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
+        moon::utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
+        moon::utils::vkDefault::DescriptorSetLayoutMap  descriptorSetLayoutMap;
+
+        moon::utils::vkDefault::PipelineLayoutMap       pipelineLayoutMap;
+        moon::utils::vkDefault::PipelineMap             pipelinesMap;
+
+        std::vector<moon::interfaces::Light*>*                                  lightSources;
+        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>*   depthMaps;
 
         void destroy(VkDevice device) override;
         void createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);

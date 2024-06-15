@@ -5,6 +5,8 @@
 #include <vector>
 #include <vector.h>
 
+#include <vkdefault.h>
+
 namespace moon::utils { struct PhysicalDevice;}
 
 namespace moon::interfaces {
@@ -42,7 +44,7 @@ protected:
 
     uint8_t pipelineBitMask{0};
 
-    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
+    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptors;
 
@@ -87,8 +89,8 @@ public:
         uint32_t frameNumber,
         VkCommandBuffer commandBuffer) = 0;
 
-    static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
-    static void createSkyboxDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
+    static moon::utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);
+    static moon::utils::vkDefault::DescriptorSetLayout createSkyboxDescriptorSetLayout(VkDevice device);
 };
 
 }

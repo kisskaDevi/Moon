@@ -1,5 +1,5 @@
-#ifndef RAYH
-#define RAYH
+#ifndef RAY_H
+#define RAY_H
 #include "vec4.h"
 
 namespace cuda::rayTracing {

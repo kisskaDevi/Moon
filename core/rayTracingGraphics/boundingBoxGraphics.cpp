@@ -276,7 +276,7 @@ void BoundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, NULL);
-    for(auto box: boxes){
+    for(const auto& box: boxes){
         vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(cuda::rayTracing::cbox), &box);
         vkCmdDraw(commandBuffer, 24, 1, 0, 0);
     }

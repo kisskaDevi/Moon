@@ -7,6 +7,7 @@
 #include "linkable.h"
 #include "attachments.h"
 #include "vector.h"
+#include "vkdefault.h"
 
 namespace moon::deferredGraphics {
 
@@ -23,9 +24,10 @@ private:
     VkDevice                        device{VK_NULL_HANDLE};
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
 
-    VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
-    VkPipeline                      Pipeline{VK_NULL_HANDLE};
-    VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
+    utils::vkDefault::PipelineLayout        pipelineLayout;
+    utils::vkDefault::Pipeline              pipeline;
+    utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
+
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    DescriptorSets;
 

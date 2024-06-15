@@ -42,7 +42,7 @@ public:
     VkResult drawFrame();
     VkResult deviceWaitIdle() const;
 
-    std::vector<uint32_t> makeScreenshot() const ;
+    std::vector<uint32_t> makeScreenshot() const;
 
 private:
     bool                                        enableValidationLayers = true;

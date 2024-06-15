@@ -18,7 +18,7 @@ void DepthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
 }
 
 void DepthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
-    createDescriptorSetLayout(device,&descriptorSetLayout);
+    descriptorSetLayout = createDescriptorSetLayout(device);
 
     descriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> shadowLayouts(imageCount, descriptorSetLayout);
@@ -44,7 +44,6 @@ DepthMap::~DepthMap(){
     destroy(device);
 }
 void DepthMap::destroy(VkDevice device){
-    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
     if(emptyTextureBlack){
@@ -87,14 +86,14 @@ Attachments* &DepthMap::get(){
     return map;
 }
 
-void DepthMap::createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout){
+moon::utils::vkDefault::DescriptorSetLayout DepthMap::createDescriptorSetLayout(VkDevice device){
+    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
+
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(binding.size());
-        layoutInfo.pBindings = binding.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout));
+
+    CHECK(descriptorSetLayout.create(device, binding));
+    return descriptorSetLayout;
 }
 
 }

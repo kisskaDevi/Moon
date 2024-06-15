@@ -226,4 +226,100 @@ VkDescriptorSetLayoutBinding vkDefault::inAttachmentFragmentLayoutBinding(const 
     return layoutBinding;
 }
 
+vkDefault::Pipeline::~Pipeline() {
+    destroy();
+}
+
+VkResult vkDefault::Pipeline::create(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos) {
+    destroy();
+    this->device = device;
+    return vkCreateGraphicsPipelines(
+        device,
+        VK_NULL_HANDLE,
+        static_cast<uint32_t>(graphicsPipelineCreateInfos.size()),
+        graphicsPipelineCreateInfos.data(),
+        nullptr,
+        &pipeline);
+}
+
+void vkDefault::Pipeline::destroy() {
+    if (pipeline) {
+        vkDestroyPipeline(device, pipeline, nullptr);
+        pipeline = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::Pipeline::operator const VkPipeline&() const {
+    return pipeline;
+}
+
+vkDefault::PipelineLayout::~PipelineLayout() {
+    destroy();
+}
+
+VkResult vkDefault::PipelineLayout::create(
+    VkDevice device,
+    const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts,
+    const std::vector<VkPushConstantRange>& pushConstantRange)
+{
+    destroy();
+    this->device = device;
+
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+        pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+        pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
+        pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRange.data();
+
+    return vkCreatePipelineLayout(
+        device,
+        &pipelineLayoutCreateInfo,
+        nullptr,
+        &pipelineLayout);
+}
+
+void vkDefault::PipelineLayout::destroy() {
+    if (pipelineLayout) {
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        pipelineLayout = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::PipelineLayout::operator const VkPipelineLayout&() const {
+    return pipelineLayout;
+}
+
+vkDefault::DescriptorSetLayout::~DescriptorSetLayout() {
+    destroy();
+}
+
+VkResult vkDefault::DescriptorSetLayout::create(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings) {
+    destroy();
+    this->device = device;
+    this->bindings = bindings;
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+    return vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
+}
+
+void vkDefault::DescriptorSetLayout::destroy() {
+    bindings.clear();
+    if (descriptorSetLayout) {
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        descriptorSetLayout = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::DescriptorSetLayout::operator const VkDescriptorSetLayout& () const {
+    return descriptorSetLayout;
+}
+
+vkDefault::DescriptorSetLayout::operator const VkDescriptorSetLayout* () const {
+    return &descriptorSetLayout;
+}
+
+
 }

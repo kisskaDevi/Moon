@@ -4,6 +4,7 @@
 #include <vulkan.h>
 #include "attachments.h"
 #include "buffer.h"
+#include "vkdefault.h"
 
 #include <filesystem>
 
@@ -14,9 +15,10 @@ public:
     std::filesystem::path           vertShaderPath;
     std::filesystem::path           fragShaderPath;
 
-    VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
-    VkPipeline                      Pipeline{VK_NULL_HANDLE};
-    VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
+    utils::vkDefault::PipelineLayout        pipelineLayout;
+    utils::vkDefault::Pipeline              pipeline;
+    utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
+
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    DescriptorSets;
 
@@ -32,7 +34,7 @@ protected:
     VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
     VkDevice                        device{VK_NULL_HANDLE};
     std::filesystem::path           shadersPath;
-    moon::utils::ImageInfo                       image;
+    moon::utils::ImageInfo          image;
 
     VkRenderPass                    renderPass{VK_NULL_HANDLE};
     std::vector<VkFramebuffer>      framebuffers;

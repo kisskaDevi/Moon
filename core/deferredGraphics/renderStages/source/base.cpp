@@ -7,37 +7,22 @@
 
 namespace moon::deferredGraphics {
 
-void Graphics::Base::Destroy(VkDevice device)
-{
-    for(auto& PipelineLayout: PipelineLayoutDictionary){
-        if(PipelineLayout.second) {vkDestroyPipelineLayout(device, PipelineLayout.second, nullptr); PipelineLayout.second = VK_NULL_HANDLE;}
-    }
-    for(auto& Pipeline: PipelineDictionary){
-        if(Pipeline.second) {vkDestroyPipeline(device, Pipeline.second, nullptr); Pipeline.second = VK_NULL_HANDLE;}
-    }
-    if(SceneDescriptorSetLayout)        {vkDestroyDescriptorSetLayout(device, SceneDescriptorSetLayout,  nullptr); SceneDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(ObjectDescriptorSetLayout)       {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout,  nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(PrimitiveDescriptorSetLayout)    {vkDestroyDescriptorSetLayout(device, PrimitiveDescriptorSetLayout,  nullptr); PrimitiveDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(MaterialDescriptorSetLayout)     {vkDestroyDescriptorSetLayout(device, MaterialDescriptorSetLayout,  nullptr); MaterialDescriptorSetLayout = VK_NULL_HANDLE;}
-    if(DescriptorPool)                  {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
+void Graphics::Base::destroy(VkDevice device) {
+    if(DescriptorPool) {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
 }
 
 void Graphics::Base::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &SceneDescriptorSetLayout));
+    CHECK(baseDescriptorSetLayout.create(device, bindings));
 
-    moon::interfaces::Object::createDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
-    moon::interfaces::Model::createNodeDescriptorSetLayout(device,&PrimitiveDescriptorSetLayout);
-    moon::interfaces::Model::createMaterialDescriptorSetLayout(device,&MaterialDescriptorSetLayout);
+    objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
+    primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
+    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 }
 
 void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -61,8 +46,8 @@ void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         specializationInfo.dataSize = sizeof(VkBool32) * transparencyData.size();
         specializationInfo.pData = transparencyData.data();
 
-    auto vertShaderCode = moon::utils::shaderModule::readFile(ShadersPath / "base/baseVert.spv");
-    auto fragShaderCode = moon::utils::shaderModule::readFile(ShadersPath / "base/baseFrag.spv");
+    auto vertShaderCode = moon::utils::shaderModule::readFile(shadersPath / "base/baseVert.spv");
+    auto fragShaderCode = moon::utils::shaderModule::readFile(shadersPath / "base/baseFrag.spv");
     VkShaderModule vertShaderModule = moon::utils::shaderModule::create(&device, vertShaderCode);
     VkShaderModule fragShaderModule = moon::utils::shaderModule::create(&device, fragShaderCode);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
@@ -100,19 +85,13 @@ void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(moon::interfaces::MaterialBlock);
-    std::vector<VkDescriptorSetLayout> setLayouts = {
-        SceneDescriptorSetLayout,
-        ObjectDescriptorSetLayout,
-        PrimitiveDescriptorSetLayout,
-        MaterialDescriptorSetLayout
+    std::vector<VkDescriptorSetLayout> descriptorSetLayout = {
+        baseDescriptorSetLayout,
+        objectDescriptorSetLayout,
+        primitiveDescriptorSetLayout,
+        materialDescriptorSetLayout
     };
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
-        pipelineLayoutInfo.pSetLayouts = setLayouts.data();
-        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
-        pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[moon::interfaces::ObjectType::base]));
+    CHECK(pipelineLayoutMap[moon::interfaces::ObjectType::base].create(device, descriptorSetLayout, pushConstantRange));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -126,13 +105,14 @@ void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = PipelineLayoutDictionary[moon::interfaces::ObjectType::base];
+        pipelineInfo.back().layout = pipelineLayoutMap[moon::interfaces::ObjectType::base];
         pipelineInfo.back().renderPass = pRenderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[moon::interfaces::ObjectType::base]));
+    CHECK(pipelineMap[moon::interfaces::ObjectType::base].create(device, pipelineInfo));
 
+    moon::utils::vkDefault::MaskType outliningMask = moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining;
         depthStencil.stencilTestEnable = VK_TRUE;
         depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
         depthStencil.back.failOp = VK_STENCIL_OP_REPLACE;
@@ -142,9 +122,9 @@ void Graphics::Base::createPipeline(VkDevice device, moon::utils::ImageInfo* pIn
         depthStencil.back.writeMask = 0xff;
         depthStencil.back.reference = 1;
         depthStencil.front = depthStencil.back;
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayoutDictionary[moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining]));
-        pipelineInfo.back().layout = PipelineLayoutDictionary[moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining];
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &PipelineDictionary[moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining]));
+    CHECK(pipelineLayoutMap[outliningMask].create(device, descriptorSetLayout, pushConstantRange));
+        pipelineInfo.back().layout = pipelineLayoutMap[outliningMask];
+    CHECK(pipelineMap[outliningMask].create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -170,7 +150,7 @@ void Graphics::createBaseDescriptorPool()
 void Graphics::createBaseDescriptorSets()
 {
     base.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, base.SceneDescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(image.Count, base.baseDescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = base.DescriptorPool;
@@ -225,11 +205,11 @@ void Graphics::updateBaseDescriptorSets(
     }
 }
 
-void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount)
+void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const
 {
     for(auto object: *objects){
         if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
-            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineDictionary[object->getPipelineBitMask()]);
+            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineMap.at(object->getPipelineBitMask()));
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
@@ -247,7 +227,7 @@ void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
             object->getModel()->render(
                         object->getInstanceNumber(frameNumber),
                         commandBuffers,
-                        PipelineLayoutDictionary[object->getPipelineBitMask()],
+                        pipelineLayoutMap.at(object->getPipelineBitMask()),
                         static_cast<uint32_t>(descriptorSets.size()),
                         descriptorSets.data(),
                         primitiveCount,

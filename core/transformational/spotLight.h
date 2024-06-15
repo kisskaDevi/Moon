@@ -37,7 +37,7 @@ private:
 
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};
-    moon::math::Vector<float,4>                     lightColor{0.0f};
+    moon::math::Vector<float,4>         lightColor{0.0f};
 
     moon::math::Matrix<float,4,4>       projectionMatrix{1.0f};
     bool                                created{false};
@@ -52,7 +52,7 @@ private:
     moon::math::Matrix<float,4,4>       globalTransformation{1.0f};
     moon::math::Matrix<float,4,4>       modelMatrix{1.0f};
 
-    VkDescriptorSetLayout               textureDescriptorSetLayout{VK_NULL_HANDLE};
+    moon::utils::vkDefault::DescriptorSetLayout textureDescriptorSetLayout;
     std::vector<VkDescriptorSet>        textureDescriptorSets;
 
     std::vector<moon::utils::Buffer> uniformBuffersHost;

@@ -4,9 +4,6 @@
 namespace moon::workflows {
 
 void Workbody::destroy(VkDevice device){
-    if(Pipeline)            {vkDestroyPipeline(device, Pipeline, nullptr); Pipeline = VK_NULL_HANDLE;}
-    if(PipelineLayout)      {vkDestroyPipelineLayout(device, PipelineLayout,nullptr); PipelineLayout = VK_NULL_HANDLE;}
-    if(DescriptorSetLayout) {vkDestroyDescriptorSetLayout(device, DescriptorSetLayout, nullptr); DescriptorSetLayout = VK_NULL_HANDLE;}
     if(DescriptorPool)      {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
     DescriptorSets.clear();
 }
@@ -89,7 +86,7 @@ void Workflow::createDescriptorPool(VkDevice device, Workbody* workbody, const u
 
 void Workflow::createDescriptorSets(VkDevice device, Workbody* workbody, const uint32_t& imageCount){
     workbody->DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, workbody->DescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, workbody->descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = workbody->DescriptorPool;

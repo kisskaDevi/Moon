@@ -3,6 +3,7 @@
 
 #include "attachments.h"
 #include "device.h"
+#include "vkdefault.h"
 
 namespace moon::utils {
 
@@ -11,7 +12,7 @@ class Texture;
 class DepthMap {
 private:
     Attachments*                    map{nullptr};
-    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
+    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptorSets;
 
@@ -30,7 +31,7 @@ public:
     void updateDescriptorSets(VkDevice device, uint32_t imageCount);
     Attachments* &get();
 
-    static void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* descriptorSetLayout);
+    static moon::utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);
 };
 
 }

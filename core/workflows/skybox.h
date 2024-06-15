@@ -2,6 +2,7 @@
 #define SKYBOX_H
 
 #include "workflow.h"
+#include "vkdefault.h"
 
 namespace moon::interfaces {class Object;}
 
@@ -47,7 +48,7 @@ private:
     bool enable;
 
     struct Skybox : public Workbody{
-        VkDescriptorSetLayout   ObjectDescriptorSetLayout{VK_NULL_HANDLE};
+        moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
 
         std::vector<moon::interfaces::Object*>*   objects;
 

@@ -86,7 +86,7 @@ VkResult PhysicalDevice::createDevice(Device logical, std::map<uint32_t,uint32_t
     VkResult result = vkCreateDevice(instance, &createInfo, nullptr, &logical.instance);
     CHECK(result);
 
-    for(auto queueCreateInfo: queueCreateInfos){
+    for(const auto& queueCreateInfo: queueCreateInfos){
         logical.queueMap[queueCreateInfo.queueFamilyIndex] = std::vector<VkQueue>(queueCreateInfo.queueCount);
         for(uint32_t index = 0; index < queueCreateInfo.queueCount; index++){
             vkGetDeviceQueue(logical.instance, queueCreateInfo.queueFamilyIndex, index, &logical.queueMap[queueCreateInfo.queueFamilyIndex][index]);

@@ -26,7 +26,6 @@ void BaseObject::destroy(VkDevice device)
     destroyBuffers(device, uniformBuffersDevice);
 
     if(descriptorPool )     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
-    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout,  nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     created = false;
 }
 
@@ -217,7 +216,7 @@ void BaseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
 
 void BaseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
 {
-    moon::interfaces::Object::createDescriptorSetLayout(device,&descriptorSetLayout);
+    descriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -313,7 +312,7 @@ void SkyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
 }
 
 void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
-    moon::interfaces::Object::createSkyboxDescriptorSetLayout(device,&descriptorSetLayout);
+    descriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device);
 
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};

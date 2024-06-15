@@ -4,6 +4,7 @@
 #include <vulkan.h>
 #include <vector>
 #include <vector.h>
+#include <vkdefault.h>
 
 namespace moon::utils {
 class Texture;
@@ -112,13 +113,8 @@ public:
     virtual void render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) = 0;
     virtual void renderBB(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) = 0;
 
-    static void createNodeDescriptorSetLayout(
-            VkDevice                        device,
-            VkDescriptorSetLayout*          descriptorSetLayout);
-
-    static void createMaterialDescriptorSetLayout(
-            VkDevice                        device,
-            VkDescriptorSetLayout*          descriptorSetLayout);
+    static moon::utils::vkDefault::DescriptorSetLayout createNodeDescriptorSetLayout(VkDevice device);
+    static moon::utils::vkDefault::DescriptorSetLayout createMaterialDescriptorSetLayout(VkDevice device);
 };
 
 }

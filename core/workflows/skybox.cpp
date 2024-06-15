@@ -20,7 +20,6 @@ void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDataba
 void SkyboxGraphics::Skybox::destroy(VkDevice device)
 {
     Workbody::destroy(device);
-    if(ObjectDescriptorSetLayout)   {vkDestroyDescriptorSetLayout(device, ObjectDescriptorSetLayout, nullptr); ObjectDescriptorSetLayout = VK_NULL_HANDLE;}
 }
 
 void SkyboxGraphics::destroy()
@@ -104,14 +103,11 @@ void SkyboxGraphics::createPipelines()
 void SkyboxGraphics::Skybox::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &DescriptorSetLayout));
+        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
-    moon::interfaces::Object::createSkyboxDescriptorSetLayout(device,&ObjectDescriptorSetLayout);
+    CHECK(descriptorSetLayout.create(device, bindings));
+
+    objectDescriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device);
 }
 
 void SkyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
@@ -139,12 +135,11 @@ void SkyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageI
         moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE)};
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    std::vector<VkDescriptorSetLayout> SetLayouts = {DescriptorSetLayout, ObjectDescriptorSetLayout};
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(SetLayouts.size());
-        pipelineLayoutInfo.pSetLayouts = SetLayouts.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &PipelineLayout));
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
+        descriptorSetLayout,
+        objectDescriptorSetLayout
+    };
+    CHECK(pipelineLayout.create(device, descriptorSetLayouts));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -158,12 +153,12 @@ void SkyboxGraphics::Skybox::createPipeline(VkDevice device, moon::utils::ImageI
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = PipelineLayout;
+        pipelineInfo.back().layout = pipelineLayout;
         pipelineInfo.back().renderPass = pRenderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &Pipeline));
+    CHECK(pipeline.create(device, pipelineInfo));
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -225,12 +220,12 @@ void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.Pipeline);
+    vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
     for(auto& object: *skybox.objects)
     {
         if((moon::interfaces::ObjectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
             std::vector<VkDescriptorSet> descriptorSets = {skybox.DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
-            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.PipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
+            vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
             vkCmdDraw(commandBuffers[frameNumber], 36, 1, 0, 0);
         }
     }

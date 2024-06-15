@@ -9,6 +9,7 @@
 #include "buffer.h"
 #include "matrix.h"
 #include "quaternion.h"
+#include "vkdefault.h"
 
 #include <filesystem>
 #include <vector>
@@ -106,8 +107,8 @@ private:
     moon::utils::Buffer vertexStaging, indexStaging;
     std::vector<unsigned char*> textureStaging;
 
-    VkDescriptorSetLayout        nodeDescriptorSetLayout = VK_NULL_HANDLE;
-    VkDescriptorSetLayout        materialDescriptorSetLayout = VK_NULL_HANDLE;
+    moon::utils::vkDefault::DescriptorSetLayout nodeDescriptorSetLayout;
+    moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
     VkDescriptorPool             descriptorPool = VK_NULL_HANDLE;
 
     struct instance{

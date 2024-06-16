@@ -16,7 +16,7 @@ namespace moon::workflows {
 class ShadowGraphics : public Workflow
 {
 private:
-    std::unordered_map<moon::utils::DepthMap*,std::vector<VkFramebuffer>> framebuffers;
+    std::unordered_map<moon::utils::DepthMap*, utils::vkDefault::Framebuffers> framebuffersMap;
     bool enable{true};
 
     struct Shadow : public Workbody{
@@ -41,8 +41,9 @@ public:
     ShadowGraphics(bool enable,
                    std::vector<moon::interfaces::Object*>* objects = nullptr,
                    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
+    ~ShadowGraphics() { destroy(); }
 
-    void destroy() override;
+    void destroy();
     void create(moon::utils::AttachmentsDatabase&) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase&) override{};
     void updateCommandBuffer(uint32_t frameNumber) override;

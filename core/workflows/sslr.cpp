@@ -13,10 +13,8 @@ void SSLRGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase
     aDatabase.addAttachmentData(parameters.out.sslr, enable, &frame);
 }
 
-void SSLRGraphics::destroy()
-{
+void SSLRGraphics::destroy() {
     sslr.destroy(device);
-    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -64,7 +62,7 @@ void SSLRGraphics::createFramebuffers()
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]);
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 

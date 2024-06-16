@@ -233,8 +233,34 @@ public:
 		const SubpassDependencies& dependencies);
 	void destroy();
 	operator const VkRenderPass& () const;
-
 };
+
+class Framebuffer {
+private:
+	VkFramebuffer framebuffer{ VK_NULL_HANDLE };
+	VkDevice device{ VK_NULL_HANDLE };
+public:
+	~Framebuffer();
+	Framebuffer() = default;
+	Framebuffer(const Framebuffer&) = delete;
+	Framebuffer& operator=(const Framebuffer&) = delete;
+	Framebuffer(Framebuffer&& other) {
+		std::swap(framebuffer, other.framebuffer);
+		std::swap(device, other.device);
+	}
+	Framebuffer& operator=(Framebuffer&& other) {
+		destroy();
+		std::swap(framebuffer, other.framebuffer);
+		std::swap(device, other.device);
+		return *this;
+	}
+
+	VkResult create(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo);
+	void destroy();
+	operator const VkFramebuffer& () const;
+};
+
+using Framebuffers = std::vector<Framebuffer>;
 
 class Instance {
 private:

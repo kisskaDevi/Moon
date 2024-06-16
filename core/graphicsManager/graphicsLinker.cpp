@@ -10,11 +10,6 @@ GraphicsLinker::~GraphicsLinker(){
 }
 
 void GraphicsLinker::destroy(){
-    for(auto& framebuffer: framebuffers){
-        if(framebuffer) vkDestroyFramebuffer(device, framebuffer,nullptr);
-    }
-    framebuffers.clear();
-
     if(!commandBuffers.empty()){
         vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     }
@@ -72,17 +67,16 @@ void GraphicsLinker::createRenderPass(){
 
 void GraphicsLinker::createFramebuffers(){
     framebuffers.resize(imageCount);
-    for (size_t Image = 0; Image < framebuffers.size(); Image++)
-    {
+    for (size_t i = 0; i < static_cast<uint32_t>(framebuffers.size()); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &swapChainKHR->attachment(static_cast<uint32_t>(Image)).imageView;
+            framebufferInfo.pAttachments = &swapChainKHR->attachment(i).imageView;
             framebufferInfo.width = imageExtent.width;
             framebufferInfo.height = imageExtent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[Image]));
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 

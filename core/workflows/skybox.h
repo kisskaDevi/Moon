@@ -65,8 +65,9 @@ private:
     void createDescriptorSets();
 public:
     SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* object = nullptr);
+    ~SkyboxGraphics() { destroy(); }
 
-    void destroy() override;
+    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

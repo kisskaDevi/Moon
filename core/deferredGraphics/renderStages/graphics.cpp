@@ -36,8 +36,6 @@ void Graphics::destroy()
     base.destroy(device);
     lighting.destroy(device);
 
-    moon::workflows::Workflow::destroy();
-
     deferredAttachments.deleteAttachment(device);
     deferredAttachments.deleteSampler(device);
 }
@@ -165,8 +163,8 @@ void Graphics::createFramebuffers()
     framebuffers.resize(image.Count);
     for (size_t imageIndex = 0; imageIndex < image.Count; imageIndex++){
         std::vector<VkImageView> attachments;
-        for(size_t attIndex = 0; attIndex < deferredAttachments.size(); attIndex++){
-            attachments.push_back(deferredAttachments[static_cast<uint32_t>(attIndex)].instances[imageIndex].imageView);
+        for(uint32_t attIndex = 0; attIndex < static_cast<uint32_t>(deferredAttachments.size()); attIndex++){
+            attachments.push_back(deferredAttachments[attIndex].instances[imageIndex].imageView);
         }
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -177,7 +175,7 @@ void Graphics::createFramebuffers()
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[imageIndex]));
+        CHECK(framebuffers[imageIndex].create(device, framebufferInfo));
     }
 }
 

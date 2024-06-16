@@ -18,7 +18,6 @@ void SelectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aData
 void SelectorGraphics::destroy()
 {
     selector.destroy(device);
-    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -59,14 +58,14 @@ void SelectorGraphics::createFramebuffers()
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = 1;
-        framebufferInfo.pAttachments = &frame.instances[i].imageView;
-        framebufferInfo.width = image.Extent.width;
-        framebufferInfo.height = image.Extent.height;
-        framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = renderPass;
+            framebufferInfo.attachmentCount = 1;
+            framebufferInfo.pAttachments = &frame.instances[i].imageView;
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.layers = 1;
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 

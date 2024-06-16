@@ -8,13 +8,6 @@ void Workbody::destroy(VkDevice device){
     DescriptorSets.clear();
 }
 
-void Workflow::destroy(){
-    for(auto& framebuffer: framebuffers){
-        if(framebuffer) vkDestroyFramebuffer(device, framebuffer,nullptr);
-    }
-    framebuffers.clear();
-}
-
 Workflow& Workflow::setShadersPath(const std::filesystem::path &path){
     shadersPath = path;
     return *this;

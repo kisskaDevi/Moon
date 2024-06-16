@@ -25,7 +25,7 @@ private:
     moon::utils::SwapChain*         swapChainKHR{nullptr};
 
     utils::vkDefault::RenderPass    renderPass;
-    std::vector<VkFramebuffer>      framebuffers;
+    utils::vkDefault::Framebuffers  framebuffers;
 
     VkCommandPool                   commandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer>    commandBuffers;

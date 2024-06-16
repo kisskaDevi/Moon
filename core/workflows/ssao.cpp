@@ -16,7 +16,6 @@ void SSAOGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase
 void SSAOGraphics::destroy()
 {
     ssao.destroy(device);
-    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -64,7 +63,7 @@ void SSAOGraphics::createFramebuffers()
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 

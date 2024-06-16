@@ -41,8 +41,9 @@ private:
     void createDescriptorSets();
 public:
     SelectorGraphics(SelectorParameters parameters, bool enable, uint32_t transparentLayersCount = 1);
+    ~SelectorGraphics() { destroy(); }
 
-    void destroy() override;
+    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

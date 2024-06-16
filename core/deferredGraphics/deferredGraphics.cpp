@@ -93,7 +93,6 @@ void DeferredGraphics::destroy(){
     }
 
     for(auto& [_,workflow]: workflows){
-        workflow->destroy();
         delete workflow;
     }
     workflows.clear();

@@ -8,10 +8,8 @@ PostProcessingGraphics::PostProcessingGraphics(PostProcessingParameters paramete
     parameters(parameters), enable{enable}
 {}
 
-void PostProcessingGraphics::destroy()
-{
+void PostProcessingGraphics::destroy() {
     postProcessing.destroy(device);
-    Workflow::destroy();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
@@ -55,17 +53,16 @@ void PostProcessingGraphics::createRenderPass()
 void PostProcessingGraphics::createFramebuffers()
 {
     framebuffers.resize(image.Count);
-    for (size_t Image = 0; Image < framebuffers.size(); Image++)
-    {
+    for (size_t i = 0; i < framebuffers.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &frame.instances[Image].imageView;
+            framebufferInfo.pAttachments = &frame.instances[i].imageView;
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[Image]));
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 

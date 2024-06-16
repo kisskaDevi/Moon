@@ -29,10 +29,8 @@ ShadowGraphics::ShadowGraphics(bool enable, std::vector<moon::interfaces::Object
     shadow.depthMaps = depthMaps;
 }
 
-void ShadowGraphics::destroy()
-{
+void ShadowGraphics::destroy(){
     shadow.destroy(device);
-    Workflow::destroy();
 }
 
 void ShadowGraphics::createRenderPass()
@@ -128,17 +126,17 @@ void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
 {
     depthMap->get() = createAttachments();
     depthMap->updateDescriptorSets(device, image.Count);
-    framebuffers[depthMap].resize(image.Count);
-    for (size_t j = 0; j < image.Count; j++){
+    framebuffersMap[depthMap].resize(image.Count);
+    for (size_t i = 0; i < image.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &depthMap->get()->instances[j].imageView;
+            framebufferInfo.pAttachments = &depthMap->get()->instances[i].imageView;
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[depthMap][j]));
+        CHECK(framebuffersMap[depthMap][i].create(device, framebufferInfo));
     }
 }
 
@@ -149,11 +147,8 @@ void ShadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap)
         depthMap->get()->deleteAttachment(device);
         depthMap->get()->deleteSampler(device);
     }
-    if(framebuffers.count(depthMap)){
-        for(auto& frame: framebuffers[depthMap]){
-            if(frame){ vkDestroyFramebuffer(device, frame,nullptr); frame = VK_NULL_HANDLE;}
-        }
-        framebuffers.erase(depthMap);
+    if(framebuffersMap.count(depthMap)){
+        framebuffersMap.erase(depthMap);
     }
 }
 
@@ -182,7 +177,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffers[depthMap][frameNumber];
+        renderPassInfo.framebuffer = framebuffersMap[depthMap][frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
         renderPassInfo.renderArea.extent = image.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

@@ -142,7 +142,9 @@ public:
              std::vector<moon::interfaces::Light*>* lightSources = nullptr,
              std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
-    void destroy()override;
+    ~Graphics(){ destroy(); }
+
+    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

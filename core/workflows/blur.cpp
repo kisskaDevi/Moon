@@ -25,8 +25,6 @@ void GaussianBlur::destroy(){
     xblur.destroy(device);
     yblur.destroy(device);
 
-    Workflow::destroy();
-
     frame.deleteAttachment(device);
     frame.deleteSampler(device);
 
@@ -89,11 +87,9 @@ void GaussianBlur::createRenderPass(){
 }
 
 void GaussianBlur::createFramebuffers(){
-    for (auto attIt = frame.instances.begin(), buffIt = bufferAttachment.instances.begin();
-         attIt != frame.instances.end() && buffIt != bufferAttachment.instances.end();
-         attIt++, buffIt++)
-    {
-        std::vector<VkImageView> attachments = {attIt->imageView, buffIt->imageView};
+    framebuffers.resize(image.Count);
+    for (uint32_t i = 0; i < static_cast<uint32_t>(framebuffers.size()); i++) {
+        std::vector<VkImageView> attachments = { frame.instances[i].imageView, bufferAttachment.instances[i].imageView};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -102,8 +98,7 @@ void GaussianBlur::createFramebuffers(){
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        framebuffers.push_back(VkFramebuffer{});
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers.back()));
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 

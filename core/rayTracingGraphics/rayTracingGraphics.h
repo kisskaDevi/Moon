@@ -48,8 +48,8 @@ private:
     std::filesystem::path workflowsShadersPath;
     VkExtent2D extent;
 
-    moon::utils::AttachmentsDatabase aDatabase;
-    moon::utils::BuffersDatabase bDatabase;
+    moon::utils::AttachmentsDatabase    aDatabase;
+    moon::utils::BuffersDatabase        bDatabase;
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 

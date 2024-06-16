@@ -60,8 +60,9 @@ public:
     Scattering(ScatteringParameters parameters,
                bool enable, std::vector<moon::interfaces::Light*>* lightSources = nullptr,
                std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
+    ~Scattering() { destroy(); }
 
-    void destroy() override;
+    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(
         const moon::utils::BuffersDatabase& bDatabase,

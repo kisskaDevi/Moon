@@ -30,7 +30,7 @@ private:
     std::vector<VkDescriptorSet>    descriptorSets;
 
     utils::vkDefault::RenderPass    renderPass;
-    std::vector<VkFramebuffer>      framebuffers;
+    utils::vkDefault::Framebuffers  framebuffers;
 
     moon::utils::Attachments frame;
     bool enable{true};

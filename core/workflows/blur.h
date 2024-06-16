@@ -44,8 +44,9 @@ private:
     void createBufferAttachments();
 public:
     GaussianBlur(GaussianBlurParameters parameters, bool enable);
+    ~GaussianBlur() { destroy(); }
 
-    void destroy() override;
+    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

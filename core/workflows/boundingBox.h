@@ -45,8 +45,9 @@ private:
     void createDescriptorSets();
 public:
     BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects = nullptr);
+    ~BoundingBoxGraphics() { destroy(); }
 
-    void destroy() override;
+    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(
         const moon::utils::BuffersDatabase& bDatabase,

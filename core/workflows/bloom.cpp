@@ -31,7 +31,6 @@ void BloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabas
 void BloomGraphics::destroy(){
     filter.destroy(device);
     bloom.destroy(device);
-    Workflow::destroy();
 
     for(auto& attachment: frames){
         attachment.deleteAttachment(device);
@@ -83,7 +82,7 @@ void BloomGraphics::createFramebuffers(){
                 framebufferInfo.width = image.Extent.width;
                 framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
-            CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * i + j]));
+            CHECK(framebuffers[image.Count * i + j].create(device, framebufferInfo));
         }
     }
     for(size_t i = 0; i < image.Count; i++){
@@ -95,7 +94,7 @@ void BloomGraphics::createFramebuffers(){
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[image.Count * frames.size() + i]));
+        CHECK(framebuffers[image.Count * frames.size() + i].create(device, framebufferInfo));
     }
 }
 

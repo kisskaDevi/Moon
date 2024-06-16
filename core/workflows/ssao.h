@@ -40,8 +40,9 @@ private:
     void createDescriptorSets();
 public:
     SSAOGraphics(SSAOParameters parameters, bool enable);
+    ~SSAOGraphics() { destroy(); }
 
-    void destroy() override;
+    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

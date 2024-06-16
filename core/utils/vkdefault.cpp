@@ -406,6 +406,27 @@ vkDefault::RenderPass::operator const VkRenderPass& () const {
     return renderPass;
 }
 
+vkDefault::Framebuffer::~Framebuffer() {
+    destroy();
+}
+
+VkResult vkDefault::Framebuffer::create(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo) {
+    destroy();
+    this->device = device;
+    return vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer);
+}
+
+void vkDefault::Framebuffer::destroy() {
+    if (framebuffer) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+        framebuffer = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::Framebuffer::operator const VkFramebuffer& () const {
+    return framebuffer;
+}
+
 vkDefault::Instance::~Instance() {
     destroy();
 }

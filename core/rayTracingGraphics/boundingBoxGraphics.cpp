@@ -53,14 +53,14 @@ void BoundingBoxGraphics::createFramebuffers(){
     for(size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> pAttachments = {frame.instances[i].imageView};
         VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
-        framebufferInfo.pAttachments = pAttachments.data();
-        framebufferInfo.width = image.Extent.width;
-        framebufferInfo.height = image.Extent.height;
-        framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = renderPass;
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
+            framebufferInfo.pAttachments = pAttachments.data();
+            framebufferInfo.width = image.Extent.width;
+            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.layers = 1;
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 
@@ -186,11 +186,6 @@ void BoundingBoxGraphics::destroy(){
     if(pipelineLayout)      {vkDestroyPipelineLayout(device, pipelineLayout,nullptr); pipelineLayout = VK_NULL_HANDLE;}
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(descriptorPool)      {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
-
-    for(auto& framebuffer: framebuffers){
-        if(framebuffer) vkDestroyFramebuffer(device, framebuffer,nullptr);
-    }
-    framebuffers.clear();
 
     frame.deleteAttachment(device);
     frame.deleteSampler(device);

@@ -28,8 +28,6 @@ void SkyboxGraphics::destroy()
     frame.deleteSampler(device);
 
     skybox.destroy(device);
-
-    Workflow::destroy();
 }
 
 void SkyboxGraphics::createRenderPass()
@@ -80,7 +78,7 @@ void SkyboxGraphics::createFramebuffers()
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]));
+        CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 

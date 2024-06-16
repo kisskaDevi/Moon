@@ -40,14 +40,13 @@ protected:
     moon::utils::ImageInfo          image;
 
     utils::vkDefault::RenderPass    renderPass;
-    std::vector<VkFramebuffer>      framebuffers;
+    utils::vkDefault::Framebuffers  framebuffers;
     std::vector<VkCommandBuffer>    commandBuffers;
 public:
     virtual ~Workflow(){};
     Workflow() = default;
     Workflow(Workflow&&) = default;
     Workflow& operator=(Workflow&&) = default;
-    virtual void destroy();
 
     Workflow& setShadersPath(const std::filesystem::path &path);
     Workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);

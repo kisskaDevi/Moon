@@ -21,7 +21,6 @@ class GraphicsManager
 {
 public:
     GraphicsManager(GLFWwindow* window, int32_t imageCount = -1, int32_t resourceCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    ~GraphicsManager();
 
     VkInstance getInstance() const;
     VkExtent2D getImageExtent() const;
@@ -35,7 +34,6 @@ public:
     void setGraphics(GraphicsInterface* graphics);
 
     void create(GLFWwindow* window);
-    void destroy();
 
     VkResult checkNextFrame();
     VkResult drawFrame();
@@ -60,8 +58,8 @@ private:
     std::vector<GraphicsInterface*>             graphics;
     GraphicsLinker                              linker;
 
-    std::vector<VkSemaphore>                    availableSemaphores;
-    std::vector<VkFence>                        fences;
+    utils::vkDefault::Semaphores                availableSemaphores;
+    utils::vkDefault::Fences                    fences;
 
     uint32_t                                    imageIndex{0};
     uint32_t                                    imageCount{0};
@@ -74,9 +72,6 @@ private:
     VkResult createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
     VkResult createLinker();
     VkResult createSyncObjects();
-
-    void destroyLinker();
-    void destroySyncObjects();
 };
 
 }

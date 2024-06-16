@@ -15,10 +15,6 @@ GraphicsManager::GraphicsManager(GLFWwindow* window, int32_t imageCount, int32_t
     create(window);
 }
 
-GraphicsManager::~GraphicsManager(){
-    destroy();
-}
-
 void GraphicsManager::create(GLFWwindow* window){
     moon::utils::debug::checkResult(createSwapChain(window, imageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
@@ -56,8 +52,8 @@ VkResult GraphicsManager::createInstance(){
         createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
         createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
         createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo : nullptr;
-    VkResult result = instance.create(createInfo);
-    CHECK(result)
+    VkResult result = VK_SUCCESS;
+    CHECK(result = instance.create(createInfo))
 
     if (enableValidationLayers) debugMessenger.create(instance);
 
@@ -70,12 +66,10 @@ VkResult GraphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
     VkResult result = VK_SUCCESS;
 
     uint32_t deviceCount = 0;
-    result = vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-    CHECK(result);
+    CHECK(result = vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr));
 
     std::vector<VkPhysicalDevice> phDevices(deviceCount);
-    result = vkEnumeratePhysicalDevices(instance, &deviceCount, phDevices.data());
-    CHECK(result);
+    CHECK(result = vkEnumeratePhysicalDevices(instance, &deviceCount, phDevices.data()));
 
     for (const auto phDevice : phDevices){
         auto device = moon::utils::PhysicalDevice(phDevice, deviceExtensions);
@@ -90,12 +84,9 @@ VkResult GraphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
         }
     }
 
-    if(!activeDevice){
-        return VK_ERROR_DEVICE_LOST;
-    }
+    if(!activeDevice) return VK_ERROR_DEVICE_LOST;
 
-    result = activeDevice->createDevice(deviceFeatures, {{0,2}});
-    CHECK(result);
+    CHECK(result = activeDevice->createDevice(deviceFeatures, { {0,2} }));
 
     return result;
 }
@@ -105,8 +96,8 @@ VkResult GraphicsManager::createSurface(GLFWwindow* window){
     CHECK_M(devices.empty(), "[ GraphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
     CHECK_M(window == nullptr, "[ createSurface ] Window is nullptr");
 
-    VkResult result = surface.create(instance, window);
-    CHECK(result);
+    VkResult result = VK_SUCCESS;
+    CHECK(result = surface.create(instance, window));
     CHECK_M(!activeDevice->presentSupport(surface), "[ GraphicsManager::createSurface ] device doesn't support present");
 
     return result;
@@ -122,6 +113,7 @@ VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
 }
 
 VkResult GraphicsManager::createLinker(){
+    linker.destroy();
     linker.setDevice(activeDevice->getLogical());
     linker.setSwapChain(&swapChainKHR);
     linker.createRenderPass();
@@ -164,32 +156,24 @@ VkResult GraphicsManager::createSyncObjects(){
     VkResult result = VK_SUCCESS;
 
     availableSemaphores.resize(resourceCount);
-    fences.resize(resourceCount);
-
-    for (size_t imageIndex = 0; imageIndex < resourceCount; imageIndex++){
-        VkSemaphoreCreateInfo semaphoreInfo{};
-            semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        result = vkCreateSemaphore(activeDevice->getLogical(), &semaphoreInfo, nullptr, &availableSemaphores[imageIndex]);
-        CHECK(result);
-
-        VkFenceCreateInfo fenceInfo{};
-            fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-            fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        result = vkCreateFence(activeDevice->getLogical(), &fenceInfo, nullptr, &fences[imageIndex]);
-        CHECK(result);
+    for (auto& semaphore : availableSemaphores) {
+        CHECK(result = semaphore.create(activeDevice->getLogical()));
     }
+
+    fences.resize(resourceCount);
+    for (auto& fence : fences) {
+        CHECK(result = fence.create(activeDevice->getLogical()));
+    }
+
     return result;
 }
 
 VkResult GraphicsManager::checkNextFrame(){
-    VkResult result = vkWaitForFences(activeDevice->getLogical(), 1, &fences[resourceIndex], VK_TRUE, UINT64_MAX);
-    CHECK(result);
+    VkResult result = VK_SUCCESS;
 
-    result = vkResetFences(activeDevice->getLogical(), 1, &fences[resourceIndex]);
-    CHECK(result);
-
-    result = vkAcquireNextImageKHR(activeDevice->getLogical(), swapChainKHR, UINT64_MAX, availableSemaphores[resourceIndex], VK_NULL_HANDLE, &imageIndex);
-    CHECK(result);
+    CHECK(result = vkWaitForFences(activeDevice->getLogical(), 1, fences[resourceIndex], VK_TRUE, UINT64_MAX));
+    CHECK(result = vkResetFences(activeDevice->getLogical(), 1, fences[resourceIndex]));
+    CHECK(result = vkAcquireNextImageKHR(activeDevice->getLogical(), swapChainKHR, UINT64_MAX, availableSemaphores[resourceIndex], VK_NULL_HANDLE, &imageIndex));
 
     return result;
 }
@@ -220,26 +204,6 @@ VkResult GraphicsManager::drawFrame(){
 
 VkResult GraphicsManager::deviceWaitIdle() const {
     return vkDeviceWaitIdle(activeDevice->getLogical());
-}
-
-void GraphicsManager::destroyLinker(){
-    linker.destroy();
-}
-
-void GraphicsManager::destroySyncObjects(){
-    for (auto& semaphore : availableSemaphores){
-        vkDestroySemaphore(activeDevice->getLogical(), semaphore, nullptr);
-    }
-    availableSemaphores.clear();
-    for (auto& fence : fences){
-        vkDestroyFence(activeDevice->getLogical(), fence, nullptr);
-    }
-    fences.clear();
-}
-
-void GraphicsManager::destroy(){
-    destroyLinker();
-    destroySyncObjects();
 }
 
 VkInstance      GraphicsManager::getInstance()      const {return instance;}

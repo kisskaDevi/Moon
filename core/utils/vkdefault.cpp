@@ -467,4 +467,55 @@ vkDefault::Surface::operator const VkSurfaceKHR& () const {
     return surface;
 }
 
+vkDefault::Semaphore::~Semaphore() {
+    destroy();
+}
+
+VkResult vkDefault::Semaphore::create(const VkDevice& device) {
+    destroy();
+    this->device = device;
+    VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    return vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
+}
+
+void vkDefault::Semaphore::destroy() {
+    if(semaphore){
+        vkDestroySemaphore(device, semaphore, nullptr);
+        semaphore = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::Semaphore::operator const VkSemaphore& () const {
+    return semaphore;
+}
+
+vkDefault::Fence::~Fence() {
+    destroy();
+}
+
+VkResult vkDefault::Fence::create(const VkDevice& device) {
+    destroy();
+    this->device = device;
+    VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    return vkCreateFence(device, &fenceInfo, nullptr, &fence);
+}
+
+void vkDefault::Fence::destroy() {
+    if (fence) {
+        vkDestroyFence(device, fence, nullptr);
+        fence = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::Fence::operator const VkFence& () const {
+    return fence;
+}
+
+vkDefault::Fence::operator const VkFence* () const {
+    return &fence;
+}
+
 }

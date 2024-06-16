@@ -89,7 +89,6 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, moon::graphicsManager::G
     }
 
     app->deviceWaitIdle();
-    app->destroy();
 
     app->create(window);
 

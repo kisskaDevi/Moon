@@ -308,5 +308,59 @@ public:
 	operator const VkSurfaceKHR& () const;
 };
 
+class Semaphore {
+private:
+	VkSemaphore semaphore{ VK_NULL_HANDLE };
+	VkDevice device{ VK_NULL_HANDLE };
+public:
+	~Semaphore();
+	Semaphore() = default;
+	Semaphore(const Semaphore&) = delete;
+	Semaphore& operator=(const Semaphore&) = delete;
+	Semaphore(Semaphore&& other) {
+		std::swap(semaphore, other.semaphore);
+		std::swap(device, other.device);
+	}
+	Semaphore& operator=(Semaphore&& other) {
+		destroy();
+		std::swap(semaphore, other.semaphore);
+		std::swap(device, other.device);
+		return *this;
+	}
+
+	VkResult create(const VkDevice& device);
+	void destroy();
+	operator const VkSemaphore& () const;
+};
+
+using Semaphores = std::vector<Semaphore>;
+
+class Fence {
+private:
+	VkFence fence{ VK_NULL_HANDLE };
+	VkDevice device{ VK_NULL_HANDLE };
+public:
+	~Fence();
+	Fence() = default;
+	Fence(const VkFence&) = delete;
+	Fence& operator=(const Fence&) = delete;
+	Fence(Fence&& other) {
+		std::swap(fence, other.fence);
+		std::swap(device, other.device);
+	}
+	Fence& operator=(Fence&& other) {
+		destroy();
+		std::swap(fence, other.fence);
+		std::swap(device, other.device);
+		return *this;
+	}
+
+	VkResult create(const VkDevice& device);
+	void destroy();
+	operator const VkFence& () const;
+	operator const VkFence* () const;
+};
+
+using Fences = std::vector<Fence>;
 }
 #endif // VKDEFAULT_H

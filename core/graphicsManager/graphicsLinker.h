@@ -19,7 +19,7 @@ private:
     uint32_t                        imageCount;
     VkExtent2D                      imageExtent;
     VkFormat                        imageFormat;
-    VkDevice                        device;
+    VkDevice                        device{ VK_NULL_HANDLE };
 
     std::vector<Linkable*>          linkables;
     moon::utils::SwapChain*         swapChainKHR{nullptr};
@@ -27,7 +27,7 @@ private:
     utils::vkDefault::RenderPass    renderPass;
     std::vector<VkFramebuffer>      framebuffers;
 
-    VkCommandPool                   commandPool;
+    VkCommandPool                   commandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer>    commandBuffers;
     std::vector<bool>               updateCommandBufferFlags;
 

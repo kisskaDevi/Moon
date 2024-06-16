@@ -23,7 +23,14 @@ void SwapChain::destroy(){
     }
 }
 
-VkResult SwapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount){
+SwapChain::~SwapChain() {
+    destroy();
+}
+
+VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, std::vector<uint32_t> queueFamilyIndices, int32_t maxImageCount){
+    destroy();
+    this->device = device;
+
     VkResult result = VK_SUCCESS;
 
     this->window = window;
@@ -47,9 +54,9 @@ VkResult SwapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t qu
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        createInfo.imageSharingMode = queueFamilyIndexCount > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.pQueueFamilyIndices = pQueueFamilyIndices;
-        createInfo.queueFamilyIndexCount = queueFamilyIndexCount;
+        createInfo.imageSharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
+        createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
         createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = swapChain::queryingPresentMode(swapChainSupport.presentModes);
@@ -87,16 +94,24 @@ VkResult SwapChain::create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t qu
     return result;
 }
 
-VkSwapchainKHR& SwapChain::operator()(){
+VkResult SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex) const {
+    VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &waitSemaphore;
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = &swapChainKHR;
+        presentInfo.pImageIndices = &imageIndex;
+    return vkQueuePresentKHR(device->getQueue(0, 0), &presentInfo);
+
+}
+
+SwapChain::operator VkSwapchainKHR&(){
     return swapChainKHR;
 }
 
 Attachment& SwapChain::attachment(uint32_t i){
     return swapChainAttachments.instances[i];
-}
-
-void SwapChain::setDevice(const const PhysicalDevice* device){
-    this->device = device;
 }
 
 uint32_t SwapChain::getImageCount() const{

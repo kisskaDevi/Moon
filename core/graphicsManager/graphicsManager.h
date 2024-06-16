@@ -21,7 +21,6 @@ class GraphicsManager
 {
 public:
     GraphicsManager(GLFWwindow* window, int32_t imageCount = -1, int32_t resourceCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    GraphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures = {});
     ~GraphicsManager();
 
     VkInstance getInstance() const;
@@ -76,7 +75,6 @@ private:
     VkResult createLinker();
     VkResult createSyncObjects();
 
-    void destroySwapChain();
     void destroyLinker();
     void destroySyncObjects();
 };

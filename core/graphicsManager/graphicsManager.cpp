@@ -6,15 +6,12 @@
 
 namespace moon::graphicsManager {
 
-GraphicsManager::GraphicsManager(const VkPhysicalDeviceFeatures& deviceFeatures){
+GraphicsManager::GraphicsManager(GLFWwindow* window, int32_t imageCount, int32_t resourceCount, const VkPhysicalDeviceFeatures& deviceFeatures) :
+    imageCount(imageCount),
+    resourceCount(resourceCount) {
     moon::utils::debug::checkResult(createInstance(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-}
-
-GraphicsManager::GraphicsManager(GLFWwindow* window, int32_t imageCount, int32_t resourceCount, const VkPhysicalDeviceFeatures& deviceFeatures)
-    : GraphicsManager(deviceFeatures){
-    this->imageCount = imageCount;
-    this->resourceCount = resourceCount;
+    moon::utils::debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     create(window);
 }
 
@@ -23,7 +20,6 @@ GraphicsManager::~GraphicsManager(){
 }
 
 void GraphicsManager::create(GLFWwindow* window){
-    moon::utils::debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createSwapChain(window, imageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
@@ -122,8 +118,7 @@ VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     CHECK_M(devices.empty(), "[ GraphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
 
     std::vector<uint32_t> queueIndices = {0};
-    swapChainKHR.setDevice(activeDevice);
-    return swapChainKHR.create(window, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data(), maxImageCount);
+    return swapChainKHR.create(activeDevice, window, surface, queueIndices, maxImageCount);
 }
 
 VkResult GraphicsManager::createLinker(){
@@ -193,7 +188,7 @@ VkResult GraphicsManager::checkNextFrame(){
     result = vkResetFences(activeDevice->getLogical(), 1, &fences[resourceIndex]);
     CHECK(result);
 
-    result = vkAcquireNextImageKHR(activeDevice->getLogical(), swapChainKHR(), UINT64_MAX, availableSemaphores[resourceIndex], VK_NULL_HANDLE, &imageIndex);
+    result = vkAcquireNextImageKHR(activeDevice->getLogical(), swapChainKHR, UINT64_MAX, availableSemaphores[resourceIndex], VK_NULL_HANDLE, &imageIndex);
     CHECK(result);
 
     return result;
@@ -220,22 +215,11 @@ VkResult GraphicsManager::drawFrame(){
 
     resourceIndex = ((resourceIndex + 1) % resourceCount);
 
-    VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &linkerSemaphore;
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &swapChainKHR();
-        presentInfo.pImageIndices = &imageIndex;
-    return vkQueuePresentKHR(activeDevice->getQueue(0,0), &presentInfo);
+    return swapChainKHR.present(linkerSemaphore, imageIndex);
 }
 
 VkResult GraphicsManager::deviceWaitIdle() const {
     return vkDeviceWaitIdle(activeDevice->getLogical());
-}
-
-void GraphicsManager::destroySwapChain(){
-    swapChainKHR.destroy();
 }
 
 void GraphicsManager::destroyLinker(){
@@ -254,7 +238,6 @@ void GraphicsManager::destroySyncObjects(){
 }
 
 void GraphicsManager::destroy(){
-    destroySwapChain();
     destroyLinker();
     destroySyncObjects();
 }

@@ -24,14 +24,19 @@ private:
 
     VkCommandPool       commandPool{VK_NULL_HANDLE};
 
+    void destroy();
 public:
     SwapChain() = default;
-    void destroy();
+    ~SwapChain();
+    SwapChain(const SwapChain&) = delete;
+    SwapChain& operator=(const SwapChain&) = delete;
+    SwapChain(SwapChain&&) = default;
+    SwapChain& operator=(SwapChain&&) = default;
 
-    VkResult create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);
-    void setDevice(const const PhysicalDevice* device);
+    VkResult create(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, std::vector<uint32_t> queueFamilyIndices, int32_t maxImageCount = -1);
+    VkResult present(VkSemaphore waitSemaphore, uint32_t imageIndex) const;
 
-    VkSwapchainKHR& operator()();
+    operator VkSwapchainKHR&();
     Attachment& attachment(uint32_t i);
 
     uint32_t getImageCount() const;

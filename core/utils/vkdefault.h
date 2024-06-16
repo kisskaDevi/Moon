@@ -331,6 +331,7 @@ public:
 	VkResult create(const VkDevice& device);
 	void destroy();
 	operator const VkSemaphore& () const;
+	operator const VkSemaphore* () const;
 };
 
 using Semaphores = std::vector<Semaphore>;

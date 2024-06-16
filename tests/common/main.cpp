@@ -88,8 +88,6 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, moon::graphicsManager::G
         glfwWaitEvents();
     }
 
-    app->deviceWaitIdle();
-
     app->create(window);
 
     testScene->resize(width, height);

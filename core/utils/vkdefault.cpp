@@ -490,6 +490,10 @@ vkDefault::Semaphore::operator const VkSemaphore& () const {
     return semaphore;
 }
 
+vkDefault::Semaphore::operator const VkSemaphore* () const {
+    return &semaphore;
+}
+
 vkDefault::Fence::~Fence() {
     destroy();
 }

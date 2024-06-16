@@ -23,13 +23,6 @@ void GraphicsLinker::destroy(){
     if(commandPool) {
         vkDestroyCommandPool(device, commandPool, nullptr); commandPool = VK_NULL_HANDLE;
     }
-
-    for (auto& signalSemaphore: signalSemaphores){
-        if(signalSemaphore) vkDestroySemaphore(device, signalSemaphore, nullptr);
-    }
-    signalSemaphores.clear();
-
-    updateCommandBufferFlags.clear();
 }
 
 void GraphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
@@ -152,11 +145,8 @@ void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t image
 
 void GraphicsLinker::createSyncObjects(){
     signalSemaphores.resize(imageCount);
-
-    for (auto& signalSemaphore: signalSemaphores){
-        VkSemaphoreCreateInfo semaphoreInfo{};
-            semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        CHECK(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &signalSemaphore));
+    for (auto& semaphore: signalSemaphores){
+        CHECK(semaphore.create(device));
     }
 }
 
@@ -170,7 +160,7 @@ const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const std::vecto
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffers[frameNumber];
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &signalSemaphores[frameNumber];
+        submitInfo.pSignalSemaphores = signalSemaphores[frameNumber];
     CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
     return signalSemaphores[frameNumber];
 }

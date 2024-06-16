@@ -3,6 +3,7 @@
 
 #include <vulkan.h>
 #include <vector>
+#include <vkdefault.h>
 
 namespace moon::utils {
 
@@ -23,9 +24,10 @@ struct Stage{
 
 struct Node{
     std::vector<Stage> stages;
-    std::vector<VkSemaphore> signalSemaphores;
+    utils::vkDefault::Semaphores signalSemaphores;
     Node* next{nullptr};
 
+    Node() = default;
     Node(const std::vector<Stage>& stages, Node* next);
     void destroy(VkDevice device);
 

@@ -34,13 +34,13 @@ struct StorageBufferObject{
 
 class DeferredGraphics: public moon::graphicsManager::GraphicsInterface{
 private:
-    std::filesystem::path                       shadersPath;
-    std::filesystem::path                       workflowsShadersPath;
-    VkExtent2D                                  extent{0,0};
-    VkSampleCountFlagBits                       MSAASamples{VK_SAMPLE_COUNT_1_BIT};
+    std::filesystem::path               shadersPath;
+    std::filesystem::path               workflowsShadersPath;
+    VkExtent2D                          extent{0,0};
+    VkSampleCountFlagBits               MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
-    moon::utils::BuffersDatabase bDatabase;
-    moon::utils::AttachmentsDatabase aDatabase;
+    moon::utils::BuffersDatabase        bDatabase;
+    moon::utils::AttachmentsDatabase    aDatabase;
     std::unordered_map<std::string, moon::workflows::Workflow*> workflows;
     std::unordered_map<std::string, bool> enable;
     Link* deferredLink;
@@ -50,7 +50,7 @@ private:
     VkCommandPool                               commandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer>                copyCommandBuffers;
     std::vector<bool>                           updateCommandBufferFlags;
-    std::vector<moon::utils::Node*>             nodes;
+    std::vector<moon::utils::Node>              nodes;
 
     uint32_t                                    blitAttachmentsCount{8};
     uint32_t                                    TransparentLayersCount{2};

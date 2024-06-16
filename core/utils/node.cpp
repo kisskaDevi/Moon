@@ -33,9 +33,7 @@ void Node::destroy(VkDevice device){
     if(next){
         next->destroy(device); delete next; next = nullptr;
     }
-    for(auto& semaphore: signalSemaphores){
-        vkDestroySemaphore(device, semaphore, nullptr);
-    }
+    signalSemaphores.clear();
 }
 
 Node* Node::back(){
@@ -64,24 +62,23 @@ std::vector<std::vector<VkSemaphore>> Node::getBackSemaphores(){
 
 VkResult Node::createSemaphores(VkDevice device){
     VkResult result = VK_SUCCESS;
-    auto createSemaphore = [this, &result](VkDevice device, VkSemaphoreCreateInfo* semaphoreInfo, Stage* stage){
-        signalSemaphores.push_back(VkSemaphore{});
-        result = vkCreateSemaphore(device, semaphoreInfo, nullptr, &signalSemaphores.back());
-        CHECK(result);
+    auto createSemaphore = [this, &result](VkDevice device, Stage* stage){
+        signalSemaphores.emplace_back();
+        CHECK(result = signalSemaphores.back().create(device));
         stage->signalSemaphores.push_back(signalSemaphores.back());
     };
 
-    if(VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0}; next){
+    if(next){
         for(auto& currentStage: stages){
             for(auto& nextStage: next->stages){
-                createSemaphore(device, &semaphoreInfo, &currentStage);
+                createSemaphore(device, &currentStage);
                 nextStage.waitSemaphores.push_back(signalSemaphores.back());
             }
         }
         next->createSemaphores(device);
     }else{
         for(auto& currentStage: stages){
-            createSemaphore(device, &semaphoreInfo, &currentStage);
+            createSemaphore(device, &currentStage);
         }
     }
     return result;

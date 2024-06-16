@@ -31,7 +31,7 @@ private:
     std::vector<VkCommandBuffer>    commandBuffers;
     std::vector<bool>               updateCommandBufferFlags;
 
-    std::vector<VkSemaphore>        signalSemaphores;
+    utils::vkDefault::Semaphores    signalSemaphores;
 public:
     GraphicsLinker() = default;
     ~GraphicsLinker();

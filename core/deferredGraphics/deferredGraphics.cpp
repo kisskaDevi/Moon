@@ -81,8 +81,7 @@ void DeferredGraphics::destroy(){
     destroyCommandPool();
 
     for(auto& node: nodes){
-        node->destroy(device->getLogical());
-        delete node;
+        node.destroy(device->getLogical());
     }
     nodes.clear();
 
@@ -331,8 +330,7 @@ void DeferredGraphics::createCommandBuffers(){
 
     nodes.resize(imageCount);
     for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
-        nodes[imageIndex]
-         = new moon::utils::Node({
+        nodes[imageIndex] = moon::utils::Node({
             moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node({
             moon::utils::Stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)),
@@ -355,21 +353,21 @@ void DeferredGraphics::createCommandBuffers(){
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, nullptr))))));
 
-        nodes[imageIndex]->createSemaphores(device->getLogical());
+        nodes[imageIndex].createSemaphores(device->getLogical());
     }
 }
 
 std::vector<std::vector<VkSemaphore>> DeferredGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex){
     if(externalSemaphore.size()){
-        nodes[imageIndex]->setExternalSemaphore(externalSemaphore);
+        nodes[imageIndex].setExternalSemaphore(externalSemaphore);
     }
     if(externalFence.size()){
-        nodes[imageIndex]->back()->setExternalFence(externalFence);
+        nodes[imageIndex].back()->setExternalFence(externalFence);
     }
 
-    nodes[imageIndex]->submit();
+    nodes[imageIndex].submit();
 
-    return nodes[imageIndex]->back()->getBackSemaphores();
+    return nodes[imageIndex].back()->getBackSemaphores();
 }
 
 void DeferredGraphics::update(uint32_t imageIndex) {

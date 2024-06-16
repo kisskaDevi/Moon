@@ -16,6 +16,7 @@ GraphicsManager::GraphicsManager(GLFWwindow* window, int32_t imageCount, int32_t
 }
 
 void GraphicsManager::create(GLFWwindow* window){
+    deviceWaitIdle();
     moon::utils::debug::checkResult(createSwapChain(window, imageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createSyncObjects(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));

@@ -29,13 +29,17 @@ struct Attachments{
     VkFormat format{VK_FORMAT_UNDEFINED};
     VkClearValue clearValue{};
 
-    Attachments() = default;
-    Attachments(const Attachments& other);
-    Attachments& operator=(const Attachments& other);
+    VkDevice device{ VK_NULL_HANDLE };
 
-    ~Attachments() = default;
-    void deleteAttachment(VkDevice device);
-    void deleteSampler(VkDevice device);
+    Attachments() = default;
+    Attachments(const Attachments& other) = delete;
+    Attachments& operator=(const Attachments& other) = delete;
+    Attachments(Attachments&& other) = default;
+    Attachments& operator=(Attachments&& other) = default;
+
+    ~Attachments();
+    void deleteAttachment();
+    void deleteSampler();
 
     VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
     VkResult createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);

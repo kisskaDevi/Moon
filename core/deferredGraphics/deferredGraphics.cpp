@@ -49,7 +49,7 @@ DeferredGraphics::DeferredGraphics(const std::filesystem::path& shadersPath, con
 }
 
 DeferredGraphics::~DeferredGraphics(){
-    DeferredGraphics::destroy();
+    destroy();
     delete deferredLink;
 }
 
@@ -74,8 +74,10 @@ void DeferredGraphics::destroyCommandPool(){
 void DeferredGraphics::destroy(){
     for(auto& [_,map]: depthMaps){
         static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
-        delete map;
-        map = nullptr;
+        if (map) {
+            delete map;
+            map = nullptr;
+        }
     }
 
     destroyCommandPool();
@@ -481,8 +483,10 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
 
     if(depthMaps.count(lightSource)){
         static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(depthMaps[lightSource]);
-        delete depthMaps[lightSource];
-        depthMaps.erase(lightSource);
+        if (depthMaps[lightSource]) {
+            delete depthMaps[lightSource];
+            depthMaps.erase(lightSource);
+        }
     }
 
     updateCmdFlags();

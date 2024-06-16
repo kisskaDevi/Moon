@@ -13,12 +13,8 @@ void SSAOGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase
     aDatabase.addAttachmentData(parameters.out.ssao, enable, &frame);
 }
 
-void SSAOGraphics::destroy()
-{
+void SSAOGraphics::destroy(){
     ssao.destroy(device);
-
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
 }
 
 void SSAOGraphics::createRenderPass()

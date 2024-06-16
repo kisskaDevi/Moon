@@ -141,12 +141,7 @@ void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
 }
 
 
-void ShadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap)
-{
-    if(depthMap->get()){
-        depthMap->get()->deleteAttachment(device);
-        depthMap->get()->deleteSampler(device);
-    }
+void ShadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap){
     if(framebuffersMap.count(depthMap)){
         framebuffersMap.erase(depthMap);
     }

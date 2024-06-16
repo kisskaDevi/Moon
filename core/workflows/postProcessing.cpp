@@ -10,9 +10,6 @@ PostProcessingGraphics::PostProcessingGraphics(PostProcessingParameters paramete
 
 void PostProcessingGraphics::destroy() {
     postProcessing.destroy(device);
-
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
 }
 
 void PostProcessingGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){

@@ -18,9 +18,6 @@ void BoundingBoxGraphics::BoundingBox::destroy(VkDevice device){
 
 void BoundingBoxGraphics::destroy(){
     box.destroy(device);
-
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
 }
 
 void BoundingBoxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){

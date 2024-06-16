@@ -24,12 +24,6 @@ void GaussianBlur::createAttachments(moon::utils::AttachmentsDatabase& aDatabase
 void GaussianBlur::destroy(){
     xblur.destroy(device);
     yblur.destroy(device);
-
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
-
-    bufferAttachment.deleteAttachment(device);
-    bufferAttachment.deleteSampler(device);
 }
 
 void GaussianBlur::createRenderPass(){

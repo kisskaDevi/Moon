@@ -42,8 +42,6 @@ void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
 
 void LayersCombiner::destroy(){
     combiner.destroy(device);
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
 }
 
 void LayersCombiner::createRenderPass(){

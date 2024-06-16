@@ -35,11 +35,7 @@ void Graphics::destroy()
 {
     base.destroy(device);
     lighting.destroy(device);
-
-    deferredAttachments.deleteAttachment(device);
-    deferredAttachments.deleteSampler(device);
 }
-
 
 void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {

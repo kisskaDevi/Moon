@@ -24,9 +24,6 @@ void SkyboxGraphics::Skybox::destroy(VkDevice device)
 
 void SkyboxGraphics::destroy()
 {
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
-
     skybox.destroy(device);
 }
 

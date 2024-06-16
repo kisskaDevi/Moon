@@ -19,8 +19,7 @@ BloomGraphics& BloomGraphics::setBlitFactor(const float& blitFactor){this->blitF
 BloomGraphics& BloomGraphics::setSamplerStepX(const float& xSamplerStep){this->xSamplerStep = xSamplerStep; return *this;}
 BloomGraphics& BloomGraphics::setSamplerStepY(const float& ySamplerStep){this->ySamplerStep = ySamplerStep; return *this;}
 
-void BloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
-{
+void BloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase) {
     frames.resize(bloom.blitAttachmentsCount);
     moon::utils::createAttachments(physicalDevice, device, image, bloom.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     moon::utils::createAttachments(physicalDevice, device, image, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
@@ -31,14 +30,6 @@ void BloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabas
 void BloomGraphics::destroy(){
     filter.destroy(device);
     bloom.destroy(device);
-
-    for(auto& attachment: frames){
-        attachment.deleteAttachment(device);
-        attachment.deleteSampler(device);
-    }
-
-    bufferAttachment.deleteAttachment(device);
-    bufferAttachment.deleteSampler(device);
 }
 
 void BloomGraphics::createRenderPass(){
@@ -344,7 +335,7 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
     moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 }
 
-void BloomGraphics::render(VkCommandBuffer commandBuffer, moon::utils::Attachments image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker)
+void BloomGraphics::render(VkCommandBuffer commandBuffer, const moon::utils::Attachments& image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker)
 {
     std::vector<VkClearValue> clearValues(1,VkClearValue{});
     for(uint32_t index = 0; index < clearValues.size(); index++){

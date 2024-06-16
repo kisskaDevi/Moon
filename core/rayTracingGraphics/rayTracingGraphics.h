@@ -38,9 +38,10 @@ private:
     ImageResource bloom;
 
     cuda::rayTracing::RayTracing rayTracer;
-    BoundingBoxGraphics bbGraphics;
-    moon::workflows::BloomGraphics bloomGraph;
     RayTracingLink Link;
+
+    BoundingBoxGraphics bbGraphics;
+    moon::workflows::BloomGraphics* bloomGraph;
 
     moon::utils::Texture* emptyTexture{nullptr};
 

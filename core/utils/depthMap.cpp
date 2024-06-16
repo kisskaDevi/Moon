@@ -43,6 +43,7 @@ DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, uint
 DepthMap::~DepthMap(){
     destroy(device);
 }
+
 void DepthMap::destroy(VkDevice device){
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
@@ -55,6 +56,11 @@ void DepthMap::destroy(VkDevice device){
         emptyTextureWhite->destroy(device);
         delete emptyTextureWhite;
         emptyTextureWhite = nullptr;
+    }
+
+    if(map) {
+        delete map;
+        map = nullptr;
     }
 }
 

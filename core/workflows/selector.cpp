@@ -15,12 +15,8 @@ void SelectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aData
     aDatabase.addAttachmentData(parameters.out.selector, enable, &frame);
 }
 
-void SelectorGraphics::destroy()
-{
+void SelectorGraphics::destroy(){
     selector.destroy(device);
-
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
 }
 
 void SelectorGraphics::createRenderPass()

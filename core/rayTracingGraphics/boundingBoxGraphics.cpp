@@ -187,9 +187,6 @@ void BoundingBoxGraphics::destroy(){
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(descriptorPool)      {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
-
     cameraBuffers.destroy(device);
 }
 

@@ -7,22 +7,10 @@
 
 namespace moon::utils {
 
-Attachments::Attachments(const Attachments &other){
-    std::copy(other.instances.begin(), other.instances.end(), std::back_inserter(instances));
-    sampler = other.sampler;
-    format = other.format;
-}
-
-Attachments& Attachments::operator=(const Attachments& other){
-    std::copy(other.instances.begin(), other.instances.end(), std::back_inserter(instances));
-    sampler = other.sampler;
-    format = other.format;
-
-    return *this;
-}
-
-VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
-{
+VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count) {
+    deleteAttachment();
+    deleteSampler();
+    this->device = device;
     VkResult result = VK_SUCCESS;
 
     instances.resize(count);
@@ -64,6 +52,9 @@ VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, V
 
 VkResult Attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
 {
+    deleteAttachment();
+    deleteSampler();
+    this->device = device;
     VkResult result = VK_SUCCESS;
 
     instances.resize(count);
@@ -103,20 +94,24 @@ VkResult Attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice devi
     return result;
 }
 
-void Attachments::deleteAttachment(VkDevice device)
+Attachments::~Attachments() {
+    deleteAttachment();
+    deleteSampler();
+}
+
+void Attachments::deleteAttachment()
 {
-    std::for_each(instances.begin(), instances.end(), [&device](Attachment& instance){
+    for(Attachment& instance : instances) {
         texture::destroy(device, instance.image, instance.imageMemory);
         vkDestroyImageView(device, instance.imageView, nullptr);
         instance.imageView = VK_NULL_HANDLE;
-    });
+    }
     instances.clear();
 }
 
-void Attachments::deleteSampler(VkDevice device)
-{
+void Attachments::deleteSampler() {
     if(sampler){
-        vkDestroySampler(device,sampler,nullptr);
+        vkDestroySampler(device, sampler, nullptr);
         sampler = VK_NULL_HANDLE;
     }
 }

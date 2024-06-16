@@ -6,13 +6,6 @@
 namespace moon::utils {
 
 void SwapChain::destroy(){
-    for (auto& instance: swapChainAttachments.instances){
-        if(instance.imageView){
-            vkDestroyImageView(device->getLogical(), instance.imageView, nullptr);
-            instance.imageView = VK_NULL_HANDLE;
-        }
-    }
-
     if(swapChainKHR) {
         vkDestroySwapchainKHR(device->getLogical(), swapChainKHR, nullptr);
         swapChainKHR = VK_NULL_HANDLE;
@@ -21,6 +14,12 @@ void SwapChain::destroy(){
     if(commandPool) {
         vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;
     }
+
+    for (Attachment& instance : swapChainAttachments.instances) {
+        vkDestroyImageView(device->getLogical(), instance.imageView, nullptr);
+        instance.imageView = VK_NULL_HANDLE;
+    }
+    swapChainAttachments.instances.clear();
 }
 
 SwapChain::~SwapChain() {
@@ -62,13 +61,12 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
         createInfo.presentMode = swapChain::queryingPresentMode(swapChainSupport.presentModes);
         createInfo.clipped = VK_TRUE;
         createInfo.oldSwapchain = VK_NULL_HANDLE;
-    result = vkCreateSwapchainKHR(device->getLogical(), &createInfo, nullptr, &swapChainKHR);
-    CHECK(result);
+    CHECK(result = vkCreateSwapchainKHR(device->getLogical(), &createInfo, nullptr, &swapChainKHR));
 
     swapChainAttachments.instances.resize(imageCount);
+    swapChainAttachments.device = device->getLogical();
     std::vector<VkImage> images = swapChainAttachments.getImages();
-    result = vkGetSwapchainImagesKHR(device->getLogical(), swapChainKHR, &imageCount, images.data());
-    CHECK(result);
+    CHECK(result = vkGetSwapchainImagesKHR(device->getLogical(), swapChainKHR, &imageCount, images.data()));
 
     for (auto& instance: swapChainAttachments.instances){
         instance.image = images[&instance - &swapChainAttachments.instances[0]];

@@ -55,7 +55,7 @@ private:
         uint32_t blitAttachmentsCount{0};
     }bloom;
 
-    void render(VkCommandBuffer commandBuffer, moon::utils::Attachments image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker);
+    void render(VkCommandBuffer commandBuffer, const moon::utils::Attachments& image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker);
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();

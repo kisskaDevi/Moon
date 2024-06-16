@@ -11,13 +11,13 @@ struct GBufferAttachments{
     moon::utils::Attachments         color;
     moon::utils::Attachments         depth;
 
-    GBufferAttachments();
-    GBufferAttachments(const GBufferAttachments& other);
-    GBufferAttachments& operator=(const GBufferAttachments& other);
+    GBufferAttachments() = default;
+    GBufferAttachments(const GBufferAttachments& other) = delete;
+    GBufferAttachments& operator=(const GBufferAttachments& other) = delete;
+    GBufferAttachments(GBufferAttachments&& other) = default;
+    GBufferAttachments& operator=(GBufferAttachments&& other) = default;
 
-    inline const moon::utils::Attachments& operator[](uint32_t index) const {
-        return *(&position + index);
-    }
+    const moon::utils::Attachments& operator[](uint32_t index) const;
 
     constexpr static uint32_t size() {return 4;}
     constexpr static uint32_t positionIndex() {return 0;}
@@ -32,16 +32,13 @@ struct DeferredAttachments{
     moon::utils::Attachments         bloom;
     GBufferAttachments  GBuffer;
 
-    DeferredAttachments();
-    DeferredAttachments(const DeferredAttachments& other);
-    DeferredAttachments& operator=(const DeferredAttachments& other);
+    DeferredAttachments() = default;
+    DeferredAttachments(const DeferredAttachments& other) = delete;
+    DeferredAttachments& operator=(const DeferredAttachments& other) = delete;
+    DeferredAttachments(DeferredAttachments&& other) = default;
+    DeferredAttachments& operator=(DeferredAttachments&& other) = default;
 
-    inline const moon::utils::Attachments& operator[](uint32_t index) const {
-        return *(&image + index);
-    }
-
-    void deleteAttachment(VkDevice device);
-    void deleteSampler(VkDevice device);
+    const moon::utils::Attachments& operator[](uint32_t index) const;
 
     constexpr static uint32_t size() {return 3 + GBufferAttachments::size();}
     constexpr static uint32_t imageIndex() {return 0;}

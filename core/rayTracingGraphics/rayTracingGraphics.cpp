@@ -32,8 +32,7 @@ void RayTracingGraphics::ImageResource::create(const std::string& id, const moon
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         &hostDevice.instance,
-        &hostDevice.memory
-        );
+        &hostDevice.memory);
     vkMapMemory(phDevice.getLogical(), hostDevice.memory, 0, sizeof(uint32_t) * extent.width * extent.height, 0, &hostDevice.map);
 
     device.create(
@@ -42,8 +41,7 @@ void RayTracingGraphics::ImageResource::create(const std::string& id, const moon
         format,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
         extent,
-        imageCount
-        );
+        imageCount);
     VkSamplerCreateInfo SamplerInfo = moon::utils::vkDefault::samler();
     vkCreateSampler(phDevice.getLogical(), &SamplerInfo, nullptr, &device.sampler);
 }
@@ -54,8 +52,6 @@ void RayTracingGraphics::ImageResource::destroy(const moon::utils::PhysicalDevic
         host = nullptr;
     }
     hostDevice.destroy(phDevice.getLogical());
-    device.deleteAttachment(phDevice.getLogical());
-    device.deleteSampler(phDevice.getLogical());
 }
 
 void RayTracingGraphics::ImageResource::moveFromHostToHostDevice(VkExtent2D extent){
@@ -91,13 +87,13 @@ void RayTracingGraphics::create()
     bloomParams.in.bloom = bloom.id;
     bloomParams.out.bloom = "finalBloom";
 
-    bloomGraph = std::move(moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED));
-    bloomGraph.setShadersPath(workflowsShadersPath);
-    bloomGraph.setDeviceProp(device->instance, device->getLogical());
-    bloomGraph.setImageProp(&bloomInfo);
-    bloomGraph.create(aDatabase);
-    bloomGraph.createCommandBuffers(commandPool);
-    bloomGraph.updateDescriptorSets(bDatabase, aDatabase);
+    bloomGraph = new moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED);
+    bloomGraph->setShadersPath(workflowsShadersPath);
+    bloomGraph->setDeviceProp(device->instance, device->getLogical());
+    bloomGraph->setImageProp(&bloomInfo);
+    bloomGraph->create(aDatabase);
+    bloomGraph->createCommandBuffers(commandPool);
+    bloomGraph->updateDescriptorSets(bDatabase, aDatabase);
 
     moon::utils::ImageInfo bbInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
     std::string bbId = "bb";
@@ -132,7 +128,7 @@ void RayTracingGraphics::destroy() {
     color.destroy(*device);
     bloom.destroy(*device);
 
-    bloomGraph.destroy();
+    if(bloomGraph) delete bloomGraph;
 
     if(commandPool) {vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
     Link.destroy();
@@ -142,6 +138,7 @@ void RayTracingGraphics::destroy() {
 
 std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)
 {
+    VkResult result = VK_SUCCESS;
     rayTracer.calculateImage(color.host, bloom.host);
 
     color.moveFromHostToHostDevice(extent);
@@ -154,19 +151,16 @@ std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vect
     bbGraphics.render(commandBuffers.back(), imageIndex);
     moon::utils::singleCommandBuffer::submit(device->getLogical(), device->getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
 
-    bloomGraph.beginCommandBuffer(imageIndex);
-    bloomGraph.updateCommandBuffer(imageIndex);
-    bloomGraph.endCommandBuffer(imageIndex);
+    bloomGraph->beginCommandBuffer(imageIndex);
+    bloomGraph->updateCommandBuffer(imageIndex);
+    bloomGraph->endCommandBuffer(imageIndex);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &bloomGraph.getCommandBuffer(imageIndex);
-    VkResult result = vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE);
-    CHECK(result);
-
-    result = vkQueueWaitIdle(device->getQueue(0,0));
-    CHECK(result);
+    submitInfo.pCommandBuffers = &bloomGraph->getCommandBuffer(imageIndex);
+    CHECK(result = vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE));
+    CHECK(result = vkQueueWaitIdle(device->getQueue(0, 0)));
 
     return std::vector<std::vector<VkSemaphore>>();
 }
@@ -191,7 +185,7 @@ void RayTracingGraphics::setEnableBloom(bool enable){
 }
 
 void RayTracingGraphics::setBlitFactor(const float& blitFactor){
-    bloomGraph.setBlitFactor(blitFactor);
+    bloomGraph->setBlitFactor(blitFactor);
 }
 
 void RayTracingGraphics::setExtent(VkExtent2D extent){

@@ -22,16 +22,6 @@ struct LayersCombinerAttachments{
     inline moon::utils::Attachments* operator&(){
         return &color;
     }
-    void deleteAttachment(VkDevice device){
-        color.deleteAttachment(device);
-        bloom.deleteAttachment(device);
-        blur.deleteAttachment(device);
-    }
-    void deleteSampler(VkDevice device){
-        color.deleteSampler(device);
-        bloom.deleteSampler(device);
-        blur.deleteSampler(device);
-    }
 };
 
 struct LayersCombinerParameters{

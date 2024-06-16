@@ -15,9 +15,6 @@ void SSLRGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase
 
 void SSLRGraphics::destroy() {
     sslr.destroy(device);
-
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
 }
 
 void SSLRGraphics::createRenderPass()

@@ -24,12 +24,8 @@ void Scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     aDatabase.addAttachmentData(parameters.out.scattering, enable, &frame);
 }
 
-void Scattering::destroy()
-{
+void Scattering::destroy(){
     lighting.destroy(device);
-
-    frame.deleteAttachment(device);
-    frame.deleteSampler(device);
 }
 
 void Scattering::createRenderPass()

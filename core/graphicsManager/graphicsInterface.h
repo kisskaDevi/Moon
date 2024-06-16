@@ -17,8 +17,8 @@ class GraphicsInterface{
 protected:
     VkFormat                                         format{VK_FORMAT_UNDEFINED};
     uint32_t                                         imageCount{0};
-    std::map<uint32_t, moon::utils::PhysicalDevice>  devices;
-    moon::utils::PhysicalDevice                      device;
+    const std::map<uint32_t, moon::utils::PhysicalDevice>* devices;
+    const moon::utils::PhysicalDevice*                     device;
     moon::utils::SwapChain*                          swapChainKHR;
     Linkable*                                        link{nullptr};
     moon::math::Vector<float,2>                      offset{0.0f, 0.0f};
@@ -43,8 +43,8 @@ public:
     }
 
     virtual void setDevices(const std::map<uint32_t, moon::utils::PhysicalDevice>& devices, uint32_t deviceIndex = 0xffffffff){
-        this->devices = devices;
-        device = devices.at(deviceIndex);
+        this->devices = &devices;
+        device = &devices.at(deviceIndex);
     }
 
     virtual Linkable* getLinkable(){

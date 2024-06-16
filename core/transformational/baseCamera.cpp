@@ -196,7 +196,7 @@ void BaseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
     }
 }
 
-void BaseCamera::create(moon::utils::PhysicalDevice device, uint32_t imageCount)
+void BaseCamera::create(const moon::utils::PhysicalDevice& device, uint32_t imageCount)
 {
     if(!created){
         createUniformBuffers(device.instance,device.getLogical(),imageCount);

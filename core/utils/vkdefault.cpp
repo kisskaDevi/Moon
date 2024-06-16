@@ -1,6 +1,8 @@
 #include "vkdefault.h"
 #include "operations.h"
 
+#include <glfw3.h>
+
 namespace moon::utils {
 
 VkSamplerCreateInfo vkDefault::samler(){
@@ -367,6 +369,102 @@ vkDefault::VertrxShaderModule::VertrxShaderModule(VkDevice device, const std::fi
 
 vkDefault::VertrxShaderModule::operator const VkPipelineShaderStageCreateInfo& () const {
     return pipelineShaderStageCreateInfo;
+}
+
+vkDefault::RenderPass::~RenderPass() {
+    destroy();
+}
+
+VkResult vkDefault::RenderPass::create(
+    VkDevice device,
+    const AttachmentDescriptions& attachments,
+    const SubpassDescriptions& subpasses,
+    const SubpassDependencies& dependencies) {
+    destroy();
+    this->device = device;
+
+    VkRenderPassCreateInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        renderPassInfo.pAttachments = attachments.data();
+        renderPassInfo.subpassCount = static_cast<uint32_t>(subpasses.size());
+        renderPassInfo.pSubpasses = subpasses.data();
+        renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+        renderPassInfo.pDependencies = dependencies.data();
+
+    return vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+}
+
+void vkDefault::RenderPass::destroy() {
+    if (renderPass) {
+        vkDestroyRenderPass(device, renderPass, nullptr);
+        renderPass = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::RenderPass::operator const VkRenderPass& () const {
+    return renderPass;
+}
+
+vkDefault::Instance::~Instance() {
+    destroy();
+}
+
+VkResult vkDefault::Instance::create(const VkInstanceCreateInfo& createInfo) {
+    return vkCreateInstance(&createInfo, nullptr, &instance);
+}
+
+void vkDefault::Instance::destroy() {
+    if (instance) {
+        vkDestroyInstance(instance, nullptr);
+        instance = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::Instance::operator const VkInstance& () const {
+    return instance;
+}
+
+vkDefault::DebugUtilsMessenger::~DebugUtilsMessenger() {
+    destroy();
+}
+
+void vkDefault::DebugUtilsMessenger::create(const VkInstance& instance) {
+    destroy();
+    this->instance = instance;
+    moon::utils::validationLayer::setupDebugMessenger(instance, &debugUtilsMessenger);
+}
+
+void vkDefault::DebugUtilsMessenger::destroy() {
+    if (debugUtilsMessenger) {
+        moon::utils::validationLayer::destroyDebugUtilsMessengerEXT(instance, debugUtilsMessenger, nullptr);
+        debugUtilsMessenger = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::DebugUtilsMessenger::operator const VkDebugUtilsMessengerEXT& () const {
+    return debugUtilsMessenger;
+}
+
+vkDefault::Surface::~Surface() {
+    destroy();
+}
+
+VkResult vkDefault::Surface::create(const VkInstance& instance, GLFWwindow* window) {
+    destroy();
+    this->instance = instance;
+    return glfwCreateWindowSurface(instance, window, nullptr, &surface);
+}
+
+void vkDefault::Surface::destroy() {
+    if (surface) {
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        surface = VK_NULL_HANDLE;
+    }
+}
+
+vkDefault::Surface::operator const VkSurfaceKHR& () const {
+    return surface;
 }
 
 }

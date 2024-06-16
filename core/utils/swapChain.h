@@ -11,7 +11,7 @@ namespace moon::utils {
 
 class SwapChain{
 private:
-    PhysicalDevice      device;
+    const PhysicalDevice* device{nullptr};
     uint32_t            imageCount{0};
     VkExtent2D          extent{0,0};
     VkFormat            format{VK_FORMAT_UNDEFINED};
@@ -28,8 +28,8 @@ public:
     SwapChain() = default;
     void destroy();
 
-    VkResult create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);    
-    void setDevice(const PhysicalDevice& device);
+    VkResult create(GLFWwindow* window, VkSurfaceKHR surface, uint32_t queueFamilyIndexCount, uint32_t* pQueueFamilyIndices, int32_t maxImageCount = -1);
+    void setDevice(const const PhysicalDevice* device);
 
     VkSwapchainKHR& operator()();
     Attachment& attachment(uint32_t i);

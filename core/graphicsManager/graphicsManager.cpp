@@ -1,9 +1,7 @@
 #include "graphicsManager.h"
-
-#include <glfw3.h>
-
 #include "linkable.h"
 
+#include <glfw3.h>
 #include <string>
 
 namespace moon::graphicsManager {
@@ -22,11 +20,6 @@ GraphicsManager::GraphicsManager(GLFWwindow* window, int32_t imageCount, int32_t
 
 GraphicsManager::~GraphicsManager(){
     destroy();
-
-    if(activeDevice->getLogical())                  { vkDestroyDevice(activeDevice->getLogical(), nullptr); activeDevice->getLogical() = VK_NULL_HANDLE;}
-    if(enableValidationLayers && debugMessenger)    { moon::utils::validationLayer::destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr); debugMessenger = VK_NULL_HANDLE;}
-    if(surface)                                     { vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;}
-    if(instance)                                    { vkDestroyInstance(instance, nullptr); instance = VK_NULL_HANDLE;}
 }
 
 void GraphicsManager::create(GLFWwindow* window){
@@ -67,12 +60,10 @@ VkResult GraphicsManager::createInstance(){
         createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
         createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
         createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo : nullptr;
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+    VkResult result = instance.create(createInfo);
     CHECK(result)
 
-    if (enableValidationLayers){
-        moon::utils::validationLayer::setupDebugMessenger(instance, &debugMessenger);
-    }
+    if (enableValidationLayers) debugMessenger.create(instance);
 
     return result;
 }
@@ -91,14 +82,15 @@ VkResult GraphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
     CHECK(result);
 
     for (const auto phDevice : phDevices){
-        const auto device = moon::utils::PhysicalDevice(phDevice, deviceExtensions);
-        devices[device.properties.index] = std::move(device);
+        auto device = moon::utils::PhysicalDevice(phDevice, deviceExtensions);
+        const moon::utils::DeviceIndex index = device.properties.index;
+        devices[index] = std::move(device);
         if(!activeDevice){
-            activeDevice = &devices[device.properties.index];
+            activeDevice = &devices[index];
         }
         if(activeDevice->properties.type != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-            devices[device.properties.index].properties.type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
-            activeDevice = &devices[device.properties.index];
+            devices[index].properties.type == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
+            activeDevice = &devices[index];
         }
     }
 
@@ -106,8 +98,7 @@ VkResult GraphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFea
         return VK_ERROR_DEVICE_LOST;
     }
 
-    moon::utils::Device logical(deviceFeatures);
-    result = activeDevice->createDevice(logical,{{0,2}});
+    result = activeDevice->createDevice(deviceFeatures, {{0,2}});
     CHECK(result);
 
     return result;
@@ -118,7 +109,7 @@ VkResult GraphicsManager::createSurface(GLFWwindow* window){
     CHECK_M(devices.empty(), "[ GraphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
     CHECK_M(window == nullptr, "[ createSurface ] Window is nullptr");
 
-    VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    VkResult result = surface.create(instance, window);
     CHECK(result);
     CHECK_M(!activeDevice->presentSupport(surface), "[ GraphicsManager::createSurface ] device doesn't support present");
 
@@ -131,7 +122,7 @@ VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     CHECK_M(devices.empty(), "[ GraphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
 
     std::vector<uint32_t> queueIndices = {0};
-    swapChainKHR.setDevice(*activeDevice);
+    swapChainKHR.setDevice(activeDevice);
     return swapChainKHR.create(window, surface, static_cast<uint32_t>(queueIndices.size()), queueIndices.data(), maxImageCount);
 }
 
@@ -262,17 +253,10 @@ void GraphicsManager::destroySyncObjects(){
     fences.clear();
 }
 
-void GraphicsManager::destroySurface(){
-    if(surface) {
-        vkDestroySurfaceKHR(instance, surface, nullptr); surface = VK_NULL_HANDLE;
-    }
-}
-
 void GraphicsManager::destroy(){
     destroySwapChain();
     destroyLinker();
     destroySyncObjects();
-    destroySurface();
 }
 
 VkInstance      GraphicsManager::getInstance()      const {return instance;}

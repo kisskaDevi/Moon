@@ -94,7 +94,7 @@ public:
     void destroy(VkDevice device) override;
 
     void create(
-            moon::utils::PhysicalDevice device,
+            const moon::utils::PhysicalDevice& device,
             VkCommandPool commandPool,
             uint32_t imageCount) override;
 

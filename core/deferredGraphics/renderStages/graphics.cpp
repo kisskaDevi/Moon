@@ -79,7 +79,7 @@ void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 
 void Graphics::createRenderPass()
 {
-    std::vector<VkAttachmentDescription> attachments = {
+    utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
         moon::utils::Attachments::imageDescription(deferredAttachments.image.format),
         moon::utils::Attachments::imageDescription(deferredAttachments.blur.format),
         moon::utils::Attachments::imageDescription(deferredAttachments.bloom.format),
@@ -114,58 +114,50 @@ void Graphics::createRenderPass()
         depthAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::depthIndex(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL});
     depthAttachmentRef.push_back(std::vector<VkAttachmentReference>());
 
+    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
     auto refIt = attachmentRef.begin(), inRefIt = inAttachmentRef.begin(), depthIt = depthAttachmentRef.begin();
-    std::vector<VkSubpassDescription> subpass;
     for(;refIt != attachmentRef.end() && inRefIt != inAttachmentRef.end() && depthIt != depthAttachmentRef.end(); refIt++, inRefIt++, depthIt++){
-        subpass.push_back(VkSubpassDescription{});
-            subpass.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            subpass.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
-            subpass.back().pColorAttachments = refIt->data();
-            subpass.back().inputAttachmentCount = static_cast<uint32_t>(inRefIt->size());
-            subpass.back().pInputAttachments = inRefIt->data();
-            subpass.back().pDepthStencilAttachment = depthIt->data();
+        subpasses.push_back(VkSubpassDescription{});
+        subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpasses.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
+        subpasses.back().pColorAttachments = refIt->data();
+        subpasses.back().inputAttachmentCount = static_cast<uint32_t>(inRefIt->size());
+        subpasses.back().pInputAttachments = inRefIt->data();
+        subpasses.back().pDepthStencilAttachment = depthIt->data();
     }
 
-    std::vector<VkSubpassDependency> dependency;
-    dependency.push_back(VkSubpassDependency{});
-        dependency.back().srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.back().dstSubpass = 0;
-        dependency.back().srcStageMask =    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT|
+    utils::vkDefault::RenderPass::SubpassDependencies dependencies;
+    dependencies.push_back(VkSubpassDependency{});
+        dependencies.back().srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies.back().dstSubpass = 0;
+        dependencies.back().srcStageMask =    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT|
                                             VK_PIPELINE_STAGE_HOST_BIT;
-        dependency.back().srcAccessMask =   VK_ACCESS_HOST_READ_BIT;
-        dependency.back().dstStageMask =    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT|
+        dependencies.back().srcAccessMask =   VK_ACCESS_HOST_READ_BIT;
+        dependencies.back().dstStageMask =    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT|
                                             VK_PIPELINE_STAGE_VERTEX_SHADER_BIT|
                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT|
                                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT|
                                             VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT|
                                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.back().dstAccessMask =   VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT|
+        dependencies.back().dstAccessMask =   VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT|
                                             VK_ACCESS_UNIFORM_READ_BIT|
                                             VK_ACCESS_INDEX_READ_BIT|
                                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
                                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependency.push_back(VkSubpassDependency{});
-        dependency.back().srcSubpass = 0;
-        dependency.back().dstSubpass = 1;
-        dependency.back().srcStageMask =    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency.back().srcAccessMask =   VK_ACCESS_MEMORY_READ_BIT;
-        dependency.back().dstStageMask =    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|
+    dependencies.push_back(VkSubpassDependency{});
+        dependencies.back().srcSubpass = 0;
+        dependencies.back().dstSubpass = 1;
+        dependencies.back().srcStageMask =  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dependencies.back().srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependencies.back().dstStageMask =  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|
                                             VK_PIPELINE_STAGE_VERTEX_INPUT_BIT|
                                             VK_PIPELINE_STAGE_VERTEX_SHADER_BIT|
                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        dependency.back().dstAccessMask =   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
+        dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
                                             VK_ACCESS_INPUT_ATTACHMENT_READ_BIT|
                                             VK_ACCESS_UNIFORM_READ_BIT;
 
-    VkRenderPassCreateInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        renderPassInfo.pAttachments = attachments.data();
-        renderPassInfo.subpassCount = static_cast<uint32_t>(subpass.size());
-        renderPassInfo.pSubpasses = subpass.data();
-        renderPassInfo.dependencyCount = static_cast<uint32_t>(subpass.size());
-        renderPassInfo.pDependencies = dependency.data();
-    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
+    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
 }
 
 void Graphics::createFramebuffers()

@@ -179,7 +179,7 @@ moon::math::Vector<float,4> SpotLight::getLightColor() const {
 }
 
 void SpotLight::create(
-    moon::utils::PhysicalDevice device,
+    const moon::utils::PhysicalDevice& device,
     VkCommandPool commandPool,
     uint32_t imageCount)
 {

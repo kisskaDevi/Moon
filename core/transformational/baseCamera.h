@@ -60,7 +60,7 @@ public:
     BaseCamera& setRotation(const float & ang ,const moon::math::Vector<float,3> & ax);
     BaseCamera& setRotation(const moon::math::Quaternion<float>& rotation);
 
-    void create(moon::utils::PhysicalDevice device, uint32_t imageCount) override;
+    void create(const moon::utils::PhysicalDevice& device, uint32_t imageCount) override;
     void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
 
     const moon::utils::Buffers& getBuffers() const override;

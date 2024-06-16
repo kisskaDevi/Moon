@@ -40,7 +40,7 @@ public:
     virtual void destroy(VkDevice device) = 0;
 
     virtual void create(
-            moon::utils::PhysicalDevice device,
+            const moon::utils::PhysicalDevice& device,
             VkCommandPool commandPool,
             uint32_t imageCount) = 0;
 

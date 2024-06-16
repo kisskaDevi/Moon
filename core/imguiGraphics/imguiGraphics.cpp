@@ -21,12 +21,12 @@ ImguiGraphics::~ImguiGraphics(){
 
 void ImguiGraphics::destroy() {
     if(descriptorPool){
-        vkDestroyDescriptorPool(device.getLogical(), descriptorPool, VK_NULL_HANDLE);
+        vkDestroyDescriptorPool(device->getLogical(), descriptorPool, VK_NULL_HANDLE);
         descriptorPool = VK_NULL_HANDLE;
     }
 
     if(commandPool) {
-        vkDestroyCommandPool(device.getLogical(), commandPool, nullptr);
+        vkDestroyCommandPool(device->getLogical(), commandPool, nullptr);
         commandPool = VK_NULL_HANDLE;
     }
 
@@ -51,7 +51,7 @@ void ImguiGraphics::createDescriptorPool(){
         pool_info.maxSets = 1;
         pool_info.poolSizeCount = static_cast<uint32_t>(descriptorPoolSize.size());
         pool_info.pPoolSizes = descriptorPoolSize.data();
-    CHECK(vkCreateDescriptorPool(device.getLogical(), &pool_info, VK_NULL_HANDLE, &descriptorPool));
+    CHECK(vkCreateDescriptorPool(device->getLogical(), &pool_info, VK_NULL_HANDLE, &descriptorPool));
 }
 
 void ImguiGraphics::createCommandPool()
@@ -60,14 +60,14 @@ void ImguiGraphics::createCommandPool()
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    CHECK(vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool));
+    CHECK(vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool));
 }
 
 void ImguiGraphics::uploadFonts()
 {
-    VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
+    VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device->getLogical(),commandPool);
     ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-    moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
+    moon::utils::singleCommandBuffer::submit(device->getLogical(),device->getQueue(0,0),commandPool,&commandBuffer);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
@@ -80,10 +80,10 @@ void ImguiGraphics::create() {
     ImGui_ImplGlfw_InitForVulkan(window, true);
     ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = instance;
-        initInfo.PhysicalDevice = device.instance;
-        initInfo.Device = device.getLogical();
+        initInfo.PhysicalDevice = device->instance;
+        initInfo.Device = device->getLogical();
         initInfo.QueueFamily = 0;
-        initInfo.Queue = device.getQueue(0,0);
+        initInfo.Queue = device->getQueue(0,0);
         initInfo.PipelineCache = VK_NULL_HANDLE;
         initInfo.DescriptorPool = descriptorPool;
         initInfo.Subpass = 0;

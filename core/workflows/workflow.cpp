@@ -9,7 +9,6 @@ void Workbody::destroy(VkDevice device){
 }
 
 void Workflow::destroy(){
-    if(renderPass) {vkDestroyRenderPass(device, renderPass, nullptr); renderPass = VK_NULL_HANDLE;}
     for(auto& framebuffer: framebuffers){
         if(framebuffer) vkDestroyFramebuffer(device, framebuffer,nullptr);
     }

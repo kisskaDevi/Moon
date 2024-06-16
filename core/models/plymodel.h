@@ -67,7 +67,7 @@ public:
 
     ~PlyModel() override;
     void destroy(VkDevice device) override;
-    void create(moon::utils::PhysicalDevice device, VkCommandPool commandPool) override;
+    void create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool) override;
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;

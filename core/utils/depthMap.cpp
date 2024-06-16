@@ -30,7 +30,7 @@ void DepthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
     CHECK(vkAllocateDescriptorSets(device, &shadowAllocInfo, descriptorSets.data()));
 }
 
-DepthMap::DepthMap(PhysicalDevice device, VkCommandPool commandPool, uint32_t imageCount){
+DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount){
     emptyTextureBlack = createEmptyTexture(device, commandPool);
     emptyTextureWhite = createEmptyTexture(device, commandPool, false);
     this->device = device.getLogical();

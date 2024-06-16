@@ -536,7 +536,7 @@ void GltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* empty
     }
 }
 
-void GltfModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandPool)
+void GltfModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool)
 {
     if(!created)
     {

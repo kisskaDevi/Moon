@@ -39,11 +39,14 @@ protected:
     std::filesystem::path           shadersPath;
     moon::utils::ImageInfo          image;
 
-    VkRenderPass                    renderPass{VK_NULL_HANDLE};
+    utils::vkDefault::RenderPass    renderPass;
     std::vector<VkFramebuffer>      framebuffers;
     std::vector<VkCommandBuffer>    commandBuffers;
 public:
     virtual ~Workflow(){};
+    Workflow() = default;
+    Workflow(Workflow&&) = default;
+    Workflow& operator=(Workflow&&) = default;
     virtual void destroy();
 
     Workflow& setShadersPath(const std::filesystem::path &path);

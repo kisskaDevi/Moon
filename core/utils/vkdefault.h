@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <unordered_map>
 
+struct GLFWwindow;
+
 namespace moon::utils::vkDefault {
 
 VkSamplerCreateInfo samler();
@@ -41,6 +43,7 @@ public:
 	Pipeline& operator=(const Pipeline&) = delete;
 	Pipeline(Pipeline&& other) {
 		std::swap(pipeline, other.pipeline);
+		std::swap(device, other.device);
 	}
 	Pipeline& operator=(Pipeline&& other) {
 		destroy();
@@ -67,6 +70,7 @@ public:
 	PipelineLayout& operator=(const PipelineLayout&) = delete;
 	PipelineLayout(PipelineLayout&& other) {
 		std::swap(pipelineLayout, other.pipelineLayout);
+		std::swap(device, other.device);
 	}
 	PipelineLayout& operator=(PipelineLayout&& other) {
 		destroy();
@@ -196,6 +200,112 @@ public:
 	VertrxShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo = VkSpecializationInfo{});
 	void destroy();
 	operator const VkPipelineShaderStageCreateInfo& () const;
+};
+
+class RenderPass {
+private:
+	VkRenderPass renderPass{VK_NULL_HANDLE};
+	VkDevice device{ VK_NULL_HANDLE };
+public:
+	~RenderPass();
+	RenderPass() = default;
+	RenderPass(const RenderPass&) = delete;
+	RenderPass& operator=(const RenderPass&) = delete;
+	RenderPass(RenderPass&& other) {
+		std::swap(renderPass, other.renderPass);
+		std::swap(device, other.device);
+	}
+	RenderPass& operator=(RenderPass&& other) {
+		destroy();
+		std::swap(renderPass, other.renderPass);
+		std::swap(device, other.device);
+		return *this;
+	}
+
+	using AttachmentDescriptions = std::vector<VkAttachmentDescription>;
+	using SubpassDescriptions = std::vector<VkSubpassDescription>;
+	using SubpassDependencies = std::vector<VkSubpassDependency>;
+
+	VkResult create(
+		VkDevice device,
+		const AttachmentDescriptions& attachments,
+		const SubpassDescriptions& subpasses,
+		const SubpassDependencies& dependencies);
+	void destroy();
+	operator const VkRenderPass& () const;
+
+};
+
+class Instance {
+private:
+	VkInstance instance{ VK_NULL_HANDLE };
+public:
+	~Instance();
+	Instance() = default;
+	Instance(const Instance&) = delete;
+	Instance& operator=(const Instance&) = delete;
+	Instance(Instance&& other) {
+		std::swap(instance, other.instance);
+	}
+	Instance& operator=(Instance&& other) {
+		destroy();
+		std::swap(instance, other.instance);
+		return *this;
+	}
+
+	VkResult create(const VkInstanceCreateInfo& createInfo);
+	void destroy();
+	operator const VkInstance& () const;
+};
+
+class DebugUtilsMessenger {
+private:
+	VkDebugUtilsMessengerEXT debugUtilsMessenger{ VK_NULL_HANDLE };
+	VkInstance instance{ VK_NULL_HANDLE };
+public:
+	~DebugUtilsMessenger();
+	DebugUtilsMessenger() = default;
+	DebugUtilsMessenger(const DebugUtilsMessenger&) = delete;
+	DebugUtilsMessenger& operator=(const DebugUtilsMessenger&) = delete;
+	DebugUtilsMessenger(DebugUtilsMessenger&& other) {
+		std::swap(debugUtilsMessenger, other.debugUtilsMessenger);
+		std::swap(instance, other.instance);
+	}
+	DebugUtilsMessenger& operator=(DebugUtilsMessenger&& other) {
+		destroy();
+		std::swap(debugUtilsMessenger, other.debugUtilsMessenger);
+		std::swap(instance, other.instance);
+		return *this;
+	}
+
+	void create(const VkInstance& createInfo);
+	void destroy();
+	operator const VkDebugUtilsMessengerEXT& () const;
+};
+
+class Surface {
+private:
+	VkSurfaceKHR surface{ VK_NULL_HANDLE };
+	VkInstance instance{ VK_NULL_HANDLE };
+public:
+	~Surface();
+	Surface() = default;
+	Surface(const Surface&) = delete;
+	Surface& operator=(const Surface&) = delete;
+	Surface(Surface&& other) {
+		std::swap(surface, other.surface);
+		std::swap(instance, other.instance);
+	}
+	Surface& operator=(Surface&& other) {
+		destroy();
+		std::swap(surface, other.surface);
+		std::swap(instance, other.instance);
+		return *this;
+	}
+
+	VkResult create(const VkInstance& instance, GLFWwindow* window);
+	void destroy();
+	operator const VkSurfaceKHR& () const;
 };
 
 }

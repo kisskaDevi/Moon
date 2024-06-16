@@ -255,7 +255,7 @@ void PlyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyT
     }
 }
 
-void PlyModel::create(moon::utils::PhysicalDevice device, VkCommandPool commandPool)
+void PlyModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool)
 {
     if(!created)
     {

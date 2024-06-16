@@ -37,20 +37,15 @@ void ShadowGraphics::destroy()
 
 void ShadowGraphics::createRenderPass()
 {
-    VkAttachmentDescription attachments = moon::utils::Attachments::depthDescription(VK_FORMAT_D32_SFLOAT);
+    utils::vkDefault::RenderPass::AttachmentDescriptions attachments = { moon::utils::Attachments::depthDescription(VK_FORMAT_D32_SFLOAT)};
     VkAttachmentReference depthRef{0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
-    VkSubpassDescription subpass{};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.pDepthStencilAttachment = &depthRef;
+    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
+    subpasses.push_back(VkSubpassDescription{});
+    subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpasses.back().pDepthStencilAttachment = &depthRef;
 
-    VkRenderPassCreateInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount = 1;
-        renderPassInfo.pAttachments = &attachments;
-        renderPassInfo.subpassCount = 1;
-        renderPassInfo.pSubpasses = &subpass;
-    CHECK(vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass));
+    CHECK(renderPass.create(device, attachments, subpasses, {}));
 }
 
 void ShadowGraphics::createPipelines()

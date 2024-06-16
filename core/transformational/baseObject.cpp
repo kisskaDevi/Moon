@@ -246,7 +246,7 @@ void BaseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
 }
 
 void BaseObject::create(
-    moon::utils::PhysicalDevice device,
+    const moon::utils::PhysicalDevice& device,
     VkCommandPool commandPool,
     uint32_t imageCount)
 {
@@ -356,7 +356,7 @@ void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
 }
 
 void SkyboxObject::create(
-    moon::utils::PhysicalDevice device,
+    const moon::utils::PhysicalDevice& device,
     VkCommandPool commandPool,
     uint32_t imageCount)
 {

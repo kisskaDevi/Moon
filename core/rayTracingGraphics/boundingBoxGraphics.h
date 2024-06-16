@@ -3,6 +3,7 @@
 
 #include "attachments.h"
 #include "buffer.h"
+#include "vkdefault.h"
 
 #include "utils/devicep.h"
 #include "math/box.h"
@@ -28,7 +29,7 @@ private:
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptorSets;
 
-    VkRenderPass                    renderPass{VK_NULL_HANDLE};
+    utils::vkDefault::RenderPass    renderPass;
     std::vector<VkFramebuffer>      framebuffers;
 
     moon::utils::Attachments frame;

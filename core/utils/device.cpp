@@ -61,8 +61,10 @@ bool PhysicalDevice::presentSupport(VkSurfaceKHR surface)
     return presentSupport;
 }
 
-VkResult PhysicalDevice::createDevice(Device logical, std::map<uint32_t,uint32_t> queueSizeMap)
+VkResult PhysicalDevice::createDevice(VkPhysicalDeviceFeatures deviceFeatures, std::map<uint32_t,uint32_t> queueSizeMap)
 {
+    Device logical(deviceFeatures);
+
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     for(auto queueSize: queueSizeMap){
         if(uint32_t index = queueSize.first; queueFamilies.count(index)){
@@ -78,7 +80,7 @@ VkResult PhysicalDevice::createDevice(Device logical, std::map<uint32_t,uint32_t
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
-        createInfo.pEnabledFeatures = &logical.deviceFeatures;
+        createInfo.pEnabledFeatures = &deviceFeatures;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
         createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
@@ -93,7 +95,7 @@ VkResult PhysicalDevice::createDevice(Device logical, std::map<uint32_t,uint32_t
         }
     }
 
-    this->logical.emplace_back(logical);
+    this->logical.emplace_back(std::move(logical));
     return result;
 }
 
@@ -108,25 +110,6 @@ const VkDevice& PhysicalDevice::getLogical() const{
 bool PhysicalDevice::createdLogical() const {
     return !logical.empty();
 }
-
-PhysicalDevice& PhysicalDevice::operator=(const PhysicalDevice& other){
-    instance = other.instance;
-    properties.index = other.properties.index;
-    properties.type = other.properties.type;
-    properties.name = other.properties.name;
-    queueFamilies = other.queueFamilies;
-    logical = other.logical;
-    deviceExtensions = other.deviceExtensions;
-    return *this;
-}
-
-PhysicalDevice::PhysicalDevice(const PhysicalDevice& other):
-    instance(other.instance),
-    properties(other.properties),
-    queueFamilies(other.queueFamilies),
-    logical(other.logical),
-    deviceExtensions(other.deviceExtensions)
-{}
 
 VkQueue PhysicalDevice::getQueue(uint32_t familyIndex, uint32_t queueIndex) const {
     return logical.back().queueMap.at(familyIndex)[queueIndex];

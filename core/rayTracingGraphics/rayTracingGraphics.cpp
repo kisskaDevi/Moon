@@ -20,7 +20,7 @@ RayTracingGraphics::~RayTracingGraphics(){
     bbGraphics.destroy();
 }
 
-void RayTracingGraphics::ImageResource::create(const std::string& id, moon::utils::PhysicalDevice phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
+void RayTracingGraphics::ImageResource::create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
     this->id = id;
 
     host = new uint32_t[extent.width * extent.height];
@@ -48,7 +48,7 @@ void RayTracingGraphics::ImageResource::create(const std::string& id, moon::util
     vkCreateSampler(phDevice.getLogical(), &SamplerInfo, nullptr, &device.sampler);
 }
 
-void RayTracingGraphics::ImageResource::destroy(moon::utils::PhysicalDevice phDevice){
+void RayTracingGraphics::ImageResource::destroy(const moon::utils::PhysicalDevice& phDevice){
     if(host){
         delete[] host;
         host = nullptr;
@@ -74,15 +74,15 @@ void RayTracingGraphics::create()
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = 0;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool);
+    vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool);
 
-    emptyTexture = createEmptyTexture(device, commandPool);
+    emptyTexture = createEmptyTexture(*device, commandPool);
     aDatabase.addEmptyTexture("black", emptyTexture);
 
-    color.create("color", device, format, extent, imageCount);
+    color.create("color", *device, format, extent, imageCount);
     aDatabase.addAttachmentData(color.id, true, &color.device);
 
-    bloom.create("bloom", device, format, extent, imageCount);
+    bloom.create("bloom", *device, format, extent, imageCount);
     aDatabase.addAttachmentData(bloom.id, true, &bloom.device);
 
     moon::utils::ImageInfo bloomInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
@@ -93,7 +93,7 @@ void RayTracingGraphics::create()
 
     bloomGraph = std::move(moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED));
     bloomGraph.setShadersPath(workflowsShadersPath);
-    bloomGraph.setDeviceProp(device.instance, device.getLogical());
+    bloomGraph.setDeviceProp(device->instance, device->getLogical());
     bloomGraph.setImageProp(&bloomInfo);
     bloomGraph.create(aDatabase);
     bloomGraph.createCommandBuffers(commandPool);
@@ -101,7 +101,7 @@ void RayTracingGraphics::create()
 
     moon::utils::ImageInfo bbInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
     std::string bbId = "bb";
-    bbGraphics.create(device.instance, device.getLogical(), bbInfo, shadersPath);
+    bbGraphics.create(device->instance, device->getLogical(), bbInfo, shadersPath);
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
     moon::utils::ImageInfo swapChainInfo{ imageCount, format, swapChainKHR->getExtent(), VK_SAMPLE_COUNT_1_BIT};
@@ -112,7 +112,7 @@ void RayTracingGraphics::create()
 
     Link.setParameters(linkParams);
     Link.setImageCount(imageCount);
-    Link.setDeviceProp(device.getLogical());
+    Link.setDeviceProp(device->getLogical());
     Link.setShadersPath(shadersPath);
     Link.createDescriptorSetLayout();
     Link.createPipeline(&swapChainInfo);
@@ -125,16 +125,16 @@ void RayTracingGraphics::create()
 
 void RayTracingGraphics::destroy() {
     if(emptyTexture){
-        emptyTexture->destroy(device.getLogical());
+        emptyTexture->destroy(device->getLogical());
         delete emptyTexture;
     }
 
-    color.destroy(device);
-    bloom.destroy(device);
+    color.destroy(*device);
+    bloom.destroy(*device);
 
     bloomGraph.destroy();
 
-    if(commandPool) {vkDestroyCommandPool(device.getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
+    if(commandPool) {vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
     Link.destroy();
     bbGraphics.destroy();
     aDatabase.destroy();
@@ -148,11 +148,11 @@ std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vect
     bloom.moveFromHostToHostDevice(extent);
 
     std::vector<VkCommandBuffer> commandBuffers;
-    commandBuffers.push_back(moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool));
+    commandBuffers.push_back(moon::utils::singleCommandBuffer::create(device->getLogical(),commandPool));
     color.copyToDevice(commandBuffers.back(), extent, imageIndex);
     bloom.copyToDevice(commandBuffers.back(), extent, imageIndex);
     bbGraphics.render(commandBuffers.back(), imageIndex);
-    moon::utils::singleCommandBuffer::submit(device.getLogical(), device.getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
+    moon::utils::singleCommandBuffer::submit(device->getLogical(), device->getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
 
     bloomGraph.beginCommandBuffer(imageIndex);
     bloomGraph.updateCommandBuffer(imageIndex);
@@ -162,10 +162,10 @@ std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vect
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &bloomGraph.getCommandBuffer(imageIndex);
-    VkResult result = vkQueueSubmit(device.getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE);
+    VkResult result = vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE);
     CHECK(result);
 
-    result = vkQueueWaitIdle(device.getQueue(0,0));
+    result = vkQueueWaitIdle(device->getQueue(0,0));
     CHECK(result);
 
     return std::vector<std::vector<VkSemaphore>>();

@@ -23,7 +23,7 @@ private:
     void createDescriptorPool(VkDevice device, uint32_t imageCount);
     void createDescriptorSets(VkDevice device, uint32_t imageCount);
 public:
-    DepthMap(PhysicalDevice device, VkCommandPool commandPool, uint32_t imageCount);
+    DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount);
     ~DepthMap();
     void destroy(VkDevice device);
 

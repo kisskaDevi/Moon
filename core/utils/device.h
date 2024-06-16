@@ -30,13 +30,34 @@ struct Device{
     std::map<uint32_t, std::vector<VkQueue>> queueMap;
 
     Device() = default;
+    Device(const Device&) = delete;
+    Device& operator=(const Device&) = delete;
+    Device(Device&& other) {
+        std::swap(instance, other.instance);
+        std::swap(deviceFeatures, other.deviceFeatures);
+        std::swap(queueMap, other.queueMap);
+    }
+    Device& operator=(Device&& other) {
+        std::swap(instance, other.instance);
+        std::swap(deviceFeatures, other.deviceFeatures);
+        std::swap(queueMap, other.queueMap);
+        return *this;
+    }
     Device(VkPhysicalDeviceFeatures deviceFeatures):
         deviceFeatures(deviceFeatures)
     {}
+    ~Device() {
+        if (instance) {
+            vkDestroyDevice(instance, nullptr);
+            instance = VK_NULL_HANDLE;
+        }
+    }
 };
 
+using DeviceIndex = uint32_t;
+
 struct PhysicalDeviceProperties{
-    uint32_t index{0x7FFFFFFF};
+    DeviceIndex index{0x7FFFFFFF};
     VkPhysicalDeviceType type{VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM};
     std::string name{};
 };
@@ -59,16 +80,33 @@ struct PhysicalDevice{
     PhysicalDevice() = default;
     PhysicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions = {});
 
-    PhysicalDevice& operator=(const PhysicalDevice& other);
-    PhysicalDevice(const PhysicalDevice& other);
+    PhysicalDevice& operator=(const PhysicalDevice& other) = delete;
+    PhysicalDevice(const PhysicalDevice& other) = delete;
+    PhysicalDevice& operator=(PhysicalDevice&& other) {
+        std::swap(instance, other.instance);
+        std::swap(properties, other.properties);
+        std::swap(queueFamilies, other.queueFamilies);
+        std::swap(logical, other.logical);
+        std::swap(deviceExtensions, other.deviceExtensions);
+        return *this;
+    };
+    PhysicalDevice(PhysicalDevice&& other) {
+        std::swap(instance, other.instance);
+        std::swap(properties, other.properties);
+        std::swap(queueFamilies, other.queueFamilies);
+        std::swap(logical, other.logical);
+        std::swap(deviceExtensions, other.deviceExtensions);
+    };
 
     bool presentSupport(VkSurfaceKHR surface);
-    VkResult createDevice(Device logical, std::map<uint32_t,uint32_t> queueSizeMap);
+    VkResult createDevice(VkPhysicalDeviceFeatures deviceFeatures, std::map<uint32_t,uint32_t> queueSizeMap);
     VkDevice& getLogical();
     const VkDevice& getLogical() const;
     VkQueue getQueue(uint32_t familyIndex, uint32_t queueIndex) const;
     bool createdLogical() const;
 };
+
+using PhysicalDeviceMap = std::map<DeviceIndex, PhysicalDevice>;
 
 }
 #endif // DEVICE_H

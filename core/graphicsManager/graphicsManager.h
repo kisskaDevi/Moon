@@ -50,13 +50,13 @@ private:
     const std::vector<const char*>              validationLayers = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*>              deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-    VkInstance                                  instance{VK_NULL_HANDLE};
-    VkDebugUtilsMessengerEXT                    debugMessenger{VK_NULL_HANDLE};
-    VkSurfaceKHR                                surface{VK_NULL_HANDLE};
+    utils::vkDefault::Instance                  instance;
+    utils::vkDefault::DebugUtilsMessenger       debugMessenger;
+    utils::vkDefault::Surface                   surface;
 
-    std::map<uint32_t, moon::utils::PhysicalDevice> devices;
-    moon::utils::PhysicalDevice*                    activeDevice{nullptr};
-    moon::utils::SwapChain                          swapChainKHR;
+    moon::utils::PhysicalDeviceMap              devices;
+    moon::utils::PhysicalDevice*                activeDevice{nullptr};
+    moon::utils::SwapChain                      swapChainKHR;
 
     std::vector<GraphicsInterface*>             graphics;
     GraphicsLinker                              linker;
@@ -76,7 +76,6 @@ private:
     VkResult createLinker();
     VkResult createSyncObjects();
 
-    void destroySurface();
     void destroySwapChain();
     void destroyLinker();
     void destroySyncObjects();

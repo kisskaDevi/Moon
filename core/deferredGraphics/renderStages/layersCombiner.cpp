@@ -49,7 +49,7 @@ void LayersCombiner::destroy(){
 }
 
 void LayersCombiner::createRenderPass(){
-    std::vector<VkAttachmentDescription> attachments = {
+    utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
         moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
         moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
         moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -61,32 +61,24 @@ void LayersCombiner::createRenderPass(){
         attachmentRef.back().push_back(VkAttachmentReference{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
         attachmentRef.back().push_back(VkAttachmentReference{2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
 
-    std::vector<VkSubpassDescription> subpass;
+    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
     for(auto refIt = attachmentRef.begin(); refIt != attachmentRef.end(); refIt++){
-        subpass.push_back(VkSubpassDescription{});
-            subpass.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            subpass.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
-            subpass.back().pColorAttachments = refIt->data();
+        subpasses.push_back(VkSubpassDescription{});
+        subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpasses.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
+        subpasses.back().pColorAttachments = refIt->data();
     }
 
-    std::vector<VkSubpassDependency> dependency;
-    dependency.push_back(VkSubpassDependency{});
-        dependency.back().srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.back().dstSubpass = 0;
-        dependency.back().srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependency.back().srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        dependency.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    utils::vkDefault::RenderPass::SubpassDependencies dependencies;
+    dependencies.push_back(VkSubpassDependency{});
+    dependencies.back().srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies.back().dstSubpass = 0;
+    dependencies.back().srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    dependencies.back().srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    VkRenderPassCreateInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        renderPassInfo.pAttachments = attachments.data();
-        renderPassInfo.subpassCount = static_cast<uint32_t>(subpass.size());
-        renderPassInfo.pSubpasses = subpass.data();
-        renderPassInfo.dependencyCount = static_cast<uint32_t>(dependency.size());
-        renderPassInfo.pDependencies = dependency.data();
-    CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
+    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
 }
 
 void LayersCombiner::createFramebuffers(){

@@ -3,8 +3,9 @@
 
 #include <vector>
 #include <stdint.h>
-
 #include <vulkan.h>
+
+#include "vkdefault.h"
 
 namespace moon::utils { class SwapChain;}
 
@@ -23,7 +24,7 @@ private:
     std::vector<Linkable*>          linkables;
     moon::utils::SwapChain*         swapChainKHR{nullptr};
 
-    VkRenderPass                    renderPass{VK_NULL_HANDLE};
+    utils::vkDefault::RenderPass    renderPass;
     std::vector<VkFramebuffer>      framebuffers;
 
     VkCommandPool                   commandPool;

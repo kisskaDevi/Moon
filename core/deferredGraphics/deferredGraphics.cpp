@@ -55,7 +55,7 @@ DeferredGraphics::~DeferredGraphics(){
 
 void DeferredGraphics::freeCommandBuffers(){
     CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ DeferredGraphics::freeCommandBuffers ] commandPool is VK_NULL_HANDLE"));
-    CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ DeferredGraphics::freeCommandBuffers ] VkDevice is VK_NULL_HANDLE"));
+    CHECK_M(device->getLogical() == VK_NULL_HANDLE, std::string("[ DeferredGraphics::freeCommandBuffers ] VkDevice is VK_NULL_HANDLE"));
 
     for(auto& [_,workflow]: workflows){
         workflow->freeCommandBuffer(commandPool);
@@ -66,7 +66,7 @@ void DeferredGraphics::destroyCommandPool(){
     if(commandPool){
         freeCommandBuffers();
 
-        vkDestroyCommandPool(device.getLogical(), commandPool, nullptr);
+        vkDestroyCommandPool(device->getLogical(), commandPool, nullptr);
         commandPool = VK_NULL_HANDLE;
     }
 }
@@ -81,14 +81,14 @@ void DeferredGraphics::destroy(){
     destroyCommandPool();
 
     for(auto& node: nodes){
-        node->destroy(device.getLogical());
+        node->destroy(device->getLogical());
         delete node;
     }
     nodes.clear();
 
     for(auto& [_,texture] : emptyTextures){
         if(texture){
-            texture->destroy(device.getLogical());
+            texture->destroy(device->getLogical());
             texture = nullptr;
         }
     }
@@ -102,7 +102,7 @@ void DeferredGraphics::destroy(){
 
     deferredLink->destroy();
 
-    storageBuffersHost.destroy(device.getLogical());
+    storageBuffersHost.destroy(device->getLogical());
     bDatabase.buffersMap.erase("storage");
 }
 
@@ -112,15 +112,15 @@ void DeferredGraphics::createCommandPool()
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    CHECK(vkCreateCommandPool(device.getLogical(), &poolInfo, nullptr, &commandPool));
+    CHECK(vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool));
 }
 
 void DeferredGraphics::create()
 {
     createCommandPool();
 
-    emptyTextures["black"] = moon::utils::createEmptyTexture(device, commandPool);
-    emptyTextures["white"] = moon::utils::createEmptyTexture(device, commandPool, false);
+    emptyTextures["black"] = moon::utils::createEmptyTexture(*device, commandPool);
+    emptyTextures["white"] = moon::utils::createEmptyTexture(*device, commandPool, false);
     aDatabase.addEmptyTexture("black", emptyTextures["black"]);
     aDatabase.addEmptyTexture("white", emptyTextures["white"]);
 
@@ -129,7 +129,7 @@ void DeferredGraphics::create()
     updateDescriptorSets();
 
     for(auto& [lightSource,map]: depthMaps){
-        depthMaps[lightSource] = new moon::utils::DepthMap(device, commandPool, imageCount);
+        depthMaps[lightSource] = new moon::utils::DepthMap(*device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
             static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
         }
@@ -138,7 +138,7 @@ void DeferredGraphics::create()
 
 void DeferredGraphics::createGraphicsPasses(){
     CHECK_M(commandPool == VK_NULL_HANDLE,       std::string("[ DeferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
-    CHECK_M(device.instance == VK_NULL_HANDLE,   std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
+    CHECK_M(device->instance == VK_NULL_HANDLE,   std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECK_M(cameraObject == nullptr,             std::string("[ DeferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
     GraphicsParameters graphicsParams;
@@ -264,7 +264,7 @@ void DeferredGraphics::createGraphicsPasses(){
 
     for(auto& [_,workflow]: workflows){
         moon::utils::ImageInfo info{imageCount, format, extent, MSAASamples};
-        workflow->setDeviceProp(device.instance, device.getLogical());
+        workflow->setDeviceProp(device->instance, device->getLogical());
         workflow->setImageProp(&info);
     }
 
@@ -283,7 +283,7 @@ void DeferredGraphics::createGraphicsPasses(){
 
     moon::utils::ImageInfo linkInfo{imageCount, format, swapChainKHR->getExtent(), MSAASamples};
     deferredLink->setShadersPath(shadersPath);
-    deferredLink->setDeviceProp(device.getLogical());
+    deferredLink->setDeviceProp(device->getLogical());
     deferredLink->setImageCount(imageCount);
     deferredLink->createDescriptorSetLayout();
     deferredLink->createPipeline(&linkInfo);
@@ -317,7 +317,7 @@ void DeferredGraphics::createCommandBuffers(){
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = imageCount;
-    CHECK(vkAllocateCommandBuffers(device.getLogical(), &allocInfo, copyCommandBuffers.data()));
+    CHECK(vkAllocateCommandBuffers(device->getLogical(), &allocInfo, copyCommandBuffers.data()));
 
     updateCmdFlags();
 
@@ -333,18 +333,18 @@ void DeferredGraphics::createCommandBuffers(){
     for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
         nodes[imageIndex]
          = new moon::utils::Node({
-            moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device.getQueue(0,0))
+            moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node({
-            moon::utils::Stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0)),
-            moon::utils::Stage(  {workflows["Skybox"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device.getQueue(0,0))
+            moon::utils::Stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)),
+            moon::utils::Stage(  {workflows["Skybox"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
         }, new moon::utils::Node({
-            moon::utils::Stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
-            moon::utils::Stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+            moon::utils::Stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
+            moon::utils::Stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node({
-            moon::utils::Stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0)),
-            moon::utils::Stage(  {workflows["SSLR"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+            moon::utils::Stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
+            moon::utils::Stage(  {workflows["SSLR"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node({
-            moon::utils::Stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+            moon::utils::Stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node({
             moon::utils::Stage(  {workflows["Selector"]->getCommandBuffer(imageIndex),
                      workflows["SSAO"]->getCommandBuffer(imageIndex),
@@ -352,10 +352,10 @@ void DeferredGraphics::createCommandBuffers(){
                      workflows["Blur"]->getCommandBuffer(imageIndex),
                      workflows["BoundingBox"]->getCommandBuffer(imageIndex),
                      workflows["PostProcessing"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device.getQueue(0,0))
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, nullptr))))));
 
-        nodes[imageIndex]->createSemaphores(device.getLogical());
+        nodes[imageIndex]->createSemaphores(device->getLogical());
     }
 }
 
@@ -417,13 +417,13 @@ void DeferredGraphics::updateBuffers(uint32_t imageIndex){
 }
 
 void DeferredGraphics::createStorageBuffers(uint32_t imageCount){
-    storageBuffersHost.create(device.instance,
-                              device.getLogical(),
+    storageBuffersHost.create(device->instance,
+                              device->getLogical(),
                               sizeof(StorageBufferObject),
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                               imageCount);
-    storageBuffersHost.map(device.getLogical());
+    storageBuffersHost.map(device->getLogical());
     bDatabase.addBufferData("storage", &storageBuffersHost);
 }
 
@@ -443,22 +443,22 @@ void DeferredGraphics::readStorageBuffer(uint32_t currentImage, uint32_t& primit
 }
 
 void DeferredGraphics::create(moon::interfaces::Model *pModel){
-    pModel->create(device, commandPool);
+    pModel->create(*device, commandPool);
 }
 
 void DeferredGraphics::destroy(moon::interfaces::Model* pModel){
-    pModel->destroy(device.getLogical());
+    pModel->destroy(device->getLogical());
 }
 
 void DeferredGraphics::bind(moon::interfaces::Camera* cameraObject){
     this->cameraObject = cameraObject;
-    cameraObject->create(device, imageCount);
+    cameraObject->create(*device, imageCount);
     bDatabase.addBufferData("camera", &cameraObject->getBuffers());
 }
 
 void DeferredGraphics::remove(moon::interfaces::Camera* cameraObject){
     if(this->cameraObject == cameraObject){
-        this->cameraObject->destroy(device.getLogical());
+        this->cameraObject->destroy(device->getLogical());
         this->cameraObject = nullptr;
         bDatabase.buffersMap.erase("camera");
     }
@@ -466,12 +466,12 @@ void DeferredGraphics::remove(moon::interfaces::Camera* cameraObject){
 
 void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
     if(depthMaps.count(lightSource) == 0){
-        depthMaps[lightSource] = new moon::utils::DepthMap(device, commandPool, imageCount);
+        depthMaps[lightSource] = new moon::utils::DepthMap(*device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
             static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
         }
     }
-    lightSource->create(device, commandPool, imageCount);
+    lightSource->create(*device, commandPool, imageCount);
     lights.push_back(lightSource);
 
     updateCmdFlags();
@@ -479,7 +479,7 @@ void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
 
 bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
     size_t size = lights.size();
-    lightSource->destroy(device.getLogical());
+    lightSource->destroy(device->getLogical());
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 
     if(depthMaps.count(lightSource)){
@@ -493,14 +493,14 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
 }
 
 void DeferredGraphics::bind(moon::interfaces::Object* object){
-    object->create(device, commandPool, imageCount);
+    object->create(*device, commandPool, imageCount);
     objects.push_back(object);
     updateCmdFlags();
 }
 
 bool DeferredGraphics::remove(moon::interfaces::Object* object){
     size_t size = objects.size();
-    object->destroy(device.getLogical());
+    object->destroy(device->getLogical());
     objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
     updateCmdFlags();
     return size - objects.size() > 0;

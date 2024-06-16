@@ -21,8 +21,7 @@ void Link::setShadersPath(const std::filesystem::path &shadersPath){
     this->shadersPath = shadersPath;
 }
 
-void Link::setRenderPass(VkRenderPass renderPass)
-{
+void Link::setRenderPass(VkRenderPass renderPass) {
     this->renderPass = renderPass;
 }
 

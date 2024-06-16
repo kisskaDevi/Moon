@@ -143,7 +143,7 @@ public:
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
-    void create(moon::utils::PhysicalDevice device, VkCommandPool commandPool) override;
+    void create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool) override;
 
     bool hasAnimation(uint32_t frameIndex) const override;
     float animationStart(uint32_t frameIndex, uint32_t index) const override;

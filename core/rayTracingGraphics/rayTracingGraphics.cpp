@@ -87,13 +87,13 @@ void RayTracingGraphics::create()
     bloomParams.in.bloom = bloom.id;
     bloomParams.out.bloom = "finalBloom";
 
-    bloomGraph = new moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED);
-    bloomGraph->setShadersPath(workflowsShadersPath);
-    bloomGraph->setDeviceProp(device->instance, device->getLogical());
-    bloomGraph->setImageProp(&bloomInfo);
-    bloomGraph->create(aDatabase);
-    bloomGraph->createCommandBuffers(commandPool);
-    bloomGraph->updateDescriptorSets(bDatabase, aDatabase);
+    bloomGraph = moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED);
+    bloomGraph.setShadersPath(workflowsShadersPath);
+    bloomGraph.setDeviceProp(device->instance, device->getLogical());
+    bloomGraph.setImageProp(&bloomInfo);
+    bloomGraph.create(aDatabase);
+    bloomGraph.createCommandBuffers(commandPool);
+    bloomGraph.updateDescriptorSets(bDatabase, aDatabase);
 
     moon::utils::ImageInfo bbInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
     std::string bbId = "bb";
@@ -128,7 +128,7 @@ void RayTracingGraphics::destroy() {
     color.destroy(*device);
     bloom.destroy(*device);
 
-    if(bloomGraph) delete bloomGraph;
+    bloomGraph.destroy();
 
     if(commandPool) {vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
     Link.destroy();
@@ -151,14 +151,14 @@ std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vect
     bbGraphics.render(commandBuffers.back(), imageIndex);
     moon::utils::singleCommandBuffer::submit(device->getLogical(), device->getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
 
-    bloomGraph->beginCommandBuffer(imageIndex);
-    bloomGraph->updateCommandBuffer(imageIndex);
-    bloomGraph->endCommandBuffer(imageIndex);
+    bloomGraph.beginCommandBuffer(imageIndex);
+    bloomGraph.updateCommandBuffer(imageIndex);
+    bloomGraph.endCommandBuffer(imageIndex);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &bloomGraph->getCommandBuffer(imageIndex);
+    submitInfo.pCommandBuffers = &bloomGraph.getCommandBuffer(imageIndex);
     CHECK(result = vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE));
     CHECK(result = vkQueueWaitIdle(device->getQueue(0, 0)));
 
@@ -185,7 +185,7 @@ void RayTracingGraphics::setEnableBloom(bool enable){
 }
 
 void RayTracingGraphics::setBlitFactor(const float& blitFactor){
-    bloomGraph->setBlitFactor(blitFactor);
+    bloomGraph.setBlitFactor(blitFactor);
 }
 
 void RayTracingGraphics::setExtent(VkExtent2D extent){

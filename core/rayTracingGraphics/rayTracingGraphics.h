@@ -41,7 +41,7 @@ private:
     RayTracingLink Link;
 
     BoundingBoxGraphics bbGraphics;
-    moon::workflows::BloomGraphics* bloomGraph;
+    moon::workflows::BloomGraphics bloomGraph;
 
     moon::utils::Texture* emptyTexture{nullptr};
 

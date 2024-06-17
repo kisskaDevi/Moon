@@ -34,8 +34,21 @@ struct Attachments{
     Attachments() = default;
     Attachments(const Attachments& other) = delete;
     Attachments& operator=(const Attachments& other) = delete;
-    Attachments(Attachments&& other) = default;
-    Attachments& operator=(Attachments&& other) = default;
+    Attachments(Attachments&& other){
+        instances = std::move(other.instances);
+        sampler = std::move(other.sampler);
+        format = std::move(other.format);
+        clearValue = std::move(other.clearValue);
+    };
+    Attachments& operator=(Attachments&& other) {
+        deleteAttachment();
+        deleteSampler();
+        instances = std::move(other.instances);
+        sampler = std::move(other.sampler);
+        format = std::move(other.format);
+        clearValue = std::move(other.clearValue);
+        return *this;
+    }
 
     ~Attachments();
     void deleteAttachment();

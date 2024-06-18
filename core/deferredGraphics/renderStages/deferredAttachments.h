@@ -30,7 +30,7 @@ struct DeferredAttachments{
     moon::utils::Attachments         image;
     moon::utils::Attachments         blur;
     moon::utils::Attachments         bloom;
-    GBufferAttachments  GBuffer;
+    GBufferAttachments               GBuffer;
 
     DeferredAttachments() = default;
     DeferredAttachments(const DeferredAttachments& other) = delete;
@@ -45,6 +45,8 @@ struct DeferredAttachments{
     constexpr static uint32_t blurIndex() {return 1;}
     constexpr static uint32_t bloomIndex() {return 2;}
     constexpr static uint32_t GBufferOffset() {return 3;}
+
+    std::vector<VkClearValue> clearValues() const;
 };
 
 }

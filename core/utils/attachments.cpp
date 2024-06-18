@@ -7,112 +7,58 @@
 
 namespace moon::utils {
 
-VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count) {
-    deleteAttachment();
-    deleteSampler();
+Attachment::~Attachment() {
+    texture::destroy(device, image, imageMemory);
+    if (imageView) vkDestroyImageView(device, imageView, nullptr);
+}
+
+VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear, VkSamplerCreateInfo samplerInfo) {
+    destroy();
     this->device = device;
+    this->imageInfo = imageInfo;
+    imageClearValue = clear;
     VkResult result = VK_SUCCESS;
 
-    instances.resize(count);
-
-    this->format = format;
-    clearValue.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    instances.resize(imageInfo.Count);
 
     for(auto& instance : instances){
-        result = texture::create(   physicalDevice,
-                                    device,
-                                    0,
-                                    {extent.width,extent.height,1},
-                                    1,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    format,
-                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                    usage,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    &(instance.image),
-                                    &(instance.imageMemory));
-        CHECK(result);
-
+        instance.device = device;
+        CHECK(result = texture::create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &instance.image, &instance.imageMemory));
+        CHECK(result = texture::createView(device, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1, instance.image, &instance.imageView));
         Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
-
-        result = texture::createView(   device,
-                                        VK_IMAGE_VIEW_TYPE_2D,
-                                        format,
-                                        VK_IMAGE_ASPECT_COLOR_BIT,
-                                        1,
-                                        0,
-                                        1,
-                                        instance.image,
-                                        &(instance.imageView));
-        CHECK(result);
     }
+    CHECK(result = vkCreateSampler(device, &samplerInfo, nullptr, &imageSampler));
     return result;
 }
 
-VkResult Attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count)
-{
-    deleteAttachment();
-    deleteSampler();
+VkResult Attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear, VkSamplerCreateInfo samplerInfo) {
+    destroy();
     this->device = device;
+    this->imageInfo = imageInfo;
+    imageClearValue = clear;
     VkResult result = VK_SUCCESS;
 
-    instances.resize(count);
-
-    this->format = format;
-    clearValue.depthStencil = {1.0f, 0};
+    instances.resize(imageInfo.Count);
 
     for(auto& instance : instances){
-        result = texture::create(   physicalDevice,
-                                    device,
-                                    0,
-                                    {extent.width,extent.height,1},
-                                    1,
-                                    1,
-                                    VK_SAMPLE_COUNT_1_BIT,
-                                    format,
-                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                    usage,
-                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    &(instance.image),
-                                    &(instance.imageMemory));
-        CHECK(result);
-
+        instance.device = device;
+        CHECK(result = texture::create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &instance.image, &instance.imageMemory));
+        CHECK(result = texture::createView(device, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 0, 1, instance.image, &instance.imageView));
         Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, instance " + std::to_string(&instance - &instances[0]));
-
-        result = texture::createView(   device,
-                                        VK_IMAGE_VIEW_TYPE_2D,
-                                        format,
-                                        VK_IMAGE_ASPECT_DEPTH_BIT,
-                                        1,
-                                        0,
-                                        1,
-                                        instance.image,
-                                        &(instance.imageView));
-        CHECK(result);
     }
+    CHECK(result = vkCreateSampler(device, &samplerInfo, nullptr, &imageSampler));
     return result;
 }
 
 Attachments::~Attachments() {
-    deleteAttachment();
-    deleteSampler();
+    destroy();
 }
 
-void Attachments::deleteAttachment()
-{
-    for(Attachment& instance : instances) {
-        texture::destroy(device, instance.image, instance.imageMemory);
-        vkDestroyImageView(device, instance.imageView, nullptr);
-        instance.imageView = VK_NULL_HANDLE;
-    }
+void Attachments::destroy() {
     instances.clear();
-}
-
-void Attachments::deleteSampler() {
-    if(sampler){
-        vkDestroySampler(device, sampler, nullptr);
-        sampler = VK_NULL_HANDLE;
+    if(imageSampler){
+        vkDestroySampler(device, imageSampler, nullptr);
+        imageSampler = VK_NULL_HANDLE;
     }
 }
 
@@ -180,11 +126,9 @@ std::vector<VkImage> Attachments::getImages() const {
     return images;
 }
 
-void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo image, uint32_t attachmentsCount, Attachments* pAttachments, VkImageUsageFlags usage){
-    for(VkSamplerCreateInfo samplerInfo = vkDefault::samler(); 0 < attachmentsCount; attachmentsCount--){
-        pAttachments[attachmentsCount - 1].create(physicalDevice,device,image.Format,usage,image.Extent,image.Count);
-        CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[attachmentsCount - 1].sampler));
-        pAttachments->clearValue.color = {{0.0f,0.0f,0.0f,1.0f}};
+void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo image, uint32_t attachmentsCount, Attachments* pAttachments, VkImageUsageFlags usage, VkSamplerCreateInfo samplerInfo){
+    for(uint32_t i = 0; i < attachmentsCount; i++){
+        CHECK(pAttachments[i].create(physicalDevice, device, image, usage, { {0.0f,0.0f,0.0f,0.0f}}, samplerInfo));
     }
 }
 
@@ -232,14 +176,14 @@ VkImageView AttachmentsDatabase::imageView(const std::string& id, const uint32_t
     const auto emptyTexture = emptyTextureId ? emptyTexturesMap.at(*emptyTextureId) : emptyTexturesMap.at(defaultEmptyTexture);
     const auto attachment = get(id);
 
-    return attachment ? attachment->instances[imageIndex].imageView : *emptyTexture->getTextureImageView();
+    return attachment ? attachment->imageView(imageIndex) : *emptyTexture->getTextureImageView();
 }
 
 VkSampler AttachmentsDatabase::sampler(const std::string& id, const std::optional<std::string>& emptyTextureId) const {
     const auto emptyTexture = emptyTextureId ? emptyTexturesMap.at(*emptyTextureId) : emptyTexturesMap.at(defaultEmptyTexture);
     const auto attachment = get(id);
 
-    return attachment ? attachment->sampler : *emptyTexture->getTextureSampler();
+    return attachment ? attachment->sampler() : *emptyTexture->getTextureSampler();
 }
 
 VkDescriptorImageInfo AttachmentsDatabase::descriptorImageInfo(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId) const{

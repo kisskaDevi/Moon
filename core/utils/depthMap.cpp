@@ -73,8 +73,8 @@ void DepthMap::updateDescriptorSets(VkDevice device, uint32_t imageCount){
     {
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView = map ? map->instances[i].imageView : *emptyTextureWhite->getTextureImageView();
-            shadowImageInfo.sampler = map ? map->sampler : *emptyTextureWhite->getTextureSampler();
+            shadowImageInfo.imageView = map ? map->imageView(i) : *emptyTextureWhite->getTextureImageView();
+            shadowImageInfo.sampler = map ? map->sampler() : *emptyTextureWhite->getTextureSampler();
         std::vector<VkWriteDescriptorSet> descriptorWrites;
             descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

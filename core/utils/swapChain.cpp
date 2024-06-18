@@ -15,11 +15,7 @@ void SwapChain::destroy(){
         vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;
     }
 
-    for (Attachment& instance : swapChainAttachments.instances) {
-        vkDestroyImageView(device->getLogical(), instance.imageView, nullptr);
-        instance.imageView = VK_NULL_HANDLE;
-    }
-    swapChainAttachments.instances.clear();
+    attachments.clear();
 }
 
 SwapChain::~SwapChain() {
@@ -39,18 +35,18 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
     VkSurfaceFormatKHR surfaceFormat = swapChain::queryingSurfaceFormat(swapChainSupport.formats);
     VkSurfaceCapabilitiesKHR capabilities = swapChain::queryingSupport(device->instance, surface).capabilities;
 
-    imageCount = swapChain::queryingSupportImageCount(device->instance, surface);
-    imageCount = (maxImageCount > 0 && imageCount > static_cast<uint32_t>(maxImageCount)) ? static_cast<uint32_t>(maxImageCount) : imageCount;
-    extent = swapChain::queryingExtent(window, capabilities);
-    format = surfaceFormat.format;
+    imageInfo.Count = swapChain::queryingSupportImageCount(device->instance, surface);
+    imageInfo.Count = (maxImageCount > 0 && imageInfo.Count > static_cast<uint32_t>(maxImageCount)) ? static_cast<uint32_t>(maxImageCount) : imageInfo.Count;
+    imageInfo.Extent = swapChain::queryingExtent(window, capabilities);
+    imageInfo.Format = surfaceFormat.format;
 
     VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         createInfo.surface = surface;
-        createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = format;
+        createInfo.minImageCount = imageInfo.Count;
+        createInfo.imageFormat = imageInfo.Format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = extent;
+        createInfo.imageExtent = imageInfo.Extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         createInfo.imageSharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
@@ -63,13 +59,16 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
         createInfo.oldSwapchain = VK_NULL_HANDLE;
     CHECK(result = vkCreateSwapchainKHR(device->getLogical(), &createInfo, nullptr, &swapChainKHR));
 
-    swapChainAttachments.instances.resize(imageCount);
-    swapChainAttachments.device = device->getLogical();
-    std::vector<VkImage> images = swapChainAttachments.getImages();
-    CHECK(result = vkGetSwapchainImagesKHR(device->getLogical(), swapChainKHR, &imageCount, images.data()));
+    attachments.resize(imageInfo.Count);
+    std::vector<VkImage> images;
+    for (auto& attachment : attachments) {
+        images.push_back(attachment.image);
+    }
+    CHECK(result = vkGetSwapchainImagesKHR(device->getLogical(), swapChainKHR, &imageInfo.Count, images.data()));
 
-    for (auto& instance: swapChainAttachments.instances){
-        instance.image = images[&instance - &swapChainAttachments.instances[0]];
+    for (auto& attachment: attachments){
+        attachment.device = device->getLogical();
+        attachment.image = images[&attachment - &attachments[0]];
         result = texture::createView(   device->getLogical(),
                                         VK_IMAGE_VIEW_TYPE_2D,
                                         surfaceFormat.format,
@@ -77,8 +76,8 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
                                         1,
                                         0,
                                         1,
-                                        instance.image,
-                                        &instance.imageView);
+                                        attachment.image,
+                                        &attachment.imageView);
         CHECK(result);
     }
 
@@ -108,20 +107,20 @@ SwapChain::operator VkSwapchainKHR&(){
     return swapChainKHR;
 }
 
-Attachment& SwapChain::attachment(uint32_t i){
-    return swapChainAttachments.instances[i];
+const VkImageView& SwapChain::imageView(uint32_t i) const {
+    return attachments[i].imageView;
 }
 
 uint32_t SwapChain::getImageCount() const{
-    return imageCount;
+    return imageInfo.Count;
 }
 
 VkExtent2D SwapChain::getExtent() const{
-    return extent;
+    return imageInfo.Extent;
 }
 
 VkFormat SwapChain::getFormat() const{
-    return format;
+    return imageInfo.Format;
 }
 
 VkSurfaceKHR SwapChain::getSurface() const{
@@ -133,15 +132,15 @@ GLFWwindow* SwapChain::getWindow(){
 }
 
 std::vector<uint32_t> SwapChain::makeScreenshot(uint32_t i) const {
-    std::vector<uint32_t> buffer(extent.height * extent.width, 0);
+    std::vector<uint32_t> buffer(imageInfo.Extent.height * imageInfo.Extent.width, 0);
 
     Buffer stagingBuffer;
-    buffer::create(device->instance, device->getLogical(), sizeof(uint32_t) * extent.width * extent.height, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
+    buffer::create(device->instance, device->getLogical(), sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
 
     VkCommandBuffer commandBuffer = singleCommandBuffer::create(device->getLogical(),commandPool);
-    texture::transitionLayout(commandBuffer, swapChainAttachments.instances[i].image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
-    texture::copy(commandBuffer, swapChainAttachments.instances[i].image, stagingBuffer.instance, {extent.width, extent.height, 1}, 1);
-    texture::transitionLayout(commandBuffer, swapChainAttachments.instances[i].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_REMAINING_MIP_LEVELS, 0, 1);
+    texture::transitionLayout(commandBuffer, attachments[i].image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+    texture::copy(commandBuffer, attachments[i].image, stagingBuffer.instance, { imageInfo.Extent.width, imageInfo.Extent.height, 1}, 1);
+    texture::transitionLayout(commandBuffer, attachments[i].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_REMAINING_MIP_LEVELS, 0, 1);
     singleCommandBuffer::submit(device->getLogical(),device->getQueue(0,0),commandPool,&commandBuffer);
 
     void* map = nullptr;

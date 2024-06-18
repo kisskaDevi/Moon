@@ -12,7 +12,7 @@ SkyboxGraphics::SkyboxGraphics(SkyboxParameters parameters, bool enable, std::ve
 }
 
 void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, image, 2, &frame);
+    moon::utils::createAttachments(physicalDevice, device, image, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::samler());
     aDatabase.addAttachmentData(parameters.out.baseColor, enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
 }
@@ -64,8 +64,8 @@ void SkyboxGraphics::createFramebuffers()
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
         std::vector<VkImageView> pAttachments = {
-            frame.color.instances[i].imageView,
-            frame.bloom.instances[i].imageView
+            frame.color.imageView(i),
+            frame.bloom.imageView(i)
         };
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -185,7 +185,7 @@ void SkyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bD
 void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue};
+    std::vector<VkClearValue> clearValues = {frame.color.clearValue(), frame.bloom.clearValue()};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

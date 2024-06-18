@@ -28,9 +28,7 @@ void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo image, uint32_t attachmentsCount, moon::utils::Attachments* pAttachments){
         for(size_t index=0; index < attachmentsCount; index++){
-            pAttachments[index].create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (index==1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),image.Extent,image.Count);
-            VkSamplerCreateInfo samplerInfo = moon::utils::vkDefault::samler();
-            CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments[index].sampler));
+            pAttachments[index].create(physicalDevice, device, image, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (index==1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0));
         }
     };
 
@@ -80,11 +78,7 @@ void LayersCombiner::createRenderPass(){
 void LayersCombiner::createFramebuffers(){
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
-        std::vector<VkImageView> attachments = {
-            frame.color.instances[i].imageView,
-            frame.bloom.instances[i].imageView,
-            frame.blur.instances[i].imageView,
-        };
+        std::vector<VkImageView> attachments = { frame.color.imageView(i), frame.bloom.imageView(i), frame.blur.imageView(i) };
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -364,7 +358,7 @@ void LayersCombiner::updateDescriptorSets(
 void LayersCombiner::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues = {frame.color.clearValue, frame.bloom.clearValue, frame.blur.clearValue};
+    std::vector<VkClearValue> clearValues = { frame.color.clearValue(), frame.bloom.clearValue(), frame.blur.clearValue() };
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

@@ -57,7 +57,7 @@ void BoundingBoxGraphics::createRenderPass(){
 void BoundingBoxGraphics::createFramebuffers(){
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
-        std::vector<VkImageView> pAttachments = {frame.instances[i].imageView};
+        std::vector<VkImageView> pAttachments = {frame.imageView(i)};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -123,7 +123,7 @@ void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::uti
         pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(BoundingBox);
+        pushConstantRange.back().size = sizeof(moon::interfaces::BoundingBox);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
         descriptorSetLayout,
         objectDescriptorSetLayout,
@@ -213,7 +213,7 @@ void BoundingBoxGraphics::updateDescriptorSets(
 void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues = {frame.clearValue};
+    std::vector<VkClearValue> clearValues = {frame.clearValue()};
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

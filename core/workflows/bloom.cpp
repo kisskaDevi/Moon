@@ -21,8 +21,8 @@ BloomGraphics& BloomGraphics::setSamplerStepY(const float& ySamplerStep){this->y
 
 void BloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase) {
     frames.resize(bloom.blitAttachmentsCount);
-    moon::utils::createAttachments(physicalDevice, device, image, bloom.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-    moon::utils::createAttachments(physicalDevice, device, image, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    moon::utils::createAttachments(physicalDevice, device, image, bloom.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::samler());
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::samler());
 
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &bufferAttachment);
 }
@@ -69,7 +69,7 @@ void BloomGraphics::createFramebuffers(){
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
-                framebufferInfo.pAttachments = &frames[i].instances[j].imageView;
+                framebufferInfo.pAttachments = &frames[i].imageView(j);
                 framebufferInfo.width = image.Extent.width;
                 framebufferInfo.height = image.Extent.height;
                 framebufferInfo.layers = 1;
@@ -81,7 +81,7 @@ void BloomGraphics::createFramebuffers(){
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &bufferAttachment.instances[i].imageView;
+            framebufferInfo.pAttachments = &bufferAttachment.imageView(i);
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
@@ -248,19 +248,17 @@ void BloomGraphics::updateDescriptorSets(
 
     srcAttachment = aDatabase.get(parameters.in.bloom);
 
-    auto updateDescriptorSets = [](VkDevice device, moon::utils::Attachments* image, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
-        auto imageIt = image->instances.begin();
-        auto setIt = descriptorSets.begin();
-        for (;imageIt != image->instances.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
+    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments& image, const std::vector<VkDescriptorSet>& descriptorSets){
+        for (uint32_t i = 0; i < image.count(); i++){
             VkDescriptorImageInfo imageInfo{};
                 imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = imageIt->imageView;
-                imageInfo.sampler = sampler;
+                imageInfo.imageView = image.imageView(i);
+                imageInfo.sampler = image.sampler();
 
             std::vector<VkWriteDescriptorSet> descriptorWrites;
             descriptorWrites.push_back(VkWriteDescriptorSet{});
                 descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites.back().dstSet = *setIt;
+                descriptorWrites.back().dstSet = descriptorSets[i];
                 descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
                 descriptorWrites.back().dstArrayElement = 0;
                 descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -269,15 +267,15 @@ void BloomGraphics::updateDescriptorSets(
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     };
-    updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, filter.DescriptorSets);
+    updateDescriptorSets(device, bufferAttachment, filter.DescriptorSets);
 
     for (size_t image = 0; image < this->image.Count; image++)
     {
         std::vector<VkDescriptorImageInfo> blitImageInfo(bloom.blitAttachmentsCount);
         for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
             blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            blitImageInfo[index].imageView = frames[i].instances[image].imageView;
-            blitImageInfo[index].sampler = frames[i].sampler;
+            blitImageInfo[index].imageView = frames[i].imageView(image);
+            blitImageInfo[index].sampler = frames[i].sampler();
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -309,14 +307,14 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
         clearColorValue.uint32[3] = 0;
 
     std::vector<VkImage> blitImages(frames.size());
-    blitImages[0] = srcAttachment->instances[frameNumber].image;
+    blitImages[0] = srcAttachment->image(frameNumber);
     moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitImages[0], inputImageLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 
     for(size_t i=1;i<frames.size();i++){
-        blitImages[i] = frames[i - 1].instances[frameNumber].image;
+        blitImages[i] = frames[i - 1].image(frameNumber);
     }
 
-    VkImage blitBufferImage = bufferAttachment.instances[frameNumber].image;
+    VkImage blitBufferImage = bufferAttachment.image(frameNumber);
     uint32_t width = image.Extent.width;
     uint32_t height = image.Extent.height;
 
@@ -329,7 +327,7 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
         render(commandBuffers[frameNumber], frames[k], frameNumber, k * image.Count + frameNumber, &filter);
     }
     for(uint32_t k = 0; k < frames.size(); k++){
-        moon::utils::texture::transitionLayout(commandBuffers[frameNumber],frames[k].instances[frameNumber].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+        moon::utils::texture::transitionLayout(commandBuffers[frameNumber],frames[k].image(frameNumber), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
     }
     render(commandBuffers[frameNumber], bufferAttachment, frameNumber, static_cast<uint32_t>(frames.size()) * image.Count + frameNumber, &bloom);
     moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
@@ -337,10 +335,7 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
 
 void BloomGraphics::render(VkCommandBuffer commandBuffer, const moon::utils::Attachments& image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker)
 {
-    std::vector<VkClearValue> clearValues(1,VkClearValue{});
-    for(uint32_t index = 0; index < clearValues.size(); index++){
-        clearValues[index].color = image.clearValue.color;
-    }
+    std::vector<VkClearValue> clearValues = { image.clearValue() };
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

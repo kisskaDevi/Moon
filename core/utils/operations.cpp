@@ -164,7 +164,7 @@ uint32_t physicalDevice::findMemoryTypeIndex(VkPhysicalDevice physicalDevice, ui
 #endif
 
     std::vector<uint32_t> memoryTypeIndex;
-    
+
 #ifdef ONLYDEVICELOCALHEAP
     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++){
         if ((memoryTypeBits & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties){
@@ -174,7 +174,7 @@ uint32_t physicalDevice::findMemoryTypeIndex(VkPhysicalDevice physicalDevice, ui
         }
     }
 #endif
-    
+
     if(memoryTypeIndex.size() == 0){
 		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++){
 		    if ((memoryTypeBits & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties){
@@ -341,16 +341,13 @@ VkResult buffer::create(VkPhysicalDevice physicalDevice, VkDevice device, VkDevi
         bufferInfo.size = size;
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer);
-    CHECK(result);
+    CHECK(result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer));
 
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
 
-    result = Memory::instance().allocate(physicalDevice, device, memoryRequirements, properties, bufferMemory);
-    CHECK(result);
-    result = vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
-    CHECK(result);
+    CHECK(result = Memory::instance().allocate(physicalDevice, device, memoryRequirements, properties, bufferMemory));
+    CHECK(result = vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
 
     return result;
 }
@@ -385,15 +382,13 @@ VkCommandBuffer singleCommandBuffer::create(VkDevice device, VkCommandPool comma
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandPool = commandPool;
         allocInfo.commandBufferCount = 1;
-    result = vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-    CHECK(result);
+    CHECK(result = vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer));
 
 
     VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;
-    result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-    CHECK(result);
+    CHECK(result = vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
     return commandBuffer;
 }
@@ -405,20 +400,17 @@ VkResult singleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPo
 
 VkResult singleCommandBuffer::submit(VkDevice device, VkQueue queue, VkCommandPool commandPool, uint32_t commandBufferCount, VkCommandBuffer* commandBuffer)
 {
+    VkResult result = VK_SUCCESS;
     for(size_t i = 0; i < commandBufferCount; i++){
-        VkResult result = vkEndCommandBuffer(commandBuffer[i]);
-        CHECK(result);
+        CHECK(result = vkEndCommandBuffer(commandBuffer[i]));
     }
 
     VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = commandBufferCount;
-    submitInfo.pCommandBuffers = commandBuffer;
-    VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-    CHECK(result);
-
-    result = vkQueueWaitIdle(queue);
-    CHECK(result);
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = commandBufferCount;
+        submitInfo.pCommandBuffers = commandBuffer;
+    CHECK(result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+    CHECK(result = vkQueueWaitIdle(queue));
 
     vkFreeCommandBuffers(device, commandPool, commandBufferCount, commandBuffer);
 
@@ -509,17 +501,13 @@ VkResult texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkIma
         imageInfo.usage = usage;
         imageInfo.samples = numSamples;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    result = vkCreateImage(device, &imageInfo, nullptr, image);
-    CHECK(result);
+    CHECK(result = vkCreateImage(device, &imageInfo, nullptr, image));
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device, *image, &memRequirements);
 
-    result = Memory::instance().allocate(physicalDevice, device, memRequirements, properties, imageMemory);
-    CHECK(result);
-
-    result = vkBindImageMemory(device, *image, *imageMemory, 0);
-    CHECK(result);
+    CHECK(result = Memory::instance().allocate(physicalDevice, device, memRequirements, properties, imageMemory));
+    CHECK(result = vkBindImageMemory(device, *image, *imageMemory, 0));
 
     return result;
 }

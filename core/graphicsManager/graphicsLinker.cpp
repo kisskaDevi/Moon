@@ -72,7 +72,7 @@ void GraphicsLinker::createFramebuffers(){
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &swapChainKHR->attachment(i).imageView;
+            framebufferInfo.pAttachments = &swapChainKHR->imageView(i);
             framebufferInfo.width = imageExtent.width;
             framebufferInfo.height = imageExtent.height;
             framebufferInfo.layers = 1;

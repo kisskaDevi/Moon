@@ -66,22 +66,22 @@ void Graphics::updateLightingDescriptorSets(const moon::utils::BuffersDatabase& 
         std::vector<VkDescriptorImageInfo> imageInfos;
         imageInfos.push_back(VkDescriptorImageInfo{
             VK_NULL_HANDLE,
-            deferredAttachments.GBuffer.position.instances[i].imageView,
+            deferredAttachments.GBuffer.position.imageView(i),
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         });
         imageInfos.push_back(VkDescriptorImageInfo{
             VK_NULL_HANDLE,
-            deferredAttachments.GBuffer.normal.instances[i].imageView,
+            deferredAttachments.GBuffer.normal.imageView(i),
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         });
         imageInfos.push_back(VkDescriptorImageInfo{
             VK_NULL_HANDLE,
-            deferredAttachments.GBuffer.color.instances[i].imageView,
+            deferredAttachments.GBuffer.color.imageView(i),
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         });
         imageInfos.push_back(VkDescriptorImageInfo{
             VK_NULL_HANDLE,
-            deferredAttachments.GBuffer.depth.instances[i].imageView,
+            deferredAttachments.GBuffer.depth.imageView(i),
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         });
 

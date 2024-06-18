@@ -41,23 +41,19 @@ void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
     auto createAttachments = [](VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, DeferredAttachments* pAttachments){
         VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        pAttachments->image.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
-        pAttachments->blur.create(physicalDevice, device, image.Format, usage, image.Extent, image.Count);
-        pAttachments->bloom.create(physicalDevice, device, image.Format, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, image.Extent, image.Count);
-        pAttachments->GBuffer.position.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
-        pAttachments->GBuffer.normal.create(physicalDevice, device, VK_FORMAT_R32G32B32A32_SFLOAT, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
-        pAttachments->GBuffer.color.create(physicalDevice, device, VK_FORMAT_R8G8B8A8_UNORM, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, image.Extent, image.Count);
-        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, moon::utils::image::depthStencilFormat(physicalDevice), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, image.Extent, image.Count);
+        pAttachments->image.create(physicalDevice, device, image, usage);
+        pAttachments->blur.create(physicalDevice, device, image, usage);
+        pAttachments->bloom.create(physicalDevice, device, image, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-        VkSamplerCreateInfo SamplerInfo{};
-        SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->image.sampler));
-        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->blur.sampler));
-        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->bloom.sampler));
-        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.position.sampler));
-        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.normal.sampler));
-        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.color.sampler));
-        CHECK(vkCreateSampler(device, &SamplerInfo, nullptr, &pAttachments->GBuffer.depth.sampler));
+        moon::utils::ImageInfo f32Image = {image.Count, VK_FORMAT_R32G32B32A32_SFLOAT, image.Extent, image.Samples};
+        pAttachments->GBuffer.position.create(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+        pAttachments->GBuffer.normal.create(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+
+        moon::utils::ImageInfo u8Image = { image.Count, VK_FORMAT_R8G8B8A8_UNORM, image.Extent, image.Samples };
+        pAttachments->GBuffer.color.create(physicalDevice, device, u8Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+
+        moon::utils::ImageInfo depthImage = { image.Count, moon::utils::image::depthStencilFormat(physicalDevice), image.Extent, image.Samples };
+        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
     };
 
     createAttachments(physicalDevice, device, image, &deferredAttachments);
@@ -74,13 +70,13 @@ void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 void Graphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(deferredAttachments.image.format),
-        moon::utils::Attachments::imageDescription(deferredAttachments.blur.format),
-        moon::utils::Attachments::imageDescription(deferredAttachments.bloom.format),
-        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.position.format),
-        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.normal.format),
-        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.color.format),
-        moon::utils::Attachments::depthStencilDescription(deferredAttachments.GBuffer.depth.format)
+        moon::utils::Attachments::imageDescription(deferredAttachments.image.format()),
+        moon::utils::Attachments::imageDescription(deferredAttachments.blur.format()),
+        moon::utils::Attachments::imageDescription(deferredAttachments.bloom.format()),
+        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.position.format()),
+        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.normal.format()),
+        moon::utils::Attachments::imageDescription(deferredAttachments.GBuffer.color.format()),
+        moon::utils::Attachments::depthStencilDescription(deferredAttachments.GBuffer.depth.format())
     };
 
     uint32_t gOffset = DeferredAttachments::GBufferOffset();
@@ -160,7 +156,7 @@ void Graphics::createFramebuffers()
     for (size_t imageIndex = 0; imageIndex < image.Count; imageIndex++){
         std::vector<VkImageView> attachments;
         for(uint32_t attIndex = 0; attIndex < static_cast<uint32_t>(deferredAttachments.size()); attIndex++){
-            attachments.push_back(deferredAttachments[attIndex].instances[imageIndex].imageView);
+            attachments.push_back(deferredAttachments[attIndex].imageView(imageIndex));
         }
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -227,11 +223,7 @@ void Graphics::updateDescriptorSets(
 void Graphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues;
-    for(size_t attIndex = 0; attIndex < deferredAttachments.size(); attIndex++){
-        clearValues.push_back(deferredAttachments[static_cast<uint32_t>(attIndex)].clearValue);
-    }
-
+    const std::vector<VkClearValue> clearValues = deferredAttachments.clearValues();
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;

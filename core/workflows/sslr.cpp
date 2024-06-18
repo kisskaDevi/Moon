@@ -9,7 +9,7 @@ SSLRGraphics::SSLRGraphics(SSLRParameters parameters, bool enable) :
 {}
 
 void SSLRGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::samler());
     aDatabase.addAttachmentData(parameters.out.sslr, enable, &frame);
 }
 
@@ -55,7 +55,7 @@ void SSLRGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &frame.instances[i].imageView;
+            framebufferInfo.pAttachments = &frame.imageView(i);
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
@@ -257,7 +257,7 @@ void SSLRGraphics::updateDescriptorSets(
 void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues = {frame.clearValue};
+    std::vector<VkClearValue> clearValues = {frame.clearValue()};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

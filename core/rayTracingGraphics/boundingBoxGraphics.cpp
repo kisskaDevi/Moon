@@ -51,7 +51,7 @@ void BoundingBoxGraphics::BoundingBoxGraphics::createRenderPass(){
 void BoundingBoxGraphics::createFramebuffers(){
     framebuffers.resize(image.Count);
     for(size_t i = 0; i < image.Count; i++){
-        std::vector<VkImageView> pAttachments = {frame.instances[i].imageView};
+        std::vector<VkImageView> pAttachments = {frame.imageView(i)};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -236,7 +236,7 @@ void BoundingBoxGraphics::update(uint32_t imageIndex){
 void BoundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const {
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues = {frame.clearValue};
+    std::vector<VkClearValue> clearValues = {frame.clearValue()};
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

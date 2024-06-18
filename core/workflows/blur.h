@@ -41,7 +41,6 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 
-    void createBufferAttachments();
 public:
     GaussianBlur(GaussianBlurParameters parameters, bool enable);
     ~GaussianBlur() { destroy(); }

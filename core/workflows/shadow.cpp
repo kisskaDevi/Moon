@@ -11,9 +11,7 @@ namespace moon::workflows {
 moon::utils::Attachments* ShadowGraphics::createAttachments()
 {
     moon::utils::Attachments* pAttachments = new moon::utils::Attachments;
-    pAttachments->createDepth(physicalDevice,device,image.Format,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,image.Extent,image.Count);
-    VkSamplerCreateInfo samplerInfo = moon::utils::vkDefault::samler();
-    CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &pAttachments->sampler));
+    pAttachments->createDepth(physicalDevice,device, image,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, {{1.0,0}}, utils::vkDefault::samler());
     return pAttachments;
 }
 
@@ -132,7 +130,7 @@ void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &depthMap->get()->instances[i].imageView;
+            framebufferInfo.pAttachments = &depthMap->get()->imageView(i);
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
@@ -167,7 +165,7 @@ void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber)
 void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, moon::utils::DepthMap* depthMap)
 {
     std::vector<VkClearValue> clearValues;
-    clearValues.push_back(VkClearValue{depthMap->get()->clearValue.color});
+    clearValues.push_back(depthMap->get()->clearValue());
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

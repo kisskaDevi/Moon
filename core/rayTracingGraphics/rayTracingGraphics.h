@@ -28,7 +28,7 @@ private:
         moon::utils::Buffer hostDevice;
         moon::utils::Attachments device;
 
-        void create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount);
+        void create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo);
         void destroy(const moon::utils::PhysicalDevice& phDevice);
         void moveFromHostToHostDevice(VkExtent2D extent);
         void copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex);

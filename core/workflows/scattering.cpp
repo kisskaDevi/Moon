@@ -66,7 +66,7 @@ void Scattering::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &frame.instances[i].imageView;
+            framebufferInfo.pAttachments = &frame.imageView(i);
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
@@ -213,7 +213,7 @@ void Scattering::updateDescriptorSets(
 void Scattering::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues = {frame.clearValue};
+    std::vector<VkClearValue> clearValues = {frame.clearValue()};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

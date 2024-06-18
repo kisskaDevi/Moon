@@ -7,55 +7,60 @@
 #include <string>
 #include <optional>
 
+#include <vkdefault.h>
+
 namespace moon::utils {
 
 struct ImageInfo{
-    uint32_t                        Count;
-    VkFormat                        Format;
-    VkExtent2D                      Extent;
-    VkSampleCountFlagBits           Samples;
+    uint32_t                Count{0};
+    VkFormat                Format{ VK_FORMAT_UNDEFINED };
+    VkExtent2D              Extent{0, 0};
+    VkSampleCountFlagBits   Samples{ VK_SAMPLE_COUNT_1_BIT };
 };
 
 struct Attachment{
-    VkImage image{VK_NULL_HANDLE};
-    VkDeviceMemory imageMemory{VK_NULL_HANDLE};
-    VkImageView imageView{VK_NULL_HANDLE};
-    VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
+    VkImage         image{VK_NULL_HANDLE};
+    VkDeviceMemory  imageMemory{VK_NULL_HANDLE};
+    VkImageView     imageView{VK_NULL_HANDLE};
+    VkImageLayout   layout{VK_IMAGE_LAYOUT_UNDEFINED};
+    VkDevice        device{ VK_NULL_HANDLE };
+
+    virtual ~Attachment();
 };
 
-struct Attachments{
+class Attachments{
+private:
     std::vector<Attachment> instances;
-    VkSampler sampler{VK_NULL_HANDLE};
-    VkFormat format{VK_FORMAT_UNDEFINED};
-    VkClearValue clearValue{};
+    VkSampler imageSampler{ VK_NULL_HANDLE };
+    ImageInfo imageInfo;
+    VkClearValue imageClearValue{};
 
     VkDevice device{ VK_NULL_HANDLE };
 
+    void destroy();
+public:
     Attachments() = default;
     Attachments(const Attachments& other) = delete;
     Attachments& operator=(const Attachments& other) = delete;
     Attachments(Attachments&& other){
         instances = std::move(other.instances);
-        sampler = std::move(other.sampler);
-        format = std::move(other.format);
-        clearValue = std::move(other.clearValue);
+        imageSampler = std::move(other.imageSampler);
+        imageInfo = std::move(other.imageInfo);
+        imageClearValue = std::move(other.imageClearValue);
     };
     Attachments& operator=(Attachments&& other) {
-        deleteAttachment();
-        deleteSampler();
+        destroy();
         instances = std::move(other.instances);
-        sampler = std::move(other.sampler);
-        format = std::move(other.format);
-        clearValue = std::move(other.clearValue);
+        imageSampler = std::move(other.imageSampler);
+        imageInfo = std::move(other.imageInfo);
+        imageClearValue = std::move(other.imageClearValue);
         return *this;
     }
 
     ~Attachments();
-    void deleteAttachment();
-    void deleteSampler();
 
-    VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
-    VkResult createDepth(VkPhysicalDevice physicalDevice, VkDevice device, VkFormat format, VkImageUsageFlags usage, VkExtent2D extent, uint32_t count);
+    VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear = {{0.0f, 0.0f, 0.0f, 0.0f}}, VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO });
+    VkResult createDepth(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear = {{ 1.0f, 0 }}, VkSamplerCreateInfo samplerInfo = vkDefault::samler());
 
     static VkAttachmentDescription imageDescription(VkFormat format);
     static VkAttachmentDescription imageDescription(VkFormat format, VkImageLayout layout);
@@ -63,9 +68,18 @@ struct Attachments{
     static VkAttachmentDescription depthDescription(VkFormat format);
 
     std::vector<VkImage> getImages() const;
+
+    const VkImage& image(size_t i) const { return instances[i].image; }
+    const VkImageView& imageView(size_t i) const { return instances[i].imageView; }
+    const VkSampler& sampler() const {return imageSampler;}
+    const VkFormat& format() const { return imageInfo.Format; }
+    const uint32_t& count() const { return imageInfo.Count; }
+    const VkClearValue& clearValue() const { return imageClearValue; }
+
+    Attachment& attachment(size_t i) { return instances[i];}
 };
 
-void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo image, uint32_t attachmentsCount, Attachments* pAttachments, VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT);
+void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo image, uint32_t attachmentsCount, Attachments* pAttachments, VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO });
 
 class Texture;
 

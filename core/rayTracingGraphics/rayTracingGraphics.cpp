@@ -20,30 +20,26 @@ RayTracingGraphics::~RayTracingGraphics(){
     bbGraphics.destroy();
 }
 
-void RayTracingGraphics::ImageResource::create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, VkFormat format, VkExtent2D extent, uint32_t imageCount){
+void RayTracingGraphics::ImageResource::create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo){
     this->id = id;
 
-    host = new uint32_t[extent.width * extent.height];
+    host = new uint32_t[imageInfo.Extent.width * imageInfo.Extent.height];
 
     moon::utils::buffer::create(
         phDevice.instance,
         phDevice.getLogical(),
-        sizeof(uint32_t) * extent.width * extent.height,
+        sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         &hostDevice.instance,
         &hostDevice.memory);
-    vkMapMemory(phDevice.getLogical(), hostDevice.memory, 0, sizeof(uint32_t) * extent.width * extent.height, 0, &hostDevice.map);
+    vkMapMemory(phDevice.getLogical(), hostDevice.memory, 0, sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height, 0, &hostDevice.map);
 
     device.create(
         phDevice.instance,
         phDevice.getLogical(),
-        format,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-        extent,
-        imageCount);
-    VkSamplerCreateInfo SamplerInfo = moon::utils::vkDefault::samler();
-    vkCreateSampler(phDevice.getLogical(), &SamplerInfo, nullptr, &device.sampler);
+        imageInfo,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 }
 
 void RayTracingGraphics::ImageResource::destroy(const moon::utils::PhysicalDevice& phDevice){
@@ -59,9 +55,9 @@ void RayTracingGraphics::ImageResource::moveFromHostToHostDevice(VkExtent2D exte
 }
 
 void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex){
-    moon::utils::texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
-    moon::utils::texture::copy(commandBuffer, hostDevice.instance, device.instances[imageIndex].image, {extent.width, extent.height, 1}, 1);
-    moon::utils::texture::transitionLayout(commandBuffer, device.instances[imageIndex].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
+    moon::utils::texture::transitionLayout(commandBuffer, device.image(imageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
+    moon::utils::texture::copy(commandBuffer, hostDevice.instance, device.image(imageIndex), {extent.width, extent.height, 1}, 1);
+    moon::utils::texture::transitionLayout(commandBuffer, device.image(imageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
 }
 
 void RayTracingGraphics::create()
@@ -75,13 +71,13 @@ void RayTracingGraphics::create()
     emptyTexture = createEmptyTexture(*device, commandPool);
     aDatabase.addEmptyTexture("black", emptyTexture);
 
-    color.create("color", *device, format, extent, imageCount);
+    moon::utils::ImageInfo imageInfo{ imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT };
+
+    color.create("color", *device, imageInfo);
     aDatabase.addAttachmentData(color.id, true, &color.device);
 
-    bloom.create("bloom", *device, format, extent, imageCount);
+    bloom.create("bloom", *device, imageInfo);
     aDatabase.addAttachmentData(bloom.id, true, &bloom.device);
-
-    moon::utils::ImageInfo bloomInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
 
     moon::workflows::BloomParameters bloomParams;
     bloomParams.in.bloom = bloom.id;
@@ -90,7 +86,7 @@ void RayTracingGraphics::create()
     bloomGraph = moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED);
     bloomGraph.setShadersPath(workflowsShadersPath);
     bloomGraph.setDeviceProp(device->instance, device->getLogical());
-    bloomGraph.setImageProp(&bloomInfo);
+    bloomGraph.setImageProp(&imageInfo);
     bloomGraph.create(aDatabase);
     bloomGraph.createCommandBuffers(commandPool);
     bloomGraph.updateDescriptorSets(bDatabase, aDatabase);

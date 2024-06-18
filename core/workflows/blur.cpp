@@ -8,16 +8,10 @@ GaussianBlur::GaussianBlur(GaussianBlurParameters parameters, bool enable) :
     parameters(parameters), enable(enable)
 {}
 
-void GaussianBlur::createBufferAttachments(){
-    bufferAttachment.create(physicalDevice,device,image.Format,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |VK_IMAGE_USAGE_SAMPLED_BIT,image.Extent,image.Count);
-    VkSamplerCreateInfo samplerInfo = moon::utils::vkDefault::samler();
-    CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &bufferAttachment.sampler));
-}
-
 void GaussianBlur::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    createBufferAttachments();
-    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::samler());
+    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::samler());
     aDatabase.addAttachmentData(parameters.out.blur, enable, &frame);
 }
 
@@ -83,7 +77,7 @@ void GaussianBlur::createRenderPass(){
 void GaussianBlur::createFramebuffers(){
     framebuffers.resize(image.Count);
     for (uint32_t i = 0; i < static_cast<uint32_t>(framebuffers.size()); i++) {
-        std::vector<VkImageView> attachments = { frame.instances[i].imageView, bufferAttachment.instances[i].imageView};
+        std::vector<VkImageView> attachments = { frame.imageView(i), bufferAttachment.imageView(i) };
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -193,37 +187,35 @@ void GaussianBlur::updateDescriptorSets(
 {
     if(!enable) return;
 
-    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments* attachment, VkSampler sampler, std::vector<VkDescriptorSet>& descriptorSets){
-        auto imageIt = attachment->instances.begin();
-        auto setIt = descriptorSets.begin();
-        for (;imageIt != attachment->instances.end() && setIt != descriptorSets.end(); imageIt++, setIt++){
+    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments& image, const std::vector<VkDescriptorSet>& descriptorSets) {
+        for (uint32_t i = 0; i < image.count(); i++) {
             VkDescriptorImageInfo imageInfo{};
-                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = imageIt->imageView;
-                imageInfo.sampler = sampler;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = image.imageView(i);
+            imageInfo.sampler = image.sampler();
 
             std::vector<VkWriteDescriptorSet> descriptorWrites;
             descriptorWrites.push_back(VkWriteDescriptorSet{});
-                descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites.back().dstSet = *setIt;
-                descriptorWrites.back().dstBinding = static_cast<uint32_t>(static_cast<uint32_t>(descriptorWrites.size() - 1));
-                descriptorWrites.back().dstArrayElement = 0;
-                descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites.back().descriptorCount = 1;
-                descriptorWrites.back().pImageInfo = &imageInfo;
+            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.back().dstSet = descriptorSets[i];
+            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+            descriptorWrites.back().dstArrayElement = 0;
+            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.back().descriptorCount = 1;
+            descriptorWrites.back().pImageInfo = &imageInfo;
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     };
 
     const auto blurAttachment = aDatabase.get(parameters.in.blur);
-    updateDescriptorSets(device, blurAttachment, blurAttachment->sampler, xblur.DescriptorSets);
-    updateDescriptorSets(device, &bufferAttachment, bufferAttachment.sampler, yblur.DescriptorSets);
+    updateDescriptorSets(device, *blurAttachment, xblur.DescriptorSets);
+    updateDescriptorSets(device, bufferAttachment, yblur.DescriptorSets);
 }
 
 void GaussianBlur::updateCommandBuffer(uint32_t frameNumber){
     if(!enable) return;
 
-    std::vector<VkClearValue> clearValues(2, VkClearValue{frame.clearValue.color});
+    std::vector<VkClearValue> clearValues = { frame.clearValue() , bufferAttachment.clearValue()};
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

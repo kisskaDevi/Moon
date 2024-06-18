@@ -11,13 +11,23 @@ namespace moon::utils {
 
 class SwapChain{
 private:
-    const PhysicalDevice* device{nullptr};
-    uint32_t            imageCount{0};
-    VkExtent2D          extent{0,0};
-    VkFormat            format{VK_FORMAT_UNDEFINED};
+    struct SwapChainAttachment {
+        VkImage         image{ VK_NULL_HANDLE };
+        VkDeviceMemory  imageMemory{ VK_NULL_HANDLE };
+        VkImageView     imageView{ VK_NULL_HANDLE };
+        VkImageLayout   layout{ VK_IMAGE_LAYOUT_UNDEFINED };
+        VkDevice        device{ VK_NULL_HANDLE };
 
-    VkSwapchainKHR      swapChainKHR{VK_NULL_HANDLE};
-    Attachments         swapChainAttachments;
+        ~SwapChainAttachment() {
+            if (imageView) vkDestroyImageView(device, imageView, nullptr);
+        }
+    };
+
+    const PhysicalDevice* device{nullptr};
+    ImageInfo imageInfo;
+
+    VkSwapchainKHR                      swapChainKHR{VK_NULL_HANDLE};
+    std::vector<SwapChainAttachment>    attachments;
 
     GLFWwindow*         window{nullptr};
     VkSurfaceKHR        surface{VK_NULL_HANDLE};
@@ -37,7 +47,7 @@ public:
     VkResult present(VkSemaphore waitSemaphore, uint32_t imageIndex) const;
 
     operator VkSwapchainKHR&();
-    Attachment& attachment(uint32_t i);
+    const VkImageView& SwapChain::imageView(uint32_t i) const;
 
     uint32_t getImageCount() const;
     VkExtent2D getExtent() const;

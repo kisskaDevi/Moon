@@ -69,7 +69,6 @@ private:
 
     void freeCommandBuffers();
     void destroyCommandPool();
-    void destroyEmptyTextures();
 
     void updateCommandBuffer(uint32_t imageIndex);
     void updateBuffers(uint32_t imageIndex);

@@ -55,7 +55,7 @@ void PostProcessingGraphics::createFramebuffers()
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &frame.instances[i].imageView;
+            framebufferInfo.pAttachments = &frame.imageView(i);
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;

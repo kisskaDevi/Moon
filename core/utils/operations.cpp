@@ -710,11 +710,15 @@ VkFormat image::supportedFormat(VkPhysicalDevice physicalDevice, const std::vect
     return supportedFormat;
 }
 
+std::vector<VkFormat> image::depthFormats() {
+    return { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT };
+}
+
 VkFormat image::depthStencilFormat(VkPhysicalDevice physicalDevice)
 {
     return image::supportedFormat(
         physicalDevice,
-        {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT},
+        image::depthFormats(),
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }

@@ -12,8 +12,16 @@ Attachment::~Attachment() {
     if (imageView) vkDestroyImageView(device, imageView, nullptr);
 }
 
+Attachment::Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage) {
+    this->device = device;
+    const auto depthFormats = image::depthFormats();
+    const bool isDepth = std::any_of(depthFormats.begin(), depthFormats.end(), [&imageInfo](const VkFormat& format) {return imageInfo.Format == format; });
+    const VkImageAspectFlagBits imageAspectFlagBits = isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    CHECK(texture::create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image, &imageMemory));
+    CHECK(texture::createView(device, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, imageAspectFlagBits, 1, 0, 1, image, &imageView));
+}
+
 VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear, VkSamplerCreateInfo samplerInfo) {
-    destroy();
     this->device = device;
     this->imageInfo = imageInfo;
     imageClearValue = clear;
@@ -22,44 +30,11 @@ VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, I
     instances.resize(imageInfo.Count);
 
     for(auto& instance : instances){
-        instance.device = device;
-        CHECK(result = texture::create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &instance.image, &instance.imageMemory));
-        CHECK(result = texture::createView(device, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1, instance.image, &instance.imageView));
+        instance = Attachment(physicalDevice, device, imageInfo, usage);
         Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
     }
-    CHECK(result = vkCreateSampler(device, &samplerInfo, nullptr, &imageSampler));
+    CHECK(imageSampler.create(device, samplerInfo));
     return result;
-}
-
-VkResult Attachments::createDepth(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear, VkSamplerCreateInfo samplerInfo) {
-    destroy();
-    this->device = device;
-    this->imageInfo = imageInfo;
-    imageClearValue = clear;
-    VkResult result = VK_SUCCESS;
-
-    instances.resize(imageInfo.Count);
-
-    for(auto& instance : instances){
-        instance.device = device;
-        CHECK(result = texture::create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &instance.image, &instance.imageMemory));
-        CHECK(result = texture::createView(device, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 0, 1, instance.image, &instance.imageView));
-        Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::createDepth, instance " + std::to_string(&instance - &instances[0]));
-    }
-    CHECK(result = vkCreateSampler(device, &samplerInfo, nullptr, &imageSampler));
-    return result;
-}
-
-Attachments::~Attachments() {
-    destroy();
-}
-
-void Attachments::destroy() {
-    instances.clear();
-    if(imageSampler){
-        vkDestroySampler(device, imageSampler, nullptr);
-        imageSampler = VK_NULL_HANDLE;
-    }
 }
 
 VkAttachmentDescription Attachments::imageDescription(VkFormat format)

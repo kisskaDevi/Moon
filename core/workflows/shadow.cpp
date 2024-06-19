@@ -11,7 +11,7 @@ namespace moon::workflows {
 moon::utils::Attachments* ShadowGraphics::createAttachments()
 {
     moon::utils::Attachments* pAttachments = new moon::utils::Attachments;
-    pAttachments->createDepth(physicalDevice,device, image,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, {{1.0,0}}, utils::vkDefault::samler());
+    pAttachments->create(physicalDevice,device, image,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, {{1.0,0}}, utils::vkDefault::sampler());
     return pAttachments;
 }
 

@@ -5,7 +5,7 @@
 
 namespace moon::utils {
 
-VkSamplerCreateInfo vkDefault::samler(){
+VkSamplerCreateInfo vkDefault::sampler(){
     VkSamplerCreateInfo SamplerInfo{};
         SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         SamplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -541,6 +541,27 @@ vkDefault::Fence::operator const VkFence& () const {
 
 vkDefault::Fence::operator const VkFence* () const {
     return &fence;
+}
+
+vkDefault::Sampler::~Sampler() {
+    destroy();
+}
+
+void vkDefault::Sampler::destroy() {
+    if (sampler) {
+        vkDestroySampler(device, sampler, nullptr);
+        sampler = VK_NULL_HANDLE;
+    }
+}
+
+VkResult vkDefault::Sampler::create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo) {
+    destroy();
+    this->device = device;
+    return vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+}
+
+vkDefault::Sampler::operator const VkSampler& () const {
+    return sampler;
 }
 
 }

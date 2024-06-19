@@ -53,7 +53,7 @@ void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
         pAttachments->GBuffer.color.create(physicalDevice, device, u8Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
 
         moon::utils::ImageInfo depthImage = { image.Count, moon::utils::image::depthStencilFormat(physicalDevice), image.Extent, image.Samples };
-        pAttachments->GBuffer.depth.createDepth(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+        pAttachments->GBuffer.depth.create(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { { 1.0f, 0 } }, utils::vkDefault::sampler());
     };
 
     createAttachments(physicalDevice, device, image, &deferredAttachments);

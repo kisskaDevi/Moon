@@ -12,7 +12,7 @@ SkyboxGraphics::SkyboxGraphics(SkyboxParameters parameters, bool enable, std::ve
 }
 
 void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, image, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::samler());
+    moon::utils::createAttachments(physicalDevice, device, image, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
     aDatabase.addAttachmentData(parameters.out.baseColor, enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
 }

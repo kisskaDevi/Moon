@@ -310,6 +310,8 @@ namespace image{
             VkImageTiling                   tiling,
             VkFormatFeatureFlags            features);
 
+    std::vector<VkFormat> depthFormats();
+
     VkFormat depthStencilFormat(
             VkPhysicalDevice                physicalDevice);
 }

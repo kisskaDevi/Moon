@@ -211,44 +211,60 @@ VkDescriptorSetLayoutBinding vkDefault::inAttachmentFragmentLayoutBinding(const 
     return layoutBinding;
 }
 
-vkDefault::Pipeline::~Pipeline() {
-    destroy();
+#define VKDEFAULT_MAKE_DESCRIPTOR(Name, BaseDescriptor)                                 \
+	vkDefault::Name::~Name() { destroy();}				                                \
+	vkDefault::Name::Name(vkDefault::Name&& other) noexcept {                           \
+        swap(other);                                                                    \
+    }                                                                                   \
+	vkDefault::Name& vkDefault::Name::operator=(vkDefault::Name&& other) noexcept {     \
+        swap(other);                                                                    \
+        return *this;                                                                   \
+    }                                                                                   \
+	vkDefault::Name::operator const BaseDescriptor&() const {                           \
+        return descriptor;                                                              \
+    }                                                                                   \
+	vkDefault::Name::operator const BaseDescriptor*() const {                           \
+        return &descriptor;                                                             \
+    }
+
+#define VKDEFAULT_MAKE_SWAP(Name)				                                        \
+    void vkDefault::Name::swap(vkDefault::Name& other) noexcept {                       \
+        uint8_t buff[sizeof(Name)];                                                     \
+        std::memcpy((void*)buff, (void*)&other, sizeof(Name));                          \
+        std::memcpy((void*)&other, (void*)this, sizeof(Name));                          \
+        std::memcpy((void*)this, (void*)buff, sizeof(Name));                            \
+    }
+
+#define VKDEFAULT_RESET()				                                                \
+    destroy();                                                                          \
+    this->device = device;                                                              \
+
+template<typename Descriptor>
+Descriptor release(Descriptor& descriptor) {
+    Descriptor temp = descriptor;
+    descriptor = VK_NULL_HANDLE;
+    return temp;
 }
 
 VkResult vkDefault::Pipeline::create(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos) {
-    destroy();
-    this->device = device;
-    return vkCreateGraphicsPipelines(
-        device,
-        VK_NULL_HANDLE,
-        static_cast<uint32_t>(graphicsPipelineCreateInfos.size()),
-        graphicsPipelineCreateInfos.data(),
-        nullptr,
-        &pipeline);
+    VKDEFAULT_RESET()
+
+    return vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphicsPipelineCreateInfos.size()), graphicsPipelineCreateInfos.data(), nullptr, &descriptor);
 }
 
 void vkDefault::Pipeline::destroy() {
-    if (pipeline) {
-        vkDestroyPipeline(device, pipeline, nullptr);
-        pipeline = VK_NULL_HANDLE;
-    }
+    if (descriptor) vkDestroyPipeline(device, release(descriptor), nullptr);
 }
 
-vkDefault::Pipeline::operator const VkPipeline&() const {
-    return pipeline;
-}
-
-vkDefault::PipelineLayout::~PipelineLayout() {
-    destroy();
-}
+VKDEFAULT_MAKE_SWAP(Pipeline)
+VKDEFAULT_MAKE_DESCRIPTOR(Pipeline, VkPipeline)
 
 VkResult vkDefault::PipelineLayout::create(
     VkDevice device,
     const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts,
     const std::vector<VkPushConstantRange>& pushConstantRange)
 {
-    destroy();
-    this->device = device;
+    VKDEFAULT_RESET()
 
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -257,54 +273,39 @@ VkResult vkDefault::PipelineLayout::create(
         pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
         pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRange.data();
 
-    return vkCreatePipelineLayout(
-        device,
-        &pipelineLayoutCreateInfo,
-        nullptr,
-        &pipelineLayout);
+    return vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &descriptor);
 }
 
 void vkDefault::PipelineLayout::destroy() {
-    if (pipelineLayout) {
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        pipelineLayout = VK_NULL_HANDLE;
-    }
+    if (descriptor) vkDestroyPipelineLayout(device, release(descriptor), nullptr);
 }
 
-vkDefault::PipelineLayout::operator const VkPipelineLayout&() const {
-    return pipelineLayout;
-}
-
-vkDefault::DescriptorSetLayout::~DescriptorSetLayout() {
-    destroy();
-}
+VKDEFAULT_MAKE_SWAP(PipelineLayout)
+VKDEFAULT_MAKE_DESCRIPTOR(PipelineLayout, VkPipelineLayout)
 
 VkResult vkDefault::DescriptorSetLayout::create(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings) {
-    destroy();
-    this->device = device;
+    VKDEFAULT_RESET()
+
     this->bindings = bindings;
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-    return vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
+    return vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptor);
 }
 
 void vkDefault::DescriptorSetLayout::destroy() {
     bindings.clear();
-    if (descriptorSetLayout) {
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-        descriptorSetLayout = VK_NULL_HANDLE;
-    }
+    if (descriptor) vkDestroyDescriptorSetLayout(device, release(descriptor), nullptr);
 }
 
-vkDefault::DescriptorSetLayout::operator const VkDescriptorSetLayout& () const {
-    return descriptorSetLayout;
+void vkDefault::DescriptorSetLayout::swap(DescriptorSetLayout& other) noexcept {
+    std::swap(bindings, other.bindings);
+    std::swap(descriptor, other.descriptor);
+    std::swap(device, other.device);
 }
 
-vkDefault::DescriptorSetLayout::operator const VkDescriptorSetLayout* () const {
-    return &descriptorSetLayout;
-}
+VKDEFAULT_MAKE_DESCRIPTOR(DescriptorSetLayout, VkDescriptorSetLayout)
 
 vkDefault::ShaderModule::~ShaderModule() {
     destroy();
@@ -371,17 +372,8 @@ vkDefault::VertrxShaderModule::operator const VkPipelineShaderStageCreateInfo& (
     return pipelineShaderStageCreateInfo;
 }
 
-vkDefault::RenderPass::~RenderPass() {
-    destroy();
-}
-
-VkResult vkDefault::RenderPass::create(
-    VkDevice device,
-    const AttachmentDescriptions& attachments,
-    const SubpassDescriptions& subpasses,
-    const SubpassDependencies& dependencies) {
-    destroy();
-    this->device = device;
+VkResult vkDefault::RenderPass::create(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies) {
+    VKDEFAULT_RESET()
 
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -392,40 +384,28 @@ VkResult vkDefault::RenderPass::create(
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
         renderPassInfo.pDependencies = dependencies.data();
 
-    return vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+    return vkCreateRenderPass(device, &renderPassInfo, nullptr, &descriptor);
 }
 
 void vkDefault::RenderPass::destroy() {
-    if (renderPass) {
-        vkDestroyRenderPass(device, renderPass, nullptr);
-        renderPass = VK_NULL_HANDLE;
-    }
+    if (descriptor) vkDestroyRenderPass(device, release(descriptor), nullptr);
 }
 
-vkDefault::RenderPass::operator const VkRenderPass& () const {
-    return renderPass;
-}
-
-vkDefault::Framebuffer::~Framebuffer() {
-    destroy();
-}
+VKDEFAULT_MAKE_SWAP(RenderPass)
+VKDEFAULT_MAKE_DESCRIPTOR(RenderPass, VkRenderPass)
 
 VkResult vkDefault::Framebuffer::create(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo) {
-    destroy();
-    this->device = device;
-    return vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer);
+    VKDEFAULT_RESET()
+
+    return vkCreateFramebuffer(device, &framebufferInfo, nullptr, &descriptor);
 }
 
 void vkDefault::Framebuffer::destroy() {
-    if (framebuffer) {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-        framebuffer = VK_NULL_HANDLE;
-    }
+    if (descriptor) vkDestroyFramebuffer(device, release(descriptor), nullptr);
 }
 
-vkDefault::Framebuffer::operator const VkFramebuffer& () const {
-    return framebuffer;
-}
+VKDEFAULT_MAKE_SWAP(Framebuffer)
+VKDEFAULT_MAKE_DESCRIPTOR(Framebuffer, VkFramebuffer)
 
 vkDefault::Instance::~Instance() {
     destroy();
@@ -488,80 +468,48 @@ vkDefault::Surface::operator const VkSurfaceKHR& () const {
     return surface;
 }
 
-vkDefault::Semaphore::~Semaphore() {
-    destroy();
-}
-
 VkResult vkDefault::Semaphore::create(const VkDevice& device) {
-    destroy();
-    this->device = device;
+    VKDEFAULT_RESET()
+
     VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    return vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
+    return vkCreateSemaphore(device, &semaphoreInfo, nullptr, &descriptor);
 }
 
 void vkDefault::Semaphore::destroy() {
-    if(semaphore){
-        vkDestroySemaphore(device, semaphore, nullptr);
-        semaphore = VK_NULL_HANDLE;
-    }
+    if(descriptor) vkDestroySemaphore(device, release(descriptor), nullptr);
 }
 
-vkDefault::Semaphore::operator const VkSemaphore& () const {
-    return semaphore;
-}
-
-vkDefault::Semaphore::operator const VkSemaphore* () const {
-    return &semaphore;
-}
-
-vkDefault::Fence::~Fence() {
-    destroy();
-}
+VKDEFAULT_MAKE_SWAP(Semaphore)
+VKDEFAULT_MAKE_DESCRIPTOR(Semaphore, VkSemaphore)
 
 VkResult vkDefault::Fence::create(const VkDevice& device) {
-    destroy();
-    this->device = device;
+    VKDEFAULT_RESET()
+
     VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    return vkCreateFence(device, &fenceInfo, nullptr, &fence);
+    return vkCreateFence(device, &fenceInfo, nullptr, &descriptor);
 }
 
 void vkDefault::Fence::destroy() {
-    if (fence) {
-        vkDestroyFence(device, fence, nullptr);
-        fence = VK_NULL_HANDLE;
-    }
+    if (descriptor) vkDestroyFence(device, release(descriptor), nullptr);
 }
 
-vkDefault::Fence::operator const VkFence& () const {
-    return fence;
-}
+VKDEFAULT_MAKE_SWAP(Fence)
+VKDEFAULT_MAKE_DESCRIPTOR(Fence, VkFence)
 
-vkDefault::Fence::operator const VkFence* () const {
-    return &fence;
-}
+VkResult vkDefault::Sampler::create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo) {
+    VKDEFAULT_RESET()
 
-vkDefault::Sampler::~Sampler() {
-    destroy();
+    return vkCreateSampler(device, &samplerInfo, nullptr, &descriptor);
 }
 
 void vkDefault::Sampler::destroy() {
-    if (sampler) {
-        vkDestroySampler(device, sampler, nullptr);
-        sampler = VK_NULL_HANDLE;
-    }
+    if (descriptor) vkDestroySampler(device, release(descriptor), nullptr);
 }
 
-VkResult vkDefault::Sampler::create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo) {
-    destroy();
-    this->device = device;
-    return vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
-}
-
-vkDefault::Sampler::operator const VkSampler& () const {
-    return sampler;
-}
+VKDEFAULT_MAKE_SWAP(Sampler)
+VKDEFAULT_MAKE_DESCRIPTOR(Sampler, VkSampler)
 
 }

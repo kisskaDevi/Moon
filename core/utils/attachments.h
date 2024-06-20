@@ -28,19 +28,19 @@ struct Attachment{
     Attachment() = default;
     Attachment(const Attachment & other) = delete;
     Attachment& operator=(const Attachment& other) = delete;
-    Attachment(Attachment&& other) {
-        std::swap(image, other.image);
-        std::swap(imageMemory, other.imageMemory);
-        std::swap(imageView, other.imageView);
-        std::swap(device, other.device);
+    Attachment(Attachment&& other) noexcept {
+        this->swap(other);
     };
-    Attachment& operator=(Attachment&& other) {
-        std::swap(image, other.image);
-        std::swap(imageMemory, other.imageMemory);
-        std::swap(imageView, other.imageView);
-        std::swap(device, other.device);
+    Attachment& operator=(Attachment&& other) noexcept {
+        this->swap(other);
         return *this;
     };
+    void swap(Attachment& other) noexcept {
+        uint8_t buff[sizeof(Attachment)];
+        std::memcpy((void*) buff, (void*) &other, sizeof(Attachment));
+        std::memcpy((void*) &other, (void*) this, sizeof(Attachment));
+        std::memcpy((void*) this, (void*) buff, sizeof(Attachment));
+    }
 
     Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage);
 
@@ -60,37 +60,37 @@ public:
     Attachments() = default;
     Attachments(const Attachments& other) = delete;
     Attachments& operator=(const Attachments& other) = delete;
-    Attachments(Attachments&& other){
-        std::swap(instances, other.instances);
-        std::swap(imageSampler, other.imageSampler);
-        std::swap(imageInfo, other.imageInfo);
-        std::swap(imageClearValue, other.imageClearValue);
+    Attachments(Attachments&& other) noexcept {
+        this->swap(other);
     };
-    Attachments& operator=(Attachments&& other) {
+    Attachments& operator=(Attachments&& other) noexcept {
+        this->swap(other);
+        return *this;
+    }
+    void swap(Attachments& other) noexcept {
         std::swap(instances, other.instances);
         std::swap(imageSampler, other.imageSampler);
         std::swap(imageInfo, other.imageInfo);
         std::swap(imageClearValue, other.imageClearValue);
-        return *this;
+        std::swap(device, other.device);
     }
 
     VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear = {{0.0f, 0.0f, 0.0f, 0.0f}}, VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO });
-
-    static VkAttachmentDescription imageDescription(VkFormat format);
-    static VkAttachmentDescription imageDescription(VkFormat format, VkImageLayout layout);
-    static VkAttachmentDescription depthStencilDescription(VkFormat format);
-    static VkAttachmentDescription depthDescription(VkFormat format);
 
     std::vector<VkImage> getImages() const;
 
     const VkImage& image(size_t i) const { return instances[i].image; }
     const VkImageView& imageView(size_t i) const { return instances[i].imageView; }
+    const Attachment& attachment(size_t i) const { return instances[i]; }
     const VkSampler& sampler() const {return imageSampler;}
     const VkFormat& format() const { return imageInfo.Format; }
     const uint32_t& count() const { return imageInfo.Count; }
     const VkClearValue& clearValue() const { return imageClearValue; }
 
-    Attachment& attachment(size_t i) { return instances[i];}
+    static VkAttachmentDescription imageDescription(VkFormat format);
+    static VkAttachmentDescription imageDescription(VkFormat format, VkImageLayout layout);
+    static VkAttachmentDescription depthStencilDescription(VkFormat format);
+    static VkAttachmentDescription depthDescription(VkFormat format);
 };
 
 void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo image, uint32_t attachmentsCount, Attachments* pAttachments, VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO });

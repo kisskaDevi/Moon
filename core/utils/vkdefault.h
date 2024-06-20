@@ -30,59 +30,39 @@ VkDescriptorSetLayoutBinding bufferFragmentLayoutBinding(const uint32_t& binding
 VkDescriptorSetLayoutBinding imageFragmentLayoutBinding(const uint32_t& binding, const uint32_t& count);
 VkDescriptorSetLayoutBinding inAttachmentFragmentLayoutBinding(const uint32_t& binding, const uint32_t& count);
 
+#define VKDEFAULT_INIT_DESCRIPTOR(Name, BaseDescriptor)	\
+private:												\
+	BaseDescriptor descriptor{ VK_NULL_HANDLE };		\
+	VkDevice device{ VK_NULL_HANDLE };					\
+	void destroy();										\
+public:													\
+	~Name();											\
+	Name() noexcept = default;							\
+	Name(const Name& other) = delete;					\
+	Name& operator=(const Name& other) = delete;		\
+	Name(Name&& other) noexcept;						\
+	Name& operator=(Name&& other) noexcept;				\
+	void swap(Name& other) noexcept;					\
+	operator const BaseDescriptor&() const;				\
+	operator const BaseDescriptor*() const;
+
 using MaskType = uint8_t;
 
 class Pipeline {
-private:
-	VkPipeline pipeline{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-public:
-	~Pipeline();
-	Pipeline() = default;
-	Pipeline(const Pipeline&) = delete;
-	Pipeline& operator=(const Pipeline&) = delete;
-	Pipeline(Pipeline&& other) {
-		std::swap(pipeline, other.pipeline);
-		std::swap(device, other.device);
-	}
-	Pipeline& operator=(Pipeline&& other) {
-		std::swap(pipeline, other.pipeline);
-		std::swap(device, other.device);
-		return *this;
-	}
+	VKDEFAULT_INIT_DESCRIPTOR(Pipeline, VkPipeline)
 
 	VkResult create(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos);
-	operator const VkPipeline&() const;
 };
 
 using PipelineMap = std::unordered_map<MaskType, moon::utils::vkDefault::Pipeline>;
 
 class PipelineLayout {
-private:
-	VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-public:
-	~PipelineLayout();
-	PipelineLayout() = default;
-	PipelineLayout(const PipelineLayout&) = delete;
-	PipelineLayout& operator=(const PipelineLayout&) = delete;
-	PipelineLayout(PipelineLayout&& other) {
-		std::swap(pipelineLayout, other.pipelineLayout);
-		std::swap(device, other.device);
-	}
-	PipelineLayout& operator=(PipelineLayout&& other) {
-		std::swap(pipelineLayout, other.pipelineLayout);
-		std::swap(device, other.device);
-		return *this;
-	}
+	VKDEFAULT_INIT_DESCRIPTOR(PipelineLayout, VkPipelineLayout)
 
 	VkResult create(
 		VkDevice device,
 		const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts,
 		const std::vector<VkPushConstantRange>& pushConstantRange = {});
-	operator const VkPipelineLayout& () const;
 };
 
 using PipelineLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::PipelineLayout>;
@@ -90,28 +70,10 @@ using PipelineLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::P
 class DescriptorSetLayout {
 private:
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
-	VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-public:
-	~DescriptorSetLayout();
-	DescriptorSetLayout() = default;
-	DescriptorSetLayout(const DescriptorSetLayout&) = delete;
-	DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
-	DescriptorSetLayout(DescriptorSetLayout&& other) : bindings(std::move(other.bindings)) {
-		std::swap(descriptorSetLayout, other.descriptorSetLayout);
-		std::swap(device, other.device);
-	}
-	DescriptorSetLayout& operator=(DescriptorSetLayout&& other) {
-		bindings = std::move(other.bindings);
-		std::swap(descriptorSetLayout, other.descriptorSetLayout);
-		std::swap(device, other.device);
-		return *this;
-	}
+
+	VKDEFAULT_INIT_DESCRIPTOR(DescriptorSetLayout, VkDescriptorSetLayout)
 
 	VkResult create(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings);
-	operator const VkDescriptorSetLayout&() const;
-	operator const VkDescriptorSetLayout*() const;
 };
 
 using DescriptorSetLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::DescriptorSetLayout>;
@@ -126,15 +88,11 @@ public:
 	ShaderModule() = default;
 	ShaderModule(const ShaderModule&) = delete;
 	ShaderModule& operator=(const ShaderModule&) = delete;
-	ShaderModule(ShaderModule&& other) {
+	ShaderModule(ShaderModule&& other) noexcept { swap(other);}
+	ShaderModule& operator=(ShaderModule&& other) noexcept { swap(other); return *this;}
+	void swap(ShaderModule& other) noexcept {
 		std::swap(shaderModule, other.shaderModule);
 		std::swap(device, other.device);
-	}
-	ShaderModule& operator=(ShaderModule&& other) {
-		destroy();
-		std::swap(shaderModule, other.shaderModule);
-		std::swap(device, other.device);
-		return *this;
 	}
 
 	ShaderModule(VkDevice device, const std::filesystem::path& shaderPath);
@@ -151,18 +109,12 @@ public:
 	FragmentShaderModule() = default;
 	FragmentShaderModule(const FragmentShaderModule&) = delete;
 	FragmentShaderModule& operator=(const FragmentShaderModule&) = delete;
-	FragmentShaderModule(FragmentShaderModule&& other) {
-		std::swap(shaderModule, other.shaderModule);
-		std::swap(device, other.device);
-		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
+	FragmentShaderModule(FragmentShaderModule&& other) noexcept { swap(other); }
+	FragmentShaderModule& operator=(FragmentShaderModule&& other) noexcept { swap(other); return *this; }
+	void swap(FragmentShaderModule& other) noexcept {
 		std::swap(specializationInfo, other.specializationInfo);
-	}
-	FragmentShaderModule& operator=(FragmentShaderModule&& other) {
-		std::swap(shaderModule, other.shaderModule);
-		std::swap(device, other.device);
 		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
-		std::swap(specializationInfo, other.specializationInfo);
-		return *this;
+		ShaderModule::swap(other);
 	}
 
 	FragmentShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo = VkSpecializationInfo{});
@@ -179,18 +131,12 @@ public:
 	VertrxShaderModule() = default;
 	VertrxShaderModule(const VertrxShaderModule&) = delete;
 	VertrxShaderModule& operator=(const VertrxShaderModule&) = delete;
-	VertrxShaderModule(VertrxShaderModule&& other) {
-		std::swap(shaderModule, other.shaderModule);
-		std::swap(device, other.device);
-		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
+	VertrxShaderModule(VertrxShaderModule&& other) noexcept { swap(other); }
+	VertrxShaderModule& operator=(VertrxShaderModule&& other) noexcept { swap(other); return *this; }
+	void swap(VertrxShaderModule& other) noexcept {
 		std::swap(specializationInfo, other.specializationInfo);
-	}
-	VertrxShaderModule& operator=(VertrxShaderModule&& other) {
-		std::swap(shaderModule, other.shaderModule);
-		std::swap(device, other.device);
 		std::swap(pipelineShaderStageCreateInfo, other.pipelineShaderStageCreateInfo);
-		std::swap(specializationInfo, other.specializationInfo);
-		return *this;
+		ShaderModule::swap(other);
 	}
 
 	VertrxShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo = VkSpecializationInfo{});
@@ -198,60 +144,19 @@ public:
 };
 
 class RenderPass {
-private:
-	VkRenderPass renderPass{VK_NULL_HANDLE};
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-public:
-	~RenderPass();
-	RenderPass() = default;
-	RenderPass(const RenderPass&) = delete;
-	RenderPass& operator=(const RenderPass&) = delete;
-	RenderPass(RenderPass&& other) {
-		std::swap(renderPass, other.renderPass);
-		std::swap(device, other.device);
-	}
-	RenderPass& operator=(RenderPass&& other) {
-		std::swap(renderPass, other.renderPass);
-		std::swap(device, other.device);
-		return *this;
-	}
+	VKDEFAULT_INIT_DESCRIPTOR(RenderPass, VkRenderPass)
 
 	using AttachmentDescriptions = std::vector<VkAttachmentDescription>;
 	using SubpassDescriptions = std::vector<VkSubpassDescription>;
 	using SubpassDependencies = std::vector<VkSubpassDependency>;
 
-	VkResult create(
-		VkDevice device,
-		const AttachmentDescriptions& attachments,
-		const SubpassDescriptions& subpasses,
-		const SubpassDependencies& dependencies);
-	operator const VkRenderPass& () const;
+	VkResult create(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies);
 };
 
 class Framebuffer {
-private:
-	VkFramebuffer framebuffer{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-
-public:
-	~Framebuffer();
-	Framebuffer() = default;
-	Framebuffer(const Framebuffer&) = delete;
-	Framebuffer& operator=(const Framebuffer&) = delete;
-	Framebuffer(Framebuffer&& other) {
-		std::swap(framebuffer, other.framebuffer);
-		std::swap(device, other.device);
-	}
-	Framebuffer& operator=(Framebuffer&& other) {
-		std::swap(framebuffer, other.framebuffer);
-		std::swap(device, other.device);
-		return *this;
-	}
+	VKDEFAULT_INIT_DESCRIPTOR(Framebuffer, VkFramebuffer)
 
 	VkResult create(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo);
-	operator const VkFramebuffer& () const;
 };
 
 using Framebuffers = std::vector<Framebuffer>;
@@ -265,13 +170,8 @@ public:
 	Instance() = default;
 	Instance(const Instance&) = delete;
 	Instance& operator=(const Instance&) = delete;
-	Instance(Instance&& other) {
-		std::swap(instance, other.instance);
-	}
-	Instance& operator=(Instance&& other) {
-		std::swap(instance, other.instance);
-		return *this;
-	}
+	Instance(Instance&& other) noexcept { std::swap(instance, other.instance); }
+	Instance& operator=(Instance&& other) noexcept { std::swap(instance, other.instance); return *this; }
 
 	VkResult create(const VkInstanceCreateInfo& createInfo);
 	operator const VkInstance& () const;
@@ -287,14 +187,11 @@ public:
 	DebugUtilsMessenger() = default;
 	DebugUtilsMessenger(const DebugUtilsMessenger&) = delete;
 	DebugUtilsMessenger& operator=(const DebugUtilsMessenger&) = delete;
-	DebugUtilsMessenger(DebugUtilsMessenger&& other) {
+	DebugUtilsMessenger(DebugUtilsMessenger&& other) noexcept { swap(other); }
+	DebugUtilsMessenger& operator=(DebugUtilsMessenger&& other) noexcept { swap(other); return *this; }
+	void swap(DebugUtilsMessenger& other) noexcept {
 		std::swap(debugUtilsMessenger, other.debugUtilsMessenger);
 		std::swap(instance, other.instance);
-	}
-	DebugUtilsMessenger& operator=(DebugUtilsMessenger&& other) {
-		std::swap(debugUtilsMessenger, other.debugUtilsMessenger);
-		std::swap(instance, other.instance);
-		return *this;
 	}
 
 	void create(const VkInstance& createInfo);
@@ -311,14 +208,11 @@ public:
 	Surface() = default;
 	Surface(const Surface&) = delete;
 	Surface& operator=(const Surface&) = delete;
-	Surface(Surface&& other) {
+	Surface(Surface&& other) { swap(other); }
+	Surface& operator=(Surface&& other) { swap(other); return *this; }
+	void swap(Surface& other) {
 		std::swap(surface, other.surface);
 		std::swap(instance, other.instance);
-	}
-	Surface& operator=(Surface&& other) {
-		std::swap(surface, other.surface);
-		std::swap(instance, other.instance);
-		return *this;
 	}
 
 	VkResult create(const VkInstance& instance, GLFWwindow* window);
@@ -327,80 +221,25 @@ public:
 
 class Semaphore {
 private:
-	VkSemaphore semaphore{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-public:
-	~Semaphore();
-	Semaphore() = default;
-	Semaphore(const Semaphore&) = delete;
-	Semaphore& operator=(const Semaphore&) = delete;
-	Semaphore(Semaphore&& other) {
-		std::swap(semaphore, other.semaphore);
-		std::swap(device, other.device);
-	}
-	Semaphore& operator=(Semaphore&& other) {
-		std::swap(semaphore, other.semaphore);
-		std::swap(device, other.device);
-		return *this;
-	}
+	VKDEFAULT_INIT_DESCRIPTOR(Semaphore, VkSemaphore)
 
 	VkResult create(const VkDevice& device);
-	operator const VkSemaphore& () const;
-	operator const VkSemaphore* () const;
 };
 
 using Semaphores = std::vector<Semaphore>;
 
 class Fence {
-private:
-	VkFence fence{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-public:
-	~Fence();
-	Fence() = default;
-	Fence(const Fence&) = delete;
-	Fence& operator=(const Fence&) = delete;
-	Fence(Fence&& other) {
-		std::swap(fence, other.fence);
-		std::swap(device, other.device);
-	}
-	Fence& operator=(Fence&& other) {
-		std::swap(fence, other.fence);
-		std::swap(device, other.device);
-		return *this;
-	}
+	VKDEFAULT_INIT_DESCRIPTOR(Fence, VkFence)
 
 	VkResult create(const VkDevice& device);
-	operator const VkFence& () const;
-	operator const VkFence* () const;
 };
 
 using Fences = std::vector<Fence>;
 
 class Sampler {
-private:
-	VkSampler sampler{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	void destroy();
-public:
-	~Sampler();
-	Sampler() = default;
-	Sampler(const Sampler&) = delete;
-	Sampler& operator=(const Sampler&) = delete;
-	Sampler(Sampler&& other) {
-		std::swap(sampler, other.sampler);
-		std::swap(device, other.device);
-	}
-	Sampler& operator=(Sampler&& other) {
-		std::swap(sampler, other.sampler);
-		std::swap(device, other.device);
-		return *this;
-	}
+	VKDEFAULT_INIT_DESCRIPTOR(Sampler, VkSampler)
 
 	VkResult create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo);
-	operator const VkSampler& () const;
 };
 
 }

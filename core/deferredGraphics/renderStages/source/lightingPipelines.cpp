@@ -6,15 +6,15 @@
 
 namespace moon::deferredGraphics {
 
-void Graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
+void Graphics::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
     uint8_t key = mask;
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShadersPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShadersPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -39,13 +39,13 @@ void Graphics::Lighting::createPipeline(uint8_t mask, VkDevice device, moon::uti
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
-    std::vector<VkDescriptorSetLayout> descriptorSetLayout = {
-        lightingDescriptorSetLayout,
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
+        descriptorSetLayout,
         shadowDescriptorSetLayout,
         bufferDescriptorSetLayoutMap[key],
         textureDescriptorSetLayoutMap[key]
     };
-    CHECK(pipelineLayoutMap[key].create(device, descriptorSetLayout));
+    CHECK(pipelineLayoutMap[key].create(device, descriptorSetLayouts));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});

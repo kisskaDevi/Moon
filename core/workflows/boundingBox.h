@@ -25,33 +25,27 @@ private:
     moon::utils::Attachments frame;
     bool enable{true};
 
-    struct BoundingBox : Workbody{
+    struct BoundingBox : public Workbody{
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
 
-        std::vector<moon::interfaces::Object*>*   objects;
+        std::vector<moon::interfaces::Object*>* objects;
 
-        void destroy(VkDevice device) override;
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device) override;
+        BoundingBox(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout();
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }box;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
-    void createPipelines();
-    void createDescriptorPool();
-    void createDescriptorSets();
 public:
-    BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects = nullptr);
-    ~BoundingBoxGraphics() { destroy(); }
+    BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects = nullptr);
 
-    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(
-        const moon::utils::BuffersDatabase& bDatabase,
-        const moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 

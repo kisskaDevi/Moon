@@ -17,7 +17,14 @@ struct OutliningPushConstBlock {
 };
 }
 
-void Graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+Graphics::OutliningExtension::OutliningExtension(const Graphics::Base& parent)
+    : parent(parent)
+{}
+
+void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass){
+    this->device = device;
+    this->shadersPath = shadersPath;
+
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "outlining/outliningVert.spv");
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "outlining/outliningFrag.spv");
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
@@ -32,8 +39,8 @@ void Graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, parent.imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, parent.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -63,10 +70,10 @@ void Graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(OutliningPushConstBlock);
     std::vector<VkDescriptorSetLayout> descriptorSetLayout = {
-        parent->baseDescriptorSetLayout,
-        parent->objectDescriptorSetLayout,
-        parent->primitiveDescriptorSetLayout,
-        parent->materialDescriptorSetLayout
+        parent.descriptorSetLayout,
+        parent.objectDescriptorSetLayout,
+        parent.primitiveDescriptorSetLayout,
+        parent.materialDescriptorSetLayout
     };
     CHECK(pipelineLayout.create(device, descriptorSetLayout, pushConstantRange));
 
@@ -93,17 +100,14 @@ void Graphics::OutliningExtension::createPipeline(VkDevice device, moon::utils::
 void Graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    for(auto object: *parent->objects){
+    for(const auto& object: *parent.objects){
         if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getOutliningEnable()){
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptorSets = {
-                parent->DescriptorSets[frameNumber],
-                object->getDescriptorSet()[frameNumber]}
-            ;
+            std::vector<VkDescriptorSet> descriptorSets = {parent.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
             OutliningPushConstBlock pushConstBlock;
             pushConstBlock.outlining.stencilColor = object->getOutliningColor();

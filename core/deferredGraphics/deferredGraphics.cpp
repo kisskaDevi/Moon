@@ -97,8 +97,10 @@ void DeferredGraphics::destroy(){
     for(auto& [_,workflow]: workflows){
         delete workflow;
     }
+
     workflows.clear();
     aDatabase.destroy();
+    nodes.clear();
 
     deferredLink->destroy();
 
@@ -138,7 +140,7 @@ void DeferredGraphics::create()
 
 void DeferredGraphics::createGraphicsPasses(){
     CHECK_M(commandPool == VK_NULL_HANDLE,       std::string("[ DeferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
-    CHECK_M(device->instance == VK_NULL_HANDLE,   std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
+    CHECK_M(device->instance == VK_NULL_HANDLE,  std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECK_M(cameraObject == nullptr,             std::string("[ DeferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
     GraphicsParameters graphicsParams;
@@ -226,58 +228,33 @@ void DeferredGraphics::createGraphicsPasses(){
     selectorParams.in.defaultDepthTexture = "white";
     selectorParams.out.selector = "selector";
 
-    workflows["DeferredGraphics"] = new Graphics(graphicsParams, enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
-    workflows["DeferredGraphics"]->setShadersPath(shadersPath);
+    moon::utils::ImageInfo info{ imageCount, format, extent, MSAASamples };
+    moon::utils::ImageInfo scatterInfo{ imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples };
+    moon::utils::ImageInfo shadowsInfo{ imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples };
 
-    workflows["LayersCombiner"] = new LayersCombiner(layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
-    workflows["LayersCombiner"]->setShadersPath(shadersPath);
-
-    workflows["PostProcessing"] = new moon::workflows::PostProcessingGraphics(postProcessingParams, enable["PostProcessing"]);
-    workflows["PostProcessing"]->setShadersPath(shadersPath);
+    workflows["DeferredGraphics"] = new Graphics(info, shadersPath, graphicsParams, enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
+    workflows["LayersCombiner"] = new LayersCombiner(info, shadersPath, layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
+    workflows["PostProcessing"] = new moon::workflows::PostProcessingGraphics(info, workflowsShadersPath, postProcessingParams, enable["PostProcessing"]);
 
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
         const auto key = "TransparentLayer" + std::to_string(i);
         enable[key] = enable["TransparentLayer"];
-        workflows[key] = new Graphics(graphicsParams, enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
-        workflows[key]->setShadersPath(shadersPath);
+        workflows[key] = new Graphics(info, shadersPath, graphicsParams, enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
     };
 
-    workflows["Blur"] = new moon::workflows::GaussianBlur(blurParams, enable["Blur"]);
-    workflows["Blur"]->setShadersPath(workflowsShadersPath);
-    workflows["Bloom"] = new moon::workflows::BloomGraphics(bloomParams, enable["Bloom"], blitAttachmentsCount);
-    workflows["Bloom"]->setShadersPath(workflowsShadersPath);
-    workflows["Skybox"] = new moon::workflows::SkyboxGraphics(skyboxParams, enable["Skybox"], &objects);
-    workflows["Skybox"]->setShadersPath(workflowsShadersPath);
-    workflows["SSLR"] = new moon::workflows::SSLRGraphics(SSLRParams, enable["SSLR"]);
-    workflows["SSLR"]->setShadersPath(workflowsShadersPath);
-    workflows["SSAO"] = new moon::workflows::SSAOGraphics(SSAOParams, enable["SSAO"]);
-    workflows["SSAO"]->setShadersPath(workflowsShadersPath);
-    workflows["Shadow"] = new moon::workflows::ShadowGraphics(enable["Shadow"], &objects, &depthMaps);
-    workflows["Shadow"]->setShadersPath(workflowsShadersPath);
-    workflows["Scattering"] = new moon::workflows::Scattering(scatteringParams, enable["Scattering"], &lights, &depthMaps);
-    workflows["Scattering"]->setShadersPath(workflowsShadersPath);
-    workflows["BoundingBox"] = new moon::workflows::BoundingBoxGraphics(bbParams, enable["BoundingBox"], &objects);
-    workflows["BoundingBox"]->setShadersPath(workflowsShadersPath);
-    workflows["Selector"] = new moon::workflows::SelectorGraphics(selectorParams, enable["Selector"]);
-    workflows["Selector"]->setShadersPath(workflowsShadersPath);
+    workflows["Blur"] = new moon::workflows::GaussianBlur(info, workflowsShadersPath, blurParams, enable["Blur"]);
+    workflows["Bloom"] = new moon::workflows::BloomGraphics(info, workflowsShadersPath, bloomParams, enable["Bloom"], blitAttachmentsCount);
+    workflows["Skybox"] = new moon::workflows::SkyboxGraphics(info, workflowsShadersPath, skyboxParams, enable["Skybox"], &objects);
+    workflows["SSLR"] = new moon::workflows::SSLRGraphics(info, workflowsShadersPath, SSLRParams, enable["SSLR"]);
+    workflows["SSAO"] = new moon::workflows::SSAOGraphics(info, workflowsShadersPath, SSAOParams, enable["SSAO"]);
+    workflows["Shadow"] = new moon::workflows::ShadowGraphics(shadowsInfo, workflowsShadersPath, enable["Shadow"], &objects, &depthMaps);
+    workflows["Scattering"] = new moon::workflows::Scattering(scatterInfo, workflowsShadersPath, scatteringParams, enable["Scattering"], &lights, &depthMaps);
+    workflows["BoundingBox"] = new moon::workflows::BoundingBoxGraphics(info, workflowsShadersPath, bbParams, enable["BoundingBox"], &objects);
+    workflows["Selector"] = new moon::workflows::SelectorGraphics(info, workflowsShadersPath, selectorParams, enable["Selector"]);
 
 
     for(auto& [_,workflow]: workflows){
-        moon::utils::ImageInfo info{imageCount, format, extent, MSAASamples};
         workflow->setDeviceProp(device->instance, device->getLogical());
-        workflow->setImageProp(&info);
-    }
-
-    moon::utils::ImageInfo scatterInfo{imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples};
-    workflows["Scattering"]->setImageProp(&scatterInfo);
-
-    moon::utils::ImageInfo shadowsInfo{imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples};
-    workflows["Shadow"]->setImageProp(&shadowsInfo);
-
-    moon::utils::ImageInfo postProcessingInfo{imageCount, format, extent, MSAASamples};
-    workflows["PostProcessing"]->setImageProp(&postProcessingInfo);
-
-    for(auto& [_,workflow]: workflows){
         workflow->create(aDatabase);
     }
 

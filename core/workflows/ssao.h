@@ -28,21 +28,18 @@ private:
     bool enable{true};
 
     struct SSAO : public Workbody{
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device)override;
+        SSAO(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout();
     }ssao;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
-    void createPipelines();
-    void createDescriptorPool();
-    void createDescriptorSets();
 public:
-    SSAOGraphics(SSAOParameters parameters, bool enable);
-    ~SSAOGraphics() { destroy(); }
+    SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters parameters, bool enable);
 
-    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

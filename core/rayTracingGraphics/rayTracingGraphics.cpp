@@ -83,10 +83,8 @@ void RayTracingGraphics::create()
     bloomParams.in.bloom = bloom.id;
     bloomParams.out.bloom = "finalBloom";
 
-    bloomGraph = moon::workflows::BloomGraphics(bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED);
-    bloomGraph.setShadersPath(workflowsShadersPath);
+    bloomGraph = moon::workflows::BloomGraphics(imageInfo, workflowsShadersPath, bloomParams, bloomEnable, 8, VK_IMAGE_LAYOUT_UNDEFINED);
     bloomGraph.setDeviceProp(device->instance, device->getLogical());
-    bloomGraph.setImageProp(&imageInfo);
     bloomGraph.create(aDatabase);
     bloomGraph.createCommandBuffers(commandPool);
     bloomGraph.updateDescriptorSets(bDatabase, aDatabase);
@@ -123,8 +121,6 @@ void RayTracingGraphics::destroy() {
 
     color.destroy(*device);
     bloom.destroy(*device);
-
-    bloomGraph.destroy();
 
     if(commandPool) {vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
     Link.destroy();

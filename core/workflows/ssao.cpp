@@ -4,23 +4,19 @@
 
 namespace moon::workflows {
 
-SSAOGraphics::SSAOGraphics(SSAOParameters parameters, bool enable) :
-    parameters(parameters), enable(enable)
+SSAOGraphics::SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters parameters, bool enable)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), ssao(this->imageInfo)
 {}
 
 void SSAOGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.ssao, enable, &frame);
-}
-
-void SSAOGraphics::destroy(){
-    ssao.destroy(device);
 }
 
 void SSAOGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -49,29 +45,21 @@ void SSAOGraphics::createRenderPass()
 
 void SSAOGraphics::createFramebuffers()
 {
-    framebuffers.resize(image.Count);
-    for(size_t i = 0; i < image.Count; i++){
+    framebuffers.resize(imageInfo.Count);
+    for(size_t i = 0; i < imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = imageInfo.Extent.width;
+            framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 
-void SSAOGraphics::createPipelines()
-{
-    ssao.vertShaderPath = shadersPath / "ssao/SSAOVert.spv";
-    ssao.fragShaderPath = shadersPath / "ssao/SSAOFrag.spv";
-    ssao.createDescriptorSetLayout(device);
-    ssao.createPipeline(device,&image,renderPass);
-}
-
-void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice device)
+void SSAOGraphics::SSAO::createDescriptorSetLayout()
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -83,13 +71,19 @@ void SSAOGraphics::SSAO::createDescriptorSetLayout(VkDevice device)
     CHECK(descriptorSetLayout.create(device, bindings));
 }
 
-void SSAOGraphics::SSAO::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) {
+void SSAOGraphics::SSAO::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
+    createDescriptorSetLayout();
+
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -121,14 +115,9 @@ void SSAOGraphics::SSAO::createPipeline(VkDevice device, moon::utils::ImageInfo*
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipeline.create(device, pipelineInfo));
-}
 
-void SSAOGraphics::createDescriptorPool(){
-    Workflow::createDescriptorPool(device, &ssao, image.Count, 4 * image.Count, image.Count);
-}
-
-void SSAOGraphics::createDescriptorSets(){
-    Workflow::createDescriptorSets(device, &ssao, image.Count);
+    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    createDescriptorSets();
 }
 
 void SSAOGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -137,9 +126,7 @@ void SSAOGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        createPipelines();
-        createDescriptorPool();
-        createDescriptorSets();
+        ssao.create(shadersPath / "ssao/SSAOVert.spv", shadersPath / "ssao/SSAOFrag.spv", device, renderPass);
     }
 }
 
@@ -149,7 +136,7 @@ void SSAOGraphics::updateDescriptorSets(
 {
     if(!enable) return;
 
-    for (uint32_t i = 0; i < this->image.Count; i++)
+    for (uint32_t i = 0; i < this->imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
         VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
@@ -160,7 +147,7 @@ void SSAOGraphics::updateDescriptorSets(
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -168,7 +155,7 @@ void SSAOGraphics::updateDescriptorSets(
             descriptorWrites.back().pBufferInfo = &bufferInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -176,7 +163,7 @@ void SSAOGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &positionInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -184,7 +171,7 @@ void SSAOGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &normalInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -192,7 +179,7 @@ void SSAOGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &imageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = ssao.DescriptorSets[i];
+            descriptorWrites.back().dstSet = ssao.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size()) - 1;
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -212,14 +199,14 @@ void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.renderArea.extent = imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.pipelineLayout, 0, 1, &ssao.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, ssao.pipelineLayout, 0, 1, &ssao.descriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);

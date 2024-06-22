@@ -46,46 +46,68 @@ private:
     bool                            enable{true};
 
     struct Base{
-        std::filesystem::path   shadersPath;
-        bool                    transparencyPass{false};
-        bool                    enableTransparency{false};
-        uint32_t                transparencyNumber{0};
+        std::filesystem::path       shadersPath;
+        bool                        transparencyPass{false};
+        bool                        enableTransparency{false};
+        uint32_t                    transparencyNumber{0};
+        const utils::ImageInfo&     imageInfo;
+        const GraphicsParameters&   parameters;
+
+        VkDevice device{VK_NULL_HANDLE};
 
         moon::utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
         moon::utils::vkDefault::PipelineMap         pipelineMap;
 
-        moon::utils::vkDefault::DescriptorSetLayout baseDescriptorSetLayout;
+        moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
 
-        VkDescriptorPool                                DescriptorPool{VK_NULL_HANDLE};
-        std::vector<VkDescriptorSet>                    DescriptorSets;
+        moon::utils::vkDefault::DescriptorPool  descriptorPool;
+        std::vector<VkDescriptorSet>            descriptorSets;
 
-        std::vector<moon::interfaces::Object*>*         objects{nullptr};
+        std::vector<moon::interfaces::Object*>* objects{nullptr};
 
-        void destroy(VkDevice device);
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
-        void createDescriptorSetLayout(VkDevice device);
+        Base(const bool transparencyPass,
+             const bool enableTransparency,
+             const uint32_t transparencyNumber,
+             const utils::ImageInfo& imageInfo,
+             const GraphicsParameters& parameters);
+
+        void createPipeline(VkRenderPass pRenderPass);
+        void createDescriptorSetLayout();
+        void createDescriptorPool();
+        void createDescriptorSets();
+        void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
+
+        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const;
     }base;
 
     struct OutliningExtension{
         std::filesystem::path   shadersPath;
-        Base*                   parent{nullptr};
+        const Base&             parent;
+
+        VkDevice device{ VK_NULL_HANDLE };
 
         moon::utils::vkDefault::PipelineLayout  pipelineLayout;
         moon::utils::vkDefault::Pipeline        pipeline;
 
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
+        OutliningExtension(const Base& parent);
+
+        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const;
     }outlining;
 
     struct Lighting{
         std::filesystem::path   shadersPath;
         bool                    enableScattering{true};
+        const utils::ImageInfo& imageInfo;
+        const GraphicsParameters& parameters;
 
-        moon::utils::vkDefault::DescriptorSetLayout     lightingDescriptorSetLayout;
+        VkDevice device{ VK_NULL_HANDLE };
+
+        moon::utils::vkDefault::DescriptorSetLayout     descriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
         moon::utils::vkDefault::DescriptorSetLayoutMap  textureDescriptorSetLayoutMap;
@@ -93,38 +115,40 @@ private:
         moon::utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
         moon::utils::vkDefault::PipelineMap         pipelineMap;
 
-        VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
-        std::vector<VkDescriptorSet>    DescriptorSets;
+        moon::utils::vkDefault::DescriptorPool  descriptorPool;
+        std::vector<VkDescriptorSet>            descriptorSets;
 
         std::vector<moon::interfaces::Light*>*                                lightSources;
         std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
 
-        void destroy(VkDevice device);
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
-        void createPipeline(uint8_t mask, VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
-        void createDescriptorSetLayout(VkDevice device);
+        Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters);
+
+        void createPipeline(VkRenderPass pRenderPass);
+        void createPipeline(uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
+        void createDescriptorSetLayout();
+        void createDescriptorPool();
+        void createDescriptorSets();
+        void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
+
+        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) const;
     }lighting;
 
     struct AmbientLighting{
         std::filesystem::path   shadersPath;
         float                   minAmbientFactor{0.05f};
-        Lighting*               parent{nullptr};
+        const Lighting&         parent;
+
+        VkDevice device{ VK_NULL_HANDLE };
 
         moon::utils::vkDefault::PipelineLayout  pipelineLayout;
         moon::utils::vkDefault::Pipeline        pipeline;
 
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass);
+        AmbientLighting(const Lighting& parent);
+
+        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const;
     }ambientLighting;
-
-    void createBaseDescriptorPool();
-    void createBaseDescriptorSets();
-    void updateBaseDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
-
-    void createLightingDescriptorPool();
-    void createLightingDescriptorSets();
-    void updateLightingDescriptorSets(const moon::utils::BuffersDatabase& bDatabase);
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
@@ -133,7 +157,9 @@ private:
     void createDescriptorPool();
     void createDescriptorSets();
 public:
-    Graphics(GraphicsParameters parameters,
+    Graphics(const moon::utils::ImageInfo& imageInfo,
+             const std::filesystem::path& shadersPath,
+             GraphicsParameters parameters,
              bool enable,
              bool enableTransparency,
              bool transparencyPass,
@@ -142,9 +168,6 @@ public:
              std::vector<moon::interfaces::Light*>* lightSources = nullptr,
              std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
 
-    ~Graphics(){ destroy(); }
-
-    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

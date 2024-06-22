@@ -5,23 +5,13 @@
 
 namespace moon::deferredGraphics {
 
-struct LayersCombinerPushConst{
-    alignas(4) int enableScatteringRefraction{true};
-    alignas(4) int enableTransparentLayers{true};
-    alignas(4) float blurDepth{1.0f};
-};
-
 struct LayersCombinerAttachments{
     moon::utils::Attachments color;
     moon::utils::Attachments bloom;
     moon::utils::Attachments blur;
 
-    static inline uint32_t size() {
-        return 3;
-    }
-    inline moon::utils::Attachments* operator&(){
-        return &color;
-    }
+    static inline uint32_t size() { return 3;}
+    inline moon::utils::Attachments* operator&(){ return &color;}
 };
 
 struct LayersCombinerParameters{
@@ -50,32 +40,33 @@ class LayersCombiner : public moon::workflows::Workflow
 {
 private:
     LayersCombinerParameters parameters;
-
     LayersCombinerAttachments frame;
     bool enable{true};
-
     float blurDepth{1.0f};
 
-    struct Combiner : public moon::workflows::Workbody{
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device) override;
+    struct Combiner : public moon::workflows::Workbody {
+        uint32_t transparentLayersCount{ 1 };
+        bool enableTransparentLayers{ true };
+        bool enableScatteringRefraction{ true };
 
-        uint32_t transparentLayersCount{1};
-        bool enableTransparentLayers{true};
-        bool enableScatteringRefraction{true};
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout();
+
+        Combiner(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
     }combiner;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
-    void createPipelines();
-    void createDescriptorPool();
-    void createDescriptorSets();
 public:
-    LayersCombiner(LayersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction);
-    ~LayersCombiner() { destroy(); }
+    LayersCombiner(
+        const moon::utils::ImageInfo& imageInfo,
+        const std::filesystem::path& shadersPath,
+        LayersCombinerParameters parameters,
+        bool enable,
+        uint32_t transparentLayersCount,
+        bool enableScatteringRefraction);
 
-    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

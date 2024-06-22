@@ -68,7 +68,7 @@ class PipelineLayout {
 using PipelineLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::PipelineLayout>;
 
 class DescriptorSetLayout {
-private:
+public:
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
 
 	VKDEFAULT_INIT_DESCRIPTOR(DescriptorSetLayout, VkDescriptorSetLayout)
@@ -240,6 +240,12 @@ class Sampler {
 	VKDEFAULT_INIT_DESCRIPTOR(Sampler, VkSampler)
 
 	VkResult create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo);
+};
+
+class DescriptorPool {
+	VKDEFAULT_INIT_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
+
+	VkResult create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount);
 };
 
 }

@@ -74,8 +74,8 @@ uint32_t Object::getPrimitiveCount() const {
     return primitiveCount;
 }
 
-const std::vector<VkDescriptorSet> &Object::getDescriptorSet() const {
-    return descriptors;
+const VkDescriptorSet& Object::getDescriptorSet(uint32_t i) const {
+    return descriptors[i];
 }
 
 uint8_t Object::getPipelineBitMask() const {

@@ -26,10 +26,12 @@ private:
     float blurDepth{1.0f};
 
     struct Blur : public Workbody{
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device) override;
-
         uint32_t subpassNumber{0};
+
+        Blur(const moon::utils::ImageInfo& imageInfo, uint32_t subpassNumber) : Workbody(imageInfo), subpassNumber(subpassNumber) {};
+
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout();
     };
     Blur xblur;
     Blur yblur;
@@ -37,15 +39,10 @@ private:
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
-    void createPipelines();
-    void createDescriptorPool();
-    void createDescriptorSets();
 
 public:
-    GaussianBlur(GaussianBlurParameters parameters, bool enable);
-    ~GaussianBlur() { destroy(); }
+    GaussianBlur(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, GaussianBlurParameters parameters, bool enable);
 
-    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

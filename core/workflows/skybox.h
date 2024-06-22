@@ -41,25 +41,20 @@ private:
 
     struct Skybox : public Workbody{
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
+        std::vector<moon::interfaces::Object*>* objects{nullptr};
 
-        std::vector<moon::interfaces::Object*>*   objects;
+        Skybox(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
 
-        void destroy(VkDevice device) override;
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device) override;
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout();
     }skybox;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
-    void createPipelines();
-    void createDescriptorPool();
-    void createDescriptorSets();
 public:
-    SkyboxGraphics(SkyboxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* object = nullptr);
-    ~SkyboxGraphics() { destroy(); }
+    SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* object = nullptr);
 
-    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

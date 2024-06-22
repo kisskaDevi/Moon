@@ -4,8 +4,23 @@
 
 namespace moon::deferredGraphics {
 
-LayersCombiner::LayersCombiner(LayersCombinerParameters parameters, bool enable, uint32_t transparentLayersCount, bool enableScatteringRefraction) :
-    parameters(parameters), enable(enable)
+struct LayersCombinerPushConst {
+    alignas(4) int enableScatteringRefraction{ true };
+    alignas(4) int enableTransparentLayers{ true };
+    alignas(4) float blurDepth{ 1.0f };
+};
+
+LayersCombiner::LayersCombiner(
+    const moon::utils::ImageInfo& imageInfo,
+    const std::filesystem::path& shadersPath,
+    LayersCombinerParameters parameters,
+    bool enable,
+    uint32_t transparentLayersCount,
+    bool enableScatteringRefraction) :
+    Workflow(imageInfo, shadersPath),
+    parameters(parameters),
+    enable(enable),
+    combiner(this->imageInfo)
 {
     combiner.transparentLayersCount = transparentLayersCount == 0 ? 1 : transparentLayersCount;
     combiner.enableTransparentLayers = transparentLayersCount != 0;
@@ -32,21 +47,17 @@ void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
         }
     };
 
-    createAttachments(physicalDevice, device, image, LayersCombinerAttachments::size(), &frame);
+    createAttachments(physicalDevice, device, imageInfo, LayersCombinerAttachments::size(), &frame);
     aDatabase.addAttachmentData(parameters.out.color, enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
     aDatabase.addAttachmentData(parameters.out.blur, enable, &frame.blur);
 }
 
-void LayersCombiner::destroy(){
-    combiner.destroy(device);
-}
-
 void LayersCombiner::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-        moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-        moon::utils::Attachments::imageDescription(image.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+        moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+        moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -76,29 +87,22 @@ void LayersCombiner::createRenderPass(){
 }
 
 void LayersCombiner::createFramebuffers(){
-    framebuffers.resize(image.Count);
-    for(size_t i = 0; i < image.Count; i++){
+    framebuffers.resize(imageInfo.Count);
+    for(size_t i = 0; i < imageInfo.Count; i++){
         std::vector<VkImageView> attachments = { frame.color.imageView(i), frame.bloom.imageView(i), frame.blur.imageView(i) };
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = imageInfo.Extent.width;
+            framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 
-void LayersCombiner::createPipelines(){
-    combiner.vertShaderPath = shadersPath / "layersCombiner/layersCombinerVert.spv";
-    combiner.fragShaderPath = shadersPath / "layersCombiner/layersCombinerFrag.spv";
-    combiner.createDescriptorSetLayout(device);
-    combiner.createPipeline(device,&image,renderPass);
-}
-
-void LayersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
+void LayersCombiner::Combiner::createDescriptorSetLayout(){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -119,7 +123,13 @@ void LayersCombiner::Combiner::createDescriptorSetLayout(VkDevice device){
     CHECK(descriptorSetLayout.create(device, bindings));
 }
 
-void LayersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
+    createDescriptorSetLayout();
+
     uint32_t specializationData = transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
         specializationMapEntry.constantID = 0;
@@ -135,8 +145,8 @@ void LayersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::Imag
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath, specializationInfo);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -173,14 +183,9 @@ void LayersCombiner::Combiner::createPipeline(VkDevice device, moon::utils::Imag
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipeline.create(device, pipelineInfo));
-}
 
-void LayersCombiner::createDescriptorPool(){
-    moon::workflows::Workflow::createDescriptorPool(device, &combiner, image.Count, (9 + 5 * combiner.transparentLayersCount) * image.Count, combiner.transparentLayersCount * image.Count);
-}
-
-void LayersCombiner::createDescriptorSets(){
-    moon::workflows::Workflow::createDescriptorSets(device, &combiner, image.Count);
+    CHECK(descriptorPool.create(device, {&descriptorSetLayout}, imageInfo.Count));
+    createDescriptorSets();
 }
 
 void LayersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -189,9 +194,7 @@ void LayersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        createPipelines();
-        createDescriptorPool();
-        createDescriptorSets();
+        combiner.create(shadersPath / "layersCombiner/layersCombinerVert.spv", shadersPath / "layersCombiner/layersCombinerFrag.spv", device, renderPass);
     }
 }
 
@@ -201,7 +204,7 @@ void LayersCombiner::updateDescriptorSets(
 {
     if(!enable) return;
 
-    for (uint32_t i = 0; i < image.Count; i++)
+    for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
         VkDescriptorImageInfo colorImageInfo = aDatabase.descriptorImageInfo(parameters.in.color, i);
@@ -233,7 +236,7 @@ void LayersCombiner::updateDescriptorSets(
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(static_cast<uint32_t>(descriptorWrites.size() - 1));
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -241,7 +244,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pBufferInfo = &bufferInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(static_cast<uint32_t>(descriptorWrites.size() - 1));
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -249,7 +252,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &colorImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -257,7 +260,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &bloomImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -265,7 +268,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &positionImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -273,7 +276,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &normalImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -281,7 +284,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &depthImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -289,7 +292,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = colorLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -297,7 +300,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = bloomLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -305,7 +308,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = positionLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -313,7 +316,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = normalLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -321,7 +324,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = depthLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -329,7 +332,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &skyboxImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -337,7 +340,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &skyboxBloomImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -345,7 +348,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &scatteringImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = combiner.DescriptorSets[i];
+            descriptorWrites.back().dstSet = combiner.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -365,7 +368,7 @@ void LayersCombiner::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.renderArea.extent = imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
@@ -378,7 +381,7 @@ void LayersCombiner::updateCommandBuffer(uint32_t frameNumber){
         vkCmdPushConstants(commandBuffers[frameNumber], combiner.pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LayersCombinerPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.pipelineLayout, 0, 1, &combiner.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.pipelineLayout, 0, 1, &combiner.descriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);

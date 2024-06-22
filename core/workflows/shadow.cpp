@@ -11,24 +11,15 @@ namespace moon::workflows {
 moon::utils::Attachments* ShadowGraphics::createAttachments()
 {
     moon::utils::Attachments* pAttachments = new moon::utils::Attachments;
-    pAttachments->create(physicalDevice,device, image,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, {{1.0,0}}, utils::vkDefault::sampler());
+    pAttachments->create(physicalDevice,device, imageInfo,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, {{1.0,0}}, utils::vkDefault::sampler());
     return pAttachments;
 }
 
-void ShadowGraphics::Shadow::destroy(VkDevice device)
-{
-    Workbody::destroy(device);
-}
-
-ShadowGraphics::ShadowGraphics(bool enable, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps) :
-    enable(enable)
+ShadowGraphics::ShadowGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, bool enable, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps)
+    : Workflow(imageInfo, shadersPath), enable(enable), shadow(this->imageInfo)
 {
     shadow.objects = objects;
     shadow.depthMaps = depthMaps;
-}
-
-void ShadowGraphics::destroy(){
-    shadow.destroy(device);
 }
 
 void ShadowGraphics::createRenderPass()
@@ -44,14 +35,7 @@ void ShadowGraphics::createRenderPass()
     CHECK(renderPass.create(device, attachments, subpasses, {}));
 }
 
-void ShadowGraphics::createPipelines()
-{
-    shadow.vertShaderPath = shadersPath / "shadow/shadowMapVert.spv";
-    shadow.createDescriptorSetLayout(device);
-    shadow.createPipeline(device,&image,renderPass);
-}
-
-void ShadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
+void ShadowGraphics::Shadow::createDescriptorSetLayout()
 {
     lightUniformBufferSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
     objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
@@ -59,7 +43,13 @@ void ShadowGraphics::Shadow::createDescriptorSetLayout(VkDevice device)
     materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 }
 
-void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) {
+void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
+    createDescriptorSetLayout();
+
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader };
 
@@ -72,8 +62,8 @@ void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageI
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
@@ -123,16 +113,16 @@ void ShadowGraphics::Shadow::createPipeline(VkDevice device, moon::utils::ImageI
 void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
 {
     depthMap->get() = createAttachments();
-    depthMap->updateDescriptorSets(device, image.Count);
-    framebuffersMap[depthMap].resize(image.Count);
-    for (size_t i = 0; i < image.Count; i++){
+    depthMap->updateDescriptorSets(device, imageInfo.Count);
+    framebuffersMap[depthMap].resize(imageInfo.Count);
+    for (size_t i = 0; i < imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &depthMap->get()->imageView(i);
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = imageInfo.Extent.width;
+            framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(framebuffersMap[depthMap][i].create(device, framebufferInfo));
     }
@@ -149,7 +139,7 @@ void ShadowGraphics::create(moon::utils::AttachmentsDatabase&)
 {
     if(enable){
         createRenderPass();
-        createPipelines();
+        shadow.create(shadersPath / "shadow/shadowMapVert.spv", "", device, renderPass);
     }
 }
 
@@ -172,24 +162,21 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffersMap[depthMap][frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.renderArea.extent = imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.pipeline);
-    for(auto object: *shadow.objects){
+    for(const auto& object: *shadow.objects){
         if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getEnableShadow()){
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
                 vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptorSets = {
-                lightSource->getDescriptorSets()[frameNumber],
-                object->getDescriptorSet()[frameNumber]
-            };
+            std::vector<VkDescriptorSet> descriptorSets = {lightSource->getDescriptorSets()[frameNumber], object->getDescriptorSet(frameNumber)};
 
             moon::interfaces::MaterialBlock material{};
 

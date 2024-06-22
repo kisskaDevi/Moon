@@ -512,4 +512,33 @@ void vkDefault::Sampler::destroy() {
 VKDEFAULT_MAKE_SWAP(Sampler)
 VKDEFAULT_MAKE_DESCRIPTOR(Sampler, VkSampler)
 
+VkResult vkDefault::DescriptorPool::create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount) {
+    VKDEFAULT_RESET()
+
+    uint32_t maxSets = 0;
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    for (const vkDefault::DescriptorSetLayout* descriptorSetLayout : descriptorSetLayouts) {
+        for (const VkDescriptorSetLayoutBinding& binding : descriptorSetLayout->bindings) {
+            VkDescriptorPoolSize descriptorPoolSize;
+                descriptorPoolSize.type = binding.descriptorType;
+                descriptorPoolSize.descriptorCount = static_cast<uint32_t>(binding.descriptorCount * descriptorsCount);
+                maxSets = std::max(maxSets, descriptorPoolSize.descriptorCount);
+            poolSizes.push_back(std::move(descriptorPoolSize));
+        }
+    }
+    VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
+        poolInfo.maxSets = maxSets;
+    return vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptor);
+}
+
+void vkDefault::DescriptorPool::destroy() {
+    if (descriptor) vkDestroyDescriptorPool(device, release(descriptor), nullptr);
+}
+
+VKDEFAULT_MAKE_SWAP(DescriptorPool)
+VKDEFAULT_MAKE_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
+
 }

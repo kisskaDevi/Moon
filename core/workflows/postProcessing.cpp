@@ -4,23 +4,19 @@
 
 namespace moon::workflows {
 
-PostProcessingGraphics::PostProcessingGraphics(PostProcessingParameters parameters, bool enable) :
-    parameters(parameters), enable{enable}
+PostProcessingGraphics::PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters parameters, bool enable)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), enable{enable}, postProcessing(this->imageInfo)
 {}
 
-void PostProcessingGraphics::destroy() {
-    postProcessing.destroy(device);
-}
-
 void PostProcessingGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.postProcessing, enable, &frame);
 }
 
 void PostProcessingGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -49,30 +45,21 @@ void PostProcessingGraphics::createRenderPass()
 
 void PostProcessingGraphics::createFramebuffers()
 {
-    framebuffers.resize(image.Count);
+    framebuffers.resize(imageInfo.Count);
     for (size_t i = 0; i < framebuffers.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = imageInfo.Extent.width;
+            framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 
-void PostProcessingGraphics::createPipelines()
-{
-    postProcessing.vertShaderPath = shadersPath / "postProcessing/postProcessingVert.spv";
-    postProcessing.fragShaderPath = shadersPath / "postProcessing/postProcessingFrag.spv";
-    postProcessing.createDescriptorSetLayout(device);
-    postProcessing.createPipeline(device,&image,renderPass);
-}
-
-void PostProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice device)
-{
+void PostProcessingGraphics::PostProcessing::createDescriptorSetLayout() {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -83,13 +70,19 @@ void PostProcessingGraphics::PostProcessing::createDescriptorSetLayout(VkDevice 
     CHECK(descriptorSetLayout.create(device, bindings));
 }
 
-void PostProcessingGraphics::PostProcessing::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) {
+void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
+    createDescriptorSetLayout();
+
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -121,14 +114,9 @@ void PostProcessingGraphics::PostProcessing::createPipeline(VkDevice device, moo
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipeline.create(device, pipelineInfo));
-}
 
-void PostProcessingGraphics::createDescriptorPool(){
-    Workflow::createDescriptorPool(device, &postProcessing, 0, 5 * image.Count, image.Count);
-}
-
-void PostProcessingGraphics::createDescriptorSets(){
-    Workflow::createDescriptorSets(device, &postProcessing, image.Count);
+    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    createDescriptorSets();
 }
 
 void PostProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -137,9 +125,7 @@ void PostProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        createPipelines();
-        createDescriptorPool();
-        createDescriptorSets();
+        postProcessing.create(shadersPath / "postProcessing/postProcessingVert.spv", shadersPath / "postProcessing/postProcessingFrag.spv", device, renderPass);
     }
 }
 
@@ -149,7 +135,7 @@ void PostProcessingGraphics::updateDescriptorSets(
 {
     if(!enable) return;
 
-    for (size_t i = 0; i < this->image.Count; i++){
+    for (size_t i = 0; i < imageInfo.Count; i++){
         VkDescriptorImageInfo layersImageInfo = aDatabase.descriptorImageInfo(parameters.in.baseColor, i);
         VkDescriptorImageInfo blurImageInfo = aDatabase.descriptorImageInfo(parameters.in.blur, i);
         VkDescriptorImageInfo ssaoImageInfo = aDatabase.descriptorImageInfo(parameters.in.ssao, i);
@@ -159,7 +145,7 @@ void PostProcessingGraphics::updateDescriptorSets(
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
+            descriptorWrites.back().dstSet = postProcessing.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -167,7 +153,7 @@ void PostProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &layersImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
+            descriptorWrites.back().dstSet = postProcessing.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -175,7 +161,7 @@ void PostProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &blurImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
+            descriptorWrites.back().dstSet = postProcessing.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -183,7 +169,7 @@ void PostProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &bloomImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
+            descriptorWrites.back().dstSet = postProcessing.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -191,7 +177,7 @@ void PostProcessingGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &ssaoImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = postProcessing.DescriptorSets[i];
+            descriptorWrites.back().dstSet = postProcessing.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -212,14 +198,14 @@ void PostProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.renderArea.extent = imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.pipelineLayout, 0, 1, &postProcessing.DescriptorSets[frameNumber], 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, postProcessing.pipelineLayout, 0, 1, &postProcessing.descriptorSets[frameNumber], 0, nullptr);
         vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);

@@ -75,7 +75,7 @@ public:
     uint32_t getPrimitiveCount() const;
 
     uint8_t getPipelineBitMask() const;
-    const std::vector<VkDescriptorSet>& getDescriptorSet() const;
+    const VkDescriptorSet& getDescriptorSet(uint32_t i) const;
 
     virtual void destroy(
         VkDevice device) = 0;

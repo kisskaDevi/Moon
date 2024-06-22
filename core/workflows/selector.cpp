@@ -4,25 +4,21 @@
 
 namespace moon::workflows {
 
-SelectorGraphics::SelectorGraphics(SelectorParameters parameters, bool enable, uint32_t transparentLayersCount) :
-    parameters(parameters), enable(enable)
+SelectorGraphics::SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters parameters, bool enable, uint32_t transparentLayersCount)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), selector(this->imageInfo)
 {
     selector.transparentLayersCount = transparentLayersCount > 0 ? transparentLayersCount : 1;
 }
 
 void SelectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.selector, enable, &frame);
-}
-
-void SelectorGraphics::destroy(){
-    selector.destroy(device);
 }
 
 void SelectorGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -51,29 +47,21 @@ void SelectorGraphics::createRenderPass()
 
 void SelectorGraphics::createFramebuffers()
 {
-    framebuffers.resize(image.Count);
-    for(size_t i = 0; i < image.Count; i++){
+    framebuffers.resize(imageInfo.Count);
+    for(size_t i = 0; i < imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = imageInfo.Extent.width;
+            framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 
-void SelectorGraphics::createPipelines()
-{
-    selector.vertShaderPath = shadersPath / "selector/selectorVert.spv";
-    selector.fragShaderPath = shadersPath / "selector/selectorFrag.spv";
-    selector.createDescriptorSetLayout(device);
-    selector.createPipeline(device,&image,renderPass);
-}
-
-void SelectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
+void SelectorGraphics::Selector::createDescriptorSetLayout()
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(VkDescriptorSetLayoutBinding{});
@@ -90,8 +78,14 @@ void SelectorGraphics::Selector::createDescriptorSetLayout(VkDevice device)
     CHECK(descriptorSetLayout.create(device, bindings));
 }
 
-void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass)
+void SelectorGraphics::Selector::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass)
 {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
+    createDescriptorSetLayout();
+
     uint32_t specializationData = transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
         specializationMapEntry.constantID = 0;
@@ -107,8 +101,8 @@ void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::Im
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath, specializationInfo);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -140,26 +134,9 @@ void SelectorGraphics::Selector::createPipeline(VkDevice device, moon::utils::Im
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     CHECK(pipeline.create(device, pipelineInfo));
-}
 
-void SelectorGraphics::createDescriptorPool(){
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, image.Count});
-    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count});
-    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count});
-    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count * selector.transparentLayersCount});
-    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, image.Count * selector.transparentLayersCount});
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = image.Count;
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &selector.DescriptorPool));
-}
-
-void SelectorGraphics::createDescriptorSets(){
-    Workflow::createDescriptorSets(device, &selector, image.Count);
+    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    createDescriptorSets();
 }
 
 void SelectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -168,9 +145,7 @@ void SelectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        createPipelines();
-        createDescriptorPool();
-        createDescriptorSets();
+        selector.create(shadersPath / "selector/selectorVert.spv", shadersPath / "selector/selectorFrag.spv", device, renderPass);
     }
 }
 
@@ -180,7 +155,7 @@ void SelectorGraphics::updateDescriptorSets(
 {
     if(!enable) return;
 
-    for (uint32_t i = 0; i < this->image.Count; i++)
+    for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo StorageBufferInfo = bDatabase.descriptorBufferInfo(parameters.in.storageBuffer, i);
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
@@ -199,7 +174,7 @@ void SelectorGraphics::updateDescriptorSets(
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = selector.DescriptorSets.at(i);
+            descriptorWrites.back().dstSet = selector.descriptorSets.at(i);
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -207,7 +182,7 @@ void SelectorGraphics::updateDescriptorSets(
             descriptorWrites.back().pBufferInfo = &StorageBufferInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = selector.DescriptorSets[i];
+            descriptorWrites.back().dstSet = selector.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -215,7 +190,7 @@ void SelectorGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &positionImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = selector.DescriptorSets[i];
+            descriptorWrites.back().dstSet = selector.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -223,7 +198,7 @@ void SelectorGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = &depthImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = selector.DescriptorSets[i];
+            descriptorWrites.back().dstSet = selector.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -231,7 +206,7 @@ void SelectorGraphics::updateDescriptorSets(
             descriptorWrites.back().pImageInfo = positionLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = selector.DescriptorSets[i];
+            descriptorWrites.back().dstSet = selector.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -251,14 +226,14 @@ void SelectorGraphics::updateCommandBuffer(uint32_t frameNumber){
     renderPassInfo.renderPass = renderPass;
     renderPassInfo.framebuffer = framebuffers[frameNumber];
     renderPassInfo.renderArea.offset = {0,0};
-    renderPassInfo.renderArea.extent = image.Extent;
+    renderPassInfo.renderArea.extent = imageInfo.Extent;
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, selector.pipeline);
-    vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, selector.pipelineLayout, 0, 1, &selector.DescriptorSets[frameNumber], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, selector.pipelineLayout, 0, 1, &selector.descriptorSets[frameNumber], 0, nullptr);
     vkCmdDraw(commandBuffers[frameNumber], 6, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffers[frameNumber]);

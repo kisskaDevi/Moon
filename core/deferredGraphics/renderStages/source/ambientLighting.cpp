@@ -7,13 +7,20 @@ struct LightPassPushConst{
     alignas(4) float minAmbientFactor;
 };
 
-void Graphics::AmbientLighting::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+Graphics::AmbientLighting::AmbientLighting(const Lighting& parent)
+    : parent(parent)
+{}
+
+void Graphics::AmbientLighting::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass){
+    this->device = device;
+    this->shadersPath = shadersPath;
+
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "ambientLightingPass/ambientLightingVert.spv");
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "ambientLightingPass/ambientLightingFrag.spv");
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, parent.imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, parent.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -33,9 +40,7 @@ void Graphics::AmbientLighting::createPipeline(VkDevice device, moon::utils::Ima
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(LightPassPushConst);
-    std::vector<VkDescriptorSetLayout> descriptorSetLayout = {
-        parent->lightingDescriptorSetLayout
-    };
+    std::vector<VkDescriptorSetLayout> descriptorSetLayout = {parent.descriptorSetLayout};
     CHECK(pipelineLayout.create(device, descriptorSetLayout, pushConstantRange));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
@@ -63,7 +68,7 @@ void Graphics::AmbientLighting::render(uint32_t frameNumber, VkCommandBuffer com
     vkCmdPushConstants(commandBuffers, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LightPassPushConst), &pushConst);
 
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &parent->DescriptorSets[frameNumber], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &parent.descriptorSets[frameNumber], 0, nullptr);
     vkCmdDraw(commandBuffers, 6, 1, 0, 0);
 }
 

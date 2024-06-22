@@ -3,33 +3,31 @@
 
 namespace moon::workflows {
 
-void Workbody::destroy(VkDevice device){
-    if(DescriptorPool)      {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
-    DescriptorSets.clear();
-}
+void Workbody::createDescriptorSets() {
+    descriptorSets.resize(imageInfo.Count);
+    std::vector<VkDescriptorSetLayout> layouts(imageInfo.Count, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageInfo.Count);
+        allocInfo.pSetLayouts = layouts.data();
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
+};
 
-Workflow& Workflow::setShadersPath(const std::filesystem::path &path){
-    shadersPath = path;
-    return *this;
-}
 Workflow& Workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
     this->physicalDevice = physicalDevice;
     this->device = device;
     return *this;
 }
-Workflow& Workflow::setImageProp(moon::utils::ImageInfo* pInfo){
-    this->image = *pInfo;
-    return *this;
-}
 
 void Workflow::createCommandBuffers(VkCommandPool commandPool)
 {
-    commandBuffers.resize(image.Count);
+    commandBuffers.resize(imageInfo.Count);
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(image.Count);
+        allocInfo.commandBufferCount = static_cast<uint32_t>(imageInfo.Count);
     CHECK(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()));
 }
 
@@ -59,32 +57,5 @@ void Workflow::freeCommandBuffer(VkCommandPool commandPool){
     }
     commandBuffers.clear();
 }
-
-void Workflow::createDescriptorPool(VkDevice device, Workbody* workbody, const uint32_t& bufferCount, const uint32_t& imageCount, const uint32_t& maxSets){
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    if(bufferCount){
-        poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, bufferCount});
-    }
-    if(imageCount){
-        poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
-    }
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = maxSets;
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &workbody->DescriptorPool));
-}
-
-void Workflow::createDescriptorSets(VkDevice device, Workbody* workbody, const uint32_t& imageCount){
-    workbody->DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, workbody->descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = workbody->DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        allocInfo.pSetLayouts = layouts.data();
-    CHECK(vkAllocateDescriptorSets(device, &allocInfo, workbody->DescriptorSets.data()));
-};
 
 }

@@ -27,21 +27,18 @@ private:
     bool enable{true};
 
     struct PostProcessing : public Workbody{
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device) override;
-    }postProcessing;
+        PostProcessing(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout();
+    } postProcessing;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
-    void createPipelines();
-    void createDescriptorPool();
-    void createDescriptorSets();
 public:
-    PostProcessingGraphics(PostProcessingParameters parameters, bool enable);
-    ~PostProcessingGraphics() { destroy(); }
+    PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters parameters, bool enable);
 
-    void destroy();
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;

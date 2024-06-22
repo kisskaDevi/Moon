@@ -20,30 +20,30 @@ private:
     bool enable{true};
 
     struct Shadow : public Workbody{
-        void destroy(VkDevice device) override;
-        void createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout(VkDevice device) override;
+        Shadow(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createDescriptorSetLayout();
 
         moon::utils::vkDefault::DescriptorSetLayout lightUniformBufferSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
 
-        std::vector<moon::interfaces::Object*>* objects;
-        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
+        std::vector<moon::interfaces::Object*>* objects{ nullptr };
+        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps{ nullptr };
     }shadow;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, moon::utils::DepthMap* depthMap);
     void createRenderPass();
-    void createPipelines();
     moon::utils::Attachments* createAttachments();
 public:
-    ShadowGraphics(bool enable,
+    ShadowGraphics(const moon::utils::ImageInfo& imageInfo,
+                   const std::filesystem::path& shadersPath,
+                   bool enable,
                    std::vector<moon::interfaces::Object*>* objects = nullptr,
                    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
-    ~ShadowGraphics() { destroy(); }
 
-    void destroy();
     void create(moon::utils::AttachmentsDatabase&) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase&) override{};
     void updateCommandBuffer(uint32_t frameNumber) override;

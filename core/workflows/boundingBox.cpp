@@ -7,27 +7,20 @@
 
 namespace moon::workflows {
 
-BoundingBoxGraphics::BoundingBoxGraphics(BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects) :
-    parameters(parameters), enable(enable){
+BoundingBoxGraphics::BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), box(this->imageInfo)
+{
     box.objects = objects;
 }
 
-void BoundingBoxGraphics::BoundingBox::destroy(VkDevice device){
-    Workbody::destroy(device);
-}
-
-void BoundingBoxGraphics::destroy(){
-    box.destroy(device);
-}
-
 void BoundingBoxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.boundingBox, enable, &frame);
 }
 
 void BoundingBoxGraphics::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(image.Format)
+        moon::utils::Attachments::imageDescription(imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -55,29 +48,22 @@ void BoundingBoxGraphics::createRenderPass(){
 }
 
 void BoundingBoxGraphics::createFramebuffers(){
-    framebuffers.resize(image.Count);
-    for(size_t i = 0; i < image.Count; i++){
+    framebuffers.resize(imageInfo.Count);
+    for(size_t i = 0; i < imageInfo.Count; i++){
         std::vector<VkImageView> pAttachments = {frame.imageView(i)};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
             framebufferInfo.pAttachments = pAttachments.data();
-            framebufferInfo.width = image.Extent.width;
-            framebufferInfo.height = image.Extent.height;
+            framebufferInfo.width = imageInfo.Extent.width;
+            framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(framebuffers[i].create(device, framebufferInfo));
     }
 }
 
-void BoundingBoxGraphics::createPipelines(){
-    box.vertShaderPath = shadersPath / "boundingBox/boundingBoxVert.spv";
-    box.fragShaderPath = shadersPath / "boundingBox/boundingBoxFrag.spv";
-    box.createDescriptorSetLayout(device);
-    box.createPipeline(device,&image,renderPass);
-}
-
-void BoundingBoxGraphics::BoundingBox::createDescriptorSetLayout(VkDevice device){
+void BoundingBoxGraphics::BoundingBox::createDescriptorSetLayout(){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
@@ -87,7 +73,13 @@ void BoundingBoxGraphics::BoundingBox::createDescriptorSetLayout(VkDevice device
     primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
 }
 
-void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::utils::ImageInfo* pInfo, VkRenderPass pRenderPass){
+void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass){
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
+    createDescriptorSetLayout();
+
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
@@ -101,8 +93,8 @@ void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::uti
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -132,47 +124,26 @@ void BoundingBoxGraphics::BoundingBox::createPipeline(VkDevice device, moon::uti
     CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
-    pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
-    pipelineInfo.back().sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.back().pNext = nullptr;
-    pipelineInfo.back().stageCount = static_cast<uint32_t>(shaderStages.size());
-    pipelineInfo.back().pStages = shaderStages.data();
-    pipelineInfo.back().pVertexInputState = &vertexInputInfo;
-    pipelineInfo.back().pInputAssemblyState = &inputAssembly;
-    pipelineInfo.back().pViewportState = &viewportState;
-    pipelineInfo.back().pRasterizationState = &rasterizer;
-    pipelineInfo.back().pMultisampleState = &multisampling;
-    pipelineInfo.back().pColorBlendState = &colorBlending;
-    pipelineInfo.back().layout = pipelineLayout;
-    pipelineInfo.back().renderPass = pRenderPass;
-    pipelineInfo.back().subpass = 0;
-    pipelineInfo.back().pDepthStencilState = &depthStencil;
-    pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
+        pipelineInfo.back().sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.back().pNext = nullptr;
+        pipelineInfo.back().stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.back().pStages = shaderStages.data();
+        pipelineInfo.back().pVertexInputState = &vertexInputInfo;
+        pipelineInfo.back().pInputAssemblyState = &inputAssembly;
+        pipelineInfo.back().pViewportState = &viewportState;
+        pipelineInfo.back().pRasterizationState = &rasterizer;
+        pipelineInfo.back().pMultisampleState = &multisampling;
+        pipelineInfo.back().pColorBlendState = &colorBlending;
+        pipelineInfo.back().layout = pipelineLayout;
+        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().subpass = 0;
+        pipelineInfo.back().pDepthStencilState = &depthStencil;
+        pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     CHECK(pipeline.create(device, pipelineInfo));
-}
 
-void BoundingBoxGraphics::createDescriptorPool(){
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    poolSizes.push_back(VkDescriptorPoolSize{});
-        poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &box.DescriptorPool);
-}
-
-void BoundingBoxGraphics::createDescriptorSets(){
-    box.DescriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, box.descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = box.DescriptorPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
-    allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(device, &allocInfo, box.DescriptorSets.data());
+    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    createDescriptorSets();
 }
 
 void BoundingBoxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -181,9 +152,7 @@ void BoundingBoxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        createPipelines();
-        createDescriptorPool();
-        createDescriptorSets();
+        box.create(shadersPath / "boundingBox/boundingBoxVert.spv", shadersPath / "boundingBox/boundingBoxFrag.spv", device, renderPass);
     }
 }
 
@@ -193,14 +162,14 @@ void BoundingBoxGraphics::updateDescriptorSets(
 {
     if(!enable) return;
 
-    for (uint32_t i = 0; i < image.Count; i++)
+    for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = box.DescriptorSets[i];
+            descriptorWrites.back().dstSet = box.descriptorSets[i];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -220,7 +189,7 @@ void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
     renderPassInfo.renderPass = renderPass;
     renderPassInfo.framebuffer = framebuffers[frameNumber];
     renderPassInfo.renderArea.offset = {0,0};
-    renderPassInfo.renderArea.extent = image.Extent;
+    renderPassInfo.renderArea.extent = imageInfo.Extent;
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 
@@ -232,7 +201,7 @@ void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
 }
 
 void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers){
-    for(auto object: *objects){
+    for(const auto& object: *objects){
         if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -241,7 +210,7 @@ void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuf
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptorSets = {DescriptorSets[frameNumber], object->getDescriptorSet()[frameNumber]};
+            std::vector<VkDescriptorSet> descriptorSets = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
             object->getModel()->renderBB(
                 object->getInstanceNumber(frameNumber),

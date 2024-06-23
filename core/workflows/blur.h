@@ -22,7 +22,6 @@ private:
     moon::utils::Attachments bufferAttachment;
     moon::utils::Attachments frame;
     bool enable{true};
-
     float blurDepth{1.0f};
 
     struct Blur : public Workbody{

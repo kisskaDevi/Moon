@@ -103,7 +103,7 @@ public:
     void createTextureImageView(VkDevice device);
 };
 
-Texture* createEmptyTexture(const PhysicalDevice&, VkCommandPool, bool isBlack = true);
+Texture createEmptyTexture(const PhysicalDevice&, VkCommandPool, bool isBlack = true);
 
 }
 #endif // TEXTURE_H

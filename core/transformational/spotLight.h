@@ -5,10 +5,9 @@
 #include "light.h"
 #include "quaternion.h"
 #include "buffer.h"
+#include "texture.h"
 
 #include <filesystem>
-
-namespace moon::utils { class Texture;}
 
 namespace moon::transformational {
 
@@ -32,8 +31,8 @@ class SpotLight : public Transformational, public moon::interfaces::Light
 {
 private:
     moon::utils::Texture*               tex{nullptr};
-    moon::utils::Texture*               emptyTextureBlack{nullptr};
-    moon::utils::Texture*               emptyTextureWhite{nullptr};
+    moon::utils::Texture                emptyTextureBlack;
+    moon::utils::Texture                emptyTextureWhite;
 
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};

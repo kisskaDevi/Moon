@@ -1,6 +1,5 @@
 #include "depthMap.h"
 #include "vkdefault.h"
-#include "texture.h"
 #include "operations.h"
 
 namespace moon::utils {
@@ -47,16 +46,8 @@ DepthMap::~DepthMap(){
 void DepthMap::destroy(VkDevice device){
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
-    if(emptyTextureBlack){
-        emptyTextureBlack->destroy(device);
-        delete emptyTextureBlack;
-        emptyTextureBlack = nullptr;
-    }
-    if(emptyTextureWhite){
-        emptyTextureWhite->destroy(device);
-        delete emptyTextureWhite;
-        emptyTextureWhite = nullptr;
-    }
+    emptyTextureBlack.destroy(device);
+    emptyTextureWhite.destroy(device);
 
     if(map) {
         delete map;
@@ -73,8 +64,8 @@ void DepthMap::updateDescriptorSets(VkDevice device, uint32_t imageCount){
     {
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView = map ? map->imageView(i) : *emptyTextureWhite->getTextureImageView();
-            shadowImageInfo.sampler = map ? map->sampler() : *emptyTextureWhite->getTextureSampler();
+            shadowImageInfo.imageView = map ? map->imageView(i) : *emptyTextureWhite.getTextureImageView();
+            shadowImageInfo.sampler = map ? map->sampler() : *emptyTextureWhite.getTextureSampler();
         std::vector<VkWriteDescriptorSet> descriptorWrites;
             descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

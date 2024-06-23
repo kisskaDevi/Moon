@@ -85,22 +85,14 @@ void DeferredGraphics::destroy(){
     for(auto& node: nodes){
         node.destroy(device->getLogical());
     }
-    nodes.clear();
 
     for(auto& [_,texture] : emptyTextures){
-        if(texture){
-            texture->destroy(device->getLogical());
-            texture = nullptr;
-        }
+        texture.destroy(device->getLogical());
     }
 
     for(auto& [_,workflow]: workflows){
         delete workflow;
     }
-
-    workflows.clear();
-    aDatabase.destroy();
-    nodes.clear();
 
     deferredLink->destroy();
 
@@ -119,12 +111,16 @@ void DeferredGraphics::createCommandPool()
 
 void DeferredGraphics::create()
 {
+    workflows.clear();
+    aDatabase.destroy();
+    nodes.clear();
+
     createCommandPool();
 
     emptyTextures["black"] = moon::utils::createEmptyTexture(*device, commandPool);
     emptyTextures["white"] = moon::utils::createEmptyTexture(*device, commandPool, false);
-    aDatabase.addEmptyTexture("black", emptyTextures["black"]);
-    aDatabase.addEmptyTexture("white", emptyTextures["white"]);
+    aDatabase.addEmptyTexture("black", &emptyTextures["black"]);
+    aDatabase.addEmptyTexture("white", &emptyTextures["white"]);
 
     createGraphicsPasses();
     createCommandBuffers();
@@ -239,7 +235,7 @@ void DeferredGraphics::createGraphicsPasses(){
     for(uint32_t i = 0; i < TransparentLayersCount; i++){
         const auto key = "TransparentLayer" + std::to_string(i);
         enable[key] = enable["TransparentLayer"];
-        workflows[key] = new Graphics(info, shadersPath, graphicsParams, enable["TransparentLayer" + std::to_string(i)], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
+        workflows[key] = new Graphics(info, shadersPath, graphicsParams, enable[key], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
     };
 
     workflows["Blur"] = new moon::workflows::GaussianBlur(info, workflowsShadersPath, blurParams, enable["Blur"]);
@@ -251,7 +247,6 @@ void DeferredGraphics::createGraphicsPasses(){
     workflows["Scattering"] = new moon::workflows::Scattering(scatterInfo, workflowsShadersPath, scatteringParams, enable["Scattering"], &lights, &depthMaps);
     workflows["BoundingBox"] = new moon::workflows::BoundingBoxGraphics(info, workflowsShadersPath, bbParams, enable["BoundingBox"], &objects);
     workflows["Selector"] = new moon::workflows::SelectorGraphics(info, workflowsShadersPath, selectorParams, enable["Selector"]);
-
 
     for(auto& [_,workflow]: workflows){
         workflow->setDeviceProp(device->instance, device->getLogical());

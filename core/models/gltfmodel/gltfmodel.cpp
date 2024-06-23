@@ -264,11 +264,7 @@ void GltfModel::destroy(VkDevice device)
     textures.clear();
     materials.clear();
 
-    if(emptyTexture){
-        emptyTexture->destroy(device);
-        delete emptyTexture;
-        emptyTexture = nullptr;
-    }
+    emptyTexture.destroy(device);
 
     created = false;
 };
@@ -552,7 +548,7 @@ void GltfModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool 
         moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
         destroyStagingBuffer(device.getLogical());
         createDescriptorPool(device.getLogical());
-        createDescriptorSet(device.getLogical(), emptyTexture);
+        createDescriptorSet(device.getLogical(), &emptyTexture);
         created = true;
     }
 }

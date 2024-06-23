@@ -100,10 +100,10 @@ private:
     }outlining;
 
     struct Lighting{
-        std::filesystem::path   shadersPath;
-        bool                    enableScattering{true};
-        const utils::ImageInfo& imageInfo;
-        const GraphicsParameters& parameters;
+        std::filesystem::path       shadersPath;
+        bool                        enableScattering{true};
+        const utils::ImageInfo&     imageInfo;
+        const GraphicsParameters&   parameters;
 
         VkDevice device{ VK_NULL_HANDLE };
 
@@ -118,7 +118,7 @@ private:
         moon::utils::vkDefault::DescriptorPool  descriptorPool;
         std::vector<VkDescriptorSet>            descriptorSets;
 
-        std::vector<moon::interfaces::Light*>*                                lightSources;
+        std::vector<moon::interfaces::Light*>* lightSources;
         std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
 
         Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters);
@@ -154,8 +154,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
-    void createDescriptorPool();
-    void createDescriptorSets();
+
 public:
     Graphics(const moon::utils::ImageInfo& imageInfo,
              const std::filesystem::path& shadersPath,

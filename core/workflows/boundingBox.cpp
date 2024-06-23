@@ -210,14 +210,14 @@ void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuf
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptorSets = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
+            std::vector<VkDescriptorSet> descriptors = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
             object->getModel()->renderBB(
                 object->getInstanceNumber(frameNumber),
                 commandBuffers,
                 pipelineLayout,
-                static_cast<uint32_t>(descriptorSets.size()),
-                descriptorSets.data());
+                static_cast<uint32_t>(descriptors.size()),
+                descriptors.data());
         }
     }
 }

@@ -100,7 +100,7 @@ class GltfModel : public moon::interfaces::Model
 private:
     std::filesystem::path filename;
     bool created{false};
-    moon::utils::Texture* emptyTexture{nullptr};
+    moon::utils::Texture emptyTexture;
     VkDevice device{VK_NULL_HANDLE};
 
     moon::utils::Buffer vertices, indices;

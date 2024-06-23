@@ -46,10 +46,10 @@ void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
     deferredAttachments.GBuffer.normal.create(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
 
     moon::utils::ImageInfo u8Image = { imageInfo.Count, VK_FORMAT_R8G8B8A8_UNORM, imageInfo.Extent, imageInfo.Samples };
-    deferredAttachments.GBuffer.color.create(physicalDevice, device, u8Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+    deferredAttachments.GBuffer.color.create(physicalDevice, device, u8Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, {{0.0f,0.0f,0.0f,1.0f}});
 
     moon::utils::ImageInfo depthImage = { imageInfo.Count, moon::utils::image::depthStencilFormat(physicalDevice), imageInfo.Extent, imageInfo.Samples };
-    deferredAttachments.GBuffer.depth.create(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { { 1.0f, 0 } }, utils::vkDefault::sampler());
+    deferredAttachments.GBuffer.depth.create(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { { 1.0f, 0 } });
 
     aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.image, enable, &deferredAttachments.image);
     aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.blur, enable, &deferredAttachments.blur);

@@ -1,6 +1,5 @@
 #include "spotLight.h"
 #include "operations.h"
-#include "texture.h"
 #include "dualQuaternion.h"
 #include "device.h"
 
@@ -40,16 +39,8 @@ void SpotLight::destroy(VkDevice device)
 
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
-    if(emptyTextureBlack){
-        emptyTextureBlack->destroy(device);
-        delete emptyTextureBlack;
-        emptyTextureBlack = nullptr;
-    }
-    if(emptyTextureWhite){
-        emptyTextureWhite->destroy(device);
-        delete emptyTextureWhite;
-        emptyTextureWhite = nullptr;
-    }
+    emptyTextureBlack.destroy(device);
+    emptyTextureWhite.destroy(device);
 
     if(tex){
         tex->destroy(device);
@@ -316,8 +307,8 @@ void SpotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
     {
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            lightTexture.imageView = tex ? *tex->getTextureImageView() : *emptyTextureBlack->getTextureImageView();
-            lightTexture.sampler = tex ? *tex->getTextureSampler() : *emptyTextureBlack->getTextureSampler();
+            lightTexture.imageView = tex ? *tex->getTextureImageView() : *emptyTextureBlack.getTextureImageView();
+            lightTexture.sampler = tex ? *tex->getTextureSampler() : *emptyTextureBlack.getTextureSampler();
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

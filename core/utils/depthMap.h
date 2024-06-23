@@ -3,11 +3,9 @@
 
 #include "attachments.h"
 #include "device.h"
-#include "vkdefault.h"
+#include "texture.h"
 
 namespace moon::utils {
-
-class Texture;
 
 class DepthMap {
 private:
@@ -16,8 +14,8 @@ private:
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptorSets;
 
-    Texture*                        emptyTextureBlack{nullptr};
-    Texture*                        emptyTextureWhite{nullptr};
+    Texture                         emptyTextureBlack;
+    Texture                         emptyTextureWhite;
     VkDevice                        device{VK_NULL_HANDLE};
 
     void createDescriptorPool(VkDevice device, uint32_t imageCount);

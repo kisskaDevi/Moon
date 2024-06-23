@@ -43,7 +43,7 @@ private:
     BoundingBoxGraphics bbGraphics;
     moon::workflows::BloomGraphics bloomGraph;
 
-    moon::utils::Texture* emptyTexture{nullptr};
+    moon::utils::Texture emptyTexture;
 
     std::filesystem::path shadersPath;
     std::filesystem::path workflowsShadersPath;

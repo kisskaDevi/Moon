@@ -224,15 +224,15 @@ void CubeTexture::createTextureImageView(VkDevice device)
                             &image.textureImageView);
 }
 
-Texture* createEmptyTexture(const PhysicalDevice& device, VkCommandPool commandPool, bool isBlack){
-    Texture* tex = new Texture;
+Texture createEmptyTexture(const PhysicalDevice& device, VkCommandPool commandPool, bool isBlack){
+    Texture tex;
 
     VkCommandBuffer commandBuffer = singleCommandBuffer::create(device.getLogical(),commandPool);
-    tex->createEmptyTextureImage(device.instance, device.getLogical(), commandBuffer, isBlack);
+    tex.createEmptyTextureImage(device.instance, device.getLogical(), commandBuffer, isBlack);
     singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-    tex->destroyStagingBuffer(device.getLogical());
-    tex->createTextureImageView(device.getLogical());
-    tex->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+    tex.destroyStagingBuffer(device.getLogical());
+    tex.createTextureImageView(device.getLogical());
+    tex.createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
 
     return tex;
 };

@@ -166,7 +166,7 @@ void main() {
         if(d > pc.blurDepth){
             outColor = vec4(0.0f);
         }
-    
+
         return;
     }
     transparentLayersCombine();

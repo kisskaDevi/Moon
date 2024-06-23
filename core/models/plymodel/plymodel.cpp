@@ -50,11 +50,7 @@ void PlyModel::destroy(VkDevice device) {
 
     uniformBuffer.destroy(device);
 
-    if(emptyTexture){
-        emptyTexture->destroy(device);
-        delete emptyTexture;
-        emptyTexture = nullptr;
-    }
+    emptyTexture.destroy(device);
 
     created = false;
 }
@@ -271,7 +267,7 @@ void PlyModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool c
         moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
         destroyStagingBuffer(device.getLogical());
         createDescriptorPool(device.getLogical());
-        createDescriptorSet(device.getLogical(), emptyTexture);
+        createDescriptorSet(device.getLogical(), &emptyTexture);
         created = true;
     }
 }

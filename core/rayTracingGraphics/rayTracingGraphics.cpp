@@ -69,7 +69,7 @@ void RayTracingGraphics::create()
     vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool);
 
     emptyTexture = createEmptyTexture(*device, commandPool);
-    aDatabase.addEmptyTexture("black", emptyTexture);
+    aDatabase.addEmptyTexture("black", &emptyTexture);
 
     moon::utils::ImageInfo imageInfo{ imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT };
 
@@ -114,10 +114,7 @@ void RayTracingGraphics::create()
 }
 
 void RayTracingGraphics::destroy() {
-    if(emptyTexture){
-        emptyTexture->destroy(device->getLogical());
-        delete emptyTexture;
-    }
+    emptyTexture.destroy(device->getLogical());
 
     color.destroy(*device);
     bloom.destroy(*device);

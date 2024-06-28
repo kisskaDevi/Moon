@@ -14,13 +14,9 @@ private:
     struct SwapChainAttachment {
         VkImage         image{ VK_NULL_HANDLE };
         VkDeviceMemory  imageMemory{ VK_NULL_HANDLE };
-        VkImageView     imageView{ VK_NULL_HANDLE };
+        utils::vkDefault::ImageView imageView;
         VkImageLayout   layout{ VK_IMAGE_LAYOUT_UNDEFINED };
         VkDevice        device{ VK_NULL_HANDLE };
-
-        ~SwapChainAttachment() {
-            if (imageView) vkDestroyImageView(device, imageView, nullptr);
-        }
     };
 
     const PhysicalDevice* device{nullptr};

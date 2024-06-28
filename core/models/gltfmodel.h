@@ -99,17 +99,14 @@ class GltfModel : public moon::interfaces::Model
 {
 private:
     std::filesystem::path filename;
-    bool created{false};
-    moon::utils::Texture emptyTexture;
     VkDevice device{VK_NULL_HANDLE};
 
     moon::utils::Buffer vertices, indices;
     moon::utils::Buffer vertexStaging, indexStaging;
-    std::vector<unsigned char*> textureStaging;
 
     moon::utils::vkDefault::DescriptorSetLayout nodeDescriptorSetLayout;
     moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
-    VkDescriptorPool             descriptorPool = VK_NULL_HANDLE;
+    moon::utils::vkDefault::DescriptorPool descriptorPool;
 
     struct instance{
         std::vector<Node*>      nodes;
@@ -117,29 +114,29 @@ private:
         std::vector<Animation>  animations;
     };
 
-    std::vector<instance>               instances;
-    std::vector<moon::utils::Texture>   textures;
-    std::vector<moon::interfaces::Material>               materials;
+    std::vector<instance> instances;
+    std::vector<moon::utils::Texture> textures;
+    std::vector<moon::interfaces::Material> materials;
 
-    void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
+    void loadFromFile(const moon::utils::PhysicalDevice& device, VkCommandBuffer commandBuffer);
     void loadNode(instance* instance, VkPhysicalDevice physicalDevice, VkDevice device, Node* parent, uint32_t nodeIndex, const tinygltf::Model& model, uint32_t& indexStart);
     void loadVertexBuffer(const tinygltf::Node& node, const tinygltf::Model& model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
-    void loadSkins(tinygltf::Model& gltfModel);
-    void loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel);
-    void loadMaterials(tinygltf::Model& gltfModel);
-    void loadAnimations(tinygltf::Model& gltfModel);
+    void loadSkins(const tinygltf::Model& gltfModel);
+    void loadTextures(const moon::utils::PhysicalDevice& device, VkCommandBuffer commandBuffer, const tinygltf::Model& gltfModel);
+    void loadMaterials(const tinygltf::Model& gltfModel);
+    void loadAnimations(const tinygltf::Model& gltfModel);
 
     Node* nodeFromIndex(uint32_t index, const std::vector<Node*>& nodes);
-    void destroyStagingBuffer(VkDevice device);
+    void destroyCache();
 
-    void createDescriptorPool(VkDevice device);
-    void createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture);
+    void createDescriptorPool();
+    void createDescriptorSet();
 
 public:
     GltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
     ~GltfModel() override;
 
-    void destroy(VkDevice device) override;
+    void destroy() override;
 
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;

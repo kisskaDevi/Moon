@@ -34,12 +34,10 @@ moon::interfaces::MaterialBlock &PlyModel::getMaterialBlock(){
 }
 
 PlyModel::~PlyModel() {
-    PlyModel::destroy(device);
+    PlyModel::destroy();
 }
 
-void PlyModel::destroy(VkDevice device) {
-    destroyStagingBuffer(device);
-
+void PlyModel::destroy() {
     vertices.destroy(device);
     indices.destroy(device);
 
@@ -50,12 +48,10 @@ void PlyModel::destroy(VkDevice device) {
 
     uniformBuffer.destroy(device);
 
-    emptyTexture.destroy(device);
-
     created = false;
 }
 
-void PlyModel::destroyStagingBuffer(VkDevice device) {
+void PlyModel::destroyCache() {
     vertexStaging.destroy(device);
     indexStaging.destroy(device);
 }
@@ -156,7 +152,7 @@ void PlyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
     moon::utils::Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
 }
 
-void PlyModel::createDescriptorPool(VkDevice device) {
+void PlyModel::createDescriptorPool() {
     uint32_t imageSamplerCount = 5;
     uint32_t meshCount = 1;
 
@@ -172,7 +168,7 @@ void PlyModel::createDescriptorPool(VkDevice device) {
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
 }
 
-void PlyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture) {
+void PlyModel::createDescriptorSet() {
     nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
     materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 
@@ -204,11 +200,11 @@ void PlyModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyT
             descriptorSetAllocInfo.descriptorSetCount = 1;
         CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material.descriptorSet));
 
-        auto getDescriptorImageInfo = [&emptyTexture](moon::utils::Texture* tex){
+        auto getDescriptorImageInfo = [this](const moon::utils::Texture* tex){
             VkDescriptorImageInfo descriptorImageInfo{};
             descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            descriptorImageInfo.imageView   = tex ? *tex->getTextureImageView() : *emptyTexture->getTextureImageView();
-            descriptorImageInfo.sampler     = tex ? *tex->getTextureSampler()   : *emptyTexture->getTextureSampler();
+            descriptorImageInfo.imageView   = tex ? tex->imageView() : emptyTexture.imageView();
+            descriptorImageInfo.sampler     = tex ? tex->sampler()   : emptyTexture.sampler();
             return descriptorImageInfo;
         };
 
@@ -259,15 +255,15 @@ void PlyModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool c
         CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
         CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
 
-        emptyTexture = createEmptyTexture(device, commandPool);
+        emptyTexture = utils::Texture::empty(device, commandPool);
         this->device = device.getLogical();
 
         VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
         loadFromFile(device.instance, device.getLogical(), commandBuffer);
         moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
-        destroyStagingBuffer(device.getLogical());
-        createDescriptorPool(device.getLogical());
-        createDescriptorSet(device.getLogical(), &emptyTexture);
+        destroyCache();
+        createDescriptorPool();
+        createDescriptorSet();
         created = true;
     }
 }

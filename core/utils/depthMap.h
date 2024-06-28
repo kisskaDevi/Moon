@@ -14,7 +14,6 @@ private:
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet>    descriptorSets;
 
-    Texture                         emptyTextureBlack;
     Texture                         emptyTextureWhite;
     VkDevice                        device{VK_NULL_HANDLE};
 

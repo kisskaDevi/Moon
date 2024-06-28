@@ -49,10 +49,10 @@ private:
     moon::math::Vector<float,3> maxSize{0.0f};
 
     void loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer);
-    void destroyStagingBuffer(VkDevice device);
+    void destroyCache();
 
-    void createDescriptorPool(VkDevice device);
-    void createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture);
+    void createDescriptorPool();
+    void createDescriptorSet();
 
 public:
     PlyModel(std::filesystem::path filename,
@@ -66,7 +66,7 @@ public:
     moon::interfaces::MaterialBlock& getMaterialBlock();
 
     ~PlyModel() override;
-    void destroy(VkDevice device) override;
+    void destroy() override;
     void create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool) override;
 
     const VkBuffer* getVertices() const override;

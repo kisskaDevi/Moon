@@ -271,9 +271,6 @@ void BaseObject::printStatus() const
 }
 
 void SkyboxObject::destroy(VkDevice device){
-    if(texture){
-        texture->destroy(device);
-    }
     BaseObject::destroy(device);
 }
 
@@ -331,8 +328,8 @@ void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
 
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = *texture->getTextureImageView();
-            imageInfo.sampler   = *texture->getTextureSampler();
+            imageInfo.imageView = texture->imageView();
+            imageInfo.sampler   = texture->sampler();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -367,11 +364,9 @@ void SkyboxObject::create(
 
         if(texture){
             VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
-            texture->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+            texture->create(device.instance, device.getLogical(), commandBuffer);
             moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-            texture->createTextureImageView(device.getLogical());
-            texture->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
-            texture->destroyStagingBuffer(device.getLogical());
+            texture->destroyCache();
         }
         createUniformBuffers(device.instance,device.getLogical(),imageCount);
         createDescriptorPool(device.getLogical(),imageCount);

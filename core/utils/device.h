@@ -32,26 +32,11 @@ struct Device{
     Device() = default;
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
-    Device(Device&& other) {
-        std::swap(instance, other.instance);
-        std::swap(deviceFeatures, other.deviceFeatures);
-        std::swap(queueMap, other.queueMap);
-    }
-    Device& operator=(Device&& other) {
-        std::swap(instance, other.instance);
-        std::swap(deviceFeatures, other.deviceFeatures);
-        std::swap(queueMap, other.queueMap);
-        return *this;
-    }
-    Device(VkPhysicalDeviceFeatures deviceFeatures):
-        deviceFeatures(deviceFeatures)
-    {}
-    ~Device() {
-        if (instance) {
-            vkDestroyDevice(instance, nullptr);
-            instance = VK_NULL_HANDLE;
-        }
-    }
+    Device(Device&& other);
+    Device& operator=(Device&& other);
+    void swap(Device& other);
+    Device(VkPhysicalDeviceFeatures deviceFeatures);
+    ~Device();
 };
 
 using DeviceIndex = uint32_t;
@@ -82,21 +67,9 @@ struct PhysicalDevice{
 
     PhysicalDevice& operator=(const PhysicalDevice& other) = delete;
     PhysicalDevice(const PhysicalDevice& other) = delete;
-    PhysicalDevice& operator=(PhysicalDevice&& other) {
-        std::swap(instance, other.instance);
-        std::swap(properties, other.properties);
-        std::swap(queueFamilies, other.queueFamilies);
-        std::swap(logical, other.logical);
-        std::swap(deviceExtensions, other.deviceExtensions);
-        return *this;
-    };
-    PhysicalDevice(PhysicalDevice&& other) {
-        std::swap(instance, other.instance);
-        std::swap(properties, other.properties);
-        std::swap(queueFamilies, other.queueFamilies);
-        std::swap(logical, other.logical);
-        std::swap(deviceExtensions, other.deviceExtensions);
-    };
+    PhysicalDevice& operator=(PhysicalDevice&& other);
+    PhysicalDevice(PhysicalDevice&& other);
+    void swap(PhysicalDevice& other);
 
     bool presentSupport(VkSurfaceKHR surface);
     VkResult createDevice(VkPhysicalDeviceFeatures deviceFeatures, std::map<uint32_t,uint32_t> queueSizeMap);

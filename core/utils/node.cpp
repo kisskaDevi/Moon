@@ -25,18 +25,32 @@ VkResult Stage::submit(){
     return vkQueueSubmit(queue, 1, &submitInfo, fence);
 }
 
-Node::Node(const std::vector<Stage>& stages, Node* next) :
-    stages(stages), next(next)
+Node::Node(VkDevice device, const std::vector<Stage>& stages, Node* next) :
+    stages(stages), next(next), device(device)
 {}
 
-void Node::destroy(VkDevice device){
-    if(next){
-        next->destroy(device); delete next; next = nullptr;
-    }
+Node::~Node(){
+    if(next) delete next; next = nullptr;
     signalSemaphores.clear();
 }
 
-Node* Node::back(){
+void Node::swap(Node& other) {
+    std::swap(stages, other.stages);
+    std::swap(signalSemaphores, other.signalSemaphores);
+    std::swap(next, other.next);
+    std::swap(device, other.device);
+}
+
+Node::Node(Node&& other) {
+    swap(other);
+}
+
+Node& Node::operator=(Node&& other) {
+    swap(other);
+    return *this;
+}
+
+Node* Node::back() {
     return next ? next->back() : this;
 }
 
@@ -60,25 +74,26 @@ std::vector<std::vector<VkSemaphore>> Node::getBackSemaphores(){
     return semaphores;
 }
 
-VkResult Node::createSemaphores(VkDevice device){
+VkResult Node::createSemaphores(){
     VkResult result = VK_SUCCESS;
-    auto createSemaphore = [this, &result](VkDevice device, Stage* stage){
-        signalSemaphores.emplace_back();
-        CHECK(result = signalSemaphores.back().create(device));
-        stage->signalSemaphores.push_back(signalSemaphores.back());
+    auto createSemaphore = [this](VkDevice device, Stage* stage){
+        auto& signalSemaphore = signalSemaphores.emplace_back();
+        VkResult result = signalSemaphore.create(device);
+        stage->signalSemaphores.push_back(signalSemaphore);
+        return result;
     };
 
     if(next){
         for(auto& currentStage: stages){
             for(auto& nextStage: next->stages){
-                createSemaphore(device, &currentStage);
+                result = std::max(result, createSemaphore(device, &currentStage));
                 nextStage.waitSemaphores.push_back(signalSemaphores.back());
             }
         }
-        next->createSemaphores(device);
+        next->createSemaphores();
     }else{
         for(auto& currentStage: stages){
-            createSemaphore(device, &currentStage);
+            result = std::max(result, createSemaphore(device, &currentStage));
         }
     }
     return result;

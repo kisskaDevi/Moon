@@ -51,7 +51,7 @@ public:
 
 namespace debug {
 
-    void checkResult(
+    VkResult checkResult(
             VkResult        result,
             std::string     message);
 

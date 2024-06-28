@@ -68,7 +68,7 @@ void RayTracingGraphics::create()
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool);
 
-    emptyTexture = createEmptyTexture(*device, commandPool);
+    emptyTexture = utils::Texture::empty(*device, commandPool);
     aDatabase.addEmptyTexture("black", &emptyTexture);
 
     moon::utils::ImageInfo imageInfo{ imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT };

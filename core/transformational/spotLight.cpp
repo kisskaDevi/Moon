@@ -39,13 +39,6 @@ void SpotLight::destroy(VkDevice device)
 
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
-    emptyTextureBlack.destroy(device);
-    emptyTextureWhite.destroy(device);
-
-    if(tex){
-        tex->destroy(device);
-    }
-
     created = false;
 }
 
@@ -179,18 +172,16 @@ void SpotLight::create(
         CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkDevice is VK_NULL_HANDLE"));
         CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkCommandPool is VK_NULL_HANDLE"));
 
-        emptyTextureBlack = createEmptyTexture(device, commandPool);
-        emptyTextureWhite = createEmptyTexture(device, commandPool, false);
+        emptyTextureBlack = utils::Texture::empty(device, commandPool);
+        emptyTextureWhite = utils::Texture::empty(device, commandPool, false);
 
         if(tex){
             VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
-            tex->createTextureImage(device.instance, device.getLogical(), commandBuffer);
+            tex->create(device.instance, device.getLogical(), commandBuffer);
             moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-            tex->destroyStagingBuffer(device.getLogical());
-            tex->createTextureImageView(device.getLogical());
-            tex->createTextureSampler(device.getLogical(),{VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT});
+            tex->destroyCache();
         }
-        createUniformBuffers(device.instance,device.getLogical(),imageCount);
+        createUniformBuffers(device.instance, device.getLogical(), imageCount);
         createDescriptorPool(device.getLogical(), imageCount);
         createDescriptorSets(device.getLogical(), imageCount);
         updateDescriptorSets(device.getLogical(), imageCount);
@@ -307,8 +298,8 @@ void SpotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
     {
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            lightTexture.imageView = tex ? *tex->getTextureImageView() : *emptyTextureBlack.getTextureImageView();
-            lightTexture.sampler = tex ? *tex->getTextureSampler() : *emptyTextureBlack.getTextureSampler();
+            lightTexture.imageView = tex ? tex->imageView() : emptyTextureBlack.imageView();
+            lightTexture.sampler = tex ? tex->sampler() : emptyTextureBlack.sampler();
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

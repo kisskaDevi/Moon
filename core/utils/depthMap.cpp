@@ -30,8 +30,7 @@ void DepthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
 }
 
 DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount){
-    emptyTextureBlack = createEmptyTexture(device, commandPool);
-    emptyTextureWhite = createEmptyTexture(device, commandPool, false);
+    emptyTextureWhite = utils::Texture::empty(device, commandPool, false);
     this->device = device.getLogical();
 
     createDescriptorPool(device.getLogical(), imageCount);
@@ -45,9 +44,6 @@ DepthMap::~DepthMap(){
 
 void DepthMap::destroy(VkDevice device){
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
-
-    emptyTextureBlack.destroy(device);
-    emptyTextureWhite.destroy(device);
 
     if(map) {
         delete map;
@@ -64,8 +60,8 @@ void DepthMap::updateDescriptorSets(VkDevice device, uint32_t imageCount){
     {
         VkDescriptorImageInfo shadowImageInfo{};
             shadowImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            shadowImageInfo.imageView = map ? map->imageView(i) : *emptyTextureWhite.getTextureImageView();
-            shadowImageInfo.sampler = map ? map->sampler() : *emptyTextureWhite.getTextureSampler();
+            shadowImageInfo.imageView = map ? map->imageView(i) : emptyTextureWhite.imageView();
+            shadowImageInfo.sampler = map ? map->sampler() : emptyTextureWhite.sampler();
         std::vector<VkWriteDescriptorSet> descriptorWrites;
             descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

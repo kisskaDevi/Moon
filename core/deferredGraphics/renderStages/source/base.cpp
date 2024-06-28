@@ -156,8 +156,8 @@ void Graphics::Base::updateDescriptorSets(
 
         VkDescriptorImageInfo skyboxImageInfo{};
             skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = *aDatabase.getEmpty()->getTextureImageView();
-            skyboxImageInfo.sampler = *aDatabase.getEmpty()->getTextureSampler();
+            skyboxImageInfo.imageView = aDatabase.getEmpty()->imageView();
+            skyboxImageInfo.sampler = aDatabase.getEmpty()->sampler();
 
         std::string depthId = !transparencyPass || transparencyNumber == 0 ? "" :
                                       (parameters.out.transparency + std::to_string(transparencyNumber - 1) + ".") + parameters.out.depth;

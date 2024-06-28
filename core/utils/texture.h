@@ -2,108 +2,118 @@
 #define TEXTURE_H
 
 #include <vulkan.h>
+#include <filesystem>
 
 #include "buffer.h"
-
-#include <filesystem>
+#include "vkdefault.h"
+#include "device.h"
 
 namespace moon::utils {
 
-struct PhysicalDevice;
-
-namespace tinygltf{
-    struct Image;
-};
-
 struct TextureSampler {
-    VkFilter magFilter;
-    VkFilter minFilter;
-    VkSamplerAddressMode addressModeU;
-    VkSamplerAddressMode addressModeV;
-    VkSamplerAddressMode addressModeW;
+    VkFilter magFilter{ VK_FILTER_LINEAR };
+    VkFilter minFilter{ VK_FILTER_LINEAR };
+    VkSamplerAddressMode addressModeU{ VK_SAMPLER_ADDRESS_MODE_REPEAT };
+    VkSamplerAddressMode addressModeV{ VK_SAMPLER_ADDRESS_MODE_REPEAT };
+    VkSamplerAddressMode addressModeW{ VK_SAMPLER_ADDRESS_MODE_REPEAT };
 };
 
-struct Iamge{
-    VkImage textureImage{VK_NULL_HANDLE};
-    VkImageView textureImageView{VK_NULL_HANDLE};
-    VkSampler textureSampler{VK_NULL_HANDLE};
-    VkDeviceMemory textureImageMemory{VK_NULL_HANDLE};
+struct Image {
+    VkImage image{ VK_NULL_HANDLE };
+    VkDeviceMemory memory{ VK_NULL_HANDLE };
+    utils::vkDefault::ImageView imageView;
+    utils::vkDefault::Sampler sampler;
+    VkDevice device{ VK_NULL_HANDLE };
 
-    VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
+    int width{ -1 };
+    int height{ -1 };
+    int channels{ -1 };
+    VkDeviceSize size{ 0 };
+    float mipLevel{ 0.0f };
+    uint32_t mipLevels{ 1 };
+    VkFormat format{ VK_FORMAT_R8G8B8A8_UNORM };
 
-    Buffer stagingBuffer;
+    Buffer cache;
 
-    void destroy(VkDevice device);
-    void destroyStagingBuffer(VkDevice device);
+    ~Image();
+    Image() = default;
+    Image(const Image&) = delete;
+    Image& operator=(const Image&) = delete;
+    Image(Image&&) noexcept;
+    Image& operator=(Image&&) noexcept;
+    void swap(Image& other) noexcept;
+
+    void makeCache(
+            VkPhysicalDevice            physicalDevice,
+            VkDevice                    device,
+            const std::vector<void*>&   buffers);
+
     VkResult create(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
             VkImageCreateFlags  flags,
-            uint32_t&           mipLevels,
-            int                 texWidth,
-            int                 texHeight,
-            VkDeviceSize        imageSize,
-            void**              pixels,
-            const uint32_t&     imageCount);
+            const uint32_t&     imageCount,
+            const TextureSampler& textureSampler);
 };
 
 class Texture{
 protected:
-    std::vector<std::filesystem::path> path;
+    std::vector<std::filesystem::path> paths;
+    Image image;
 
-    float mipLevel{0.0f};
-    uint32_t mipLevels{1};
-
-    Iamge image;
+    Texture(const std::vector<std::filesystem::path>& paths);
 
 public:
-    Texture() = default;
-    Texture(const std::filesystem::path & path);
-    ~Texture() = default;
-    void destroy(VkDevice device);
-    void destroyStagingBuffer(VkDevice device);
+    Texture(const std::filesystem::path& path);
 
-    VkResult createTextureImage(
+    virtual ~Texture() = default;
+    Texture() = default;
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
+    Texture(Texture&&) noexcept;
+    Texture& operator=(Texture&&) noexcept;
+    void swap(Texture& other) noexcept;
+
+    void destroyCache();
+
+    VkResult create(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
             int                 width,
             int                 height,
-            void**              buffer);
-    VkResult createTextureImage(
-            VkPhysicalDevice    physicalDevice,
-            VkDevice            device,
-            VkCommandBuffer     commandBuffer);
-    VkResult createEmptyTextureImage(
+            void*               buffer,
+            const TextureSampler& textureSampler = TextureSampler{});
+
+    virtual VkResult create(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
-            bool                isBlack = true);
-    VkResult createTextureImageView(VkDevice device);
-    VkResult createTextureSampler(VkDevice device, TextureSampler TextureSampler);
+            const TextureSampler& textureSampler = TextureSampler{});
+
     void setMipLevel(float mipLevel);
     void setTextureFormat(VkFormat format);
 
-    const VkImageView* getTextureImageView() const;
-    const VkSampler*   getTextureSampler() const;
-};
+    const VkImageView imageView() const;
+    const VkSampler sampler() const;
 
+    static Texture empty(const PhysicalDevice&, VkCommandPool, bool isBlack = true);
+    static Texture empty(const PhysicalDevice&, VkCommandBuffer, bool isBlack = true);
+};
 
 class CubeTexture: public Texture {
 public:
     CubeTexture() = default;
-    CubeTexture(const std::vector<std::filesystem::path> & path);
+    CubeTexture(const std::vector<std::filesystem::path>& path);
     ~CubeTexture() = default;
 
-    void createTextureImage(
+    VkResult create(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
-            VkCommandBuffer     commandBuffer);
-    void createTextureImageView(VkDevice device);
+            VkCommandBuffer     commandBuffer,
+            const TextureSampler& textureSampler = TextureSampler{}) override;
 };
-
-Texture createEmptyTexture(const PhysicalDevice&, VkCommandPool, bool isBlack = true);
 
 }
 #endif // TEXTURE_H

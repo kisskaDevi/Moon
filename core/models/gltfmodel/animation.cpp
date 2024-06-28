@@ -14,14 +14,14 @@ float GltfModel::animationEnd(uint32_t frameIndex, uint32_t index) const {
     return instances[frameIndex].animations[index].end;
 }
 
-void GltfModel::loadAnimations(tinygltf::Model& gltfModel)
+void GltfModel::loadAnimations(const tinygltf::Model& gltfModel)
 {
     for(auto& instance: instances){
-        for (tinygltf::Animation &anim : gltfModel.animations) {
+        for (const tinygltf::Animation &anim : gltfModel.animations) {
             Animation animation{};
 
             // Samplers
-            for (auto &samp : anim.samplers) {
+            for (const auto &samp : anim.samplers) {
                 Animation::AnimationSampler sampler{};
 
                 if (samp.interpolation == "LINEAR") {
@@ -90,7 +90,7 @@ void GltfModel::loadAnimations(tinygltf::Model& gltfModel)
             }
 
             // Channels
-            for (auto &source: anim.channels)
+            for (const auto &source: anim.channels)
             {
                 Animation::AnimationChannel channel{};
 
@@ -131,8 +131,8 @@ void GltfModel::updateAnimation(uint32_t frameIndex, uint32_t index, float time)
     Animation &animation = instances[frameIndex].animations[index];
 
     bool updated = false;
-    for (auto& channel : animation.channels) {
-        Animation::AnimationSampler &sampler = animation.samplers[channel.samplerIndex];
+    for (const auto& channel : animation.channels) {
+        const Animation::AnimationSampler &sampler = animation.samplers[channel.samplerIndex];
         if (sampler.inputs.size() > sampler.outputsVec4.size()) {
             continue;
         }
@@ -192,8 +192,8 @@ void GltfModel::changeAnimation(uint32_t frameIndex, uint32_t oldIndex, uint32_t
 
     bool updated = false;
     for (auto& channel : animationOld.channels) {
-        Animation::AnimationSampler &samplerOld = animationOld.samplers[channel.samplerIndex];
-        Animation::AnimationSampler &samplerNew = animationNew.samplers[channel.samplerIndex];
+        const Animation::AnimationSampler &samplerOld = animationOld.samplers[channel.samplerIndex];
+        const Animation::AnimationSampler &samplerNew = animationNew.samplers[channel.samplerIndex];
         if (samplerOld.inputs.size() > samplerOld.outputsVec4.size())
             continue;
 

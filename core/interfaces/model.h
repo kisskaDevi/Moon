@@ -29,22 +29,22 @@ struct Material {
     float roughnessFactor{1.0f};
     moon::math::Vector<float,4> baseColorFactor{1.0f};
     moon::math::Vector<float,4> emissiveFactor{1.0f};
-    moon::utils::Texture* baseColorTexture{nullptr};
-    moon::utils::Texture* metallicRoughnessTexture{nullptr};
-    moon::utils::Texture* normalTexture{nullptr};
-    moon::utils::Texture* occlusionTexture{nullptr};
-    moon::utils::Texture* emissiveTexture{nullptr};
+    const moon::utils::Texture* baseColorTexture{nullptr};
+    const moon::utils::Texture* metallicRoughnessTexture{nullptr};
+    const moon::utils::Texture* normalTexture{nullptr};
+    const moon::utils::Texture* occlusionTexture{nullptr};
+    const moon::utils::Texture* emissiveTexture{nullptr};
     struct TexCoordSets {
-        uint8_t baseColor{0};
-        uint8_t metallicRoughness{0};
-        uint8_t specularGlossiness{0};
-        uint8_t normal{0};
-        uint8_t occlusion{0};
-        uint8_t emissive{0};
+        int8_t baseColor{ -1 };
+        int8_t metallicRoughness{ -1 };
+        int8_t specularGlossiness{ -1 };
+        int8_t normal{ -1 };
+        int8_t occlusion{ -1 };
+        int8_t emissive{ -1 };
     } texCoordSets;
     struct Extension {
-        moon::utils::Texture* specularGlossinessTexture{nullptr};
-        moon::utils::Texture* diffuseTexture{nullptr};
+        const moon::utils::Texture* specularGlossinessTexture{nullptr};
+        const moon::utils::Texture* diffuseTexture{nullptr};
         moon::math::Vector<float,4> diffuseFactor{1.0f};
         moon::math::Vector<float,3> specularFactor{0.0f};
     } extension;
@@ -53,6 +53,16 @@ struct Material {
         bool specularGlossiness = false;
     } pbrWorkflows;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+    Material() = default;
+    Material(const moon::utils::Texture* empty) {
+        baseColorTexture = empty;
+        metallicRoughnessTexture = empty;
+        normalTexture = empty;
+        occlusionTexture = empty;
+        emissiveTexture = empty;
+        extension.specularGlossinessTexture = empty;
+        extension.diffuseTexture = empty;
+    }
 };
 
 struct MaterialBlock
@@ -97,7 +107,7 @@ public:
     };
 
     virtual ~Model(){};
-    virtual void destroy(VkDevice device) = 0;
+    virtual void destroy() = 0;
 
     virtual const VkBuffer* getVertices() const = 0;
     virtual const VkBuffer* getIndices() const = 0;

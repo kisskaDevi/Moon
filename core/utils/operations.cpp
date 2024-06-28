@@ -13,7 +13,7 @@
 
 namespace moon::utils {
 
-void debug::checkResult(VkResult result, std::string message){
+VkResult debug::checkResult(VkResult result, std::string message){
     if (result != VK_SUCCESS){
         message = string_VkResult(result) + std::string(" : ") + message;
 #ifndef NDEBUG
@@ -23,6 +23,7 @@ void debug::checkResult(VkResult result, std::string message){
         throw std::runtime_error(message);
 #endif
     }
+    return result;
 }
 
 void debug::checkResult(bool result, std::string message){
@@ -527,8 +528,6 @@ void texture::destroy(VkDevice device, VkImage& image, VkDeviceMemory& memory)
 
 VkResult texture::createView(VkDevice device, VkImageViewType type, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t baseArrayLayer, uint32_t layerCount, VkImage image, VkImageView* imageView)
 {
-    VkResult result = VK_SUCCESS;
-
     VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = image;
@@ -539,10 +538,7 @@ VkResult texture::createView(VkDevice device, VkImageViewType type, VkFormat for
         viewInfo.subresourceRange.levelCount = mipLevels;
         viewInfo.subresourceRange.baseArrayLayer = baseArrayLayer;
         viewInfo.subresourceRange.layerCount = layerCount;
-    result = vkCreateImageView(device, &viewInfo, nullptr, imageView);
-    CHECK(result);
-
-    return result;
+    return vkCreateImageView(device, &viewInfo, nullptr, imageView);
 }
 
 void texture::generateMipmaps(VkPhysicalDevice physicalDevice, VkCommandBuffer commandBuffer, VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels, uint32_t baseArrayLayer, uint32_t layerCount)

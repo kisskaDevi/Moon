@@ -151,14 +151,14 @@ VkImageView AttachmentsDatabase::imageView(const std::string& id, const uint32_t
     const auto emptyTexture = emptyTextureId ? emptyTexturesMap.at(*emptyTextureId) : emptyTexturesMap.at(defaultEmptyTexture);
     const auto attachment = get(id);
 
-    return attachment ? attachment->imageView(imageIndex) : *emptyTexture->getTextureImageView();
+    return attachment ? attachment->imageView(imageIndex) : emptyTexture->imageView();
 }
 
 VkSampler AttachmentsDatabase::sampler(const std::string& id, const std::optional<std::string>& emptyTextureId) const {
     const auto emptyTexture = emptyTextureId ? emptyTexturesMap.at(*emptyTextureId) : emptyTexturesMap.at(defaultEmptyTexture);
     const auto attachment = get(id);
 
-    return attachment ? attachment->sampler() : *emptyTexture->getTextureSampler();
+    return attachment ? attachment->sampler() : emptyTexture->sampler();
 }
 
 VkDescriptorImageInfo AttachmentsDatabase::descriptorImageInfo(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId) const{

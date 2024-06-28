@@ -246,6 +246,21 @@ class DescriptorPool {
 	VKDEFAULT_INIT_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
 
 	VkResult create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount);
+	VkResult create(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo);
+};
+
+class ImageView {
+	VKDEFAULT_INIT_DESCRIPTOR(ImageView, VkImageView)
+
+	VkResult create(
+		const VkDevice& device,
+		const VkImage& image,
+		VkImageViewType type,
+		VkFormat format,
+		VkImageAspectFlags aspectFlags,
+		uint32_t mipLevels,
+		uint32_t baseArrayLayer,
+		uint32_t layerCount);
 };
 
 }

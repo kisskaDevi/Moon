@@ -3,6 +3,32 @@
 
 namespace moon::utils {
 
+Device::Device(Device&& other) {
+    swap(other);
+}
+
+Device& Device::operator=(Device&& other) {
+    swap(other);
+    return *this;
+}
+
+void Device::swap(Device& other) {
+    std::swap(instance, other.instance);
+    std::swap(deviceFeatures, other.deviceFeatures);
+    std::swap(queueMap, other.queueMap);
+}
+
+Device::Device(VkPhysicalDeviceFeatures deviceFeatures) :
+    deviceFeatures(deviceFeatures)
+{}
+
+Device::~Device() {
+    if (instance) {
+        vkDestroyDevice(instance, nullptr);
+        instance = VK_NULL_HANDLE;
+    }
+}
+
 QueueFamily::QueueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport):
 index(index), flags(flag), queueCount(queueCount), presentSupport(presentSupport){
     queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));
@@ -24,6 +50,23 @@ QueueFamily& QueueFamily::operator=(const QueueFamily& other){
 
 bool QueueFamily::availableQueueFlag(VkQueueFlags flag) const {
     return (flag & flags) == flag;
+}
+
+PhysicalDevice& PhysicalDevice::operator=(PhysicalDevice&& other) {
+    swap(other);
+    return *this;
+};
+
+PhysicalDevice::PhysicalDevice(PhysicalDevice&& other) {
+    swap(other);
+};
+
+void PhysicalDevice::swap(PhysicalDevice& other) {
+    std::swap(instance, other.instance);
+    std::swap(properties, other.properties);
+    std::swap(queueFamilies, other.queueFamilies);
+    std::swap(logical, other.logical);
+    std::swap(deviceExtensions, other.deviceExtensions);
 }
 
 PhysicalDevice::PhysicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions):

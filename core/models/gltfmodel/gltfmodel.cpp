@@ -93,7 +93,7 @@ namespace {
         }
     }
 
-    void createMaterialDescriptorSet(VkDevice device, moon::interfaces::Material* material, moon::utils::Texture* emptyTexture, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+    void createMaterialDescriptorSet(VkDevice device, moon::interfaces::Material* material, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
     {
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -102,11 +102,11 @@ namespace {
             descriptorSetAllocInfo.descriptorSetCount = 1;
         CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material->descriptorSet));
 
-        auto getDescriptorImageInfo = [&emptyTexture](moon::utils::Texture* tex){
+        auto getDescriptorImageInfo = [](const moon::utils::Texture* tex){
             VkDescriptorImageInfo descriptorImageInfo{};
             descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            descriptorImageInfo.imageView   = tex ? *tex->getTextureImageView() : *emptyTexture->getTextureImageView();
-            descriptorImageInfo.sampler     = tex ? *tex->getTextureSampler()   : *emptyTexture->getTextureSampler();
+            descriptorImageInfo.imageView = tex->imageView();
+            descriptorImageInfo.sampler = tex->sampler();
             return descriptorImageInfo;
         };
 
@@ -163,10 +163,10 @@ namespace {
                 moon::interfaces::MaterialBlock material{};
                 material.primitive = primitiveCount++;
                 material.emissiveFactor = primitive->material->emissiveFactor;
-                material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
-                material.normalTextureSet = primitive->material->normalTexture != nullptr ? primitive->material->texCoordSets.normal : -1;
-                material.occlusionTextureSet = primitive->material->occlusionTexture != nullptr ? primitive->material->texCoordSets.occlusion : -1;
-                material.emissiveTextureSet = primitive->material->emissiveTexture != nullptr ? primitive->material->texCoordSets.emissive : -1;
+                material.colorTextureSet = primitive->material->texCoordSets.baseColor;
+                material.normalTextureSet = primitive->material->texCoordSets.normal;
+                material.occlusionTextureSet = primitive->material->texCoordSets.occlusion;
+                material.emissiveTextureSet = primitive->material->texCoordSets.emissive;
                 material.alphaMask = static_cast<float>(primitive->material->alphaMode == moon::interfaces::Material::ALPHAMODE_MASK);
                 material.alphaMaskCutoff = primitive->material->alphaCutoff;
                 if (primitive->material->pbrWorkflows.metallicRoughness) {
@@ -174,13 +174,13 @@ namespace {
                     material.baseColorFactor = primitive->material->baseColorFactor;
                     material.metallicFactor = primitive->material->metallicFactor;
                     material.roughnessFactor = primitive->material->roughnessFactor;
-                    material.PhysicalDescriptorTextureSet = primitive->material->metallicRoughnessTexture != nullptr ? primitive->material->texCoordSets.metallicRoughness : -1;
-                    material.colorTextureSet = primitive->material->baseColorTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
+                    material.PhysicalDescriptorTextureSet = primitive->material->texCoordSets.metallicRoughness;
+                    material.colorTextureSet = primitive->material->texCoordSets.baseColor;
                 }
                 if (primitive->material->pbrWorkflows.specularGlossiness) {
                     material.workflow = static_cast<float>(moon::interfaces::PBR_WORKFLOW_SPECULAR_GLOSINESS);
-                    material.PhysicalDescriptorTextureSet = primitive->material->extension.specularGlossinessTexture != nullptr ? primitive->material->texCoordSets.specularGlossiness : -1;
-                    material.colorTextureSet = primitive->material->extension.diffuseTexture != nullptr ? primitive->material->texCoordSets.baseColor : -1;
+                    material.PhysicalDescriptorTextureSet = primitive->material->texCoordSets.specularGlossiness;
+                    material.colorTextureSet = primitive->material->texCoordSets.baseColor;
                     material.diffuseFactor = primitive->material->extension.diffuseFactor;
                     material.specularFactor = moon::math::Vector<float, 4>(
                         primitive->material->extension.specularFactor[0],
@@ -231,20 +231,13 @@ GltfModel::GltfModel(std::filesystem::path filename, uint32_t instanceCount)
 }
 
 GltfModel::~GltfModel() {
-    GltfModel::destroy(device);
+    GltfModel::destroy();
 }
 
-void GltfModel::destroy(VkDevice device)
+void GltfModel::destroy()
 {
-    destroyStagingBuffer(device);
-
     vertices.destroy(device);
     indices.destroy(device);
-
-    if(descriptorPool != VK_NULL_HANDLE){
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-        descriptorPool = VK_NULL_HANDLE;
-    }
 
     for(auto& instance : instances){
         for (auto& node : instance.nodes){
@@ -258,26 +251,15 @@ void GltfModel::destroy(VkDevice device)
         instance.skins.clear();
         instance.animations.clear();
     }
-    for (auto texture : textures){
-        texture.destroy(device);
-    }
     textures.clear();
     materials.clear();
 
-    emptyTexture.destroy(device);
-
-    created = false;
+    this->device = VK_NULL_HANDLE;
 };
 
-void GltfModel::destroyStagingBuffer(VkDevice device)
+void GltfModel::destroyCache()
 {
-    for(auto& texture: textures){
-        texture.destroyStagingBuffer(device);
-    }
-    for(auto texture: textureStaging){
-        delete[] texture;
-    }
-
+    for(auto& texture: textures) texture.destroyCache();
     vertexStaging.destroy(device);
     indexStaging.destroy(device);
 }
@@ -290,7 +272,7 @@ const VkBuffer* GltfModel::getIndices() const{
     return &indices.instance;
 }
 
-void GltfModel::loadSkins(tinygltf::Model &gltfModel){
+void GltfModel::loadSkins(const tinygltf::Model &gltfModel){
     for(auto& instance : instances){
         for (const tinygltf::Skin& source: gltfModel.skins) {
             Skin* newSkin = new Skin{};
@@ -324,76 +306,76 @@ void GltfModel::loadSkins(tinygltf::Model &gltfModel){
     }
 }
 
-void GltfModel::loadTextures(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, tinygltf::Model& gltfModel)
+void GltfModel::loadTextures(const moon::utils::PhysicalDevice& device, VkCommandBuffer commandBuffer, const tinygltf::Model& gltfModel)
 {
     for(const tinygltf::Texture &tex : gltfModel.textures){
         const tinygltf::Image& gltfimage = gltfModel.images[tex.source];
-        const VkDeviceSize bufferSize = gltfimage.width * gltfimage.height * 4;
-        if (gltfimage.component == 3){
-            textureStaging.push_back(new stbi_uc[bufferSize]);
-            for (int32_t i = 0; i< gltfimage.width * gltfimage.height; ++i){
-                for (int32_t j = 0; j < 3; ++j) {
-                    textureStaging.back()[4*i + j] = gltfimage.image[3*i + j];
-                }
-                textureStaging.back()[4*i + 3] = 255;
+
+        std::vector<uint8_t> buffer(4 * gltfimage.width * gltfimage.height);
+        for (int32_t i = 0; i< gltfimage.width * gltfimage.height; ++i){
+            buffer[4 * i + 3] = 255;
+            for (int32_t j = 0; j < gltfimage.component; ++j) {
+                buffer[4 * i + j] = gltfimage.image[gltfimage.component * i + j];
             }
         }
-        const unsigned char* buffer = gltfimage.component == 3 ? textureStaging.back() : gltfimage.image.data();
 
-        moon::utils::TextureSampler TextureSampler{};
-            TextureSampler.minFilter = tex.sampler == -1 ? VK_FILTER_LINEAR : getVkFilterMode(gltfModel.samplers[tex.sampler].minFilter);
-            TextureSampler.magFilter = tex.sampler == -1 ? VK_FILTER_LINEAR : getVkFilterMode(gltfModel.samplers[tex.sampler].magFilter);
-            TextureSampler.addressModeU = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : getVkWrapMode(gltfModel.samplers[tex.sampler].wrapS);
-            TextureSampler.addressModeV = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : getVkWrapMode(gltfModel.samplers[tex.sampler].wrapT);
-            TextureSampler.addressModeW = tex.sampler == -1 ? VK_SAMPLER_ADDRESS_MODE_REPEAT : TextureSampler.addressModeV;
-        textures.emplace_back(moon::utils::Texture());
-        textures.back().createTextureImage(physicalDevice, device, commandBuffer, gltfimage.width, gltfimage.height, (void**) &buffer);
-        textures.back().createTextureImageView(device);
-        textures.back().createTextureSampler(device,TextureSampler);
+        moon::utils::TextureSampler textureSampler{};
+        if (tex.sampler != -1) {
+            textureSampler.minFilter = textureSampler.magFilter = getVkFilterMode(gltfModel.samplers[tex.sampler].minFilter);
+            textureSampler.addressModeV = textureSampler.addressModeW = getVkWrapMode(gltfModel.samplers[tex.sampler].wrapT);
+            textureSampler.addressModeU = getVkWrapMode(gltfModel.samplers[tex.sampler].wrapS);
+        }
+        auto& texture = textures.emplace_back();
+        CHECK(texture.create(device.instance, device.getLogical(), commandBuffer, gltfimage.width, gltfimage.height, buffer.data(), textureSampler));
     }
+    textures.push_back(utils::Texture::empty(device, commandBuffer));
 }
 
-void GltfModel::loadMaterials(tinygltf::Model &gltfModel)
+void GltfModel::loadMaterials(const tinygltf::Model &gltfModel)
 {
-    for (tinygltf::Material &mat : gltfModel.materials)
+    const utils::Texture* emptyTexture = &textures.back();
+    for (const tinygltf::Material &mat : gltfModel.materials)
     {
-        moon::interfaces::Material material{};
+        moon::interfaces::Material material(emptyTexture);
         if (mat.values.find("baseColorTexture") != mat.values.end()) {
-            material.baseColorTexture = &textures[mat.values["baseColorTexture"].TextureIndex()];
-            material.texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
+            const auto& baseColor = mat.values.at("baseColorTexture");
+            material.baseColorTexture = &textures[baseColor.TextureIndex()];
+            material.texCoordSets.baseColor = baseColor.TextureTexCoord();
         }
         if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
-            material.metallicRoughnessTexture = &textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
-            material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+            const auto& metallicRoughness = mat.values.at("metallicRoughnessTexture");
+            material.metallicRoughnessTexture = &textures[metallicRoughness.TextureIndex()];
+            material.texCoordSets.metallicRoughness = metallicRoughness.TextureTexCoord();
         }
         if (mat.values.find("roughnessFactor") != mat.values.end()) {
-            material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+            const auto& roughnessFactor = mat.values.at("roughnessFactor");
+            material.roughnessFactor = static_cast<float>(roughnessFactor.Factor());
         }
         if (mat.values.find("metallicFactor") != mat.values.end()) {
-            material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+            const auto& metallicFactor = mat.values.at("metallicFactor");
+            material.metallicFactor = static_cast<float>(metallicFactor.Factor());
         }
         if (mat.values.find("baseColorFactor") != mat.values.end()) {
-            auto color = mat.values["baseColorFactor"].ColorFactor();
-            material.baseColorFactor = moon::math::Vector<float, 4>(
-                static_cast<float>(color[0]),
-                static_cast<float>(color[1]),
-                static_cast<float>(color[2]),
-                static_cast<float>(color[3]));
+            const auto& factor = mat.values.at("baseColorFactor").ColorFactor();
+            material.baseColorFactor = moon::math::Vector<float, 4>(factor[0], factor[1], factor[2], factor[3]);
         }
         if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
-            material.normalTexture = &textures[mat.additionalValues["normalTexture"].TextureIndex()];
-            material.texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
+            const auto& normalTexture = mat.additionalValues.at("normalTexture");
+            material.normalTexture = &textures[normalTexture.TextureIndex()];
+            material.texCoordSets.normal = normalTexture.TextureTexCoord();
         }
         if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
-            material.emissiveTexture = &textures[mat.additionalValues["emissiveTexture"].TextureIndex()];
-            material.texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
+            const auto& emissiveTexture = mat.additionalValues.at("emissiveTexture");
+            material.emissiveTexture = &textures[emissiveTexture.TextureIndex()];
+            material.texCoordSets.emissive = emissiveTexture.TextureTexCoord();
         }
         if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
-            material.occlusionTexture = &textures[mat.additionalValues["occlusionTexture"].TextureIndex()];
-            material.texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
+            const auto& occlusionTexture = mat.additionalValues.at("occlusionTexture");
+            material.occlusionTexture = &textures[occlusionTexture.TextureIndex()];
+            material.texCoordSets.occlusion = occlusionTexture.TextureTexCoord();
         }
         if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
-            tinygltf::Parameter param = mat.additionalValues["alphaMode"];
+            const tinygltf::Parameter& param = mat.additionalValues.at("alphaMode");
             if (param.string_value == "BLEND") {
                 material.alphaMode = moon::interfaces::Material::ALPHAMODE_BLEND;
             }
@@ -403,14 +385,12 @@ void GltfModel::loadMaterials(tinygltf::Model &gltfModel)
             }
         }
         if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) {
-            material.alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+            const auto& alphaCutoff = mat.additionalValues.at("alphaCutoff");
+            material.alphaCutoff = static_cast<float>(alphaCutoff.Factor());
         }
         if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
-            auto color = mat.additionalValues["emissiveFactor"].ColorFactor();
-            material.emissiveFactor = moon::math::Vector<float, 4>(
-                static_cast<float>(color[0]),
-                static_cast<float>(color[1]),
-                static_cast<float>(color[2]), 1.0f);
+            const auto& factor = mat.additionalValues.at("emissiveFactor").ColorFactor();
+            material.emissiveFactor = moon::math::Vector<float, 4>(factor[0], factor[1], factor[2], 1.0f);
         }
 
         // Extensions
@@ -443,14 +423,11 @@ void GltfModel::loadMaterials(tinygltf::Model &gltfModel)
                 }
             }
         }
-
         materials.push_back(material);
     }
-    // Push a default material at the end of the list for meshes with no material assigned
-    materials.push_back(moon::interfaces::Material());
 }
 
-void GltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer)
+void GltfModel::loadFromFile(const moon::utils::PhysicalDevice& device, VkCommandBuffer commandBuffer)
 {
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF gltfContext;
@@ -459,13 +436,13 @@ void GltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
         gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename.string().c_str()) :
         gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.string().c_str()))
     {
-        loadTextures(physicalDevice,device,commandBuffer,gltfModel);
+        loadTextures(device, commandBuffer, gltfModel);
         loadMaterials(gltfModel);
 
         for(auto& instance: instances){
             uint32_t indexStart = 0;
             for (const auto& nodeIndex: gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0].nodes) {
-                loadNode(&instance, physicalDevice, device, nullptr, nodeIndex, gltfModel, indexStart);
+                loadNode(&instance, device.instance, device.getLogical(), nullptr, nodeIndex, gltfModel, indexStart);
             }
         }
 
@@ -487,40 +464,33 @@ void GltfModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, V
             }
         }
 
-        createBuffer(physicalDevice, device, commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexStaging, vertices);
-        createBuffer(physicalDevice, device, commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexStaging, indices);
+        createBuffer(device.instance, device.getLogical(), commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexStaging, vertices);
+        createBuffer(device.instance, device.getLogical(), commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexStaging, indices);
     }
 }
 
-void GltfModel::createDescriptorPool(VkDevice device)
-{
-    uint32_t imageSamplerCount = std::accumulate(materials.begin(), materials.end(), 0, [](const uint32_t& count, const auto& material){
-        static_cast<void>(material);
-        return count + 5;
-    });
-    uint32_t meshCount = std::accumulate(instances.begin(), instances.end(), 0, [](const uint32_t& count, const auto& instance){
-        return count + std::accumulate(instance.nodes.begin(), instance.nodes.end(), 0, [](const uint32_t& count, Node* node){
+void GltfModel::createDescriptorPool() {
+    uint32_t materialsCount = std::accumulate(materials.begin(), materials.end(), 0, [](const uint32_t& count, const auto&) { return count + 5;});
+    uint32_t nodesCount = std::accumulate(instances.begin(), instances.end(), 0, [](const uint32_t& count, const auto& instance) {
+        return count + std::accumulate(instance.nodes.begin(), instance.nodes.end(), 0, [](const uint32_t& count, Node* node) {
             return count + node->meshCount();
         });
     });
 
     std::vector<VkDescriptorPoolSize> poolSize;
-    poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, meshCount});
-    poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageSamplerCount});
+    poolSize.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nodesCount });
+    poolSize.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialsCount });
 
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
         poolInfo.pPoolSizes = poolSize.data();
-        poolInfo.maxSets = std::max(meshCount, imageSamplerCount);
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
+        poolInfo.maxSets = std::max(materialsCount, nodesCount);
+    CHECK(descriptorPool.create(device, poolInfo));
 }
 
-void GltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* emptyTexture)
+void GltfModel::createDescriptorSet()
 {
-    nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
-    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
-
     for(auto& instance : instances){
         for (auto& node : instance.nodes){
             createNodeDescriptorSet(device, node , descriptorPool, nodeDescriptorSetLayout);
@@ -528,28 +498,29 @@ void GltfModel::createDescriptorSet(VkDevice device, moon::utils::Texture* empty
     }
 
     for (auto &material : materials){
-        createMaterialDescriptorSet(device, &material, emptyTexture, descriptorPool, materialDescriptorSetLayout);
+        createMaterialDescriptorSet(device, &material, descriptorPool, materialDescriptorSetLayout);
     }
 }
 
 void GltfModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool)
 {
-    if(!created)
+    if(this->device == VK_NULL_HANDLE)
     {
         CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
         CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
         CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
 
-        emptyTexture = createEmptyTexture(device, commandPool);
         this->device = device.getLogical();
 
         VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
-        loadFromFile(device.instance, device.getLogical(), commandBuffer);
+        loadFromFile(device, commandBuffer);
         moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
-        destroyStagingBuffer(device.getLogical());
-        createDescriptorPool(device.getLogical());
-        createDescriptorSet(device.getLogical(), &emptyTexture);
-        created = true;
+        destroyCache();
+
+        nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device.getLogical());
+        materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device.getLogical());
+        createDescriptorPool();
+        createDescriptorSet();
     }
 }
 

@@ -25,6 +25,7 @@ struct Attachment{
     VkImageLayout   layout{VK_IMAGE_LAYOUT_UNDEFINED};
     VkDevice        device{ VK_NULL_HANDLE };
 
+    ~Attachment();
     Attachment() = default;
     Attachment(const Attachment & other) = delete;
     Attachment& operator=(const Attachment& other) = delete;
@@ -43,8 +44,6 @@ struct Attachment{
     }
 
     Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage);
-
-    ~Attachment();
 };
 
 class Attachments{

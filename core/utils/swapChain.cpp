@@ -69,24 +69,14 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
     for (auto& attachment: attachments){
         attachment.device = device->getLogical();
         attachment.image = images[&attachment - &attachments[0]];
-        result = texture::createView(   device->getLogical(),
-                                        VK_IMAGE_VIEW_TYPE_2D,
-                                        surfaceFormat.format,
-                                        VK_IMAGE_ASPECT_COLOR_BIT,
-                                        1,
-                                        0,
-                                        1,
-                                        attachment.image,
-                                        &attachment.imageView);
-        CHECK(result);
+        CHECK(result = attachment.imageView.create(device->getLogical(), attachment.image, VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1));
     }
 
     VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    result = vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool);
-    CHECK(result);
+    CHECK(result = vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool));
 
     return result;
 }

@@ -512,9 +512,12 @@ void vkDefault::Sampler::destroy() {
 VKDEFAULT_MAKE_SWAP(Sampler)
 VKDEFAULT_MAKE_DESCRIPTOR(Sampler, VkSampler)
 
-VkResult vkDefault::DescriptorPool::create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount) {
+VkResult vkDefault::DescriptorPool::create(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo) {
     VKDEFAULT_RESET()
+    return vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptor);
+}
 
+VkResult vkDefault::DescriptorPool::create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount) {
     uint32_t maxSets = 0;
     std::vector<VkDescriptorPoolSize> poolSizes;
     for (const vkDefault::DescriptorSetLayout* descriptorSetLayout : descriptorSetLayouts) {
@@ -531,7 +534,7 @@ VkResult vkDefault::DescriptorPool::create(const VkDevice& device, const std::ve
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = maxSets;
-    return vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptor);
+    return create(device, poolInfo);
 }
 
 void vkDefault::DescriptorPool::destroy() {
@@ -540,5 +543,26 @@ void vkDefault::DescriptorPool::destroy() {
 
 VKDEFAULT_MAKE_SWAP(DescriptorPool)
 VKDEFAULT_MAKE_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
+
+
+VkResult vkDefault::ImageView::create(
+    const VkDevice& device,
+    const VkImage& image,
+    VkImageViewType type,
+    VkFormat format,
+    VkImageAspectFlags aspectFlags,
+    uint32_t mipLevels,
+    uint32_t baseArrayLayer,
+    uint32_t layerCount) {
+    VKDEFAULT_RESET()
+    return utils::texture::createView(device, type, format, aspectFlags, mipLevels, baseArrayLayer, layerCount, image, &descriptor);
+}
+
+void vkDefault::ImageView::destroy() {
+    if (descriptor) vkDestroyImageView(device, release(descriptor), nullptr);
+}
+
+VKDEFAULT_MAKE_SWAP(ImageView)
+VKDEFAULT_MAKE_DESCRIPTOR(ImageView, VkImageView)
 
 }

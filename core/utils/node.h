@@ -15,9 +15,7 @@ struct Stage{
     VkQueue queue{VK_NULL_HANDLE};
     VkFence fence{VK_NULL_HANDLE};
 
-    Stage(  std::vector<VkCommandBuffer> commandBuffers,
-            VkPipelineStageFlags waitStages,
-            VkQueue queue);
+    Stage(std::vector<VkCommandBuffer> commandBuffers, VkPipelineStageFlags waitStages, VkQueue queue);
 
     VkResult submit();
 };
@@ -26,10 +24,17 @@ struct Node{
     std::vector<Stage> stages;
     utils::vkDefault::Semaphores signalSemaphores;
     Node* next{nullptr};
+    VkDevice device{VK_NULL_HANDLE};
 
     Node() = default;
-    Node(const std::vector<Stage>& stages, Node* next);
-    void destroy(VkDevice device);
+    Node(const Node&) = delete;
+    Node& operator=(const Node&) = delete;
+
+    void swap(Node&);
+    Node(Node&&);
+    Node& operator=(Node&&);
+    Node(VkDevice device, const std::vector<Stage>& stages, Node* next);
+    ~Node();
 
     Node* back();
 
@@ -37,7 +42,7 @@ struct Node{
     void setExternalFence(const std::vector<VkFence>& externalFence);
     std::vector<std::vector<VkSemaphore>> getBackSemaphores();
 
-    VkResult createSemaphores(VkDevice device);
+    VkResult createSemaphores();
     void submit();
 };
 

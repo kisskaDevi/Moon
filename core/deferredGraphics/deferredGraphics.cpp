@@ -82,17 +82,12 @@ void DeferredGraphics::destroy(){
 
     destroyCommandPool();
 
-    for(auto& node: nodes){
-        node.destroy(device->getLogical());
-    }
-
-    for(auto& [_,texture] : emptyTextures){
-        texture.destroy(device->getLogical());
-    }
+    emptyTextures.clear();
 
     for(auto& [_,workflow]: workflows){
         delete workflow;
     }
+    workflows.clear();
 
     deferredLink->destroy();
 
@@ -111,14 +106,12 @@ void DeferredGraphics::createCommandPool()
 
 void DeferredGraphics::create()
 {
-    workflows.clear();
     aDatabase.destroy();
-    nodes.clear();
 
     createCommandPool();
 
-    emptyTextures["black"] = moon::utils::createEmptyTexture(*device, commandPool);
-    emptyTextures["white"] = moon::utils::createEmptyTexture(*device, commandPool, false);
+    emptyTextures["black"] = moon::utils::Texture::empty(*device, commandPool);
+    emptyTextures["white"] = moon::utils::Texture::empty(*device, commandPool, false);
     aDatabase.addEmptyTexture("black", &emptyTextures["black"]);
     aDatabase.addEmptyTexture("white", &emptyTextures["white"]);
 
@@ -303,30 +296,29 @@ void DeferredGraphics::createCommandBuffers(){
 
     nodes.resize(imageCount);
     for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
-        nodes[imageIndex] = moon::utils::Node({
+        nodes[imageIndex] = moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node({
+        }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)),
             moon::utils::Stage(  {workflows["Skybox"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node({
+        }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
             moon::utils::Stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node({
+        }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
             moon::utils::Stage(  {workflows["SSLR"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node({
+        }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node({
+        }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["Selector"]->getCommandBuffer(imageIndex),
-                     workflows["SSAO"]->getCommandBuffer(imageIndex),
-                     workflows["Bloom"]->getCommandBuffer(imageIndex),
-                     workflows["Blur"]->getCommandBuffer(imageIndex),
-                     workflows["BoundingBox"]->getCommandBuffer(imageIndex),
-                     workflows["PostProcessing"]->getCommandBuffer(imageIndex)},
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+                                  workflows["SSAO"]->getCommandBuffer(imageIndex),
+                                  workflows["Bloom"]->getCommandBuffer(imageIndex),
+                                  workflows["Blur"]->getCommandBuffer(imageIndex),
+                                  workflows["BoundingBox"]->getCommandBuffer(imageIndex),
+                                  workflows["PostProcessing"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, nullptr))))));
 
-        nodes[imageIndex].createSemaphores(device->getLogical());
+        nodes[imageIndex].createSemaphores();
     }
 }
 
@@ -418,7 +410,7 @@ void DeferredGraphics::create(moon::interfaces::Model *pModel){
 }
 
 void DeferredGraphics::destroy(moon::interfaces::Model* pModel){
-    pModel->destroy(device->getLogical());
+    pModel->destroy();
 }
 
 void DeferredGraphics::bind(moon::interfaces::Camera* cameraObject){

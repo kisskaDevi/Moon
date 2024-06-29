@@ -22,17 +22,14 @@ BaseObject::~BaseObject(){
 
 void BaseObject::destroy(VkDevice device)
 {
-    destroyBuffers(device, uniformBuffersHost);
-    destroyBuffers(device, uniformBuffersDevice);
-
-    if(descriptorPool )     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
+    if(descriptorPool)     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
     created = false;
 }
 
 void BaseObject::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
-        buffer.updateFlag = true;
+        buffer.raiseFlag();
     }
 }
 
@@ -158,45 +155,28 @@ void BaseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice 
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-        moon::utils::buffer::create(   physicalDevice,
-                        device,
-                        sizeof(UniformBuffer),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        &buffer.instance,
-                        &buffer.memory);
-        CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(UniformBuffer), 0, &buffer.map));
-
-        moon::utils::Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
+        buffer.create(physicalDevice, device, sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-        moon::utils::buffer::create(   physicalDevice,
-                        device,
-                        sizeof(UniformBuffer),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        &buffer.instance,
-                        &buffer.memory);
-
-        moon::utils::Memory::instance().instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+        buffer.create(physicalDevice, device, sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
 void BaseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
-    if(uniformBuffersHost[frameNumber].updateFlag){
+    if(auto& buffer = uniformBuffersHost[frameNumber]; buffer.dropFlag()){
         UniformBuffer ubo{};
             ubo.modelMatrix = transpose(modelMatrix);
             ubo.constantColor = constantColor;
             ubo.colorFactor = colorFactor;
             ubo.bloomColor = bloomColor;
             ubo.bloomFactor = bloomFactor;
-        std::memcpy(uniformBuffersHost[frameNumber].map, &ubo, sizeof(ubo));
+        buffer.copy(&ubo);
 
-        uniformBuffersHost[frameNumber].updateFlag = false;
-
-        moon::utils::buffer::copy(commandBuffer, sizeof(UniformBuffer), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+        moon::utils::buffer::copy(commandBuffer, sizeof(UniformBuffer), buffer, uniformBuffersDevice[frameNumber]);
     }
 }
 
@@ -229,7 +209,7 @@ void BaseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffersDevice[i].instance;
+            bufferInfo.buffer = uniformBuffersDevice[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBuffer);
 
@@ -322,7 +302,7 @@ void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffersDevice[i].instance;
+            bufferInfo.buffer = uniformBuffersDevice[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBuffer);
 

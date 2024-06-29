@@ -25,15 +25,12 @@ void RayTracingGraphics::ImageResource::create(const std::string& id, const moon
 
     host = new uint32_t[imageInfo.Extent.width * imageInfo.Extent.height];
 
-    moon::utils::buffer::create(
+    hostDevice.create(
         phDevice.instance,
         phDevice.getLogical(),
         sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        &hostDevice.instance,
-        &hostDevice.memory);
-    vkMapMemory(phDevice.getLogical(), hostDevice.memory, 0, sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height, 0, &hostDevice.map);
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     device.create(
         phDevice.instance,
@@ -47,16 +44,15 @@ void RayTracingGraphics::ImageResource::destroy(const moon::utils::PhysicalDevic
         delete[] host;
         host = nullptr;
     }
-    hostDevice.destroy(phDevice.getLogical());
 }
 
 void RayTracingGraphics::ImageResource::moveFromHostToHostDevice(VkExtent2D extent){
-    std::memcpy(hostDevice.map, host, sizeof(uint32_t) * extent.width * extent.height);
+    hostDevice.copy(host);
 }
 
 void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex){
     moon::utils::texture::transitionLayout(commandBuffer, device.image(imageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 0, 1);
-    moon::utils::texture::copy(commandBuffer, hostDevice.instance, device.image(imageIndex), {extent.width, extent.height, 1}, 1);
+    moon::utils::texture::copy(commandBuffer, hostDevice, device.image(imageIndex), {extent.width, extent.height, 1}, 1);
     moon::utils::texture::transitionLayout(commandBuffer, device.image(imageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
 }
 
@@ -114,8 +110,6 @@ void RayTracingGraphics::create()
 }
 
 void RayTracingGraphics::destroy() {
-    emptyTexture.destroy(device->getLogical());
-
     color.destroy(*device);
     bloom.destroy(*device);
 

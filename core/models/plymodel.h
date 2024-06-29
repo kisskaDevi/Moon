@@ -21,7 +21,7 @@ private:
     VkDevice device{VK_NULL_HANDLE};
 
     moon::utils::Buffer vertices, indices;
-    moon::utils::Buffer vertexStaging, indexStaging;
+    moon::utils::Buffer vertexCache, indexCache;
 
     uint32_t indexCount{0};
 

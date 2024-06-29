@@ -123,23 +123,21 @@ GLFWwindow* SwapChain::getWindow(){
 std::vector<uint32_t> SwapChain::makeScreenshot(uint32_t i) const {
     std::vector<uint32_t> buffer(imageInfo.Extent.height * imageInfo.Extent.width, 0);
 
-    Buffer stagingBuffer;
-    buffer::create(device->instance, device->getLogical(), sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer.instance, &stagingBuffer.memory);
+    Buffer cache;
+    cache.create(device->instance, device->getLogical(), sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     VkCommandBuffer commandBuffer = singleCommandBuffer::create(device->getLogical(),commandPool);
     texture::transitionLayout(commandBuffer, attachments[i].image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
-    texture::copy(commandBuffer, attachments[i].image, stagingBuffer.instance, { imageInfo.Extent.width, imageInfo.Extent.height, 1}, 1);
+    texture::copy(commandBuffer, attachments[i].image, cache, { imageInfo.Extent.width, imageInfo.Extent.height, 1}, 1);
     texture::transitionLayout(commandBuffer, attachments[i].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_REMAINING_MIP_LEVELS, 0, 1);
     singleCommandBuffer::submit(device->getLogical(),device->getQueue(0,0),commandPool,&commandBuffer);
 
     void* map = nullptr;
-    VkResult result = vkMapMemory(device->getLogical(), stagingBuffer.memory, 0, sizeof(uint32_t) * buffer.size(), 0, &map);
+    VkResult result = vkMapMemory(device->getLogical(), cache, 0, sizeof(uint32_t) * buffer.size(), 0, &map);
     debug::checkResult(result, std::string("in file ") + std::string(__FILE__) + std::string(" in line ") + std::to_string(__LINE__));
 
     std::memcpy(buffer.data(), map, sizeof(uint32_t) * buffer.size());
-    vkUnmapMemory(device->getLogical(), stagingBuffer.memory);
-
-    stagingBuffer.destroy(device->getLogical());
+    vkUnmapMemory(device->getLogical(), cache);
 
     return buffer;
 }

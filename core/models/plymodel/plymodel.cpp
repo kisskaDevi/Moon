@@ -38,29 +38,24 @@ PlyModel::~PlyModel() {
 }
 
 void PlyModel::destroy() {
-    vertices.destroy(device);
-    indices.destroy(device);
-
     if(descriptorPool != VK_NULL_HANDLE){
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
         descriptorPool = VK_NULL_HANDLE;
     }
 
-    uniformBuffer.destroy(device);
-
-    created = false;
+    device = VK_NULL_HANDLE;
 }
 
 void PlyModel::destroyCache() {
-    vertexStaging.destroy(device);
-    indexStaging.destroy(device);
+    vertexCache = utils::Buffer();
+    indexCache = utils::Buffer();
 }
 
 const VkBuffer* PlyModel::getVertices() const {
-    return &vertices.instance;
+    return vertices;
 }
 const VkBuffer* PlyModel::getIndices() const {
-    return &indices.instance;
+    return indices;
 }
 const moon::math::Vector<float,3> PlyModel::getMaxSize() const {
     return maxSize;
@@ -135,21 +130,13 @@ void PlyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
         }
     }
 
-    createBuffer(physicalDevice, device, commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexStaging, this->vertices);
-    createBuffer(physicalDevice, device, commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexStaging, indices);
+    utils::createModelBuffer(physicalDevice, device, commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexCache, this->vertices);
+    utils::createModelBuffer(physicalDevice, device, commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexCache, indices);
 
     this->uniformBlock.mat = moon::math::Matrix<float,4,4>(1.0f);
-    moon::utils::buffer::create( physicalDevice,
-                    device,
-                    sizeof(uniformBlock),
-                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                    &uniformBuffer.instance,
-                    &uniformBuffer.memory);
-    CHECK(vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map));
-    std::memcpy(uniformBuffer.map, &uniformBlock, sizeof(uniformBlock));
-
-    moon::utils::Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
+    uniformBuffer.create(physicalDevice, device, sizeof(uniformBlock), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    uniformBuffer.copy(&uniformBlock);
+    moon::utils::Memory::instance().nameMemory(uniformBuffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", plyModel::loadFromFile, uniformBuffer");
 }
 
 void PlyModel::createDescriptorPool() {
@@ -180,7 +167,7 @@ void PlyModel::createDescriptorSet() {
             descriptorSetAllocInfo.descriptorSetCount = 1;
         CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &uniformBuffer.descriptorSet));
 
-        VkDescriptorBufferInfo bufferInfo{ uniformBuffer.instance, 0, sizeof(uniformBlock)};
+        VkDescriptorBufferInfo bufferInfo{ uniformBuffer, 0, sizeof(uniformBlock)};
 
         VkWriteDescriptorSet writeDescriptorSet{};
             writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -249,7 +236,7 @@ void PlyModel::createDescriptorSet() {
 
 void PlyModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool)
 {
-    if(!created)
+    if(this->device)
     {
         CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
         CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
@@ -264,7 +251,6 @@ void PlyModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool c
         destroyCache();
         createDescriptorPool();
         createDescriptorSet();
-        created = true;
     }
 }
 

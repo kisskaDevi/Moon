@@ -2,6 +2,7 @@
 #include "operations.h"
 
 #include <glfw3.h>
+#include <iostream>
 
 namespace moon::utils {
 
@@ -564,7 +565,6 @@ void vkDefault::ImageView::destroy() {
 VKDEFAULT_MAKE_SWAP(ImageView)
 VKDEFAULT_MAKE_DESCRIPTOR(ImageView, VkImageView)
 
-
 VkResult vkDefault::Image::create(
     VkPhysicalDevice                physicalDevice,
     VkDevice                        device,
@@ -595,4 +595,64 @@ vkDefault::Image::operator const VkDeviceMemory* () const {
 
 VKDEFAULT_MAKE_SWAP(Image)
 VKDEFAULT_MAKE_DESCRIPTOR(Image, VkImage)
+
+void vkDefault::Buffer::destroy() {
+    utils::buffer::destroy(device, descriptor, memory);
+}
+
+VkResult vkDefault::Buffer::create(
+    VkPhysicalDevice                physicalDevice,
+    VkDevice                        device,
+    VkDeviceSize                    size,
+    VkBufferUsageFlags              usage,
+    VkMemoryPropertyFlags           properties) {
+    VKDEFAULT_RESET()
+    memorysize = size;
+    VkResult result = utils::buffer::create(physicalDevice, device, size, usage, properties, &descriptor, &memory);
+    if (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT || properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+        result = std::max(result, vkMapMemory(device, memory, 0, size, 0, &memorymap));
+    }
+    return result;
+}
+
+void vkDefault::Buffer::copy(const void* data) {
+    std::memcpy(memorymap, data, memorysize);
+}
+
+void vkDefault::Buffer::copy(const void* data, uint32_t offset, uint32_t size) {
+    if (memorymap) {
+        vkUnmapMemory(device, memory);
+    }
+    CHECK(vkMapMemory(device, memory, offset, size, 0, &memorymap));
+    std::memcpy(memorymap, data, size);
+}
+
+size_t vkDefault::Buffer::size() const {
+    return memorysize;
+}
+
+void vkDefault::Buffer::raiseFlag() {
+    updateFlag = true;
+}
+
+bool vkDefault::Buffer::dropFlag() {
+    bool temp = updateFlag;
+    updateFlag = false;
+    return temp;
+}
+
+void* &vkDefault::Buffer::map() {
+    return memorymap;
+}
+
+vkDefault::Buffer::operator const VkDeviceMemory& () const {
+    return memory;
+}
+
+vkDefault::Buffer::operator const VkDeviceMemory* () const {
+    return &memory;
+}
+
+VKDEFAULT_MAKE_SWAP(Buffer)
+VKDEFAULT_MAKE_DESCRIPTOR(Buffer, VkBuffer)
 }

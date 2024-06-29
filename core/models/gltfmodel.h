@@ -102,7 +102,7 @@ private:
     VkDevice device{VK_NULL_HANDLE};
 
     moon::utils::Buffer vertices, indices;
-    moon::utils::Buffer vertexStaging, indexStaging;
+    moon::utils::Buffer vertexCache, indexCache;
 
     moon::utils::vkDefault::DescriptorSetLayout nodeDescriptorSetLayout;
     moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;

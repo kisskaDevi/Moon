@@ -35,9 +35,7 @@ TextureImage& TextureImage::operator=(TextureImage&& other) noexcept {
     return *this;
 }
 
-TextureImage::~TextureImage() {
-    cache.destroy(device);
-}
+TextureImage::~TextureImage() {}
 
 void TextureImage::makeCache(
         VkPhysicalDevice            physicalDevice,
@@ -47,14 +45,11 @@ void TextureImage::makeCache(
     this->device = device;
     if(width == -1 || height == -1 || channels == -1) throw std::runtime_error("[TextureImage::makeCache] : texture sizes not init");
 
-    buffer::create(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &cache.instance, &cache.memory);
-    Memory::instance().nameMemory(cache.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", TextureImage::makeCache, cache");
+    cache.create(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    Memory::instance().nameMemory(cache, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", TextureImage::makeCache, cache");
 
     for (uint32_t i = 0, ds = 4 * width * height; i < buffers.size(); i++) {
-        CHECK(vkMapMemory(device, cache.memory, i * ds, ds, 0, &cache.map));
-        std::memcpy(cache.map, buffers[i], ds);
-        vkUnmapMemory(device, cache.memory);
-        cache.map = nullptr;
+        cache.copy(buffers[i], i * ds, ds);
     }
 }
 
@@ -83,7 +78,7 @@ VkResult TextureImage::create(
     Memory::instance().nameMemory(image, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", TextureImage::create, image");
 
     texture::transitionLayout(commandBuffer, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
-    texture::copy(commandBuffer, cache.instance, image, {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1}, imageCount);
+    texture::copy(commandBuffer, cache, image, {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1}, imageCount);
     if(mipLevels == 1){
         texture::transitionLayout(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, 0, imageCount);
     } else {
@@ -132,7 +127,7 @@ Texture& Texture::operator=(Texture&& other) noexcept {
 }
 
 void Texture::destroyCache(){
-    image.cache.destroy(image.device);
+    image.cache = Buffer();
 }
 
 VkResult Texture::create(

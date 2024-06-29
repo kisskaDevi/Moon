@@ -87,20 +87,11 @@ Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t ve
 Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, moon::math::Matrix<float,4,4> matrix)
 {
     this->uniformBlock.matrix = matrix;
-    moon::utils::buffer::create( physicalDevice,
-                    device,
-                    sizeof(uniformBlock),
-                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                    &uniformBuffer.instance,
-                    &uniformBuffer.memory);
-    CHECK(vkMapMemory(device, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.map));
-
-    moon::utils::Memory::instance().nameMemory(uniformBuffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Mesh::Mesh, uniformBuffer");
+    uniformBuffer.create(physicalDevice, device, sizeof(uniformBlock), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    moon::utils::Memory::instance().nameMemory(uniformBuffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Mesh::Mesh, uniformBuffer");
 };
 
 void Mesh::destroy(VkDevice device){
-    uniformBuffer.destroy(device);
     for (Primitive* p : primitives){
         delete p;
     }
@@ -114,7 +105,7 @@ void Node::update() {
             mesh->uniformBlock.jointMatrix[i] = transpose(inverse(getMatrix(this)) * getMatrix(skin->joints[i]) * skin->inverseBindMatrices[i]);
         }
         mesh->uniformBlock.jointcount = static_cast<float>(numJoints);
-        std::memcpy(mesh->uniformBuffer.map, &mesh->uniformBlock, sizeof(mesh->uniformBlock));
+        mesh->uniformBuffer.copy(&mesh->uniformBlock);
     }
     for (auto& child : children){
         child->update();

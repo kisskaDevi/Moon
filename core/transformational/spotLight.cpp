@@ -34,9 +34,6 @@ SpotLight::~SpotLight(){
 
 void SpotLight::destroy(VkDevice device)
 {
-    destroyBuffers(device, uniformBuffersHost);
-    destroyBuffers(device, uniformBuffersDevice);
-
     if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
 
     created = false;
@@ -45,7 +42,7 @@ void SpotLight::destroy(VkDevice device)
 void SpotLight::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
 {
     for (auto& buffer: uniformBuffers){
-        buffer.updateFlag = true;
+        buffer.raiseFlag();
     }
 }
 
@@ -209,28 +206,13 @@ void SpotLight::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice d
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-        moon::utils::buffer::create(  physicalDevice,
-                        device,
-                        sizeof(LightBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        &buffer.instance,
-                        &buffer.memory);
-        CHECK(vkMapMemory(device, buffer.memory, 0, sizeof(LightBufferObject), 0, &buffer.map));
-
-        moon::utils::Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
+        buffer.create(physicalDevice, device, sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-        moon::utils::buffer::create(  physicalDevice,
-                        device,
-                        sizeof(LightBufferObject),
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        &buffer.instance,
-                        &buffer.memory);
-
-        moon::utils::Memory::instance().nameMemory(buffer.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
+        buffer.create(physicalDevice, device, sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
@@ -238,19 +220,16 @@ void SpotLight::update(
     uint32_t frameNumber,
     VkCommandBuffer commandBuffer)
 {
-    if(uniformBuffersHost[frameNumber].updateFlag){
-        LightBufferObject buffer{};
-            buffer.proj = transpose(projectionMatrix);
-            buffer.view = transpose(inverse(modelMatrix));
-            buffer.projView = transpose(projectionMatrix * inverse(modelMatrix));
-            buffer.position = modelMatrix * moon::math::Vector<float,4>(0.0f,0.0f,0.0f,1.0f);
-            buffer.lightColor = lightColor;
-            buffer.lightProp = moon::math::Vector<float,4>(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
-        std::memcpy(uniformBuffersHost[frameNumber].map, &buffer, sizeof(buffer));
-
-        uniformBuffersHost[frameNumber].updateFlag = false;
-
-        moon::utils::buffer::copy(commandBuffer, sizeof(LightBufferObject), uniformBuffersHost[frameNumber].instance, uniformBuffersDevice[frameNumber].instance);
+    if(auto& buffer = uniformBuffersHost[frameNumber]; buffer.dropFlag()){
+        LightBufferObject lightBuffer{};
+            lightBuffer.proj = transpose(projectionMatrix);
+            lightBuffer.view = transpose(inverse(modelMatrix));
+            lightBuffer.projView = transpose(projectionMatrix * inverse(modelMatrix));
+            lightBuffer.position = modelMatrix * moon::math::Vector<float,4>(0.0f,0.0f,0.0f,1.0f);
+            lightBuffer.lightColor = lightColor;
+            lightBuffer.lightProp = moon::math::Vector<float,4>(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
+        buffer.copy(&lightBuffer);
+        moon::utils::buffer::copy(commandBuffer, sizeof(LightBufferObject), buffer, uniformBuffersDevice[frameNumber]);
     }
 }
 
@@ -312,7 +291,7 @@ void SpotLight::updateDescriptorSets(VkDevice device, uint32_t imageCount)
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
         VkDescriptorBufferInfo lightBufferInfo{};
-            lightBufferInfo.buffer = uniformBuffersDevice[i].instance;
+            lightBufferInfo.buffer = uniformBuffersDevice[i];
             lightBufferInfo.offset = 0;
             lightBufferInfo.range = sizeof(LightBufferObject);
         std::vector<VkWriteDescriptorSet> bufferDescriptorWrites;

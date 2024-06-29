@@ -40,6 +40,7 @@ template<typename type> type period(clk::time_point time){
 
 int main()
 {
+
     uint32_t WIDTH = 1024;
     uint32_t HEIGHT = 720;
     const std::filesystem::path ExternalPath = std::filesystem::absolute(std::filesystem::path(__FILE__).replace_filename("../../"));
@@ -55,7 +56,7 @@ int main()
 #endif
     testScene.create(WIDTH,HEIGHT);
 
-    //Memory::instance().status();
+    // moon::utils::Memory::instance().status();
 
     for(float time = 1.0f; !glfwWindowShouldClose(window);){
         if(auto start = clk::now(); app.checkNextFrame() != VK_ERROR_OUT_OF_DATE_KHR) {
@@ -92,7 +93,7 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, moon::graphicsManager::G
 
     testScene->resize(width, height);
 
-    //Memory::instance().status();
+    // moon::utils::Memory::instance().status();
 
     framebufferResized = false;
 

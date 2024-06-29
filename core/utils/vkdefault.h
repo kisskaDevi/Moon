@@ -285,5 +285,32 @@ private:
 	operator const VkDeviceMemory* () const;
 };
 
+class Buffer {
+private:
+	VkDeviceMemory memory{ VK_NULL_HANDLE };
+	bool updateFlag{ true };
+	void* memorymap{ nullptr };
+	size_t memorysize{ 0 };
+
+	VKDEFAULT_INIT_DESCRIPTOR(Buffer, VkBuffer);
+
+	VkResult create(
+		VkPhysicalDevice                physicalDevice,
+		VkDevice                        device,
+		VkDeviceSize                    size,
+		VkBufferUsageFlags              usage,
+		VkMemoryPropertyFlags           properties);
+
+	void copy(const void* data);
+	void copy(const void* data, uint32_t offset, uint32_t size);
+	size_t size() const;
+	void* &map();
+	void raiseFlag();
+	bool dropFlag();
+
+	operator const VkDeviceMemory& () const;
+	operator const VkDeviceMemory* () const;
+};
+
 }
 #endif // VKDEFAULT_H

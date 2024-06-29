@@ -77,7 +77,7 @@ namespace {
                 descriptorSetAllocInfo.descriptorSetCount = 1;
             CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet));
 
-            VkDescriptorBufferInfo bufferInfo{ node->mesh->uniformBuffer.instance, 0, sizeof(Mesh::uniformBlock)};
+            VkDescriptorBufferInfo bufferInfo{ node->mesh->uniformBuffer, 0, sizeof(Mesh::uniformBlock)};
 
             VkWriteDescriptorSet writeDescriptorSet{};
                 writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -236,9 +236,6 @@ GltfModel::~GltfModel() {
 
 void GltfModel::destroy()
 {
-    vertices.destroy(device);
-    indices.destroy(device);
-
     for(auto& instance : instances){
         for (auto& node : instance.nodes){
             node->destroy(device);
@@ -260,16 +257,16 @@ void GltfModel::destroy()
 void GltfModel::destroyCache()
 {
     for(auto& texture: textures) texture.destroyCache();
-    vertexStaging.destroy(device);
-    indexStaging.destroy(device);
+    vertexCache = utils::Buffer();
+    indexCache = utils::Buffer();
 }
 
 const VkBuffer* GltfModel::getVertices() const{
-    return &vertices.instance;
+    return vertices;
 }
 
 const VkBuffer* GltfModel::getIndices() const{
-    return &indices.instance;
+    return indices;
 }
 
 void GltfModel::loadSkins(const tinygltf::Model &gltfModel){
@@ -464,8 +461,8 @@ void GltfModel::loadFromFile(const moon::utils::PhysicalDevice& device, VkComman
             }
         }
 
-        createBuffer(device.instance, device.getLogical(), commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexStaging, vertices);
-        createBuffer(device.instance, device.getLogical(), commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexStaging, indices);
+        utils::createModelBuffer(device.instance, device.getLogical(), commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexCache, vertices);
+        utils::createModelBuffer(device.instance, device.getLogical(), commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexCache, indices);
     }
 }
 

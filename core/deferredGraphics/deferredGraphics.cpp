@@ -91,7 +91,6 @@ void DeferredGraphics::destroy(){
 
     deferredLink->destroy();
 
-    storageBuffersHost.destroy(device->getLogical());
     bDatabase.buffersMap.erase("storage");
 }
 
@@ -341,9 +340,7 @@ void DeferredGraphics::update(uint32_t imageIndex) {
 }
 
 void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) {
-    this->offset = offset;
-    this->size = size;
-    deferredLink->setPositionInWindow(offset, size);
+    deferredLink->setPositionInWindow(this->offset = offset, this->size = size);
 }
 
 void DeferredGraphics::updateCommandBuffer(uint32_t imageIndex){
@@ -380,13 +377,10 @@ void DeferredGraphics::updateBuffers(uint32_t imageIndex){
 }
 
 void DeferredGraphics::createStorageBuffers(uint32_t imageCount){
-    storageBuffersHost.create(device->instance,
-                              device->getLogical(),
-                              sizeof(StorageBufferObject),
-                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                              imageCount);
-    storageBuffersHost.map(device->getLogical());
+    storageBuffersHost.resize(imageCount);
+    for (auto& buffer : storageBuffersHost) {
+        buffer.create(device->instance, device->getLogical(), sizeof(StorageBufferObject), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    }
     bDatabase.addBufferData("storage", &storageBuffersHost);
 }
 
@@ -395,12 +389,12 @@ void DeferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& m
         StorageUBO.mousePosition = moon::math::Vector<float,4>(mousex,mousey,0.0f,0.0f);
         StorageUBO.number = std::numeric_limits<uint32_t>::max();
         StorageUBO.depth = 1.0f;
-    std::memcpy(storageBuffersHost.instances[currentImage].map, &StorageUBO, sizeof(StorageUBO));
+    storageBuffersHost[currentImage].copy(&StorageUBO);
 }
 
 void DeferredGraphics::readStorageBuffer(uint32_t currentImage, uint32_t& primitiveNumber, float& depth){
     StorageBufferObject storageBuffer{};
-    std::memcpy((void*)&storageBuffer, (void*)storageBuffersHost.instances[currentImage].map, sizeof(StorageBufferObject));
+    std::memcpy((void*)&storageBuffer, (void*)storageBuffersHost[currentImage].map(), sizeof(StorageBufferObject));
     primitiveNumber = storageBuffer.number;
     depth = storageBuffer.depth;
 }

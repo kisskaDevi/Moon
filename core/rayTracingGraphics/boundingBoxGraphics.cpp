@@ -160,7 +160,7 @@ void BoundingBoxGraphics::createDescriptorSets(){
     for (uint32_t i = 0; i < image.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = cameraBuffers.instances[i].instance;
+        bufferInfo.buffer = cameraBuffers[i];
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(CameraBuffer);
 
@@ -186,8 +186,6 @@ void BoundingBoxGraphics::destroy(){
     if(pipelineLayout)      {vkDestroyPipelineLayout(device, pipelineLayout,nullptr); pipelineLayout = VK_NULL_HANDLE;}
     if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
     if(descriptorPool)      {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
-
-    cameraBuffers.destroy(device);
 }
 
 void BoundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath){
@@ -199,8 +197,10 @@ void BoundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
     vertShaderPath = shadersPath / "boundingBox/boundingBoxVert.spv";
     fragShaderPath = shadersPath / "boundingBox/boundingBoxFrag.spv";
 
-    cameraBuffers.create(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, image.Count);
-    cameraBuffers.map(device);
+    cameraBuffers.resize(image.Count);
+    for(auto& buffer: cameraBuffers) {
+        buffer.create(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    }
 
     createAttachments();
     createRenderPass();
@@ -230,7 +230,7 @@ void BoundingBoxGraphics::update(uint32_t imageIndex){
     };
 
     CameraBuffer buffer{transpose(projMatrix), transpose(viewMatrix)};
-    cameraBuffers.copy(imageIndex, &buffer);
+    cameraBuffers[imageIndex].copy(&buffer);
 }
 
 void BoundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const {

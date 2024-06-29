@@ -37,17 +37,14 @@ BaseCamera::~BaseCamera(){
     BaseCamera::destroy(device);
 }
 
-void BaseCamera::destroy(VkDevice device)
-{
-    uniformBuffersHost.destroy(device);
-    uniformBuffersDevice.destroy(device);
+void BaseCamera::destroy(VkDevice device) {
     created = false;
 }
 
 void updateUniformBuffersFlags(moon::utils::Buffers& uniformBuffers)
 {
-    for (auto& buffer: uniformBuffers.instances){
-        buffer.updateFlag = true;
+    for (auto& buffer: uniformBuffers){
+        buffer.raiseFlag();
     }
 }
 
@@ -152,47 +149,28 @@ moon::math::Quaternion<float>   BaseCamera::getRotationY()const     {   return r
 
 void BaseCamera::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
 {
-    uniformBuffersHost.create(physicalDevice,
-                              device,
-                              sizeof(UniformBufferObject),
-                              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                              imageCount);
-    uniformBuffersHost.map(device);
-    for (auto& buffer: uniformBuffersHost.instances){
-        moon::utils::Memory::instance().nameMemory(  buffer.memory,
-                                        std::string(__FILE__) +
-                                        " in line " + std::to_string(__LINE__) +
-                                        ", baseCamera::createUniformBuffers, uniformBuffersHost " +
-                                        std::to_string(&buffer - &uniformBuffersHost.instances[0]));
+    uniformBuffersHost.resize(imageCount);
+    for (auto& buffer: uniformBuffersHost){
+        buffer.create(physicalDevice, device, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
-    uniformBuffersDevice.create(physicalDevice,
-                                device,
-                                sizeof(UniformBufferObject),
-                                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                imageCount);
-    for (auto& buffer: uniformBuffersDevice.instances){
-        moon::utils::Memory::instance().nameMemory(buffer.memory,
-                                    std::string(__FILE__) +
-                                    " in line " + std::to_string(__LINE__) +
-                                    ", baseCamera::createUniformBuffers, uniformBuffersDevice " +
-                                    std::to_string(&buffer - &uniformBuffersDevice.instances[0]));
+    uniformBuffersDevice.resize(imageCount);
+    for (auto& buffer: uniformBuffersDevice){
+        buffer.create(physicalDevice, device, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
 
 void BaseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 {
-    if(uniformBuffersHost.instances[frameNumber].updateFlag){
+    if(auto& buffer = uniformBuffersHost[frameNumber]; buffer.dropFlag()){
         UniformBufferObject baseUBO{};
             baseUBO.view = transpose(viewMatrix);
             baseUBO.proj = transpose(projMatrix);
             baseUBO.eyePosition = moon::math::Vector<float,4>(translation.im()[0], translation.im()[1], translation.im()[2], 1.0);
-        std::memcpy(uniformBuffersHost.instances[frameNumber].map, &baseUBO, sizeof(baseUBO));
+        buffer.copy(&baseUBO);
 
-        uniformBuffersHost.instances[frameNumber].updateFlag = false;
-
-        moon::utils::buffer::copy(commandBuffer, sizeof(UniformBufferObject), uniformBuffersHost.instances[frameNumber].instance, uniformBuffersDevice.instances[frameNumber].instance);
+        moon::utils::buffer::copy(commandBuffer, sizeof(UniformBufferObject), buffer, uniformBuffersDevice[frameNumber]);
     }
 }
 

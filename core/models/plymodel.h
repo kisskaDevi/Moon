@@ -27,7 +27,7 @@ private:
 
     moon::utils::vkDefault::DescriptorSetLayout nodeDescriptorSetLayout;
     moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
-    VkDescriptorPool                descriptorPool = VK_NULL_HANDLE;
+    moon::utils::vkDefault::DescriptorPool descriptorPool;
 
     moon::interfaces::Material material;
     moon::interfaces::MaterialBlock materialBlock{};
@@ -65,8 +65,6 @@ public:
 
     moon::interfaces::MaterialBlock& getMaterialBlock();
 
-    ~PlyModel() override;
-    void destroy() override;
     void create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool) override;
 
     const VkBuffer* getVertices() const override;

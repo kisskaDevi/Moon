@@ -101,7 +101,6 @@ public:
     DeferredGraphics& setBlurDepth(float blurDepth);
 
     void create(moon::interfaces::Model* pModel);
-    void destroy(moon::interfaces::Model* pModel);
 
     void bind(moon::interfaces::Camera* cameraObject);
     void remove(moon::interfaces::Camera* cameraObject);

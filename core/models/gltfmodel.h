@@ -136,8 +136,6 @@ public:
     GltfModel(std::filesystem::path filename, uint32_t instanceCount = 1);
     ~GltfModel() override;
 
-    void destroy() override;
-
     const VkBuffer* getVertices() const override;
     const VkBuffer* getIndices() const override;
     void create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool) override;

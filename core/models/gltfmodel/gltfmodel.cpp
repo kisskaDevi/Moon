@@ -231,17 +231,12 @@ GltfModel::GltfModel(std::filesystem::path filename, uint32_t instanceCount)
 }
 
 GltfModel::~GltfModel() {
-    GltfModel::destroy();
-}
-
-void GltfModel::destroy()
-{
-    for(auto& instance : instances){
-        for (auto& node : instance.nodes){
+    for (auto& instance : instances) {
+        for (auto& node : instance.nodes) {
             node->destroy(device);
             delete node;
         }
-        for (auto& skin : instance.skins){
+        for (auto& skin : instance.skins) {
             delete skin;
         }
         instance.nodes.clear();
@@ -252,7 +247,7 @@ void GltfModel::destroy()
     materials.clear();
 
     this->device = VK_NULL_HANDLE;
-};
+}
 
 void GltfModel::destroyCache()
 {
@@ -467,23 +462,22 @@ void GltfModel::loadFromFile(const moon::utils::PhysicalDevice& device, VkComman
 }
 
 void GltfModel::createDescriptorPool() {
-    uint32_t materialsCount = std::accumulate(materials.begin(), materials.end(), 0, [](const uint32_t& count, const auto&) { return count + 5;});
+    nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
+    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
+
     uint32_t nodesCount = std::accumulate(instances.begin(), instances.end(), 0, [](const uint32_t& count, const auto& instance) {
         return count + std::accumulate(instance.nodes.begin(), instance.nodes.end(), 0, [](const uint32_t& count, Node* node) {
             return count + node->meshCount();
         });
     });
 
-    std::vector<VkDescriptorPoolSize> poolSize;
-    poolSize.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nodesCount });
-    poolSize.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialsCount });
+    std::vector<const utils::vkDefault::DescriptorSetLayout*> materialDescriptorSetLayouts(materials.size(), &materialDescriptorSetLayout);
+    std::vector<const utils::vkDefault::DescriptorSetLayout*> nodeDescriptorSetLayouts(nodesCount, &nodeDescriptorSetLayout);
+    std::vector<const utils::vkDefault::DescriptorSetLayout*> descriptorSetLayouts;
+    descriptorSetLayouts.insert(descriptorSetLayouts.end(), materialDescriptorSetLayouts.begin(), materialDescriptorSetLayouts.end());
+    descriptorSetLayouts.insert(descriptorSetLayouts.end(), nodeDescriptorSetLayouts.begin(), nodeDescriptorSetLayouts.end());
 
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
-        poolInfo.pPoolSizes = poolSize.data();
-        poolInfo.maxSets = std::max(materialsCount, nodesCount);
-    CHECK(descriptorPool.create(device, poolInfo));
+    CHECK(descriptorPool.create(device, descriptorSetLayouts, 1));
 }
 
 void GltfModel::createDescriptorSet()
@@ -514,8 +508,6 @@ void GltfModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool 
         moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
         destroyCache();
 
-        nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device.getLogical());
-        materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device.getLogical());
         createDescriptorPool();
         createDescriptorSet();
     }

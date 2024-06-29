@@ -32,19 +32,6 @@ moon::interfaces::MaterialBlock &PlyModel::getMaterialBlock(){
     return materialBlock;
 }
 
-PlyModel::~PlyModel() {
-    PlyModel::destroy();
-}
-
-void PlyModel::destroy() {
-    if(descriptorPool != VK_NULL_HANDLE){
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-        descriptorPool = VK_NULL_HANDLE;
-    }
-
-    device = VK_NULL_HANDLE;
-}
-
 void PlyModel::destroyCache() {
     vertexCache = utils::Buffer();
     indexCache = utils::Buffer();
@@ -139,25 +126,12 @@ void PlyModel::loadFromFile(VkPhysicalDevice physicalDevice, VkDevice device, Vk
 }
 
 void PlyModel::createDescriptorPool() {
-    uint32_t imageSamplerCount = 5;
-    uint32_t meshCount = 1;
-
-    std::vector<VkDescriptorPoolSize> poolSize;
-    poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, meshCount});
-    poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageSamplerCount});
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
-        poolInfo.pPoolSizes = poolSize.data();
-        poolInfo.maxSets = std::max(meshCount, imageSamplerCount);
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
+    nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
+    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
+    CHECK(descriptorPool.create(device, { &materialDescriptorSetLayout, &nodeDescriptorSetLayout }, 1));
 }
 
 void PlyModel::createDescriptorSet() {
-    nodeDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
-    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
-
     {
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

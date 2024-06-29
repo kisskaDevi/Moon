@@ -107,7 +107,6 @@ public:
     };
 
     virtual ~Model(){};
-    virtual void destroy() = 0;
 
     virtual const VkBuffer* getVertices() const = 0;
     virtual const VkBuffer* getIndices() const = 0;

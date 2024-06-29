@@ -403,10 +403,6 @@ void DeferredGraphics::create(moon::interfaces::Model *pModel){
     pModel->create(*device, commandPool);
 }
 
-void DeferredGraphics::destroy(moon::interfaces::Model* pModel){
-    pModel->destroy();
-}
-
 void DeferredGraphics::bind(moon::interfaces::Camera* cameraObject){
     this->cameraObject = cameraObject;
     cameraObject->create(*device, imageCount);

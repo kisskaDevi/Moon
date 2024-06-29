@@ -1,6 +1,6 @@
 #include "models/model.h"
 #include "hitable/triangle.h"
-#include <iostream>
+
 namespace cuda::rayTracing {
 
 Model::~Model(){}

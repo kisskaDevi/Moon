@@ -7,7 +7,6 @@
 
 #include <memory>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 namespace moon::models {

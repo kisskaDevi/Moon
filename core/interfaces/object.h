@@ -45,8 +45,8 @@ protected:
     uint8_t pipelineBitMask{0};
 
     moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>    descriptors;
+    moon::utils::vkDefault::DescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptors;
 
 public:
     virtual ~Object(){};
@@ -76,9 +76,6 @@ public:
 
     uint8_t getPipelineBitMask() const;
     const VkDescriptorSet& getDescriptorSet(uint32_t i) const;
-
-    virtual void destroy(
-        VkDevice device) = 0;
 
     virtual void create(
         const moon::utils::PhysicalDevice& device,

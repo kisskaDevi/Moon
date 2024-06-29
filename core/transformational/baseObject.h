@@ -46,24 +46,23 @@ private:
     float changeAnimationTime{0.0f};
 
 protected:
-    bool created{false};
-    VkDevice device{VK_NULL_HANDLE};
+    const moon::utils::PhysicalDevice* device{nullptr};
 
     std::vector<moon::utils::Buffer> uniformBuffersHost;
     std::vector<moon::utils::Buffer> uniformBuffersDevice;
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
+    void createUniformBuffers(uint32_t imageCount);
 
 private:
-    void createDescriptorPool(VkDevice device, uint32_t imageCount);
-    void createDescriptorSet(VkDevice device, uint32_t imageCount);
+    void createDescriptorPool(uint32_t imageCount);
+    void createDescriptorSet(uint32_t imageCount);
     void updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers);
     void updateModelMatrix();
 
 public:
     BaseObject() = default;
     BaseObject(moon::interfaces::Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    virtual ~BaseObject();
+    virtual ~BaseObject() = default;
 
     BaseObject& setGlobalTransform(const moon::math::Matrix<float,4,4>& transform) override;
     BaseObject& translate(const moon::math::Vector<float,3>& translate) override;
@@ -80,8 +79,6 @@ public:
     BaseObject& setColorFactor(const moon::math::Vector<float,4> & color);
     BaseObject& setBloomColor(const moon::math::Vector<float,4> & color);
     BaseObject& setBloomFactor(const moon::math::Vector<float,4> & color);
-
-    void destroy(VkDevice device) override;
 
     void create(
         const moon::utils::PhysicalDevice& device,
@@ -104,16 +101,14 @@ class SkyboxObject : public BaseObject{
 private:
     moon::utils::CubeTexture* texture{nullptr};
 
-    void createDescriptorPool(VkDevice device, uint32_t imageCount);
-    void createDescriptorSet(VkDevice device, uint32_t imageCount);
+    void createDescriptorPool(uint32_t imageCount);
+    void createDescriptorSet(uint32_t imageCount);
 public:
     SkyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
     ~SkyboxObject();
 
     SkyboxObject& setMipLevel(float mipLevel);
     SkyboxObject& translate(const moon::math::Vector<float,3>& translate) override;
-
-    void destroy(VkDevice device) override;
 
     void create(
         const moon::utils::PhysicalDevice& device,

@@ -415,7 +415,6 @@ void DeferredGraphics::bind(moon::interfaces::Camera* cameraObject){
 
 void DeferredGraphics::remove(moon::interfaces::Camera* cameraObject){
     if(this->cameraObject == cameraObject){
-        this->cameraObject->destroy(device->getLogical());
         this->cameraObject = nullptr;
         bDatabase.buffersMap.erase("camera");
     }
@@ -436,7 +435,6 @@ void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
 
 bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
     size_t size = lights.size();
-    lightSource->destroy(device->getLogical());
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 
     if(depthMaps.count(lightSource)){
@@ -459,7 +457,6 @@ void DeferredGraphics::bind(moon::interfaces::Object* object){
 
 bool DeferredGraphics::remove(moon::interfaces::Object* object){
     size_t size = objects.size();
-    object->destroy(device->getLogical());
     objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
     updateCmdFlags();
     return size - objects.size() > 0;

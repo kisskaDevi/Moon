@@ -29,20 +29,17 @@ private:
     moon::math::Quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
 
 protected:
-    bool                    created{false};
-    VkDevice                device{VK_NULL_HANDLE};
+    const moon::utils::PhysicalDevice* device{nullptr};
 
-    moon::utils::Buffers    uniformBuffersHost;
-    moon::utils::Buffers    uniformBuffersDevice;
+    moon::utils::Buffers uniformBuffersHost;
+    moon::utils::Buffers uniformBuffersDevice;
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
+    void createUniformBuffers(uint32_t imageCount);
     void updateViewMatrix();
 public:
     BaseCamera();
     BaseCamera(float angle, float aspect, float near);
     BaseCamera(float angle, float aspect, float near, float far);
-    ~BaseCamera();
-    void destroy(VkDevice device) override;
     void recreate(float angle, float aspect, float near, float far);
     void recreate(float angle, float aspect, float near);
 

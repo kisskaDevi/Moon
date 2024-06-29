@@ -13,6 +13,7 @@ namespace moon::utils {
 using Buffer = vkDefault::Buffer;
 using Buffers = std::vector<Buffer>;
 
+inline void raiseFlags(moon::utils::Buffers& buffers) { for (auto& buffer : buffers) buffer.raiseFlag();}
 void createModelBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, size_t bufferSize, void* data, VkBufferUsageFlagBits usage, Buffer& cache, Buffer& deviceLocal);
 
 struct BuffersDatabase{

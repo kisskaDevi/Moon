@@ -16,23 +16,6 @@ BaseObject::BaseObject(moon::interfaces::Model* model, uint32_t firstInstance, u
     this->instanceCount = instanceCount;
 }
 
-BaseObject::~BaseObject(){
-    BaseObject::destroy(device);
-}
-
-void BaseObject::destroy(VkDevice device)
-{
-    if(descriptorPool)     {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
-    created = false;
-}
-
-void BaseObject::updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers)
-{
-    for (auto& buffer: uniformBuffers){
-        buffer.raiseFlag();
-    }
-}
-
 void BaseObject::updateModelMatrix()
 {
     moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
@@ -40,7 +23,7 @@ void BaseObject::updateModelMatrix()
 
     modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
 
-    updateUniformBuffersFlags(uniformBuffersHost);
+    utils::raiseFlags(uniformBuffersHost);
 }
 
 BaseObject& BaseObject::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
@@ -99,22 +82,22 @@ const moon::math::Vector<float,3> BaseObject::getScale() const{
 
 BaseObject& BaseObject::setConstantColor(const moon::math::Vector<float,4> &color){
     this->constantColor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
+    utils::raiseFlags(uniformBuffersHost);
     return *this;
 }
 BaseObject& BaseObject::setColorFactor(const moon::math::Vector<float,4> & color){
     this->colorFactor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
+    utils::raiseFlags(uniformBuffersHost);
     return *this;
 }
 BaseObject& BaseObject::setBloomColor(const moon::math::Vector<float,4> & color){
     this->bloomColor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
+    utils::raiseFlags(uniformBuffersHost);
     return *this;
 }
 BaseObject& BaseObject::setBloomFactor(const moon::math::Vector<float,4> &color){
     this->bloomFactor = color;
-    updateUniformBuffersFlags(uniformBuffersHost);
+    utils::raiseFlags(uniformBuffersHost);
     return *this;
 }
 
@@ -151,16 +134,16 @@ uint32_t BaseObject::getAnimationIndex(){
     return animationIndex;
 }
 
-void BaseObject::createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount)
+void BaseObject::createUniformBuffers(uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-        buffer.create(physicalDevice, device, sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        buffer.create(device->instance, device->getLogical(), sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-        buffer.create(physicalDevice, device, sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        buffer.create(device->instance, device->getLogical(), sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
@@ -180,24 +163,12 @@ void BaseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
     }
 }
 
-void BaseObject::createDescriptorPool(VkDevice device, uint32_t imageCount)
-{
-    std::vector<VkDescriptorPoolSize> poolSizes = {
-        VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)}
-    };
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
+void BaseObject::createDescriptorPool(uint32_t imageCount) {
+    descriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device->getLogical());
+    CHECK(descriptorPool.create(device->getLogical(), { &descriptorSetLayout }, imageCount));
 }
 
-void BaseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
-{
-    descriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
-
+void BaseObject::createDescriptorSet(uint32_t imageCount) {
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -205,7 +176,7 @@ void BaseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
     descriptors.resize(imageCount);
-    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptors.data()));
+    CHECK(vkAllocateDescriptorSets(device->getLogical(), &allocInfo, descriptors.data()));
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
@@ -221,7 +192,7 @@ void BaseObject::createDescriptorSet(VkDevice device, uint32_t imageCount)
             descriptorWrites.back().dstSet = descriptors[i];
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pBufferInfo = &bufferInfo;
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device->getLogical(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -230,29 +201,24 @@ void BaseObject::create(
     VkCommandPool commandPool,
     uint32_t imageCount)
 {
-    if(!created){
+    if(this->device == VK_NULL_HANDLE){
         CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
         CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
         CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
 
-        createUniformBuffers(device.instance,device.getLogical(),imageCount);
-        createDescriptorPool(device.getLogical(),imageCount);
-        createDescriptorSet(device.getLogical(),imageCount);
-        created = true;
-        this->device = device.getLogical();
+        this->device = &device;
+        createUniformBuffers(imageCount);
+        createDescriptorPool(imageCount);
+        createDescriptorSet(imageCount);
     }
 }
 
-void BaseObject::printStatus() const
-{
+void BaseObject::printStatus() const {
     std::cout << "translation\t" << translation.im()[0] << '\t' << translation.im()[1] << '\t' << translation.im()[2] << '\n';
     std::cout << "rotation\t" << rotation.re() << '\t' << rotation.im()[0] << '\t' << rotation.im()[1] << '\t' << rotation.im()[2] << '\n';
     std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
 }
 
-void SkyboxObject::destroy(VkDevice device){
-    BaseObject::destroy(device);
-}
 
 SkyboxObject::SkyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) :
     BaseObject(),
@@ -261,7 +227,6 @@ SkyboxObject::SkyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PAT
 }
 
 SkyboxObject::~SkyboxObject(){
-    SkyboxObject::destroy(device);
     delete texture;
 }
 
@@ -274,23 +239,12 @@ SkyboxObject& SkyboxObject::translate(const moon::math::Vector<float,3> &) {
     return *this;
 }
 
-void SkyboxObject::createDescriptorPool(VkDevice device, uint32_t imageCount){
-    std::vector<VkDescriptorPoolSize> poolSizes = {
-        VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(imageCount)},
-        VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)}
-    };
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
+void SkyboxObject::createDescriptorPool(uint32_t imageCount) {
+    descriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device->getLogical());
+    CHECK(descriptorPool.create(device->getLogical(), { &descriptorSetLayout }, imageCount));
 }
 
-void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
-    descriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device);
-
+void SkyboxObject::createDescriptorSet(uint32_t imageCount) {
     std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -298,7 +252,7 @@ void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
         allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
         allocInfo.pSetLayouts = layouts.data();
     descriptors.resize(imageCount);
-    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptors.data()));
+    CHECK(vkAllocateDescriptorSets(device->getLogical(), &allocInfo, descriptors.data()));
 
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
@@ -328,7 +282,7 @@ void SkyboxObject::createDescriptorSet(VkDevice device, uint32_t imageCount){
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &imageInfo;
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device->getLogical(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -337,10 +291,12 @@ void SkyboxObject::create(
     VkCommandPool commandPool,
     uint32_t imageCount)
 {
-    if(!created){
+    if(this->device == VK_NULL_HANDLE){
         CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkPhysicalDevice is VK_NULL_HANDLE"));
         CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkDevice is VK_NULL_HANDLE"));
         CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindObject ] VkCommandPool is VK_NULL_HANDLE"));
+
+        this->device = &device;
 
         if(texture){
             VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
@@ -348,11 +304,9 @@ void SkyboxObject::create(
             moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
             texture->destroyCache();
         }
-        createUniformBuffers(device.instance,device.getLogical(),imageCount);
-        createDescriptorPool(device.getLogical(),imageCount);
-        createDescriptorSet(device.getLogical(),imageCount);
-        created = true;
-        this->device = device.getLogical();
+        createUniformBuffers(imageCount);
+        createDescriptorPool(imageCount);
+        createDescriptorSet(imageCount);
     }
 }
 

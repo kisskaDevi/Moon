@@ -34,14 +34,11 @@ private:
     moon::utils::Texture                emptyTextureBlack;
     moon::utils::Texture                emptyTextureWhite;
 
+    SpotType                            type{ SpotType::circle };
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};
     moon::math::Vector<float,4>         lightColor{0.0f};
-
     moon::math::Matrix<float,4,4>       projectionMatrix{1.0f};
-    bool                                created{false};
-    VkDevice                            device{VK_NULL_HANDLE};
-    SpotType                            type{SpotType::circle};
 
     moon::math::Quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
     moon::math::Quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
@@ -52,15 +49,17 @@ private:
     moon::math::Matrix<float,4,4>       modelMatrix{1.0f};
 
     moon::utils::vkDefault::DescriptorSetLayout textureDescriptorSetLayout;
-    std::vector<VkDescriptorSet>        textureDescriptorSets;
+    std::vector<VkDescriptorSet> textureDescriptorSets;
 
     std::vector<moon::utils::Buffer> uniformBuffersHost;
     std::vector<moon::utils::Buffer> uniformBuffersDevice;
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t imageCount);
-    void createDescriptorPool(VkDevice device, uint32_t imageCount);
-    void createDescriptorSets(VkDevice device, uint32_t imageCount);
-    void updateDescriptorSets(VkDevice device, uint32_t imageCount);
+    const moon::utils::PhysicalDevice* device{ nullptr };
+
+    void createUniformBuffers(uint32_t imageCount);
+    void createDescriptorPool(uint32_t imageCount);
+    void createDescriptorSets(uint32_t imageCount);
+    void updateDescriptorSets(uint32_t imageCount);
 
     void updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers);
     void updateModelMatrix();
@@ -89,8 +88,6 @@ public:
     moon::math::Matrix<float,4,4>   getModelMatrix() const;
     moon::math::Vector<float,3>     getTranslate() const;
     moon::math::Vector<float,4>     getLightColor() const;
-
-    void destroy(VkDevice device) override;
 
     void create(
             const moon::utils::PhysicalDevice& device,

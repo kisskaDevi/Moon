@@ -2,7 +2,6 @@
 #include "operations.h"
 
 #include <glfw3.h>
-#include <iostream>
 
 namespace moon::utils {
 
@@ -526,8 +525,8 @@ VkResult vkDefault::DescriptorPool::create(const VkDevice& device, const std::ve
             VkDescriptorPoolSize descriptorPoolSize;
                 descriptorPoolSize.type = binding.descriptorType;
                 descriptorPoolSize.descriptorCount = static_cast<uint32_t>(binding.descriptorCount * descriptorsCount);
-                maxSets = std::max(maxSets, descriptorPoolSize.descriptorCount);
-            poolSizes.push_back(std::move(descriptorPoolSize));
+                maxSets += descriptorPoolSize.descriptorCount;
+            poolSizes.push_back(descriptorPoolSize);
         }
     }
     VkDescriptorPoolCreateInfo poolInfo{};

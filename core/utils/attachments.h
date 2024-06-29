@@ -11,68 +11,44 @@
 
 namespace moon::utils {
 
-struct ImageInfo{
+struct ImageInfo {
     uint32_t                Count{0};
     VkFormat                Format{ VK_FORMAT_UNDEFINED };
     VkExtent2D              Extent{0, 0};
     VkSampleCountFlagBits   Samples{ VK_SAMPLE_COUNT_1_BIT };
 };
 
-struct Attachment{
-    VkImage         image{VK_NULL_HANDLE};
-    VkDeviceMemory  imageMemory{VK_NULL_HANDLE};
-    VkImageView     imageView{VK_NULL_HANDLE};
+struct Attachment {
+    utils::vkDefault::Image image;
+    utils::vkDefault::ImageView imageView;
+
     VkImageLayout   layout{VK_IMAGE_LAYOUT_UNDEFINED};
     VkDevice        device{ VK_NULL_HANDLE };
 
-    ~Attachment();
     Attachment() = default;
     Attachment(const Attachment & other) = delete;
     Attachment& operator=(const Attachment& other) = delete;
-    Attachment(Attachment&& other) noexcept {
-        this->swap(other);
-    };
-    Attachment& operator=(Attachment&& other) noexcept {
-        this->swap(other);
-        return *this;
-    };
-    void swap(Attachment& other) noexcept {
-        uint8_t buff[sizeof(Attachment)];
-        std::memcpy((void*) buff, (void*) &other, sizeof(Attachment));
-        std::memcpy((void*) &other, (void*) this, sizeof(Attachment));
-        std::memcpy((void*) this, (void*) buff, sizeof(Attachment));
-    }
+    Attachment(Attachment&& other) noexcept;
+    Attachment& operator=(Attachment&& other) noexcept;
+    void swap(Attachment& other) noexcept;
 
     Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage);
 };
 
-class Attachments{
+class Attachments {
 private:
     std::vector<Attachment> instances;
     utils::vkDefault::Sampler imageSampler;
     ImageInfo imageInfo;
     VkClearValue imageClearValue{};
 
-    VkDevice device{ VK_NULL_HANDLE };
-
 public:
     Attachments() = default;
     Attachments(const Attachments& other) = delete;
     Attachments& operator=(const Attachments& other) = delete;
-    Attachments(Attachments&& other) noexcept {
-        this->swap(other);
-    };
-    Attachments& operator=(Attachments&& other) noexcept {
-        this->swap(other);
-        return *this;
-    }
-    void swap(Attachments& other) noexcept {
-        std::swap(instances, other.instances);
-        std::swap(imageSampler, other.imageSampler);
-        std::swap(imageInfo, other.imageInfo);
-        std::swap(imageClearValue, other.imageClearValue);
-        std::swap(device, other.device);
-    }
+    Attachments(Attachments&& other) noexcept;
+    Attachments& operator=(Attachments&& other) noexcept;
+    void swap(Attachments& other) noexcept;
 
     VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear = {{0.0f, 0.0f, 0.0f, 0.0f}}, VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO });
 
@@ -96,7 +72,7 @@ void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const I
 
 class Texture;
 
-struct AttachmentsDatabase{
+struct AttachmentsDatabase {
     struct data{
         bool enable{false};
         const Attachments* pImages{nullptr};
@@ -121,6 +97,7 @@ struct AttachmentsDatabase{
     VkImageView imageView(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId = std::nullopt) const;
     VkSampler sampler(const std::string& id, const std::optional<std::string>& emptyTextureId = std::nullopt) const;
     VkDescriptorImageInfo descriptorImageInfo(const std::string& id, const uint32_t imageIndex, const std::optional<std::string>& emptyTextureId = std::nullopt) const;
+    VkDescriptorImageInfo descriptorEmptyInfo(const std::string& id = "") const;
 };
 
 }

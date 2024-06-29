@@ -12,23 +12,20 @@ namespace moon::utils {
 class SwapChain{
 private:
     struct SwapChainAttachment {
-        VkImage         image{ VK_NULL_HANDLE };
-        VkDeviceMemory  imageMemory{ VK_NULL_HANDLE };
+        VkImage image{ VK_NULL_HANDLE };
         utils::vkDefault::ImageView imageView;
-        VkImageLayout   layout{ VK_IMAGE_LAYOUT_UNDEFINED };
-        VkDevice        device{ VK_NULL_HANDLE };
     };
 
     const PhysicalDevice* device{nullptr};
     ImageInfo imageInfo;
 
-    VkSwapchainKHR                      swapChainKHR{VK_NULL_HANDLE};
-    std::vector<SwapChainAttachment>    attachments;
+    VkSwapchainKHR swapChainKHR{VK_NULL_HANDLE};
+    std::vector<SwapChainAttachment> attachments;
 
-    GLFWwindow*         window{nullptr};
-    VkSurfaceKHR        surface{VK_NULL_HANDLE};
+    GLFWwindow*     window{nullptr};
+    VkSurfaceKHR    surface{VK_NULL_HANDLE};
 
-    VkCommandPool       commandPool{VK_NULL_HANDLE};
+    VkCommandPool   commandPool{VK_NULL_HANDLE};
 
     void destroy();
 public:

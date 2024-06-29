@@ -7,9 +7,20 @@
 
 namespace moon::utils {
 
-Attachment::~Attachment() {
-    texture::destroy(device, image, imageMemory);
-    if (imageView) vkDestroyImageView(device, imageView, nullptr);
+Attachment::Attachment(Attachment&& other) noexcept {
+    this->swap(other);
+};
+
+Attachment& Attachment::operator=(Attachment&& other) noexcept {
+    this->swap(other);
+    return *this;
+};
+
+void Attachment::swap(Attachment& other) noexcept {
+    uint8_t buff[sizeof(Attachment)];
+    std::memcpy((void*)buff, (void*)&other, sizeof(Attachment));
+    std::memcpy((void*)&other, (void*)this, sizeof(Attachment));
+    std::memcpy((void*)this, (void*)buff, sizeof(Attachment));
 }
 
 Attachment::Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage) {
@@ -17,21 +28,35 @@ Attachment::Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageIn
     const auto depthFormats = image::depthFormats();
     const bool isDepth = std::any_of(depthFormats.begin(), depthFormats.end(), [&imageInfo](const VkFormat& format) {return imageInfo.Format == format; });
     const VkImageAspectFlagBits imageAspectFlagBits = isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-    CHECK(texture::create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image, &imageMemory));
-    CHECK(texture::createView(device, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, imageAspectFlagBits, 1, 0, 1, image, &imageView));
+    CHECK(image.create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+    CHECK(imageView.create(device, image, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, imageAspectFlagBits, 1, 0, 1));
+}
+
+Attachments::Attachments(Attachments&& other) noexcept {
+    this->swap(other);
+}
+
+Attachments& Attachments::operator=(Attachments&& other) noexcept {
+    this->swap(other);
+    return *this;
+}
+
+void Attachments::swap(Attachments& other) noexcept {
+    std::swap(instances, other.instances);
+    std::swap(imageSampler, other.imageSampler);
+    std::swap(imageInfo, other.imageInfo);
+    std::swap(imageClearValue, other.imageClearValue);
 }
 
 VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear, VkSamplerCreateInfo samplerInfo) {
-    this->device = device;
     this->imageInfo = imageInfo;
     imageClearValue = clear;
     VkResult result = VK_SUCCESS;
 
     instances.resize(imageInfo.Count);
-
     for(auto& instance : instances){
         instance = Attachment(physicalDevice, device, imageInfo, usage);
-        Memory::instance().nameMemory(instance.imageMemory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
+        Memory::instance().nameMemory(instance.image, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
     }
     CHECK(imageSampler.create(device, samplerInfo));
     return result;
@@ -166,6 +191,14 @@ VkDescriptorImageInfo AttachmentsDatabase::descriptorImageInfo(const std::string
     res.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     res.imageView = imageView(id, imageIndex, emptyTextureId);
     res.sampler = sampler(id);
+    return res;
+}
+
+VkDescriptorImageInfo AttachmentsDatabase::descriptorEmptyInfo(const std::string& id) const {
+    VkDescriptorImageInfo res;
+    res.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    res.imageView = getEmpty(id)->imageView();
+    res.sampler = getEmpty(id)->sampler();
     return res;
 }
 

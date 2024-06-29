@@ -67,7 +67,6 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
     CHECK(result = vkGetSwapchainImagesKHR(device->getLogical(), swapChainKHR, &imageInfo.Count, images.data()));
 
     for (auto& attachment: attachments){
-        attachment.device = device->getLogical();
         attachment.image = images[&attachment - &attachments[0]];
         CHECK(result = attachment.imageView.create(device->getLogical(), attachment.image, VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1));
     }

@@ -153,11 +153,7 @@ void Graphics::Base::updateDescriptorSets(
     for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
-
-        VkDescriptorImageInfo skyboxImageInfo{};
-            skyboxImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            skyboxImageInfo.imageView = aDatabase.getEmpty()->imageView();
-            skyboxImageInfo.sampler = aDatabase.getEmpty()->sampler();
+        VkDescriptorImageInfo skyboxImageInfo = aDatabase.descriptorEmptyInfo();
 
         std::string depthId = !transparencyPass || transparencyNumber == 0 ? "" :
                                       (parameters.out.transparency + std::to_string(transparencyNumber - 1) + ".") + parameters.out.depth;

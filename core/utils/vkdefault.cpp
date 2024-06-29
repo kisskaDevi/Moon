@@ -544,7 +544,6 @@ void vkDefault::DescriptorPool::destroy() {
 VKDEFAULT_MAKE_SWAP(DescriptorPool)
 VKDEFAULT_MAKE_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
 
-
 VkResult vkDefault::ImageView::create(
     const VkDevice& device,
     const VkImage& image,
@@ -565,4 +564,35 @@ void vkDefault::ImageView::destroy() {
 VKDEFAULT_MAKE_SWAP(ImageView)
 VKDEFAULT_MAKE_DESCRIPTOR(ImageView, VkImageView)
 
+
+VkResult vkDefault::Image::create(
+    VkPhysicalDevice                physicalDevice,
+    VkDevice                        device,
+    VkImageCreateFlags              flags,
+    VkExtent3D                      extent,
+    uint32_t                        arrayLayers,
+    uint32_t                        mipLevels,
+    VkSampleCountFlagBits           numSamples,
+    VkFormat                        format,
+    VkImageLayout                   layout,
+    VkImageUsageFlags               usage,
+    VkMemoryPropertyFlags           properties) {
+    VKDEFAULT_RESET()
+    return utils::texture::create(physicalDevice, device, flags, extent, arrayLayers, mipLevels, numSamples, format, layout, usage, properties, &descriptor, &memory);
+}
+
+void vkDefault::Image::destroy() {
+    utils::texture::destroy(device, descriptor, memory);
+}
+
+vkDefault::Image::operator const VkDeviceMemory& () const {
+    return memory;
+}
+
+vkDefault::Image::operator const VkDeviceMemory* () const {
+    return &memory;
+}
+
+VKDEFAULT_MAKE_SWAP(Image)
+VKDEFAULT_MAKE_DESCRIPTOR(Image, VkImage)
 }

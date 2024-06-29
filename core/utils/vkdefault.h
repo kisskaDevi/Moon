@@ -263,5 +263,27 @@ class ImageView {
 		uint32_t layerCount);
 };
 
+class Image {
+private:
+	VkDeviceMemory memory{ VK_NULL_HANDLE };
+	VKDEFAULT_INIT_DESCRIPTOR(Image, VkImage)
+
+	VkResult create(
+		VkPhysicalDevice                physicalDevice,
+		VkDevice                        device,
+		VkImageCreateFlags              flags,
+		VkExtent3D                      extent,
+		uint32_t                        arrayLayers,
+		uint32_t                        mipLevels,
+		VkSampleCountFlagBits           numSamples,
+		VkFormat                        format,
+		VkImageLayout                   layout,
+		VkImageUsageFlags               usage,
+		VkMemoryPropertyFlags           properties);
+
+	operator const VkDeviceMemory& () const;
+	operator const VkDeviceMemory* () const;
+};
+
 }
 #endif // VKDEFAULT_H

@@ -18,11 +18,11 @@ struct TextureSampler {
     VkSamplerAddressMode addressModeW{ VK_SAMPLER_ADDRESS_MODE_REPEAT };
 };
 
-struct Image {
-    VkImage image{ VK_NULL_HANDLE };
-    VkDeviceMemory memory{ VK_NULL_HANDLE };
+struct TextureImage {
+    utils::vkDefault::Image image;
     utils::vkDefault::ImageView imageView;
     utils::vkDefault::Sampler sampler;
+
     VkDevice device{ VK_NULL_HANDLE };
 
     int width{ -1 };
@@ -35,13 +35,13 @@ struct Image {
 
     Buffer cache;
 
-    ~Image();
-    Image() = default;
-    Image(const Image&) = delete;
-    Image& operator=(const Image&) = delete;
-    Image(Image&&) noexcept;
-    Image& operator=(Image&&) noexcept;
-    void swap(Image& other) noexcept;
+    ~TextureImage();
+    TextureImage() = default;
+    TextureImage(const TextureImage&) = delete;
+    TextureImage& operator=(const TextureImage&) = delete;
+    TextureImage(TextureImage&&) noexcept;
+    TextureImage& operator=(TextureImage&&) noexcept;
+    void swap(TextureImage& other) noexcept;
 
     void makeCache(
             VkPhysicalDevice            physicalDevice,
@@ -60,7 +60,7 @@ struct Image {
 class Texture{
 protected:
     std::vector<std::filesystem::path> paths;
-    Image image;
+    TextureImage image;
 
     Texture(const std::vector<std::filesystem::path>& paths);
 

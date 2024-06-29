@@ -515,11 +515,11 @@ VkResult texture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkIma
 
 void texture::destroy(VkDevice device, VkImage& image, VkDeviceMemory& memory)
 {
-    if(image){
+    if(image) {
         vkDestroyImage(device, image, nullptr);
         image = VK_NULL_HANDLE;
     }
-    if(memory){
+    if(memory) {
         Memory::instance().free(memory);
         vkFreeMemory(device, memory, nullptr);
         memory = VK_NULL_HANDLE;

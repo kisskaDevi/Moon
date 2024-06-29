@@ -219,7 +219,7 @@ void DeferredGraphics::createGraphicsPasses(){
 
     moon::utils::ImageInfo info{ imageCount, format, extent, MSAASamples };
     moon::utils::ImageInfo scatterInfo{ imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples };
-    moon::utils::ImageInfo shadowsInfo{ imageCount,VK_FORMAT_D32_SFLOAT,VkExtent2D{1024,1024},MSAASamples };
+    moon::utils::ImageInfo shadowsInfo{ imageCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
 
     workflows["DeferredGraphics"] = new Graphics(info, shadersPath, graphicsParams, enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
     workflows["LayersCombiner"] = new LayersCombiner(info, shadersPath, layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);

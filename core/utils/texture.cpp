@@ -11,9 +11,8 @@
 
 namespace moon::utils {
 
-void Image::swap(Image& other) noexcept {
+void TextureImage::swap(TextureImage& other) noexcept {
     std::swap(image, other.image);
-    std::swap(memory, other.memory);
     std::swap(imageView, other.imageView);
     std::swap(sampler, other.sampler);
     std::swap(format, other.format);
@@ -27,30 +26,29 @@ void Image::swap(Image& other) noexcept {
     std::swap(mipLevels, other.mipLevels);
 }
 
-Image::Image(Image&& other) noexcept {
+TextureImage::TextureImage(TextureImage&& other) noexcept {
     swap(other);
 }
 
-Image& Image::operator=(Image&& other) noexcept {
+TextureImage& TextureImage::operator=(TextureImage&& other) noexcept {
     swap(other);
     return *this;
 }
 
-Image::~Image() {
+TextureImage::~TextureImage() {
     cache.destroy(device);
-    texture::destroy(device, image, memory);
 }
 
-void Image::makeCache(
+void TextureImage::makeCache(
         VkPhysicalDevice            physicalDevice,
         VkDevice                    device,
         const std::vector<void*>&   buffers)
 {
     this->device = device;
-    if(width == -1 || height == -1 || channels == -1) throw std::runtime_error("[Image::makeCache] : texture sizes not init");
+    if(width == -1 || height == -1 || channels == -1) throw std::runtime_error("[TextureImage::makeCache] : texture sizes not init");
 
     buffer::create(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &cache.instance, &cache.memory);
-    Memory::instance().nameMemory(cache.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Image::makeCache, cache");
+    Memory::instance().nameMemory(cache.memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", TextureImage::makeCache, cache");
 
     for (uint32_t i = 0, ds = 4 * width * height; i < buffers.size(); i++) {
         CHECK(vkMapMemory(device, cache.memory, i * ds, ds, 0, &cache.map));
@@ -60,7 +58,7 @@ void Image::makeCache(
     }
 }
 
-VkResult Image::create(
+VkResult TextureImage::create(
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer,
@@ -71,20 +69,18 @@ VkResult Image::create(
     this->device = device;
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-    VkResult result = texture::create(  physicalDevice,
-                                        device,
-                                        flags,
-                                        {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1},
-                                        imageCount,
-                                        mipLevels,
-                                        VK_SAMPLE_COUNT_1_BIT,
-                                        format,
-                                        VK_IMAGE_LAYOUT_UNDEFINED,
-                                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | (mipLevels > 1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),
-                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                        &image,
-                                        &memory);
-    Memory::instance().nameMemory(memory, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Image::create, textureImageMemory");
+    VkResult result = image.create( physicalDevice,
+                                    device,
+                                    flags,
+                                    {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1},
+                                    imageCount,
+                                    mipLevels,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    format,
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | (mipLevels > 1 ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0),
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    Memory::instance().nameMemory(image, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", TextureImage::create, image");
 
     texture::transitionLayout(commandBuffer, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 0, imageCount);
     texture::copy(commandBuffer, cache.instance, image, {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1}, imageCount);

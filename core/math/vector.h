@@ -470,15 +470,15 @@ template<typename type>
 class Vector<type, 2> : public BaseVector<type, 2>
 {
 public:
-    Vector() : BaseVector<type,2>() {}
-    Vector(const BaseVector<type,2>& other) : BaseVector<type,2>(other) {}
-    Vector(const Vector<type,2>& other) : BaseVector<type,2>(other.x0, other.x1) {}
+    Vector() : BaseVector<type, 2>() {}
+    Vector(const BaseVector<type, 2>& other) : BaseVector<type, 2>(other) {}
+    Vector(const Vector<type, 2>& other) : BaseVector<type, 2>(other.x0, other.x1) {}
     Vector(const type& x0, const type& x1) {
         this->x0 = x0;
         this->x1 = x1;
     }
-    Vector(const type& x) : BaseVector<type,2>(x) {}
-    Vector<type,2>& operator=(const Vector<type,2> other) {
+    Vector(const type& x) : BaseVector<type, 2>(x) {}
+    Vector<type, 2>& operator=(const Vector<type, 2> other) {
         this->x0 = other.x0;
         this->x1 = other.x1;
         return *this;
@@ -489,9 +489,10 @@ template<typename type>
 class Vector<type, 3> : public BaseVector<type, 3>
 {
 public:
-    Vector() : BaseVector<type,3>() {}
-    Vector(const BaseVector<type,3>& other) : BaseVector<type,3>(other) {}
-    Vector(const Vector<type,3>& other) : BaseVector<type,3>(other.vec, other.s) {}
+    Vector() : BaseVector<type, 3>() {}
+    Vector(const BaseVector<type, 2>& other, const type& s) : BaseVector<type, 3>(other, s) {}
+    Vector(const BaseVector<type, 3>& other) : BaseVector<type, 3>(other) {}
+    Vector(const Vector<type, 3>& other) : BaseVector<type, 3>(other.vec, other.s) {}
     Vector(const type& x0, const type& x1, const type& s) {
         this->vec = BaseVector<type, 2>(x0, x1);
         this->s = s;
@@ -515,8 +516,9 @@ class Vector<type, 4> : public BaseVector<type, 4>
 {
 public:
     Vector() : BaseVector<type,4>() {}
-    Vector(const BaseVector<type,4>& other) : BaseVector<type,4>(other) {}
-    Vector(const Vector<type,4>& other) : BaseVector<type,4>(other.vec, other.s) {}
+    Vector(const BaseVector<type, 3>& other, const type& s) : BaseVector<type, 4>(other, s) {}
+    Vector(const BaseVector<type, 4>& other) : BaseVector<type, 4>(other) {}
+    Vector(const Vector<type, 4>& other) : BaseVector<type,4>(other.vec, other.s) {}
     Vector(const type& x0, const type& x1, const type& x2, const type& s) {
         this->vec = BaseVector<type, 3>({x0, x1}, x2);
         this->s = s;

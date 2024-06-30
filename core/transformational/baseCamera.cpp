@@ -124,7 +124,7 @@ void BaseCamera::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
         UniformBufferObject baseUBO{};
             baseUBO.view = transpose(viewMatrix);
             baseUBO.proj = transpose(projMatrix);
-            baseUBO.eyePosition = moon::math::Vector<float,4>(translation.im()[0], translation.im()[1], translation.im()[2], 1.0);
+            baseUBO.eyePosition = moon::math::Vector<float,4>(translation.im(), 1.0f);
         buffer.copy(&baseUBO);
 
         moon::utils::buffer::copy(commandBuffer, sizeof(UniformBufferObject), buffer, uniformBuffersDevice[frameNumber]);

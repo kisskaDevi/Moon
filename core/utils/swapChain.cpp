@@ -11,10 +11,6 @@ void SwapChain::destroy(){
         swapChainKHR = VK_NULL_HANDLE;
     }
 
-    if(commandPool) {
-        vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;
-    }
-
     attachments.clear();
 }
 
@@ -71,11 +67,7 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
         CHECK(result = attachment.imageView.create(device->getLogical(), attachment.image, VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1));
     }
 
-    VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = 0;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    CHECK(result = vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool));
+    CHECK(result = commandPool.create(device->getLogical()));
 
     return result;
 }

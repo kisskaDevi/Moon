@@ -44,7 +44,8 @@ public:													\
 	Name& operator=(Name&& other) noexcept;				\
 	void swap(Name& other) noexcept;					\
 	operator const BaseDescriptor&() const;				\
-	operator const BaseDescriptor*() const;
+	operator const BaseDescriptor*() const;				\
+	operator const bool() const;
 
 using MaskType = uint8_t;
 
@@ -313,6 +314,12 @@ private:
 
 	operator const VkDeviceMemory& () const;
 	operator const VkDeviceMemory* () const;
+};
+
+class CommandPool {
+	VKDEFAULT_INIT_DESCRIPTOR(CommandPool, VkCommandPool)
+
+	VkResult create(const VkDevice& device);
 };
 
 }

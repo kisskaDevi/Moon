@@ -119,7 +119,6 @@ VkResult GraphicsManager::createLinker(){
     linker.setSwapChain(&swapChainKHR);
     linker.createRenderPass();
     linker.createFramebuffers();
-    linker.createCommandPool();
     linker.createCommandBuffers();
     linker.createSyncObjects();
 

@@ -51,7 +51,7 @@ private:
     moon::utils::AttachmentsDatabase    aDatabase;
     moon::utils::BuffersDatabase        bDatabase;
 
-    VkCommandPool commandPool{VK_NULL_HANDLE};
+    utils::vkDefault::CommandPool commandPool;
 
     bool bloomEnable = true;
 

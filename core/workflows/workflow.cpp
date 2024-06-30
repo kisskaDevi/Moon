@@ -35,8 +35,7 @@ void Workflow::endCommandBuffer(uint32_t frameNumber){
     CHECK(vkEndCommandBuffer(commandBuffers[frameNumber]));
 }
 
-VkCommandBuffer& Workflow::getCommandBuffer(uint32_t frameNumber)
-{
+VkCommandBuffer& Workflow::getCommandBuffer(uint32_t frameNumber) {
     return commandBuffers[frameNumber];
 }
 

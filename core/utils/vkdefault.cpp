@@ -225,6 +225,9 @@ VkDescriptorSetLayoutBinding vkDefault::inAttachmentFragmentLayoutBinding(const 
     }                                                                                   \
 	vkDefault::Name::operator const BaseDescriptor*() const {                           \
         return &descriptor;                                                             \
+    }                                                                                   \
+    vkDefault::Name::operator const bool() const {                                      \
+        return descriptor != VK_NULL_HANDLE;                                            \
     }
 
 #define VKDEFAULT_MAKE_SWAP(Name)				                                        \
@@ -666,4 +669,22 @@ vkDefault::Buffer::operator const VkDeviceMemory* () const {
 
 VKDEFAULT_MAKE_SWAP(Buffer)
 VKDEFAULT_MAKE_DESCRIPTOR(Buffer, VkBuffer)
+
+VkResult vkDefault::CommandPool::create(const VkDevice& device) {
+    VKDEFAULT_RESET()
+
+    VkCommandPoolCreateInfo poolInfo {};
+        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.queueFamilyIndex = 0;
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    CHECK(vkCreateCommandPool(device, &poolInfo, nullptr, &descriptor));
+}
+
+void vkDefault::CommandPool::destroy() {
+    if (descriptor) vkDestroyCommandPool(device, release(descriptor), nullptr);
+}
+
+VKDEFAULT_MAKE_SWAP(CommandPool)
+VKDEFAULT_MAKE_DESCRIPTOR(CommandPool, VkCommandPool)
+
 }

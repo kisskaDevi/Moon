@@ -4,6 +4,7 @@
 #include <vulkan.h>
 #include <vector>
 
+#include "vkdefault.h"
 #include "graphicsInterface.h"
 #include "imguiLink.h"
 
@@ -17,14 +18,12 @@ private:
     GLFWwindow*         window{nullptr};
     VkInstance          instance{VK_NULL_HANDLE};
     uint32_t            imageCount{0};
-    VkDescriptorPool    descriptorPool{VK_NULL_HANDLE};
-    VkCommandPool       commandPool{VK_NULL_HANDLE};
-    ImguiLink           Link;
 
+    utils::vkDefault::DescriptorPool descriptorPool;
+    utils::vkDefault::CommandPool commandPool;
+    ImguiLink Link;
 
     void setupImguiContext();
-    void createDescriptorPool();
-    void createCommandPool();
     void uploadFonts();
 public:
     ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);

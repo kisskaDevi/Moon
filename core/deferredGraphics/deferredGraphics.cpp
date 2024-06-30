@@ -54,21 +54,13 @@ DeferredGraphics::~DeferredGraphics(){
 }
 
 void DeferredGraphics::freeCommandBuffers(){
-    CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ DeferredGraphics::freeCommandBuffers ] commandPool is VK_NULL_HANDLE"));
-    CHECK_M(device->getLogical() == VK_NULL_HANDLE, std::string("[ DeferredGraphics::freeCommandBuffers ] VkDevice is VK_NULL_HANDLE"));
-
     for(auto& [_,workflow]: workflows){
         workflow->freeCommandBuffer(commandPool);
     }
 }
 
 void DeferredGraphics::destroyCommandPool(){
-    if(commandPool){
-        freeCommandBuffers();
-
-        vkDestroyCommandPool(device->getLogical(), commandPool, nullptr);
-        commandPool = VK_NULL_HANDLE;
-    }
+    freeCommandBuffers();
 }
 
 void DeferredGraphics::destroy(){
@@ -92,21 +84,11 @@ void DeferredGraphics::destroy(){
     bDatabase.buffersMap.erase("storage");
 }
 
-void DeferredGraphics::createCommandPool()
-{
-    VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = 0;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    CHECK(vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool));
-}
-
 void DeferredGraphics::create()
 {
+    CHECK(commandPool.create(device->getLogical()));
+
     aDatabase.destroy();
-
-    createCommandPool();
-
     emptyTextures["black"] = moon::utils::Texture::empty(*device, commandPool);
     emptyTextures["white"] = moon::utils::Texture::empty(*device, commandPool, false);
     aDatabase.addEmptyTexture("black", &emptyTextures["black"]);
@@ -125,7 +107,7 @@ void DeferredGraphics::create()
 }
 
 void DeferredGraphics::createGraphicsPasses(){
-    CHECK_M(commandPool == VK_NULL_HANDLE,       std::string("[ DeferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
+    CHECK_M(!commandPool,                        std::string("[ DeferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
     CHECK_M(device->instance == VK_NULL_HANDLE,  std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECK_M(cameraObject == nullptr,             std::string("[ DeferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
@@ -219,10 +201,10 @@ void DeferredGraphics::createGraphicsPasses(){
     moon::utils::ImageInfo shadowsInfo{ imageCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
 
     workflows["DeferredGraphics"] = new Graphics(info, shadersPath, graphicsParams, enable["DeferredGraphics"], enable["TransparentLayer"], false, 0, &objects, &lights, &depthMaps);
-    workflows["LayersCombiner"] = new LayersCombiner(info, shadersPath, layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? TransparentLayersCount : 0, true);
+    workflows["LayersCombiner"] = new LayersCombiner(info, shadersPath, layersCombinerParams, enable["LayersCombiner"], enable["TransparentLayer"] ? transparentLayersCount : 0, true);
     workflows["PostProcessing"] = new moon::workflows::PostProcessingGraphics(info, workflowsShadersPath, postProcessingParams, enable["PostProcessing"]);
 
-    for(uint32_t i = 0; i < TransparentLayersCount; i++){
+    for(uint32_t i = 0; i < transparentLayersCount; i++){
         const auto key = "TransparentLayer" + std::to_string(i);
         enable[key] = enable["TransparentLayer"];
         workflows[key] = new Graphics(info, shadersPath, graphicsParams, enable[key], enable["TransparentLayer"], true, i, &objects, &lights, &depthMaps);
@@ -266,7 +248,7 @@ void DeferredGraphics::updateDescriptorSets(){
 }
 
 void DeferredGraphics::createCommandBuffers(){
-    CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createCommandBuffers ] VkCommandPool is VK_NULL_HANDLE"));
+    CHECK_M(!commandPool, std::string("[ deferredGraphics::createCommandBuffers ] VkCommandPool is VK_NULL_HANDLE"));
 
     for(auto& [_,workflow]: workflows){
         workflow->createCommandBuffers(commandPool);
@@ -284,7 +266,7 @@ void DeferredGraphics::createCommandBuffers(){
 
     auto getTransparentLayersCommandBuffers = [this](uint32_t imageIndex) -> std::vector<VkCommandBuffer>{
         std::vector<VkCommandBuffer> commandBuffers;
-        for(uint32_t i = 0; i < TransparentLayersCount; i++){
+        for(uint32_t i = 0; i < transparentLayersCount; i++){
             commandBuffers.push_back(workflows["TransparentLayer" + std::to_string(i)]->getCommandBuffer(imageIndex));
         }
         return commandBuffers;
@@ -470,7 +452,7 @@ bool DeferredGraphics::getEnable(const std::string& name){
 
 DeferredGraphics& DeferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
     static_cast<Graphics*>(workflows["DeferredGraphics"])->setMinAmbientFactor(minAmbientFactor);
-    for(uint32_t i = 0; i < TransparentLayersCount; i++){
+    for(uint32_t i = 0; i < transparentLayersCount; i++){
         static_cast<Graphics*>(workflows["TransparentLayer" + std::to_string(i)])->setMinAmbientFactor(minAmbientFactor);
     }
 

@@ -14,10 +14,6 @@ void GraphicsLinker::destroy(){
         vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     }
     commandBuffers.clear();
-
-    if(commandPool) {
-        vkDestroyCommandPool(device, commandPool, nullptr); commandPool = VK_NULL_HANDLE;
-    }
 }
 
 void GraphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
@@ -80,16 +76,9 @@ void GraphicsLinker::createFramebuffers(){
     }
 }
 
-void GraphicsLinker::createCommandPool()
-{
-    VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = 0;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    CHECK(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool));
-}
-
 void GraphicsLinker::createCommandBuffers(){
+    CHECK(commandPool.create(device));
+
     commandBuffers.resize(imageCount);
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

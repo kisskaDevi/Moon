@@ -20,16 +20,6 @@ ImguiGraphics::~ImguiGraphics(){
 }
 
 void ImguiGraphics::destroy() {
-    if(descriptorPool){
-        vkDestroyDescriptorPool(device->getLogical(), descriptorPool, VK_NULL_HANDLE);
-        descriptorPool = VK_NULL_HANDLE;
-    }
-
-    if(commandPool) {
-        vkDestroyCommandPool(device->getLogical(), commandPool, nullptr);
-        commandPool = VK_NULL_HANDLE;
-    }
-
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -43,26 +33,6 @@ void ImguiGraphics::setupImguiContext(){
     ImGui::StyleColorsDark();
 }
 
-void ImguiGraphics::createDescriptorPool(){
-    std::vector<VkDescriptorPoolSize> descriptorPoolSize = {{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }};
-    VkDescriptorPoolCreateInfo pool_info{};
-        pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        pool_info.maxSets = 1;
-        pool_info.poolSizeCount = static_cast<uint32_t>(descriptorPoolSize.size());
-        pool_info.pPoolSizes = descriptorPoolSize.data();
-    CHECK(vkCreateDescriptorPool(device->getLogical(), &pool_info, VK_NULL_HANDLE, &descriptorPool));
-}
-
-void ImguiGraphics::createCommandPool()
-{
-    VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = 0;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    CHECK(vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool));
-}
-
 void ImguiGraphics::uploadFonts()
 {
     VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device->getLogical(),commandPool);
@@ -72,10 +42,17 @@ void ImguiGraphics::uploadFonts()
 }
 
 void ImguiGraphics::create() {
-    setupImguiContext();
-    createDescriptorPool();
-    createCommandPool();
+    std::vector<VkDescriptorPoolSize> descriptorPoolSize = { VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 } };
+    VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.maxSets = 1;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSize.size());
+        poolInfo.pPoolSizes = descriptorPoolSize.data();
+    CHECK(descriptorPool.create(device->getLogical(), poolInfo));
+    CHECK(commandPool.create(device->getLogical()));
 
+    setupImguiContext();
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForVulkan(window, true);
     ImGui_ImplVulkan_InitInfo initInfo = {};

@@ -16,16 +16,14 @@ private:
         utils::vkDefault::ImageView imageView;
     };
 
-    const PhysicalDevice* device{nullptr};
-    ImageInfo imageInfo;
+    GLFWwindow*             window{ nullptr };
+    const PhysicalDevice*   device{nullptr};
+    VkSurfaceKHR            surface{ VK_NULL_HANDLE };
+    ImageInfo               imageInfo;
 
     VkSwapchainKHR swapChainKHR{VK_NULL_HANDLE};
     std::vector<SwapChainAttachment> attachments;
-
-    GLFWwindow*     window{nullptr};
-    VkSurfaceKHR    surface{VK_NULL_HANDLE};
-
-    VkCommandPool   commandPool{VK_NULL_HANDLE};
+    utils::vkDefault::CommandPool commandPool;
 
     void destroy();
 public:

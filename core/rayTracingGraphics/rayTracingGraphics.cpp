@@ -56,11 +56,7 @@ void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuff
 
 void RayTracingGraphics::create()
 {
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = 0;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vkCreateCommandPool(device->getLogical(), &poolInfo, nullptr, &commandPool);
+    CHECK(commandPool.create(device->getLogical()));
 
     emptyTexture = utils::Texture::empty(*device, commandPool);
     aDatabase.addEmptyTexture("black", &emptyTexture);
@@ -104,8 +100,6 @@ void RayTracingGraphics::create()
 void RayTracingGraphics::destroy() {
     color.destroy(*device);
     bloom.destroy(*device);
-
-    if(commandPool) {vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
     aDatabase.destroy();
 }
 

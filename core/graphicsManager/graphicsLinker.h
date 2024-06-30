@@ -27,13 +27,13 @@ private:
     utils::vkDefault::RenderPass    renderPass;
     utils::vkDefault::Framebuffers  framebuffers;
 
-    VkCommandPool                   commandPool{VK_NULL_HANDLE};
+    utils::vkDefault::CommandPool   commandPool;
     std::vector<VkCommandBuffer>    commandBuffers;
     std::vector<bool>               updateCommandBufferFlags;
 
     utils::vkDefault::Semaphores    signalSemaphores;
+
 public:
-    GraphicsLinker() = default;
     ~GraphicsLinker();
     void destroy();
 
@@ -44,7 +44,6 @@ public:
     void createRenderPass();
     void createFramebuffers();
 
-    void createCommandPool();
     void createCommandBuffers();
     void updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber);
 

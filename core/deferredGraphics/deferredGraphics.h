@@ -45,15 +45,15 @@ private:
     std::unordered_map<std::string, bool> enable;
     Link* deferredLink;
 
-    moon::utils::Buffers                        storageBuffersHost;
+    moon::utils::Buffers            storageBuffersHost;
 
-    VkCommandPool                               commandPool{VK_NULL_HANDLE};
-    std::vector<VkCommandBuffer>                copyCommandBuffers;
-    std::vector<bool>                           updateCommandBufferFlags;
-    std::vector<moon::utils::Node>              nodes;
+    utils::vkDefault::CommandPool   commandPool;
+    std::vector<VkCommandBuffer>    copyCommandBuffers;
+    std::vector<bool>               updateCommandBufferFlags;
+    std::vector<moon::utils::Node>  nodes;
 
-    uint32_t                                    blitAttachmentsCount{8};
-    uint32_t                                    TransparentLayersCount{2};
+    uint32_t                        blitAttachmentsCount{8};
+    uint32_t                        transparentLayersCount{2};
 
     moon::interfaces::Camera* cameraObject{nullptr};
     std::vector<moon::interfaces::Object*> objects;
@@ -64,7 +64,6 @@ private:
     void createStorageBuffers(uint32_t imageCount);
     void createGraphicsPasses();
     void createCommandBuffers();
-    void createCommandPool();
     void updateDescriptorSets();
 
     void freeCommandBuffers();

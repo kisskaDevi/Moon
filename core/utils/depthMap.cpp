@@ -5,20 +5,11 @@
 namespace moon::utils {
 
 void DepthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
-    std::vector<VkDescriptorPoolSize> poolSize = {
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(imageCount)}
-    };
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
-        poolInfo.pPoolSizes = poolSize.data();
-        poolInfo.maxSets = static_cast<uint32_t>(imageCount);
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
+    descriptorSetLayout = createDescriptorSetLayout(device);
+    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageCount));
 }
 
 void DepthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
-    descriptorSetLayout = createDescriptorSetLayout(device);
-
     descriptorSets.resize(imageCount);
     std::vector<VkDescriptorSetLayout> shadowLayouts(imageCount, descriptorSetLayout);
     VkDescriptorSetAllocateInfo shadowAllocInfo{};
@@ -43,8 +34,6 @@ DepthMap::~DepthMap(){
 }
 
 void DepthMap::destroy(VkDevice device){
-    if(descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
-
     if(map) {
         delete map;
         map = nullptr;

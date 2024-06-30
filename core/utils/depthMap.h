@@ -11,8 +11,8 @@ class DepthMap {
 private:
     Attachments*                    map{nullptr};
     moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>    descriptorSets;
+    moon::utils::vkDefault::DescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSets;
 
     Texture                         emptyTextureWhite;
     VkDevice                        device{VK_NULL_HANDLE};

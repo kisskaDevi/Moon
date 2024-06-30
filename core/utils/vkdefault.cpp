@@ -677,7 +677,7 @@ VkResult vkDefault::CommandPool::create(const VkDevice& device) {
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = 0;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    CHECK(vkCreateCommandPool(device, &poolInfo, nullptr, &descriptor));
+    return vkCreateCommandPool(device, &poolInfo, nullptr, &descriptor);
 }
 
 void vkDefault::CommandPool::destroy() {
@@ -686,5 +686,43 @@ void vkDefault::CommandPool::destroy() {
 
 VKDEFAULT_MAKE_SWAP(CommandPool)
 VKDEFAULT_MAKE_DESCRIPTOR(CommandPool, VkCommandPool)
+
+VkResult vkDefault::SwapchainKHR::create(const VkDevice& device, const utils::ImageInfo& imageInfo, const utils::swapChain::SupportDetails& supportDetails, const std::vector<uint32_t>& queueFamilyIndices,  VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat) {
+    VKDEFAULT_RESET()
+    this->imageInfo = imageInfo;
+
+    VkSwapchainCreateInfoKHR createInfo {};
+        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        createInfo.surface = surface;
+        createInfo.minImageCount = imageInfo.Count;
+        createInfo.imageFormat = imageInfo.Format;
+        createInfo.imageColorSpace = surfaceFormat.colorSpace;
+        createInfo.imageExtent = imageInfo.Extent;
+        createInfo.imageArrayLayers = 1;
+        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        createInfo.imageSharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
+        createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
+        createInfo.preTransform = supportDetails.capabilities.currentTransform;
+        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        createInfo.presentMode = swapChain::queryingPresentMode(supportDetails.presentModes);
+        createInfo.clipped = VK_TRUE;
+        createInfo.oldSwapchain = VK_NULL_HANDLE;
+    return vkCreateSwapchainKHR(device, &createInfo, nullptr, &descriptor);
+}
+
+void vkDefault::SwapchainKHR::destroy() {
+    if (descriptor) vkDestroySwapchainKHR(device, release(descriptor), nullptr);
+}
+
+std::vector<VkImage> vkDefault::SwapchainKHR::images() const {
+    uint32_t count = imageInfo.Count;
+    std::vector<VkImage> result(count);
+    CHECK(vkGetSwapchainImagesKHR(device, descriptor, &count, result.data()));
+    return result;
+}
+
+VKDEFAULT_MAKE_SWAP(SwapchainKHR)
+VKDEFAULT_MAKE_DESCRIPTOR(SwapchainKHR, VkSwapchainKHR)
 
 }

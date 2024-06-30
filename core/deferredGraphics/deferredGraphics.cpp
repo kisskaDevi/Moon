@@ -225,7 +225,7 @@ void DeferredGraphics::createGraphicsPasses(){
         workflow->create(aDatabase);
     }
 
-    moon::utils::ImageInfo linkInfo{imageCount, format, swapChainKHR->getExtent(), MSAASamples};
+    moon::utils::ImageInfo linkInfo{imageCount, format, swapChainKHR->info().Extent, MSAASamples};
     deferredLink->setShadersPath(shadersPath);
     deferredLink->setDeviceProp(device->getLogical());
     deferredLink->setImageCount(imageCount);

@@ -84,7 +84,7 @@ void RayTracingGraphics::create()
     bbGraphics.create(device->instance, device->getLogical(), bbInfo, shadersPath);
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
-    moon::utils::ImageInfo swapChainInfo{ imageCount, format, swapChainKHR->getExtent(), VK_SAMPLE_COUNT_1_BIT};
+    moon::utils::ImageInfo swapChainInfo{ imageCount, format, swapChainKHR->info().Extent, VK_SAMPLE_COUNT_1_BIT};
     RayTracingLinkParameters linkParams;
     linkParams.in.color = color.id;
     linkParams.in.bloom = bloomParams.out.bloom;

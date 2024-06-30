@@ -5,30 +5,32 @@
 
 namespace moon::utils {
 
-void SwapChain::destroy(){
-    if(swapChainKHR) {
-        vkDestroySwapchainKHR(device->getLogical(), swapChainKHR, nullptr);
-        swapChainKHR = VK_NULL_HANDLE;
-    }
-
-    attachments.clear();
+SwapChain::SwapChain(SwapChain&& other) {
+    swap(other);
 }
 
-SwapChain::~SwapChain() {
-    destroy();
+SwapChain& SwapChain::operator=(SwapChain&& other) {
+    swap(other);
+    return *this;
+}
+
+void SwapChain::swap(SwapChain& other) {
+    std::swap(window, other.window);
+    std::swap(device, other.device);
+    std::swap(surface, other.surface);
+    std::swap(imageInfo, other.imageInfo);
+    std::swap(swapChainKHR, other.swapChainKHR);
+    std::swap(commandPool, other.commandPool);
+    std::swap(attachments, other.attachments);
 }
 
 VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, std::vector<uint32_t> queueFamilyIndices, int32_t maxImageCount){
-    destroy();
     this->device = device;
-
-    VkResult result = VK_SUCCESS;
-
     this->window = window;
     this->surface = surface;
 
-    swapChain::SupportDetails swapChainSupport = swapChain::queryingSupport(device->instance, surface);
-    VkSurfaceFormatKHR surfaceFormat = swapChain::queryingSurfaceFormat(swapChainSupport.formats);
+    swapChain::SupportDetails supportDetails = swapChain::queryingSupport(device->instance, surface);
+    VkSurfaceFormatKHR surfaceFormat = swapChain::queryingSurfaceFormat(supportDetails.formats);
     VkSurfaceCapabilitiesKHR capabilities = swapChain::queryingSupport(device->instance, surface).capabilities;
 
     imageInfo.Count = swapChain::queryingSupportImageCount(device->instance, surface);
@@ -36,34 +38,12 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
     imageInfo.Extent = swapChain::queryingExtent(window, capabilities);
     imageInfo.Format = surfaceFormat.format;
 
-    VkSwapchainCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface;
-        createInfo.minImageCount = imageInfo.Count;
-        createInfo.imageFormat = imageInfo.Format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = imageInfo.Extent;
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        createInfo.imageSharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
-        createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
-        createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = swapChain::queryingPresentMode(swapChainSupport.presentModes);
-        createInfo.clipped = VK_TRUE;
-        createInfo.oldSwapchain = VK_NULL_HANDLE;
-    CHECK(result = vkCreateSwapchainKHR(device->getLogical(), &createInfo, nullptr, &swapChainKHR));
+    VkResult result = VK_SUCCESS;
+    CHECK(result = swapChainKHR.create(device->getLogical(), imageInfo, supportDetails, queueFamilyIndices, surface, surfaceFormat));
 
-    attachments.resize(imageInfo.Count);
-    std::vector<VkImage> images;
-    for (auto& attachment : attachments) {
-        images.push_back(attachment.image);
-    }
-    CHECK(result = vkGetSwapchainImagesKHR(device->getLogical(), swapChainKHR, &imageInfo.Count, images.data()));
-
-    for (auto& attachment: attachments){
-        attachment.image = images[&attachment - &attachments[0]];
+    for (const auto& image: swapChainKHR.images()){
+        auto& attachment = attachments.emplace_back();
+        attachment.image = image;
         CHECK(result = attachment.imageView.create(device->getLogical(), attachment.image, VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1));
     }
 
@@ -78,13 +58,12 @@ VkResult SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex) cons
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = &waitSemaphore;
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &swapChainKHR;
+        presentInfo.pSwapchains = swapChainKHR;
         presentInfo.pImageIndices = &imageIndex;
     return vkQueuePresentKHR(device->getQueue(0, 0), &presentInfo);
-
 }
 
-SwapChain::operator VkSwapchainKHR&(){
+SwapChain::operator const VkSwapchainKHR&() const {
     return swapChainKHR;
 }
 
@@ -92,25 +71,9 @@ const VkImageView& SwapChain::imageView(uint32_t i) const {
     return attachments[i].imageView;
 }
 
-uint32_t SwapChain::getImageCount() const{
-    return imageInfo.Count;
-}
-
-VkExtent2D SwapChain::getExtent() const{
-    return imageInfo.Extent;
-}
-
-VkFormat SwapChain::getFormat() const{
-    return imageInfo.Format;
-}
-
-VkSurfaceKHR SwapChain::getSurface() const{
-    return surface;
-}
-
-GLFWwindow* SwapChain::getWindow(){
-    return window;
-}
+ImageInfo SwapChain::info() const { return imageInfo;}
+VkSurfaceKHR SwapChain::getSurface() const { return surface;}
+GLFWwindow* SwapChain::getWindow() const { return window;}
 
 std::vector<uint32_t> SwapChain::makeScreenshot(uint32_t i) const {
     std::vector<uint32_t> buffer(imageInfo.Extent.height * imageInfo.Extent.width, 0);

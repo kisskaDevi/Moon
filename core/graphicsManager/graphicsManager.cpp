@@ -110,6 +110,7 @@ VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     CHECK_M(devices.empty(), "[ GraphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
 
     std::vector<uint32_t> queueIndices = {0};
+    swapChainKHR = utils::SwapChain();
     return swapChainKHR.create(activeDevice, window, surface, queueIndices, maxImageCount);
 }
 
@@ -133,7 +134,7 @@ void GraphicsManager::setGraphics(GraphicsInterface* graphics){
     this->graphics.push_back(graphics);
     this->graphics.back()->setDevices(devices, activeDevice->properties.index);
     this->graphics.back()->setSwapChain(&swapChainKHR);
-    this->graphics.back()->setProperties(swapChainKHR.getFormat(), resourceCount);
+    this->graphics.back()->setProperties(swapChainKHR.info().Format, resourceCount);
     this->graphics.back()->getLinkable()->setRenderPass(linker.getRenderPass());
     linker.addLinkable(this->graphics.back()->getLinkable());
 }
@@ -207,7 +208,7 @@ VkResult GraphicsManager::deviceWaitIdle() const {
 }
 
 VkInstance      GraphicsManager::getInstance()      const {return instance;}
-VkExtent2D      GraphicsManager::getImageExtent()   const {return swapChainKHR.getExtent();}
+VkExtent2D      GraphicsManager::getImageExtent()   const {return swapChainKHR.info().Extent;}
 uint32_t        GraphicsManager::getResourceIndex() const {return resourceIndex;}
 uint32_t        GraphicsManager::getResourceCount() const {return resourceCount;}
 uint32_t        GraphicsManager::getImageIndex()    const {return imageIndex;}

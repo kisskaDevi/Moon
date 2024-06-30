@@ -7,16 +7,9 @@
 #include <string>
 #include <optional>
 
-#include <vkdefault.h>
+#include "vkdefault.h"
 
 namespace moon::utils {
-
-struct ImageInfo {
-    uint32_t                Count{0};
-    VkFormat                Format{ VK_FORMAT_UNDEFINED };
-    VkExtent2D              Extent{0, 0};
-    VkSampleCountFlagBits   Samples{ VK_SAMPLE_COUNT_1_BIT };
-};
 
 struct Attachment {
     utils::vkDefault::Image image;

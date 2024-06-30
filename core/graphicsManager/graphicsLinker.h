@@ -6,8 +6,7 @@
 #include <vulkan.h>
 
 #include "vkdefault.h"
-
-namespace moon::utils { class SwapChain;}
+#include "swapChain.h"
 
 namespace moon::graphicsManager {
 
@@ -16,11 +15,9 @@ class Linkable;
 class GraphicsLinker
 {
 private:
-    uint32_t                        imageCount;
-    VkExtent2D                      imageExtent;
-    VkFormat                        imageFormat;
-    VkDevice                        device{ VK_NULL_HANDLE };
+    moon::utils::ImageInfo imageInfo;
 
+    VkDevice                        device{ VK_NULL_HANDLE };
     std::vector<Linkable*>          linkables;
     moon::utils::SwapChain*         swapChainKHR{nullptr};
 

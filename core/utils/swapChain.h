@@ -17,34 +17,31 @@ private:
     };
 
     GLFWwindow*             window{ nullptr };
-    const PhysicalDevice*   device{nullptr};
+    const PhysicalDevice*   device{ nullptr };
     VkSurfaceKHR            surface{ VK_NULL_HANDLE };
     ImageInfo               imageInfo;
 
-    VkSwapchainKHR swapChainKHR{VK_NULL_HANDLE};
-    std::vector<SwapChainAttachment> attachments;
+    utils::vkDefault::SwapchainKHR swapChainKHR;
     utils::vkDefault::CommandPool commandPool;
+    std::vector<SwapChainAttachment> attachments;
 
-    void destroy();
 public:
     SwapChain() = default;
-    ~SwapChain();
     SwapChain(const SwapChain&) = delete;
     SwapChain& operator=(const SwapChain&) = delete;
-    SwapChain(SwapChain&&) = default;
-    SwapChain& operator=(SwapChain&&) = default;
+    SwapChain(SwapChain&&);
+    SwapChain& operator=(SwapChain&&);
+    void swap(SwapChain&);
 
     VkResult create(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, std::vector<uint32_t> queueFamilyIndices, int32_t maxImageCount = -1);
     VkResult present(VkSemaphore waitSemaphore, uint32_t imageIndex) const;
 
-    operator VkSwapchainKHR&();
+    operator const VkSwapchainKHR&() const;
     const VkImageView& SwapChain::imageView(uint32_t i) const;
 
-    uint32_t getImageCount() const;
-    VkExtent2D getExtent() const;
-    VkFormat getFormat() const;
+    ImageInfo info() const;
     VkSurfaceKHR getSurface() const;
-    GLFWwindow* getWindow();
+    GLFWwindow* getWindow() const;
 
     std::vector<uint32_t> makeScreenshot(uint32_t i = 0) const;
 };

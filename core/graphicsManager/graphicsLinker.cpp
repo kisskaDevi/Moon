@@ -18,9 +18,7 @@ void GraphicsLinker::destroy(){
 
 void GraphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
     this->swapChainKHR = swapChainKHR;
-    this->imageCount = swapChainKHR->getImageCount();
-    this->imageExtent = swapChainKHR->getExtent();
-    this->imageFormat = swapChainKHR->getFormat();
+    imageInfo = swapChainKHR->info();
 }
 
 void GraphicsLinker::setDevice(VkDevice device){
@@ -34,7 +32,7 @@ void GraphicsLinker::addLinkable(Linkable* link){
 
 void GraphicsLinker::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageFormat, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -62,15 +60,15 @@ void GraphicsLinker::createRenderPass(){
 }
 
 void GraphicsLinker::createFramebuffers(){
-    framebuffers.resize(imageCount);
+    framebuffers.resize(imageInfo.Count);
     for (size_t i = 0; i < static_cast<uint32_t>(framebuffers.size()); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &swapChainKHR->imageView(i);
-            framebufferInfo.width = imageExtent.width;
-            framebufferInfo.height = imageExtent.height;
+            framebufferInfo.width = imageInfo.Extent.width;
+            framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         CHECK(framebuffers[i].create(device, framebufferInfo));
     }
@@ -79,15 +77,15 @@ void GraphicsLinker::createFramebuffers(){
 void GraphicsLinker::createCommandBuffers(){
     CHECK(commandPool.create(device));
 
-    commandBuffers.resize(imageCount);
+    commandBuffers.resize(imageInfo.Count);
     VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(imageCount);
+        allocInfo.commandBufferCount = static_cast<uint32_t>(imageInfo.Count);
     CHECK(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()));
 
-    updateCommandBufferFlags.resize(imageCount, true);
+    updateCommandBufferFlags.resize(imageInfo.Count, true);
 }
 
 void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber){
@@ -108,7 +106,7 @@ void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t image
                 renderPassInfo.renderPass = renderPass;
                 renderPassInfo.framebuffer = framebuffers[imageNumber];
                 renderPassInfo.renderArea.offset = {0,0};
-                renderPassInfo.renderArea.extent = imageExtent;
+                renderPassInfo.renderArea.extent = imageInfo.Extent;
                 renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
                 renderPassInfo.pClearValues = clearValues.data();
 
@@ -127,7 +125,7 @@ void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t image
 }
 
 void GraphicsLinker::createSyncObjects(){
-    signalSemaphores.resize(imageCount);
+    signalSemaphores.resize(imageInfo.Count);
     for (auto& semaphore: signalSemaphores){
         CHECK(semaphore.create(device));
     }

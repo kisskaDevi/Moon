@@ -6,7 +6,19 @@
 #include <filesystem>
 #include <unordered_map>
 
+#include "operations.h"
+
 struct GLFWwindow;
+
+namespace moon::utils {
+
+struct ImageInfo {
+	uint32_t                Count{ 0 };
+	VkFormat                Format{ VK_FORMAT_UNDEFINED };
+	VkExtent2D              Extent{ 0, 0 };
+	VkSampleCountFlagBits   Samples{ VK_SAMPLE_COUNT_1_BIT };
+};
+}
 
 namespace moon::utils::vkDefault {
 
@@ -320,6 +332,23 @@ class CommandPool {
 	VKDEFAULT_INIT_DESCRIPTOR(CommandPool, VkCommandPool)
 
 	VkResult create(const VkDevice& device);
+};
+
+class SwapchainKHR {
+private:
+	utils::ImageInfo imageInfo;
+	VKDEFAULT_INIT_DESCRIPTOR(SwapchainKHR, VkSwapchainKHR)
+
+public:
+	VkResult create(
+		const VkDevice& device,
+		const utils::ImageInfo& imageInfo,
+		const utils::swapChain::SupportDetails& supportDetails,
+		const std::vector<uint32_t>& queueFamilyIndices,
+		VkSurfaceKHR surface,
+		VkSurfaceFormatKHR surfaceFormat);
+
+	std::vector<VkImage> images() const;
 };
 
 }

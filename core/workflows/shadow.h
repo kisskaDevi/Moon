@@ -23,7 +23,6 @@ private:
         Shadow(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout();
 
         moon::utils::vkDefault::DescriptorSetLayout lightUniformBufferSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;

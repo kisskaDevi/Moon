@@ -157,18 +157,10 @@ void BaseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 void BaseObject::createDescriptorPool(uint32_t imageCount) {
     descriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device->getLogical());
     CHECK(descriptorPool.create(device->getLogical(), { &descriptorSetLayout }, imageCount));
+    descriptors = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
 }
 
 void BaseObject::createDescriptorSet(uint32_t imageCount) {
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        allocInfo.pSetLayouts = layouts.data();
-    descriptors.resize(imageCount);
-    CHECK(vkAllocateDescriptorSets(device->getLogical(), &allocInfo, descriptors.data()));
-
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = uniformBuffersDevice[i];

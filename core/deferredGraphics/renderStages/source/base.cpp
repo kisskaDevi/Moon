@@ -128,20 +128,9 @@ void Graphics::Base::createPipeline(VkRenderPass pRenderPass) {
     CHECK(pipelineMap[outliningMask].create(device, pipelineInfo));
 }
 
-void Graphics::Base::createDescriptorPool() {
+void Graphics::Base::createDescriptors() {
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-}
-
-void Graphics::Base::createDescriptorSets()
-{
-    descriptorSets.resize(imageInfo.Count);
-    std::vector<VkDescriptorSetLayout> layouts(imageInfo.Count, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageInfo.Count);
-        allocInfo.pSetLayouts = layouts.data();
-    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void Graphics::Base::updateDescriptorSets(
@@ -194,8 +183,7 @@ void Graphics::Base::create(const std::filesystem::path& shadersPath, VkDevice d
 
     createDescriptorSetLayout();
     createPipeline(pRenderPass);
-    createDescriptorPool();
-    createDescriptorSets();
+    createDescriptors();
 }
 
 void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const
@@ -209,7 +197,7 @@ void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptors = { descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
+            utils::vkDefault::DescriptorSets descriptors = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
             moon::interfaces::MaterialBlock material;
 

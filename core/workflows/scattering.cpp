@@ -71,31 +71,25 @@ void Scattering::createFramebuffers()
     }
 }
 
-void Scattering::Lighting::createDescriptorSetLayout()
-{
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, bindings));
-
-    bufferDescriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
-    descriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createTextureDescriptorSetLayout(device);
-    shadowDescriptorSetLayout = moon::utils::DepthMap::createDescriptorSetLayout(device);
-}
-
 void Scattering::Lighting::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass)
 {
     this->vertShaderPath = vertShaderPath;
     this->fragShaderPath = fragShaderPath;
     this->device = device;
 
-    createDescriptorSetLayout();
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    CHECK(descriptorSetLayout.create(device, bindings));
+
+    bufferDescriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
+    descriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createTextureDescriptorSetLayout(device);
+    shadowDescriptorSetLayout = moon::utils::DepthMap::createDescriptorSetLayout(device);
 
     createPipeline(moon::interfaces::LightType::spot, pRenderPass);
 
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass) {

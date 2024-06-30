@@ -102,7 +102,11 @@ void LayersCombiner::createFramebuffers(){
     }
 }
 
-void LayersCombiner::Combiner::createDescriptorSetLayout(){
+void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -119,16 +123,7 @@ void LayersCombiner::Combiner::createDescriptorSetLayout(){
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
     CHECK(descriptorSetLayout.create(device, bindings));
-}
-
-void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
-    createDescriptorSetLayout();
 
     uint32_t specializationData = transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
@@ -185,7 +180,7 @@ void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPat
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, {&descriptorSetLayout}, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void LayersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)

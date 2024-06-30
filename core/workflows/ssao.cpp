@@ -59,24 +59,18 @@ void SSAOGraphics::createFramebuffers()
     }
 }
 
-void SSAOGraphics::SSAO::createDescriptorSetLayout()
-{
+void SSAOGraphics::SSAO::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
     CHECK(descriptorSetLayout.create(device, bindings));
-}
-
-void SSAOGraphics::SSAO::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
-    createDescriptorSetLayout();
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -117,7 +111,7 @@ void SSAOGraphics::SSAO::create(const std::filesystem::path& vertShaderPath, con
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void SSAOGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)

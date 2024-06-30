@@ -107,7 +107,7 @@ void Graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptorSets = {parent.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
+            utils::vkDefault::DescriptorSets descriptorSets = {parent.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
             OutliningPushConstBlock pushConstBlock;
             pushConstBlock.outlining.stencilColor = object->getOutliningColor();

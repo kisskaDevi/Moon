@@ -67,18 +67,12 @@ namespace {
         return (extpos != std::string::npos) && (filename.string().substr(extpos + 1, filename.string().length() - extpos) == "glb");
     }
 
-    void createNodeDescriptorSet(VkDevice device, Node* node, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+    void createNodeDescriptorSet(VkDevice device, Node* node, utils::vkDefault::DescriptorPool& descriptorPool, const utils::vkDefault::DescriptorSetLayout& descriptorSetLayout)
     {
         if (node->mesh){
-            VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-                descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-                descriptorSetAllocInfo.descriptorPool = descriptorPool;
-                descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
-                descriptorSetAllocInfo.descriptorSetCount = 1;
-            CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet));
+            node->mesh->uniformBuffer.descriptorSet = descriptorPool.allocateDescriptorSets(descriptorSetLayout, 1).front();
 
             VkDescriptorBufferInfo bufferInfo{ node->mesh->uniformBuffer, 0, sizeof(Mesh::uniformBlock)};
-
             VkWriteDescriptorSet writeDescriptorSet{};
                 writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -93,14 +87,9 @@ namespace {
         }
     }
 
-    void createMaterialDescriptorSet(VkDevice device, moon::interfaces::Material* material, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+    void createMaterialDescriptorSet(VkDevice device, moon::interfaces::Material* material, utils::vkDefault::DescriptorPool & descriptorPool, const utils::vkDefault::DescriptorSetLayout& descriptorSetLayout)
     {
-        VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-            descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            descriptorSetAllocInfo.descriptorPool = descriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
-            descriptorSetAllocInfo.descriptorSetCount = 1;
-        CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material->descriptorSet));
+        material->descriptorSet = descriptorPool.allocateDescriptorSets(descriptorSetLayout, 1).front();
 
         auto getDescriptorImageInfo = [](const moon::utils::Texture* tex){
             VkDescriptorImageInfo descriptorImageInfo{};
@@ -154,7 +143,7 @@ namespace {
         {
             for (Mesh::Primitive* primitive : node->mesh->primitives)
             {
-                std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+                utils::vkDefault::DescriptorSets nodeDescriptorSets(descriptorSetsCount);
                 std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
                 nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
                 nodeDescriptorSets.push_back(primitive->material->descriptorSet);
@@ -210,7 +199,7 @@ namespace {
         {
             for (Mesh::Primitive* primitive : node->mesh->primitives)
             {
-                std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+                utils::vkDefault::DescriptorSets nodeDescriptorSets(descriptorSetsCount);
                 std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
                 nodeDescriptorSets.push_back(node->mesh->uniformBuffer.descriptorSet);
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);

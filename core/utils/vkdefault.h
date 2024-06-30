@@ -242,11 +242,14 @@ class Sampler {
 	VkResult create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo);
 };
 
+using DescriptorSets = std::vector<VkDescriptorSet>;
+
 class DescriptorPool {
 	VKDEFAULT_INIT_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
 
 	VkResult create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount);
 	VkResult create(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo);
+	DescriptorSets allocateDescriptorSets(const vkDefault::DescriptorSetLayout& descriptorSetLayout, const uint32_t& descriptorSetCount);
 };
 
 class ImageView {

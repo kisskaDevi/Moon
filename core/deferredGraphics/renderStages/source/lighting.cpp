@@ -37,20 +37,9 @@ void Graphics::Lighting::createPipeline(VkRenderPass pRenderPass)
     createPipeline(moon::interfaces::LightType::spot, pRenderPass, spotVert, spotFrag);
 }
 
-void Graphics::Lighting::createDescriptorPool() {
+void Graphics::Lighting::createDescriptors() {
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-}
-
-void Graphics::Lighting::createDescriptorSets()
-{
-    descriptorSets.resize(imageInfo.Count);
-    std::vector<VkDescriptorSetLayout> layouts(imageInfo.Count, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageInfo.Count);
-        allocInfo.pSetLayouts = layouts.data();
-    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void Graphics::Lighting::updateDescriptorSets(
@@ -95,8 +84,7 @@ void Graphics::Lighting::create(const std::filesystem::path& shadersPath, VkDevi
 
     createDescriptorSetLayout();
     createPipeline(pRenderPass);
-    createDescriptorPool();
-    createDescriptorSets();
+    createDescriptors();
 }
 
 void Graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer) const

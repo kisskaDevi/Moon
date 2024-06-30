@@ -4,29 +4,18 @@
 
 namespace moon::utils {
 
-void DepthMap::createDescriptorPool(VkDevice device, uint32_t imageCount){
+void DepthMap::createDescriptorPool(uint32_t imageCount){
     descriptorSetLayout = createDescriptorSetLayout(device);
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageCount));
-}
-
-void DepthMap::createDescriptorSets(VkDevice device, uint32_t imageCount){
-    descriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> shadowLayouts(imageCount, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo shadowAllocInfo{};
-        shadowAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        shadowAllocInfo.descriptorPool = descriptorPool;
-        shadowAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        shadowAllocInfo.pSetLayouts = shadowLayouts.data();
-    CHECK(vkAllocateDescriptorSets(device, &shadowAllocInfo, descriptorSets.data()));
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
 }
 
 DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount){
     emptyTextureWhite = utils::Texture::empty(device, commandPool, false);
     this->device = device.getLogical();
 
-    createDescriptorPool(device.getLogical(), imageCount);
-    createDescriptorSets(device.getLogical(), imageCount);
-    updateDescriptorSets(device.getLogical(), imageCount);
+    createDescriptorPool(imageCount);
+    updateDescriptorSets(imageCount);
 }
 
 DepthMap::~DepthMap(){
@@ -40,11 +29,11 @@ void DepthMap::destroy(VkDevice device){
     }
 }
 
-const std::vector<VkDescriptorSet>& DepthMap::getDescriptorSets() const{
+const utils::vkDefault::DescriptorSets& DepthMap::getDescriptorSets() const{
     return descriptorSets;
 }
 
-void DepthMap::updateDescriptorSets(VkDevice device, uint32_t imageCount){
+void DepthMap::updateDescriptorSets(uint32_t imageCount){
     for (size_t i = 0; i < imageCount; i++)
     {
         VkDescriptorImageInfo shadowImageInfo{};

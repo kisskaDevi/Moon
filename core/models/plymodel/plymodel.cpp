@@ -133,15 +133,9 @@ void PlyModel::createDescriptorPool() {
 
 void PlyModel::createDescriptorSet() {
     {
-        VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-            descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            descriptorSetAllocInfo.descriptorPool = descriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = nodeDescriptorSetLayout;
-            descriptorSetAllocInfo.descriptorSetCount = 1;
-        CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &uniformBuffer.descriptorSet));
+        uniformBuffer.descriptorSet = descriptorPool.allocateDescriptorSets(nodeDescriptorSetLayout, 1).front();
 
         VkDescriptorBufferInfo bufferInfo{ uniformBuffer, 0, sizeof(uniformBlock)};
-
         VkWriteDescriptorSet writeDescriptorSet{};
             writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -230,7 +224,7 @@ void PlyModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool c
 void PlyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets, uint32_t& primitiveCount, uint32_t pushConstantSize, uint32_t pushConstantOffset, void* pushConstant) {
     static_cast<void>(frameIndex);
 
-    std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+    utils::vkDefault::DescriptorSets nodeDescriptorSets(descriptorSetsCount);
     std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
     nodeDescriptorSets.push_back(uniformBuffer.descriptorSet);
     nodeDescriptorSets.push_back(material.descriptorSet);
@@ -245,7 +239,7 @@ void PlyModel::render(uint32_t frameIndex, VkCommandBuffer commandBuffer, VkPipe
 }
 
 void PlyModel::renderBB(uint32_t, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSetsCount, VkDescriptorSet* descriptorSets) {
-    std::vector<VkDescriptorSet> nodeDescriptorSets(descriptorSetsCount);
+    utils::vkDefault::DescriptorSets nodeDescriptorSets(descriptorSetsCount);
     std::copy(descriptorSets, descriptorSets + descriptorSetsCount, nodeDescriptorSets.data());
     nodeDescriptorSets.push_back(uniformBuffer.descriptorSet);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSetsCount + 1, nodeDescriptorSets.data(), 0, NULL);

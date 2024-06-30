@@ -27,7 +27,7 @@ private:
     VkPipeline                      pipeline{VK_NULL_HANDLE};
     VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>    descriptorSets;
+    utils::vkDefault::DescriptorSets descriptorSets;
 
     utils::vkDefault::RenderPass    renderPass;
     utils::vkDefault::Framebuffers  framebuffers;

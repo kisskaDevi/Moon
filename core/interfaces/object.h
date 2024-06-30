@@ -46,7 +46,7 @@ protected:
 
     moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
     moon::utils::vkDefault::DescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptors;
+    moon::utils::vkDefault::DescriptorSets descriptors;
 
 public:
     virtual ~Object(){};

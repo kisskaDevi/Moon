@@ -63,8 +63,8 @@ private:
         moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
 
-        moon::utils::vkDefault::DescriptorPool  descriptorPool;
-        std::vector<VkDescriptorSet>            descriptorSets;
+        moon::utils::vkDefault::DescriptorPool descriptorPool;
+        moon::utils::vkDefault::DescriptorSets descriptorSets;
 
         std::vector<moon::interfaces::Object*>* objects{nullptr};
 
@@ -76,8 +76,7 @@ private:
 
         void createPipeline(VkRenderPass pRenderPass);
         void createDescriptorSetLayout();
-        void createDescriptorPool();
-        void createDescriptorSets();
+        void createDescriptors();
         void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
 
         void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
@@ -115,8 +114,8 @@ private:
         moon::utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
         moon::utils::vkDefault::PipelineMap         pipelineMap;
 
-        moon::utils::vkDefault::DescriptorPool  descriptorPool;
-        std::vector<VkDescriptorSet>            descriptorSets;
+        moon::utils::vkDefault::DescriptorPool descriptorPool;
+        moon::utils::vkDefault::DescriptorSets descriptorSets;
 
         std::vector<moon::interfaces::Light*>* lightSources;
         std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
@@ -126,8 +125,7 @@ private:
         void createPipeline(VkRenderPass pRenderPass);
         void createPipeline(uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
         void createDescriptorSetLayout();
-        void createDescriptorPool();
-        void createDescriptorSets();
+        void createDescriptors();
         void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
 
         void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);

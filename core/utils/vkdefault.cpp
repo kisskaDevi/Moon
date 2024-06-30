@@ -537,6 +537,18 @@ VkResult vkDefault::DescriptorPool::create(const VkDevice& device, const std::ve
     return create(device, poolInfo);
 }
 
+vkDefault::DescriptorSets vkDefault::DescriptorPool::allocateDescriptorSets(const vkDefault::DescriptorSetLayout& descriptorSetLayout, const uint32_t& descriptorSetCount) {
+    vkDefault::DescriptorSets descriptorSets(descriptorSetCount);
+    std::vector<VkDescriptorSetLayout> layouts(descriptorSetCount, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptor;
+        allocInfo.descriptorSetCount = descriptorSetCount;
+        allocInfo.pSetLayouts = layouts.data();
+    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
+    return descriptorSets;
+}
+
 void vkDefault::DescriptorPool::destroy() {
     if (descriptor) vkDestroyDescriptorPool(device, release(descriptor), nullptr);
 }

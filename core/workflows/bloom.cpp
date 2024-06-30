@@ -97,20 +97,15 @@ void BloomGraphics::createFramebuffers(){
     }
 }
 
-void BloomGraphics::Filter::createDescriptorSetLayout(){
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, bindings));
-}
-
 void BloomGraphics::Filter::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass)
 {
     this->vertShaderPath = vertShaderPath;
     this->fragShaderPath = fragShaderPath;
     this->device = device;
 
-    createDescriptorSetLayout();
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    CHECK(descriptorSetLayout.create(device, bindings));
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -156,14 +151,7 @@ void BloomGraphics::Filter::create(const std::filesystem::path& vertShaderPath, 
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, {&descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
-}
-
-void BloomGraphics::Bloom::createDescriptorSetLayout(){
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
-
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass)
@@ -172,7 +160,9 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
     this->fragShaderPath = fragShaderPath;
     this->device = device;
 
-    createDescriptorSetLayout();
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
+    CHECK(descriptorSetLayout.create(device, bindings));
 
     uint32_t specializationData = blitAttachmentsCount;
     VkSpecializationMapEntry specializationMapEntry{};
@@ -229,7 +219,7 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void BloomGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -251,7 +241,7 @@ void BloomGraphics::updateDescriptorSets(
 
     srcAttachment = aDatabase.get(parameters.in.bloom);
 
-    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments& image, const std::vector<VkDescriptorSet>& descriptorSets){
+    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments& image, const utils::vkDefault::DescriptorSets& descriptorSets){
         for (uint32_t i = 0; i < image.count(); i++){
             VkDescriptorImageInfo imageInfo{};
                 imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

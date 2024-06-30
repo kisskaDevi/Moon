@@ -49,7 +49,7 @@ private:
     moon::math::Matrix<float,4,4>       modelMatrix{1.0f};
 
     moon::utils::vkDefault::DescriptorSetLayout textureDescriptorSetLayout;
-    std::vector<VkDescriptorSet> textureDescriptorSets;
+    utils::vkDefault::DescriptorSets textureDescriptorSets;
 
     std::vector<moon::utils::Buffer> uniformBuffersHost;
     std::vector<moon::utils::Buffer> uniformBuffersDevice;
@@ -58,7 +58,6 @@ private:
 
     void createUniformBuffers(uint32_t imageCount);
     void createDescriptorPool(uint32_t imageCount);
-    void createDescriptorSets(uint32_t imageCount);
     void updateDescriptorSets(uint32_t imageCount);
 
     SpotLight& updateModelMatrix();
@@ -97,7 +96,7 @@ public:
     void render(
         uint32_t frameNumber,
         VkCommandBuffer commandBuffer,
-        const std::vector<VkDescriptorSet>& descriptorSet,
+        const utils::vkDefault::DescriptorSets& descriptorSet,
         VkPipelineLayout pipelineLayout,
         VkPipeline pipeline) override;
 

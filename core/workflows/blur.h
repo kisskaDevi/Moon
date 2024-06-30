@@ -30,7 +30,6 @@ private:
         Blur(const moon::utils::ImageInfo& imageInfo, uint32_t subpassNumber) : Workbody(imageInfo), subpassNumber(subpassNumber) {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout();
     };
     Blur xblur;
     Blur yblur;

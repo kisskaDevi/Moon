@@ -59,23 +59,19 @@ void PostProcessingGraphics::createFramebuffers()
     }
 }
 
-void PostProcessingGraphics::PostProcessing::createDescriptorSetLayout() {
+void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
     CHECK(descriptorSetLayout.create(device, bindings));
-}
 
-void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
-    createDescriptorSetLayout();
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -116,7 +112,7 @@ void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path&
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void PostProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)

@@ -37,7 +37,6 @@ private:
         Filter(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout();
     }filter;
 
     struct Bloom : public Workbody{
@@ -50,7 +49,6 @@ private:
         Bloom(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout();
     }bloom;
 
     void render(VkCommandBuffer commandBuffer, const moon::utils::Attachments& image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker);

@@ -4,11 +4,6 @@
 
 namespace moon::deferredGraphics {
 
-void Link::destroy(){
-    if(DescriptorPool)      {vkDestroyDescriptorPool(device, DescriptorPool, nullptr); DescriptorPool = VK_NULL_HANDLE;}
-    DescriptorSets.clear();
-}
-
 void Link::setDeviceProp(VkDevice device){
     this->device = device;
 }
@@ -83,25 +78,8 @@ void Link::createPipeline(moon::utils::ImageInfo* pInfo) {
 }
 
 void Link::createDescriptorPool() {
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    poolSizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount});
-    VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = imageCount;
-    CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &DescriptorPool));
-}
-
-void Link::createDescriptorSets() {
-    DescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        allocInfo.pSetLayouts = layouts.data();
-    CHECK(vkAllocateDescriptorSets(device, &allocInfo, DescriptorSets.data()));
+    CHECK(descriptorPool.create(device, {&descriptorSetLayout}, imageCount));
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
 }
 
 void Link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
@@ -115,7 +93,7 @@ void Link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = DescriptorSets[image];
+            descriptorWrites.back().dstSet = descriptorSets[image];
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -129,7 +107,7 @@ void Link::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
 {
     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LinkPushConstant), &pushConstant);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &DescriptorSets[imageNumber], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageNumber], 0, nullptr);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 

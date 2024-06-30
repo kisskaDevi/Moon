@@ -12,20 +12,19 @@ private:
     Attachments*                    map{nullptr};
     moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
     moon::utils::vkDefault::DescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    moon::utils::vkDefault::DescriptorSets descriptorSets;
 
     Texture                         emptyTextureWhite;
     VkDevice                        device{VK_NULL_HANDLE};
 
-    void createDescriptorPool(VkDevice device, uint32_t imageCount);
-    void createDescriptorSets(VkDevice device, uint32_t imageCount);
+    void createDescriptorPool(uint32_t imageCount);
 public:
     DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount);
     ~DepthMap();
     void destroy(VkDevice device);
 
-    const std::vector<VkDescriptorSet>& getDescriptorSets() const;
-    void updateDescriptorSets(VkDevice device, uint32_t imageCount);
+    const utils::vkDefault::DescriptorSets& getDescriptorSets() const;
+    void updateDescriptorSets(uint32_t imageCount);
     Attachments* &get();
 
     static moon::utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);

@@ -28,14 +28,13 @@ private:
     utils::vkDefault::Pipeline              pipeline;
     utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
 
-    VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>    DescriptorSets;
+    utils::vkDefault::DescriptorPool        descriptorPool;
+    utils::vkDefault::DescriptorSets        descriptorSets;
 
     LinkPushConstant                pushConstant;
 
 public:
     Link() = default;
-    void destroy();
     void setDeviceProp(VkDevice device);
     void setImageCount(const uint32_t& count);
     void setShadersPath(const std::filesystem::path& shadersPath);
@@ -47,7 +46,6 @@ public:
     void createDescriptorSetLayout();
     void createPipeline(moon::utils::ImageInfo* pInfo);
     void createDescriptorPool();
-    void createDescriptorSets();
     void updateDescriptorSets(const moon::utils::Attachments* attachment);
 };
 

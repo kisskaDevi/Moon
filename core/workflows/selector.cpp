@@ -61,8 +61,12 @@ void SelectorGraphics::createFramebuffers()
     }
 }
 
-void SelectorGraphics::Selector::createDescriptorSetLayout()
+void SelectorGraphics::Selector::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass)
 {
+    this->vertShaderPath = vertShaderPath;
+    this->fragShaderPath = fragShaderPath;
+    this->device = device;
+
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(VkDescriptorSetLayoutBinding{});
         bindings.back().binding = static_cast<uint32_t>(bindings.size() - 1);
@@ -74,17 +78,7 @@ void SelectorGraphics::Selector::createDescriptorSetLayout()
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-
     CHECK(descriptorSetLayout.create(device, bindings));
-}
-
-void SelectorGraphics::Selector::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass)
-{
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
-    createDescriptorSetLayout();
 
     uint32_t specializationData = transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
@@ -136,7 +130,7 @@ void SelectorGraphics::Selector::create(const std::filesystem::path& vertShaderP
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void SelectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)

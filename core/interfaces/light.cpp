@@ -21,7 +21,7 @@ bool Light::isScatteringEnable() const{
     return enableScattering;
 }
 
-const std::vector<VkDescriptorSet>& Light::getDescriptorSets() const {
+const utils::vkDefault::DescriptorSets& Light::getDescriptorSets() const {
     return descriptorSets;
 }
 

@@ -85,19 +85,15 @@ void GaussianBlur::createFramebuffers(){
     }
 }
 
-void GaussianBlur::Blur::createDescriptorSetLayout(){
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, bindings));
-}
-
 void GaussianBlur::Blur::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass){
     this->vertShaderPath = vertShaderPath;
     this->fragShaderPath = fragShaderPath;
     this->device = device;
 
-    createDescriptorSetLayout();
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+
+    CHECK(descriptorSetLayout.create(device, bindings));
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -146,7 +142,7 @@ void GaussianBlur::Blur::create(const std::filesystem::path& vertShaderPath, con
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, {&descriptorSetLayout}, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void GaussianBlur::create(moon::utils::AttachmentsDatabase& aDatabasep)
@@ -166,7 +162,7 @@ void GaussianBlur::updateDescriptorSets(
 {
     if(!enable) return;
 
-    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments& image, const std::vector<VkDescriptorSet>& descriptorSets) {
+    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments& image, const utils::vkDefault::DescriptorSets& descriptorSets) {
         for (uint32_t i = 0; i < image.count(); i++) {
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

@@ -30,7 +30,6 @@ private:
         PostProcessing(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout();
     } postProcessing;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);

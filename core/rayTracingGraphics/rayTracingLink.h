@@ -36,7 +36,7 @@ private:
     VkPipeline                      Pipeline{VK_NULL_HANDLE};
     VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
-    std::vector<VkDescriptorSet>    DescriptorSets;
+    utils::vkDefault::DescriptorSets DescriptorSets;
 
     LinkPushConstant                pushConstant;
 

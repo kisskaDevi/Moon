@@ -35,20 +35,15 @@ void ShadowGraphics::createRenderPass()
     CHECK(renderPass.create(device, attachments, subpasses, {}));
 }
 
-void ShadowGraphics::Shadow::createDescriptorSetLayout()
-{
-    lightUniformBufferSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
-    objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
-    primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
-    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
-}
-
 void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
     this->vertShaderPath = vertShaderPath;
     this->fragShaderPath = fragShaderPath;
     this->device = device;
 
-    createDescriptorSetLayout();
+    lightUniformBufferSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
+    objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
+    primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
+    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader };
@@ -113,7 +108,7 @@ void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath,
 void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
 {
     depthMap->get() = createAttachments();
-    depthMap->updateDescriptorSets(device, imageInfo.Count);
+    depthMap->updateDescriptorSets(imageInfo.Count);
     framebuffersMap[depthMap].resize(imageInfo.Count);
     for (size_t i = 0; i < imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
@@ -176,7 +171,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
                 vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptorSets = {lightSource->getDescriptorSets()[frameNumber], object->getDescriptorSet(frameNumber)};
+            utils::vkDefault::DescriptorSets descriptorSets = {lightSource->getDescriptorSets()[frameNumber], object->getDescriptorSet(frameNumber)};
 
             moon::interfaces::MaterialBlock material{};
 

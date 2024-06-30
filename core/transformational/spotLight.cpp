@@ -152,7 +152,6 @@ void SpotLight::create(
         }
         createUniformBuffers(imageCount);
         createDescriptorPool(imageCount);
-        createDescriptorSets(imageCount);
         updateDescriptorSets(imageCount);
     }
 }
@@ -160,12 +159,12 @@ void SpotLight::create(
 void SpotLight::render(
     uint32_t frameNumber,
     VkCommandBuffer commandBuffer,
-    const std::vector<VkDescriptorSet>& descriptorSet,
+    const utils::vkDefault::DescriptorSets& descriptorSet,
     VkPipelineLayout pipelineLayout,
     VkPipeline pipeline)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    std::vector<VkDescriptorSet> descriptorSets = descriptorSet;
+    utils::vkDefault::DescriptorSets descriptorSets = descriptorSet;
     descriptorSets.push_back(this->descriptorSets[frameNumber]);
     descriptorSets.push_back(textureDescriptorSets[frameNumber]);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
@@ -207,26 +206,8 @@ void SpotLight::createDescriptorPool(uint32_t imageCount) {
     textureDescriptorSetLayout = moon::interfaces::Light::createTextureDescriptorSetLayout(device->getLogical());
     descriptorSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device->getLogical());
     CHECK(descriptorPool.create(device->getLogical(), { &textureDescriptorSetLayout , &descriptorSetLayout}, imageCount));
-}
-
-void SpotLight::createDescriptorSets(uint32_t imageCount) {
-    textureDescriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> textLayouts(imageCount, textureDescriptorSetLayout);
-    VkDescriptorSetAllocateInfo textAllocInfo{};
-        textAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        textAllocInfo.descriptorPool = descriptorPool;
-        textAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        textAllocInfo.pSetLayouts = textLayouts.data();
-    CHECK(vkAllocateDescriptorSets(device->getLogical(), &textAllocInfo, textureDescriptorSets.data()));
-
-    descriptorSets.resize(imageCount);
-    std::vector<VkDescriptorSetLayout> bufferLayouts(imageCount, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo bufferAllocInfo{};
-        bufferAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        bufferAllocInfo.descriptorPool = descriptorPool;
-        bufferAllocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        bufferAllocInfo.pSetLayouts = bufferLayouts.data();
-    CHECK(vkAllocateDescriptorSets(device->getLogical(), &bufferAllocInfo, descriptorSets.data()));
+    textureDescriptorSets = descriptorPool.allocateDescriptorSets(textureDescriptorSetLayout, imageCount);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
 }
 
 void SpotLight::updateDescriptorSets(uint32_t imageCount)

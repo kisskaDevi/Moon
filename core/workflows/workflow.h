@@ -22,8 +22,8 @@ public:
     utils::vkDefault::Pipeline              pipeline;
     utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
 
-    utils::vkDefault::DescriptorPool        descriptorPool;
-    std::vector<VkDescriptorSet>            descriptorSets;
+    utils::vkDefault::DescriptorPool descriptorPool;
+    utils::vkDefault::DescriptorSets descriptorSets;
 
     virtual ~Workbody(){};
     Workbody() = default;
@@ -31,7 +31,6 @@ public:
     Workbody(Workbody&&) = default;
     Workbody& operator=(Workbody&&) = default;
 
-    virtual void createDescriptorSets();
     virtual void create(
         const std::filesystem::path& vertShaderPath,
         const std::filesystem::path& fragShaderPath,

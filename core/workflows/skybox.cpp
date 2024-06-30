@@ -69,22 +69,16 @@ void SkyboxGraphics::createFramebuffers()
     }
 }
 
-void SkyboxGraphics::Skybox::createDescriptorSetLayout()
-{
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, bindings));
-
-    objectDescriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device);
-}
-
 void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
     this->vertShaderPath = vertShaderPath;
     this->fragShaderPath = fragShaderPath;
     this->device = device;
 
-    createDescriptorSetLayout();
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    CHECK(descriptorSetLayout.create(device, bindings));
+
+    objectDescriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device);
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -127,7 +121,7 @@ void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath,
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void SkyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -180,7 +174,7 @@ void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
     for(const auto& object: *skybox.objects)
     {
         if((moon::interfaces::ObjectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
-            std::vector<VkDescriptorSet> descriptorSets = {skybox.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
+            utils::vkDefault::DescriptorSets descriptorSets = {skybox.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
             vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
             vkCmdDraw(commandBuffers[frameNumber], 36, 1, 0, 0);
         }

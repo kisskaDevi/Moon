@@ -89,8 +89,6 @@ void DeferredGraphics::destroy(){
     }
     workflows.clear();
 
-    deferredLink->destroy();
-
     bDatabase.buffersMap.erase("storage");
 }
 
@@ -252,7 +250,6 @@ void DeferredGraphics::createGraphicsPasses(){
     deferredLink->createDescriptorSetLayout();
     deferredLink->createPipeline(&linkInfo);
     deferredLink->createDescriptorPool();
-    deferredLink->createDescriptorSets();
 
     createStorageBuffers(imageCount);
 

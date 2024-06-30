@@ -63,22 +63,18 @@ void BoundingBoxGraphics::createFramebuffers(){
     }
 }
 
-void BoundingBoxGraphics::BoundingBox::createDescriptorSetLayout(){
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, bindings));
-
-    objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
-    primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
-}
-
 void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass){
     this->vertShaderPath = vertShaderPath;
     this->fragShaderPath = fragShaderPath;
     this->device = device;
 
-    createDescriptorSetLayout();
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+
+    CHECK(descriptorSetLayout.create(device, bindings));
+
+    objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
+    primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -143,7 +139,7 @@ void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertS
     CHECK(pipeline.create(device, pipelineInfo));
 
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
-    createDescriptorSets();
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void BoundingBoxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -210,7 +206,7 @@ void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuf
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            std::vector<VkDescriptorSet> descriptors = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
+            utils::vkDefault::DescriptorSets descriptors = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
             object->getModel()->renderBB(
                 object->getInstanceNumber(frameNumber),

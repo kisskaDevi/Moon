@@ -42,7 +42,6 @@ private:
 
         void createPipeline(uint8_t mask, VkRenderPass pRenderPass);
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout();
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }lighting;
 

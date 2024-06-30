@@ -49,10 +49,9 @@ private:
         bool enableTransparentLayers{ true };
         bool enableScatteringRefraction{ true };
 
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-        void createDescriptorSetLayout();
-
         Combiner(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+
+        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
     }combiner;
 
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);

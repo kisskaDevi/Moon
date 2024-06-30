@@ -21,7 +21,7 @@ protected:
 
     moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
     moon::utils::vkDefault::DescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    moon::utils::vkDefault::DescriptorSets descriptorSets;
 
     uint8_t pipelineBitMask{0};
 
@@ -35,7 +35,7 @@ public:
     bool isScatteringEnable() const;
 
     uint8_t getPipelineBitMask() const;
-    const std::vector<VkDescriptorSet>& getDescriptorSets() const;
+    const moon::utils::vkDefault::DescriptorSets& getDescriptorSets() const;
 
     virtual void create(
             const moon::utils::PhysicalDevice& device,
@@ -45,7 +45,7 @@ public:
     virtual void render(
         uint32_t frameNumber,
         VkCommandBuffer commandBuffer,
-        const std::vector<VkDescriptorSet>& descriptorSet,
+        const utils::vkDefault::DescriptorSets& descriptorSet,
         VkPipelineLayout pipelineLayout,
         VkPipeline pipeline) = 0;
 

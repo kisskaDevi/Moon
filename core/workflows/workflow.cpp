@@ -3,17 +3,6 @@
 
 namespace moon::workflows {
 
-void Workbody::createDescriptorSets() {
-    descriptorSets.resize(imageInfo.Count);
-    std::vector<VkDescriptorSetLayout> layouts(imageInfo.Count, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageInfo.Count);
-        allocInfo.pSetLayouts = layouts.data();
-    CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()));
-};
-
 Workflow& Workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
     this->physicalDevice = physicalDevice;
     this->device = device;

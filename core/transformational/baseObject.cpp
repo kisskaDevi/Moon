@@ -16,56 +16,47 @@ BaseObject::BaseObject(moon::interfaces::Model* model, uint32_t firstInstance, u
     this->instanceCount = instanceCount;
 }
 
-void BaseObject::updateModelMatrix()
-{
-    moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
-    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
-
+BaseObject& BaseObject::updateModelMatrix() {
+    moon::math::Matrix<float,4,4> transformMatrix = convert(convert(rotation, translation));
     modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
-
     utils::raiseFlags(uniformBuffersHost);
+    return *this;
 }
 
 BaseObject& BaseObject::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 BaseObject& BaseObject::translate(const moon::math::Vector<float,3> & translate)
 {
     translation += moon::math::Quaternion<float>(0.0f,translate);
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 BaseObject& BaseObject::setTranslation(const moon::math::Vector<float,3>& translate)
 {
     translation = moon::math::Quaternion<float>(0.0f,translate);
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 BaseObject& BaseObject::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 BaseObject& BaseObject::rotate(const moon::math::Quaternion<float>& quat)
 {
     rotation = quat * rotation;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 BaseObject& BaseObject::scale(const moon::math::Vector<float,3> & scale)
 {
     scaling = scale;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 const moon::math::Vector<float,3> BaseObject::getTranslation() const{

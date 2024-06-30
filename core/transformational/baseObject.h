@@ -56,8 +56,7 @@ protected:
 private:
     void createDescriptorPool(uint32_t imageCount);
     void createDescriptorSet(uint32_t imageCount);
-    void updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers);
-    void updateModelMatrix();
+    BaseObject& updateModelMatrix();
 
 public:
     BaseObject() = default;

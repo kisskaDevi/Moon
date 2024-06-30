@@ -35,7 +35,7 @@ protected:
     moon::utils::Buffers uniformBuffersDevice;
 
     void createUniformBuffers(uint32_t imageCount);
-    void updateViewMatrix();
+    BaseCamera& updateViewMatrix();
 public:
     BaseCamera();
     BaseCamera(float angle, float aspect, float near);

@@ -61,8 +61,8 @@ private:
     void createDescriptorSets(uint32_t imageCount);
     void updateDescriptorSets(uint32_t imageCount);
 
-    void updateUniformBuffersFlags(std::vector<moon::utils::Buffer>& uniformBuffers);
-    void updateModelMatrix();
+    SpotLight& updateModelMatrix();
+
 public:
     SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
     SpotLight(const std::filesystem::path & TEXTURE_PATH, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
@@ -125,7 +125,8 @@ private:
 
     std::vector<SpotLight*>             lightSource;
 
-    void updateModelMatrix();
+    IsotropicLight& updateModelMatrix();
+
 public:
     IsotropicLight(const moon::math::Vector<float,4>& color, float radius = 100.0f);
     ~IsotropicLight();
@@ -133,15 +134,15 @@ public:
     void setLightColor(const moon::math::Vector<float,4> & color);
     void setLightDropFactor(const float& dropFactor);
     void setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection);
-    void setTranslation(const moon::math::Vector<float,3>& translate);
 
+    IsotropicLight& setTranslation(const moon::math::Vector<float,3>& translate);
     IsotropicLight& setGlobalTransform(const moon::math::Matrix<float,4,4>& transform);
     IsotropicLight& translate(const moon::math::Vector<float,3>& translate);
     IsotropicLight& rotate(const float& ang,const moon::math::Vector<float,3>& ax);
     IsotropicLight& scale(const moon::math::Vector<float,3>& scale);
 
-    void rotateX(const float& ang ,const moon::math::Vector<float,3>& ax);
-    void rotateY(const float& ang ,const moon::math::Vector<float,3>& ax);
+    IsotropicLight& rotateX(const float& ang ,const moon::math::Vector<float,3>& ax);
+    IsotropicLight& rotateY(const float& ang ,const moon::math::Vector<float,3>& ax);
 
     moon::math::Vector<float,3> getTranslate() const;
     moon::math::Vector<float,4> getLightColor() const;

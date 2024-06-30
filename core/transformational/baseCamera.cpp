@@ -33,12 +33,11 @@ void BaseCamera::recreate(float angle, float aspect, float near)
     setProjMatrix(proj);
 }
 
-void BaseCamera::updateViewMatrix() {
-    moon::math::DualQuaternion<float> dQuat = convert(rotation, translation);
-    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
+BaseCamera& BaseCamera::updateViewMatrix() {
+    moon::math::Matrix<float,4,4> transformMatrix = convert(convert(rotation, translation));
     viewMatrix = inverse(moon::math::Matrix<float,4,4>(globalTransformation * transformMatrix));
-
     utils::raiseFlags(uniformBuffersHost);
+    return *this;
 }
 
 BaseCamera& BaseCamera::setProjMatrix(const moon::math::Matrix<float,4,4> & proj) {
@@ -49,20 +48,17 @@ BaseCamera& BaseCamera::setProjMatrix(const moon::math::Matrix<float,4,4> & proj
 
 BaseCamera& BaseCamera::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform) {
     globalTransformation = transform;
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::translate(const moon::math::Vector<float,3> & translate) {
     translation += moon::math::Quaternion<float>(0.0f,translate);
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::rotate(const float & ang ,const moon::math::Vector<float,3> & ax) {
     rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::scale(const moon::math::Vector<float,3> &){
@@ -71,41 +67,35 @@ BaseCamera& BaseCamera::scale(const moon::math::Vector<float,3> &){
 
 BaseCamera& BaseCamera::rotate(const moon::math::Quaternion<float>& quat) {
     rotation = quat * rotation;
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax) {
     rotationX = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax) {
     rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::setTranslation(const moon::math::Vector<float,3> & translate)
 {
     translation = moon::math::Quaternion<float>(0.0f,translate);
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::setRotation(const float & ang ,const moon::math::Vector<float,3> & ax) {
     rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax)));
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 BaseCamera& BaseCamera::setRotation(const moon::math::Quaternion<float>& rotation) {
     this->rotation = rotation;
-    updateViewMatrix();
-    return *this;
+    return updateViewMatrix();
 }
 
 moon::math::Matrix<float,4,4> BaseCamera::getProjMatrix() const { return projMatrix;}

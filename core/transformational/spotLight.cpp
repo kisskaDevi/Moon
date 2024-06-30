@@ -29,85 +29,73 @@ SpotLight::SpotLight(const std::filesystem::path & TEXTURE_PATH, const moon::mat
 
 SpotLight::~SpotLight(){delete tex;}
 
-void SpotLight::updateModelMatrix()
-{
-    moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
-    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
+SpotLight& SpotLight::updateModelMatrix() {
+    moon::math::Matrix<float,4,4> transformMatrix = convert(convert(rotation, translation));
     modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
-
     utils::raiseFlags(uniformBuffersHost);
+    return *this;
 }
 
 SpotLight& SpotLight::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::translate(const moon::math::Vector<float,3> & translate)
 {
     translation += moon::math::Quaternion<float>(0.0f,translate);
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::rotate(const moon::math::Quaternion<float>& quat)
 {
     rotation = quat*rotation;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::scale(const moon::math::Vector<float,3> & scale)
 {
     scaling = scale;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::setTranslation(const moon::math::Vector<float,3>& translate)
 {
-    translation = moon::math::Quaternion<float>(0.0f,moon::math::Vector<float,3>(translate[0],translate[1],translate[2]));
-    updateModelMatrix();
-    return *this;
+    translation = moon::math::Quaternion<float>(0.0f, translate);
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::setRotation(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotation = convert(ang,moon::math::Vector<float,3>(normalize(ax)));
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::setRotation(const moon::math::Quaternion<float>& rotation)
 {
     this->rotation = rotation;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotationX = convert(ang,moon::math::Vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 SpotLight& SpotLight::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 void SpotLight::setTexture(moon::utils::Texture* tex) {
@@ -353,63 +341,58 @@ void IsotropicLight::setLightDropFactor(const float& dropFactor){
         source->setLightDropFactor(lightDropFactor);
 }
 
-void IsotropicLight::updateModelMatrix()
+IsotropicLight& IsotropicLight::updateModelMatrix()
 {
-    moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
-    moon::math::Matrix<float,4,4> transformMatrix = convert(dQuat);
-
+    moon::math::Matrix<float,4,4> transformMatrix = convert(convert(rotation, translation));
     modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
-
     for(auto& source: lightSource)
         source->setGlobalTransform(modelMatrix);
+
+    return *this;
 }
 
 IsotropicLight& IsotropicLight::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
 {
     globalTransformation = transform;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 IsotropicLight& IsotropicLight::translate(const moon::math::Vector<float,3> & translate)
 {
-    translation += moon::math::Quaternion<float>(0.0f, moon::math::Vector<float,3>(translate[0],translate[1],translate[2]));
-    updateModelMatrix();
-    return *this;
+    translation += moon::math::Quaternion<float>(0.0f, translate);
+    return updateModelMatrix();
 }
 
 IsotropicLight& IsotropicLight::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
 IsotropicLight& IsotropicLight::scale(const moon::math::Vector<float,3> & scale)
 {
     scaling = scale;
-    updateModelMatrix();
-    return *this;
+    return updateModelMatrix();
 }
 
-void IsotropicLight::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
+IsotropicLight& IsotropicLight::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotationX = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationX;
     rotation = rotationY * rotationX;
-    updateModelMatrix();
+    return updateModelMatrix();
 }
 
-void IsotropicLight::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
+IsotropicLight& IsotropicLight::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
 {
     rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
     rotation = rotationY * rotationX;
-    updateModelMatrix();
+    return updateModelMatrix();
 }
 
-void IsotropicLight::setTranslation(const moon::math::Vector<float,3>& translate)
+IsotropicLight& IsotropicLight::setTranslation(const moon::math::Vector<float,3>& translate)
 {
-    translation = moon::math::Quaternion<float>(0.0f, moon::math::Vector<float,3>(translate[0],translate[1],translate[2]));
-    updateModelMatrix();
+    translation = moon::math::Quaternion<float>(0.0f, translate);
+    return updateModelMatrix();
 }
 
 }

@@ -23,14 +23,13 @@ private:
     std::filesystem::path           vertShaderPath;
     std::filesystem::path           fragShaderPath;
 
-    VkPipelineLayout                pipelineLayout{VK_NULL_HANDLE};
-    VkPipeline                      pipeline{VK_NULL_HANDLE};
-    VkDescriptorSetLayout           descriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorPool                descriptorPool{VK_NULL_HANDLE};
-    utils::vkDefault::DescriptorSets descriptorSets;
-
-    utils::vkDefault::RenderPass    renderPass;
-    utils::vkDefault::Framebuffers  framebuffers;
+    utils::vkDefault::PipelineLayout        pipelineLayout;
+    utils::vkDefault::Pipeline              pipeline;
+    utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
+    utils::vkDefault::DescriptorPool        descriptorPool;
+    utils::vkDefault::DescriptorSets        descriptorSets;
+    utils::vkDefault::RenderPass            renderPass;
+    utils::vkDefault::Framebuffers          framebuffers;
 
     moon::utils::Attachments frame;
     bool enable{true};
@@ -42,18 +41,13 @@ private:
     void createAttachments();
     void createRenderPass();
     void createFramebuffers();
-
     void createDescriptorSetLayout();
     void createPipeline();
-
-    void createDescriptorPool();
-    void createDescriptorSets();
+    void createDescriptors();
 
 public:
-    BoundingBoxGraphics();
-    ~BoundingBoxGraphics();
+    BoundingBoxGraphics() = default;
 
-    void destroy();
     void create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath);
     void update(uint32_t imageIndex);
     void render(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;

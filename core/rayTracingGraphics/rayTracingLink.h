@@ -28,26 +28,27 @@ class RayTracingLink : public moon::graphicsManager::Linkable{
 private:
     RayTracingLinkParameters        parameters;
     std::filesystem::path           shadersPath;
-    uint32_t                        imageCount{0};
-    VkDevice                        device{VK_NULL_HANDLE};
-    VkRenderPass                    renderPass{VK_NULL_HANDLE};
+    moon::utils::ImageInfo          imageInfo;
 
-    VkPipelineLayout                PipelineLayout{VK_NULL_HANDLE};
-    VkPipeline                      Pipeline{VK_NULL_HANDLE};
-    VkDescriptorSetLayout           DescriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorPool                DescriptorPool{VK_NULL_HANDLE};
-    utils::vkDefault::DescriptorSets DescriptorSets;
+    VkDevice        device{VK_NULL_HANDLE};
+    VkRenderPass    renderPass{VK_NULL_HANDLE};
 
-    LinkPushConstant                pushConstant;
+    utils::vkDefault::PipelineLayout        pipelineLayout;
+    utils::vkDefault::Pipeline              pipeline;
+    utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
+    utils::vkDefault::DescriptorPool        descriptorPool;
+    utils::vkDefault::DescriptorSets        descriptorSets;
+
+    LinkPushConstant pushConstant;
+
+    void createDescriptorSetLayout();
+    void createPipeline();
+    void createDescriptors();
 
 public:
     RayTracingLink() = default;
     RayTracingLink(const RayTracingLinkParameters& parameters) : parameters(parameters){};
-    void destroy();
 
-    void setDeviceProp(VkDevice device);
-    void setImageCount(const uint32_t& count);
-    void setShadersPath(const std::filesystem::path& shadersPath);
     void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size);
     void setParameters(const RayTracingLinkParameters& parameters){
         this->parameters = parameters;
@@ -56,10 +57,7 @@ public:
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
     void setRenderPass(VkRenderPass renderPass) override;
 
-    void createDescriptorSetLayout();
-    void createPipeline(moon::utils::ImageInfo* pInfo);
-    void createDescriptorPool();
-    void createDescriptorSets();
+    void create(const std::filesystem::path& shadersPath, VkDevice device, const moon::utils::ImageInfo& imageInfo);
     void updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase);
 };
 

@@ -13,8 +13,6 @@ struct CameraBuffer{
     alignas(16) moon::math::Matrix<float,4,4> view;
 };
 
-BoundingBoxGraphics::BoundingBoxGraphics() {}
-
 void BoundingBoxGraphics::createAttachments() {
     moon::utils::createAttachments(physicalDevice, device, image, 1, &frame);
 }
@@ -44,7 +42,6 @@ void BoundingBoxGraphics::BoundingBoxGraphics::createRenderPass(){
         dependencies.back().srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
     CHECK(renderPass.create(device, attachments, subpasses, dependencies));
 }
 
@@ -67,12 +64,7 @@ void BoundingBoxGraphics::createFramebuffers(){
 void BoundingBoxGraphics::createDescriptorSetLayout(){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-    CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout));
+    CHECK(descriptorSetLayout.create(device, bindings));
 }
 
 void BoundingBoxGraphics::createPipeline(){
@@ -100,19 +92,12 @@ void BoundingBoxGraphics::createPipeline(){
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
-    pushConstantRange.push_back(VkPushConstantRange{});
-    pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-    pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(cuda::rayTracing::cbox);
-
-    std::vector<VkDescriptorSetLayout> setLayouts = {descriptorSetLayout};
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
-    pipelineLayoutInfo.pSetLayouts = setLayouts.data();
-    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRange.size());
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRange.data();
-    CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+        pushConstantRange.push_back(VkPushConstantRange{});
+        pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        pushConstantRange.back().offset = 0;
+        pushConstantRange.back().size = sizeof(cuda::rayTracing::cbox);
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
+    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -131,31 +116,13 @@ void BoundingBoxGraphics::createPipeline(){
     pipelineInfo.back().subpass = 0;
     pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(pipelineInfo.size()), pipelineInfo.data(), nullptr, &pipeline));
+    CHECK(pipeline.create(device, pipelineInfo));
 }
 
-void BoundingBoxGraphics::createDescriptorPool(){
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    poolSizes.push_back(VkDescriptorPoolSize{});
-    poolSizes.back().type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes.back().descriptorCount = static_cast<uint32_t>(image.Count);
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-    poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(image.Count);
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
-}
 
-void BoundingBoxGraphics::createDescriptorSets(){
-    descriptorSets.resize(image.Count);
-    std::vector<VkDescriptorSetLayout> layouts(image.Count, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(image.Count);
-    allocInfo.pSetLayouts = layouts.data();
-    vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data());
+void BoundingBoxGraphics::createDescriptors(){
+    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, image.Count));
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, image.Count);
 
     for (uint32_t i = 0; i < image.Count; i++)
     {
@@ -177,17 +144,6 @@ void BoundingBoxGraphics::createDescriptorSets(){
     }
 }
 
-BoundingBoxGraphics::~BoundingBoxGraphics(){
-    destroy();
-}
-
-void BoundingBoxGraphics::destroy(){
-    if(pipeline)            {vkDestroyPipeline(device, pipeline, nullptr); pipeline = VK_NULL_HANDLE;}
-    if(pipelineLayout)      {vkDestroyPipelineLayout(device, pipelineLayout,nullptr); pipelineLayout = VK_NULL_HANDLE;}
-    if(descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr); descriptorSetLayout = VK_NULL_HANDLE;}
-    if(descriptorPool)      {vkDestroyDescriptorPool(device, descriptorPool, nullptr); descriptorPool = VK_NULL_HANDLE;}
-}
-
 void BoundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice device, const moon::utils::ImageInfo& image, const std::filesystem::path& shadersPath){
     if(!enable) return;
 
@@ -207,8 +163,7 @@ void BoundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
     createFramebuffers();
     createDescriptorSetLayout();
     createPipeline();
-    createDescriptorPool();
-    createDescriptorSets();
+    createDescriptors();
 }
 
 void BoundingBoxGraphics::update(uint32_t imageIndex){
@@ -239,13 +194,13 @@ void BoundingBoxGraphics::render(VkCommandBuffer commandBuffer, uint32_t imageIn
     std::vector<VkClearValue> clearValues = {frame.clearValue()};
 
     VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = framebuffers[imageIndex];
-    renderPassInfo.renderArea.offset = {0,0};
-    renderPassInfo.renderArea.extent = image.Extent;
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = framebuffers[imageIndex];
+        renderPassInfo.renderArea.offset = {0,0};
+        renderPassInfo.renderArea.extent = image.Extent;
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

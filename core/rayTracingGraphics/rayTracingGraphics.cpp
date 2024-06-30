@@ -11,13 +11,11 @@ RayTracingGraphics::RayTracingGraphics(const std::filesystem::path& shadersPath,
     : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
 {
     setExtent(extent);
-    Link.setShadersPath(shadersPath);
-    link = &Link;
+    link = &rayTracingLink;
 }
 
 RayTracingGraphics::~RayTracingGraphics(){
     RayTracingGraphics::destroy();
-    bbGraphics.destroy();
 }
 
 void RayTracingGraphics::ImageResource::create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo){
@@ -96,15 +94,9 @@ void RayTracingGraphics::create()
     linkParams.in.bloom = bloomParams.out.bloom;
     linkParams.in.boundingBox = bbId;
 
-    Link.setParameters(linkParams);
-    Link.setImageCount(imageCount);
-    Link.setDeviceProp(device->getLogical());
-    Link.setShadersPath(shadersPath);
-    Link.createDescriptorSetLayout();
-    Link.createPipeline(&swapChainInfo);
-    Link.createDescriptorPool();
-    Link.createDescriptorSets();
-    Link.updateDescriptorSets(aDatabase);
+    rayTracingLink.setParameters(linkParams);
+    rayTracingLink.create(shadersPath, device->getLogical(), swapChainInfo);
+    rayTracingLink.updateDescriptorSets(aDatabase);
 
     rayTracer.create();
 }
@@ -114,8 +106,6 @@ void RayTracingGraphics::destroy() {
     bloom.destroy(*device);
 
     if(commandPool) {vkDestroyCommandPool(device->getLogical(), commandPool, nullptr); commandPool = VK_NULL_HANDLE;}
-    Link.destroy();
-    bbGraphics.destroy();
     aDatabase.destroy();
 }
 
@@ -156,7 +146,7 @@ void RayTracingGraphics::update(uint32_t imageIndex) {
 void RayTracingGraphics::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) {
     this->offset = offset;
     this->size = size;
-    Link.setPositionInWindow(offset, size);
+    rayTracingLink.setPositionInWindow(offset, size);
 }
 
 void RayTracingGraphics::setEnableBoundingBox(bool enable){

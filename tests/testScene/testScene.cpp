@@ -257,9 +257,6 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
                 );
             }
         }
-        for(auto& [_,graph]: graphics){
-            graph->updateCmdFlags();
-        }
         ImGui::TreePop();
     }
 
@@ -492,10 +489,6 @@ void testScene::mouseEvent(float frameTime)
                         controledObjectOutlightingColor[3]
                     }
                 );
-
-                for(auto& [_,graph]: graphics){
-                    graph->updateCmdFlags();
-                }
             }
         }
     }

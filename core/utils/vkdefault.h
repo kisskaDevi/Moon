@@ -5,6 +5,7 @@
 #include <vector>
 #include <filesystem>
 #include <unordered_map>
+#include <list>
 
 #include "operations.h"
 
@@ -64,6 +65,7 @@ using MaskType = uint8_t;
 class Pipeline {
 	VKDEFAULT_INIT_DESCRIPTOR(Pipeline, VkPipeline)
 
+public:
 	VkResult create(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos);
 };
 
@@ -72,6 +74,7 @@ using PipelineMap = std::unordered_map<MaskType, moon::utils::vkDefault::Pipelin
 class PipelineLayout {
 	VKDEFAULT_INIT_DESCRIPTOR(PipelineLayout, VkPipelineLayout)
 
+public:
 	VkResult create(
 		VkDevice device,
 		const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts,
@@ -81,10 +84,10 @@ class PipelineLayout {
 using PipelineLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::PipelineLayout>;
 
 class DescriptorSetLayout {
+	VKDEFAULT_INIT_DESCRIPTOR(DescriptorSetLayout, VkDescriptorSetLayout)
+
 public:
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
-
-	VKDEFAULT_INIT_DESCRIPTOR(DescriptorSetLayout, VkDescriptorSetLayout)
 
 	VkResult create(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 };
@@ -96,6 +99,7 @@ protected:
 	VkShaderModule shaderModule{ VK_NULL_HANDLE };
 	VkDevice device{ VK_NULL_HANDLE };
 	virtual void destroy();
+
 public:
 	virtual ~ShaderModule();
 	ShaderModule() = default;
@@ -117,6 +121,7 @@ private:
 	VkSpecializationInfo specializationInfo{};
 	VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo{};
 	void destroy();
+
 public:
 	~FragmentShaderModule();
 	FragmentShaderModule() = default;
@@ -139,6 +144,7 @@ private:
 	VkSpecializationInfo specializationInfo{};
 	VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo{};
 	void destroy();
+
 public:
 	~VertrxShaderModule();
 	VertrxShaderModule() = default;
@@ -159,6 +165,7 @@ public:
 class RenderPass {
 	VKDEFAULT_INIT_DESCRIPTOR(RenderPass, VkRenderPass)
 
+public:
 	using AttachmentDescriptions = std::vector<VkAttachmentDescription>;
 	using SubpassDescriptions = std::vector<VkSubpassDescription>;
 	using SubpassDependencies = std::vector<VkSubpassDependency>;
@@ -169,6 +176,7 @@ class RenderPass {
 class Framebuffer {
 	VKDEFAULT_INIT_DESCRIPTOR(Framebuffer, VkFramebuffer)
 
+public:
 	VkResult create(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo);
 };
 
@@ -178,6 +186,7 @@ class Instance {
 private:
 	VkInstance instance{ VK_NULL_HANDLE };
 	void destroy();
+
 public:
 	~Instance();
 	Instance() = default;
@@ -195,6 +204,7 @@ private:
 	VkDebugUtilsMessengerEXT debugUtilsMessenger{ VK_NULL_HANDLE };
 	VkInstance instance{ VK_NULL_HANDLE };
 	void destroy();
+
 public:
 	~DebugUtilsMessenger();
 	DebugUtilsMessenger() = default;
@@ -216,6 +226,7 @@ private:
 	VkSurfaceKHR surface{ VK_NULL_HANDLE };
 	VkInstance instance{ VK_NULL_HANDLE };
 	void destroy();
+
 public:
 	~Surface();
 	Surface() = default;
@@ -236,6 +247,7 @@ class Semaphore {
 private:
 	VKDEFAULT_INIT_DESCRIPTOR(Semaphore, VkSemaphore)
 
+public:
 	VkResult create(const VkDevice& device);
 };
 
@@ -244,6 +256,7 @@ using Semaphores = std::vector<Semaphore>;
 class Fence {
 	VKDEFAULT_INIT_DESCRIPTOR(Fence, VkFence)
 
+public:
 	VkResult create(const VkDevice& device);
 };
 
@@ -252,6 +265,7 @@ using Fences = std::vector<Fence>;
 class Sampler {
 	VKDEFAULT_INIT_DESCRIPTOR(Sampler, VkSampler)
 
+public:
 	VkResult create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo);
 };
 
@@ -260,6 +274,7 @@ using DescriptorSets = std::vector<VkDescriptorSet>;
 class DescriptorPool {
 	VKDEFAULT_INIT_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
 
+public:
 	VkResult create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount);
 	VkResult create(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo);
 	DescriptorSets allocateDescriptorSets(const vkDefault::DescriptorSetLayout& descriptorSetLayout, const uint32_t& descriptorSetCount);
@@ -268,6 +283,7 @@ class DescriptorPool {
 class ImageView {
 	VKDEFAULT_INIT_DESCRIPTOR(ImageView, VkImageView)
 
+public:
 	VkResult create(
 		const VkDevice& device,
 		const VkImage& image,
@@ -284,6 +300,7 @@ private:
 	VkDeviceMemory memory{ VK_NULL_HANDLE };
 	VKDEFAULT_INIT_DESCRIPTOR(Image, VkImage)
 
+public:
 	VkResult create(
 		VkPhysicalDevice                physicalDevice,
 		VkDevice                        device,
@@ -310,6 +327,7 @@ private:
 
 	VKDEFAULT_INIT_DESCRIPTOR(Buffer, VkBuffer);
 
+public:
 	VkResult create(
 		VkPhysicalDevice                physicalDevice,
 		VkDevice                        device,
@@ -328,12 +346,6 @@ private:
 	operator const VkDeviceMemory* () const;
 };
 
-class CommandPool {
-	VKDEFAULT_INIT_DESCRIPTOR(CommandPool, VkCommandPool)
-
-	VkResult create(const VkDevice& device);
-};
-
 class SwapchainKHR {
 private:
 	utils::ImageInfo imageInfo;
@@ -349,6 +361,30 @@ public:
 		VkSurfaceFormatKHR surfaceFormat);
 
 	std::vector<VkImage> images() const;
+};
+
+class CommandBuffer {
+private:
+	VkCommandPool commandPool{ VK_NULL_HANDLE };
+	bool updateFlag{false};
+	VKDEFAULT_INIT_DESCRIPTOR(CommandBuffer, VkCommandBuffer)
+
+public:
+	VkResult create(const VkDevice& device, VkCommandPool commandPool);
+	VkResult reset() const;
+	VkResult begin() const;
+	VkResult end() const;
+};
+
+using CommandBuffers = std::vector<CommandBuffer>;
+
+class CommandPool {
+	std::list<VkCommandBuffer> commandBuffers;
+	VKDEFAULT_INIT_DESCRIPTOR(CommandPool, VkCommandPool)
+
+public:
+	VkResult create(const VkDevice& device);
+	CommandBuffers allocateCommandBuffers(const uint32_t& commandBuffersCount) const;
 };
 
 }

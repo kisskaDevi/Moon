@@ -14,7 +14,7 @@ Graphics::Lighting::Lighting(const utils::ImageInfo& imageInfo,
     parameters(parameters)
 {}
 
-void Graphics::Lighting::createDescriptorSetLayout()
+void Graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::inAttachmentFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -30,19 +30,20 @@ void Graphics::Lighting::createDescriptorSetLayout()
     shadowDescriptorSetLayout = moon::utils::DepthMap::createDescriptorSetLayout(device);
 }
 
-void Graphics::Lighting::createPipeline(VkRenderPass pRenderPass)
+void Graphics::Lighting::createPipeline(VkDevice device, VkRenderPass pRenderPass)
 {
     std::filesystem::path spotVert = shadersPath / "spotLightingPass/spotLightingVert.spv";
     std::filesystem::path spotFrag = shadersPath / "spotLightingPass/spotLightingFrag.spv";
-    createPipeline(moon::interfaces::LightType::spot, pRenderPass, spotVert, spotFrag);
+    createPipeline(device, moon::interfaces::LightType::spot, pRenderPass, spotVert, spotFrag);
 }
 
-void Graphics::Lighting::createDescriptors() {
+void Graphics::Lighting::createDescriptors(VkDevice device) {
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void Graphics::Lighting::updateDescriptorSets(
+    VkDevice device,
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -79,12 +80,11 @@ void Graphics::Lighting::updateDescriptorSets(
 }
 
 void Graphics::Lighting::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->device = device;
     this->shadersPath = shadersPath;
 
-    createDescriptorSetLayout();
-    createPipeline(pRenderPass);
-    createDescriptors();
+    createDescriptorSetLayout(device);
+    createPipeline(device, pRenderPass);
+    createDescriptors(device);
 }
 
 void Graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer) const

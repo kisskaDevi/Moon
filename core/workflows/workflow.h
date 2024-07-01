@@ -46,9 +46,9 @@ protected:
     std::filesystem::path           shadersPath;
     moon::utils::ImageInfo          imageInfo;
 
-    utils::vkDefault::RenderPass    renderPass;
-    utils::vkDefault::Framebuffers  framebuffers;
-    std::vector<VkCommandBuffer>    commandBuffers;
+    utils::vkDefault::RenderPass        renderPass;
+    utils::vkDefault::Framebuffers      framebuffers;
+    utils::vkDefault::CommandBuffers    commandBuffers;
 public:
     virtual ~Workflow(){};
     Workflow(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path & shadersPath) : imageInfo(imageInfo), shadersPath(shadersPath) {};
@@ -61,11 +61,10 @@ public:
     virtual void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) = 0;
     virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
 
-    void createCommandBuffers(VkCommandPool commandPool);
-    void beginCommandBuffer(uint32_t frameNumber);
-    void endCommandBuffer(uint32_t frameNumber);
-    VkCommandBuffer& getCommandBuffer(uint32_t frameNumber);
-    void freeCommandBuffer(VkCommandPool commandPool);
+    void createCommandBuffers(const utils::vkDefault::CommandPool& commandPool);
+    void beginCommandBuffer(uint32_t frameNumber) const;
+    void endCommandBuffer(uint32_t frameNumber) const;
+    VkCommandBuffer getCommandBuffer(uint32_t frameNumber) const;
 };
 
 }

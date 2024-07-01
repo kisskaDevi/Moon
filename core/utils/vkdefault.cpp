@@ -670,23 +670,6 @@ vkDefault::Buffer::operator const VkDeviceMemory* () const {
 VKDEFAULT_MAKE_SWAP(Buffer)
 VKDEFAULT_MAKE_DESCRIPTOR(Buffer, VkBuffer)
 
-VkResult vkDefault::CommandPool::create(const VkDevice& device) {
-    VKDEFAULT_RESET()
-
-    VkCommandPoolCreateInfo poolInfo {};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = 0;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    return vkCreateCommandPool(device, &poolInfo, nullptr, &descriptor);
-}
-
-void vkDefault::CommandPool::destroy() {
-    if (descriptor) vkDestroyCommandPool(device, release(descriptor), nullptr);
-}
-
-VKDEFAULT_MAKE_SWAP(CommandPool)
-VKDEFAULT_MAKE_DESCRIPTOR(CommandPool, VkCommandPool)
-
 VkResult vkDefault::SwapchainKHR::create(const VkDevice& device, const utils::ImageInfo& imageInfo, const utils::swapChain::SupportDetails& supportDetails, const std::vector<uint32_t>& queueFamilyIndices,  VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat) {
     VKDEFAULT_RESET()
     this->imageInfo = imageInfo;
@@ -725,4 +708,72 @@ std::vector<VkImage> vkDefault::SwapchainKHR::images() const {
 VKDEFAULT_MAKE_SWAP(SwapchainKHR)
 VKDEFAULT_MAKE_DESCRIPTOR(SwapchainKHR, VkSwapchainKHR)
 
+VkResult vkDefault::CommandPool::create(const VkDevice& device) {
+    VKDEFAULT_RESET()
+
+    VkCommandPoolCreateInfo poolInfo {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.queueFamilyIndex = 0;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    return vkCreateCommandPool(device, &poolInfo, nullptr, &descriptor);
+}
+
+void vkDefault::CommandPool::swap(CommandPool& other) noexcept {
+    std::swap(device, other.device);
+    std::swap(descriptor, other.descriptor);
+    std::swap(commandBuffers, other.commandBuffers);
+}
+
+vkDefault::CommandBuffers vkDefault::CommandPool::allocateCommandBuffers(const uint32_t& commandBuffersCount) const {
+    vkDefault::CommandBuffers commandBuffers(commandBuffersCount);
+    for (auto& commandBuffer: commandBuffers) {
+        commandBuffer.create(device, descriptor);
+    }
+    return commandBuffers;
+}
+
+void vkDefault::CommandPool::destroy() {
+    if (descriptor) vkDestroyCommandPool(device, release(descriptor), nullptr);
+    for (auto& commandBuffer: commandBuffers) {
+        vkFreeCommandBuffers(device, descriptor, 1, &commandBuffer);
+    }
+    commandBuffers.clear();
+}
+
+VKDEFAULT_MAKE_DESCRIPTOR(CommandPool, VkCommandPool)
+
+VkResult vkDefault::CommandBuffer::create(const VkDevice& device, VkCommandPool commandPool) {
+    VKDEFAULT_RESET()
+    this->commandPool = commandPool;
+
+    VkCommandBufferAllocateInfo allocInfo {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+    return vkAllocateCommandBuffers(device, &allocInfo, &descriptor);
+}
+
+void vkDefault::CommandBuffer::destroy() {
+    descriptor = VK_NULL_HANDLE;
+}
+
+VkResult vkDefault::CommandBuffer::reset() const {
+    return vkResetCommandBuffer(descriptor, 0);
+}
+
+VkResult vkDefault::CommandBuffer::begin() const {
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0;
+    beginInfo.pInheritanceInfo = nullptr;
+    return vkBeginCommandBuffer(descriptor, &beginInfo);
+}
+
+VkResult vkDefault::CommandBuffer::end() const {
+    return vkEndCommandBuffer(descriptor);
+}
+
+VKDEFAULT_MAKE_SWAP(CommandBuffer)
+VKDEFAULT_MAKE_DESCRIPTOR(CommandBuffer, VkCommandBuffer)
 }

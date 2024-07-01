@@ -20,7 +20,7 @@ Graphics::Base::Base(
     parameters(parameters)
 {}
 
-void Graphics::Base::createDescriptorSetLayout() {
+void Graphics::Base::createDescriptorSetLayout(VkDevice device) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -33,7 +33,7 @@ void Graphics::Base::createDescriptorSetLayout() {
     materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
 }
 
-void Graphics::Base::createPipeline(VkRenderPass pRenderPass) {
+void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
     std::vector<VkBool32> transparencyData = {
         static_cast<VkBool32>(enableTransparency),
         static_cast<VkBool32>(transparencyPass)
@@ -128,17 +128,16 @@ void Graphics::Base::createPipeline(VkRenderPass pRenderPass) {
     CHECK(pipelineMap[outliningMask].create(device, pipelineInfo));
 }
 
-void Graphics::Base::createDescriptors() {
+void Graphics::Base::createDescriptors(VkDevice device) {
     CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
 void Graphics::Base::updateDescriptorSets(
+    VkDevice device,
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
-    CHECK_M(device == VK_NULL_HANDLE, std::string("[ Graphics::Base::updateDescriptorSets ] VkDevice is VK_NULL_HANDLE"));
-
     for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
@@ -178,12 +177,11 @@ void Graphics::Base::updateDescriptorSets(
 }
 
 void Graphics::Base::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->device = device;
     this->shadersPath = shadersPath;
 
-    createDescriptorSetLayout();
-    createPipeline(pRenderPass);
-    createDescriptors();
+    createDescriptorSetLayout(device);
+    createPipeline(device, pRenderPass);
+    createDescriptors(device);
 }
 
 void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const

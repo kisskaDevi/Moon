@@ -5,16 +5,7 @@
 
 namespace moon::graphicsManager {
 
-GraphicsLinker::~GraphicsLinker(){
-    destroy();
-}
-
-void GraphicsLinker::destroy(){
-    if(!commandBuffers.empty()){
-        vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-    }
-    commandBuffers.clear();
-}
+GraphicsLinker::~GraphicsLinker(){}
 
 void GraphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
     this->swapChainKHR = swapChainKHR;
@@ -27,7 +18,6 @@ void GraphicsLinker::setDevice(VkDevice device){
 
 void GraphicsLinker::addLinkable(Linkable* link){
     linkables.push_back(link);
-    updateCmdFlags();
 }
 
 void GraphicsLinker::createRenderPass(){
@@ -75,53 +65,35 @@ void GraphicsLinker::createFramebuffers(){
 }
 
 void GraphicsLinker::createCommandBuffers(){
+    commandBuffers.clear();
     CHECK(commandPool.create(device));
-
-    commandBuffers.resize(imageInfo.Count);
-    VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(imageInfo.Count);
-    CHECK(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()));
-
-    updateCommandBufferFlags.resize(imageInfo.Count, true);
+    commandBuffers = commandPool.allocateCommandBuffers(imageInfo.Count);
 }
 
 void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber){
-    if(updateCommandBufferFlags[resourceNumber])
-    {
-        CHECK(vkResetCommandBuffer(commandBuffers[resourceNumber],0));
+    CHECK(commandBuffers[resourceNumber].reset());
+    CHECK(commandBuffers[resourceNumber].begin());
 
-        VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = 0;
-            beginInfo.pInheritanceInfo = nullptr;
-        CHECK(vkBeginCommandBuffer(commandBuffers[resourceNumber], &beginInfo));
+        std::vector<VkClearValue> clearValues = {VkClearValue{}};
 
-            std::vector<VkClearValue> clearValues = {VkClearValue{}};
+        VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = framebuffers[imageNumber];
+            renderPassInfo.renderArea.offset = {0,0};
+            renderPassInfo.renderArea.extent = imageInfo.Extent;
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            renderPassInfo.pClearValues = clearValues.data();
 
-            VkRenderPassBeginInfo renderPassInfo{};
-                renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-                renderPassInfo.renderPass = renderPass;
-                renderPassInfo.framebuffer = framebuffers[imageNumber];
-                renderPassInfo.renderArea.offset = {0,0};
-                renderPassInfo.renderArea.extent = imageInfo.Extent;
-                renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-                renderPassInfo.pClearValues = clearValues.data();
+        vkCmdBeginRenderPass(commandBuffers[resourceNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBeginRenderPass(commandBuffers[resourceNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            for(const auto& link: linkables){
+                link->draw(commandBuffers[resourceNumber], resourceNumber);
+            }
 
-                for(const auto& link: linkables){
-                    link->draw(commandBuffers[resourceNumber], resourceNumber);
-                }
+        vkCmdEndRenderPass(commandBuffers[resourceNumber]);
 
-            vkCmdEndRenderPass(commandBuffers[resourceNumber]);
-
-        CHECK(vkEndCommandBuffer(commandBuffers[resourceNumber]));
-
-        updateCommandBufferFlags[resourceNumber] = false;
-    }
+    CHECK(commandBuffers[resourceNumber].end());
 }
 
 void GraphicsLinker::createSyncObjects(){
@@ -139,7 +111,7 @@ const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const std::vecto
         submitInfo.pWaitSemaphores = submitInfo.waitSemaphoreCount > 0 ? waitSemaphores.data() : VK_NULL_HANDLE;
         submitInfo.pWaitDstStageMask = &waitStages;
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffers[frameNumber];
+        submitInfo.pCommandBuffers = commandBuffers[frameNumber];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores[frameNumber];
     CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
@@ -152,10 +124,6 @@ const VkRenderPass& GraphicsLinker::getRenderPass() const {
 
 const VkCommandBuffer& GraphicsLinker::getCommandBuffer(uint32_t frameNumber) const {
     return commandBuffers[frameNumber];
-}
-
-void GraphicsLinker::updateCmdFlags(){
-    std::fill(updateCommandBufferFlags.begin(), updateCommandBufferFlags.end(), true);
 }
 
 }

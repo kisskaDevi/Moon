@@ -187,8 +187,8 @@ void Graphics::updateDescriptorSets(
 {
     if(!enable) return;
 
-    base.updateDescriptorSets(bDatabase, aDatabase);
-    lighting.updateDescriptorSets(bDatabase, aDatabase);
+    base.updateDescriptorSets(device, bDatabase, aDatabase);
+    lighting.updateDescriptorSets(device, bDatabase, aDatabase);
 }
 
 void Graphics::updateCommandBuffer(uint32_t frameNumber){

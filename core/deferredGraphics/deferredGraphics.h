@@ -47,10 +47,9 @@ private:
 
     moon::utils::Buffers            storageBuffersHost;
 
-    utils::vkDefault::CommandPool   commandPool;
-    std::vector<VkCommandBuffer>    copyCommandBuffers;
-    std::vector<bool>               updateCommandBufferFlags;
-    std::vector<moon::utils::Node>  nodes;
+    utils::vkDefault::CommandPool    commandPool;
+    utils::vkDefault::CommandBuffers copyCommandBuffers;
+    std::vector<moon::utils::Node>   nodes;
 
     uint32_t                        blitAttachmentsCount{8};
     uint32_t                        transparentLayersCount{2};
@@ -65,9 +64,6 @@ private:
     void createGraphicsPasses();
     void createCommandBuffers();
     void updateDescriptorSets();
-
-    void freeCommandBuffers();
-    void destroyCommandPool();
 
     void updateCommandBuffer(uint32_t imageIndex);
     void updateBuffers(uint32_t imageIndex);
@@ -87,8 +83,6 @@ public:
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
-
-    void updateCmdFlags();
 
     bool getEnable(const std::string& name);
     DeferredGraphics& setEnable(const std::string& name, bool enable);

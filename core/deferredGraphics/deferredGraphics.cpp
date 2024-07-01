@@ -53,16 +53,6 @@ DeferredGraphics::~DeferredGraphics(){
     delete deferredLink;
 }
 
-void DeferredGraphics::freeCommandBuffers(){
-    for(auto& [_,workflow]: workflows){
-        workflow->freeCommandBuffer(commandPool);
-    }
-}
-
-void DeferredGraphics::destroyCommandPool(){
-    freeCommandBuffers();
-}
-
 void DeferredGraphics::destroy(){
     for(auto& [_,map]: depthMaps){
         static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
@@ -72,14 +62,13 @@ void DeferredGraphics::destroy(){
         }
     }
 
-    destroyCommandPool();
-
     emptyTextures.clear();
 
     for(auto& [_,workflow]: workflows){
         delete workflow;
     }
     workflows.clear();
+    copyCommandBuffers.clear();
 
     bDatabase.buffersMap.erase("storage");
 }
@@ -234,8 +223,6 @@ void DeferredGraphics::createGraphicsPasses(){
     deferredLink->createDescriptorPool();
 
     createStorageBuffers(imageCount);
-
-    updateCommandBufferFlags.resize(imageCount, true);
 }
 
 void DeferredGraphics::updateDescriptorSets(){
@@ -254,15 +241,7 @@ void DeferredGraphics::createCommandBuffers(){
         workflow->createCommandBuffers(commandPool);
     }
 
-    copyCommandBuffers.resize(imageCount);
-    VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = imageCount;
-    CHECK(vkAllocateCommandBuffers(device->getLogical(), &allocInfo, copyCommandBuffers.data()));
-
-    updateCmdFlags();
+    copyCommandBuffers = commandPool.allocateCommandBuffers(imageCount);
 
     auto getTransparentLayersCommandBuffers = [this](uint32_t imageIndex) -> std::vector<VkCommandBuffer>{
         std::vector<VkCommandBuffer> commandBuffers;
@@ -323,24 +302,16 @@ void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float,2>& of
 }
 
 void DeferredGraphics::updateCommandBuffer(uint32_t imageIndex){
-    if(updateCommandBufferFlags[imageIndex]){
-        for(auto& [name, workflow]: workflows){
-            workflow->beginCommandBuffer(imageIndex);
-            workflow->updateCommandBuffer(imageIndex);
-            workflow->endCommandBuffer(imageIndex);
-        }
-        updateCommandBufferFlags[imageIndex] = false;
+    for(auto& [name, workflow]: workflows){
+        workflow->beginCommandBuffer(imageIndex);
+        workflow->updateCommandBuffer(imageIndex);
+        workflow->endCommandBuffer(imageIndex);
     }
 }
 
 void DeferredGraphics::updateBuffers(uint32_t imageIndex){
-    CHECK(vkResetCommandBuffer(copyCommandBuffers[imageIndex],0));
-
-    VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
-        beginInfo.pInheritanceInfo = nullptr;
-    CHECK(vkBeginCommandBuffer(copyCommandBuffers[imageIndex], &beginInfo));
+    CHECK(copyCommandBuffers[imageIndex].reset());
+    CHECK(copyCommandBuffers[imageIndex].begin());
 
     if(cameraObject){
         cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
@@ -352,7 +323,7 @@ void DeferredGraphics::updateBuffers(uint32_t imageIndex){
         light->update(imageIndex, copyCommandBuffers[imageIndex]);
     }
 
-    vkEndCommandBuffer(copyCommandBuffers[imageIndex]);
+    CHECK(copyCommandBuffers[imageIndex].end());
 }
 
 void DeferredGraphics::createStorageBuffers(uint32_t imageCount){
@@ -404,8 +375,6 @@ void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
     }
     lightSource->create(*device, commandPool, imageCount);
     lights.push_back(lightSource);
-
-    updateCmdFlags();
 }
 
 bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
@@ -420,25 +389,18 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
         }
     }
 
-    updateCmdFlags();
     return size - objects.size() > 0;
 }
 
 void DeferredGraphics::bind(moon::interfaces::Object* object){
     object->create(*device, commandPool, imageCount);
     objects.push_back(object);
-    updateCmdFlags();
 }
 
 bool DeferredGraphics::remove(moon::interfaces::Object* object){
     size_t size = objects.size();
     objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
-    updateCmdFlags();
     return size - objects.size() > 0;
-}
-
-void DeferredGraphics::updateCmdFlags(){
-    std::fill(updateCommandBufferFlags.begin(), updateCommandBufferFlags.end(), true);
 }
 
 DeferredGraphics& DeferredGraphics::setEnable(const std::string& name, bool enable){
@@ -456,21 +418,18 @@ DeferredGraphics& DeferredGraphics::setMinAmbientFactor(const float& minAmbientF
         static_cast<Graphics*>(workflows["TransparentLayer" + std::to_string(i)])->setMinAmbientFactor(minAmbientFactor);
     }
 
-    updateCmdFlags();
     return *this;
 }
 
 DeferredGraphics& DeferredGraphics::setScatteringRefraction(bool enable){
     static_cast<LayersCombiner*>(workflows["LayersCombiner"])->setScatteringRefraction(enable);
 
-    updateCmdFlags();
     return *this;
 }
 
 DeferredGraphics& DeferredGraphics::setBlitFactor(float blitFactor){
     if(enable["Bloom"] && blitFactor >= 1.0f){
         static_cast<moon::workflows::BloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
-        updateCmdFlags();
     }
     return *this;
 }
@@ -478,7 +437,6 @@ DeferredGraphics& DeferredGraphics::setBlitFactor(float blitFactor){
 DeferredGraphics& DeferredGraphics::setBlurDepth(float blurDepth){
     static_cast<moon::workflows::GaussianBlur*>(workflows["Blur"])->setBlurDepth(blurDepth);
     static_cast<LayersCombiner*>(workflows["LayersCombiner"])->setBlurDepth(blurDepth);
-    updateCmdFlags();
     return *this;
 }
 

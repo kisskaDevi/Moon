@@ -115,7 +115,6 @@ VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
 }
 
 VkResult GraphicsManager::createLinker(){
-    linker.destroy();
     linker.setDevice(activeDevice->getLogical());
     linker.setSwapChain(&swapChainKHR);
     linker.createRenderPass();
@@ -183,7 +182,6 @@ VkResult GraphicsManager::drawFrame(){
     for(auto graphics: graphics){
         graphics->update(resourceIndex);
     }
-    linker.updateCmdFlags();
     linker.updateCommandBuffer(resourceIndex, imageIndex);
 
     std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[resourceIndex]}};

@@ -122,10 +122,11 @@ std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vect
     bloomGraph.updateCommandBuffer(imageIndex);
     bloomGraph.endCommandBuffer(imageIndex);
 
+    const auto bloomCommandBuffer = bloomGraph.getCommandBuffer(imageIndex);
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &bloomGraph.getCommandBuffer(imageIndex);
+    submitInfo.pCommandBuffers = &bloomCommandBuffer;
     CHECK(result = vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE));
     CHECK(result = vkQueueWaitIdle(device->getQueue(0, 0)));
 

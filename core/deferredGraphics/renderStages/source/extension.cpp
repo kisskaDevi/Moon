@@ -22,7 +22,6 @@ Graphics::OutliningExtension::OutliningExtension(const Graphics::Base& parent)
 {}
 
 void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass){
-    this->device = device;
     this->shadersPath = shadersPath;
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "outlining/outliningVert.spv");

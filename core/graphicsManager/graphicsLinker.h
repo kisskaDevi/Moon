@@ -24,15 +24,13 @@ private:
     utils::vkDefault::RenderPass    renderPass;
     utils::vkDefault::Framebuffers  framebuffers;
 
-    utils::vkDefault::CommandPool   commandPool;
-    std::vector<VkCommandBuffer>    commandBuffers;
-    std::vector<bool>               updateCommandBufferFlags;
+    utils::vkDefault::CommandPool    commandPool;
+    utils::vkDefault::CommandBuffers commandBuffers;
 
     utils::vkDefault::Semaphores    signalSemaphores;
 
 public:
     ~GraphicsLinker();
-    void destroy();
 
     void setSwapChain(moon::utils::SwapChain* swapChainKHR);
     void setDevice(VkDevice device);
@@ -49,8 +47,6 @@ public:
 
     const VkRenderPass& getRenderPass() const;
     const VkCommandBuffer& getCommandBuffer(uint32_t frameNumber) const;
-
-    void updateCmdFlags();
 };
 
 }

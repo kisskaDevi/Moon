@@ -6,7 +6,7 @@
 
 namespace moon::deferredGraphics {
 
-void Graphics::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
+void Graphics::Lighting::createPipeline(VkDevice device, uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
     uint8_t key = mask;
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShadersPath);

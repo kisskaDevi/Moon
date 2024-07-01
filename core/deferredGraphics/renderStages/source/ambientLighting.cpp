@@ -12,7 +12,6 @@ Graphics::AmbientLighting::AmbientLighting(const Lighting& parent)
 {}
 
 void Graphics::AmbientLighting::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass){
-    this->device = device;
     this->shadersPath = shadersPath;
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "ambientLightingPass/ambientLightingVert.spv");

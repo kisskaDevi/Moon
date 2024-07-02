@@ -122,7 +122,7 @@ const VkRenderPass& GraphicsLinker::getRenderPass() const {
     return renderPass;
 }
 
-const VkCommandBuffer& GraphicsLinker::getCommandBuffer(uint32_t frameNumber) const {
+utils::vkDefault::CommandBuffer& GraphicsLinker::commandBuffer(uint32_t frameNumber) {
     return commandBuffers[frameNumber];
 }
 

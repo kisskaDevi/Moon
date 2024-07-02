@@ -46,7 +46,7 @@ public:
     const VkSemaphore& submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue);
 
     const VkRenderPass& getRenderPass() const;
-    const VkCommandBuffer& getCommandBuffer(uint32_t frameNumber) const;
+    utils::vkDefault::CommandBuffer& commandBuffer(uint32_t frameNumber);
 };
 
 }

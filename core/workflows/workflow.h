@@ -12,9 +12,9 @@ namespace moon::workflows {
 
 class Workbody{
 public:
-    std::filesystem::path           vertShaderPath;
-    std::filesystem::path           fragShaderPath;
-    moon::utils::ImageInfo          imageInfo;
+    std::filesystem::path   vertShaderPath;
+    std::filesystem::path   fragShaderPath;
+    moon::utils::ImageInfo  imageInfo;
 
     VkDevice device{VK_NULL_HANDLE};
 
@@ -41,14 +41,15 @@ public:
 class Workflow
 {
 protected:
-    VkPhysicalDevice                physicalDevice{VK_NULL_HANDLE};
-    VkDevice                        device{VK_NULL_HANDLE};
-    std::filesystem::path           shadersPath;
-    moon::utils::ImageInfo          imageInfo;
+    VkPhysicalDevice        physicalDevice{VK_NULL_HANDLE};
+    VkDevice                device{VK_NULL_HANDLE};
+    std::filesystem::path   shadersPath;
+    moon::utils::ImageInfo  imageInfo;
 
     utils::vkDefault::RenderPass        renderPass;
     utils::vkDefault::Framebuffers      framebuffers;
     utils::vkDefault::CommandBuffers    commandBuffers;
+
 public:
     virtual ~Workflow(){};
     Workflow(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path & shadersPath) : imageInfo(imageInfo), shadersPath(shadersPath) {};
@@ -64,7 +65,8 @@ public:
     void createCommandBuffers(const utils::vkDefault::CommandPool& commandPool);
     void beginCommandBuffer(uint32_t frameNumber) const;
     void endCommandBuffer(uint32_t frameNumber) const;
-    VkCommandBuffer getCommandBuffer(uint32_t frameNumber) const;
+    utils::vkDefault::CommandBuffer& commandBuffer(uint32_t frameNumber);
+    void raiseUpdateFlags();
 };
 
 }

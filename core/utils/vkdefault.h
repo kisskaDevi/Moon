@@ -19,6 +19,11 @@ struct ImageInfo {
 	VkExtent2D              Extent{ 0, 0 };
 	VkSampleCountFlagBits   Samples{ VK_SAMPLE_COUNT_1_BIT };
 };
+
+template<typename T>
+void raiseFlags(std::vector<T>& buffers) {
+	for (auto& buffer : buffers) buffer.raiseFlag();
+}
 }
 
 namespace moon::utils::vkDefault {
@@ -366,7 +371,7 @@ public:
 class CommandBuffer {
 private:
 	VkCommandPool commandPool{ VK_NULL_HANDLE };
-	bool updateFlag{false};
+	bool updateFlag{true};
 	VKDEFAULT_INIT_DESCRIPTOR(CommandBuffer, VkCommandBuffer)
 
 public:
@@ -374,6 +379,8 @@ public:
 	VkResult reset() const;
 	VkResult begin() const;
 	VkResult end() const;
+	void raiseFlag();
+	bool dropFlag();
 };
 
 using CommandBuffers = std::vector<CommandBuffer>;

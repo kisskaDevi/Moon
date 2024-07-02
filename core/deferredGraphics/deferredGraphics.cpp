@@ -246,7 +246,7 @@ void DeferredGraphics::createCommandBuffers(){
     auto getTransparentLayersCommandBuffers = [this](uint32_t imageIndex) -> std::vector<VkCommandBuffer>{
         std::vector<VkCommandBuffer> commandBuffers;
         for(uint32_t i = 0; i < transparentLayersCount; i++){
-            commandBuffers.push_back(workflows["TransparentLayer" + std::to_string(i)]->getCommandBuffer(imageIndex));
+            commandBuffers.push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
         }
         return commandBuffers;
     };
@@ -256,23 +256,23 @@ void DeferredGraphics::createCommandBuffers(){
         nodes[imageIndex] = moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["Shadow"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)),
-            moon::utils::Stage(  {workflows["Skybox"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
+            moon::utils::Stage(  {workflows["Shadow"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)),
+            moon::utils::Stage(  {workflows["Skybox"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["DeferredGraphics"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
+            moon::utils::Stage(  {workflows["DeferredGraphics"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
             moon::utils::Stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["Scattering"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
-            moon::utils::Stage(  {workflows["SSLR"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+            moon::utils::Stage(  {workflows["Scattering"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
+            moon::utils::Stage(  {workflows["SSLR"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["LayersCombiner"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+            moon::utils::Stage(  {workflows["LayersCombiner"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["Selector"]->getCommandBuffer(imageIndex),
-                                  workflows["SSAO"]->getCommandBuffer(imageIndex),
-                                  workflows["Bloom"]->getCommandBuffer(imageIndex),
-                                  workflows["Blur"]->getCommandBuffer(imageIndex),
-                                  workflows["BoundingBox"]->getCommandBuffer(imageIndex),
-                                  workflows["PostProcessing"]->getCommandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+            moon::utils::Stage(  {workflows["Selector"]->commandBuffer(imageIndex),
+                                  workflows["SSAO"]->commandBuffer(imageIndex),
+                                  workflows["Bloom"]->commandBuffer(imageIndex),
+                                  workflows["Blur"]->commandBuffer(imageIndex),
+                                  workflows["BoundingBox"]->commandBuffer(imageIndex),
+                                  workflows["PostProcessing"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, nullptr))))));
 
         nodes[imageIndex].createSemaphores();
@@ -303,9 +303,11 @@ void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float,2>& of
 
 void DeferredGraphics::updateCommandBuffer(uint32_t imageIndex){
     for(auto& [name, workflow]: workflows){
-        workflow->beginCommandBuffer(imageIndex);
-        workflow->updateCommandBuffer(imageIndex);
-        workflow->endCommandBuffer(imageIndex);
+        if (workflow->commandBuffer(imageIndex).dropFlag()) {
+            workflow->beginCommandBuffer(imageIndex);
+            workflow->updateCommandBuffer(imageIndex);
+            workflow->endCommandBuffer(imageIndex);
+        }
     }
 }
 
@@ -371,10 +373,18 @@ void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
         depthMaps[lightSource] = new moon::utils::DepthMap(*device, commandPool, imageCount);
         if(lightSource->isShadowEnable() && enable["Shadow"]){
             static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
+            workflows["Shadow"]->raiseUpdateFlags();
         }
     }
     lightSource->create(*device, commandPool, imageCount);
     lights.push_back(lightSource);
+
+    workflows["DeferredGraphics"]->raiseUpdateFlags();
+    workflows["Scattering"]->raiseUpdateFlags();
+    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+        const auto key = "TransparentLayer" + std::to_string(i);
+        workflows[key]->raiseUpdateFlags();
+    };
 }
 
 bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
@@ -387,7 +397,15 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
             delete depthMaps[lightSource];
             depthMaps.erase(lightSource);
         }
+        workflows["Shadow"]->raiseUpdateFlags();
     }
+
+    workflows["DeferredGraphics"]->raiseUpdateFlags();
+    workflows["Scattering"]->raiseUpdateFlags();
+    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+        const auto key = "TransparentLayer" + std::to_string(i);
+        workflows[key]->raiseUpdateFlags();
+    };
 
     return size - objects.size() > 0;
 }
@@ -395,16 +413,35 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
 void DeferredGraphics::bind(moon::interfaces::Object* object){
     object->create(*device, commandPool, imageCount);
     objects.push_back(object);
+
+    workflows["DeferredGraphics"]->raiseUpdateFlags();
+    workflows["Skybox"]->raiseUpdateFlags();
+    workflows["Shadow"]->raiseUpdateFlags();
+    workflows["BoundingBox"]->raiseUpdateFlags();
+    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+        const auto key = "TransparentLayer" + std::to_string(i);
+        workflows[key]->raiseUpdateFlags();
+    };
 }
 
 bool DeferredGraphics::remove(moon::interfaces::Object* object){
     size_t size = objects.size();
     objects.erase(std::remove(objects.begin(), objects.end(), object), objects.end());
+
+    workflows["DeferredGraphics"]->raiseUpdateFlags();
+    workflows["Skybox"]->raiseUpdateFlags();
+    workflows["Shadow"]->raiseUpdateFlags();
+    workflows["BoundingBox"]->raiseUpdateFlags();
+    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+        const auto key = "TransparentLayer" + std::to_string(i);
+        workflows[key]->raiseUpdateFlags();
+    };
     return size - objects.size() > 0;
 }
 
 DeferredGraphics& DeferredGraphics::setEnable(const std::string& name, bool enable){
     this->enable[name] = enable;
+    if(workflows.count(name) > 0) workflows[name]->raiseUpdateFlags();
     return *this;
 }
 
@@ -414,8 +451,11 @@ bool DeferredGraphics::getEnable(const std::string& name){
 
 DeferredGraphics& DeferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
     static_cast<Graphics*>(workflows["DeferredGraphics"])->setMinAmbientFactor(minAmbientFactor);
+    workflows["DeferredGraphics"]->raiseUpdateFlags();
     for(uint32_t i = 0; i < transparentLayersCount; i++){
-        static_cast<Graphics*>(workflows["TransparentLayer" + std::to_string(i)])->setMinAmbientFactor(minAmbientFactor);
+        const auto key = "TransparentLayer" + std::to_string(i);
+        static_cast<Graphics*>(workflows[key])->setMinAmbientFactor(minAmbientFactor);
+        workflows[key]->raiseUpdateFlags();
     }
 
     return *this;
@@ -423,7 +463,7 @@ DeferredGraphics& DeferredGraphics::setMinAmbientFactor(const float& minAmbientF
 
 DeferredGraphics& DeferredGraphics::setScatteringRefraction(bool enable){
     static_cast<LayersCombiner*>(workflows["LayersCombiner"])->setScatteringRefraction(enable);
-
+    workflows["LayersCombiner"]->raiseUpdateFlags();
     return *this;
 }
 
@@ -431,12 +471,15 @@ DeferredGraphics& DeferredGraphics::setBlitFactor(float blitFactor){
     if(enable["Bloom"] && blitFactor >= 1.0f){
         static_cast<moon::workflows::BloomGraphics*>(workflows["Bloom"])->setBlitFactor(blitFactor).setSamplerStepX(blitFactor).setSamplerStepY(blitFactor);
     }
+    workflows["Bloom"]->raiseUpdateFlags();
     return *this;
 }
 
 DeferredGraphics& DeferredGraphics::setBlurDepth(float blurDepth){
     static_cast<moon::workflows::GaussianBlur*>(workflows["Blur"])->setBlurDepth(blurDepth);
     static_cast<LayersCombiner*>(workflows["LayersCombiner"])->setBlurDepth(blurDepth);
+    workflows["Blur"]->raiseUpdateFlags();
+    workflows["LayersCombiner"]->raiseUpdateFlags();
     return *this;
 }
 

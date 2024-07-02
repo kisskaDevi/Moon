@@ -774,6 +774,16 @@ VkResult vkDefault::CommandBuffer::end() const {
     return vkEndCommandBuffer(descriptor);
 }
 
+void vkDefault::CommandBuffer::raiseFlag() {
+    updateFlag = true;
+}
+
+bool vkDefault::CommandBuffer::dropFlag() {
+    bool temp = updateFlag;
+    updateFlag = false;
+    return temp;
+}
+
 VKDEFAULT_MAKE_SWAP(CommandBuffer)
 VKDEFAULT_MAKE_DESCRIPTOR(CommandBuffer, VkCommandBuffer)
 }

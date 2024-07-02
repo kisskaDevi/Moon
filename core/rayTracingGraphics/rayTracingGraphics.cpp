@@ -105,7 +105,6 @@ void RayTracingGraphics::destroy() {
 
 std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)
 {
-    VkResult result = VK_SUCCESS;
     rayTracer.calculateImage(color.host, bloom.host);
 
     color.moveFromHostToHostDevice(extent);
@@ -122,13 +121,13 @@ std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vect
     bloomGraph.updateCommandBuffer(imageIndex);
     bloomGraph.endCommandBuffer(imageIndex);
 
-    const auto bloomCommandBuffer = bloomGraph.getCommandBuffer(imageIndex);
+    const VkCommandBuffer bloomCommandBuffer = bloomGraph.commandBuffer(imageIndex);
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &bloomCommandBuffer;
-    CHECK(result = vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE));
-    CHECK(result = vkQueueWaitIdle(device->getQueue(0, 0)));
+    CHECK(vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE));
+    CHECK(vkQueueWaitIdle(device->getQueue(0, 0)));
 
     return std::vector<std::vector<VkSemaphore>>();
 }

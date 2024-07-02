@@ -22,8 +22,12 @@ void Workflow::endCommandBuffer(uint32_t frameNumber) const {
     CHECK(commandBuffers[frameNumber].end());
 }
 
-VkCommandBuffer Workflow::getCommandBuffer(uint32_t frameNumber) const{
+utils::vkDefault::CommandBuffer& Workflow::commandBuffer(uint32_t frameNumber) {
     return commandBuffers[frameNumber];
+}
+
+void Workflow::raiseUpdateFlags() {
+    utils::raiseFlags(commandBuffers);
 }
 
 }

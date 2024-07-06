@@ -52,7 +52,7 @@ void Scattering::createRenderPass()
     dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
 void Scattering::createFramebuffers()
@@ -67,7 +67,7 @@ void Scattering::createFramebuffers()
             framebufferInfo.width = imageInfo.Extent.width;
             framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(framebuffers[i].create(device, framebufferInfo));
+        framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
@@ -80,7 +80,7 @@ void Scattering::Lighting::create(const std::filesystem::path& vertShaderPath, c
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
     bufferDescriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
     descriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createTextureDescriptorSetLayout(device);
@@ -88,7 +88,7 @@ void Scattering::Lighting::create(const std::filesystem::path& vertShaderPath, c
 
     createPipeline(moon::interfaces::LightType::spot, pRenderPass);
 
-    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
@@ -128,7 +128,7 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass
         bufferDescriptorSetLayoutMap[mask],
         descriptorSetLayoutMap[mask]
     };
-    CHECK(pipelineLayoutMap[mask].create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayoutMap[mask] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -147,7 +147,7 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipelinesMap[mask].create(device, pipelineInfo));
+    pipelinesMap[mask] = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 void Scattering::create(moon::utils::AttachmentsDatabase& aDatabase)

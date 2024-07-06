@@ -129,12 +129,12 @@ void BaseObject::createUniformBuffers(uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-        buffer.create(device->instance, device->getLogical(), sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        buffer = utils::vkDefault::Buffer(device->instance, device->getLogical(), sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-        buffer.create(device->instance, device->getLogical(), sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        buffer = utils::vkDefault::Buffer(device->instance, device->getLogical(), sizeof(UniformBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseObject::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
@@ -156,7 +156,7 @@ void BaseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer)
 
 void BaseObject::createDescriptorPool(uint32_t imageCount) {
     descriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device->getLogical());
-    CHECK(descriptorPool.create(device->getLogical(), { &descriptorSetLayout }, imageCount));
+    descriptorPool = utils::vkDefault::DescriptorPool(device->getLogical(), { &descriptorSetLayout }, imageCount);
     descriptors = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
 }
 
@@ -224,7 +224,7 @@ SkyboxObject& SkyboxObject::translate(const moon::math::Vector<float,3> &) {
 
 void SkyboxObject::createDescriptorPool(uint32_t imageCount) {
     descriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device->getLogical());
-    CHECK(descriptorPool.create(device->getLogical(), { &descriptorSetLayout }, imageCount));
+    descriptorPool = utils::vkDefault::DescriptorPool(device->getLogical(), { &descriptorSetLayout }, imageCount);
 }
 
 void SkyboxObject::createDescriptorSet(uint32_t imageCount) {

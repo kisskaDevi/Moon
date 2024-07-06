@@ -19,7 +19,7 @@ void RayTracingLink::createDescriptorSetLayout() {
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 }
 
 void RayTracingLink::createPipeline() {
@@ -45,7 +45,7 @@ void RayTracingLink::createPipeline() {
     pushConstantRange.back().offset = 0;
     pushConstantRange.back().size = sizeof(LinkPushConstant);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
-    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -64,11 +64,11 @@ void RayTracingLink::createPipeline() {
     pipelineInfo.back().subpass = 0;
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 void RayTracingLink::createDescriptors() {
-    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 

@@ -46,7 +46,7 @@ void GraphicsLinker::createRenderPass(){
     dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
 void GraphicsLinker::createFramebuffers(){
@@ -60,13 +60,13 @@ void GraphicsLinker::createFramebuffers(){
             framebufferInfo.width = imageInfo.Extent.width;
             framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(framebuffers[i].create(device, framebufferInfo));
+        framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
 void GraphicsLinker::createCommandBuffers(){
     commandBuffers.clear();
-    CHECK(commandPool.create(device));
+    commandPool = utils::vkDefault::CommandPool(device);
     commandBuffers = commandPool.allocateCommandBuffers(imageInfo.Count);
 }
 
@@ -99,7 +99,7 @@ void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t image
 void GraphicsLinker::createSyncObjects(){
     signalSemaphores.resize(imageInfo.Count);
     for (auto& semaphore: signalSemaphores){
-        CHECK(semaphore.create(device));
+        semaphore = utils::vkDefault::Semaphore(device);
     }
 }
 

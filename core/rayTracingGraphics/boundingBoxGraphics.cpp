@@ -42,7 +42,7 @@ void BoundingBoxGraphics::BoundingBoxGraphics::createRenderPass(){
         dependencies.back().srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
 void BoundingBoxGraphics::createFramebuffers(){
@@ -57,14 +57,14 @@ void BoundingBoxGraphics::createFramebuffers(){
             framebufferInfo.width = image.Extent.width;
             framebufferInfo.height = image.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(framebuffers[i].create(device, framebufferInfo));
+        framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
 void BoundingBoxGraphics::createDescriptorSetLayout(){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 }
 
 void BoundingBoxGraphics::createPipeline(){
@@ -97,7 +97,7 @@ void BoundingBoxGraphics::createPipeline(){
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(cuda::rayTracing::cbox);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
-    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -116,12 +116,12 @@ void BoundingBoxGraphics::createPipeline(){
     pipelineInfo.back().subpass = 0;
     pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 
 void BoundingBoxGraphics::createDescriptors(){
-    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, image.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, image.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, image.Count);
 
     for (uint32_t i = 0; i < image.Count; i++)
@@ -155,7 +155,7 @@ void BoundingBoxGraphics::create(VkPhysicalDevice physicalDevice, VkDevice devic
 
     cameraBuffers.resize(image.Count);
     for(auto& buffer: cameraBuffers) {
-        buffer.create(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        buffer = utils::vkDefault::Buffer(physicalDevice, device, sizeof(CameraBuffer), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
     createAttachments();

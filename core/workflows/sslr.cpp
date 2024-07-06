@@ -40,7 +40,7 @@ void SSLRGraphics::createRenderPass()
         dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
 void SSLRGraphics::createFramebuffers()
@@ -55,7 +55,7 @@ void SSLRGraphics::createFramebuffers()
             framebufferInfo.width = imageInfo.Extent.width;
             framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(framebuffers[i].create(device, framebufferInfo));
+        framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
@@ -74,7 +74,7 @@ void SSLRGraphics::SSLR::create(const std::filesystem::path& vertShaderPath, con
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -93,7 +93,7 @@ void SSLRGraphics::SSLR::create(const std::filesystem::path& vertShaderPath, con
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
-    CHECK(pipelineLayout.create(device, descriptorSetLayouts));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -112,9 +112,9 @@ void SSLRGraphics::SSLR::create(const std::filesystem::path& vertShaderPath, con
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 

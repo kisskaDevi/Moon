@@ -46,7 +46,7 @@ void SkyboxGraphics::createRenderPass()
         dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
 void SkyboxGraphics::createFramebuffers()
@@ -65,7 +65,7 @@ void SkyboxGraphics::createFramebuffers()
             framebufferInfo.width = imageInfo.Extent.width;
             framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(framebuffers[i].create(device, framebufferInfo));
+        framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
@@ -76,7 +76,7 @@ void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath,
 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
     objectDescriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device);
 
@@ -99,7 +99,7 @@ void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath,
     VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {descriptorSetLayout, objectDescriptorSetLayout};
-    CHECK(pipelineLayout.create(device, descriptorSetLayouts));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -118,9 +118,9 @@ void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath,
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 

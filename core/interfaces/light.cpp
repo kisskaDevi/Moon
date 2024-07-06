@@ -36,18 +36,14 @@ moon::utils::vkDefault::DescriptorSetLayout Light::createBufferDescriptorSetLayo
         binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    CHECK(descriptorSetLayout.create(device, binding));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, binding);
     return descriptorSetLayout;
 }
 
 moon::utils::vkDefault::DescriptorSetLayout Light::createTextureDescriptorSetLayout(VkDevice device){
-    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, binding));
-    return descriptorSetLayout;
+    return utils::vkDefault::DescriptorSetLayout(device, binding);
 }
 
 }

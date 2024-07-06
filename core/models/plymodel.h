@@ -35,6 +35,10 @@ private:
     class UniformBuffer : public moon::utils::Buffer {
     public:
         UniformBuffer() = default;
+        UniformBuffer& operator=(utils::Buffer && other) {
+            swap(other);
+            return *this;
+        }
         VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
     } uniformBuffer;
 

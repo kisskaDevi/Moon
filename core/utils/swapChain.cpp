@@ -39,15 +39,15 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
     imageInfo.Format = surfaceFormat.format;
 
     VkResult result = VK_SUCCESS;
-    CHECK(result = swapChainKHR.create(device->getLogical(), imageInfo, supportDetails, queueFamilyIndices, surface, surfaceFormat));
+    swapChainKHR = utils::vkDefault::SwapchainKHR(device->getLogical(), imageInfo, supportDetails, queueFamilyIndices, surface, surfaceFormat);
 
     for (const auto& image: swapChainKHR.images()){
         auto& attachment = attachments.emplace_back();
         attachment.image = image;
-        CHECK(result = attachment.imageView.create(device->getLogical(), attachment.image, VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1));
+        attachment.imageView = utils::vkDefault::ImageView(device->getLogical(), attachment.image, VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1);
     }
 
-    CHECK(result = commandPool.create(device->getLogical()));
+    commandPool = utils::vkDefault::CommandPool(device->getLogical());
 
     return result;
 }
@@ -78,8 +78,7 @@ GLFWwindow* SwapChain::getWindow() const { return window;}
 std::vector<uint32_t> SwapChain::makeScreenshot(uint32_t i) const {
     std::vector<uint32_t> buffer(imageInfo.Extent.height * imageInfo.Extent.width, 0);
 
-    Buffer cache;
-    cache.create(device->instance, device->getLogical(), sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    Buffer cache(device->instance, device->getLogical(), sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     VkCommandBuffer commandBuffer = singleCommandBuffer::create(device->getLogical(),commandPool);
     texture::transitionLayout(commandBuffer, attachments[i].image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);

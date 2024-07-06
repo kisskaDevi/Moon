@@ -26,7 +26,7 @@ void Graphics::Base::createDescriptorSetLayout(VkDevice device) {
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
     objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
     primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
@@ -92,7 +92,7 @@ void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
         primitiveDescriptorSetLayout,
         materialDescriptorSetLayout
     };
-    CHECK(pipelineLayoutMap[moon::interfaces::ObjectType::base].create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayoutMap[moon::interfaces::ObjectType::base] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -111,7 +111,7 @@ void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    CHECK(pipelineMap[moon::interfaces::ObjectType::base].create(device, pipelineInfo));
+    pipelineMap[moon::interfaces::ObjectType::base] = utils::vkDefault::Pipeline(device, pipelineInfo);
 
     moon::utils::vkDefault::MaskType outliningMask = moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining;
         depthStencil.stencilTestEnable = VK_TRUE;
@@ -123,13 +123,13 @@ void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
         depthStencil.back.writeMask = 0xff;
         depthStencil.back.reference = 1;
         depthStencil.front = depthStencil.back;
-    CHECK(pipelineLayoutMap[outliningMask].create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayoutMap[outliningMask] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
         pipelineInfo.back().layout = pipelineLayoutMap[outliningMask];
-    CHECK(pipelineMap[outliningMask].create(device, pipelineInfo));
+    pipelineMap[outliningMask] = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 void Graphics::Base::createDescriptors(VkDevice device) {
-    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 

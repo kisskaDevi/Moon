@@ -74,7 +74,7 @@ void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPa
         parent.primitiveDescriptorSetLayout,
         parent.materialDescriptorSetLayout
     };
-    CHECK(pipelineLayout.create(device, descriptorSetLayout, pushConstantRange));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayout, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -93,7 +93,7 @@ void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPa
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 void Graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const

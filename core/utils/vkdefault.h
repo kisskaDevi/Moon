@@ -52,7 +52,6 @@ VkDescriptorSetLayoutBinding inAttachmentFragmentLayoutBinding(const uint32_t& b
 private:												\
 	BaseDescriptor descriptor{ VK_NULL_HANDLE };		\
 	VkDevice device{ VK_NULL_HANDLE };					\
-	void destroy();										\
 public:													\
 	~Name();											\
 	Name() noexcept = default;							\
@@ -71,7 +70,7 @@ class Pipeline {
 	VKDEFAULT_INIT_DESCRIPTOR(Pipeline, VkPipeline)
 
 public:
-	VkResult create(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos);
+	Pipeline(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos);
 };
 
 using PipelineMap = std::unordered_map<MaskType, moon::utils::vkDefault::Pipeline>;
@@ -80,7 +79,7 @@ class PipelineLayout {
 	VKDEFAULT_INIT_DESCRIPTOR(PipelineLayout, VkPipelineLayout)
 
 public:
-	VkResult create(
+	PipelineLayout(
 		VkDevice device,
 		const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts,
 		const std::vector<VkPushConstantRange>& pushConstantRange = {});
@@ -94,7 +93,7 @@ class DescriptorSetLayout {
 public:
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-	VkResult create(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings);
+	DescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 };
 
 using DescriptorSetLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::DescriptorSetLayout>;
@@ -103,7 +102,6 @@ class ShaderModule {
 protected:
 	VkShaderModule shaderModule{ VK_NULL_HANDLE };
 	VkDevice device{ VK_NULL_HANDLE };
-	virtual void destroy();
 
 public:
 	virtual ~ShaderModule();
@@ -125,7 +123,6 @@ class FragmentShaderModule : public ShaderModule {
 private:
 	VkSpecializationInfo specializationInfo{};
 	VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo{};
-	void destroy();
 
 public:
 	~FragmentShaderModule();
@@ -148,7 +145,6 @@ class VertrxShaderModule : public ShaderModule {
 private:
 	VkSpecializationInfo specializationInfo{};
 	VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo{};
-	void destroy();
 
 public:
 	~VertrxShaderModule();
@@ -175,14 +171,14 @@ public:
 	using SubpassDescriptions = std::vector<VkSubpassDescription>;
 	using SubpassDependencies = std::vector<VkSubpassDependency>;
 
-	VkResult create(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies);
+	RenderPass(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies);
 };
 
 class Framebuffer {
 	VKDEFAULT_INIT_DESCRIPTOR(Framebuffer, VkFramebuffer)
 
 public:
-	VkResult create(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo);
+	Framebuffer(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo);
 };
 
 using Framebuffers = std::vector<Framebuffer>;
@@ -190,7 +186,6 @@ using Framebuffers = std::vector<Framebuffer>;
 class Instance {
 private:
 	VkInstance instance{ VK_NULL_HANDLE };
-	void destroy();
 
 public:
 	~Instance();
@@ -200,7 +195,7 @@ public:
 	Instance(Instance&& other) noexcept { std::swap(instance, other.instance); }
 	Instance& operator=(Instance&& other) noexcept { std::swap(instance, other.instance); return *this; }
 
-	VkResult create(const VkInstanceCreateInfo& createInfo);
+	Instance(const VkInstanceCreateInfo& createInfo);
 	operator const VkInstance& () const;
 };
 
@@ -208,7 +203,6 @@ class DebugUtilsMessenger {
 private:
 	VkDebugUtilsMessengerEXT debugUtilsMessenger{ VK_NULL_HANDLE };
 	VkInstance instance{ VK_NULL_HANDLE };
-	void destroy();
 
 public:
 	~DebugUtilsMessenger();
@@ -222,7 +216,7 @@ public:
 		std::swap(instance, other.instance);
 	}
 
-	void create(const VkInstance& createInfo);
+	DebugUtilsMessenger(const VkInstance& createInfo);
 	operator const VkDebugUtilsMessengerEXT& () const;
 };
 
@@ -230,7 +224,6 @@ class Surface {
 private:
 	VkSurfaceKHR surface{ VK_NULL_HANDLE };
 	VkInstance instance{ VK_NULL_HANDLE };
-	void destroy();
 
 public:
 	~Surface();
@@ -244,7 +237,7 @@ public:
 		std::swap(instance, other.instance);
 	}
 
-	VkResult create(const VkInstance& instance, GLFWwindow* window);
+	Surface(const VkInstance& instance, GLFWwindow* window);
 	operator const VkSurfaceKHR& () const;
 };
 
@@ -253,7 +246,7 @@ private:
 	VKDEFAULT_INIT_DESCRIPTOR(Semaphore, VkSemaphore)
 
 public:
-	VkResult create(const VkDevice& device);
+	Semaphore(const VkDevice& device);
 };
 
 using Semaphores = std::vector<Semaphore>;
@@ -262,7 +255,7 @@ class Fence {
 	VKDEFAULT_INIT_DESCRIPTOR(Fence, VkFence)
 
 public:
-	VkResult create(const VkDevice& device);
+	Fence(const VkDevice& device);
 };
 
 using Fences = std::vector<Fence>;
@@ -271,7 +264,7 @@ class Sampler {
 	VKDEFAULT_INIT_DESCRIPTOR(Sampler, VkSampler)
 
 public:
-	VkResult create(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo);
+	Sampler(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo);
 };
 
 using DescriptorSets = std::vector<VkDescriptorSet>;
@@ -280,8 +273,8 @@ class DescriptorPool {
 	VKDEFAULT_INIT_DESCRIPTOR(DescriptorPool, VkDescriptorPool)
 
 public:
-	VkResult create(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount);
-	VkResult create(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo);
+	DescriptorPool(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount);
+	DescriptorPool(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo);
 	DescriptorSets allocateDescriptorSets(const vkDefault::DescriptorSetLayout& descriptorSetLayout, const uint32_t& descriptorSetCount);
 };
 
@@ -289,7 +282,7 @@ class ImageView {
 	VKDEFAULT_INIT_DESCRIPTOR(ImageView, VkImageView)
 
 public:
-	VkResult create(
+	ImageView(
 		const VkDevice& device,
 		const VkImage& image,
 		VkImageViewType type,
@@ -306,7 +299,7 @@ private:
 	VKDEFAULT_INIT_DESCRIPTOR(Image, VkImage)
 
 public:
-	VkResult create(
+	Image(
 		VkPhysicalDevice                physicalDevice,
 		VkDevice                        device,
 		VkImageCreateFlags              flags,
@@ -333,7 +326,7 @@ private:
 	VKDEFAULT_INIT_DESCRIPTOR(Buffer, VkBuffer);
 
 public:
-	VkResult create(
+	Buffer(
 		VkPhysicalDevice                physicalDevice,
 		VkDevice                        device,
 		VkDeviceSize                    size,
@@ -357,7 +350,7 @@ private:
 	VKDEFAULT_INIT_DESCRIPTOR(SwapchainKHR, VkSwapchainKHR)
 
 public:
-	VkResult create(
+	SwapchainKHR(
 		const VkDevice& device,
 		const utils::ImageInfo& imageInfo,
 		const utils::swapChain::SupportDetails& supportDetails,
@@ -375,7 +368,7 @@ private:
 	VKDEFAULT_INIT_DESCRIPTOR(CommandBuffer, VkCommandBuffer)
 
 public:
-	VkResult create(const VkDevice& device, VkCommandPool commandPool);
+	CommandBuffer(const VkDevice& device, VkCommandPool commandPool);
 	VkResult reset() const;
 	VkResult begin() const;
 	VkResult end() const;
@@ -390,7 +383,7 @@ class CommandPool {
 	VKDEFAULT_INIT_DESCRIPTOR(CommandPool, VkCommandPool)
 
 public:
-	VkResult create(const VkDevice& device);
+	CommandPool(const VkDevice& device);
 	CommandBuffers allocateCommandBuffers(const uint32_t& commandBuffersCount) const;
 };
 

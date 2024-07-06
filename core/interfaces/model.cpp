@@ -26,27 +26,19 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 }
 
 moon::utils::vkDefault::DescriptorSetLayout Model::createNodeDescriptorSetLayout(VkDevice device) {
-    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, binding));
-    return descriptorSetLayout;
+    return utils::vkDefault::DescriptorSetLayout(device, binding);
 }
 
 moon::utils::vkDefault::DescriptorSetLayout Model::createMaterialDescriptorSetLayout(VkDevice device) {
-    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, binding));
-    return descriptorSetLayout;
+    return utils::vkDefault::DescriptorSetLayout(device, binding);
 }
 
 }

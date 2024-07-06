@@ -40,7 +40,7 @@ void Graphics::AmbientLighting::create(const std::filesystem::path& shadersPath,
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(LightPassPushConst);
     std::vector<VkDescriptorSetLayout> descriptorSetLayout = {parent.descriptorSetLayout};
-    CHECK(pipelineLayout.create(device, descriptorSetLayout, pushConstantRange));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayout, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -59,7 +59,7 @@ void Graphics::AmbientLighting::create(const std::filesystem::path& shadersPath,
         pipelineInfo.back().subpass = 1;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 void Graphics::AmbientLighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const {

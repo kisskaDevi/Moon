@@ -46,8 +46,8 @@ void ImguiGraphics::create() {
         poolInfo.maxSets = 1;
         poolInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSize.size());
         poolInfo.pPoolSizes = descriptorPoolSize.data();
-    CHECK(descriptorPool.create(device->getLogical(), poolInfo));
-    CHECK(commandPool.create(device->getLogical()));
+    descriptorPool = utils::vkDefault::DescriptorPool(device->getLogical(), poolInfo);
+    commandPool = utils::vkDefault::CommandPool(device->getLogical());
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForVulkan(window, true);

@@ -54,11 +54,11 @@ VkResult GraphicsManager::createInstance(){
         createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
         createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo : nullptr;
     VkResult result = VK_SUCCESS;
-    CHECK(result = instance.create(createInfo))
+    instance = utils::vkDefault::Instance(createInfo);
 
-    if (enableValidationLayers) debugMessenger.create(instance);
+    if (enableValidationLayers) debugMessenger = utils::vkDefault::DebugUtilsMessenger(instance);
 
-    return result;
+    return VK_SUCCESS;
 }
 
 VkResult GraphicsManager::createDevice(const VkPhysicalDeviceFeatures& deviceFeatures){
@@ -97,11 +97,10 @@ VkResult GraphicsManager::createSurface(GLFWwindow* window){
     CHECK_M(devices.empty(), "[ GraphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
     CHECK_M(window == nullptr, "[ createSurface ] Window is nullptr");
 
-    VkResult result = VK_SUCCESS;
-    CHECK(result = surface.create(instance, window));
+    surface = utils::vkDefault::Surface(instance, window);
     CHECK_M(!activeDevice->presentSupport(surface), "[ GraphicsManager::createSurface ] device doesn't support present");
 
-    return result;
+    return VK_SUCCESS;
 }
 
 VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCount){
@@ -157,12 +156,12 @@ VkResult GraphicsManager::createSyncObjects(){
 
     availableSemaphores.resize(resourceCount);
     for (auto& semaphore : availableSemaphores) {
-        CHECK(result = semaphore.create(activeDevice->getLogical()));
+        semaphore = utils::vkDefault::Semaphore(activeDevice->getLogical());
     }
 
     fences.resize(resourceCount);
     for (auto& fence : fences) {
-        CHECK(result = fence.create(activeDevice->getLogical()));
+        fence = utils::vkDefault::Fence(activeDevice->getLogical());
     }
 
     return result;

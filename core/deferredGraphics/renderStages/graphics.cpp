@@ -140,7 +140,7 @@ void Graphics::createRenderPass()
                                             VK_ACCESS_INPUT_ATTACHMENT_READ_BIT|
                                             VK_ACCESS_UNIFORM_READ_BIT;
 
-    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
 void Graphics::createFramebuffers()
@@ -160,7 +160,7 @@ void Graphics::createFramebuffers()
             framebufferInfo.width = imageInfo.Extent.width;
             framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(framebuffers[imageIndex].create(device, framebufferInfo));
+        framebuffers[imageIndex] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 

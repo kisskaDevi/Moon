@@ -18,7 +18,7 @@ RayTracingGraphics::ImageResource::ImageResource(const std::string& id, const mo
 
     host.resize(imageInfo.Extent.width * imageInfo.Extent.height);
 
-    hostDevice.create(
+    hostDevice = utils::vkDefault::Buffer(
         phDevice.instance,
         phDevice.getLogical(),
         sizeof(uint32_t) * host.size(),
@@ -61,7 +61,7 @@ void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuff
 void RayTracingGraphics::create()
 {
     aDatabase.destroy();
-    CHECK(commandPool.create(device->getLogical()));
+    commandPool = utils::vkDefault::CommandPool(device->getLogical());
 
     emptyTexture = utils::Texture::empty(*device, commandPool);
     aDatabase.addEmptyTexture("black", &emptyTexture);

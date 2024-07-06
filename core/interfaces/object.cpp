@@ -83,25 +83,17 @@ uint8_t Object::getPipelineBitMask() const {
 }
 
 moon::utils::vkDefault::DescriptorSetLayout Object::createDescriptorSetLayout(VkDevice device){
-    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    CHECK(descriptorSetLayout.create(device, binding));
-    return descriptorSetLayout;
+    return utils::vkDefault::DescriptorSetLayout(device, binding);
 }
 
 moon::utils::vkDefault::DescriptorSetLayout Object::createSkyboxDescriptorSetLayout(VkDevice device) {
-    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-
-    CHECK(descriptorSetLayout.create(device, binding));
-    return descriptorSetLayout;
+    return utils::vkDefault::DescriptorSetLayout(device, binding);
 }
 
 }

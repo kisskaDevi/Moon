@@ -49,7 +49,7 @@ DeferredGraphics::DeferredGraphics(const std::filesystem::path& shadersPath, con
 
 void DeferredGraphics::create()
 {
-    CHECK(commandPool.create(device->getLogical()));
+    commandPool = utils::vkDefault::CommandPool(device->getLogical());
 
     aDatabase.destroy();
     emptyTextures["black"] = moon::utils::Texture::empty(*device, commandPool);
@@ -298,7 +298,7 @@ void DeferredGraphics::updateBuffers(uint32_t imageIndex){
 void DeferredGraphics::createStorageBuffers(uint32_t imageCount){
     storageBuffersHost.resize(imageCount);
     for (auto& buffer : storageBuffersHost) {
-        buffer.create(device->instance, device->getLogical(), sizeof(StorageBufferObject), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        buffer = utils::vkDefault::Buffer(device->instance, device->getLogical(), sizeof(StorageBufferObject), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
     bDatabase.buffersMap["storage"] = &storageBuffersHost;
 }

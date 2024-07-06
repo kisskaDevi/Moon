@@ -28,8 +28,8 @@ Attachment::Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageIn
     const auto depthFormats = image::depthFormats();
     const bool isDepth = std::any_of(depthFormats.begin(), depthFormats.end(), [&imageInfo](const VkFormat& format) {return imageInfo.Format == format; });
     const VkImageAspectFlagBits imageAspectFlagBits = isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-    CHECK(image.create(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-    CHECK(imageView.create(device, image, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, imageAspectFlagBits, 1, 0, 1));
+    image = utils::vkDefault::Image(physicalDevice, device, 0, { imageInfo.Extent.width, imageInfo.Extent.height, 1 }, 1, 1, VK_SAMPLE_COUNT_1_BIT, imageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    imageView = utils::vkDefault::ImageView(device, image, VK_IMAGE_VIEW_TYPE_2D, imageInfo.Format, imageAspectFlagBits, 1, 0, 1);
 }
 
 Attachments::Attachments(Attachments&& other) noexcept {
@@ -58,7 +58,7 @@ VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, I
         instance = Attachment(physicalDevice, device, imageInfo, usage);
         Memory::instance().nameMemory(instance.image, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
     }
-    CHECK(imageSampler.create(device, samplerInfo));
+    imageSampler = utils::vkDefault::Sampler(device, samplerInfo);
     return result;
 }
 

@@ -66,7 +66,7 @@ void BloomGraphics::createRenderPass(){
         dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    CHECK(renderPass.create(device, attachments, subpasses, dependencies));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
 void BloomGraphics::createFramebuffers(){
@@ -81,7 +81,7 @@ void BloomGraphics::createFramebuffers(){
                 framebufferInfo.width = imageInfo.Extent.width;
                 framebufferInfo.height = imageInfo.Extent.height;
                 framebufferInfo.layers = 1;
-            CHECK(framebuffers[imageInfo.Count * i + j].create(device, framebufferInfo));
+            framebuffers[imageInfo.Count * i + j] = utils::vkDefault::Framebuffer(device, framebufferInfo);
         }
     }
     for(size_t i = 0; i < imageInfo.Count; i++){
@@ -93,7 +93,7 @@ void BloomGraphics::createFramebuffers(){
             framebufferInfo.width = imageInfo.Extent.width;
             framebufferInfo.height = imageInfo.Extent.height;
             framebufferInfo.layers = 1;
-        CHECK(framebuffers[imageInfo.Count * frames.size() + i].create(device, framebufferInfo));
+        framebuffers[imageInfo.Count * frames.size() + i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
@@ -105,7 +105,7 @@ void BloomGraphics::Filter::create(const std::filesystem::path& vertShaderPath, 
 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
@@ -129,7 +129,7 @@ void BloomGraphics::Filter::create(const std::filesystem::path& vertShaderPath, 
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(BloomPushConst);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
-    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -148,9 +148,9 @@ void BloomGraphics::Filter::create(const std::filesystem::path& vertShaderPath, 
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    CHECK(descriptorPool.create(device, {&descriptorSetLayout }, imageInfo.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, {&descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
@@ -162,7 +162,7 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
-    CHECK(descriptorSetLayout.create(device, bindings));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
     uint32_t specializationData = blitAttachmentsCount;
     VkSpecializationMapEntry specializationMapEntry{};
@@ -197,7 +197,7 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(BloomPushConst);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
-    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -216,9 +216,9 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    CHECK(descriptorPool.create(device, { &descriptorSetLayout }, imageInfo.Count));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 

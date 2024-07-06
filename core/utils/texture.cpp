@@ -45,7 +45,7 @@ void TextureImage::makeCache(
     this->device = device;
     if(width == -1 || height == -1 || channels == -1) throw std::runtime_error("[TextureImage::makeCache] : texture sizes not init");
 
-    cache.create(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    cache = utils::vkDefault::Buffer(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     Memory::instance().nameMemory(cache, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", TextureImage::makeCache, cache");
 
     for (uint32_t i = 0, ds = 4 * width * height; i < buffers.size(); i++) {
@@ -64,7 +64,7 @@ VkResult TextureImage::create(
     this->device = device;
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-    VkResult result = image.create( physicalDevice,
+    image = utils::vkDefault::Image(physicalDevice,
                                     device,
                                     flags,
                                     {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1},
@@ -104,9 +104,9 @@ VkResult TextureImage::create(
     samplerInfo.mipLodBias = 0.0f;
 
     VkImageViewType type = flags == VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
-    result = std::max(result, imageView.create(device, image, type, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 0, imageCount));
-    result = std::max(result, sampler.create(device, samplerInfo));
-    return result;
+    imageView = utils::vkDefault::ImageView(device, image, type, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 0, imageCount);
+    sampler = utils::vkDefault::Sampler(device, samplerInfo);
+    return VK_SUCCESS;
 }
 
 Texture::Texture(const std::filesystem::path& path) : paths({path}) {}

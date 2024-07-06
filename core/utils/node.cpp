@@ -78,9 +78,9 @@ VkResult Node::createSemaphores(){
     VkResult result = VK_SUCCESS;
     auto createSemaphore = [this](VkDevice device, Stage* stage){
         auto& signalSemaphore = signalSemaphores.emplace_back();
-        VkResult result = signalSemaphore.create(device);
+        signalSemaphore = utils::vkDefault::Semaphore(device);
         stage->signalSemaphores.push_back(signalSemaphore);
-        return result;
+        return VK_SUCCESS;
     };
 
     if(next){

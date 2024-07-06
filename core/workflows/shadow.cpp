@@ -25,7 +25,7 @@ void ShadowGraphics::createRenderPass()
     subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpasses.back().pDepthStencilAttachment = &depthRef;
 
-    CHECK(renderPass.create(device, attachments, subpasses, {}));
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, {});
 }
 
 void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
@@ -76,7 +76,7 @@ void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath,
         primitiveDescriptorSetLayout,
         materialDescriptorSetLayout
     };
-    CHECK(pipelineLayout.create(device, descriptorSetLayouts, pushConstantRange));
+    pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -95,7 +95,7 @@ void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath,
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipeline.create(device, pipelineInfo));
+    pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 void ShadowGraphics::create(moon::utils::AttachmentsDatabase&)
@@ -125,7 +125,7 @@ void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber)
                 framebufferInfo.width = imageInfo.Extent.width;
                 framebufferInfo.height = imageInfo.Extent.height;
                 framebufferInfo.layers = 1;
-                CHECK(framebuffersMap[&depthMap][i].create(device, framebufferInfo));
+                framebuffersMap[&depthMap][i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
             }
         }
         render(frameNumber, commandBuffers[frameNumber], light, depthMap);

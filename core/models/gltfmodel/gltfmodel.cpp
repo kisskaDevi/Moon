@@ -466,7 +466,7 @@ void GltfModel::createDescriptorPool() {
     descriptorSetLayouts.insert(descriptorSetLayouts.end(), materialDescriptorSetLayouts.begin(), materialDescriptorSetLayouts.end());
     descriptorSetLayouts.insert(descriptorSetLayouts.end(), nodeDescriptorSetLayouts.begin(), nodeDescriptorSetLayouts.end());
 
-    CHECK(descriptorPool.create(device, descriptorSetLayouts, 1));
+    descriptorPool = utils::vkDefault::DescriptorPool(device, descriptorSetLayouts, 1);
 }
 
 void GltfModel::createDescriptorSet()

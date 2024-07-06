@@ -87,7 +87,7 @@ Mesh::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t ve
 Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, moon::math::Matrix<float,4,4> matrix)
 {
     this->uniformBlock.matrix = matrix;
-    uniformBuffer.create(physicalDevice, device, sizeof(uniformBlock), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    uniformBuffer = utils::vkDefault::Buffer(physicalDevice, device, sizeof(uniformBlock), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     moon::utils::Memory::instance().nameMemory(uniformBuffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", Mesh::Mesh, uniformBuffer");
 };
 

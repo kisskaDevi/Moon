@@ -45,7 +45,7 @@ void Graphics::Lighting::createPipeline(VkDevice device, uint8_t mask, VkRenderP
         bufferDescriptorSetLayoutMap[key],
         textureDescriptorSetLayoutMap[key]
     };
-    CHECK(pipelineLayoutMap[key].create(device, descriptorSetLayouts));
+    pipelineLayoutMap[key] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -64,7 +64,7 @@ void Graphics::Lighting::createPipeline(VkDevice device, uint8_t mask, VkRenderP
         pipelineInfo.back().subpass = 1;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    CHECK(pipelineMap[key].create(device, pipelineInfo));
+    pipelineMap[key] = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 }

@@ -10,7 +10,7 @@ DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, cons
     this->imageInfo = imageInfo;
 
     map.descriptorSetLayout = DepthMap::createDescriptorSetLayout(device.getLogical());
-    CHECK(map.descriptorPool.create(device.getLogical(), { &map.descriptorSetLayout }, imageInfo.Count));
+    map.descriptorPool = utils::vkDefault::DescriptorPool(device.getLogical(), { &map.descriptorSetLayout }, imageInfo.Count);
     map.descriptorSets = map.descriptorPool.allocateDescriptorSets(map.descriptorSetLayout, imageInfo.Count);
 
     map.attachments.create(
@@ -54,7 +54,7 @@ moon::utils::vkDefault::DescriptorSetLayout DepthMap::createDescriptorSetLayout(
     moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
     std::vector<VkDescriptorSetLayoutBinding> binding;
     binding.push_back(vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-    CHECK(descriptorSetLayout.create(device, binding));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, binding);
     return descriptorSetLayout;
 }
 

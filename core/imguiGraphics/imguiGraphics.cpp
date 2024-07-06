@@ -12,14 +12,11 @@ ImguiGraphics::ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t i
     window(window),
     instance(instance),
     imageCount(imageCount) {
+    setupImguiContext();
     link = &Link;
 }
 
 ImguiGraphics::~ImguiGraphics(){
-    ImguiGraphics::destroy();
-}
-
-void ImguiGraphics::destroy() {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -52,7 +49,6 @@ void ImguiGraphics::create() {
     CHECK(descriptorPool.create(device->getLogical(), poolInfo));
     CHECK(commandPool.create(device->getLogical()));
 
-    setupImguiContext();
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForVulkan(window, true);
     ImGui_ImplVulkan_InitInfo initInfo = {};

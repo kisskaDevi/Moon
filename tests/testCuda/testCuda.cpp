@@ -205,7 +205,6 @@ void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
     cam = make_devicep<Camera>(*hostcam);
     graphics->setExtent({extent[0],extent[1]});
 
-    graphics->destroy();
     graphics->setEnableBoundingBox(enableBB);
     graphics->setEnableBloom(enableBloom);
     graphics->create();

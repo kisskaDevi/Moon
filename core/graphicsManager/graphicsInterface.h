@@ -26,7 +26,6 @@ protected:
 
 public:
     virtual ~GraphicsInterface(){};
-    virtual void destroy() = 0;
 
     virtual void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size){
         this->offset = offset;

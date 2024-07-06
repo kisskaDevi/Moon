@@ -55,7 +55,6 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
 #endif
 
     for(auto& [_,graph]: graphics){
-        graph->destroy();
         graph->create();
     }
 }

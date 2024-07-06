@@ -24,12 +24,18 @@ class RayTracingGraphics : public moon::graphicsManager::GraphicsInterface {
 private:
     struct ImageResource{
         std::string id;
-        uint32_t* host{nullptr};
+        std::vector<uint32_t> host;
         moon::utils::Buffer hostDevice;
         moon::utils::Attachments device;
 
-        void create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo);
-        void destroy(const moon::utils::PhysicalDevice& phDevice);
+        ImageResource() = default;
+        ImageResource(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo);
+        ImageResource(const ImageResource&) = delete;
+        ImageResource& operator=(const ImageResource&) = delete;
+        ImageResource(ImageResource&&) noexcept;
+        ImageResource& operator=(ImageResource&&) noexcept;
+        void swap(ImageResource&) noexcept;
+
         void moveFromHostToHostDevice(VkExtent2D extent);
         void copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex);
     };
@@ -57,11 +63,9 @@ private:
 
 public:
     RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent);
-    ~RayTracingGraphics();
 
     void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
     void create() override;
-    void destroy() override;
     void update(uint32_t imageIndex) override;
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,

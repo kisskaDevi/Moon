@@ -3,12 +3,14 @@
 
 #include "graphicsInterface.h"
 #include "workflow.h"
+#include "link.h"
 
 #include "buffer.h"
 #include "vector.h"
 
 #include <unordered_map>
 #include <filesystem>
+#include <memory>
 
 namespace moon::interfaces {
 class Model;
@@ -23,8 +25,6 @@ struct Node;
 }
 
 namespace moon::deferredGraphics {
-
-class Link;
 
 struct StorageBufferObject{
     alignas(16) moon::math::Vector<float,4> mousePosition;
@@ -41,18 +41,19 @@ private:
 
     moon::utils::BuffersDatabase        bDatabase;
     moon::utils::AttachmentsDatabase    aDatabase;
-    std::unordered_map<std::string, moon::workflows::Workflow*> workflows;
-    std::unordered_map<std::string, bool> enable;
-    Link* deferredLink;
 
-    moon::utils::Buffers            storageBuffersHost;
+    std::unordered_map<std::string, std::unique_ptr<moon::workflows::Workflow>> workflows;
+    std::unordered_map<std::string, bool> enable;
+    Link deferredLink;
+
+    moon::utils::Buffers storageBuffersHost;
 
     utils::vkDefault::CommandPool    commandPool;
     utils::vkDefault::CommandBuffers copyCommandBuffers;
     std::vector<moon::utils::Node>   nodes;
 
-    uint32_t                        blitAttachmentsCount{8};
-    uint32_t                        transparentLayersCount{2};
+    uint32_t blitAttachmentsCount{8};
+    uint32_t transparentLayersCount{2};
 
     moon::interfaces::Camera* cameraObject{nullptr};
     std::vector<moon::interfaces::Object*> objects;
@@ -70,11 +71,8 @@ private:
 
 public:
     DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
-    ~DeferredGraphics();
 
-    void destroy() override;
     void create() override;
-
     void update(uint32_t imageIndex) override;
 
     void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;

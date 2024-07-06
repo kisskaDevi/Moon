@@ -30,7 +30,6 @@ public:
     ~ImguiGraphics();
 
     void create() override;
-    void destroy() override;
     void update(uint32_t imageIndex) override;
     std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 };

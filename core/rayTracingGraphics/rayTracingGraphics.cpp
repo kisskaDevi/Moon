@@ -8,25 +8,20 @@
 namespace moon::rayTracingGraphics {
 
 RayTracingGraphics::RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
-    : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
-{
+    : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent) {
     setExtent(extent);
     link = &rayTracingLink;
 }
 
-RayTracingGraphics::~RayTracingGraphics(){
-    RayTracingGraphics::destroy();
-}
-
-void RayTracingGraphics::ImageResource::create(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo){
+RayTracingGraphics::ImageResource::ImageResource(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo){
     this->id = id;
 
-    host = new uint32_t[imageInfo.Extent.width * imageInfo.Extent.height];
+    host.resize(imageInfo.Extent.width * imageInfo.Extent.height);
 
     hostDevice.create(
         phDevice.instance,
         phDevice.getLogical(),
-        sizeof(uint32_t) * imageInfo.Extent.width * imageInfo.Extent.height,
+        sizeof(uint32_t) * host.size(),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
@@ -37,15 +32,24 @@ void RayTracingGraphics::ImageResource::create(const std::string& id, const moon
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 }
 
-void RayTracingGraphics::ImageResource::destroy(const moon::utils::PhysicalDevice& phDevice){
-    if(host){
-        delete[] host;
-        host = nullptr;
-    }
+RayTracingGraphics::ImageResource::ImageResource(ImageResource&& other) noexcept {
+    swap(other);
+}
+
+RayTracingGraphics::ImageResource& RayTracingGraphics::ImageResource::operator=(ImageResource&& other) noexcept {
+    swap(other);
+    return *this;
+}
+
+void RayTracingGraphics::ImageResource::swap(ImageResource& other) noexcept {
+    std::swap(id, other.id);
+    std::swap(host, other.host);
+    std::swap(hostDevice, other.hostDevice);
+    std::swap(device, other.device);
 }
 
 void RayTracingGraphics::ImageResource::moveFromHostToHostDevice(VkExtent2D extent){
-    hostDevice.copy(host);
+    hostDevice.copy(host.data());
 }
 
 void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t imageIndex){
@@ -56,6 +60,7 @@ void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuff
 
 void RayTracingGraphics::create()
 {
+    aDatabase.destroy();
     CHECK(commandPool.create(device->getLogical()));
 
     emptyTexture = utils::Texture::empty(*device, commandPool);
@@ -63,10 +68,10 @@ void RayTracingGraphics::create()
 
     moon::utils::ImageInfo imageInfo{ imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT };
 
-    color.create("color", *device, imageInfo);
+    color = ImageResource("color", *device, imageInfo);
     aDatabase.addAttachmentData(color.id, true, &color.device);
 
-    bloom.create("bloom", *device, imageInfo);
+    bloom = ImageResource("bloom", *device, imageInfo);
     aDatabase.addAttachmentData(bloom.id, true, &bloom.device);
 
     moon::workflows::BloomParameters bloomParams;
@@ -97,15 +102,9 @@ void RayTracingGraphics::create()
     rayTracer.create();
 }
 
-void RayTracingGraphics::destroy() {
-    color.destroy(*device);
-    bloom.destroy(*device);
-    aDatabase.destroy();
-}
-
 std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vector<std::vector<VkSemaphore>>&, const std::vector<VkFence>&, uint32_t imageIndex)
 {
-    rayTracer.calculateImage(color.host, bloom.host);
+    rayTracer.calculateImage(color.host.data(), bloom.host.data());
 
     color.moveFromHostToHostDevice(extent);
     bloom.moveFromHostToHostDevice(extent);

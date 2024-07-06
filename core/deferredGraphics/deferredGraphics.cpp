@@ -54,14 +54,6 @@ DeferredGraphics::~DeferredGraphics(){
 }
 
 void DeferredGraphics::destroy(){
-    for(auto& [_,map]: depthMaps){
-        static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(map);
-        if (map) {
-            delete map;
-            map = nullptr;
-        }
-    }
-
     emptyTextures.clear();
 
     for(auto& [_,workflow]: workflows){
@@ -86,13 +78,6 @@ void DeferredGraphics::create()
     createGraphicsPasses();
     createCommandBuffers();
     updateDescriptorSets();
-
-    for(auto& [lightSource,map]: depthMaps){
-        depthMaps[lightSource] = new moon::utils::DepthMap(*device, commandPool, imageCount);
-        if(lightSource->isShadowEnable() && enable["Shadow"]){
-            static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
-        }
-    }
 }
 
 void DeferredGraphics::createGraphicsPasses(){
@@ -226,8 +211,6 @@ void DeferredGraphics::createGraphicsPasses(){
 }
 
 void DeferredGraphics::updateDescriptorSets(){
-    CHECK_M(cameraObject == nullptr, std::string("[ deferredGraphics::updateDescriptorSets ] camera is nullptr"));
-
     for(auto& [name, workflow]: workflows){
         workflow->updateDescriptorSets(bDatabase, aDatabase);
     }
@@ -369,16 +352,16 @@ void DeferredGraphics::remove(moon::interfaces::Camera* cameraObject){
 }
 
 void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
-    if(depthMaps.count(lightSource) == 0){
-        depthMaps[lightSource] = new moon::utils::DepthMap(*device, commandPool, imageCount);
-        if(lightSource->isShadowEnable() && enable["Shadow"]){
-            static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->createFramebuffers(depthMaps[lightSource]);
-            workflows["Shadow"]->raiseUpdateFlags();
-        }
-    }
     lightSource->create(*device, commandPool, imageCount);
     lights.push_back(lightSource);
 
+    if (depthMaps.find(lightSource) == depthMaps.end()) {
+        moon::utils::ImageInfo shadowsInfo{ imageCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
+        depthMaps[lightSource] = utils::DepthMap(*device, commandPool, shadowsInfo);
+        depthMaps[lightSource].update(lightSource->isShadowEnable() && enable["Shadow"]);
+    }
+
+    workflows["Shadow"]->raiseUpdateFlags();
     workflows["DeferredGraphics"]->raiseUpdateFlags();
     workflows["Scattering"]->raiseUpdateFlags();
     for (uint32_t i = 0; i < transparentLayersCount; i++) {
@@ -392,11 +375,7 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
     lights.erase(std::remove(lights.begin(), lights.end(), lightSource), lights.end());
 
     if(depthMaps.count(lightSource)){
-        static_cast<moon::workflows::ShadowGraphics*>(workflows["Shadow"])->destroyFramebuffers(depthMaps[lightSource]);
-        if (depthMaps[lightSource]) {
-            delete depthMaps[lightSource];
-            depthMaps.erase(lightSource);
-        }
+        depthMaps.erase(lightSource);
         workflows["Shadow"]->raiseUpdateFlags();
     }
 

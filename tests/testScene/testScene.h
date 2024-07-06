@@ -81,7 +81,6 @@ private:
 
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);
-    void updates(float frameTime);
 
     void loadModels();
     void createLight();

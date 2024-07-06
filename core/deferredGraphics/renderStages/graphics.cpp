@@ -14,7 +14,7 @@ Graphics::Graphics(
     bool transparencyPass,
     uint32_t transparencyNumber,
     std::vector<moon::interfaces::Object*>* object, std::vector<moon::interfaces::Light*>* lightSources,
-    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps) :
+    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps) :
     Workflow(imageInfo, shadersPath),
     parameters(parameters),
     enable(enable),

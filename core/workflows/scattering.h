@@ -36,7 +36,7 @@ private:
         moon::utils::vkDefault::PipelineMap             pipelinesMap;
 
         std::vector<moon::interfaces::Light*>* lightSources{ nullptr };
-        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps{ nullptr };
+        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps{ nullptr };
 
         Lighting(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
 
@@ -51,7 +51,7 @@ private:
 public:
     Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters parameters,
                bool enable, std::vector<moon::interfaces::Light*>* lightSources = nullptr,
-               std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
+               std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(

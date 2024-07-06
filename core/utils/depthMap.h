@@ -9,23 +9,24 @@ namespace moon::utils {
 
 class DepthMap {
 private:
-    Attachments*                    map{nullptr};
-    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-    moon::utils::vkDefault::DescriptorPool descriptorPool;
-    moon::utils::vkDefault::DescriptorSets descriptorSets;
+    struct {
+        utils::Attachments attachments;
+        utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
+        utils::vkDefault::DescriptorPool descriptorPool;
+        utils::vkDefault::DescriptorSets descriptorSets;
+    } map;
 
-    Texture                         emptyTextureWhite;
-    VkDevice                        device{VK_NULL_HANDLE};
+    Texture emptyTextureWhite;
+    utils::ImageInfo imageInfo;
+    VkDevice device{VK_NULL_HANDLE};
 
-    void createDescriptorPool(uint32_t imageCount);
 public:
-    DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount);
-    ~DepthMap();
-    void destroy(VkDevice device);
+    DepthMap() = default;
+    DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, const utils::ImageInfo& imageInfo);
+    void update(bool enable);
 
-    const utils::vkDefault::DescriptorSets& getDescriptorSets() const;
-    void updateDescriptorSets(uint32_t imageCount);
-    Attachments* &get();
+    const utils::vkDefault::DescriptorSets& descriptorSets() const;
+    const utils::Attachments& attachments() const;
 
     static moon::utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);
 };

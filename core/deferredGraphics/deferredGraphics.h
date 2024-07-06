@@ -57,7 +57,7 @@ private:
     moon::interfaces::Camera* cameraObject{nullptr};
     std::vector<moon::interfaces::Object*> objects;
     std::vector<moon::interfaces::Light*> lights;
-    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*> depthMaps;
+    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap> depthMaps;
     std::unordered_map<std::string, moon::utils::Texture> emptyTextures;
 
     void createStorageBuffers(uint32_t imageCount);

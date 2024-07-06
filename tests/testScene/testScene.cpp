@@ -267,7 +267,14 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     keyboardEvent(frameTime);
 #endif
 
-    updates(frameTime);
+    globalTime += frameTime;
+
+    skyboxObjects["stars"]->rotate(0.1f * frameTime, normalize(moon::math::Vector<float, 3>(1.0f, 1.0f, 1.0f)));
+    objects["helmet"]->
+        rotate(0.5f * frameTime, normalize(moon::math::Vector<float, 3>(0.0f, 0.0f, 1.0f))).
+        translate(moon::math::Vector<float, 3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
+
+    graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(1.02f * farBlurDepth);
 
     for(auto& [_,object]: objects){
         object->updateAnimation(frameNumber, animationSpeed * frameTime);
@@ -591,16 +598,3 @@ void testScene::keyboardEvent(float frameTime)
         }
     }
 }
-
-void testScene::updates(float frameTime)
-{
-    globalTime += frameTime;
-
-    skyboxObjects["stars"]->rotate(0.1f * frameTime, normalize(moon::math::Vector<float,3>(1.0f,1.0f,1.0f)));
-    objects["helmet"]->
-        rotate(0.5f * frameTime, normalize(moon::math::Vector<float,3>(0.0f,0.0f,1.0f))).
-        translate(moon::math::Vector<float,3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
-
-    graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(1.02f * farBlurDepth);
-}
-

@@ -110,22 +110,22 @@ std::vector<std::vector<VkSemaphore>> RayTracingGraphics::submit(const std::vect
     color.moveFromHostToHostDevice(extent);
     bloom.moveFromHostToHostDevice(extent);
 
-    std::vector<VkCommandBuffer> commandBuffers;
-    commandBuffers.push_back(moon::utils::singleCommandBuffer::create(device->getLogical(),commandPool));
-    color.copyToDevice(commandBuffers.back(), extent, imageIndex);
-    bloom.copyToDevice(commandBuffers.back(), extent, imageIndex);
-    bbGraphics.render(commandBuffers.back(), imageIndex);
-    moon::utils::singleCommandBuffer::submit(device->getLogical(), device->getQueue(0,0), commandPool, commandBuffers.size(), commandBuffers.data());
-
     bloomGraph.beginCommandBuffer(imageIndex);
     bloomGraph.updateCommandBuffer(imageIndex);
     bloomGraph.endCommandBuffer(imageIndex);
 
-    const VkCommandBuffer bloomCommandBuffer = bloomGraph.commandBuffer(imageIndex);
+    std::vector<VkCommandBuffer> commandBuffers;
+    auto& commandBuffer = commandBuffers.emplace_back(moon::utils::singleCommandBuffer::create(device->getLogical(),commandPool));
+    color.copyToDevice(commandBuffer, extent, imageIndex);
+    bloom.copyToDevice(commandBuffer, extent, imageIndex);
+    bbGraphics.render(commandBuffer, imageIndex);
+    CHECK(vkEndCommandBuffer(commandBuffer));
+    commandBuffers.push_back(bloomGraph.commandBuffer(imageIndex));
+
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &bloomCommandBuffer;
+    submitInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+    submitInfo.pCommandBuffers = commandBuffers.data();
     CHECK(vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE));
     CHECK(vkQueueWaitIdle(device->getQueue(0, 0)));
 

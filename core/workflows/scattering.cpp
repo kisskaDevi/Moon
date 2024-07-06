@@ -13,7 +13,7 @@ struct ScatteringPushConst {
 
 Scattering::Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters parameters,
                        bool enable, std::vector<moon::interfaces::Light*>* lightSources,
-                       std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps)
+                       std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
     : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), lighting(this->imageInfo)
 {
     lighting.lightSources = lightSources;
@@ -213,7 +213,7 @@ void Scattering::updateCommandBuffer(uint32_t frameNumber){
             ScatteringPushConst pushConst{ imageInfo.Extent.width, imageInfo.Extent.height};
             uint8_t mask = lightSource->getPipelineBitMask();
             vkCmdPushConstants(commandBuffers[frameNumber], lighting.pipelineLayoutMap[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
-            lightSource->render(frameNumber, commandBuffers[frameNumber], {lighting.descriptorSets[frameNumber], (*lighting.depthMaps)[lightSource]->getDescriptorSets()[frameNumber]}, lighting.pipelineLayoutMap[mask], lighting.pipelinesMap[mask]);
+            lightSource->render(frameNumber, commandBuffers[frameNumber], {lighting.descriptorSets[frameNumber], (*lighting.depthMaps)[lightSource].descriptorSets()[frameNumber]}, lighting.pipelineLayoutMap[mask], lighting.pipelinesMap[mask]);
         }
     }
 

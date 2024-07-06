@@ -112,7 +112,7 @@ private:
         moon::utils::vkDefault::DescriptorSets descriptorSets;
 
         std::vector<moon::interfaces::Light*>* lightSources;
-        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps;
+        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps;
 
         Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters);
 
@@ -155,7 +155,7 @@ public:
              uint32_t transparencyNumber,
              std::vector<moon::interfaces::Object*>* object = nullptr,
              std::vector<moon::interfaces::Light*>* lightSources = nullptr,
-             std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps = nullptr);
+             std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

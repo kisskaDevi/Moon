@@ -95,7 +95,7 @@ void Graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuf
             frameNumber,
             commandBuffer,
             {descriptorSets[frameNumber],
-            (*depthMaps)[lightSource]->getDescriptorSets()[frameNumber]},
+            (*depthMaps)[lightSource].descriptorSets()[frameNumber]},
             pipelineLayoutMap.at(mask),
             pipelineMap.at(mask));
     }

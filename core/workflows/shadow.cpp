@@ -8,14 +8,7 @@
 
 namespace moon::workflows {
 
-moon::utils::Attachments* ShadowGraphics::createAttachments()
-{
-    moon::utils::Attachments* pAttachments = new moon::utils::Attachments;
-    pAttachments->create(physicalDevice,device, imageInfo,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, {{1.0,0}}, utils::vkDefault::sampler());
-    return pAttachments;
-}
-
-ShadowGraphics::ShadowGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, bool enable, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap*>* depthMaps)
+ShadowGraphics::ShadowGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, bool enable, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
     : Workflow(imageInfo, shadersPath), enable(enable), shadow(this->imageInfo)
 {
     shadow.objects = objects;
@@ -105,36 +98,14 @@ void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath,
     CHECK(pipeline.create(device, pipelineInfo));
 }
 
-void ShadowGraphics::createFramebuffers(moon::utils::DepthMap* depthMap)
-{
-    depthMap->get() = createAttachments();
-    depthMap->updateDescriptorSets(imageInfo.Count);
-    framebuffersMap[depthMap].resize(imageInfo.Count);
-    for (size_t i = 0; i < imageInfo.Count; i++){
-        VkFramebufferCreateInfo framebufferInfo{};
-            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass = renderPass;
-            framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments = &depthMap->get()->imageView(i);
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
-            framebufferInfo.layers = 1;
-        CHECK(framebuffersMap[depthMap][i].create(device, framebufferInfo));
-    }
-}
-
-
-void ShadowGraphics::destroyFramebuffers(moon::utils::DepthMap* depthMap){
-    if(framebuffersMap.count(depthMap)){
-        framebuffersMap.erase(depthMap);
-    }
-}
-
 void ShadowGraphics::create(moon::utils::AttachmentsDatabase&)
 {
     if(enable){
         createRenderPass();
         shadow.create(shadersPath / "shadow/shadowMapVert.spv", "", device, renderPass);
+    }
+    for (auto& [light, depthMap] : *shadow.depthMaps) {
+        depthMap.update(light->isShadowEnable() && enable);
     }
 }
 
@@ -142,20 +113,34 @@ void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber)
 {
     if(!enable) return;
 
-    for(const auto& [light, depth] : *shadow.depthMaps){
-        render(frameNumber, commandBuffers[frameNumber], light, depth);
+    for(const auto& [light, depthMap] : *shadow.depthMaps){
+        if (light->isShadowEnable() && framebuffersMap.find(&depthMap) == framebuffersMap.end()){
+            framebuffersMap[&depthMap].resize(imageInfo.Count);
+            for (size_t i = 0; i < imageInfo.Count; i++) {
+                VkFramebufferCreateInfo framebufferInfo{};
+                framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+                framebufferInfo.renderPass = renderPass;
+                framebufferInfo.attachmentCount = 1;
+                framebufferInfo.pAttachments = &depthMap.attachments().imageView(i);
+                framebufferInfo.width = imageInfo.Extent.width;
+                framebufferInfo.height = imageInfo.Extent.height;
+                framebufferInfo.layers = 1;
+                CHECK(framebuffersMap[&depthMap][i].create(device, framebufferInfo));
+            }
+        }
+        render(frameNumber, commandBuffers[frameNumber], light, depthMap);
     }
 }
 
-void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, moon::utils::DepthMap* depthMap)
+void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, const moon::utils::DepthMap& depthMap)
 {
     std::vector<VkClearValue> clearValues;
-    clearValues.push_back(depthMap->get()->clearValue());
+    clearValues.push_back(depthMap.attachments().clearValue());
 
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffersMap[depthMap][frameNumber];
+        renderPassInfo.framebuffer = framebuffersMap[&depthMap][frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
         renderPassInfo.renderArea.extent = imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

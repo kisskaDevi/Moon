@@ -65,8 +65,6 @@ protected:
     Texture(const std::vector<std::filesystem::path>& paths);
 
 public:
-    Texture(const std::filesystem::path& path);
-
     virtual ~Texture() = default;
     Texture() = default;
     Texture(const Texture&) = delete;
@@ -77,7 +75,7 @@ public:
 
     void destroyCache();
 
-    VkResult create(
+    Texture(
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
@@ -86,7 +84,8 @@ public:
             void*               buffer,
             const TextureSampler& textureSampler = TextureSampler{});
 
-    virtual VkResult create(
+    Texture(
+            const std::filesystem::path& path,
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
@@ -105,14 +104,15 @@ public:
 class CubeTexture: public Texture {
 public:
     CubeTexture() = default;
-    CubeTexture(const std::vector<std::filesystem::path>& path);
     ~CubeTexture() = default;
-
-    VkResult create(
-            VkPhysicalDevice    physicalDevice,
-            VkDevice            device,
-            VkCommandBuffer     commandBuffer,
-            const TextureSampler& textureSampler = TextureSampler{}) override;
+    CubeTexture(CubeTexture&&) noexcept = default;
+    CubeTexture& operator=(CubeTexture&&) noexcept = default;
+    CubeTexture(Texture&& texture);
+    CubeTexture(const std::vector<std::filesystem::path>& path,
+                VkPhysicalDevice        physicalDevice,
+                VkDevice                device,
+                VkCommandBuffer         commandBuffer,
+                const TextureSampler&   textureSampler = TextureSampler{});
 };
 
 }

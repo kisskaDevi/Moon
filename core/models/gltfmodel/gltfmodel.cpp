@@ -306,8 +306,7 @@ void GltfModel::loadTextures(const moon::utils::PhysicalDevice& device, VkComman
             textureSampler.addressModeV = textureSampler.addressModeW = getVkWrapMode(gltfModel.samplers[tex.sampler].wrapT);
             textureSampler.addressModeU = getVkWrapMode(gltfModel.samplers[tex.sampler].wrapS);
         }
-        auto& texture = textures.emplace_back();
-        CHECK(texture.create(device.instance, device.getLogical(), commandBuffer, gltfimage.width, gltfimage.height, buffer.data(), textureSampler));
+        textures.emplace_back(device.instance, device.getLogical(), commandBuffer, gltfimage.width, gltfimage.height, buffer.data(), textureSampler);
     }
     textures.push_back(utils::Texture::empty(device, commandBuffer));
 }

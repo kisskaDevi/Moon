@@ -30,9 +30,8 @@ enum SpotType
 class SpotLight : public Transformational, public moon::interfaces::Light
 {
 private:
-    moon::utils::Texture*               tex{nullptr};
-    moon::utils::Texture                emptyTextureBlack;
-    moon::utils::Texture                emptyTextureWhite;
+    const std::filesystem::path texturePath;
+    moon::utils::Texture texture;
 
     SpotType                            type{ SpotType::circle };
     float                               lightPowerFactor{10.0f};
@@ -64,25 +63,24 @@ private:
 
 public:
     SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
-    SpotLight(const std::filesystem::path & TEXTURE_PATH, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
+    SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
     virtual ~SpotLight();
 
-    SpotLight&          setGlobalTransform(const moon::math::Matrix<float,4,4> & transform) override;
-    SpotLight&          translate(const moon::math::Vector<float,3> & translate) override;
-    SpotLight&          rotate(const float & ang,const moon::math::Vector<float,3> & ax) override;
-    SpotLight&          scale(const moon::math::Vector<float,3> & scale) override;
+    SpotLight& setGlobalTransform(const moon::math::Matrix<float,4,4> & transform) override;
+    SpotLight& translate(const moon::math::Vector<float,3> & translate) override;
+    SpotLight& rotate(const float & ang,const moon::math::Vector<float,3> & ax) override;
+    SpotLight& scale(const moon::math::Vector<float,3> & scale) override;
 
-    SpotLight&          rotateX(const float & ang ,const moon::math::Vector<float,3> & ax);
-    SpotLight&          rotateY(const float & ang ,const moon::math::Vector<float,3> & ax);
-    SpotLight&          setTranslation(const moon::math::Vector<float,3>& translate);
-    SpotLight&          setRotation(const moon::math::Quaternion<float>& rotation);
-    SpotLight&          setRotation(const float & ang ,const moon::math::Vector<float,3> & ax);
-    SpotLight&          rotate(const moon::math::Quaternion<float>& quat);
+    SpotLight& rotateX(const float & ang ,const moon::math::Vector<float,3> & ax);
+    SpotLight& rotateY(const float & ang ,const moon::math::Vector<float,3> & ax);
+    SpotLight& setTranslation(const moon::math::Vector<float,3>& translate);
+    SpotLight& setRotation(const moon::math::Quaternion<float>& rotation);
+    SpotLight& setRotation(const float & ang ,const moon::math::Vector<float,3> & ax);
+    SpotLight& rotate(const moon::math::Quaternion<float>& quat);
 
-    void                setLightColor(const moon::math::Vector<float,4> & color);
-    void                setLightDropFactor(const float& dropFactor);
-    void                setTexture(moon::utils::Texture* tex);
-    void                setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection);
+    void setLightColor(const moon::math::Vector<float,4> & color);
+    void setLightDropFactor(const float& dropFactor);
+    void setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection);
 
     moon::math::Matrix<float,4,4>   getModelMatrix() const;
     moon::math::Vector<float,3>     getTranslate() const;

@@ -17,8 +17,8 @@ SpotLight::SpotLight(const moon::math::Vector<float,4>& color, const moon::math:
     this->enableScattering = enableScattering;
 }
 
-SpotLight::SpotLight(const std::filesystem::path & TEXTURE_PATH, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
-    tex(new moon::utils::Texture(TEXTURE_PATH)),
+SpotLight::SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
+    texturePath(texturePath),
     projectionMatrix(projection),
     type(type)
 {
@@ -27,7 +27,7 @@ SpotLight::SpotLight(const std::filesystem::path & TEXTURE_PATH, const moon::mat
     this->enableScattering = enableScattering;
 }
 
-SpotLight::~SpotLight(){delete tex;}
+SpotLight::~SpotLight(){}
 
 SpotLight& SpotLight::updateModelMatrix() {
     moon::math::Matrix<float,4,4> transformMatrix = convert(convert(rotation, translation));
@@ -98,10 +98,6 @@ SpotLight& SpotLight::rotateY(const float & ang ,const moon::math::Vector<float,
     return updateModelMatrix();
 }
 
-void SpotLight::setTexture(moon::utils::Texture* tex) {
-    this->tex = tex;
-}
-
 void SpotLight::setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection)  {
     projectionMatrix = projection;
     utils::raiseFlags(uniformBuffersHost);
@@ -141,15 +137,11 @@ void SpotLight::create(
 
         this->device = &device;
 
-        emptyTextureBlack = utils::Texture::empty(device, commandPool);
-        emptyTextureWhite = utils::Texture::empty(device, commandPool, false);
+        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(), commandPool);
+        texture = texturePath.empty() ? utils::Texture::empty(device, commandBuffer) : utils::Texture(texturePath, device.instance, device.getLogical(), commandBuffer);
+        moon::utils::singleCommandBuffer::submit(device.getLogical(), device.getQueue(0, 0), commandPool, &commandBuffer);
+        texture.destroyCache();
 
-        if(tex){
-            VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
-            tex->create(device.instance, device.getLogical(), commandBuffer);
-            moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-            tex->destroyCache();
-        }
         createUniformBuffers(imageCount);
         createDescriptorPool(imageCount);
         updateDescriptorSets(imageCount);
@@ -216,8 +208,8 @@ void SpotLight::updateDescriptorSets(uint32_t imageCount)
     {
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            lightTexture.imageView = tex ? tex->imageView() : emptyTextureBlack.imageView();
-            lightTexture.sampler = tex ? tex->sampler() : emptyTextureBlack.sampler();
+            lightTexture.imageView = texture.imageView();
+            lightTexture.sampler = texture.sampler();
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

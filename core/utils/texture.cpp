@@ -109,7 +109,6 @@ VkResult TextureImage::create(
     return VK_SUCCESS;
 }
 
-Texture::Texture(const std::filesystem::path& path) : paths({path}) {}
 Texture::Texture(const std::vector<std::filesystem::path>& path) : paths(path) {}
 
 void Texture::swap(Texture& other) noexcept {
@@ -130,7 +129,7 @@ void Texture::destroyCache(){
     image.cache = Buffer();
 }
 
-VkResult Texture::create(
+Texture::Texture(
     VkPhysicalDevice    physicalDevice,
     VkDevice            device,
     VkCommandBuffer     commandBuffer,
@@ -144,14 +143,15 @@ VkResult Texture::create(
     image.channels = 4;
     image.size = 4 * image.width * image.height;
     image.makeCache(physicalDevice, device, { buffer });
-    return image.create(physicalDevice, device, commandBuffer, 0, 1, textureSampler);
+    CHECK(image.create(physicalDevice, device, commandBuffer, 0, 1, textureSampler));
 }
 
-VkResult Texture::create(
+Texture::Texture(
+        const std::filesystem::path& path,
         VkPhysicalDevice    physicalDevice,
         VkDevice            device,
         VkCommandBuffer     commandBuffer,
-        const TextureSampler& textureSampler)
+        const TextureSampler& textureSampler) : paths({ path })
 {
     if(paths.empty()) throw std::runtime_error("[Texture::create] : no paths to texture");
 
@@ -161,7 +161,7 @@ VkResult Texture::create(
     image.makeCache(physicalDevice, device, { buffer });
     stbi_image_free(buffer);
 
-    return image.create(physicalDevice, device, commandBuffer, 0, 1, textureSampler);
+    CHECK(image.create(physicalDevice, device, commandBuffer, 0, 1, textureSampler));
 }
 
 void Texture::setMipLevel(float mipLevel){image.mipLevel = mipLevel;}
@@ -170,9 +170,9 @@ void Texture::setTextureFormat(VkFormat format){image.format = format;}
 const VkImageView Texture::imageView() const {return image.imageView;}
 const VkSampler Texture::sampler() const {return image.sampler;}
 
-CubeTexture::CubeTexture(const std::vector<std::filesystem::path>& path) : Texture(path) {}
+CubeTexture::CubeTexture(Texture&& texture) : Texture(std::move(texture)){}
 
-VkResult CubeTexture::create(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, const TextureSampler& textureSampler)
+CubeTexture::CubeTexture(const std::vector<std::filesystem::path>& path, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, const TextureSampler& textureSampler) : Texture(path)
 {
     if (paths.size() != 6) throw std::runtime_error("[CubeTexture::create] : must be 6 images");
 
@@ -194,7 +194,7 @@ VkResult CubeTexture::create(VkPhysicalDevice physicalDevice, VkDevice device, V
     image.makeCache(physicalDevice, device, buffers);
     for(auto& buffer : buffers) stbi_image_free(buffer);
 
-    return image.create(physicalDevice, device, commandBuffer, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, 6, textureSampler);
+    CHECK(image.create(physicalDevice, device, commandBuffer, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, 6, textureSampler));
 }
 
 Texture Texture::empty(const PhysicalDevice& device, VkCommandPool commandPool, bool isBlack){
@@ -206,11 +206,9 @@ Texture Texture::empty(const PhysicalDevice& device, VkCommandPool commandPool, 
 };
 
 Texture Texture::empty(const PhysicalDevice& device, VkCommandBuffer commandBuffer, bool isBlack) {
-    Texture tex;
     uint32_t buffer = isBlack ? 0xff000000 : 0xffffffff;
     int width = 1, height = 1;
-    CHECK(tex.create(device.instance, device.getLogical(), commandBuffer, width, height, &buffer));
-    return tex;
+    return Texture(device.instance, device.getLogical(), commandBuffer, width, height, &buffer);
 }
 
 }

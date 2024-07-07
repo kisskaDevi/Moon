@@ -98,12 +98,13 @@ public:
 
 class SkyboxObject : public BaseObject{
 private:
-    moon::utils::CubeTexture* texture{nullptr};
+    std::vector<std::filesystem::path> texturePaths;
+    moon::utils::CubeTexture texture;
 
     void createDescriptorPool(uint32_t imageCount);
     void createDescriptorSet(uint32_t imageCount);
 public:
-    SkyboxObject(const std::vector<std::filesystem::path>& TEXTURE_PATH);
+    SkyboxObject(const std::vector<std::filesystem::path>& texturePaths);
     ~SkyboxObject();
 
     SkyboxObject& setMipLevel(float mipLevel);

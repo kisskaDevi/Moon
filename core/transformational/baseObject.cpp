@@ -203,18 +203,17 @@ void BaseObject::printStatus() const {
 }
 
 
-SkyboxObject::SkyboxObject(const std::vector<std::filesystem::path> &TEXTURE_PATH) :
+SkyboxObject::SkyboxObject(const std::vector<std::filesystem::path> &texturePaths) :
     BaseObject(),
-    texture(new moon::utils::CubeTexture(TEXTURE_PATH)){
+    texturePaths(texturePaths){
     pipelineBitMask = moon::interfaces::ObjectType::skybox;
 }
 
 SkyboxObject::~SkyboxObject(){
-    delete texture;
 }
 
 SkyboxObject& SkyboxObject::setMipLevel(float mipLevel){
-    texture->setMipLevel(mipLevel);
+    texture.setMipLevel(mipLevel);
     return *this;
 }
 
@@ -245,8 +244,8 @@ void SkyboxObject::createDescriptorSet(uint32_t imageCount) {
 
         VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = texture->imageView();
-            imageInfo.sampler   = texture->sampler();
+            imageInfo.imageView = texture.imageView();
+            imageInfo.sampler = texture.sampler();
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
@@ -281,12 +280,11 @@ void SkyboxObject::create(
 
         this->device = &device;
 
-        if(texture){
-            VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
-            texture->create(device.instance, device.getLogical(), commandBuffer);
-            moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0),commandPool,&commandBuffer);
-            texture->destroyCache();
-        }
+        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(), commandPool);
+        texture = texturePaths.empty() ? utils::Texture::empty(device, commandBuffer) : utils::CubeTexture(texturePaths, device.instance, device.getLogical(), commandBuffer);
+        moon::utils::singleCommandBuffer::submit(device.getLogical(), device.getQueue(0, 0), commandPool, &commandBuffer);
+        texture.destroyCache();
+
         createUniformBuffers(imageCount);
         createDescriptorPool(imageCount);
         createDescriptorSet(imageCount);

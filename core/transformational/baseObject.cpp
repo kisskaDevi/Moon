@@ -224,18 +224,10 @@ SkyboxObject& SkyboxObject::translate(const moon::math::Vector<float,3> &) {
 void SkyboxObject::createDescriptorPool(uint32_t imageCount) {
     descriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device->getLogical());
     descriptorPool = utils::vkDefault::DescriptorPool(device->getLogical(), { &descriptorSetLayout }, imageCount);
+    descriptors = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
 }
 
 void SkyboxObject::createDescriptorSet(uint32_t imageCount) {
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(imageCount);
-        allocInfo.pSetLayouts = layouts.data();
-    descriptors.resize(imageCount);
-    CHECK(vkAllocateDescriptorSets(device->getLogical(), &allocInfo, descriptors.data()));
-
     for (size_t i = 0; i < imageCount; i++){
         VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = uniformBuffersDevice[i];

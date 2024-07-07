@@ -347,10 +347,22 @@ public:
 class SwapchainKHR {
 private:
 	utils::ImageInfo imageInfo;
-	VKDEFAULT_INIT_DESCRIPTOR(SwapchainKHR, VkSwapchainKHR)
+	VkSwapchainKHR descriptor{ VK_NULL_HANDLE };
+	VkDevice device{ VK_NULL_HANDLE };
 
 public:
-	SwapchainKHR(
+	~SwapchainKHR();
+	SwapchainKHR() noexcept = default;
+	SwapchainKHR(const SwapchainKHR&) = delete;
+	SwapchainKHR& operator=(const SwapchainKHR&) = delete;
+	SwapchainKHR(SwapchainKHR&&) = delete;
+	SwapchainKHR& operator=(SwapchainKHR&&) = delete;
+
+	operator const VkSwapchainKHR& () const;
+	operator const VkSwapchainKHR* () const;
+	operator const bool() const;
+
+	VkResult reset(
 		const VkDevice& device,
 		const utils::ImageInfo& imageInfo,
 		const utils::swapChain::SupportDetails& supportDetails,

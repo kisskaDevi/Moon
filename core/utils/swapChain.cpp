@@ -5,26 +5,7 @@
 
 namespace moon::utils {
 
-SwapChain::SwapChain(SwapChain&& other) {
-    swap(other);
-}
-
-SwapChain& SwapChain::operator=(SwapChain&& other) {
-    swap(other);
-    return *this;
-}
-
-void SwapChain::swap(SwapChain& other) {
-    std::swap(window, other.window);
-    std::swap(device, other.device);
-    std::swap(surface, other.surface);
-    std::swap(imageInfo, other.imageInfo);
-    std::swap(swapChainKHR, other.swapChainKHR);
-    std::swap(commandPool, other.commandPool);
-    std::swap(attachments, other.attachments);
-}
-
-VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, std::vector<uint32_t> queueFamilyIndices, int32_t maxImageCount){
+VkResult SwapChain::reset(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, int32_t maxImageCount){
     this->device = device;
     this->window = window;
     this->surface = surface;
@@ -38,15 +19,15 @@ VkResult SwapChain::create(const PhysicalDevice* device, GLFWwindow* window, VkS
     imageInfo.Extent = swapChain::queryingExtent(window, capabilities);
     imageInfo.Format = surfaceFormat.format;
 
-    VkResult result = VK_SUCCESS;
-    swapChainKHR = utils::vkDefault::SwapchainKHR(device->getLogical(), imageInfo, supportDetails, queueFamilyIndices, surface, surfaceFormat);
+    std::vector<uint32_t> queueFamilyIndices = { 0 };
+    VkResult result = swapChainKHR.reset(device->getLogical(), imageInfo, supportDetails, queueFamilyIndices, surface, surfaceFormat);
 
+    attachments.clear();
     for (const auto& image: swapChainKHR.images()){
         auto& attachment = attachments.emplace_back();
         attachment.image = image;
         attachment.imageView = utils::vkDefault::ImageView(device->getLogical(), attachment.image, VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, 0, 1);
     }
-
     commandPool = utils::vkDefault::CommandPool(device->getLogical());
 
     return result;

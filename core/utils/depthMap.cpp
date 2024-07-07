@@ -13,7 +13,7 @@ DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, cons
     map.descriptorPool = utils::vkDefault::DescriptorPool(device.getLogical(), { &map.descriptorSetLayout }, imageInfo.Count);
     map.descriptorSets = map.descriptorPool.allocateDescriptorSets(map.descriptorSetLayout, imageInfo.Count);
 
-    map.attachments.create(
+    map.attachments = utils::Attachments(
         device.instance,
         device.getLogical(),
         imageInfo,

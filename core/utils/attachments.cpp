@@ -48,18 +48,15 @@ void Attachments::swap(Attachments& other) noexcept {
     std::swap(imageClearValue, other.imageClearValue);
 }
 
-VkResult Attachments::create(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear, VkSamplerCreateInfo samplerInfo) {
+Attachments::Attachments(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear, VkSamplerCreateInfo samplerInfo) {
     this->imageInfo = imageInfo;
     imageClearValue = clear;
-    VkResult result = VK_SUCCESS;
-
     instances.resize(imageInfo.Count);
     for(auto& instance : instances){
         instance = Attachment(physicalDevice, device, imageInfo, usage);
         Memory::instance().nameMemory(instance.image, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", attachments::create, instance " + std::to_string(&instance - &instances[0]));
     }
     imageSampler = utils::vkDefault::Sampler(device, samplerInfo);
-    return result;
 }
 
 VkAttachmentDescription Attachments::imageDescription(VkFormat format)
@@ -128,7 +125,7 @@ std::vector<VkImage> Attachments::getImages() const {
 
 void createAttachments(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo image, uint32_t attachmentsCount, Attachments* pAttachments, VkImageUsageFlags usage, VkSamplerCreateInfo samplerInfo){
     for(uint32_t i = 0; i < attachmentsCount; i++){
-        CHECK(pAttachments[i].create(physicalDevice, device, image, usage, { {0.0f,0.0f,0.0f,0.0f}}, samplerInfo));
+        pAttachments[i] = Attachments(physicalDevice, device, image, usage, { {0.0f,0.0f,0.0f,0.0f}}, samplerInfo);
     }
 }
 

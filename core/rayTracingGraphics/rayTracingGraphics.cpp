@@ -25,7 +25,7 @@ RayTracingGraphics::ImageResource::ImageResource(const std::string& id, const mo
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    device.create(
+    device = utils::Attachments(
         phDevice.instance,
         phDevice.getLogical(),
         imageInfo,

@@ -12,7 +12,7 @@ const moon::utils::Attachments& DeferredAttachments::operator[](uint32_t index) 
 
 std::vector<VkClearValue> DeferredAttachments::clearValues() const {
     std::vector<VkClearValue> value;
-    for (uint32_t i = 0; i < static_cast<uint32_t>(size()); i++) {
+    for (uint32_t i = 0; i < size(); i++) {
         value.push_back((*this)[i].clearValue());
     }
     return value;

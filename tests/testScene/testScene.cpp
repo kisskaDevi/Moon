@@ -28,8 +28,9 @@
 #include <limits>
 #include <cstring>
 
-testScene::testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized):
+testScene::testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, uint32_t width, uint32_t height, const std::filesystem::path& ExternalPath, bool& framebufferResized):
     framebufferResized(framebufferResized),
+    extent(width, height),
     ExternalPath(ExternalPath),
     window(window),
     app(app),
@@ -40,18 +41,20 @@ testScene::testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* wi
 {
     screenshot.resize(100);
     std::memcpy(screenshot.data(), "screenshot", 10);
+
+    create();
 }
 
-void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
+void testScene::resize(uint32_t width, uint32_t height)
 {
-    extent = {WIDTH, HEIGHT};
+    extent = { width, height };
 
-    cameras["base"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"]->setExtent({WIDTH, HEIGHT});
+    cameras["base"]->recreate(45.0f, (float) extent[0] / (float) extent[1], 0.1f);
+    graphics["base"]->setExtent({ extent[0], extent[1] });
 
 #ifdef SECOND_VIEW_WINDOW
-    cameras["view"]->recreate(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["view"]->setExtent({static_cast<uint32_t>(WIDTH / 3), static_cast<uint32_t>(HEIGHT / 3)});
+    cameras["view"]->recreate(45.0f, (float)extent[0] / (float)extent[1], 0.1f);
+    graphics["view"]->setExtent({static_cast<uint32_t>(extent[0] / 3), static_cast<uint32_t>(extent[1] / 3)});
 #endif
 
     for(auto& [_,graph]: graphics){
@@ -59,12 +62,10 @@ void testScene::resize(uint32_t WIDTH, uint32_t HEIGHT)
     }
 }
 
-void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
+void testScene::create()
 {
-    extent = {WIDTH, HEIGHT};
-
-    cameras["base"] = std::make_shared<moon::transformational::BaseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["base"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(ExternalPath / "core/deferredGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{WIDTH, HEIGHT});
+    cameras["base"] = std::make_shared<moon::transformational::BaseCamera>(45.0f, (float) extent[0] / (float) extent[1], 0.1f);
+    graphics["base"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(ExternalPath / "core/deferredGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{ extent[0], extent[1] });
     app->setGraphics(graphics["base"].get());
     graphics["base"]->bind(cameras["base"].get());
     graphics["base"]->
@@ -80,8 +81,8 @@ void testScene::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics["base"]->create();
 
 #ifdef SECOND_VIEW_WINDOW
-    cameras["view"] = std::make_shared<baseCamera>(45.0f, (float) WIDTH / (float) HEIGHT, 0.1f);
-    graphics["view"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{WIDTH/3, HEIGHT/3});
+    cameras["view"] = std::make_shared<baseCamera>(45.0f, (float)extent[0] / (float)extent[1], 0.1f);
+    graphics["view"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{ extent[0] / 3, extent[1] / 3});
     graphics["view"]->setPositionInWindow(viewOffset, viewExtent);
     app->setGraphics(graphics["view"].get());
     graphics["view"]->bind(cameras["view"].get());

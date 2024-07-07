@@ -29,11 +29,10 @@ public:
     SwapChain() = default;
     SwapChain(const SwapChain&) = delete;
     SwapChain& operator=(const SwapChain&) = delete;
-    SwapChain(SwapChain&&);
-    SwapChain& operator=(SwapChain&&);
-    void swap(SwapChain&);
+    SwapChain(SwapChain&&) = delete;
+    SwapChain& operator=(SwapChain&&) = delete;
 
-    VkResult create(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, std::vector<uint32_t> queueFamilyIndices, int32_t maxImageCount = -1);
+    VkResult reset(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, int32_t maxImageCount = -1);
     VkResult present(VkSemaphore waitSemaphore, uint32_t imageIndex) const;
 
     operator const VkSwapchainKHR&() const;

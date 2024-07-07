@@ -106,11 +106,9 @@ VkResult GraphicsManager::createSurface(GLFWwindow* window){
 VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCount){
     CHECK_M(window == nullptr, "[ GraphicsManager::createSwapChain ] Window is nullptr");
     CHECK_M(surface == VK_NULL_HANDLE, "[ GraphicsManager::createSwapChain ] surface is VK_NULL_HANDLE");
-    CHECK_M(devices.empty(), "[ GraphicsManager::createSwapChain ] device is VK_NULL_HANDLE");
+    CHECK_M(activeDevice == nullptr, "[ GraphicsManager::activeDevice ] device is nullptr");
 
-    std::vector<uint32_t> queueIndices = {0};
-    swapChainKHR = utils::SwapChain();
-    return swapChainKHR.create(activeDevice, window, surface, queueIndices, maxImageCount);
+    return swapChainKHR.reset(activeDevice, window, surface, maxImageCount);
 }
 
 VkResult GraphicsManager::createLinker(){

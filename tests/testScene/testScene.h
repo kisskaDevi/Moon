@@ -82,14 +82,14 @@ private:
     void mouseEvent(float frameTime);
     void keyboardEvent(float frameTime);
 
+    void create();
     void loadModels();
     void createLight();
     void createObjects();
 public:
-    testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized);
+    testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, uint32_t width, uint32_t height, const std::filesystem::path& ExternalPath, bool& framebufferResized);
 
-    void create(uint32_t WIDTH, uint32_t HEIGHT) override;
-    void resize(uint32_t WIDTH, uint32_t HEIGHT) override;
+    void resize(uint32_t width, uint32_t height) override;
     void updateFrame(uint32_t frameNumber, float frameTime) override;
 };
 

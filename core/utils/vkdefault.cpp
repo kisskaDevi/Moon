@@ -638,8 +638,9 @@ vkDefault::Buffer::operator const VkDeviceMemory* () const {
 VKDEFAULT_MAKE_SWAP(Buffer)
 VKDEFAULT_MAKE_DESCRIPTOR(Buffer, VkBuffer)
 
-vkDefault::SwapchainKHR::SwapchainKHR(const VkDevice& device, const utils::ImageInfo& imageInfo, const utils::swapChain::SupportDetails& supportDetails, const std::vector<uint32_t>& queueFamilyIndices,  VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat) {
-    VKDEFAULT_RESET()
+VkResult vkDefault::SwapchainKHR::reset(const VkDevice& device, const utils::ImageInfo& imageInfo, const utils::swapChain::SupportDetails& supportDetails, const std::vector<uint32_t>& queueFamilyIndices, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat) {
+    if (descriptor) vkDestroySwapchainKHR(device, release(descriptor), nullptr);
+    this->device = device;
     this->imageInfo = imageInfo;
 
     VkSwapchainCreateInfoKHR createInfo {};
@@ -659,7 +660,7 @@ vkDefault::SwapchainKHR::SwapchainKHR(const VkDevice& device, const utils::Image
         createInfo.presentMode = swapChain::queryingPresentMode(supportDetails.presentModes);
         createInfo.clipped = VK_TRUE;
         createInfo.oldSwapchain = VK_NULL_HANDLE;
-    CHECK(vkCreateSwapchainKHR(device, &createInfo, nullptr, &descriptor));
+    return vkCreateSwapchainKHR(device, &createInfo, nullptr, &descriptor);
 }
 
 vkDefault::SwapchainKHR::~SwapchainKHR() {
@@ -673,8 +674,17 @@ std::vector<VkImage> vkDefault::SwapchainKHR::images() const {
     return result;
 }
 
-VKDEFAULT_MAKE_SWAP(SwapchainKHR)
-VKDEFAULT_MAKE_DESCRIPTOR(SwapchainKHR, VkSwapchainKHR)
+vkDefault::SwapchainKHR::operator const VkSwapchainKHR& () const {
+    return descriptor;
+}
+
+vkDefault::SwapchainKHR::operator const VkSwapchainKHR* () const {
+    return &descriptor;
+}
+
+vkDefault::SwapchainKHR::operator const bool() const {
+    return descriptor != VK_NULL_HANDLE;
+}
 
 vkDefault::CommandPool::CommandPool(const VkDevice& device) {
     VKDEFAULT_RESET()

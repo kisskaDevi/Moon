@@ -49,11 +49,10 @@ int main()
     moon::graphicsManager::GraphicsManager app(window, imageCount, resCount, physicalDeviceFeatures());
 
 #if defined(TESTCUDA)
-    testCuda testScene(&app, window, ExternalPath, framebufferResized);
+    testCuda testScene(&app, window, WIDTH, HEIGHT, ExternalPath, framebufferResized);
 #else
-    testScene testScene(&app, window, ExternalPath, framebufferResized);
+    testScene testScene(&app, window, WIDTH, HEIGHT, ExternalPath, framebufferResized);
 #endif
-    testScene.create(WIDTH,HEIGHT);
 
     // moon::utils::Memory::instance().status();
 

@@ -129,9 +129,10 @@ void createWorld(std::unordered_map<std::string, std::unique_ptr<cuda::rayTracin
     }
 }
 
-testCuda::testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, const std::filesystem::path& ExternalPath, bool& framebufferResized) :
+testCuda::testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, uint32_t width, uint32_t height, const std::filesystem::path& ExternalPath, bool& framebufferResized) :
     framebufferResized(framebufferResized),
     ExternalPath(ExternalPath),
+    extent(width, height),
     app(app),
     window(window),
     mouse(new controller(window, glfwGetMouseButton)),
@@ -151,15 +152,16 @@ testCuda::testCuda(moon::graphicsManager::GraphicsManager *app, GLFWwindow* wind
                 cuda::rayTracing::vec4f(-1.0f, 0.0f, -1.0f, 0.0f)
                 ),
             1.0f));
+
+    create();
 }
 
 testCuda::~testCuda() = default;
 
-void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
+void testCuda::create()
 {
     Timer timer("testCuda::create");
 
-    extent = {WIDTH, HEIGHT};
     createWorld(objects, ExternalPath);
 
     timer.elapsedTime("testCuda::create : createWorld");
@@ -167,7 +169,8 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics = std::make_shared<moon::rayTracingGraphics::RayTracingGraphics>(
         ExternalPath / "core/rayTracingGraphics/spv",
         ExternalPath / "core/workflows/spv",
-        VkExtent2D{extent[0],extent[1]});
+        VkExtent2D{extent[0], extent[1]});
+
     app->setGraphics(graphics.get());
     graphics->create();
 
@@ -198,12 +201,12 @@ void testCuda::create(uint32_t WIDTH, uint32_t HEIGHT)
     graphics->setEnableBoundingBox(enableBB);
 }
 
-void testCuda::resize(uint32_t WIDTH, uint32_t HEIGHT)
+void testCuda::resize(uint32_t width, uint32_t height)
 {
-    extent = {WIDTH, HEIGHT};
+    extent = { width, height };
     hostcam->aspect = float(extent[0]) / float(extent[1]);
     cam = make_devicep<Camera>(*hostcam);
-    graphics->setExtent({extent[0],extent[1]});
+    graphics->setExtent({extent[0], extent[1]});
 
     graphics->setEnableBoundingBox(enableBB);
     graphics->setEnableBloom(enableBloom);

@@ -4,13 +4,13 @@
 
 namespace moon::workflows {
 
-PostProcessingGraphics::PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters parameters, bool enable)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), enable{enable}, postProcessing(this->imageInfo)
+PostProcessingGraphics::PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters& parameters)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), postProcessing(this->imageInfo)
 {}
 
 void PostProcessingGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
-    aDatabase.addAttachmentData(parameters.out.postProcessing, enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.postProcessing, parameters.enable, &frame);
 }
 
 void PostProcessingGraphics::createRenderPass()
@@ -116,19 +116,19 @@ void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path&
 
 void PostProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         postProcessing.create(shadersPath / "postProcessing/postProcessingVert.spv", shadersPath / "postProcessing/postProcessingFrag.spv", device, renderPass);
+        created = true;
     }
 }
 
 void PostProcessingGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase&,
-    const moon::utils::AttachmentsDatabase& aDatabase)
-{
-    if(!enable) return;
+    const moon::utils::AttachmentsDatabase& aDatabase) {
+    if (!parameters.enable || !created) return;
 
     for (size_t i = 0; i < imageInfo.Count; i++){
         VkDescriptorImageInfo layersImageInfo = aDatabase.descriptorImageInfo(parameters.in.baseColor, i);
@@ -183,7 +183,7 @@ void PostProcessingGraphics::updateDescriptorSets(
 }
 
 void PostProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues;
     clearValues.push_back(VkClearValue{});

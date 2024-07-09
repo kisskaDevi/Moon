@@ -5,7 +5,7 @@
 
 namespace moon::workflows {
 
-struct SelectorParameters{
+struct SelectorParameters : workflows::Parameters {
     struct{
         std::string storageBuffer;
         std::string position;
@@ -16,20 +16,20 @@ struct SelectorParameters{
     struct{
         std::string selector;
     }out;
+    uint32_t transparentLayersCount{ 1 };
 };
 
 class SelectorGraphics : public Workflow
 {
 private:
-    SelectorParameters parameters;
-
+    SelectorParameters& parameters;
     moon::utils::Attachments frame;
-    bool enable{true};
 
     struct Selector : public Workbody{
-        uint32_t transparentLayersCount{ 1 };
-
-        Selector(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        const SelectorParameters& parameters;
+        Selector(const moon::utils::ImageInfo& imageInfo, const SelectorParameters& parameters)
+            : Workbody(imageInfo), parameters(parameters)
+        {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
     }selector;
@@ -38,7 +38,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters parameters, bool enable, uint32_t transparentLayersCount = 1);
+    SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

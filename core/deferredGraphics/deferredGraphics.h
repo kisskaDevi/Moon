@@ -12,6 +12,19 @@
 #include <filesystem>
 #include <memory>
 
+#include "graphics.h"
+#include "layersCombiner.h"
+#include "skybox.h"
+#include "scattering.h"
+#include "sslr.h"
+#include "bloom.h"
+#include "blur.h"
+#include "boundingBox.h"
+#include "ssao.h"
+#include "selector.h"
+#include "shadow.h"
+#include "postProcessing.h"
+
 namespace moon::interfaces {
 class Model;
 class Camera;
@@ -43,7 +56,7 @@ private:
     moon::utils::AttachmentsDatabase    aDatabase;
 
     std::unordered_map<std::string, std::unique_ptr<moon::workflows::Workflow>> workflows;
-    std::unordered_map<std::string, bool> enable;
+    std::unordered_map<std::string, moon::workflows::Parameters*> workflowsParameters;
     Link deferredLink;
 
     moon::utils::Buffers storageBuffersHost;
@@ -68,6 +81,20 @@ private:
 
     void updateCommandBuffer(uint32_t imageIndex);
     void updateBuffers(uint32_t imageIndex);
+
+    GraphicsParameters graphicsParams;
+    std::vector<GraphicsParameters> transparentLayersParams;
+    LayersCombinerParameters layersCombinerParams;
+    workflows::SkyboxParameters skyboxParams;
+    workflows::ScatteringParameters scatteringParams;
+    workflows::SSLRParameters SSLRParams;
+    workflows::BloomParameters bloomParams;
+    workflows::GaussianBlurParameters blurParams;
+    workflows::BoundingBoxParameters bbParams;
+    workflows::SSAOParameters SSAOParams;
+    workflows::SelectorParameters selectorParams;
+    workflows::PostProcessingParameters postProcessingParams;
+    workflows::ShadowGraphicsParameters shadowGraphicsParameters;
 
 public:
     DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);

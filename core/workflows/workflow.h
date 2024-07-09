@@ -45,6 +45,7 @@ protected:
     VkDevice                device{VK_NULL_HANDLE};
     std::filesystem::path   shadersPath;
     moon::utils::ImageInfo  imageInfo;
+    bool created{false};
 
     utils::vkDefault::RenderPass        renderPass;
     utils::vkDefault::Framebuffers      framebuffers;
@@ -67,6 +68,10 @@ public:
     void endCommandBuffer(uint32_t frameNumber) const;
     utils::vkDefault::CommandBuffer& commandBuffer(uint32_t frameNumber);
     void raiseUpdateFlags();
+};
+
+struct Parameters {
+    bool enable{false};
 };
 
 }

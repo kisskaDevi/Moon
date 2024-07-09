@@ -7,17 +7,8 @@
 
 namespace moon::deferredGraphics {
 
-Graphics::Base::Base(
-    const bool transparencyPass,
-    const bool enableTransparency,
-    const uint32_t transparencyNumber,
-    const utils::ImageInfo& imageInfo,
-    const GraphicsParameters& parameters) :
-    transparencyPass(transparencyPass),
-    enableTransparency(enableTransparency),
-    transparencyNumber(transparencyNumber),
-    imageInfo(imageInfo),
-    parameters(parameters)
+Graphics::Base::Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters)
+    : imageInfo(imageInfo), parameters(parameters)
 {}
 
 void Graphics::Base::createDescriptorSetLayout(VkDevice device) {
@@ -35,8 +26,8 @@ void Graphics::Base::createDescriptorSetLayout(VkDevice device) {
 
 void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
     std::vector<VkBool32> transparencyData = {
-        static_cast<VkBool32>(enableTransparency),
-        static_cast<VkBool32>(transparencyPass)
+        static_cast<VkBool32>(parameters.enableTransparency),
+        static_cast<VkBool32>(parameters.transparencyPass)
     };
     std::vector<VkSpecializationMapEntry> specializationMapEntry;
     specializationMapEntry.push_back(VkSpecializationMapEntry{});
@@ -143,8 +134,8 @@ void Graphics::Base::updateDescriptorSets(
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
         VkDescriptorImageInfo skyboxImageInfo = aDatabase.descriptorEmptyInfo();
 
-        std::string depthId = !transparencyPass || transparencyNumber == 0 ? "" :
-                                      (parameters.out.transparency + std::to_string(transparencyNumber - 1) + ".") + parameters.out.depth;
+        std::string depthId = !parameters.transparencyPass || parameters.transparencyNumber == 0 ? "" :
+                                      (parameters.out.transparency + std::to_string(parameters.transparencyNumber - 1) + ".") + parameters.out.depth;
         VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(depthId, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;

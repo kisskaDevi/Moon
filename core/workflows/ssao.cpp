@@ -4,13 +4,13 @@
 
 namespace moon::workflows {
 
-SSAOGraphics::SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters parameters, bool enable)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), ssao(this->imageInfo)
+SSAOGraphics::SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters& parameters)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), ssao(this->imageInfo)
 {}
 
 void SSAOGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
-    aDatabase.addAttachmentData(parameters.out.ssao, enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.ssao, parameters.enable, &frame);
 }
 
 void SSAOGraphics::createRenderPass()
@@ -116,19 +116,19 @@ void SSAOGraphics::SSAO::create(const std::filesystem::path& vertShaderPath, con
 
 void SSAOGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         ssao.create(shadersPath / "ssao/SSAOVert.spv", shadersPath / "ssao/SSAOFrag.spv", device, renderPass);
+        created = true;
     }
 }
 
 void SSAOGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
-    const moon::utils::AttachmentsDatabase& aDatabase)
-{
-    if(!enable) return;
+    const moon::utils::AttachmentsDatabase& aDatabase) {
+    if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < this->imageInfo.Count; i++)
     {
@@ -184,7 +184,7 @@ void SSAOGraphics::updateDescriptorSets(
 }
 
 void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue()};
 

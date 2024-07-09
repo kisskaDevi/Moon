@@ -4,15 +4,13 @@
 
 namespace moon::workflows {
 
-SelectorGraphics::SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters parameters, bool enable, uint32_t transparentLayersCount)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), selector(this->imageInfo)
-{
-    selector.transparentLayersCount = transparentLayersCount > 0 ? transparentLayersCount : 1;
-}
+SelectorGraphics::SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), selector(this->imageInfo, parameters)
+{}
 
 void SelectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
-    aDatabase.addAttachmentData(parameters.out.selector, enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.selector, parameters.enable, &frame);
 }
 
 void SelectorGraphics::createRenderPass()
@@ -76,11 +74,11 @@ void SelectorGraphics::Selector::create(const std::filesystem::path& vertShaderP
         bindings.back().pImmutableSamplers = nullptr;
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.transparentLayersCount));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    uint32_t specializationData = transparentLayersCount;
+    uint32_t specializationData = parameters.transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
         specializationMapEntry.constantID = 0;
         specializationMapEntry.offset = 0;
@@ -135,19 +133,19 @@ void SelectorGraphics::Selector::create(const std::filesystem::path& vertShaderP
 
 void SelectorGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         selector.create(shadersPath / "selector/selectorVert.spv", shadersPath / "selector/selectorFrag.spv", device, renderPass);
+        created = true;
     }
 }
 
 void SelectorGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
-    const moon::utils::AttachmentsDatabase& aDatabase)
-{
-    if(!enable) return;
+    const moon::utils::AttachmentsDatabase& aDatabase) {
+    if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
@@ -155,10 +153,10 @@ void SelectorGraphics::updateDescriptorSets(
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
         VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, parameters.in.defaultDepthTexture);
 
-        std::vector<VkDescriptorImageInfo> positionLayersImageInfo(selector.transparentLayersCount);
-        std::vector<VkDescriptorImageInfo> depthLayersImageInfo(selector.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> positionLayersImageInfo(parameters.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> depthLayersImageInfo(parameters.transparentLayersCount);
 
-        for(uint32_t index = 0; index < selector.transparentLayersCount; index++){
+        for(uint32_t index = 0; index < parameters.transparentLayersCount; index++){
             std::string key = parameters.in.transparency + std::to_string(index) + ".";
 
             positionLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.position, i);
@@ -196,7 +194,7 @@ void SelectorGraphics::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = selector.transparentLayersCount;
+            descriptorWrites.back().descriptorCount = parameters.transparentLayersCount;
             descriptorWrites.back().pImageInfo = positionLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -204,14 +202,14 @@ void SelectorGraphics::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = selector.transparentLayersCount;
+            descriptorWrites.back().descriptorCount = parameters.transparentLayersCount;
             descriptorWrites.back().pImageInfo = depthLayersImageInfo.data();
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
 void SelectorGraphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue()};
 

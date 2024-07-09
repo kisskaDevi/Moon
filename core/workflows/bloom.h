@@ -5,29 +5,28 @@
 
 namespace moon::workflows {
 
-struct BloomParameters{
+struct BloomParameters : workflows::Parameters {
     struct{
         std::string bloom;
     }in;
     struct{
         std::string bloom;
     }out;
+    uint32_t blitAttachmentsCount{ 0 };
+    float blitFactor{ 1.5f };
+    float xSamplerStep{ 1.5f };
+    float ySamplerStep{ 1.5f };
+    VkImageLayout inputImageLayout{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 };
 
 class BloomGraphics : public Workflow
 {
 private:
-    BloomParameters parameters;
+    BloomParameters& parameters;
 
     std::vector<moon::utils::Attachments> frames;
     moon::utils::Attachments bufferAttachment;
     const moon::utils::Attachments* srcAttachment{nullptr};
-
-    bool enable{true};
-    float blitFactor{1.5f};
-    float xSamplerStep{1.5f};
-    float ySamplerStep{1.5f};
-    VkImageLayout inputImageLayout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 
     struct Filter : public Workbody{
         Filter() = default;
@@ -40,35 +39,31 @@ private:
     }filter;
 
     struct Bloom : public Workbody{
-        uint32_t blitAttachmentsCount{ 0 };
-
+        const BloomParameters& parameters;
         Bloom() = default;
         Bloom(Bloom&&) = default;
         Bloom& operator=(Bloom&&) = default;
 
-        Bloom(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        Bloom(const moon::utils::ImageInfo& imageInfo, const BloomParameters& parameters)
+            : Workbody(imageInfo), parameters(parameters)
+        {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
     }bloom;
 
     void render(VkCommandBuffer commandBuffer, const moon::utils::Attachments& image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker);
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
 public:
     BloomGraphics(BloomGraphics&&) = default;
     BloomGraphics& operator=(BloomGraphics&&) = default;
-    BloomGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, VkImageLayout inputImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, float blitFactor = 1.5f, float xSamplerStep = 1.5f, float ySamplerStep = 1.5f);
+    BloomGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BloomParameters& parameters);
     BloomGraphics();
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    BloomGraphics& setBlitFactor(const float& blitFactor);
-    BloomGraphics& setSamplerStepX(const float& xSamplerStep);
-    BloomGraphics& setSamplerStepY(const float& ySamplerStep);
 };
 
 }

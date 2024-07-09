@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <random>
 #include <stack>
+#include <memory>
 
 #include "cudaRayTracing.h"
 #include "boundingBoxGraphics.h"
@@ -45,7 +46,7 @@ private:
 
     cuda::rayTracing::RayTracing rayTracer;
     BoundingBoxGraphics bbGraphics;
-    moon::workflows::BloomGraphics bloomGraph;
+    std::unique_ptr<moon::workflows::BloomGraphics> bloomGraph;
     RayTracingLink rayTracingLink;
 
     moon::utils::Texture emptyTexture;
@@ -60,6 +61,8 @@ private:
     utils::vkDefault::CommandPool commandPool;
 
     bool bloomEnable = true;
+
+    moon::workflows::BloomParameters bloomParams;
 
 public:
     RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent);

@@ -8,17 +8,11 @@ namespace moon::deferredGraphics {
 Graphics::Graphics(
     const moon::utils::ImageInfo& imageInfo,
     const std::filesystem::path& shadersPath,
-    GraphicsParameters parameters,
-    bool enable,
-    bool enableTransparency,
-    bool transparencyPass,
-    uint32_t transparencyNumber,
+    GraphicsParameters& parameters,
     std::vector<moon::interfaces::Object*>* object, std::vector<moon::interfaces::Light*>* lightSources,
-    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps) :
-    Workflow(imageInfo, shadersPath),
-    parameters(parameters),
-    enable(enable),
-    base(transparencyPass, enableTransparency, transparencyNumber, this->imageInfo, this->parameters),
+    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
+    : Workflow(imageInfo, shadersPath), parameters(parameters),
+    base(this->imageInfo, this->parameters),
     outlining(base),
     lighting(this->imageInfo, this->parameters),
     ambientLighting(lighting)
@@ -27,11 +21,6 @@ Graphics::Graphics(
 
     lighting.lightSources = lightSources;
     lighting.depthMaps = depthMaps;
-}
-
-Graphics& Graphics::setMinAmbientFactor(const float& minAmbientFactor){
-    ambientLighting.minAmbientFactor = minAmbientFactor;
-    return *this;
 }
 
 void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
@@ -51,13 +40,13 @@ void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
     moon::utils::ImageInfo depthImage = { imageInfo.Count, moon::utils::image::depthStencilFormat(physicalDevice), imageInfo.Extent, imageInfo.Samples };
     deferredAttachments.GBuffer.depth = utils::Attachments(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { { 1.0f, 0 } });
 
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.image, enable, &deferredAttachments.image);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.blur, enable, &deferredAttachments.blur);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.bloom, enable, &deferredAttachments.bloom);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.position, enable, &deferredAttachments.GBuffer.position);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.normal, enable, &deferredAttachments.GBuffer.normal);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.color, enable, &deferredAttachments.GBuffer.color);
-    aDatabase.addAttachmentData((!base.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.transparencyNumber) + ".") + parameters.out.depth, enable, &deferredAttachments.GBuffer.depth);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.image, parameters.enable, &deferredAttachments.image);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.blur, parameters.enable, &deferredAttachments.blur);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.bloom, parameters.enable, &deferredAttachments.bloom);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.position, parameters.enable, &deferredAttachments.GBuffer.position);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.normal, parameters.enable, &deferredAttachments.GBuffer.normal);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.color, parameters.enable, &deferredAttachments.GBuffer.color);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.depth, parameters.enable, &deferredAttachments.GBuffer.depth);
 }
 
 void Graphics::createRenderPass()
@@ -173,11 +162,12 @@ void Graphics::createPipelines() {
 
 void Graphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         createPipelines();
+        created = true;
     }
 }
 
@@ -185,14 +175,14 @@ void Graphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     base.updateDescriptorSets(device, bDatabase, aDatabase);
     lighting.updateDescriptorSets(device, bDatabase, aDatabase);
 }
 
 void Graphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     const std::vector<VkClearValue> clearValues = deferredAttachments.clearValues();
     VkRenderPassBeginInfo renderPassInfo{};
@@ -206,7 +196,7 @@ void Graphics::updateCommandBuffer(uint32_t frameNumber){
 
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        primitiveCount = 0;
+        uint32_t primitiveCount = 0;
 
         base.render(frameNumber,commandBuffers[frameNumber], primitiveCount);
         outlining.render(frameNumber,commandBuffers[frameNumber]);

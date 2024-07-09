@@ -21,7 +21,7 @@ struct SkyboxAttachments
     }
 };
 
-struct SkyboxParameters{
+struct SkyboxParameters : workflows::Parameters {
     struct{
         std::string camera;
     }in;
@@ -34,10 +34,8 @@ struct SkyboxParameters{
 class SkyboxGraphics : public Workflow
 {
 private:
-    SkyboxParameters parameters;
-
+    SkyboxParameters& parameters;
     SkyboxAttachments frame;
-    bool enable;
 
     struct Skybox : public Workbody{
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
@@ -52,7 +50,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* object = nullptr);
+    SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, std::vector<moon::interfaces::Object*>* object = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

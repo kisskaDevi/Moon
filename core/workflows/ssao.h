@@ -5,7 +5,7 @@
 
 namespace moon::workflows {
 
-struct SSAOParameters{
+struct SSAOParameters : workflows::Parameters{
     struct{
         std::string camera;
         std::string position;
@@ -22,10 +22,8 @@ struct SSAOParameters{
 class SSAOGraphics : public Workflow
 {
 private:
-    SSAOParameters parameters;
-
+    SSAOParameters& parameters;
     moon::utils::Attachments frame;
-    bool enable{true};
 
     struct SSAO : public Workbody{
         SSAO(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
@@ -37,7 +35,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters parameters, bool enable);
+    SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

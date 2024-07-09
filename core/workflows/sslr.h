@@ -5,7 +5,7 @@
 
 namespace moon::workflows {
 
-struct SSLRParameters{
+struct SSLRParameters : workflows::Parameters{
     struct{
         std::string camera;
         std::string position;
@@ -23,10 +23,8 @@ struct SSLRParameters{
 class SSLRGraphics : public Workflow
 {
 private:
-    SSLRParameters parameters;
-
+    SSLRParameters& parameters;
     moon::utils::Attachments frame;
-    bool enable;
 
     struct SSLR : public Workbody{
         SSLR(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
@@ -38,7 +36,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SSLRGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSLRParameters parameters, bool enable);
+    SSLRGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSLRParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

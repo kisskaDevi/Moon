@@ -5,16 +5,16 @@
 
 namespace moon::workflows {
 
-SkyboxGraphics::SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), skybox(this->imageInfo)
+SkyboxGraphics::SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, std::vector<moon::interfaces::Object*>* objects)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), skybox(this->imageInfo)
 {
     skybox.objects = objects;
 }
 
 void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
-    aDatabase.addAttachmentData(parameters.out.baseColor, enable, &frame.color);
-    aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
+    aDatabase.addAttachmentData(parameters.out.baseColor, parameters.enable, &frame.color);
+    aDatabase.addAttachmentData(parameters.out.bloom, parameters.enable, &frame.bloom);
 }
 
 void SkyboxGraphics::createRenderPass()
@@ -126,17 +126,17 @@ void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath,
 
 void SkyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         skybox.create(shadersPath / "skybox/skyboxVert.spv", shadersPath / "skybox/skyboxFrag.spv", device, renderPass);
+        created = true;
     }
 }
 
-void SkyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase&)
-{
-    if(!enable) return;
+void SkyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase&) {
+    if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < imageInfo.Count; i++){
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
@@ -155,7 +155,7 @@ void SkyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bD
 }
 
 void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues = {frame.color.clearValue(), frame.bloom.clearValue()};
 

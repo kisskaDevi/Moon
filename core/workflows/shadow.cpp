@@ -8,8 +8,8 @@
 
 namespace moon::workflows {
 
-ShadowGraphics::ShadowGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, bool enable, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
-    : Workflow(imageInfo, shadersPath), enable(enable), shadow(this->imageInfo)
+ShadowGraphics::ShadowGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ShadowGraphicsParameters& parameters, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), shadow(this->imageInfo)
 {
     shadow.objects = objects;
     shadow.depthMaps = depthMaps;
@@ -100,18 +100,18 @@ void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath,
 
 void ShadowGraphics::create(moon::utils::AttachmentsDatabase&)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createRenderPass();
         shadow.create(shadersPath / "shadow/shadowMapVert.spv", "", device, renderPass);
+        created = true;
     }
     for (auto& [light, depthMap] : *shadow.depthMaps) {
-        depthMap.update(light->isShadowEnable() && enable);
+        depthMap.update(light->isShadowEnable() && parameters.enable);
     }
 }
 
-void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber)
-{
-    if(!enable) return;
+void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber) {
+    if (!parameters.enable || !created) return;
 
     for(const auto& [light, depthMap] : *shadow.depthMaps){
         if (light->isShadowEnable() && framebuffersMap.find(&depthMap) == framebuffersMap.end()){

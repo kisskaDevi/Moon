@@ -13,11 +13,13 @@ namespace moon::utils { class DepthMap;}
 
 namespace moon::workflows {
 
+struct ShadowGraphicsParameters : workflows::Parameters {};
+
 class ShadowGraphics : public Workflow
 {
 private:
+    ShadowGraphicsParameters& parameters;
     std::unordered_map<const moon::utils::DepthMap*, utils::vkDefault::Framebuffers> framebuffersMap;
-    bool enable{true};
 
     struct Shadow : public Workbody{
         Shadow(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
@@ -38,7 +40,7 @@ private:
 public:
     ShadowGraphics(const moon::utils::ImageInfo& imageInfo,
                    const std::filesystem::path& shadersPath,
-                   bool enable,
+                   ShadowGraphicsParameters& parameters,
                    std::vector<moon::interfaces::Object*>* objects = nullptr,
                    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
 

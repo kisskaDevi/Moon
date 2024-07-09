@@ -8,7 +8,7 @@ namespace moon::interfaces { class Object;}
 
 namespace moon::workflows {
 
-struct BoundingBoxParameters{
+struct BoundingBoxParameters : workflows::Parameters {
     struct{
         std::string camera;
     }in;
@@ -20,10 +20,8 @@ struct BoundingBoxParameters{
 class BoundingBoxGraphics : public Workflow
 {
 private:
-    BoundingBoxParameters parameters;
-
+    BoundingBoxParameters& parameters;
     moon::utils::Attachments frame;
-    bool enable{true};
 
     struct BoundingBox : public Workbody{
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
@@ -41,7 +39,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects = nullptr);
+    BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters& parameters, std::vector<moon::interfaces::Object*>* objects = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

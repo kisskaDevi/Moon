@@ -105,7 +105,6 @@ private:
     void createDescriptorSet(uint32_t imageCount);
 public:
     SkyboxObject(const std::vector<std::filesystem::path>& texturePaths);
-    ~SkyboxObject();
 
     SkyboxObject& setMipLevel(float mipLevel);
     SkyboxObject& translate(const moon::math::Vector<float,3>& translate) override;

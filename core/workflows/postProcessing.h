@@ -5,7 +5,7 @@
 
 namespace moon::workflows {
 
-struct PostProcessingParameters{
+struct PostProcessingParameters : workflows::Parameters{
     struct{
         std::string baseColor;
         std::string blur;
@@ -21,10 +21,8 @@ struct PostProcessingParameters{
 class PostProcessingGraphics : public Workflow
 {
 private:
-    PostProcessingParameters parameters;
-
+    PostProcessingParameters& parameters;
     moon::utils::Attachments frame;
-    bool enable{true};
 
     struct PostProcessing : public Workbody{
         PostProcessing(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
@@ -36,7 +34,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters parameters, bool enable);
+    PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

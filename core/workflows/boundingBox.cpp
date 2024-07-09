@@ -7,15 +7,15 @@
 
 namespace moon::workflows {
 
-BoundingBoxGraphics::BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters parameters, bool enable, std::vector<moon::interfaces::Object*>* objects)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), box(this->imageInfo)
+BoundingBoxGraphics::BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters& parameters, std::vector<moon::interfaces::Object*>* objects)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), box(this->imageInfo)
 {
     box.objects = objects;
 }
 
 void BoundingBoxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
-    aDatabase.addAttachmentData(parameters.out.boundingBox, enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.boundingBox, parameters.enable, &frame);
 }
 
 void BoundingBoxGraphics::createRenderPass(){
@@ -143,11 +143,12 @@ void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertS
 
 void BoundingBoxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         box.create(shadersPath / "boundingBox/boundingBoxVert.spv", shadersPath / "boundingBox/boundingBoxFrag.spv", device, renderPass);
+        created = true;
     }
 }
 
@@ -155,7 +156,7 @@ void BoundingBoxGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase&)
 {
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
@@ -175,7 +176,7 @@ void BoundingBoxGraphics::updateDescriptorSets(
 }
 
 void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue()};
 

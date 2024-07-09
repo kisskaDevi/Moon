@@ -20,7 +20,7 @@ class   CubeTexture;
 
 namespace moon::deferredGraphics {
 
-struct GraphicsParameters{
+struct GraphicsParameters : workflows::Parameters {
     struct{
         std::string camera;
     }in;
@@ -34,22 +34,21 @@ struct GraphicsParameters{
         std::string depth;
         std::string transparency;
     }out;
+
+    bool        transparencyPass{ false };
+    bool        enableTransparency{ false };
+    uint32_t    transparencyNumber{ 0 };
+    float       minAmbientFactor{ 0.05f };
 };
 
 class Graphics : public moon::workflows::Workflow
 {
 private:
-    GraphicsParameters parameters;
-
-    uint32_t                        primitiveCount{0};
-    DeferredAttachments             deferredAttachments;
-    bool                            enable{true};
+    GraphicsParameters& parameters;
+    DeferredAttachments deferredAttachments;
 
     struct Base{
         std::filesystem::path       shadersPath;
-        bool                        transparencyPass{false};
-        bool                        enableTransparency{false};
-        uint32_t                    transparencyNumber{0};
         const utils::ImageInfo&     imageInfo;
         const GraphicsParameters&   parameters;
 
@@ -66,11 +65,7 @@ private:
 
         std::vector<moon::interfaces::Object*>* objects{nullptr};
 
-        Base(const bool transparencyPass,
-             const bool enableTransparency,
-             const uint32_t transparencyNumber,
-             const utils::ImageInfo& imageInfo,
-             const GraphicsParameters& parameters);
+        Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters);
 
         void createPipeline(VkDevice device, VkRenderPass pRenderPass);
         void createDescriptorSetLayout(VkDevice device);
@@ -96,7 +91,6 @@ private:
 
     struct Lighting{
         std::filesystem::path       shadersPath;
-        bool                        enableScattering{true};
         const utils::ImageInfo&     imageInfo;
         const GraphicsParameters&   parameters;
 
@@ -128,7 +122,6 @@ private:
 
     struct AmbientLighting{
         std::filesystem::path   shadersPath;
-        float                   minAmbientFactor{0.05f};
         const Lighting&         parent;
 
         moon::utils::vkDefault::PipelineLayout  pipelineLayout;
@@ -148,11 +141,7 @@ private:
 public:
     Graphics(const moon::utils::ImageInfo& imageInfo,
              const std::filesystem::path& shadersPath,
-             GraphicsParameters parameters,
-             bool enable,
-             bool enableTransparency,
-             bool transparencyPass,
-             uint32_t transparencyNumber,
+             GraphicsParameters& parameters,
              std::vector<moon::interfaces::Object*>* object = nullptr,
              std::vector<moon::interfaces::Light*>* lightSources = nullptr,
              std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
@@ -160,8 +149,6 @@ public:
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    Graphics& setMinAmbientFactor(const float& minAmbientFactor);
 };
 
 }

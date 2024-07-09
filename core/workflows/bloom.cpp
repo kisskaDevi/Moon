@@ -10,35 +10,9 @@ struct BloomPushConst{
     alignas (4) float blitFactor;
 };
 
-BloomGraphics::BloomGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BloomParameters parameters, bool enable, uint32_t blitAttachmentsCount, VkImageLayout inputImageLayout, float blitFactor, float xSamplerStep, float ySamplerStep) :
-    Workflow(imageInfo, shadersPath),
-    parameters(parameters),
-    enable(enable),
-    blitFactor(blitFactor),
-    xSamplerStep(xSamplerStep),
-    ySamplerStep(ySamplerStep),
-    inputImageLayout(inputImageLayout),
-    filter(this->imageInfo),
-    bloom(this->imageInfo)
-{
-    bloom.blitAttachmentsCount = blitAttachmentsCount;
-}
-
-BloomGraphics::BloomGraphics()
-    : Workflow({}, ""), filter(this->imageInfo), bloom(this->imageInfo)
+BloomGraphics::BloomGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BloomParameters& parameters)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), filter(this->imageInfo), bloom(this->imageInfo, parameters)
 {}
-
-BloomGraphics& BloomGraphics::setBlitFactor(const float& blitFactor){this->blitFactor = blitFactor; return *this;}
-BloomGraphics& BloomGraphics::setSamplerStepX(const float& xSamplerStep){this->xSamplerStep = xSamplerStep; return *this;}
-BloomGraphics& BloomGraphics::setSamplerStepY(const float& ySamplerStep){this->ySamplerStep = ySamplerStep; return *this;}
-
-void BloomGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase) {
-    frames.resize(bloom.blitAttachmentsCount);
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, bloom.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
-
-    aDatabase.addAttachmentData(parameters.out.bloom, enable, &bufferAttachment);
-}
 
 void BloomGraphics::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
@@ -161,10 +135,10 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
     this->device = device;
 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), blitAttachmentsCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.blitAttachmentsCount));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    uint32_t specializationData = blitAttachmentsCount;
+    uint32_t specializationData = parameters.blitAttachmentsCount;
     VkSpecializationMapEntry specializationMapEntry{};
     specializationMapEntry.constantID = 0;
     specializationMapEntry.offset = 0;
@@ -224,12 +198,19 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
 
 void BloomGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
-        createAttachments(aDatabase);
+    if(parameters.enable && !created){
+        frames.resize(parameters.blitAttachmentsCount);
+        moon::utils::createAttachments(physicalDevice, device, imageInfo, parameters.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
+        moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
+
+        aDatabase.addAttachmentData(parameters.out.bloom, parameters.enable, &bufferAttachment);
+
         createRenderPass();
         createFramebuffers();
         filter.create(shadersPath / "customFilter/customFilterVert.spv", shadersPath / "customFilter/customFilterFrag.spv", device, renderPass);
         bloom.create(shadersPath / "bloom/bloomVert.spv", shadersPath / "bloom/bloomFrag.spv", device, renderPass);
+
+        created = true;
     }
 }
 
@@ -237,34 +218,31 @@ void BloomGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase&,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(!enable) return;
+    if(!parameters.enable || !created) return;
 
     srcAttachment = aDatabase.get(parameters.in.bloom);
 
-    auto updateDescriptorSets = [](VkDevice device, const moon::utils::Attachments& image, const utils::vkDefault::DescriptorSets& descriptorSets){
-        for (uint32_t i = 0; i < image.count(); i++){
-            VkDescriptorImageInfo imageInfo{};
-                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = image.imageView(i);
-                imageInfo.sampler = image.sampler();
+    for (uint32_t i = 0; i < imageInfo.Count; i++) {
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = bufferAttachment.imageView(i);
+        imageInfo.sampler = bufferAttachment.sampler();
 
-            std::vector<VkWriteDescriptorSet> descriptorWrites;
-            descriptorWrites.push_back(VkWriteDescriptorSet{});
-                descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites.back().dstSet = descriptorSets[i];
-                descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
-                descriptorWrites.back().dstArrayElement = 0;
-                descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites.back().descriptorCount = 1;
-                descriptorWrites.back().pImageInfo = &imageInfo;
-            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
-    };
-    updateDescriptorSets(device, bufferAttachment, filter.descriptorSets);
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        descriptorWrites.push_back(VkWriteDescriptorSet{});
+        descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites.back().dstSet = filter.descriptorSets[i];
+        descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+        descriptorWrites.back().dstArrayElement = 0;
+        descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites.back().descriptorCount = 1;
+        descriptorWrites.back().pImageInfo = &imageInfo;
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
 
     for (size_t image = 0; image < imageInfo.Count; image++)
     {
-        std::vector<VkDescriptorImageInfo> blitImageInfo(bloom.blitAttachmentsCount);
+        std::vector<VkDescriptorImageInfo> blitImageInfo(parameters.blitAttachmentsCount);
         for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
             blitImageInfo[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             blitImageInfo[index].imageView = frames[i].imageView(image);
@@ -285,7 +263,7 @@ void BloomGraphics::updateDescriptorSets(
 }
 
 void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if(!parameters.enable || !created) return;
 
     VkImageSubresourceRange ImageSubresourceRange{};
         ImageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -301,9 +279,9 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
 
     std::vector<VkImage> blitImages(frames.size());
     blitImages[0] = srcAttachment->image(frameNumber);
-    moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitImages[0], inputImageLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
+    moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitImages[0], parameters.inputImageLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 
-    for(size_t i=1;i<frames.size();i++){
+    for(size_t i = 1; i < frames.size(); i++){
         blitImages[i] = frames[i - 1].image(frameNumber);
     }
 
@@ -314,7 +292,7 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
     for(uint32_t k = 0; k < frames.size(); k++){
         moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, (k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
         vkCmdClearColorImage(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &ImageSubresourceRange);
-        moon::utils::texture::blitDown(commandBuffers[frameNumber], blitImages[k], 0, blitBufferImage, 0, width, height, 0, 1, blitFactor);
+        moon::utils::texture::blitDown(commandBuffers[frameNumber], blitImages[k], 0, blitBufferImage, 0, width, height, 0, 1, parameters.blitFactor);
         moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 
         render(commandBuffers[frameNumber], frames[k], frameNumber, k * imageInfo.Count + frameNumber, &filter);
@@ -341,7 +319,7 @@ void BloomGraphics::render(VkCommandBuffer commandBuffer, const moon::utils::Att
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        BloomPushConst pushConst{xSamplerStep, ySamplerStep, blitFactor};
+        BloomPushConst pushConst{ parameters.xSamplerStep, parameters.ySamplerStep, parameters.blitFactor};
         vkCmdPushConstants(commandBuffer, worker->pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(BloomPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, worker->pipeline);

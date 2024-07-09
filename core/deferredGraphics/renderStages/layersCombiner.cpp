@@ -13,31 +13,11 @@ struct LayersCombinerPushConst {
 LayersCombiner::LayersCombiner(
     const moon::utils::ImageInfo& imageInfo,
     const std::filesystem::path& shadersPath,
-    LayersCombinerParameters parameters,
-    bool enable,
-    uint32_t transparentLayersCount,
-    bool enableScatteringRefraction) :
+    LayersCombinerParameters& parameters) :
     Workflow(imageInfo, shadersPath),
     parameters(parameters),
-    enable(enable),
-    combiner(this->imageInfo)
-{
-    combiner.transparentLayersCount = transparentLayersCount == 0 ? 1 : transparentLayersCount;
-    combiner.enableTransparentLayers = transparentLayersCount != 0;
-    combiner.enableScatteringRefraction = enableScatteringRefraction;
-}
-
-void LayersCombiner::setTransparentLayersCount(uint32_t transparentLayersCount){
-    combiner.transparentLayersCount = transparentLayersCount;
-}
-
-void LayersCombiner::setScatteringRefraction(bool enable){
-    combiner.enableScatteringRefraction = enable;
-}
-
-void LayersCombiner::setBlurDepth(float blurDepth){
-    this->blurDepth = blurDepth;
-}
+    combiner(this->imageInfo, parameters)
+{}
 
 void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
@@ -48,9 +28,9 @@ void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
     };
 
     createAttachments(physicalDevice, device, imageInfo, LayersCombinerAttachments::size(), &frame);
-    aDatabase.addAttachmentData(parameters.out.color, enable, &frame.color);
-    aDatabase.addAttachmentData(parameters.out.bloom, enable, &frame.bloom);
-    aDatabase.addAttachmentData(parameters.out.blur, enable, &frame.blur);
+    aDatabase.addAttachmentData(parameters.out.color, parameters.enable, &frame.color);
+    aDatabase.addAttachmentData(parameters.out.bloom, parameters.enable, &frame.bloom);
+    aDatabase.addAttachmentData(parameters.out.blur, parameters.enable, &frame.blur);
 }
 
 void LayersCombiner::createRenderPass(){
@@ -114,18 +94,18 @@ void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPat
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.transparentLayersCount));
+        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), parameters.transparentLayersCount));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    uint32_t specializationData = transparentLayersCount;
+    uint32_t specializationData = parameters.transparentLayersCount;
     VkSpecializationMapEntry specializationMapEntry{};
         specializationMapEntry.constantID = 0;
         specializationMapEntry.offset = 0;
@@ -185,19 +165,19 @@ void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPat
 
 void LayersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         combiner.create(shadersPath / "layersCombiner/layersCombinerVert.spv", shadersPath / "layersCombiner/layersCombinerFrag.spv", device, renderPass);
+        created = true;
     }
 }
 
 void LayersCombiner::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
-    const moon::utils::AttachmentsDatabase& aDatabase)
-{
-    if(!enable) return;
+    const moon::utils::AttachmentsDatabase& aDatabase) {
+    if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
@@ -212,13 +192,13 @@ void LayersCombiner::updateDescriptorSets(
         VkDescriptorImageInfo scatteringImageInfo = aDatabase.descriptorImageInfo(parameters.in.scattering, i);
         VkDescriptorImageInfo sslrImageInfo = aDatabase.descriptorImageInfo(parameters.in.sslr, i);
 
-        std::vector<VkDescriptorImageInfo> colorLayersImageInfo(combiner.transparentLayersCount);
-        std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(combiner.transparentLayersCount);
-        std::vector<VkDescriptorImageInfo> positionLayersImageInfo(combiner.transparentLayersCount);
-        std::vector<VkDescriptorImageInfo> normalLayersImageInfo(combiner.transparentLayersCount);
-        std::vector<VkDescriptorImageInfo> depthLayersImageInfo(combiner.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> colorLayersImageInfo(parameters.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> bloomLayersImageInfo(parameters.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> positionLayersImageInfo(parameters.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> normalLayersImageInfo(parameters.transparentLayersCount);
+        std::vector<VkDescriptorImageInfo> depthLayersImageInfo(parameters.transparentLayersCount);
 
-        for(uint32_t index = 0; index < combiner.transparentLayersCount; index++){
+        for(uint32_t index = 0; index < parameters.transparentLayersCount; index++){
             std::string key = parameters.in.transparency + std::to_string(index) + ".";
 
             colorLayersImageInfo[index] = aDatabase.descriptorImageInfo(key + parameters.in.color, i);
@@ -283,7 +263,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().descriptorCount = parameters.transparentLayersCount;
             descriptorWrites.back().pImageInfo = colorLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -291,7 +271,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().descriptorCount = parameters.transparentLayersCount;
             descriptorWrites.back().pImageInfo = bloomLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -299,7 +279,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().descriptorCount = parameters.transparentLayersCount;
             descriptorWrites.back().pImageInfo = positionLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -307,7 +287,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().descriptorCount = parameters.transparentLayersCount;
             descriptorWrites.back().pImageInfo = normalLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -315,7 +295,7 @@ void LayersCombiner::updateDescriptorSets(
             descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = combiner.transparentLayersCount;
+            descriptorWrites.back().descriptorCount = parameters.transparentLayersCount;
             descriptorWrites.back().pImageInfo = depthLayersImageInfo.data();
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -354,7 +334,7 @@ void LayersCombiner::updateDescriptorSets(
 }
 
 void LayersCombiner::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues = { frame.color.clearValue(), frame.bloom.clearValue(), frame.blur.clearValue() };
 
@@ -370,9 +350,9 @@ void LayersCombiner::updateCommandBuffer(uint32_t frameNumber){
     vkCmdBeginRenderPass(commandBuffers[frameNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         LayersCombinerPushConst pushConst{};
-            pushConst.enableScatteringRefraction = static_cast<int>(combiner.enableScatteringRefraction);
-            pushConst.enableTransparentLayers = static_cast<int>(combiner.enableTransparentLayers);
-            pushConst.blurDepth = blurDepth;
+            pushConst.enableScatteringRefraction = static_cast<int>(parameters.enableScatteringRefraction);
+            pushConst.enableTransparentLayers = static_cast<int>(parameters.enableTransparentLayers);
+            pushConst.blurDepth = parameters.blurDepth;
         vkCmdPushConstants(commandBuffers[frameNumber], combiner.pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LayersCombinerPushConst), &pushConst);
 
         vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, combiner.pipeline);

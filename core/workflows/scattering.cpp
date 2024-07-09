@@ -11,10 +11,10 @@ struct ScatteringPushConst {
     alignas(4) uint32_t  height { 0 };
 };
 
-Scattering::Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters parameters,
-                       bool enable, std::vector<moon::interfaces::Light*>* lightSources,
+Scattering::Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters& parameters,
+                       std::vector<moon::interfaces::Light*>* lightSources,
                        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), lighting(this->imageInfo)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), lighting(this->imageInfo)
 {
     lighting.lightSources = lightSources;
     lighting.depthMaps = depthMaps;
@@ -22,7 +22,7 @@ Scattering::Scattering(const moon::utils::ImageInfo& imageInfo, const std::files
 
 void Scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
-    aDatabase.addAttachmentData(parameters.out.scattering, enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.scattering, parameters.enable, &frame);
 }
 
 void Scattering::createRenderPass()
@@ -152,11 +152,12 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass
 
 void Scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         lighting.create(shadersPath / "scattering/scatteringVert.spv", shadersPath / "scattering/scatteringFrag.spv", device, renderPass);
+        created = true;
     }
 }
 
@@ -164,7 +165,7 @@ void Scattering::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
     const moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
@@ -193,7 +194,7 @@ void Scattering::updateDescriptorSets(
 }
 
 void Scattering::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue()};
 

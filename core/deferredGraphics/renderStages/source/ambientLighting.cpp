@@ -63,7 +63,7 @@ void Graphics::AmbientLighting::create(const std::filesystem::path& shadersPath,
 }
 
 void Graphics::AmbientLighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const {
-    LightPassPushConst pushConst{ minAmbientFactor };
+    LightPassPushConst pushConst{ parent.parameters.minAmbientFactor };
     vkCmdPushConstants(commandBuffers, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LightPassPushConst), &pushConst);
 
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);

@@ -7,11 +7,8 @@
 
 namespace moon::deferredGraphics {
 
-Graphics::Lighting::Lighting(const utils::ImageInfo& imageInfo,
-                             const GraphicsParameters& parameters) :
-    enableScattering(enableScattering),
-    imageInfo(imageInfo),
-    parameters(parameters)
+Graphics::Lighting::Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters)
+    : imageInfo(imageInfo), parameters(parameters)
 {}
 
 void Graphics::Lighting::createDescriptorSetLayout(VkDevice device)

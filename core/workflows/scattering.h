@@ -9,7 +9,7 @@ namespace moon::utils { class DepthMap;}
 
 namespace moon::workflows {
 
-struct ScatteringParameters{
+struct ScatteringParameters : workflows::Parameters{
     struct{
         std::string camera;
         std::string depth;
@@ -22,10 +22,8 @@ struct ScatteringParameters{
 class Scattering : public Workflow
 {
 private:
-    ScatteringParameters parameters;
-
+    ScatteringParameters& parameters;
     moon::utils::Attachments frame;
-    bool enable{true};
 
     struct Lighting : Workbody{
         moon::utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
@@ -49,14 +47,12 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters parameters,
-               bool enable, std::vector<moon::interfaces::Light*>* lightSources = nullptr,
+    Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters& parameters,
+               std::vector<moon::interfaces::Light*>* lightSources = nullptr,
                std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
 
-    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(
-        const moon::utils::BuffersDatabase& bDatabase,
-        const moon::utils::AttachmentsDatabase& aDatabase) override;
+    void create(utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptorSets(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
 };
 

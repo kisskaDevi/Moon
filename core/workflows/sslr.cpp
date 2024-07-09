@@ -4,13 +4,13 @@
 
 namespace moon::workflows {
 
-SSLRGraphics::SSLRGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSLRParameters parameters, bool enable)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), enable(enable), sslr(this->imageInfo)
+SSLRGraphics::SSLRGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSLRParameters& parameters)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), sslr(this->imageInfo)
 {}
 
 void SSLRGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
-    aDatabase.addAttachmentData(parameters.out.sslr, enable, &frame);
+    aDatabase.addAttachmentData(parameters.out.sslr, parameters.enable, &frame);
 }
 
 void SSLRGraphics::createRenderPass()
@@ -120,19 +120,19 @@ void SSLRGraphics::SSLR::create(const std::filesystem::path& vertShaderPath, con
 
 void SSLRGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    if(enable){
+    if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
         sslr.create(shadersPath / "sslr/SSLRVert.spv", shadersPath / "sslr/SSLRFrag.spv",device, renderPass);
+        created = true;
     }
 }
 
 void SSLRGraphics::updateDescriptorSets(
     const moon::utils::BuffersDatabase& bDatabase,
-    const moon::utils::AttachmentsDatabase& aDatabase)
-{
-    if(!enable) return;
+    const moon::utils::AttachmentsDatabase& aDatabase) {
+    if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < this->imageInfo.Count; i++)
     {
@@ -236,7 +236,7 @@ void SSLRGraphics::updateDescriptorSets(
 }
 
 void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber){
-    if(!enable) return;
+    if (!parameters.enable || !created) return;
 
     std::vector<VkClearValue> clearValues = {frame.clearValue()};
 

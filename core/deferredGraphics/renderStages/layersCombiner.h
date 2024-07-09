@@ -14,7 +14,7 @@ struct LayersCombinerAttachments{
     inline moon::utils::Attachments* operator&(){ return &color;}
 };
 
-struct LayersCombinerParameters{
+struct LayersCombinerParameters : workflows::Parameters {
     struct{
         std::string camera;
         std::string color;
@@ -34,22 +34,23 @@ struct LayersCombinerParameters{
         std::string bloom;
         std::string blur;
     }out;
+    float blurDepth{ 1.0f };
+    uint32_t transparentLayersCount{ 1 };
+    bool enableTransparentLayers{ true };
+    bool enableScatteringRefraction{ true };
 };
 
 class LayersCombiner : public moon::workflows::Workflow
 {
 private:
-    LayersCombinerParameters parameters;
+    LayersCombinerParameters& parameters;
     LayersCombinerAttachments frame;
-    bool enable{true};
-    float blurDepth{1.0f};
 
     struct Combiner : public moon::workflows::Workbody {
-        uint32_t transparentLayersCount{ 1 };
-        bool enableTransparentLayers{ true };
-        bool enableScatteringRefraction{ true };
-
-        Combiner(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        const LayersCombinerParameters& parameters;
+        Combiner(const moon::utils::ImageInfo& imageInfo, const LayersCombinerParameters& parameters)
+            : Workbody(imageInfo), parameters(parameters)
+        {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
     }combiner;
@@ -61,18 +62,11 @@ public:
     LayersCombiner(
         const moon::utils::ImageInfo& imageInfo,
         const std::filesystem::path& shadersPath,
-        LayersCombinerParameters parameters,
-        bool enable,
-        uint32_t transparentLayersCount,
-        bool enableScatteringRefraction);
+        LayersCombinerParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateCommandBuffer(uint32_t frameNumber) override;
-
-    void setTransparentLayersCount(uint32_t transparentLayersCount);
-    void setScatteringRefraction(bool enable);
-    void setBlurDepth(float blurDepth);
 };
 
 }

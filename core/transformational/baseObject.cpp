@@ -209,9 +209,6 @@ SkyboxObject::SkyboxObject(const std::vector<std::filesystem::path> &texturePath
     pipelineBitMask = moon::interfaces::ObjectType::skybox;
 }
 
-SkyboxObject::~SkyboxObject(){
-}
-
 SkyboxObject& SkyboxObject::setMipLevel(float mipLevel){
     texture.setMipLevel(mipLevel);
     return *this;

@@ -4,11 +4,12 @@
 
 layout(constant_id = 0) const int transparentLayersCount = 1;
 
-layout(set = 0, binding = 0) buffer StorageBuffer {
-    vec4 mousePosition;
+layout(set = 0, binding = 0) buffer cursorBuffer {
+    float x;
+    float y;
     uint number;
     float depth;
-} storage;
+} cursor;
 layout(set = 0, binding = 1) uniform sampler2D Position;
 layout(set = 0, binding = 2) uniform sampler2D Depth;
 layout(set = 0, binding = 3) uniform sampler2D LayersPosition[transparentLayersCount];
@@ -33,8 +34,8 @@ void main()
     layerDepth[transparentLayersCount] = texture(Depth, fragTexCoord.xy).r;
 
     float depth = layerDepth[0];
-    if(abs(fragTexCoord.x - storage.mousePosition.x) < texSize.x &&
-        abs(fragTexCoord.y - storage.mousePosition.y) < texSize.y){
+    if(abs(fragTexCoord.x - cursor.x) < texSize.x &&
+        abs(fragTexCoord.y - cursor.y) < texSize.y){
         for(int i = 0; i < transparentLayersCount + 1; i++){
             if(depth >= layerDepth[i]){
                 depth = layerDepth[i];
@@ -43,9 +44,9 @@ void main()
         }
     }
     if(number != 0xffffffff){
-        storage.number = number;
+        cursor.number = number;
     }
     if(abs(fragTexCoord.x - 0.5f) < texSize.x && abs(fragTexCoord.y - 0.5f) < texSize.y){
-        storage.depth = layerDepth[transparentLayersCount] < layerDepth[0] ? layerDepth[transparentLayersCount] : layerDepth[0];
+        cursor.depth = layerDepth[transparentLayersCount] < layerDepth[0] ? layerDepth[transparentLayersCount] : layerDepth[0];
     }
 }

@@ -2,6 +2,7 @@
 #define SELECTOR_H
 
 #include "workflow.h"
+#include "cursor.h"
 
 namespace moon::workflows {
 
@@ -24,6 +25,7 @@ class SelectorGraphics : public Workflow
 private:
     SelectorParameters& parameters;
     moon::utils::Attachments frame;
+    utils::Cursor** cursor{ nullptr };
 
     struct Selector : public Workbody{
         const SelectorParameters& parameters;
@@ -38,7 +40,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters);
+    SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters, utils::Cursor** cursor);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

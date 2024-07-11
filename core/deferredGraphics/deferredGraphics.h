@@ -5,6 +5,7 @@
 #include "workflow.h"
 #include "link.h"
 
+#include "cursor.h"
 #include "buffer.h"
 #include "vector.h"
 
@@ -68,19 +69,15 @@ private:
     uint32_t blitAttachmentsCount{8};
     uint32_t transparentLayersCount{2};
 
+    moon::utils::Cursor* cursor{ nullptr };
     moon::interfaces::Camera* cameraObject{nullptr};
     std::vector<moon::interfaces::Object*> objects;
     std::vector<moon::interfaces::Light*> lights;
     std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap> depthMaps;
     std::unordered_map<std::string, moon::utils::Texture> emptyTextures;
 
-    void createStorageBuffers(uint32_t imageCount);
     void createGraphicsPasses();
-    void createCommandBuffers();
-    void updateDescriptorSets();
-
-    void updateCommandBuffer(uint32_t imageIndex);
-    void updateBuffers(uint32_t imageIndex);
+    void createStages();
 
     GraphicsParameters graphicsParams;
     std::vector<GraphicsParameters> transparentLayersParams;
@@ -99,7 +96,7 @@ private:
 public:
     DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
 
-    void create() override;
+    void reset() override;
     void update(uint32_t imageIndex) override;
 
     void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
@@ -110,6 +107,7 @@ public:
         uint32_t imageIndex) override;
 
     bool getEnable(const std::string& name);
+    DeferredGraphics& requestUpdate(const std::string& name);
     DeferredGraphics& setEnable(const std::string& name, bool enable);
     DeferredGraphics& setExtent(VkExtent2D extent);
     DeferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
@@ -129,8 +127,7 @@ public:
     void bind(moon::interfaces::Light* lightSource);
     bool remove(moon::interfaces::Light* lightSource);
 
-    void updateStorageBuffer(uint32_t imageIndex, const float& mousex, const float& mousey);
-    void readStorageBuffer(uint32_t imageIndex, uint32_t& primitiveNumber, float& depth);
+    void bind(moon::utils::Cursor* cursor);
 };
 
 }

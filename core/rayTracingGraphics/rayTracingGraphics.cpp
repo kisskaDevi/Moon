@@ -58,7 +58,7 @@ void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuff
     moon::utils::texture::transitionLayout(commandBuffer, device.image(imageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1);
 }
 
-void RayTracingGraphics::create()
+void RayTracingGraphics::reset()
 {
     aDatabase.destroy();
     commandPool = utils::vkDefault::CommandPool(device->getLogical());

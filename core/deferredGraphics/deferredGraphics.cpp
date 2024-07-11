@@ -36,7 +36,11 @@ DeferredGraphics::DeferredGraphics(const std::filesystem::path& shadersPath, con
     link = &deferredLink;
 }
 
-void DeferredGraphics::create()
+void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float, 2>& offset, const moon::math::Vector<float, 2>& size) {
+    deferredLink.setPositionInWindow(this->offset = offset, this->size = size);
+}
+
+void DeferredGraphics::reset()
 {
     commandPool = utils::vkDefault::CommandPool(device->getLogical());
 
@@ -47,8 +51,7 @@ void DeferredGraphics::create()
     aDatabase.addEmptyTexture("white", &emptyTextures["white"]);
 
     createGraphicsPasses();
-    createCommandBuffers();
-    updateDescriptorSets();
+    createStages();
 }
 
 void DeferredGraphics::createGraphicsPasses(){
@@ -160,6 +163,8 @@ void DeferredGraphics::createGraphicsPasses(){
         workflows[key] = std::make_unique<Graphics>(info, shadersPath, transparentLayersParams[i], &objects, &lights, &depthMaps);
     };
 
+    copyCommandBuffers = commandPool.allocateCommandBuffers(imageCount);
+
     workflows["Blur"] = std::make_unique<moon::workflows::GaussianBlur>(info, workflowsShadersPath, blurParams);
     workflows["Bloom"] = std::make_unique<moon::workflows::BloomGraphics>(info, workflowsShadersPath, bloomParams);
     workflows["Skybox"] = std::make_unique<moon::workflows::SkyboxGraphics>(info, workflowsShadersPath, skyboxParams, &objects);
@@ -168,11 +173,15 @@ void DeferredGraphics::createGraphicsPasses(){
     workflows["Shadow"] = std::make_unique<moon::workflows::ShadowGraphics>(shadowsInfo, workflowsShadersPath, shadowGraphicsParameters, &objects, &depthMaps);
     workflows["Scattering"] = std::make_unique<moon::workflows::Scattering>(scatterInfo, workflowsShadersPath, scatteringParams, &lights, &depthMaps);
     workflows["BoundingBox"] = std::make_unique<moon::workflows::BoundingBoxGraphics>(info, workflowsShadersPath, bbParams, &objects);
-    workflows["Selector"] = std::make_unique<moon::workflows::SelectorGraphics>(info, workflowsShadersPath, selectorParams);
+    workflows["Selector"] = std::make_unique<moon::workflows::SelectorGraphics>(info, workflowsShadersPath, selectorParams, &cursor);
 
     for(auto& [_,workflow]: workflows){
         workflow->setDeviceProp(device->instance, device->getLogical());
         workflow->create(aDatabase);
+    }
+    for (auto& [_, workflow] : workflows) {
+        workflow->updateDescriptorSets(bDatabase, aDatabase);
+        workflow->createCommandBuffers(commandPool);
     }
 
     moon::utils::ImageInfo linkInfo{imageCount, format, swapChainKHR->info().Extent, MSAASamples};
@@ -182,33 +191,16 @@ void DeferredGraphics::createGraphicsPasses(){
     deferredLink.createDescriptorSetLayout();
     deferredLink.createPipeline(&linkInfo);
     deferredLink.createDescriptorPool();
-
-    createStorageBuffers(imageCount);
-}
-
-void DeferredGraphics::updateDescriptorSets(){
-    for(auto& [name, workflow]: workflows){
-        workflow->updateDescriptorSets(bDatabase, aDatabase);
-    }
     deferredLink.updateDescriptorSets(aDatabase.get("final"));
 }
 
-void DeferredGraphics::createCommandBuffers(){
-    CHECK_M(!commandPool, std::string("[ deferredGraphics::createCommandBuffers ] VkCommandPool is VK_NULL_HANDLE"));
-
-    for(auto& [_,workflow]: workflows){
-        workflow->createCommandBuffers(commandPool);
-    }
-
-    copyCommandBuffers = commandPool.allocateCommandBuffers(imageCount);
-
-    auto getTransparentLayersCommandBuffers = [this](uint32_t imageIndex) -> std::vector<VkCommandBuffer>{
-        std::vector<VkCommandBuffer> commandBuffers;
-        for(uint32_t i = 0; i < transparentLayersCount; i++){
-            commandBuffers.push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
+void DeferredGraphics::createStages(){
+    std::vector<std::vector<VkCommandBuffer>> transparentLayersCommandBuffers(imageCount);
+    for (uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++) {
+        for (uint32_t i = 0; i < transparentLayersCount; i++) {
+            transparentLayersCommandBuffers[imageIndex].push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
         }
-        return commandBuffers;
-    };
+    }
 
     nodes.resize(imageCount);
     for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
@@ -219,7 +211,7 @@ void DeferredGraphics::createCommandBuffers(){
             moon::utils::Stage(  {workflows["Skybox"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["DeferredGraphics"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
-            moon::utils::Stage(  getTransparentLayersCommandBuffers(imageIndex), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+            moon::utils::Stage(  transparentLayersCommandBuffers[imageIndex], VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["Scattering"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
             moon::utils::Stage(  {workflows["SSLR"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
@@ -234,7 +226,7 @@ void DeferredGraphics::createCommandBuffers(){
                                   workflows["PostProcessing"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, nullptr))))));
 
-        nodes[imageIndex].createSemaphores();
+        CHECK(nodes[imageIndex].createSemaphores());
     }
 }
 
@@ -252,62 +244,26 @@ std::vector<std::vector<VkSemaphore>> DeferredGraphics::submit(const std::vector
 }
 
 void DeferredGraphics::update(uint32_t imageIndex) {
-    updateBuffers(imageIndex);
-    updateCommandBuffer(imageIndex);
-}
+    CHECK(copyCommandBuffers[imageIndex].reset());
+    CHECK(copyCommandBuffers[imageIndex].begin());
+    if (cameraObject) {
+        cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
+    }
+    for (auto& object : objects) {
+        object->update(imageIndex, copyCommandBuffers[imageIndex]);
+    }
+    for (auto& light : lights) {
+        light->update(imageIndex, copyCommandBuffers[imageIndex]);
+    }
+    CHECK(copyCommandBuffers[imageIndex].end());
 
-void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) {
-    deferredLink.setPositionInWindow(this->offset = offset, this->size = size);
-}
-
-void DeferredGraphics::updateCommandBuffer(uint32_t imageIndex){
-    for(auto& [name, workflow]: workflows){
+    for (auto& [name, workflow] : workflows) {
         if (workflow->commandBuffer(imageIndex).dropFlag()) {
             workflow->beginCommandBuffer(imageIndex);
             workflow->updateCommandBuffer(imageIndex);
             workflow->endCommandBuffer(imageIndex);
         }
     }
-}
-
-void DeferredGraphics::updateBuffers(uint32_t imageIndex){
-    CHECK(copyCommandBuffers[imageIndex].reset());
-    CHECK(copyCommandBuffers[imageIndex].begin());
-
-    if(cameraObject){
-        cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
-    }
-    for(auto& object: objects){
-        object->update(imageIndex, copyCommandBuffers[imageIndex]);
-    }
-    for(auto& light: lights){
-        light->update(imageIndex, copyCommandBuffers[imageIndex]);
-    }
-
-    CHECK(copyCommandBuffers[imageIndex].end());
-}
-
-void DeferredGraphics::createStorageBuffers(uint32_t imageCount){
-    storageBuffersHost.resize(imageCount);
-    for (auto& buffer : storageBuffersHost) {
-        buffer = utils::vkDefault::Buffer(device->instance, device->getLogical(), sizeof(StorageBufferObject), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    }
-    bDatabase.buffersMap["storage"] = &storageBuffersHost;
-}
-
-void DeferredGraphics::updateStorageBuffer(uint32_t currentImage, const float& mousex, const float& mousey){
-    StorageBufferObject StorageUBO{};
-        StorageUBO.mousePosition = moon::math::Vector<float,4>(mousex,mousey,0.0f,0.0f);
-        StorageUBO.number = std::numeric_limits<uint32_t>::max();
-        StorageUBO.depth = 1.0f;
-    storageBuffersHost[currentImage].copy(&StorageUBO);
-}
-
-void DeferredGraphics::readStorageBuffer(uint32_t currentImage, uint32_t& primitiveNumber, float& depth){
-    StorageBufferObject storageBuffer{};
-    std::memcpy((void*)&storageBuffer, (void*)storageBuffersHost[currentImage].map(), sizeof(StorageBufferObject));
-    primitiveNumber = storageBuffer.number;
-    depth = storageBuffer.depth;
 }
 
 void DeferredGraphics::create(moon::interfaces::Model *pModel){
@@ -362,7 +318,7 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
         workflows[key]->raiseUpdateFlags();
     };
 
-    return size - objects.size() > 0;
+    return size - lights.size() > 0;
 }
 
 void DeferredGraphics::bind(moon::interfaces::Object* object){
@@ -394,6 +350,17 @@ bool DeferredGraphics::remove(moon::interfaces::Object* object){
     return size - objects.size() > 0;
 }
 
+void DeferredGraphics::bind(moon::utils::Cursor* cursor) {
+    this->cursor = cursor;
+    cursor->create(device->instance, device->getLogical());
+    if (workflows["Selector"]) workflows["Selector"]->raiseUpdateFlags();
+}
+
+DeferredGraphics& DeferredGraphics::requestUpdate(const std::string& name) {
+    workflows[name]->raiseUpdateFlags();
+    return *this;
+}
+
 DeferredGraphics& DeferredGraphics::setEnable(const std::string& name, bool enable){
     workflowsParameters[name]->enable = enable;
     return *this;
@@ -411,7 +378,6 @@ DeferredGraphics& DeferredGraphics::setMinAmbientFactor(const float& minAmbientF
         const auto key = "TransparentLayer" + std::to_string(i);
         workflows[key]->raiseUpdateFlags();
     }
-
     return *this;
 }
 

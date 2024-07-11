@@ -27,6 +27,9 @@ class Group;
 class BaseCamera;
 class SkyboxObject;
 }
+namespace moon::utils {
+class Cursor;
+}
 
 class testScene : public scene
 {
@@ -56,6 +59,7 @@ private:
     moon::graphicsManager::GraphicsManager* app{nullptr};
     std::shared_ptr<controller> mouse{nullptr};
     std::shared_ptr<controller> board{nullptr};
+    std::shared_ptr<moon::utils::Cursor> cursor{ nullptr };
 
     uint32_t resourceCount{0};
     uint32_t imageCount{0};

@@ -7,6 +7,7 @@
 #include "baseObject.h"
 #include "group.h"
 #include "baseCamera.h"
+#include "cursor.h"
 
 #ifdef SECOND_VIEW_WINDOW
 #include "dualQuaternion.h"
@@ -36,6 +37,7 @@ testScene::testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* wi
     app(app),
     mouse(new controller(window, glfwGetMouseButton)),
     board(new controller(window, glfwGetKey)),
+    cursor(new moon::utils::Cursor),
     resourceCount(app->getResourceCount()),
     imageCount(app->getImageCount())
 {
@@ -58,7 +60,7 @@ void testScene::resize(uint32_t width, uint32_t height)
 #endif
 
     for(auto& [_,graph]: graphics){
-        graph->create();
+        graph->reset();
     }
 }
 
@@ -68,6 +70,7 @@ void testScene::create()
     graphics["base"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(ExternalPath / "core/deferredGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{ extent[0], extent[1] });
     app->setGraphics(graphics["base"].get());
     graphics["base"]->bind(cameras["base"].get());
+    graphics["base"]->bind(cursor.get());
     graphics["base"]->
         setEnable("TransparentLayer", true).
         setEnable("Skybox", true).
@@ -78,7 +81,7 @@ void testScene::create()
         setEnable("Scattering", true).
         setEnable("Shadow", true).
         setEnable("Selector", true);
-    graphics["base"]->create();
+    graphics["base"]->reset();
 
 #ifdef SECOND_VIEW_WINDOW
     cameras["view"] = std::make_shared<baseCamera>(45.0f, (float)extent[0] / (float)extent[1], 0.1f);
@@ -101,7 +104,7 @@ void testScene::create()
 #ifdef IMGUI_GRAPHICS
     gui = std::make_shared<moon::imguiGraphics::ImguiGraphics>(window, app->getInstance(), app->getImageCount());
     app->setGraphics(gui.get());
-    gui->create();
+    gui->reset();
 #endif
 
     loadModels();
@@ -166,17 +169,21 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     {
         std::string title = "FPS = " + std::to_string(1.0f / frameTime);
         ImGui::Text("%s", title.c_str());
-        ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f);
+        if(ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f)){
+            graphics["base"]->setBlitFactor(blitFactor);
+        }
 
         if(graphics["base"]->getEnable("Blur")){
             ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.0f, 1.0f);
+            graphics["base"]->setBlurDepth(1.02f * farBlurDepth);
         } else {
             farBlurDepth = 1.0f;
         }
 
-        ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f);
-        for(auto& [_,graph]: graphics){
-            graph->setMinAmbientFactor(minAmbientFactor);
+        if(ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f)) {
+            for (auto& [_, graph] : graphics) {
+                graph->setMinAmbientFactor(minAmbientFactor);
+            }
         }
 
         ImGui::SliderFloat("animation speed", &animationSpeed, 0.0f, 5.0f);
@@ -243,6 +250,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
             controledObjectEnableOutlighting = !controledObjectEnableOutlighting;
             if(controledObject){
                 controledObject->setOutlining(controledObjectEnableOutlighting);
+                graphics["base"]->requestUpdate("DeferredGraphics");
             }
         }
         if(ImGui::ColorPicker4("outlighting", controledObjectOutlightingColor, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB)){
@@ -255,6 +263,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
                         controledObjectOutlightingColor[3]
                     }
                 );
+                graphics["base"]->requestUpdate("DeferredGraphics");
             }
         }
         ImGui::TreePop();
@@ -273,8 +282,6 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     objects["helmet"]->
         rotate(0.5f * frameTime, normalize(moon::math::Vector<float, 3>(0.0f, 0.0f, 1.0f))).
         translate(moon::math::Vector<float, 3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
-
-    graphics["base"]->setBlitFactor(blitFactor).setBlurDepth(1.02f * farBlurDepth);
 
     for(auto& [_,object]: objects){
         object->updateAnimation(frameNumber, animationSpeed * frameTime);
@@ -457,12 +464,9 @@ void testScene::mouseEvent(float frameTime)
 {
     float sensitivity = mouse->sensitivity * frameTime;
 
-    for(uint32_t i=0; i < resourceCount; i++){
-        graphics["base"]->readStorageBuffer(i, primitiveNumber, farBlurDepth);
-        if(primitiveNumber != std::numeric_limits<uint32_t>::max()){
-            break;
-        }
-    }
+    const auto cursorInfo = cursor->read();
+    primitiveNumber = cursorInfo.number;
+    farBlurDepth = cursorInfo.depth;
 
     glfwSetScrollCallback(window,[](GLFWwindow*, double, double) {});
 
@@ -472,12 +476,9 @@ void testScene::mouseEvent(float frameTime)
         cameras["base"]->rotateY(sensitivity * static_cast<float>(mousePos[0] - x), {0.0f,0.0f,1.0f});
         mousePos = {x,y};
 
-        auto scale = [](double pos, double ex) -> float { return static_cast<float>(pos / ex);};
-        for(uint32_t i=0; i < resourceCount; i++){
-            graphics["base"]->updateStorageBuffer(i, scale(mousePos[0], extent[0]), scale(mousePos[1], extent[1]));
-        }
+        cursor->update(mousePos[0] / extent[0], mousePos[1] / extent[1]);
     } else {
-        glfwGetCursorPos(window,&mousePos[0],&mousePos[1]);
+        glfwGetCursorPos(window, &mousePos[0], &mousePos[1]);
     }
 
     if(mouse->released(GLFW_MOUSE_BUTTON_LEFT)){
@@ -496,6 +497,7 @@ void testScene::mouseEvent(float frameTime)
                         controledObjectOutlightingColor[3]
                     }
                 );
+                graphics["base"]->requestUpdate("DeferredGraphics");
             }
         }
     }

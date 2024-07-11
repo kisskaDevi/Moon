@@ -50,8 +50,7 @@ public:
         return link;
     }
 
-    virtual void create() = 0;
-
+    virtual void reset() = 0;
     virtual void update(uint32_t imageIndex) = 0;
 
     virtual std::vector<std::vector<VkSemaphore>> submit(

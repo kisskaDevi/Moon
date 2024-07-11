@@ -27,6 +27,7 @@ set(SOURCES
     buffer.cpp
     swapChain.cpp
     depthMap.cpp
+    cursor.cpp
 )
 
 set(HEADERS
@@ -39,6 +40,7 @@ set(HEADERS
     buffer.h
     swapChain.h
     depthMap.h
+    cursor.h
 )
 
 add_library(utils STATIC ${SOURCES} ${HEADERS})

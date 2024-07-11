@@ -172,12 +172,12 @@ void testCuda::create()
         VkExtent2D{extent[0], extent[1]});
 
     app->setGraphics(graphics.get());
-    graphics->create();
+    graphics->reset();
 
 #ifdef IMGUI_GRAPHICS
     gui = std::make_shared<moon::imguiGraphics::ImguiGraphics>(window, app->getInstance(), app->getImageCount());
     app->setGraphics(gui.get());
-    gui->create();
+    gui->reset();
 #endif
 
     timer.elapsedTime("testCuda::create : create graphics");
@@ -210,7 +210,7 @@ void testCuda::resize(uint32_t width, uint32_t height)
 
     graphics->setEnableBoundingBox(enableBB);
     graphics->setEnableBloom(enableBloom);
-    graphics->create();
+    graphics->reset();
     graphics->setBlitFactor(blitFactor);
 }
 

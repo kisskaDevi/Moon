@@ -38,7 +38,7 @@ void ImguiGraphics::uploadFonts()
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void ImguiGraphics::create() {
+void ImguiGraphics::reset() {
     std::vector<VkDescriptorPoolSize> descriptorPoolSize = { VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 } };
     VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

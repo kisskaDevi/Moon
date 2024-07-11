@@ -4,8 +4,8 @@
 
 namespace moon::workflows {
 
-SelectorGraphics::SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), selector(this->imageInfo, parameters)
+SelectorGraphics::SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters, utils::Cursor** cursor)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), selector(this->imageInfo, parameters), cursor(cursor)
 {}
 
 void SelectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
@@ -149,7 +149,7 @@ void SelectorGraphics::updateDescriptorSets(
 
     for (uint32_t i = 0; i < imageInfo.Count; i++)
     {
-        VkDescriptorBufferInfo StorageBufferInfo = bDatabase.descriptorBufferInfo(parameters.in.storageBuffer, i);
+        VkDescriptorBufferInfo cursorInfo = (*cursor)->descriptorBufferInfo();
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
         VkDescriptorImageInfo depthImageInfo = aDatabase.descriptorImageInfo(parameters.in.depth, i, parameters.in.defaultDepthTexture);
 
@@ -171,7 +171,7 @@ void SelectorGraphics::updateDescriptorSets(
             descriptorWrites.back().dstArrayElement = 0;
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pBufferInfo = &StorageBufferInfo;
+            descriptorWrites.back().pBufferInfo = &cursorInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
             descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites.back().dstSet = selector.descriptorSets[i];

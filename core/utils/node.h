@@ -33,7 +33,7 @@ struct Node{
     void swap(Node&);
     Node(Node&&);
     Node& operator=(Node&&);
-    Node(VkDevice device, const std::vector<Stage>& stages, Node* next);
+    Node(VkDevice device, const std::vector<Stage>& stages, Node* next = nullptr);
     ~Node();
 
     Node* back();

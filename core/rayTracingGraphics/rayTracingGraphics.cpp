@@ -66,7 +66,7 @@ void RayTracingGraphics::reset()
     emptyTexture = utils::Texture::empty(*device, commandPool);
     aDatabase.addEmptyTexture("black", &emptyTexture);
 
-    moon::utils::ImageInfo imageInfo{ imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT };
+    moon::utils::ImageInfo imageInfo{ resourceCount, swapChainKHR->info().Format, extent, VK_SAMPLE_COUNT_1_BIT };
 
     color = ImageResource("color", *device, imageInfo);
     aDatabase.addAttachmentData(color.id, true, &color.device);
@@ -86,12 +86,12 @@ void RayTracingGraphics::reset()
     bloomGraph->createCommandBuffers(commandPool);
     bloomGraph->updateDescriptorSets(bDatabase, aDatabase);
 
-    moon::utils::ImageInfo bbInfo{imageCount, format, extent, VK_SAMPLE_COUNT_1_BIT};
+    moon::utils::ImageInfo bbInfo{ resourceCount, swapChainKHR->info().Format, extent, VK_SAMPLE_COUNT_1_BIT};
     std::string bbId = "bb";
     bbGraphics.create(device->instance, device->getLogical(), bbInfo, shadersPath);
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
-    moon::utils::ImageInfo swapChainInfo{ imageCount, format, swapChainKHR->info().Extent, VK_SAMPLE_COUNT_1_BIT};
+    moon::utils::ImageInfo swapChainInfo{ resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, VK_SAMPLE_COUNT_1_BIT};
     RayTracingLinkParameters linkParams;
     linkParams.in.color = color.id;
     linkParams.in.bloom = bloomParams.out.bloom;

@@ -33,7 +33,7 @@ public:
     void setDevice(uint32_t deviceIndex);
     void setGraphics(GraphicsInterface* graphics);
 
-    void create(GLFWwindow* window);
+    void reset(GLFWwindow* window);
 
     VkResult checkNextFrame();
     VkResult drawFrame();

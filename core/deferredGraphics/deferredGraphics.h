@@ -93,22 +93,22 @@ private:
     workflows::PostProcessingParameters postProcessingParams;
     workflows::ShadowGraphicsParameters shadowGraphicsParameters;
 
-public:
-    DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
-
-    void reset() override;
     void update(uint32_t imageIndex) override;
-
-    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
-
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
 
+public:
+    DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+
+    void reset() override;
+    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
+
     bool getEnable(const std::string& name);
     DeferredGraphics& requestUpdate(const std::string& name);
     DeferredGraphics& setEnable(const std::string& name, bool enable);
+
     DeferredGraphics& setExtent(VkExtent2D extent);
     DeferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
     DeferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
@@ -128,6 +128,7 @@ public:
     bool remove(moon::interfaces::Light* lightSource);
 
     void bind(moon::utils::Cursor* cursor);
+    bool remove(moon::utils::Cursor* cursor);
 };
 
 }

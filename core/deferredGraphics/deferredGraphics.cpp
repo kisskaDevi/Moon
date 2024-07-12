@@ -141,9 +141,9 @@ void DeferredGraphics::createGraphicsPasses(){
     postProcessingParams.in.ssao = SSAOParams.out.ssao;
     postProcessingParams.out.postProcessing = "final";
 
-    moon::utils::ImageInfo info{ imageCount, format, extent, MSAASamples };
-    moon::utils::ImageInfo scatterInfo{ imageCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples };
-    moon::utils::ImageInfo shadowsInfo{ imageCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
+    moon::utils::ImageInfo info{ resourceCount, swapChainKHR->info().Format, extent, MSAASamples };
+    moon::utils::ImageInfo scatterInfo{ resourceCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples };
+    moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
 
     workflows.clear();
 
@@ -163,7 +163,7 @@ void DeferredGraphics::createGraphicsPasses(){
         workflows[key] = std::make_unique<Graphics>(info, shadersPath, transparentLayersParams[i], &objects, &lights, &depthMaps);
     };
 
-    copyCommandBuffers = commandPool.allocateCommandBuffers(imageCount);
+    copyCommandBuffers = commandPool.allocateCommandBuffers(resourceCount);
 
     workflows["Blur"] = std::make_unique<moon::workflows::GaussianBlur>(info, workflowsShadersPath, blurParams);
     workflows["Bloom"] = std::make_unique<moon::workflows::BloomGraphics>(info, workflowsShadersPath, bloomParams);
@@ -184,10 +184,10 @@ void DeferredGraphics::createGraphicsPasses(){
         workflow->createCommandBuffers(commandPool);
     }
 
-    moon::utils::ImageInfo linkInfo{imageCount, format, swapChainKHR->info().Extent, MSAASamples};
+    moon::utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, MSAASamples};
     deferredLink.setShadersPath(shadersPath);
     deferredLink.setDeviceProp(device->getLogical());
-    deferredLink.setImageCount(imageCount);
+    deferredLink.setImageCount(resourceCount);
     deferredLink.createDescriptorSetLayout();
     deferredLink.createPipeline(&linkInfo);
     deferredLink.createDescriptorPool();
@@ -195,15 +195,15 @@ void DeferredGraphics::createGraphicsPasses(){
 }
 
 void DeferredGraphics::createStages(){
-    std::vector<std::vector<VkCommandBuffer>> transparentLayersCommandBuffers(imageCount);
-    for (uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++) {
+    std::vector<std::vector<VkCommandBuffer>> transparentLayersCommandBuffers(resourceCount);
+    for (uint32_t imageIndex = 0; imageIndex < resourceCount; imageIndex++) {
         for (uint32_t i = 0; i < transparentLayersCount; i++) {
             transparentLayersCommandBuffers[imageIndex].push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
         }
     }
 
-    nodes.resize(imageCount);
-    for(uint32_t imageIndex = 0; imageIndex < imageCount; imageIndex++){
+    nodes.resize(resourceCount);
+    for(uint32_t imageIndex = 0; imageIndex < resourceCount; imageIndex++){
         nodes[imageIndex] = moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
@@ -272,7 +272,7 @@ void DeferredGraphics::create(moon::interfaces::Model *pModel){
 
 void DeferredGraphics::bind(moon::interfaces::Camera* cameraObject){
     this->cameraObject = cameraObject;
-    cameraObject->create(*device, imageCount);
+    cameraObject->create(*device, resourceCount);
     bDatabase.addBufferData("camera", &cameraObject->getBuffers());
 }
 
@@ -284,11 +284,11 @@ void DeferredGraphics::remove(moon::interfaces::Camera* cameraObject){
 }
 
 void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
-    lightSource->create(*device, commandPool, imageCount);
+    lightSource->create(*device, commandPool, resourceCount);
     lights.push_back(lightSource);
 
     if (depthMaps.find(lightSource) == depthMaps.end()) {
-        moon::utils::ImageInfo shadowsInfo{ imageCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
+        moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
         depthMaps[lightSource] = utils::DepthMap(*device, commandPool, shadowsInfo);
         depthMaps[lightSource].update(lightSource->isShadowEnable() && workflowsParameters["Shadow"]->enable);
     }
@@ -322,7 +322,7 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
 }
 
 void DeferredGraphics::bind(moon::interfaces::Object* object){
-    object->create(*device, commandPool, imageCount);
+    object->create(*device, commandPool, resourceCount);
     objects.push_back(object);
 
     workflows["DeferredGraphics"]->raiseUpdateFlags();
@@ -354,6 +354,10 @@ void DeferredGraphics::bind(moon::utils::Cursor* cursor) {
     this->cursor = cursor;
     cursor->create(device->instance, device->getLogical());
     if (workflows["Selector"]) workflows["Selector"]->raiseUpdateFlags();
+}
+
+bool DeferredGraphics::remove(moon::utils::Cursor* cursor) {
+    return this->cursor == cursor ? !(this->cursor = nullptr) : false;
 }
 
 DeferredGraphics& DeferredGraphics::requestUpdate(const std::string& name) {

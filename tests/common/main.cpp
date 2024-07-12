@@ -87,15 +87,14 @@ std::pair<uint32_t,uint32_t> resize(GLFWwindow* window, moon::graphicsManager::G
         glfwWaitEvents();
     }
 
-    app->create(window);
-
+    app->reset(window);
     testScene->resize(width, height);
 
     // moon::utils::Memory::instance().status();
 
     framebufferResized = false;
 
-    return std::pair<uint32_t,uint32_t>(width, height);
+    return std::pair(width, height);
 }
 
 GLFWwindow* initializeWindow(uint32_t WIDTH, uint32_t HEIGHT, std::filesystem::path iconName)

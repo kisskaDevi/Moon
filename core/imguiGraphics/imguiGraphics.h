@@ -25,13 +25,13 @@ private:
 
     void setupImguiContext();
     void uploadFonts();
-public:
-    ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);
-    ~ImguiGraphics();
 
-    void reset() override;
     void update(uint32_t imageIndex) override;
     std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
+public:
+    ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);
+    void reset() override;
+    ~ImguiGraphics();
 };
 
 }

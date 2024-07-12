@@ -12,10 +12,10 @@ GraphicsManager::GraphicsManager(GLFWwindow* window, int32_t imageCount, int32_t
     moon::utils::debug::checkResult(createInstance(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createDevice(deviceFeatures), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createSurface(window), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
-    create(window);
+    reset(window);
 }
 
-void GraphicsManager::create(GLFWwindow* window){
+void GraphicsManager::reset(GLFWwindow* window){
     deviceWaitIdle();
     moon::utils::debug::checkResult(createSwapChain(window, imageCount), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
     moon::utils::debug::checkResult(createLinker(), "in file " + std::string(__FILE__) + ", line " + std::to_string(__LINE__));
@@ -120,7 +120,7 @@ VkResult GraphicsManager::createLinker(){
     linker.createSyncObjects();
 
     for(auto graphics: graphics){
-        graphics->getLinkable()->setRenderPass(linker.getRenderPass());
+        graphics->linkable()->setRenderPass(linker.getRenderPass());
     }
 
     return VK_SUCCESS;
@@ -128,11 +128,9 @@ VkResult GraphicsManager::createLinker(){
 
 void GraphicsManager::setGraphics(GraphicsInterface* graphics){
     this->graphics.push_back(graphics);
-    this->graphics.back()->setDevices(devices, activeDevice->properties.index);
-    this->graphics.back()->setSwapChain(&swapChainKHR);
-    this->graphics.back()->setProperties(swapChainKHR.info().Format, resourceCount);
-    this->graphics.back()->getLinkable()->setRenderPass(linker.getRenderPass());
-    linker.addLinkable(this->graphics.back()->getLinkable());
+    this->graphics.back()->setProperties(devices, activeDevice->properties.index, &swapChainKHR, resourceCount);
+    this->graphics.back()->linkable()->setRenderPass(linker.getRenderPass());
+    linker.addLinkable(this->graphics.back()->linkable());
 }
 
 std::vector<moon::utils::PhysicalDeviceProperties> GraphicsManager::getDeviceInfo() const {

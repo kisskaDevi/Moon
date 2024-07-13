@@ -11,14 +11,13 @@ struct ScatteringPushConst {
     alignas(4) uint32_t  height { 0 };
 };
 
-Scattering::Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters& parameters,
-                       std::vector<moon::interfaces::Light*>* lightSources,
-                       std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), lighting(this->imageInfo)
-{
-    lighting.lightSources = lightSources;
-    lighting.depthMaps = depthMaps;
-}
+Scattering::Scattering(const moon::utils::ImageInfo& imageInfo,
+                       const std::filesystem::path& shadersPath,
+                       ScatteringParameters& parameters,
+                       const interfaces::Lights* lightSources,
+                       const interfaces::DepthMaps* depthMaps)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), lighting(imageInfo, lightSources, depthMaps)
+{}
 
 void Scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
@@ -212,9 +211,15 @@ void Scattering::updateCommandBuffer(uint32_t frameNumber){
     for(auto& lightSource: *lighting.lightSources){
         if(lightSource->isScatteringEnable()){
             ScatteringPushConst pushConst{ imageInfo.Extent.width, imageInfo.Extent.height};
-            uint8_t mask = lightSource->getPipelineBitMask();
             vkCmdPushConstants(commandBuffers[frameNumber], lighting.pipelineLayoutMap[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
-            lightSource->render(frameNumber, commandBuffers[frameNumber], {lighting.descriptorSets[frameNumber], (*lighting.depthMaps)[lightSource].descriptorSets()[frameNumber]}, lighting.pipelineLayoutMap[mask], lighting.pipelinesMap[mask]);
+            uint8_t mask = lightSource->getPipelineBitMask();
+            const auto& depthMap = lighting.depthMaps->at(lightSource);
+            lightSource->render(
+                frameNumber,
+                commandBuffers[frameNumber],
+                {lighting.descriptorSets[frameNumber], depthMap.descriptorSets()[frameNumber]},
+                lighting.pipelineLayoutMap[mask],
+                lighting.pipelinesMap[mask]);
         }
     }
 

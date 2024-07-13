@@ -9,19 +9,15 @@ Graphics::Graphics(
     const moon::utils::ImageInfo& imageInfo,
     const std::filesystem::path& shadersPath,
     GraphicsParameters& parameters,
-    std::vector<moon::interfaces::Object*>* object, std::vector<moon::interfaces::Light*>* lightSources,
-    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
-    : Workflow(imageInfo, shadersPath), parameters(parameters),
-    base(this->imageInfo, this->parameters),
-    outlining(base),
-    lighting(this->imageInfo, this->parameters),
-    ambientLighting(lighting)
-{
-    base.objects = object;
-
-    lighting.lightSources = lightSources;
-    lighting.depthMaps = depthMaps;
-}
+    const interfaces::Objects* object,
+    const interfaces::Lights* lightSources,
+    const interfaces::DepthMaps* depthMaps)
+    :   Workflow(imageInfo, shadersPath), parameters(parameters),
+        base(imageInfo, parameters, object),
+        outlining(base),
+        lighting(imageInfo, parameters, lightSources, depthMaps),
+        ambientLighting(lighting)
+{}
 
 void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {

@@ -1,11 +1,13 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include <vulkan.h>
 #include <vector>
-#include <vkdefault.h>
+#include <unordered_map>
 
-namespace moon::utils { struct PhysicalDevice;}
+#include <vulkan.h>
+#include <vkdefault.h>
+#include <device.h>
+#include <depthMap.h>
 
 namespace moon::interfaces {
 
@@ -56,6 +58,9 @@ public:
     static moon::utils::vkDefault::DescriptorSetLayout createTextureDescriptorSetLayout(VkDevice device);
     static moon::utils::vkDefault::DescriptorSetLayout createBufferDescriptorSetLayout(VkDevice device);
 };
+
+using Lights = std::vector<moon::interfaces::Light*>;
+using DepthMaps = std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>;
 
 }
 #endif // LIGHT_H

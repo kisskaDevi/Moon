@@ -90,5 +90,7 @@ public:
     static moon::utils::vkDefault::DescriptorSetLayout createSkyboxDescriptorSetLayout(VkDevice device);
 };
 
+using Objects = std::vector<moon::interfaces::Object*>;
+
 }
 #endif // OBJECT_H

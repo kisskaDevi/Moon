@@ -2,18 +2,19 @@
 #include "operations.h"
 #include "vkdefault.h"
 #include "light.h"
-#include "object.h"
 #include "model.h"
 #include "depthMap.h"
 
 namespace moon::workflows {
 
-ShadowGraphics::ShadowGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ShadowGraphicsParameters& parameters, std::vector<moon::interfaces::Object*>* objects, std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), shadow(this->imageInfo)
-{
-    shadow.objects = objects;
-    shadow.depthMaps = depthMaps;
-}
+ShadowGraphics::ShadowGraphics(
+    const moon::utils::ImageInfo& imageInfo,
+    const std::filesystem::path& shadersPath,
+    ShadowGraphicsParameters& parameters,
+    const interfaces::Objects* objects,
+    interfaces::DepthMaps* depthMaps)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), shadow(imageInfo, objects, depthMaps)
+{}
 
 void ShadowGraphics::createRenderPass()
 {

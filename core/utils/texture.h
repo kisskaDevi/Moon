@@ -1,9 +1,10 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <vulkan.h>
 #include <filesystem>
+#include <unordered_map>
 
+#include <vulkan.h>
 #include "buffer.h"
 #include "vkdefault.h"
 #include "device.h"
@@ -100,6 +101,8 @@ public:
     static Texture empty(const PhysicalDevice&, VkCommandPool, bool isBlack = true);
     static Texture empty(const PhysicalDevice&, VkCommandBuffer, bool isBlack = true);
 };
+
+using TextureMap = std::unordered_map<std::string, moon::utils::Texture>;
 
 class CubeTexture: public Texture {
 public:

@@ -3,13 +3,8 @@
 
 #include "workflow.h"
 #include "vkdefault.h"
-#include <unordered_map>
-
-namespace moon::interfaces {
-class Object;
-class Light;
-}
-namespace moon::utils { class DepthMap;}
+#include "object.h"
+#include "light.h"
 
 namespace moon::workflows {
 
@@ -19,10 +14,12 @@ class ShadowGraphics : public Workflow
 {
 private:
     ShadowGraphicsParameters& parameters;
-    std::unordered_map<const moon::utils::DepthMap*, utils::vkDefault::Framebuffers> framebuffersMap;
+    std::unordered_map<const moon::utils::DepthMap*, moon::utils::vkDefault::Framebuffers> framebuffersMap;
 
     struct Shadow : public Workbody{
-        Shadow(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        Shadow(const moon::utils::ImageInfo& imageInfo, const interfaces::Objects* objects, interfaces::DepthMaps* depthMaps)
+            : Workbody(imageInfo), objects(objects), depthMaps(depthMaps)
+        {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
 
@@ -31,8 +28,8 @@ private:
         moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
         moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
 
-        std::vector<moon::interfaces::Object*>* objects{ nullptr };
-        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps{ nullptr };
+        const interfaces::Objects* objects{ nullptr };
+        interfaces::DepthMaps* depthMaps{ nullptr };
     }shadow;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, const moon::utils::DepthMap& depthMap);
@@ -41,8 +38,8 @@ public:
     ShadowGraphics(const moon::utils::ImageInfo& imageInfo,
                    const std::filesystem::path& shadersPath,
                    ShadowGraphicsParameters& parameters,
-                   std::vector<moon::interfaces::Object*>* objects = nullptr,
-                   std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
+                   const interfaces::Objects* objects = nullptr,
+                   interfaces::DepthMaps* depthMaps = nullptr);
 
     void create(moon::utils::AttachmentsDatabase&) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase&) override{};

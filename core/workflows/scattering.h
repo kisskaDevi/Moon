@@ -3,9 +3,7 @@
 
 #include "workflow.h"
 #include "vkdefault.h"
-
-namespace moon::interfaces { class Light;}
-namespace moon::utils { class DepthMap;}
+#include "light.h"
 
 namespace moon::workflows {
 
@@ -33,10 +31,12 @@ private:
         moon::utils::vkDefault::PipelineLayoutMap       pipelineLayoutMap;
         moon::utils::vkDefault::PipelineMap             pipelinesMap;
 
-        std::vector<moon::interfaces::Light*>* lightSources{ nullptr };
-        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps{ nullptr };
+        const interfaces::Lights* lightSources{ nullptr };
+        const interfaces::DepthMaps* depthMaps{ nullptr };
 
-        Lighting(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        Lighting(const moon::utils::ImageInfo& imageInfo, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps)
+            : Workbody(imageInfo), lightSources(lightSources), depthMaps(depthMaps)
+        {}
 
         void createPipeline(uint8_t mask, VkRenderPass pRenderPass);
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
@@ -48,8 +48,8 @@ private:
     void createFramebuffers();
 public:
     Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters& parameters,
-               std::vector<moon::interfaces::Light*>* lightSources = nullptr,
-               std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
+               const interfaces::Lights* lightSources = nullptr,
+               const interfaces::DepthMaps* depthMaps = nullptr);
 
     void create(utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) override;

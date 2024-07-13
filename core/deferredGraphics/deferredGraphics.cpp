@@ -43,6 +43,7 @@ void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float, 2>& o
 void DeferredGraphics::reset()
 {
     commandPool = utils::vkDefault::CommandPool(device->getLogical());
+    copyCommandBuffers = commandPool.allocateCommandBuffers(resourceCount);
 
     aDatabase.destroy();
     emptyTextures["black"] = moon::utils::Texture::empty(*device, commandPool);
@@ -163,8 +164,6 @@ void DeferredGraphics::createGraphicsPasses(){
         workflows[key] = std::make_unique<Graphics>(info, shadersPath, transparentLayersParams[i], &objects, &lights, &depthMaps);
     };
 
-    copyCommandBuffers = commandPool.allocateCommandBuffers(resourceCount);
-
     workflows["Blur"] = std::make_unique<moon::workflows::GaussianBlur>(info, workflowsShadersPath, blurParams);
     workflows["Bloom"] = std::make_unique<moon::workflows::BloomGraphics>(info, workflowsShadersPath, bloomParams);
     workflows["Skybox"] = std::make_unique<moon::workflows::SkyboxGraphics>(info, workflowsShadersPath, skyboxParams, &objects);
@@ -195,15 +194,13 @@ void DeferredGraphics::createGraphicsPasses(){
 }
 
 void DeferredGraphics::createStages(){
-    std::vector<std::vector<VkCommandBuffer>> transparentLayersCommandBuffers(resourceCount);
-    for (uint32_t imageIndex = 0; imageIndex < resourceCount; imageIndex++) {
-        for (uint32_t i = 0; i < transparentLayersCount; i++) {
-            transparentLayersCommandBuffers[imageIndex].push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
-        }
-    }
-
     nodes.resize(resourceCount);
     for(uint32_t imageIndex = 0; imageIndex < resourceCount; imageIndex++){
+        std::vector<VkCommandBuffer> transparentLayersCommandBuffers;
+        for (uint32_t i = 0; i < transparentLayersCount; i++) {
+            transparentLayersCommandBuffers.push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
+        }
+
         nodes[imageIndex] = moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
@@ -211,7 +208,7 @@ void DeferredGraphics::createStages(){
             moon::utils::Stage(  {workflows["Skybox"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["DeferredGraphics"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
-            moon::utils::Stage(  transparentLayersCommandBuffers[imageIndex], VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+            moon::utils::Stage(  transparentLayersCommandBuffers, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
         }, new moon::utils::Node(device->getLogical(), {
             moon::utils::Stage(  {workflows["Scattering"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
             moon::utils::Stage(  {workflows["SSLR"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))

@@ -1,15 +1,12 @@
 #include "skybox.h"
 #include "operations.h"
 #include "vkdefault.h"
-#include "object.h"
 
 namespace moon::workflows {
 
-SkyboxGraphics::SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, std::vector<moon::interfaces::Object*>* objects)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), skybox(this->imageInfo)
-{
-    skybox.objects = objects;
-}
+SkyboxGraphics::SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, const interfaces::Objects* objects)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), skybox(imageInfo, objects)
+{}
 
 void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());

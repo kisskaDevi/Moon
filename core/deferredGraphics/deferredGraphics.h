@@ -32,6 +32,11 @@ class Camera;
 class Object;
 class Light;
 }
+
+#include "camera.h"
+#include "object.h"
+#include "light.h"
+
 namespace moon::utils {
 class Texture;
 class DepthMap;
@@ -71,10 +76,10 @@ private:
 
     moon::utils::Cursor* cursor{ nullptr };
     moon::interfaces::Camera* cameraObject{nullptr};
-    std::vector<moon::interfaces::Object*> objects;
-    std::vector<moon::interfaces::Light*> lights;
-    std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap> depthMaps;
-    std::unordered_map<std::string, moon::utils::Texture> emptyTextures;
+    interfaces::Objects objects;
+    interfaces::Lights lights;
+    interfaces::DepthMaps depthMaps;
+    utils::TextureMap emptyTextures;
 
     void createGraphicsPasses();
     void createStages();

@@ -1,14 +1,13 @@
 #include "graphics.h"
 #include "vkdefault.h"
-#include "light.h"
 #include "deferredAttachments.h"
 #include "depthMap.h"
 #include "operations.h"
 
 namespace moon::deferredGraphics {
 
-Graphics::Lighting::Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters)
-    : imageInfo(imageInfo), parameters(parameters)
+Graphics::Lighting::Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps)
+    : imageInfo(imageInfo), parameters(parameters), lightSources(lightSources), depthMaps(depthMaps)
 {}
 
 void Graphics::Lighting::createDescriptorSetLayout(VkDevice device)
@@ -87,12 +86,12 @@ void Graphics::Lighting::create(const std::filesystem::path& shadersPath, VkDevi
 void Graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuffer) const
 {
     for(auto& lightSource: *lightSources){
+        const auto& depthMap = depthMaps->at(lightSource);
         uint8_t mask = lightSource->getPipelineBitMask();
         lightSource->render(
             frameNumber,
             commandBuffer,
-            {descriptorSets[frameNumber],
-            (*depthMaps)[lightSource].descriptorSets()[frameNumber]},
+            {descriptorSets[frameNumber], depthMap.descriptorSets()[frameNumber]},
             pipelineLayoutMap.at(mask),
             pipelineMap.at(mask));
     }

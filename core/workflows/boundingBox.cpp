@@ -2,16 +2,13 @@
 #include "vkdefault.h"
 #include "operations.h"
 
-#include "object.h"
 #include "model.h"
 
 namespace moon::workflows {
 
-BoundingBoxGraphics::BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters& parameters, std::vector<moon::interfaces::Object*>* objects)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), box(this->imageInfo)
-{
-    box.objects = objects;
-}
+BoundingBoxGraphics::BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters& parameters, const interfaces::Objects* objects)
+    : Workflow(imageInfo, shadersPath), parameters(parameters), box(imageInfo, objects)
+{}
 
 void BoundingBoxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
     moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);

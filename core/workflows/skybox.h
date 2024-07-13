@@ -3,8 +3,7 @@
 
 #include "workflow.h"
 #include "vkdefault.h"
-
-namespace moon::interfaces {class Object;}
+#include "object.h"
 
 namespace moon::workflows {
 
@@ -39,9 +38,11 @@ private:
 
     struct Skybox : public Workbody{
         moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
-        std::vector<moon::interfaces::Object*>* objects{nullptr};
+        const interfaces::Objects* objects{nullptr};
 
-        Skybox(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        Skybox(const moon::utils::ImageInfo& imageInfo, const interfaces::Objects* objects)
+            : Workbody(imageInfo), objects(objects)
+        {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
     }skybox;
@@ -50,7 +51,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, std::vector<moon::interfaces::Object*>* object = nullptr);
+    SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, const interfaces::Objects* object = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

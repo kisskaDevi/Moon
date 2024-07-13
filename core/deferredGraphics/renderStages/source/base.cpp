@@ -7,8 +7,8 @@
 
 namespace moon::deferredGraphics {
 
-Graphics::Base::Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters)
-    : imageInfo(imageInfo), parameters(parameters)
+Graphics::Base::Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters, const interfaces::Objects* objects)
+    : imageInfo(imageInfo), parameters(parameters), objects(objects)
 {}
 
 void Graphics::Base::createDescriptorSetLayout(VkDevice device) {

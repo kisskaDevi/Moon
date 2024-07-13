@@ -5,18 +5,12 @@
 #include "workflow.h"
 #include "deferredAttachments.h"
 
+#include "object.h"
+#include "light.h"
+#include "texture.h"
+
 #include <filesystem>
 #include <unordered_map>
-
-namespace moon::interfaces {
-class   Object;
-class   Light;
-}
-namespace moon::utils {
-class   DepthMap;
-class   Texture;
-class   CubeTexture;
-}
 
 namespace moon::deferredGraphics {
 
@@ -63,9 +57,9 @@ private:
         moon::utils::vkDefault::DescriptorPool descriptorPool;
         moon::utils::vkDefault::DescriptorSets descriptorSets;
 
-        std::vector<moon::interfaces::Object*>* objects{nullptr};
+        const interfaces::Objects* objects{ nullptr };
 
-        Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters);
+        Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters, const interfaces::Objects* objects);
 
         void createPipeline(VkDevice device, VkRenderPass pRenderPass);
         void createDescriptorSetLayout(VkDevice device);
@@ -94,21 +88,21 @@ private:
         const utils::ImageInfo&     imageInfo;
         const GraphicsParameters&   parameters;
 
-        moon::utils::vkDefault::DescriptorSetLayout     descriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
-        moon::utils::vkDefault::DescriptorSetLayoutMap  textureDescriptorSetLayoutMap;
+        utils::vkDefault::DescriptorSetLayout     descriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
+        utils::vkDefault::DescriptorSetLayoutMap  textureDescriptorSetLayoutMap;
 
-        moon::utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
-        moon::utils::vkDefault::PipelineMap         pipelineMap;
+        utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
+        utils::vkDefault::PipelineMap         pipelineMap;
 
-        moon::utils::vkDefault::DescriptorPool descriptorPool;
-        moon::utils::vkDefault::DescriptorSets descriptorSets;
+        utils::vkDefault::DescriptorPool descriptorPool;
+        utils::vkDefault::DescriptorSets descriptorSets;
 
-        std::vector<moon::interfaces::Light*>* lightSources;
-        std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps;
+        const interfaces::Lights* lightSources{ nullptr };
+        const interfaces::DepthMaps* depthMaps{ nullptr };
 
-        Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters);
+        Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps);
 
         void createPipeline(VkDevice device, VkRenderPass pRenderPass);
         void createPipeline(VkDevice device, uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
@@ -142,9 +136,9 @@ public:
     Graphics(const moon::utils::ImageInfo& imageInfo,
              const std::filesystem::path& shadersPath,
              GraphicsParameters& parameters,
-             std::vector<moon::interfaces::Object*>* object = nullptr,
-             std::vector<moon::interfaces::Light*>* lightSources = nullptr,
-             std::unordered_map<moon::interfaces::Light*, moon::utils::DepthMap>* depthMaps = nullptr);
+             const interfaces::Objects* object = nullptr,
+             const interfaces::Lights* lightSources = nullptr,
+             const interfaces::DepthMaps* depthMaps = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

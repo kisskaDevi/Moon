@@ -15,8 +15,8 @@
 
 namespace moon::deferredGraphics {
 
-DeferredGraphics::DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples):
-    shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent), MSAASamples(MSAASamples)
+DeferredGraphics::DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent):
+    shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
 {
     transparentLayersParams.resize(transparentLayersCount);
     (workflowsParameters["DeferredGraphics"] = &graphicsParams)->enable = true;

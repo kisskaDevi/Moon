@@ -46,5 +46,7 @@ struct Node{
     void submit();
 };
 
+using Nodes = std::vector<moon::utils::Node>;
+
 }
 #endif // NODE_H

@@ -8,10 +8,7 @@
 #include "cursor.h"
 #include "buffer.h"
 #include "vector.h"
-
-#include <unordered_map>
-#include <filesystem>
-#include <memory>
+#include "node.h"
 
 #include "graphics.h"
 #include "layersCombiner.h"
@@ -26,50 +23,30 @@
 #include "shadow.h"
 #include "postProcessing.h"
 
-namespace moon::interfaces {
-class Model;
-class Camera;
-class Object;
-class Light;
-}
-
 #include "camera.h"
 #include "object.h"
 #include "light.h"
-
-namespace moon::utils {
-class Texture;
-class DepthMap;
-struct Node;
-}
+#include "model.h"
 
 namespace moon::deferredGraphics {
 
-struct StorageBufferObject{
-    alignas(16) moon::math::Vector<float,4> mousePosition;
-    alignas(4)  uint32_t number;
-    alignas(4)  float depth;
-};
-
 class DeferredGraphics: public moon::graphicsManager::GraphicsInterface{
 private:
-    std::filesystem::path               shadersPath;
-    std::filesystem::path               workflowsShadersPath;
-    VkExtent2D                          extent{0,0};
-    VkSampleCountFlagBits               MSAASamples{VK_SAMPLE_COUNT_1_BIT};
+    std::filesystem::path shadersPath;
+    std::filesystem::path workflowsShadersPath;
+    VkExtent2D            extent{0,0};
+    VkSampleCountFlagBits MSAASamples{VK_SAMPLE_COUNT_1_BIT};
 
-    moon::utils::BuffersDatabase        bDatabase;
-    moon::utils::AttachmentsDatabase    aDatabase;
+    moon::utils::BuffersDatabase     bDatabase;
+    moon::utils::AttachmentsDatabase aDatabase;
 
-    std::unordered_map<std::string, std::unique_ptr<moon::workflows::Workflow>> workflows;
-    std::unordered_map<std::string, moon::workflows::Parameters*> workflowsParameters;
+    workflows::WorkflowsMap workflows;
+    workflows::ParametersMap workflowsParameters;
     Link deferredLink;
 
-    moon::utils::Buffers storageBuffersHost;
-
-    utils::vkDefault::CommandPool    commandPool;
+    utils::vkDefault::CommandPool commandPool;
     utils::vkDefault::CommandBuffers copyCommandBuffers;
-    std::vector<moon::utils::Node>   nodes;
+    utils::Nodes nodes;
 
     uint32_t blitAttachmentsCount{8};
     uint32_t transparentLayersCount{2};
@@ -80,9 +57,6 @@ private:
     interfaces::Lights lights;
     interfaces::DepthMaps depthMaps;
     utils::TextureMap emptyTextures;
-
-    void createGraphicsPasses();
-    void createStages();
 
     GraphicsParameters graphicsParams;
     std::vector<GraphicsParameters> transparentLayersParams;
@@ -98,6 +72,9 @@ private:
     workflows::PostProcessingParameters postProcessingParams;
     workflows::ShadowGraphicsParameters shadowGraphicsParameters;
 
+    void createGraphicsPasses();
+    void createStages();
+
     void update(uint32_t imageIndex) override;
     std::vector<std::vector<VkSemaphore>> submit(
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
@@ -105,7 +82,7 @@ private:
         uint32_t imageIndex) override;
 
 public:
-    DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent, VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT);
+    DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent);
 
     void reset() override;
     void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;

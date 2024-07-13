@@ -7,6 +7,8 @@
 #include "vkdefault.h"
 
 #include <filesystem>
+#include <unordered_map>
+#include <memory>
 
 namespace moon::workflows {
 
@@ -73,6 +75,9 @@ public:
 struct Parameters {
     bool enable{false};
 };
+
+using ParametersMap = std::unordered_map<std::string, moon::workflows::Parameters*>;
+using WorkflowsMap = std::unordered_map<std::string, std::unique_ptr<moon::workflows::Workflow>>;
 
 }
 #endif // WORKFLOW_H

@@ -30,15 +30,56 @@
 
 namespace moon::deferredGraphics {
 
-class DeferredGraphics: public moon::graphicsManager::GraphicsInterface{
+template <typename T>
+class UpdateTracked {
 private:
-    std::filesystem::path shadersPath;
-    std::filesystem::path workflowsShadersPath;
-    VkExtent2D            extent{0,0};
-    VkSampleCountFlagBits MSAASamples{VK_SAMPLE_COUNT_1_BIT};
+    T v;
+    bool update{false};
 
-    moon::utils::BuffersDatabase     bDatabase;
-    moon::utils::AttachmentsDatabase aDatabase;
+public:
+    UpdateTracked(const T& v) : v(v), update(true) {}
+    UpdateTracked(const UpdateTracked& other) {
+        v = other.v;
+        update = true;
+    }
+    UpdateTracked& operator=(const UpdateTracked& other) {
+        v = other.v;
+        update = true;
+        return *this;
+    }
+    operator T() { return v; }
+    T release() { update = false; return v; }
+    bool updated() const { return update; }
+};
+
+struct Parameters {
+    std::filesystem::path       shadersPath;
+    std::filesystem::path       workflowsShadersPath;
+    math::Vector<uint32_t, 2>   extent{0};
+    VkSampleCountFlagBits       MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
+    utils::Cursor*              cursor{ nullptr };
+    interfaces::Camera*         cameraObject{ nullptr };
+
+    struct {
+        UpdateTracked<uint32_t> blitAttachmentsCount{ 8 };
+        UpdateTracked<uint32_t> transparentLayersCount{ 2 };
+        UpdateTracked<float>    blitFactor{ 1.5f };
+        UpdateTracked<float>    blurDepth{ 1.0f };
+        UpdateTracked<float>    minAmbientFactor{ 0.05 };
+        UpdateTracked<bool>     scatteringRefraction{ false };
+    } workflowsParameters;
+
+    UpdateTracked<uint32_t>& blitAttachmentsCount() {return workflowsParameters.blitAttachmentsCount;}
+    UpdateTracked<uint32_t>& transparentLayersCount() { return workflowsParameters.transparentLayersCount; }
+    UpdateTracked<float>&    blitFactor() { return workflowsParameters.blitFactor; }
+    UpdateTracked<float>&    blurDepth() { return workflowsParameters.blurDepth; }
+    UpdateTracked<float>&    minAmbientFactor() { return workflowsParameters.minAmbientFactor; }
+    UpdateTracked<bool>&     scatteringRefraction() { return workflowsParameters.scatteringRefraction; }
+};
+
+class DeferredGraphics: public graphicsManager::GraphicsInterface{
+private:
+    Parameters params;
 
     workflows::WorkflowsMap workflows;
     workflows::ParametersMap workflowsParameters;
@@ -48,11 +89,9 @@ private:
     utils::vkDefault::CommandBuffers copyCommandBuffers;
     utils::Nodes nodes;
 
-    uint32_t blitAttachmentsCount{8};
-    uint32_t transparentLayersCount{2};
+    utils::BuffersDatabase bDatabase;
+    utils::AttachmentsDatabase aDatabase;
 
-    moon::utils::Cursor* cursor{ nullptr };
-    moon::interfaces::Camera* cameraObject{nullptr};
     interfaces::Objects objects;
     interfaces::Lights lights;
     interfaces::DepthMaps depthMaps;
@@ -74,6 +113,7 @@ private:
 
     void createGraphicsPasses();
     void createStages();
+    void updateParameters();
 
     void update(uint32_t imageIndex) override;
     std::vector<std::vector<VkSemaphore>> submit(
@@ -82,35 +122,30 @@ private:
         uint32_t imageIndex) override;
 
 public:
-    DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent);
+    DeferredGraphics(const Parameters& parameters);
 
     void reset() override;
-    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
+    void setPositionInWindow(const math::Vector<float,2>& offset, const math::Vector<float,2>& size) override;
 
     bool getEnable(const std::string& name);
-    DeferredGraphics& requestUpdate(const std::string& name);
     DeferredGraphics& setEnable(const std::string& name, bool enable);
+    DeferredGraphics& requestUpdate(const std::string& name);
 
-    DeferredGraphics& setExtent(VkExtent2D extent);
-    DeferredGraphics& setShadersPath(const std::filesystem::path& shadersPath);
-    DeferredGraphics& setMinAmbientFactor(const float& minAmbientFactor);
-    DeferredGraphics& setScatteringRefraction(bool enable);
-    DeferredGraphics& setBlitFactor(float blitFactor);
-    DeferredGraphics& setBlurDepth(float blurDepth);
+    Parameters& parameters();
 
-    void create(moon::interfaces::Model* pModel);
+    void create(interfaces::Model* pModel);
 
-    void bind(moon::interfaces::Camera* cameraObject);
-    void remove(moon::interfaces::Camera* cameraObject);
+    void bind(interfaces::Camera* cameraObject);
+    void remove(interfaces::Camera* cameraObject);
 
-    void bind(moon::interfaces::Object* object);
-    bool remove(moon::interfaces::Object* object);
+    void bind(interfaces::Object* object);
+    bool remove(interfaces::Object* object);
 
-    void bind(moon::interfaces::Light* lightSource);
-    bool remove(moon::interfaces::Light* lightSource);
+    void bind(interfaces::Light* lightSource);
+    bool remove(interfaces::Light* lightSource);
 
-    void bind(moon::utils::Cursor* cursor);
-    bool remove(moon::utils::Cursor* cursor);
+    void bind(utils::Cursor* cursor);
+    bool remove(utils::Cursor* cursor);
 };
 
 }

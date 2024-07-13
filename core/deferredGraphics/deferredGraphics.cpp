@@ -15,10 +15,10 @@
 
 namespace moon::deferredGraphics {
 
-DeferredGraphics::DeferredGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent):
-    shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent)
+DeferredGraphics::DeferredGraphics(const Parameters& parameters):
+    params(parameters)
 {
-    transparentLayersParams.resize(transparentLayersCount);
+    transparentLayersParams.resize(params.transparentLayersCount());
     (workflowsParameters["DeferredGraphics"] = &graphicsParams)->enable = true;
     (workflowsParameters["LayersCombiner"] = &layersCombinerParams)->enable = true;
     (workflowsParameters["PostProcessing"] = &postProcessingParams)->enable = true;
@@ -56,9 +56,9 @@ void DeferredGraphics::reset()
 }
 
 void DeferredGraphics::createGraphicsPasses(){
-    CHECK_M(!commandPool,                        std::string("[ DeferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
-    CHECK_M(device->instance == VK_NULL_HANDLE,  std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
-    CHECK_M(cameraObject == nullptr,             std::string("[ DeferredGraphics::createGraphicsPasses ] camera is nullptr"));
+    CHECK_M(!commandPool,                       std::string("[ DeferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
+    CHECK_M(device->instance == VK_NULL_HANDLE, std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
+    CHECK_M(params.cameraObject == nullptr,     std::string("[ DeferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
     graphicsParams.in.camera = "camera";
     graphicsParams.out.image = "image";
@@ -72,7 +72,7 @@ void DeferredGraphics::createGraphicsPasses(){
     graphicsParams.enableTransparency = workflowsParameters["TransparentLayer"]->enable;
     graphicsParams.transparencyPass = false;
     graphicsParams.transparencyNumber = 0;
-    graphicsParams.minAmbientFactor = 0.05f;
+    graphicsParams.minAmbientFactor = params.minAmbientFactor();
 
     skyboxParams.in.camera = graphicsParams.in.camera;
     skyboxParams.out.baseColor = "skybox.color";
@@ -107,14 +107,20 @@ void DeferredGraphics::createGraphicsPasses(){
     layersCombinerParams.out.bloom = "combined.bloom";
     layersCombinerParams.out.blur = "combined.blur";
     layersCombinerParams.enableTransparentLayers = workflowsParameters["TransparentLayer"]->enable;
-    layersCombinerParams.transparentLayersCount = workflowsParameters["TransparentLayer"]->enable ? transparentLayersCount : 1;
+    layersCombinerParams.transparentLayersCount = workflowsParameters["TransparentLayer"]->enable ? params.transparentLayersCount() : 1;
+    layersCombinerParams.enableScatteringRefraction = params.scatteringRefraction();
+    layersCombinerParams.blurDepth = params.blurDepth();
 
     bloomParams.in.bloom = layersCombinerParams.out.bloom;
     bloomParams.out.bloom = "bloomFinal";
-    bloomParams.blitAttachmentsCount = blitAttachmentsCount;
+    bloomParams.blitAttachmentsCount = params.blitAttachmentsCount();
+    bloomParams.blitFactor = params.blitFactor();
+    bloomParams.xSamplerStep = params.blitFactor();
+    bloomParams.ySamplerStep = params.blitFactor();
 
     blurParams.in.blur = layersCombinerParams.out.blur;
     blurParams.out.blur = "blured";
+    blurParams.blurDepth = params.blurDepth();
 
     bbParams.in.camera = graphicsParams.in.camera;
     bbParams.out.boundingBox = "boundingBox";
@@ -133,7 +139,7 @@ void DeferredGraphics::createGraphicsPasses(){
     selectorParams.in.transparency = graphicsParams.out.transparency;
     selectorParams.in.defaultDepthTexture = "white";
     selectorParams.out.selector = "selector";
-    selectorParams.transparentLayersCount = workflowsParameters["TransparentLayer"]->enable ? transparentLayersCount : 1;
+    selectorParams.transparentLayersCount = workflowsParameters["TransparentLayer"]->enable ? params.transparentLayersCount() : 1;
 
     postProcessingParams.in.baseColor = layersCombinerParams.out.color;
     postProcessingParams.in.bloom = bloomParams.out.bloom;
@@ -142,17 +148,18 @@ void DeferredGraphics::createGraphicsPasses(){
     postProcessingParams.in.ssao = SSAOParams.out.ssao;
     postProcessingParams.out.postProcessing = "final";
 
-    moon::utils::ImageInfo info{ resourceCount, swapChainKHR->info().Format, extent, MSAASamples };
-    moon::utils::ImageInfo scatterInfo{ resourceCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, MSAASamples };
-    moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
+    VkExtent2D extent{ params.extent[0], params.extent[1]};
+    moon::utils::ImageInfo info{ resourceCount, swapChainKHR->info().Format, extent, params.MSAASamples };
+    moon::utils::ImageInfo scatterInfo{ resourceCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, params.MSAASamples };
+    moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, params.MSAASamples };
 
     workflows.clear();
 
-    workflows["DeferredGraphics"] = std::make_unique<Graphics>(info, shadersPath, graphicsParams, &objects, &lights, &depthMaps);
-    workflows["LayersCombiner"] = std::make_unique<LayersCombiner>(info, shadersPath, layersCombinerParams);
-    workflows["PostProcessing"] = std::make_unique<moon::workflows::PostProcessingGraphics>(info, workflowsShadersPath, postProcessingParams);
+    workflows["DeferredGraphics"] = std::make_unique<Graphics>(info, params.shadersPath, graphicsParams, &objects, &lights, &depthMaps);
+    workflows["LayersCombiner"] = std::make_unique<LayersCombiner>(info, params.shadersPath, layersCombinerParams);
+    workflows["PostProcessing"] = std::make_unique<moon::workflows::PostProcessingGraphics>(info, params.workflowsShadersPath, postProcessingParams);
 
-    for(uint32_t i = 0; i < transparentLayersCount; i++){
+    for(uint32_t i = 0; i < params.transparentLayersCount(); i++){
         const auto key = "TransparentLayer" + std::to_string(i);
         transparentLayersParams[i].in = graphicsParams.in;
         transparentLayersParams[i].out = graphicsParams.out;
@@ -160,19 +167,19 @@ void DeferredGraphics::createGraphicsPasses(){
         transparentLayersParams[i].enableTransparency = true;
         transparentLayersParams[i].transparencyPass = true;
         transparentLayersParams[i].transparencyNumber = i;
-        transparentLayersParams[i].minAmbientFactor = 0.05f;
-        workflows[key] = std::make_unique<Graphics>(info, shadersPath, transparentLayersParams[i], &objects, &lights, &depthMaps);
+        transparentLayersParams[i].minAmbientFactor = params.minAmbientFactor();
+        workflows[key] = std::make_unique<Graphics>(info, params.shadersPath, transparentLayersParams[i], &objects, &lights, &depthMaps);
     };
 
-    workflows["Blur"] = std::make_unique<moon::workflows::GaussianBlur>(info, workflowsShadersPath, blurParams);
-    workflows["Bloom"] = std::make_unique<moon::workflows::BloomGraphics>(info, workflowsShadersPath, bloomParams);
-    workflows["Skybox"] = std::make_unique<moon::workflows::SkyboxGraphics>(info, workflowsShadersPath, skyboxParams, &objects);
-    workflows["SSLR"] = std::make_unique<moon::workflows::SSLRGraphics>(info, workflowsShadersPath, SSLRParams);
-    workflows["SSAO"] = std::make_unique<moon::workflows::SSAOGraphics>(info, workflowsShadersPath, SSAOParams);
-    workflows["Shadow"] = std::make_unique<moon::workflows::ShadowGraphics>(shadowsInfo, workflowsShadersPath, shadowGraphicsParameters, &objects, &depthMaps);
-    workflows["Scattering"] = std::make_unique<moon::workflows::Scattering>(scatterInfo, workflowsShadersPath, scatteringParams, &lights, &depthMaps);
-    workflows["BoundingBox"] = std::make_unique<moon::workflows::BoundingBoxGraphics>(info, workflowsShadersPath, bbParams, &objects);
-    workflows["Selector"] = std::make_unique<moon::workflows::SelectorGraphics>(info, workflowsShadersPath, selectorParams, &cursor);
+    workflows["Blur"] = std::make_unique<moon::workflows::GaussianBlur>(info, params.workflowsShadersPath, blurParams);
+    workflows["Bloom"] = std::make_unique<moon::workflows::BloomGraphics>(info, params.workflowsShadersPath, bloomParams);
+    workflows["Skybox"] = std::make_unique<moon::workflows::SkyboxGraphics>(info, params.workflowsShadersPath, skyboxParams, &objects);
+    workflows["SSLR"] = std::make_unique<moon::workflows::SSLRGraphics>(info, params.workflowsShadersPath, SSLRParams);
+    workflows["SSAO"] = std::make_unique<moon::workflows::SSAOGraphics>(info, params.workflowsShadersPath, SSAOParams);
+    workflows["Shadow"] = std::make_unique<moon::workflows::ShadowGraphics>(shadowsInfo, params.workflowsShadersPath, shadowGraphicsParameters, &objects, &depthMaps);
+    workflows["Scattering"] = std::make_unique<moon::workflows::Scattering>(scatterInfo, params.workflowsShadersPath, scatteringParams, &lights, &depthMaps);
+    workflows["BoundingBox"] = std::make_unique<moon::workflows::BoundingBoxGraphics>(info, params.workflowsShadersPath, bbParams, &objects);
+    workflows["Selector"] = std::make_unique<moon::workflows::SelectorGraphics>(info, params.workflowsShadersPath, selectorParams, &params.cursor);
 
     for(auto& [_,workflow]: workflows){
         workflow->setDeviceProp(device->instance, device->getLogical());
@@ -183,8 +190,8 @@ void DeferredGraphics::createGraphicsPasses(){
         workflow->createCommandBuffers(commandPool);
     }
 
-    moon::utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, MSAASamples};
-    deferredLink.setShadersPath(shadersPath);
+    moon::utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, params.MSAASamples};
+    deferredLink.setShadersPath(params.shadersPath);
     deferredLink.setDeviceProp(device->getLogical());
     deferredLink.setImageCount(resourceCount);
     deferredLink.createDescriptorSetLayout();
@@ -197,7 +204,7 @@ void DeferredGraphics::createStages(){
     nodes.resize(resourceCount);
     for(uint32_t imageIndex = 0; imageIndex < resourceCount; imageIndex++){
         std::vector<VkCommandBuffer> transparentLayersCommandBuffers;
-        for (uint32_t i = 0; i < transparentLayersCount; i++) {
+        for (uint32_t i = 0; i < params.transparentLayersCount(); i++) {
             transparentLayersCommandBuffers.push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
         }
 
@@ -240,11 +247,44 @@ std::vector<std::vector<VkSemaphore>> DeferredGraphics::submit(const std::vector
     return nodes[imageIndex].back()->getBackSemaphores();
 }
 
+void DeferredGraphics::updateParameters() {
+    if (params.blitFactor().updated()) {
+        const auto blitFactor = params.blitFactor().release();
+        bloomParams.blitFactor = blitFactor;
+        bloomParams.xSamplerStep = blitFactor;
+        bloomParams.ySamplerStep = blitFactor;
+        workflows["Bloom"]->raiseUpdateFlags();
+    }
+    if (params.blurDepth().updated()) {
+        const auto blurDepth = params.blurDepth().release();
+        blurParams.blurDepth = blurDepth;
+        layersCombinerParams.blurDepth = blurDepth;
+        workflows["Blur"]->raiseUpdateFlags();
+        workflows["LayersCombiner"]->raiseUpdateFlags();
+    }
+    if (params.minAmbientFactor().updated()) {
+        const auto minAmbientFactor = params.minAmbientFactor().release();
+        graphicsParams.minAmbientFactor = minAmbientFactor;
+        workflows["DeferredGraphics"]->raiseUpdateFlags();
+        for (uint32_t i = 0; i < params.transparentLayersCount(); i++) {
+            transparentLayersParams[i].minAmbientFactor = minAmbientFactor;
+            const auto key = "TransparentLayer" + std::to_string(i);
+            workflows[key]->raiseUpdateFlags();
+        };
+    }
+    if (params.scatteringRefraction().updated()) {
+        layersCombinerParams.enableScatteringRefraction = params.scatteringRefraction().release();
+        workflows["LayersCombiner"]->raiseUpdateFlags();
+    }
+}
+
 void DeferredGraphics::update(uint32_t imageIndex) {
+    updateParameters();
+
     CHECK(copyCommandBuffers[imageIndex].reset());
     CHECK(copyCommandBuffers[imageIndex].begin());
-    if (cameraObject) {
-        cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
+    if (params.cameraObject) {
+        params.cameraObject->update(imageIndex, copyCommandBuffers[imageIndex]);
     }
     for (auto& object : objects) {
         object->update(imageIndex, copyCommandBuffers[imageIndex]);
@@ -268,14 +308,14 @@ void DeferredGraphics::create(moon::interfaces::Model *pModel){
 }
 
 void DeferredGraphics::bind(moon::interfaces::Camera* cameraObject){
-    this->cameraObject = cameraObject;
+    params.cameraObject = cameraObject;
     cameraObject->create(*device, resourceCount);
     bDatabase.addBufferData("camera", &cameraObject->getBuffers());
 }
 
 void DeferredGraphics::remove(moon::interfaces::Camera* cameraObject){
-    if(this->cameraObject == cameraObject){
-        this->cameraObject = nullptr;
+    if(params.cameraObject == cameraObject){
+        params.cameraObject = nullptr;
         bDatabase.buffersMap.erase("camera");
     }
 }
@@ -285,7 +325,7 @@ void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
     lights.push_back(lightSource);
 
     if (depthMaps.find(lightSource) == depthMaps.end()) {
-        moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, MSAASamples };
+        moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, params.MSAASamples };
         depthMaps[lightSource] = utils::DepthMap(*device, commandPool, shadowsInfo);
         depthMaps[lightSource].update(lightSource->isShadowEnable() && workflowsParameters["Shadow"]->enable);
     }
@@ -293,7 +333,7 @@ void DeferredGraphics::bind(moon::interfaces::Light* lightSource){
     workflows["Shadow"]->raiseUpdateFlags();
     workflows["DeferredGraphics"]->raiseUpdateFlags();
     workflows["Scattering"]->raiseUpdateFlags();
-    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+    for (uint32_t i = 0; i < params.transparentLayersCount(); i++) {
         const auto key = "TransparentLayer" + std::to_string(i);
         workflows[key]->raiseUpdateFlags();
     };
@@ -310,7 +350,7 @@ bool DeferredGraphics::remove(moon::interfaces::Light* lightSource){
 
     workflows["DeferredGraphics"]->raiseUpdateFlags();
     workflows["Scattering"]->raiseUpdateFlags();
-    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+    for (uint32_t i = 0; i < params.transparentLayersCount(); i++) {
         const auto key = "TransparentLayer" + std::to_string(i);
         workflows[key]->raiseUpdateFlags();
     };
@@ -326,7 +366,7 @@ void DeferredGraphics::bind(moon::interfaces::Object* object){
     workflows["Skybox"]->raiseUpdateFlags();
     workflows["Shadow"]->raiseUpdateFlags();
     workflows["BoundingBox"]->raiseUpdateFlags();
-    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+    for (uint32_t i = 0; i < params.transparentLayersCount(); i++) {
         const auto key = "TransparentLayer" + std::to_string(i);
         workflows[key]->raiseUpdateFlags();
     };
@@ -340,7 +380,7 @@ bool DeferredGraphics::remove(moon::interfaces::Object* object){
     workflows["Skybox"]->raiseUpdateFlags();
     workflows["Shadow"]->raiseUpdateFlags();
     workflows["BoundingBox"]->raiseUpdateFlags();
-    for (uint32_t i = 0; i < transparentLayersCount; i++) {
+    for (uint32_t i = 0; i < params.transparentLayersCount(); i++) {
         const auto key = "TransparentLayer" + std::to_string(i);
         workflows[key]->raiseUpdateFlags();
     };
@@ -348,13 +388,13 @@ bool DeferredGraphics::remove(moon::interfaces::Object* object){
 }
 
 void DeferredGraphics::bind(moon::utils::Cursor* cursor) {
-    this->cursor = cursor;
+    params.cursor = cursor;
     cursor->create(device->instance, device->getLogical());
     if (workflows["Selector"]) workflows["Selector"]->raiseUpdateFlags();
 }
 
 bool DeferredGraphics::remove(moon::utils::Cursor* cursor) {
-    return this->cursor == cursor ? !(this->cursor = nullptr) : false;
+    return params.cursor == cursor ? !(params.cursor = nullptr) : false;
 }
 
 DeferredGraphics& DeferredGraphics::requestUpdate(const std::string& name) {
@@ -371,49 +411,8 @@ bool DeferredGraphics::getEnable(const std::string& name){
     return workflowsParameters[name]->enable;
 }
 
-DeferredGraphics& DeferredGraphics::setMinAmbientFactor(const float& minAmbientFactor){
-    graphicsParams.minAmbientFactor = minAmbientFactor;
-    workflows["DeferredGraphics"]->raiseUpdateFlags();
-    for(uint32_t i = 0; i < transparentLayersCount; i++){
-        transparentLayersParams[i].minAmbientFactor = minAmbientFactor;
-        const auto key = "TransparentLayer" + std::to_string(i);
-        workflows[key]->raiseUpdateFlags();
-    }
-    return *this;
-}
-
-DeferredGraphics& DeferredGraphics::setScatteringRefraction(bool enable){
-    layersCombinerParams.enableScatteringRefraction = enable;
-    workflows["LayersCombiner"]->raiseUpdateFlags();
-    return *this;
-}
-
-DeferredGraphics& DeferredGraphics::setBlitFactor(float blitFactor){
-    if(workflowsParameters["Bloom"]->enable && blitFactor >= 1.0f){
-        bloomParams.blitFactor = blitFactor;
-        bloomParams.xSamplerStep = blitFactor;
-        bloomParams.ySamplerStep = blitFactor;
-    }
-    workflows["Bloom"]->raiseUpdateFlags();
-    return *this;
-}
-
-DeferredGraphics& DeferredGraphics::setBlurDepth(float blurDepth){
-    layersCombinerParams.blurDepth = blurDepth;
-    blurParams.blurDepth = blurDepth;
-    workflows["Blur"]->raiseUpdateFlags();
-    workflows["LayersCombiner"]->raiseUpdateFlags();
-    return *this;
-}
-
-DeferredGraphics& DeferredGraphics::setExtent(VkExtent2D extent) {
-    this->extent = extent;
-    return *this;
-}
-
-DeferredGraphics& DeferredGraphics::setShadersPath(const std::filesystem::path& path){
-    shadersPath = path;
-    return *this;
+Parameters& DeferredGraphics::parameters() {
+    return params;
 }
 
 }

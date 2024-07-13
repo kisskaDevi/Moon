@@ -51,8 +51,8 @@ private:
     uint32_t                primitiveNumber = std::numeric_limits<uint32_t>::max();
 
 #ifdef SECOND_VIEW_WINDOW
-    vector<float,2>      viewOffset{0.5f,0.5f};
-    vector<float,2>      viewExtent{0.33f,0.33f};
+    moon::math::Vector<float,2> viewOffset{0.5f,0.5f};
+    moon::math::Vector<float,2> viewExtent{0.33f,0.33f};
 #endif
 
     GLFWwindow* window{nullptr};

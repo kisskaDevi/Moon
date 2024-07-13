@@ -52,11 +52,11 @@ void testScene::resize(uint32_t width, uint32_t height)
     extent = { width, height };
 
     cameras["base"]->recreate(45.0f, (float) extent[0] / (float) extent[1], 0.1f);
-    graphics["base"]->setExtent({ extent[0], extent[1] });
+    graphics["base"]->parameters().extent = extent;
 
 #ifdef SECOND_VIEW_WINDOW
     cameras["view"]->recreate(45.0f, (float)extent[0] / (float)extent[1], 0.1f);
-    graphics["view"]->setExtent({static_cast<uint32_t>(extent[0] / 3), static_cast<uint32_t>(extent[1] / 3)});
+    graphics["view"]->parameters().extent = extent / 3;
 #endif
 
     for(auto& [_,graph]: graphics){
@@ -67,7 +67,11 @@ void testScene::resize(uint32_t width, uint32_t height)
 void testScene::create()
 {
     cameras["base"] = std::make_shared<moon::transformational::BaseCamera>(45.0f, (float) extent[0] / (float) extent[1], 0.1f);
-    graphics["base"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(ExternalPath / "core/deferredGraphics/spv", ExternalPath / "core/workflows/spv", VkExtent2D{ extent[0], extent[1] });
+    moon::deferredGraphics::Parameters deferredGraphicsParameters;
+    deferredGraphicsParameters.shadersPath = ExternalPath / "core/deferredGraphics/spv";
+    deferredGraphicsParameters.workflowsShadersPath = ExternalPath / "core/workflows/spv";
+    deferredGraphicsParameters.extent = extent;
+    graphics["base"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(deferredGraphicsParameters);
     app->setGraphics(graphics["base"].get());
     graphics["base"]->bind(cameras["base"].get());
     graphics["base"]->bind(cursor.get());
@@ -84,8 +88,9 @@ void testScene::create()
     graphics["base"]->reset();
 
 #ifdef SECOND_VIEW_WINDOW
-    cameras["view"] = std::make_shared<baseCamera>(45.0f, (float)extent[0] / (float)extent[1], 0.1f);
-    graphics["view"] = std::make_shared<deferredGraphics>(ExternalPath / "core/deferredGraphics/spv", VkExtent2D{ extent[0] / 3, extent[1] / 3});
+    cameras["view"] = std::make_shared<moon::transformational::BaseCamera>(45.0f, (float)extent[0] / (float)extent[1], 0.1f);
+    deferredGraphicsParameters.extent /= 3;
+    graphics["view"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(deferredGraphicsParameters);
     graphics["view"]->setPositionInWindow(viewOffset, viewExtent);
     app->setGraphics(graphics["view"].get());
     graphics["view"]->bind(cameras["view"].get());
@@ -98,7 +103,7 @@ void testScene::create()
         setEnable("SSLR", false).
         setEnable("Scattering", false).
         setEnable("Shadow", false);
-    graphics["view"]->create();
+    graphics["view"]->reset();
 #endif
 
 #ifdef IMGUI_GRAPHICS
@@ -170,19 +175,19 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
         std::string title = "FPS = " + std::to_string(1.0f / frameTime);
         ImGui::Text("%s", title.c_str());
         if(ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f)){
-            graphics["base"]->setBlitFactor(blitFactor);
+            graphics["base"]->parameters().blitFactor() = blitFactor;
         }
 
         if(graphics["base"]->getEnable("Blur")){
             ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.0f, 1.0f);
-            graphics["base"]->setBlurDepth(1.02f * farBlurDepth);
+            graphics["base"]->parameters().blurDepth() = 1.02f * farBlurDepth;
         } else {
             farBlurDepth = 1.0f;
         }
 
         if(ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f)) {
             for (auto& [_, graph] : graphics) {
-                graph->setMinAmbientFactor(minAmbientFactor);
+                graph->parameters().minAmbientFactor() = minAmbientFactor;
             }
         }
 
@@ -191,7 +196,7 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
         if(ImGui::RadioButton("refraction of scattering", enableScatteringRefraction)){
             enableScatteringRefraction = !enableScatteringRefraction;
             for(auto& [_,graph]: graphics){
-                graph->setScatteringRefraction(enableScatteringRefraction);
+                graph->parameters().scatteringRefraction() = enableScatteringRefraction;
             }
         }
 
@@ -251,6 +256,9 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
             if(controledObject){
                 controledObject->setOutlining(controledObjectEnableOutlighting);
                 graphics["base"]->requestUpdate("DeferredGraphics");
+#ifdef SECOND_VIEW_WINDOW
+                graphics["view"]->requestUpdate("DeferredGraphics");
+#endif
             }
         }
         if(ImGui::ColorPicker4("outlighting", controledObjectOutlightingColor, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB)){
@@ -264,6 +272,9 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
                     }
                 );
                 graphics["base"]->requestUpdate("DeferredGraphics");
+#ifdef SECOND_VIEW_WINDOW
+                graphics["view"]->requestUpdate("DeferredGraphics");
+#endif
             }
         }
         ImGui::TreePop();
@@ -498,6 +509,9 @@ void testScene::mouseEvent(float frameTime)
                     }
                 );
                 graphics["base"]->requestUpdate("DeferredGraphics");
+#ifdef SECOND_VIEW_WINDOW
+                graphics["view"]->requestUpdate("DeferredGraphics");
+#endif
             }
         }
     }

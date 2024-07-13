@@ -47,6 +47,7 @@ private:
     float                   farBlurDepth = 1.0f;
     float                   minAmbientFactor{0.05f};
     float                   animationSpeed{1.0f};
+    float                   frameTime{0.0f};
     std::string             screenshot;
     uint32_t                primitiveNumber = std::numeric_limits<uint32_t>::max();
 
@@ -77,19 +78,30 @@ private:
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::Group>> groups;
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::IsotropicLight>> lightPoints;
     std::vector<std::shared_ptr<moon::transformational::SpotLight>> lightSources;
-    moon::transformational::BaseObject* controledObject{nullptr};
 
-    bool            controledObjectEnableOutlighting{true};
-    float           controledObjectOutlightingColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    std::string     controledObjectName{"none"};
+    struct ControledObject
+    {
+        moon::transformational::BaseObject* ptr{ nullptr };
+        std::string name{ "none" };
+        struct Outlighting {
+            bool enable{ true };
+            moon::math::Vector<float, 4> color{ 1.0f, 1.0f, 1.0f, 1.0f };
+        } outlighting;
+        operator moon::transformational::BaseObject*(){return ptr;}
+        moon::transformational::BaseObject* operator->(){ return ptr; }
+    } controledObject;
 
-    void mouseEvent(float frameTime);
-    void keyboardEvent(float frameTime);
+    void mouseEvent();
+    void keyboardEvent();
 
     void create();
     void loadModels();
     void createLight();
     void createObjects();
+    void requestUpdate();
+    void makeScreenshot();
+    void makeGui();
+
 public:
     testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, uint32_t width, uint32_t height, const std::filesystem::path& ExternalPath, bool& framebufferResized);
 

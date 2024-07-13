@@ -123,48 +123,33 @@ void testScene::create()
     groups["ufo3"]->translate({-10.0f,0.0f,5.0f});
 }
 
-void testScene::updateFrame(uint32_t frameNumber, float frameTime)
-{
-    glfwPollEvents();
+void testScene::requestUpdate() {
+    if (graphics["base"]) {
+        graphics["base"]->requestUpdate("DeferredGraphics");
+    }
+#ifdef SECOND_VIEW_WINDOW
+    if (graphics["view"]) {
+        graphics["view"]->requestUpdate("DeferredGraphics");
+    }
+#endif
+}
 
-#ifdef IMGUI_GRAPHICS
-    ImGuiIO io = ImGui::GetIO();
-    if(!io.WantCaptureMouse)    mouseEvent(frameTime);
-    if(!io.WantCaptureKeyboard) keyboardEvent(frameTime);
-
-    // Start the Dear ImGui frame
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::SetWindowSize({350,100}, ImGuiCond_::ImGuiCond_Once);
-
-    ImGui::Begin("Debug");
-
-    if (ImGui::Button("Update")){
+void testScene::makeGui() {
+    if (ImGui::Button("Update")) {
         framebufferResized = true;
     }
 
     ImGui::SameLine(0.0, 10.0f);
-    if(ImGui::Button("Make screenshot")){
-        const auto& imageExtent = app->getImageExtent();
-        auto screenshot = app->makeScreenshot();
-
-        std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
-        for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
-        }
-        auto filename = std::string("./") + std::string(this->screenshot.data()) + std::string(".jpg");
-        stbi_write_jpg(filename.c_str(), imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
+    if (ImGui::Button("Make screenshot")) {
+        makeScreenshot();
     }
 
     ImGui::SameLine(0.0, 10.0f);
     ImGui::SetNextItemWidth(100.0f);
     ImGui::InputText("filename", screenshot.data(), screenshot.size());
 
-    auto switcher = [this](std::shared_ptr<moon::deferredGraphics::DeferredGraphics> graphics, const std::string& name){
-        if(auto val = graphics->getEnable(name); ImGui::RadioButton(name.c_str(), val)){
+    auto switcher = [this](std::shared_ptr<moon::deferredGraphics::DeferredGraphics> graphics, const std::string& name) {
+        if (auto val = graphics->getEnable(name); ImGui::RadioButton(name.c_str(), val)) {
             graphics->setEnable(name, !val);
             framebufferResized = true;
         }
@@ -174,18 +159,19 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
     {
         std::string title = "FPS = " + std::to_string(1.0f / frameTime);
         ImGui::Text("%s", title.c_str());
-        if(ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f)){
+        if (ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f)) {
             graphics["base"]->parameters().blitFactor() = blitFactor;
         }
 
-        if(graphics["base"]->getEnable("Blur")){
+        if (graphics["base"]->getEnable("Blur")) {
             ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.0f, 1.0f);
             graphics["base"]->parameters().blurDepth() = 1.02f * farBlurDepth;
-        } else {
+        }
+        else {
             farBlurDepth = 1.0f;
         }
 
-        if(ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f)) {
+        if (ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f)) {
             for (auto& [_, graph] : graphics) {
                 graph->parameters().minAmbientFactor() = minAmbientFactor;
             }
@@ -193,9 +179,9 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
         ImGui::SliderFloat("animation speed", &animationSpeed, 0.0f, 5.0f);
 
-        if(ImGui::RadioButton("refraction of scattering", enableScatteringRefraction)){
+        if (ImGui::RadioButton("refraction of scattering", enableScatteringRefraction)) {
             enableScatteringRefraction = !enableScatteringRefraction;
-            for(auto& [_,graph]: graphics){
+            for (auto& [_, graph] : graphics) {
                 graph->parameters().scatteringRefraction() = enableScatteringRefraction;
             }
         }
@@ -236,10 +222,10 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
 
     if (ImGui::TreeNodeEx("Object", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
     {
-        std::string title = "controled object : " + controledObjectName;
+        std::string title = "controled object : " + controledObject.name;
         ImGui::Text("%s", title.c_str());
         {
-            if(controledObject){
+            if (controledObject) {
                 const auto p = controledObject->getTranslation();
                 std::string pos = "position : " + std::to_string(p[0]) + " " + std::to_string(p[1]) + " " + std::to_string(p[2]);
                 ImGui::Text("%s", pos.c_str());
@@ -251,51 +237,72 @@ void testScene::updateFrame(uint32_t frameNumber, float frameTime)
                 ImGui::Text("%s", scl.c_str());
             }
         }
-        if(ImGui::RadioButton("outlighting", controledObjectEnableOutlighting)){
-            controledObjectEnableOutlighting = !controledObjectEnableOutlighting;
-            if(controledObject){
-                controledObject->setOutlining(controledObjectEnableOutlighting);
-                graphics["base"]->requestUpdate("DeferredGraphics");
-#ifdef SECOND_VIEW_WINDOW
-                graphics["view"]->requestUpdate("DeferredGraphics");
-#endif
+        if (ImGui::RadioButton("outlighting", controledObject.outlighting.enable)) {
+            controledObject.outlighting.enable = !controledObject.outlighting.enable;
+            if (controledObject) {
+                controledObject->setOutlining(controledObject.outlighting.enable);
+                requestUpdate();
             }
         }
-        if(ImGui::ColorPicker4("outlighting", controledObjectOutlightingColor, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB)){
-            if(controledObject){
-                controledObject->setOutlining(true && controledObjectEnableOutlighting, 0.03f,
-                    {
-                        controledObjectOutlightingColor[0],
-                        controledObjectOutlightingColor[1],
-                        controledObjectOutlightingColor[2],
-                        controledObjectOutlightingColor[3]
-                    }
-                );
-                graphics["base"]->requestUpdate("DeferredGraphics");
-#ifdef SECOND_VIEW_WINDOW
-                graphics["view"]->requestUpdate("DeferredGraphics");
-#endif
+        if (ImGui::ColorPicker4("outlighting", (float*)&controledObject.outlighting.color, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB)) {
+            if (controledObject) {
+                controledObject->setOutlining(controledObject.outlighting.enable, 0.03f, controledObject.outlighting.color);
+                requestUpdate();
             }
         }
         ImGui::TreePop();
     }
+}
 
+void testScene::makeScreenshot() {
+    const auto& imageExtent = app->getImageExtent();
+    auto screenshot = app->makeScreenshot();
+
+    std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
+    for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
+        jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
+        jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
+        jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
+    }
+    auto filename = std::string("./") + std::string(this->screenshot.data()) + std::string(".jpg");
+    stbi_write_jpg(filename.c_str(), imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
+}
+
+void testScene::updateFrame(uint32_t frameNumber, float inFrameTime)
+{
+    frameTime = inFrameTime;
+    glfwPollEvents();
+
+#ifdef IMGUI_GRAPHICS
+    ImGuiIO io = ImGui::GetIO();
+    if(!io.WantCaptureMouse)    mouseEvent();
+    if(!io.WantCaptureKeyboard) keyboardEvent();
+
+    // Start the Dear ImGui frame
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::SetWindowSize({350,100}, ImGuiCond_::ImGuiCond_Once);
+
+    if (ImGui::Begin("Debug")) {
+        makeGui();
+    }
     ImGui::End();
 
 #else
-    mouseEvent(frameTime);
-    keyboardEvent(frameTime);
+    mouseEvent();
+    keyboardEvent();
 #endif
 
-    globalTime += frameTime;
+    float animationTime = animationSpeed * frameTime;
+    globalTime += animationTime;
 
-    skyboxObjects["stars"]->rotate(0.1f * frameTime, normalize(moon::math::Vector<float, 3>(1.0f, 1.0f, 1.0f)));
-    objects["helmet"]->
-        rotate(0.5f * frameTime, normalize(moon::math::Vector<float, 3>(0.0f, 0.0f, 1.0f))).
-        translate(moon::math::Vector<float, 3>(0.0f, 0.0f, 0.005f * std::sin(0.5f * globalTime)));
+    skyboxObjects["stars"]->rotate(0.1f * animationTime, normalize(moon::math::Vector<float, 3>(1.0f, 1.0f, 1.0f)));
+    objects["helmet"]->rotate(0.5f * animationTime, normalize(moon::math::Vector<float, 3>(0.0f, 0.0f, 1.0f))).
+                       setTranslation({27.0f, -10.0f, 14.0f + 0.2f * std::sin(globalTime)});
 
     for(auto& [_,object]: objects){
-        object->updateAnimation(frameNumber, animationSpeed * frameTime);
+        object->updateAnimation(frameNumber, animationTime);
     }
 }
 
@@ -341,7 +348,7 @@ void testScene::createObjects()
     objects["dragon"]->scale(1.0f).rotate(moon::math::Quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(moon::math::Vector<float,3>(26.0f, 11.0f, 11.0f));
 
     objects["helmet"] = std::make_shared<moon::transformational::BaseObject>(models["DamagedHelmet"].get());
-    objects["helmet"]->scale(1.0f).rotate(moon::math::Quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(moon::math::Vector<float,3>(27.0f, -10.0f, 14.0f));
+    objects["helmet"]->scale(1.0f).rotate(moon::math::Quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f));
 
     objects["robot"] = std::make_shared<moon::transformational::BaseObject>(models["robot"].get(), 0, resourceCount);
     objects["robot"]->scale(25.0f).rotate(moon::math::Quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).rotate(moon::math::radians(180.0f), {0.0f, 0.0f, 1.0f}).translate(moon::math::Vector<float,3>(-30.0f, 11.0f, 10.0f));
@@ -471,7 +478,7 @@ void testScene::createLight()
     }
 }
 
-void testScene::mouseEvent(float frameTime)
+void testScene::mouseEvent()
 {
     float sensitivity = mouse->sensitivity * frameTime;
 
@@ -498,20 +505,10 @@ void testScene::mouseEvent(float frameTime)
                 if(controledObject){
                     controledObject->setOutlining(false);
                 }
-                controledObject = object.get();
-                controledObjectName = key;
-                controledObject->setOutlining(true && controledObjectEnableOutlighting, 0.03f,
-                    {
-                        controledObjectOutlightingColor[0],
-                        controledObjectOutlightingColor[1],
-                        controledObjectOutlightingColor[2],
-                        controledObjectOutlightingColor[3]
-                    }
-                );
-                graphics["base"]->requestUpdate("DeferredGraphics");
-#ifdef SECOND_VIEW_WINDOW
-                graphics["view"]->requestUpdate("DeferredGraphics");
-#endif
+                controledObject.ptr = object.get();
+                controledObject.name = key;
+                controledObject->setOutlining(controledObject.outlighting.enable, 0.03f, controledObject.outlighting.color);
+                requestUpdate();
             }
         }
     }
@@ -526,7 +523,7 @@ void testScene::mouseEvent(float frameTime)
 #endif
 }
 
-void testScene::keyboardEvent(float frameTime)
+void testScene::keyboardEvent()
 {
     float sensitivity = 8.0f * frameTime;
 

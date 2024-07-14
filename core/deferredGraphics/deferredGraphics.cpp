@@ -301,13 +301,13 @@ void DeferredGraphics::create(moon::interfaces::Model *pModel){
 void DeferredGraphics::bind(moon::interfaces::Camera* cameraObject){
     params.cameraObject = cameraObject;
     cameraObject->create(*device, resourceCount);
-    bDatabase.addBufferData("camera", &cameraObject->getBuffers());
+    bDatabase.add("camera", &cameraObject->getBuffers());
 }
 
 void DeferredGraphics::remove(moon::interfaces::Camera* cameraObject){
     if(params.cameraObject == cameraObject){
         params.cameraObject = nullptr;
-        bDatabase.buffersMap.erase("camera");
+        bDatabase.remove("camera");
     }
 }
 

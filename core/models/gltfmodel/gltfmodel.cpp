@@ -444,8 +444,8 @@ void GltfModel::loadFromFile(const moon::utils::PhysicalDevice& device, VkComman
             }
         }
 
-        utils::createModelBuffer(device.instance, device.getLogical(), commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexCache, vertices);
-        utils::createModelBuffer(device.instance, device.getLogical(), commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexCache, indices);
+        utils::createDeviceBuffer(device.instance, device.getLogical(), commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexCache, vertices);
+        utils::createDeviceBuffer(device.instance, device.getLogical(), commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexCache, indices);
     }
 }
 

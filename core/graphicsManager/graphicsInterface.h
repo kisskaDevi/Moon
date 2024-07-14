@@ -1,28 +1,30 @@
 #ifndef GRAPHICSINTERFACE_H
 #define GRAPHICSINTERFACE_H
 
-#include <vulkan.h>
 #include <vector>
+#include <memory>
 
+#include <vulkan.h>
 #include "device.h"
 #include "vector.h"
-
-namespace moon::utils { class SwapChain;}
+#include "linkable.h"
+#include "swapChain.h"
 
 namespace moon::graphicsManager {
 
-class Linkable;
 class GraphicsManager;
+class Linkable;
 
 class GraphicsInterface{
 protected:
-    uint32_t                        resourceCount{0};
     const utils::PhysicalDeviceMap* devices{ nullptr };
     const utils::PhysicalDevice*    device{ nullptr };
-    utils::SwapChain*               swapChainKHR{ nullptr };
-    Linkable*                       link{ nullptr };
+    const utils::SwapChain*         swapChainKHR{ nullptr };
+
+    uint32_t                        resourceCount{ 0 };
     math::Vector<float,2>           offset{0.0f, 0.0f};
     math::Vector<float,2>           size{1.0f, 1.0f};
+    std::unique_ptr<Linkable>       link;
 
 private:
     virtual void update(uint32_t imageIndex) = 0;
@@ -35,7 +37,7 @@ private:
     virtual void setProperties(
         const utils::PhysicalDeviceMap& devices,
         const uint32_t deviceIndex,
-        utils::SwapChain* swapChain,
+        const utils::SwapChain* swapChain,
         uint32_t resourceCount)
     {
         this->swapChainKHR = swapChain;
@@ -44,10 +46,7 @@ private:
         device = &devices.at(deviceIndex);
     }
 
-    virtual Linkable* linkable() {
-        return link;
-    }
-
+    friend class GraphicsLinker;
     friend class GraphicsManager;
 
 public:

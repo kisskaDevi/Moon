@@ -4,17 +4,15 @@
 
 namespace moon::rayTracingGraphics {
 
-void RayTracingLink::setRenderPass(VkRenderPass renderPass)
-{
-    this->renderPass = renderPass;
-}
+RayTracingLink::RayTracingLink(VkDevice device, const RayTracingLinkParameters& parameters, VkRenderPass renderPass, const moon::utils::AttachmentsDatabase& aDatabase)
+    : parameters(parameters) {
+    pRenderPass = renderPass;
+    createDescriptorSetLayout(device);
+    createPipeline(device);
+    createDescriptors(device, aDatabase);
+};
 
-void RayTracingLink::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size){
-    pushConstant.offset = offset;
-    pushConstant.size = size;
-}
-
-void RayTracingLink::createDescriptorSetLayout() {
+void RayTracingLink::createDescriptorSetLayout(VkDevice device) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -22,13 +20,13 @@ void RayTracingLink::createDescriptorSetLayout() {
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 }
 
-void RayTracingLink::createPipeline() {
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "linkable/linkableVert.spv");
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "linkable/linkableFrag.spv");
+void RayTracingLink::createPipeline(VkDevice device) {
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / "linkable/linkableVert.spv");
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / "linkable/linkableFrag.spv");
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -43,7 +41,7 @@ void RayTracingLink::createPipeline() {
     pushConstantRange.push_back(VkPushConstantRange{});
     pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
     pushConstantRange.back().offset = 0;
-    pushConstantRange.back().size = sizeof(LinkPushConstant);
+    pushConstantRange.back().size = sizeof(PushConstant);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
     pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
@@ -60,20 +58,18 @@ void RayTracingLink::createPipeline() {
     pipelineInfo.back().pMultisampleState = &multisampling;
     pipelineInfo.back().pColorBlendState = &colorBlending;
     pipelineInfo.back().layout = pipelineLayout;
-    pipelineInfo.back().renderPass = renderPass;
+    pipelineInfo.back().renderPass = renderPass();
     pipelineInfo.back().subpass = 0;
     pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
-void RayTracingLink::createDescriptors() {
-    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
-}
+void RayTracingLink::createDescriptors(VkDevice device, const moon::utils::AttachmentsDatabase& aDatabase) {
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, parameters.imageInfo.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
 
-void RayTracingLink::updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase) {
-    for (size_t image = 0; image < this->imageInfo.Count; image++)
+    for (size_t image = 0; image < parameters.imageInfo.Count; image++)
     {
         VkDescriptorImageInfo imageInfo = aDatabase.descriptorImageInfo(parameters.in.color, image);
         VkDescriptorImageInfo bloomImageInfo = aDatabase.descriptorImageInfo(parameters.in.bloom, image);
@@ -81,47 +77,41 @@ void RayTracingLink::updateDescriptorSets(const moon::utils::AttachmentsDatabase
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = descriptorSets[image];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &imageInfo;
+        descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites.back().dstSet = descriptorSets[image];
+        descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+        descriptorWrites.back().dstArrayElement = 0;
+        descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites.back().descriptorCount = 1;
+        descriptorWrites.back().pImageInfo = &imageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = descriptorSets[image];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &bbImageInfo;
+        descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites.back().dstSet = descriptorSets[image];
+        descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+        descriptorWrites.back().dstArrayElement = 0;
+        descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites.back().descriptorCount = 1;
+        descriptorWrites.back().pImageInfo = &bbImageInfo;
         descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = descriptorSets[image];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &bloomImageInfo;
+        descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites.back().dstSet = descriptorSets[image];
+        descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
+        descriptorWrites.back().dstArrayElement = 0;
+        descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites.back().descriptorCount = 1;
+        descriptorWrites.back().pImageInfo = &bloomImageInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
-
-void RayTracingLink::create(const std::filesystem::path& shadersPath, VkDevice device, const moon::utils::ImageInfo& imageInfo) {
-    this->device = device;
-    this->imageInfo = imageInfo;
-    this->shadersPath = shadersPath;
-
-    createDescriptorSetLayout();
-    createPipeline();
-    createDescriptors();
+void RayTracingLink::setPositionInWindow(const moon::math::Vector<float, 2>& offset, const moon::math::Vector<float, 2>& size) {
+    pushConstant.offset = offset;
+    pushConstant.size = size;
 }
 
 void RayTracingLink::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
 {
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LinkPushConstant), &pushConstant);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConstant), &pushConstant);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageNumber], 0, nullptr);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);

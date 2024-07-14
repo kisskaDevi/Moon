@@ -111,17 +111,14 @@ VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
 }
 
 VkResult GraphicsManager::createLinker(){
-    linker = GraphicsLinker(activeDevice->getLogical(), &swapChainKHR);
-    for(auto graphics: graphics){
-        linker.bind(graphics->linkable());
-    }
+    linker = GraphicsLinker(activeDevice->getLogical(), &swapChainKHR, &graphics);
     return VK_SUCCESS;
 }
 
-void GraphicsManager::setGraphics(GraphicsInterface* graphics){
-    this->graphics.push_back(graphics);
-    this->graphics.back()->setProperties(devices, activeDevice->properties.index, &swapChainKHR, resourceCount);
-    linker.bind(this->graphics.back()->linkable());
+void GraphicsManager::setGraphics(GraphicsInterface* ingraphics){
+    graphics.push_back(ingraphics);
+    ingraphics->setProperties(devices, activeDevice->properties.index, &swapChainKHR, resourceCount);
+    ingraphics->link->renderPass() = linker.getRenderPass();
 }
 
 std::vector<moon::utils::PhysicalDeviceProperties> GraphicsManager::getDeviceInfo() const {

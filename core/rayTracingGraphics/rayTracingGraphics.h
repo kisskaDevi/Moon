@@ -47,7 +47,6 @@ private:
     cuda::rayTracing::RayTracing rayTracer;
     BoundingBoxGraphics bbGraphics;
     std::unique_ptr<moon::workflows::BloomGraphics> bloomGraph;
-    RayTracingLink rayTracingLink;
 
     moon::utils::Texture emptyTexture;
 
@@ -69,6 +68,7 @@ private:
         const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
         const std::vector<VkFence>& externalFence,
         uint32_t imageIndex) override;
+
 public:
     RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent);
 

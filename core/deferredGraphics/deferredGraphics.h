@@ -83,7 +83,6 @@ private:
 
     workflows::WorkflowsMap workflows;
     workflows::ParametersMap workflowsParameters;
-    Link deferredLink;
 
     utils::vkDefault::CommandPool commandPool;
     utils::vkDefault::CommandBuffers copyCommandBuffers;
@@ -125,7 +124,6 @@ public:
     DeferredGraphics(const Parameters& parameters);
 
     void reset() override;
-    void setPositionInWindow(const math::Vector<float,2>& offset, const math::Vector<float,2>& size) override;
 
     bool getEnable(const std::string& name);
     DeferredGraphics& setEnable(const std::string& name, bool enable);

@@ -10,11 +10,6 @@
 
 namespace moon::rayTracingGraphics {
 
-struct LinkPushConstant{
-    moon::math::Vector<float,2> offset{0.0f, 0.0f};
-    moon::math::Vector<float,2> size{1.0f, 1.0f};
-};
-
 struct RayTracingLinkParameters{
     struct{
         std::string color;
@@ -22,43 +17,34 @@ struct RayTracingLinkParameters{
         std::string boundingBox;
     }in;
     struct{}out;
+    std::filesystem::path shadersPath;
+    moon::utils::ImageInfo imageInfo;
 };
 
 class RayTracingLink : public moon::graphicsManager::Linkable{
 private:
-    RayTracingLinkParameters        parameters;
-    std::filesystem::path           shadersPath;
-    moon::utils::ImageInfo          imageInfo;
-
-    VkDevice        device{VK_NULL_HANDLE};
-    VkRenderPass    renderPass{VK_NULL_HANDLE};
-
+    RayTracingLinkParameters                parameters;
     utils::vkDefault::PipelineLayout        pipelineLayout;
     utils::vkDefault::Pipeline              pipeline;
     utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
     utils::vkDefault::DescriptorPool        descriptorPool;
     utils::vkDefault::DescriptorSets        descriptorSets;
 
-    LinkPushConstant pushConstant;
+    struct PushConstant {
+        moon::math::Vector<float, 2> offset{ 0.0f, 0.0f };
+        moon::math::Vector<float, 2> size{ 1.0f, 1.0f };
+    } pushConstant;
 
-    void createDescriptorSetLayout();
-    void createPipeline();
-    void createDescriptors();
+    void createDescriptorSetLayout(VkDevice device);
+    void createPipeline(VkDevice device);
+    void createDescriptors(VkDevice device, const moon::utils::AttachmentsDatabase& aDatabase);
 
 public:
     RayTracingLink() = default;
-    RayTracingLink(const RayTracingLinkParameters& parameters) : parameters(parameters){};
+    RayTracingLink(VkDevice device, const RayTracingLinkParameters& parameters, VkRenderPass renderPass, const moon::utils::AttachmentsDatabase& aDatabase);
 
-    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size);
-    void setParameters(const RayTracingLinkParameters& parameters){
-        this->parameters = parameters;
-    };
-
+    void setPositionInWindow(const math::Vector<float, 2>& offset, const math::Vector<float, 2>& size) override;
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
-    void setRenderPass(VkRenderPass renderPass) override;
-
-    void create(const std::filesystem::path& shadersPath, VkDevice device, const moon::utils::ImageInfo& imageInfo);
-    void updateDescriptorSets(const moon::utils::AttachmentsDatabase& aDatabase);
 };
 
 }

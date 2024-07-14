@@ -4,41 +4,27 @@
 
 namespace moon::deferredGraphics {
 
-void Link::setDeviceProp(VkDevice device){
-    this->device = device;
+Link::Link(VkDevice device, const std::filesystem::path& shadersPath, const moon::utils::ImageInfo& info, VkRenderPass renderPass, const moon::utils::Attachments* attachment) {
+    pRenderPass = renderPass;
+    createDescriptorSetLayout(device);
+    createPipeline(device, shadersPath, info);
+    createDescriptors(device, info, attachment);
 }
 
-void Link::setImageCount(const uint32_t& count){
-    this->imageCount = count;
-}
-
-void Link::setShadersPath(const std::filesystem::path &shadersPath){
-    this->shadersPath = shadersPath;
-}
-
-void Link::setRenderPass(VkRenderPass renderPass) {
-    this->renderPass = renderPass;
-}
-
-void Link::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size){
-    pushConstant.offset = offset;
-    pushConstant.size = size;
-}
-
-void Link::createDescriptorSetLayout() {
+void Link::createDescriptorSetLayout(VkDevice device) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 }
 
-void Link::createPipeline(moon::utils::ImageInfo* pInfo) {
+void Link::createPipeline(VkDevice device, const std::filesystem::path& shadersPath, const moon::utils::ImageInfo& info) {
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "linkable/deferredLinkableVert.spv");
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "linkable/deferredLinkableFrag.spv");
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, pInfo->Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, pInfo->Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, info.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, info.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -70,20 +56,20 @@ void Link::createPipeline(moon::utils::ImageInfo* pInfo) {
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayout;
-        pipelineInfo.back().renderPass = renderPass;
+        pipelineInfo.back().renderPass = renderPass();
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
-void Link::createDescriptorPool() {
-    descriptorPool = utils::vkDefault::DescriptorPool(device, {&descriptorSetLayout}, imageCount);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
-}
+void Link::createDescriptors(VkDevice device, const moon::utils::ImageInfo& info, const moon::utils::Attachments* attachment) {
+    descriptorPool = utils::vkDefault::DescriptorPool(device, {&descriptorSetLayout}, info.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, info.Count);
 
-void Link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
-    for (size_t image = 0; image < this->imageCount; image++)
+    CHECK_M(attachment == nullptr, std::string("[ Link::createDescriptors ] attachment is nullptr"));
+    if(!attachment) return;
+    for (size_t image = 0; image < info.Count; image++)
     {
         VkDescriptorImageInfo imageInfo;
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -101,6 +87,11 @@ void Link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
             descriptorWrites.back().pImageInfo = &imageInfo;
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+}
+
+void Link::setPositionInWindow(const moon::math::Vector<float, 2>& offset, const moon::math::Vector<float, 2>& size) {
+    pushConstant.offset = offset;
+    pushConstant.size = size;
 }
 
 void Link::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const

@@ -21,7 +21,6 @@ private:
 
     utils::vkDefault::DescriptorPool descriptorPool;
     utils::vkDefault::CommandPool commandPool;
-    ImguiLink Link;
 
     void setupImguiContext();
     void uploadFonts();

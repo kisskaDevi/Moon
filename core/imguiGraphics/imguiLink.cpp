@@ -5,10 +5,6 @@
 
 namespace moon::imguiGraphics {
 
-const VkRenderPass &ImguiLink::getRenderPass(){
-    return renderPass;
-}
-
 void ImguiLink::draw(VkCommandBuffer commandBuffer, uint32_t) const {
     // Rendering
     ImGui::Render();
@@ -16,10 +12,6 @@ void ImguiLink::draw(VkCommandBuffer commandBuffer, uint32_t) const {
 
     // Record dear imgui primitives into command buffer
     ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
-}
-
-void ImguiLink::setRenderPass(VkRenderPass renderPass) {
-    this->renderPass = renderPass;
 }
 
 }

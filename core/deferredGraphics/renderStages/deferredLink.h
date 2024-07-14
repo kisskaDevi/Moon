@@ -14,11 +14,6 @@ namespace moon::deferredGraphics {
 class Link : public moon::graphicsManager::Linkable
 {
 private:
-    std::filesystem::path           shadersPath;
-    uint32_t                        imageCount{0};
-    VkDevice                        device{VK_NULL_HANDLE};
-    VkRenderPass                    renderPass{VK_NULL_HANDLE};
-
     utils::vkDefault::PipelineLayout        pipelineLayout;
     utils::vkDefault::Pipeline              pipeline;
     utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
@@ -31,20 +26,16 @@ private:
         moon::math::Vector<float, 2> size{ 1.0f, 1.0f };
     } pushConstant;
 
+    void createDescriptorSetLayout(VkDevice device);
+    void createPipeline(VkDevice device, const std::filesystem::path& shadersPath, const moon::utils::ImageInfo& info);
+    void createDescriptors(VkDevice device, const moon::utils::ImageInfo& info, const moon::utils::Attachments* attachment);
+
 public:
     Link() = default;
-    void setDeviceProp(VkDevice device);
-    void setImageCount(const uint32_t& count);
-    void setShadersPath(const std::filesystem::path& shadersPath);
-    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size);
+    Link(VkDevice device, const std::filesystem::path& shadersPath, const moon::utils::ImageInfo& info, VkRenderPass renderPass, const moon::utils::Attachments* attachment);
 
+    void setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) override;
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
-    void setRenderPass(VkRenderPass renderPass) override;
-
-    void createDescriptorSetLayout();
-    void createPipeline(moon::utils::ImageInfo* pInfo);
-    void createDescriptorPool();
-    void updateDescriptorSets(const moon::utils::Attachments* attachment);
 };
 
 }

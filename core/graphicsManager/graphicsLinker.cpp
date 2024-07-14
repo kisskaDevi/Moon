@@ -15,9 +15,7 @@ GraphicsLinker& GraphicsLinker::operator=(GraphicsLinker&& other) {
 }
 
 void GraphicsLinker::swap(GraphicsLinker& other) {
-    for (auto& linkable : other.linkables) {
-        bind(linkable);
-    }
+    std::swap(graphics, other.graphics);
     std::swap(imageInfo, other.imageInfo);
     renderPass.swap(other.renderPass);
     framebuffers.swap(other.framebuffers);
@@ -26,12 +24,16 @@ void GraphicsLinker::swap(GraphicsLinker& other) {
     signalSemaphores.swap(other.signalSemaphores);
 }
 
-GraphicsLinker::GraphicsLinker(VkDevice device, const moon::utils::SwapChain* swapChainKHR) {
-    imageInfo = swapChainKHR->info();
+GraphicsLinker::GraphicsLinker(VkDevice device, const moon::utils::SwapChain* swapChainKHR, std::vector<GraphicsInterface*>* graphics)
+    : graphics(graphics), imageInfo(swapChainKHR->info()) {
     createRenderPass(device);
     createFramebuffers(device, swapChainKHR);
     createCommandBuffers(device);
     createSyncObjects(device);
+
+    for (auto& graph : *graphics) {
+        graph->link->renderPass() = renderPass;
+    }
 }
 
 void GraphicsLinker::createRenderPass(VkDevice device){
@@ -65,7 +67,7 @@ void GraphicsLinker::createRenderPass(VkDevice device){
 
 void GraphicsLinker::createFramebuffers(VkDevice device, const moon::utils::SwapChain* swapChainKHR){
     framebuffers.resize(imageInfo.Count);
-    for (size_t i = 0; i < static_cast<uint32_t>(framebuffers.size()); i++) {
+    for (size_t i = 0; i < framebuffers.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -79,9 +81,15 @@ void GraphicsLinker::createFramebuffers(VkDevice device, const moon::utils::Swap
 }
 
 void GraphicsLinker::createCommandBuffers(VkDevice device){
-    commandBuffers.clear();
     commandPool = utils::vkDefault::CommandPool(device);
     commandBuffers = commandPool.allocateCommandBuffers(imageInfo.Count);
+}
+
+void GraphicsLinker::createSyncObjects(VkDevice device) {
+    signalSemaphores.resize(imageInfo.Count);
+    for (auto& semaphore : signalSemaphores) {
+        semaphore = utils::vkDefault::Semaphore(device);
+    }
 }
 
 void GraphicsLinker::update(uint32_t resourceNumber, uint32_t imageNumber){
@@ -100,8 +108,8 @@ void GraphicsLinker::update(uint32_t resourceNumber, uint32_t imageNumber){
 
     vkCmdBeginRenderPass(commandBuffers[resourceNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    for(const auto& link: linkables){
-        link->draw(commandBuffers[resourceNumber], resourceNumber);
+    for(auto& graph: *graphics){
+        graph->link->draw(commandBuffers[resourceNumber], resourceNumber);
     }
 
     vkCmdEndRenderPass(commandBuffers[resourceNumber]);
@@ -109,11 +117,8 @@ void GraphicsLinker::update(uint32_t resourceNumber, uint32_t imageNumber){
     CHECK(commandBuffers[resourceNumber].end());
 }
 
-void GraphicsLinker::createSyncObjects(VkDevice device){
-    signalSemaphores.resize(imageInfo.Count);
-    for (auto& semaphore: signalSemaphores){
-        semaphore = utils::vkDefault::Semaphore(device);
-    }
+VkRenderPass GraphicsLinker::getRenderPass() const {
+    return renderPass;
 }
 
 const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue){
@@ -129,15 +134,6 @@ const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const std::vecto
         submitInfo.pSignalSemaphores = signalSemaphores[frameNumber];
     CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
     return signalSemaphores[frameNumber];
-}
-
-void GraphicsLinker::bind(Linkable* link) {
-    linkables.insert(link);
-    link->setRenderPass(renderPass);
-}
-
-bool GraphicsLinker::remove(Linkable* link) {
-    return linkables.erase(link);
 }
 
 }

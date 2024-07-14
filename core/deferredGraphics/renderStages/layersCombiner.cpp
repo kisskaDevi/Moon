@@ -16,7 +16,7 @@ LayersCombiner::LayersCombiner(
     LayersCombinerParameters& parameters) :
     Workflow(imageInfo, shadersPath),
     parameters(parameters),
-    combiner(this->imageInfo, parameters)
+    combiner(imageInfo, parameters)
 {}
 
 void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)

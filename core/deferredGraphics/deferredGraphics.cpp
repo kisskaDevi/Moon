@@ -18,6 +18,8 @@ namespace moon::deferredGraphics {
 DeferredGraphics::DeferredGraphics(const Parameters& parameters):
     params(parameters)
 {
+    link = std::make_unique<Link>();
+
     transparentLayersParams.resize(params.transparentLayersCount());
     (workflowsParameters["DeferredGraphics"] = &graphicsParams)->enable = true;
     (workflowsParameters["LayersCombiner"] = &layersCombinerParams)->enable = true;
@@ -32,12 +34,6 @@ DeferredGraphics::DeferredGraphics(const Parameters& parameters):
     (workflowsParameters["BoundingBox"] = &bbParams)->enable = false;
     (workflowsParameters["TransparentLayer"] = &transparentLayersParams.front())->enable = false;
     (workflowsParameters["Selector"] = &selectorParams)->enable = false;
-
-    link = &deferredLink;
-}
-
-void DeferredGraphics::setPositionInWindow(const moon::math::Vector<float, 2>& offset, const moon::math::Vector<float, 2>& size) {
-    deferredLink.setPositionInWindow(this->offset = offset, this->size = size);
 }
 
 void DeferredGraphics::reset()
@@ -191,13 +187,8 @@ void DeferredGraphics::createGraphicsPasses(){
     }
 
     moon::utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, params.MSAASamples};
-    deferredLink.setShadersPath(params.shadersPath);
-    deferredLink.setDeviceProp(device->getLogical());
-    deferredLink.setImageCount(resourceCount);
-    deferredLink.createDescriptorSetLayout();
-    deferredLink.createPipeline(&linkInfo);
-    deferredLink.createDescriptorPool();
-    deferredLink.updateDescriptorSets(aDatabase.get("final"));
+    link = std::make_unique<Link>(device->getLogical(), params.shadersPath, linkInfo, link->renderPass(), aDatabase.get(postProcessingParams.out.postProcessing));
+    link->setPositionInWindow(offset, size);
 }
 
 void DeferredGraphics::createStages(){

@@ -13,7 +13,7 @@ ImguiGraphics::ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t i
     instance(instance),
     imageCount(imageCount) {
     setupImguiContext();
-    link = &Link;
+    link = std::make_unique<ImguiLink>();
 }
 
 ImguiGraphics::~ImguiGraphics(){
@@ -65,7 +65,7 @@ void ImguiGraphics::reset() {
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = VK_NULL_HANDLE;
         initInfo.CheckVkResultFn = [](VkResult result){moon::utils::debug::checkResult(result,"");};
-    ImGui_ImplVulkan_Init(&initInfo, Link.getRenderPass());
+    ImGui_ImplVulkan_Init(&initInfo, link->renderPass());
 
     uploadFonts();
 }

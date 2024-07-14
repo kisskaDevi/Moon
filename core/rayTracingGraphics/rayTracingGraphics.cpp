@@ -10,7 +10,7 @@ namespace moon::rayTracingGraphics {
 RayTracingGraphics::RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent)
     : shadersPath(shadersPath), workflowsShadersPath(workflowsShadersPath), extent(extent) {
     setExtent(extent);
-    link = &rayTracingLink;
+    link = std::make_unique<RayTracingLink>();
 }
 
 RayTracingGraphics::ImageResource::ImageResource(const std::string& id, const moon::utils::PhysicalDevice& phDevice, const moon::utils::ImageInfo& imageInfo){
@@ -91,15 +91,15 @@ void RayTracingGraphics::reset()
     bbGraphics.create(device->instance, device->getLogical(), bbInfo, shadersPath);
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
-    moon::utils::ImageInfo swapChainInfo{ resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, VK_SAMPLE_COUNT_1_BIT};
     RayTracingLinkParameters linkParams;
     linkParams.in.color = color.id;
     linkParams.in.bloom = bloomParams.out.bloom;
     linkParams.in.boundingBox = bbId;
+    linkParams.shadersPath = shadersPath;
+    linkParams.imageInfo = utils::ImageInfo{ resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, VK_SAMPLE_COUNT_1_BIT };
 
-    rayTracingLink.setParameters(linkParams);
-    rayTracingLink.create(shadersPath, device->getLogical(), swapChainInfo);
-    rayTracingLink.updateDescriptorSets(aDatabase);
+    link = std::make_unique<RayTracingLink>(device->getLogical(), linkParams, link->renderPass(), aDatabase);
+    link->setPositionInWindow(offset, size);
 
     rayTracer.create();
 }
@@ -141,7 +141,6 @@ void RayTracingGraphics::update(uint32_t imageIndex) {
 void RayTracingGraphics::setPositionInWindow(const moon::math::Vector<float,2>& offset, const moon::math::Vector<float,2>& size) {
     this->offset = offset;
     this->size = size;
-    rayTracingLink.setPositionInWindow(offset, size);
 }
 
 void RayTracingGraphics::setEnableBoundingBox(bool enable){

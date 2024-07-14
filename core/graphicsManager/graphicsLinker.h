@@ -1,52 +1,47 @@
 #ifndef GRAPHICSLINKER_H
 #define GRAPHICSLINKER_H
 
+#include <set>
 #include <vector>
 #include <stdint.h>
 #include <vulkan.h>
 
 #include "vkdefault.h"
 #include "swapChain.h"
+#include "linkable.h"
 
 namespace moon::graphicsManager {
-
-class Linkable;
 
 class GraphicsLinker
 {
 private:
-    moon::utils::ImageInfo imageInfo;
-
-    VkDevice                        device{ VK_NULL_HANDLE };
-    std::vector<Linkable*>          linkables;
-    moon::utils::SwapChain*         swapChainKHR{nullptr};
-
-    utils::vkDefault::RenderPass    renderPass;
-    utils::vkDefault::Framebuffers  framebuffers;
-
+    std::set<Linkable*>              linkables;
+    moon::utils::ImageInfo           imageInfo;
+    utils::vkDefault::RenderPass     renderPass;
+    utils::vkDefault::Framebuffers   framebuffers;
     utils::vkDefault::CommandPool    commandPool;
     utils::vkDefault::CommandBuffers commandBuffers;
+    utils::vkDefault::Semaphores     signalSemaphores;
 
-    utils::vkDefault::Semaphores    signalSemaphores;
-
+    void createRenderPass(VkDevice device);
+    void createFramebuffers(VkDevice device, const moon::utils::SwapChain* swapChainKHR);
+    void createCommandBuffers(VkDevice device);
+    void createSyncObjects(VkDevice device);
 public:
-    ~GraphicsLinker();
+    GraphicsLinker() = default;
+    GraphicsLinker(const GraphicsLinker&) = delete;
+    GraphicsLinker& operator=(const GraphicsLinker&) = delete;
+    GraphicsLinker(GraphicsLinker&&);
+    GraphicsLinker& operator=(GraphicsLinker&&);
+    void swap(GraphicsLinker&);
 
-    void setSwapChain(moon::utils::SwapChain* swapChainKHR);
-    void setDevice(VkDevice device);
-    void addLinkable(Linkable* link);
+    GraphicsLinker(VkDevice device, const moon::utils::SwapChain* swapChainKHR);
+    void update(uint32_t resourceNumber, uint32_t imageNumber);
 
-    void createRenderPass();
-    void createFramebuffers();
+    void bind(Linkable* link);
+    bool remove(Linkable* link);
 
-    void createCommandBuffers();
-    void updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber);
-
-    void createSyncObjects();
     const VkSemaphore& submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue);
-
-    const VkRenderPass& getRenderPass() const;
-    utils::vkDefault::CommandBuffer& commandBuffer(uint32_t frameNumber);
 };
 
 }

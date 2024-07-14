@@ -28,6 +28,8 @@
 #include <random>
 #include <limits>
 #include <cstring>
+#include <algorithm>
+#include <execution>
 
 testScene::testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* window, uint32_t width, uint32_t height, const std::filesystem::path& ExternalPath, bool& framebufferResized):
     framebufferResized(framebufferResized),
@@ -255,16 +257,17 @@ void testScene::makeGui() {
 }
 
 void testScene::makeScreenshot() {
-    const auto& imageExtent = app->getImageExtent();
-    auto screenshot = app->makeScreenshot();
+    const auto imageExtent = app->getImageExtent();
+    auto screenshotImage = app->makeScreenshot();
+    size_t imageSize = imageExtent.height * imageExtent.width;
 
-    std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
-    for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
-        jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
-        jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
-        jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
+    std::vector<uint8_t> jpg(3 * imageSize, 0);
+    for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageSize; pixel_index++) {
+        jpg[jpg_index++] = (screenshotImage[pixel_index] & 0x00ff0000) >> 16;
+        jpg[jpg_index++] = (screenshotImage[pixel_index] & 0x0000ff00) >> 8;
+        jpg[jpg_index++] = (screenshotImage[pixel_index] & 0x000000ff) >> 0;
     }
-    auto filename = std::string("./") + std::string(this->screenshot.data()) + std::string(".jpg");
+    auto filename = std::string("./") + std::string(screenshot.data()) + std::string(".jpg");
     stbi_write_jpg(filename.c_str(), imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
 }
 
@@ -282,7 +285,7 @@ void testScene::updateFrame(uint32_t frameNumber, float inFrameTime)
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    ImGui::SetWindowSize({350,100}, ImGuiCond_::ImGuiCond_Once);
+    ImGui::SetWindowSize({350, 100}, ImGuiCond_::ImGuiCond_Once);
 
     if (ImGui::Begin("Debug")) {
         makeGui();
@@ -301,9 +304,9 @@ void testScene::updateFrame(uint32_t frameNumber, float inFrameTime)
     objects["helmet"]->rotate(0.5f * animationTime, normalize(moon::math::Vector<float, 3>(0.0f, 0.0f, 1.0f))).
                        setTranslation({27.0f, -10.0f, 14.0f + 0.2f * std::sin(globalTime)});
 
-    for(auto& [_,object]: objects){
-        object->updateAnimation(frameNumber, animationTime);
-    }
+    std::for_each(std::execution::par, objects.begin(), objects.end(), [&frameNumber, &animationTime](auto& object) {
+        object.second->updateAnimation(frameNumber, animationTime);
+    });
 }
 
 void testScene::loadModels()
@@ -535,33 +538,33 @@ void testScene::keyboardEvent()
     if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_S)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
 
     auto rotateControled = [this](const float& ang, const moon::math::Vector<float,3>& ax){
-        if(bool foundInGroups = false; this->controledObject){
-            for(auto& [_,group]: this->groups){
-                if(group->findObject(this->controledObject)){
+        if(bool foundInGroups = false; controledObject){
+            for(auto& [_,group]: groups){
+                if(group->findObject(controledObject)){
                     group->rotate(ang,ax);
                     foundInGroups = true;
                 }
             }
-            if(!foundInGroups) this->controledObject->rotate(ang,ax);
+            if(!foundInGroups) controledObject->rotate(ang,ax);
         }
     };
 
-    if(board->pressed(GLFW_KEY_KP_4)) rotateControled(moon::math::radians(0.5f),{0.0f,0.0f,1.0f});
-    if(board->pressed(GLFW_KEY_KP_6)) rotateControled(moon::math::radians(-0.5f),{0.0f,0.0f,1.0f});
-    if(board->pressed(GLFW_KEY_KP_8)) rotateControled(moon::math::radians(0.5f),{1.0f,0.0f,0.0f});
-    if(board->pressed(GLFW_KEY_KP_5)) rotateControled(moon::math::radians(-0.5f),{1.0f,0.0f,0.0f});
-    if(board->pressed(GLFW_KEY_KP_7)) rotateControled(moon::math::radians(0.5f),{0.0f,1.0f,0.0f});
-    if(board->pressed(GLFW_KEY_KP_9)) rotateControled(moon::math::radians(-0.5f),{0.0f,1.0f,0.0f});
+    if(board->pressed(GLFW_KEY_KP_4)) rotateControled(moon::math::radians( 0.5f), {0.0f,0.0f,1.0f});
+    if(board->pressed(GLFW_KEY_KP_6)) rotateControled(moon::math::radians(-0.5f), {0.0f,0.0f,1.0f});
+    if(board->pressed(GLFW_KEY_KP_8)) rotateControled(moon::math::radians( 0.5f), {1.0f,0.0f,0.0f});
+    if(board->pressed(GLFW_KEY_KP_5)) rotateControled(moon::math::radians(-0.5f), {1.0f,0.0f,0.0f});
+    if(board->pressed(GLFW_KEY_KP_7)) rotateControled(moon::math::radians( 0.5f), {0.0f,1.0f,0.0f});
+    if(board->pressed(GLFW_KEY_KP_9)) rotateControled(moon::math::radians(-0.5f), {0.0f,1.0f,0.0f});
 
     auto translateControled = [this](const moon::math::Vector<float,3>& tr){
-        if(bool foundInGroups = false; this->controledObject){
-            for(auto& [_,group]: this->groups){
-                if(group->findObject(this->controledObject)){
+        if(bool foundInGroups = false; controledObject){
+            for(auto& [_,group]: groups){
+                if(group->findObject(controledObject)){
                     group->translate(tr);
                     foundInGroups = true;
                 }
             }
-            if(!foundInGroups) this->controledObject->translate(tr);
+            if(!foundInGroups) controledObject->translate(tr);
         }
     };
 

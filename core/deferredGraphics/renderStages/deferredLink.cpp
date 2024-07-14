@@ -1,4 +1,4 @@
-#include "link.h"
+#include "deferredLink.h"
 #include "operations.h"
 #include "vkdefault.h"
 
@@ -53,7 +53,7 @@ void Link::createPipeline(moon::utils::ImageInfo* pInfo) {
         pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(LinkPushConstant);
+        pushConstantRange.back().size = sizeof(PushConstant);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
     pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
@@ -105,7 +105,7 @@ void Link::updateDescriptorSets(const moon::utils::Attachments* attachment) {
 
 void Link::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
 {
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(LinkPushConstant), &pushConstant);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConstant), &pushConstant);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageNumber], 0, nullptr);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);

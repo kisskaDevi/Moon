@@ -1,5 +1,5 @@
-#ifndef LINK_H
-#define LINK_H
+#ifndef DEFERRED_LINK_H
+#define DEFERRED_LINK_H
 
 #include <vector>
 #include <filesystem>
@@ -10,11 +10,6 @@
 #include "vkdefault.h"
 
 namespace moon::deferredGraphics {
-
-struct LinkPushConstant{
-    moon::math::Vector<float,2> offset{0.0f, 0.0f};
-    moon::math::Vector<float,2> size{1.0f, 1.0f};
-};
 
 class Link : public moon::graphicsManager::Linkable
 {
@@ -31,7 +26,10 @@ private:
     utils::vkDefault::DescriptorPool        descriptorPool;
     utils::vkDefault::DescriptorSets        descriptorSets;
 
-    LinkPushConstant                pushConstant;
+    struct PushConstant {
+        moon::math::Vector<float, 2> offset{ 0.0f, 0.0f };
+        moon::math::Vector<float, 2> size{ 1.0f, 1.0f };
+    } pushConstant;
 
 public:
     Link() = default;
@@ -50,4 +48,4 @@ public:
 };
 
 }
-#endif // LINK_H
+#endif // DEFERRED_LINK_H

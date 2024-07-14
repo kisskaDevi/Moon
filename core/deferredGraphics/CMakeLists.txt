@@ -19,7 +19,7 @@ set(SOURCES
     renderStages/source/base.cpp
     renderStages/source/extension.cpp
     renderStages/graphics.cpp
-    renderStages/link.cpp
+    renderStages/deferredLink.cpp
     renderStages/deferredAttachments.cpp
 )
 
@@ -27,7 +27,7 @@ set(HEADERS
     deferredGraphics.h
     renderStages/layersCombiner.h
     renderStages/graphics.h
-    renderStages/link.h
+    renderStages/deferredLink.h
     renderStages/deferredAttachments.h
 )
 

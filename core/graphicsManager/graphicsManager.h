@@ -1,10 +1,6 @@
 #ifndef GRAPHICSMANAGER_H
 #define GRAPHICSMANAGER_H
 
-#ifdef WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
-#endif
-
 #include <vulkan.h>
 #include "operations.h"
 #include "device.h"
@@ -13,12 +9,42 @@
 #include "graphicsInterface.h"
 #include "graphicsLinker.h"
 
-//#define NDEBUG
-
 namespace moon::graphicsManager {
 
 class GraphicsManager
 {
+private:
+    bool                                    enableValidationLayers = true;
+
+    const std::vector<const char*>          validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    const std::vector<const char*>          deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+    utils::vkDefault::Instance              instance;
+    utils::vkDefault::DebugUtilsMessenger   debugMessenger;
+    utils::vkDefault::Surface               surface;
+
+    moon::utils::PhysicalDeviceMap          devices;
+    moon::utils::PhysicalDevice*            activeDevice{nullptr};
+    moon::utils::SwapChain                  swapChainKHR;
+
+    std::vector<GraphicsInterface*>         graphics;
+    GraphicsLinker                          linker;
+
+    utils::vkDefault::Semaphores            availableSemaphores;
+    utils::vkDefault::Fences                fences;
+
+    uint32_t imageIndex{0};
+    uint32_t imageCount{0};
+    uint32_t resourceIndex{0};
+    uint32_t resourceCount{0};
+
+    VkResult createInstance();
+    VkResult createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
+    VkResult createSurface(GLFWwindow* window);
+    VkResult createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
+    VkResult createLinker();
+    VkResult createSyncObjects();
+
 public:
     GraphicsManager(GLFWwindow* window, int32_t imageCount = -1, int32_t resourceCount = -1, const VkPhysicalDeviceFeatures& deviceFeatures = {});
 
@@ -41,37 +67,6 @@ public:
 
     std::vector<uint32_t> makeScreenshot() const;
 
-private:
-    bool                                        enableValidationLayers = true;
-
-    const std::vector<const char*>              validationLayers = {"VK_LAYER_KHRONOS_validation"};
-    const std::vector<const char*>              deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
-    utils::vkDefault::Instance                  instance;
-    utils::vkDefault::DebugUtilsMessenger       debugMessenger;
-    utils::vkDefault::Surface                   surface;
-
-    moon::utils::PhysicalDeviceMap              devices;
-    moon::utils::PhysicalDevice*                activeDevice{nullptr};
-    moon::utils::SwapChain                      swapChainKHR;
-
-    std::vector<GraphicsInterface*>             graphics;
-    GraphicsLinker                              linker;
-
-    utils::vkDefault::Semaphores                availableSemaphores;
-    utils::vkDefault::Fences                    fences;
-
-    uint32_t                                    imageIndex{0};
-    uint32_t                                    imageCount{0};
-    uint32_t                                    resourceIndex{0};
-    uint32_t                                    resourceCount{0};
-
-    VkResult createDevice(const VkPhysicalDeviceFeatures& deviceFeatures = {});
-    VkResult createInstance();
-    VkResult createSurface(GLFWwindow* window);
-    VkResult createSwapChain(GLFWwindow* window, int32_t maxImageCount = -1);
-    VkResult createLinker();
-    VkResult createSyncObjects();
 };
 
 }

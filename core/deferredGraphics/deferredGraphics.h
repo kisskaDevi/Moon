@@ -3,7 +3,7 @@
 
 #include "graphicsInterface.h"
 #include "workflow.h"
-#include "link.h"
+#include "deferredLink.h"
 
 #include "cursor.h"
 #include "buffer.h"

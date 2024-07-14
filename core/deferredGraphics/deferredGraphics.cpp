@@ -9,7 +9,7 @@
 #include "depthMap.h"
 #include "swapChain.h"
 
-#include "link.h"
+#include "deferredLink.h"
 
 #include <cstring>
 

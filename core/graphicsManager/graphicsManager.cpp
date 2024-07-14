@@ -107,30 +107,21 @@ VkResult GraphicsManager::createSwapChain(GLFWwindow* window, int32_t maxImageCo
     CHECK_M(window == nullptr, "[ GraphicsManager::createSwapChain ] Window is nullptr");
     CHECK_M(surface == VK_NULL_HANDLE, "[ GraphicsManager::createSwapChain ] surface is VK_NULL_HANDLE");
     CHECK_M(activeDevice == nullptr, "[ GraphicsManager::activeDevice ] device is nullptr");
-
     return swapChainKHR.reset(activeDevice, window, surface, maxImageCount);
 }
 
 VkResult GraphicsManager::createLinker(){
-    linker.setDevice(activeDevice->getLogical());
-    linker.setSwapChain(&swapChainKHR);
-    linker.createRenderPass();
-    linker.createFramebuffers();
-    linker.createCommandBuffers();
-    linker.createSyncObjects();
-
+    linker = GraphicsLinker(activeDevice->getLogical(), &swapChainKHR);
     for(auto graphics: graphics){
-        graphics->linkable()->setRenderPass(linker.getRenderPass());
+        linker.bind(graphics->linkable());
     }
-
     return VK_SUCCESS;
 }
 
 void GraphicsManager::setGraphics(GraphicsInterface* graphics){
     this->graphics.push_back(graphics);
     this->graphics.back()->setProperties(devices, activeDevice->properties.index, &swapChainKHR, resourceCount);
-    this->graphics.back()->linkable()->setRenderPass(linker.getRenderPass());
-    linker.addLinkable(this->graphics.back()->linkable());
+    linker.bind(this->graphics.back()->linkable());
 }
 
 std::vector<moon::utils::PhysicalDeviceProperties> GraphicsManager::getDeviceInfo() const {
@@ -177,7 +168,7 @@ VkResult GraphicsManager::drawFrame(){
     for(auto graphics: graphics){
         graphics->update(resourceIndex);
     }
-    linker.updateCommandBuffer(resourceIndex, imageIndex);
+    linker.update(resourceIndex, imageIndex);
 
     std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[resourceIndex]}};
     for(auto& graph: graphics){

@@ -5,22 +5,36 @@
 
 namespace moon::graphicsManager {
 
-GraphicsLinker::~GraphicsLinker(){}
+GraphicsLinker::GraphicsLinker(GraphicsLinker&& other) {
+    swap(other);
+}
 
-void GraphicsLinker::setSwapChain(moon::utils::SwapChain* swapChainKHR){
-    this->swapChainKHR = swapChainKHR;
+GraphicsLinker& GraphicsLinker::operator=(GraphicsLinker&& other) {
+    swap(other);
+    return *this;
+}
+
+void GraphicsLinker::swap(GraphicsLinker& other) {
+    for (auto& linkable : other.linkables) {
+        bind(linkable);
+    }
+    std::swap(imageInfo, other.imageInfo);
+    renderPass.swap(other.renderPass);
+    framebuffers.swap(other.framebuffers);
+    commandPool.swap(other.commandPool);
+    commandBuffers.swap(other.commandBuffers);
+    signalSemaphores.swap(other.signalSemaphores);
+}
+
+GraphicsLinker::GraphicsLinker(VkDevice device, const moon::utils::SwapChain* swapChainKHR) {
     imageInfo = swapChainKHR->info();
+    createRenderPass(device);
+    createFramebuffers(device, swapChainKHR);
+    createCommandBuffers(device);
+    createSyncObjects(device);
 }
 
-void GraphicsLinker::setDevice(VkDevice device){
-    this->device = device;
-}
-
-void GraphicsLinker::addLinkable(Linkable* link){
-    linkables.push_back(link);
-}
-
-void GraphicsLinker::createRenderPass(){
+void GraphicsLinker::createRenderPass(VkDevice device){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
         moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     };
@@ -49,7 +63,7 @@ void GraphicsLinker::createRenderPass(){
     renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
 }
 
-void GraphicsLinker::createFramebuffers(){
+void GraphicsLinker::createFramebuffers(VkDevice device, const moon::utils::SwapChain* swapChainKHR){
     framebuffers.resize(imageInfo.Count);
     for (size_t i = 0; i < static_cast<uint32_t>(framebuffers.size()); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
@@ -64,39 +78,38 @@ void GraphicsLinker::createFramebuffers(){
     }
 }
 
-void GraphicsLinker::createCommandBuffers(){
+void GraphicsLinker::createCommandBuffers(VkDevice device){
     commandBuffers.clear();
     commandPool = utils::vkDefault::CommandPool(device);
     commandBuffers = commandPool.allocateCommandBuffers(imageInfo.Count);
 }
 
-void GraphicsLinker::updateCommandBuffer(uint32_t resourceNumber, uint32_t imageNumber){
+void GraphicsLinker::update(uint32_t resourceNumber, uint32_t imageNumber){
     CHECK(commandBuffers[resourceNumber].reset());
     CHECK(commandBuffers[resourceNumber].begin());
 
-        std::vector<VkClearValue> clearValues = {VkClearValue{}};
+    std::vector<VkClearValue> clearValues = {VkClearValue{}};
+    VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = framebuffers[imageNumber];
+        renderPassInfo.renderArea.offset = {0,0};
+        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
 
-        VkRenderPassBeginInfo renderPassInfo{};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = renderPass;
-            renderPassInfo.framebuffer = framebuffers[imageNumber];
-            renderPassInfo.renderArea.offset = {0,0};
-            renderPassInfo.renderArea.extent = imageInfo.Extent;
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-            renderPassInfo.pClearValues = clearValues.data();
+    vkCmdBeginRenderPass(commandBuffers[resourceNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBeginRenderPass(commandBuffers[resourceNumber], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    for(const auto& link: linkables){
+        link->draw(commandBuffers[resourceNumber], resourceNumber);
+    }
 
-            for(const auto& link: linkables){
-                link->draw(commandBuffers[resourceNumber], resourceNumber);
-            }
-
-        vkCmdEndRenderPass(commandBuffers[resourceNumber]);
+    vkCmdEndRenderPass(commandBuffers[resourceNumber]);
 
     CHECK(commandBuffers[resourceNumber].end());
 }
 
-void GraphicsLinker::createSyncObjects(){
+void GraphicsLinker::createSyncObjects(VkDevice device){
     signalSemaphores.resize(imageInfo.Count);
     for (auto& semaphore: signalSemaphores){
         semaphore = utils::vkDefault::Semaphore(device);
@@ -118,12 +131,13 @@ const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const std::vecto
     return signalSemaphores[frameNumber];
 }
 
-const VkRenderPass& GraphicsLinker::getRenderPass() const {
-    return renderPass;
+void GraphicsLinker::bind(Linkable* link) {
+    linkables.insert(link);
+    link->setRenderPass(renderPass);
 }
 
-utils::vkDefault::CommandBuffer& GraphicsLinker::commandBuffer(uint32_t frameNumber) {
-    return commandBuffers[frameNumber];
+bool GraphicsLinker::remove(Linkable* link) {
+    return linkables.erase(link);
 }
 
 }

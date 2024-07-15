@@ -24,8 +24,6 @@ struct TextureImage {
     utils::vkDefault::ImageView imageView;
     utils::vkDefault::Sampler sampler;
 
-    VkDevice device{ VK_NULL_HANDLE };
-
     int width{ -1 };
     int height{ -1 };
     int channels{ -1 };

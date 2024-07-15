@@ -189,9 +189,9 @@ namespace texture {
             VkDeviceMemory*                 imageMemory);
 
     void destroy(
-        VkDevice                            device,
-        VkImage&                            image,
-        VkDeviceMemory&                     memory);
+            VkDevice                            device,
+            VkImage&                            image,
+            VkDeviceMemory&                     memory);
 
     VkResult createView(
             VkDevice                        device,
@@ -284,12 +284,12 @@ namespace swapChain {
     };
 
     SupportDetails queryingSupport(
-        VkPhysicalDevice                            device,
-        VkSurfaceKHR                                surface);
+            VkPhysicalDevice                            device,
+            VkSurfaceKHR                                surface);
 
     uint32_t queryingSupportImageCount(
-        VkPhysicalDevice                            device,
-        VkSurfaceKHR                                surface);
+            VkPhysicalDevice                            device,
+            VkSurfaceKHR                                surface);
 
     VkSurfaceFormatKHR queryingSurfaceFormat(
             const std::vector<VkSurfaceFormatKHR>&  availableFormats);

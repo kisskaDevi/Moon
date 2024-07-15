@@ -9,11 +9,14 @@ namespace moon::utils {
 
 class DepthMap {
 private:
-    struct {
+    struct Map {
         utils::Attachments attachments;
         utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
         utils::vkDefault::DescriptorPool descriptorPool;
         utils::vkDefault::DescriptorSets descriptorSets;
+
+        Map() = default;
+        Map(const PhysicalDevice& device, const utils::ImageInfo& imageInfo);
     } map;
 
     Texture emptyTextureWhite;

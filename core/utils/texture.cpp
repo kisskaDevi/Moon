@@ -16,7 +16,6 @@ void TextureImage::swap(TextureImage& other) noexcept {
     std::swap(imageView, other.imageView);
     std::swap(sampler, other.sampler);
     std::swap(format, other.format);
-    std::swap(device, other.device);
     std::swap(width, other.width);
     std::swap(height, other.height);
     std::swap(channels, other.channels);
@@ -42,7 +41,6 @@ void TextureImage::makeCache(
         VkDevice                    device,
         const std::vector<void*>&   buffers)
 {
-    this->device = device;
     if(width == -1 || height == -1 || channels == -1) throw std::runtime_error("[TextureImage::makeCache] : texture sizes not init");
 
     cache = utils::vkDefault::Buffer(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -61,8 +59,6 @@ VkResult TextureImage::create(
         const uint32_t&     imageCount,
         const TextureSampler& textureSampler)
 {
-    this->device = device;
-
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
     image = utils::vkDefault::Image(physicalDevice,
                                     device,

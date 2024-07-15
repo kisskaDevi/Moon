@@ -66,7 +66,6 @@ public:
     VkResult deviceWaitIdle() const;
 
     std::vector<uint32_t> makeScreenshot() const;
-
 };
 
 }

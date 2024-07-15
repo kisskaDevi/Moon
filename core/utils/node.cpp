@@ -3,9 +3,7 @@
 
 namespace moon::utils {
 
-Stage::Stage(   std::vector<VkCommandBuffer> commandBuffers,
-                VkPipelineStageFlags waitStage,
-                VkQueue queue) :
+Stage::Stage(std::vector<VkCommandBuffer> commandBuffers, VkPipelineStageFlags waitStage, VkQueue queue) :
     commandBuffers(commandBuffers),
     waitStage(waitStage),
     queue(queue)
@@ -76,6 +74,7 @@ std::vector<std::vector<VkSemaphore>> Node::getBackSemaphores(){
 
 VkResult Node::createSemaphores(){
     VkResult result = VK_SUCCESS;
+
     auto createSemaphore = [this](VkDevice device, Stage* stage){
         auto& signalSemaphore = signalSemaphores.emplace_back();
         signalSemaphore = utils::vkDefault::Semaphore(device);

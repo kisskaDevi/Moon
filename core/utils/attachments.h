@@ -14,9 +14,7 @@ namespace moon::utils {
 struct Attachment {
     utils::vkDefault::Image image;
     utils::vkDefault::ImageView imageView;
-
     VkImageLayout   layout{VK_IMAGE_LAYOUT_UNDEFINED};
-    VkDevice        device{ VK_NULL_HANDLE };
 
     Attachment() = default;
     Attachment(const Attachment & other) = delete;
@@ -25,7 +23,7 @@ struct Attachment {
     Attachment& operator=(Attachment&& other) noexcept;
     void swap(Attachment& other) noexcept;
 
-    Attachment(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage);
+    Attachment(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo& imageInfo, VkImageUsageFlags usage);
 };
 
 class Attachments {
@@ -43,7 +41,7 @@ public:
     Attachments& operator=(Attachments&& other) noexcept;
     void swap(Attachments& other) noexcept;
 
-    Attachments(VkPhysicalDevice physicalDevice, VkDevice device, ImageInfo imageInfo, VkImageUsageFlags usage, VkClearValue clear = {{0.0f, 0.0f, 0.0f, 0.0f}}, VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO });
+    Attachments(VkPhysicalDevice physicalDevice, VkDevice device, const ImageInfo& imageInfo, VkImageUsageFlags usage, const VkClearValue& clear = {{0.0f, 0.0f, 0.0f, 0.0f}}, VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO });
 
     std::vector<VkImage> getImages() const;
 

@@ -4,23 +4,22 @@
 
 namespace moon::utils {
 
-DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, const utils::ImageInfo& imageInfo){
-    emptyTextureWhite = utils::Texture::empty(device, commandPool, false);
-    this->device = device.getLogical();
-    this->imageInfo = imageInfo;
-
-    map.descriptorSetLayout = DepthMap::createDescriptorSetLayout(device.getLogical());
-    map.descriptorPool = utils::vkDefault::DescriptorPool(device.getLogical(), { &map.descriptorSetLayout }, imageInfo.Count);
-    map.descriptorSets = map.descriptorPool.allocateDescriptorSets(map.descriptorSetLayout, imageInfo.Count);
-
-    map.attachments = utils::Attachments(
+DepthMap::Map::Map(const PhysicalDevice& device, const utils::ImageInfo& imageInfo) :
+    attachments(utils::Attachments(
         device.instance,
         device.getLogical(),
         imageInfo,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
         { {1.0,0} },
-        utils::vkDefault::sampler());
-}
+        utils::vkDefault::sampler())),
+    descriptorSetLayout(DepthMap::createDescriptorSetLayout(device.getLogical())),
+    descriptorPool(utils::vkDefault::DescriptorPool(device.getLogical(), { &descriptorSetLayout }, imageInfo.Count)),
+    descriptorSets(descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count))
+{}
+
+DepthMap::DepthMap(const PhysicalDevice& device, VkCommandPool commandPool, const utils::ImageInfo& imageInfo)
+    : map(device, imageInfo), emptyTextureWhite(utils::Texture::empty(device, commandPool, false)), imageInfo(imageInfo), device(device.getLogical())
+{}
 
 const utils::vkDefault::DescriptorSets& DepthMap::descriptorSets() const{
     return map.descriptorSets;

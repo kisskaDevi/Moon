@@ -39,7 +39,7 @@ void Link::createPipeline(VkDevice device, const std::filesystem::path& shadersP
         pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(PushConstant);
+        pushConstantRange.back().size = sizeof(graphicsManager::PositionInWindow);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { descriptorSetLayout };
     pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
@@ -89,14 +89,9 @@ void Link::createDescriptors(VkDevice device, const moon::utils::ImageInfo& info
     }
 }
 
-void Link::setPositionInWindow(const moon::math::Vector<float, 2>& offset, const moon::math::Vector<float, 2>& size) {
-    pushConstant.offset = offset;
-    pushConstant.size = size;
-}
-
 void Link::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
 {
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConstant), &pushConstant);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(positionInWindow), &positionInWindow);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageNumber], 0, nullptr);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);

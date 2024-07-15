@@ -30,11 +30,6 @@ private:
     utils::vkDefault::DescriptorPool        descriptorPool;
     utils::vkDefault::DescriptorSets        descriptorSets;
 
-    struct PushConstant {
-        moon::math::Vector<float, 2> offset{ 0.0f, 0.0f };
-        moon::math::Vector<float, 2> size{ 1.0f, 1.0f };
-    } pushConstant;
-
     void createDescriptorSetLayout(VkDevice device);
     void createPipeline(VkDevice device);
     void createDescriptors(VkDevice device, const moon::utils::AttachmentsDatabase& aDatabase);
@@ -43,7 +38,6 @@ public:
     RayTracingLink() = default;
     RayTracingLink(VkDevice device, const RayTracingLinkParameters& parameters, VkRenderPass renderPass, const moon::utils::AttachmentsDatabase& aDatabase);
 
-    void setPositionInWindow(const math::Vector<float, 2>& offset, const math::Vector<float, 2>& size) override;
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
 };
 

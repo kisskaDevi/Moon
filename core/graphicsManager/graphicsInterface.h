@@ -55,8 +55,7 @@ public:
     virtual void reset() = 0;
 
     virtual void setPositionInWindow(const math::Vector<float,2>& offset, const math::Vector<float,2>& size) {
-        this->offset = offset;
-        this->size = size;
+        if(link) link->setPositionInWindow({ offset , size });
     }
 };
 

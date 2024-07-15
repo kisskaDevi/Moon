@@ -6,14 +6,20 @@
 
 namespace moon::graphicsManager {
 
+struct PositionInWindow {
+    moon::math::Vector<float, 2> offset{ 0.0f, 0.0f };
+    moon::math::Vector<float, 2> size{ 1.0f, 1.0f };
+};
+
 class Linkable{
 protected:
     VkRenderPass pRenderPass{ VK_NULL_HANDLE };
+    PositionInWindow positionInWindow;
 
 public:
     virtual ~Linkable(){};
-    virtual void setPositionInWindow(const math::Vector<float, 2>& offset, const math::Vector<float, 2>& size) = 0;
     virtual void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const = 0;
+    virtual void setPositionInWindow(const PositionInWindow& position){ positionInWindow = position;};
     virtual VkRenderPass& renderPass() { return pRenderPass; }
 };
 

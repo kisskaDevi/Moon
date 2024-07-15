@@ -188,7 +188,6 @@ void DeferredGraphics::createGraphicsPasses(){
 
     moon::utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, params.MSAASamples};
     link = std::make_unique<Link>(device->getLogical(), params.shadersPath, linkInfo, link->renderPass(), aDatabase.get(postProcessingParams.out.postProcessing));
-    link->setPositionInWindow(offset, size);
 }
 
 void DeferredGraphics::createStages(){

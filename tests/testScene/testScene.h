@@ -12,7 +12,7 @@
 #include "vector.h"
 #include "controller.h"
 
-// #define SECOND_VIEW_WINDOW
+//#define SECOND_VIEW_WINDOW
 #define IMGUI_GRAPHICS
 
 namespace moon::interfaces { class Model;}

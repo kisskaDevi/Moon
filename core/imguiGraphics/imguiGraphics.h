@@ -29,8 +29,9 @@ private:
     std::vector<std::vector<VkSemaphore>> submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex) override;
 public:
     ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);
-    void reset() override;
     ~ImguiGraphics();
+
+    void reset() override;
 };
 
 }

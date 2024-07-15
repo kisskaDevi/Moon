@@ -99,7 +99,6 @@ void RayTracingGraphics::reset()
     linkParams.imageInfo = utils::ImageInfo{ resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, VK_SAMPLE_COUNT_1_BIT };
 
     link = std::make_unique<RayTracingLink>(device->getLogical(), linkParams, link->renderPass(), aDatabase);
-    link->setPositionInWindow(offset, size);
 
     rayTracer.create();
 }

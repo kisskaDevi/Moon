@@ -28,7 +28,9 @@ private:
 
         const interfaces::Objects* objects;
 
-        BoundingBox(const moon::utils::ImageInfo& imageInfo, const interfaces::Objects* objects) : Workbody(imageInfo), objects(objects) {};
+        BoundingBox(const moon::utils::ImageInfo& imageInfo, const interfaces::Objects* objects)
+            : Workbody(imageInfo), objects(objects)
+        {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
@@ -38,7 +40,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters& parameters, const interfaces::Objects* objects = nullptr);
+    BoundingBoxGraphics(BoundingBoxParameters& parameters, const interfaces::Objects* objects = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

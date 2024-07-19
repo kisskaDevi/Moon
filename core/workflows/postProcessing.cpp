@@ -4,19 +4,19 @@
 
 namespace moon::workflows {
 
-PostProcessingGraphics::PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters& parameters)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), postProcessing(this->imageInfo)
+PostProcessingGraphics::PostProcessingGraphics(PostProcessingParameters& parameters)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), postProcessing(parameters.imageInfo)
 {}
 
 void PostProcessingGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.postProcessing, parameters.enable, &frame);
 }
 
 void PostProcessingGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -45,15 +45,15 @@ void PostProcessingGraphics::createRenderPass()
 
 void PostProcessingGraphics::createFramebuffers()
 {
-    framebuffers.resize(imageInfo.Count);
+    framebuffers.resize(parameters.imageInfo.Count);
     for (size_t i = 0; i < framebuffers.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -120,7 +120,7 @@ void PostProcessingGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        postProcessing.create(shadersPath / "postProcessing/postProcessingVert.spv", shadersPath / "postProcessing/postProcessingFrag.spv", device, renderPass);
+        postProcessing.create(parameters.shadersPath / "postProcessing/postProcessingVert.spv", parameters.shadersPath / "postProcessing/postProcessingFrag.spv", device, renderPass);
         created = true;
     }
 }
@@ -130,7 +130,7 @@ void PostProcessingGraphics::updateDescriptorSets(
     const moon::utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
 
-    for (size_t i = 0; i < imageInfo.Count; i++){
+    for (size_t i = 0; i < parameters.imageInfo.Count; i++){
         VkDescriptorImageInfo layersImageInfo = aDatabase.descriptorImageInfo(parameters.in.baseColor, i);
         VkDescriptorImageInfo blurImageInfo = aDatabase.descriptorImageInfo(parameters.in.blur, i);
         VkDescriptorImageInfo ssaoImageInfo = aDatabase.descriptorImageInfo(parameters.in.ssao, i);
@@ -193,7 +193,7 @@ void PostProcessingGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

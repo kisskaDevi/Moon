@@ -59,10 +59,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    LayersCombiner(
-        const moon::utils::ImageInfo& imageInfo,
-        const std::filesystem::path& shadersPath,
-        LayersCombinerParameters& parameters);
+    LayersCombiner(LayersCombinerParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

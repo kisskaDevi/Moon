@@ -4,19 +4,19 @@
 
 namespace moon::workflows {
 
-SSLRGraphics::SSLRGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSLRParameters& parameters)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), sslr(this->imageInfo)
+SSLRGraphics::SSLRGraphics(SSLRParameters& parameters)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), sslr(parameters.imageInfo)
 {}
 
 void SSLRGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
     aDatabase.addAttachmentData(parameters.out.sslr, parameters.enable, &frame);
 }
 
 void SSLRGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -45,15 +45,15 @@ void SSLRGraphics::createRenderPass()
 
 void SSLRGraphics::createFramebuffers()
 {
-    framebuffers.resize(imageInfo.Count);
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -124,7 +124,7 @@ void SSLRGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        sslr.create(shadersPath / "sslr/SSLRVert.spv", shadersPath / "sslr/SSLRFrag.spv",device, renderPass);
+        sslr.create(parameters.shadersPath / "sslr/SSLRVert.spv", parameters.shadersPath / "sslr/SSLRFrag.spv",device, renderPass);
         created = true;
     }
 }
@@ -134,7 +134,7 @@ void SSLRGraphics::updateDescriptorSets(
     const moon::utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
 
-    for (uint32_t i = 0; i < this->imageInfo.Count; i++)
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
         VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
@@ -245,7 +245,7 @@ void SSLRGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

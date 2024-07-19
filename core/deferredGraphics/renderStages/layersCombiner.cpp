@@ -10,13 +10,10 @@ struct LayersCombinerPushConst {
     alignas(4) float blurDepth{ 1.0f };
 };
 
-LayersCombiner::LayersCombiner(
-    const moon::utils::ImageInfo& imageInfo,
-    const std::filesystem::path& shadersPath,
-    LayersCombinerParameters& parameters) :
-    Workflow(imageInfo, shadersPath),
+LayersCombiner::LayersCombiner(LayersCombinerParameters& parameters) :
+    Workflow(parameters.imageInfo, parameters.shadersPath),
     parameters(parameters),
-    combiner(imageInfo, parameters)
+    combiner(parameters.imageInfo, parameters)
 {}
 
 void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
@@ -27,7 +24,7 @@ void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
         }
     };
 
-    createAttachments(physicalDevice, device, imageInfo, LayersCombinerAttachments::size(), &frame);
+    createAttachments(physicalDevice, device, parameters.imageInfo, LayersCombinerAttachments::size(), &frame);
     aDatabase.addAttachmentData(parameters.out.color, parameters.enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, parameters.enable, &frame.bloom);
     aDatabase.addAttachmentData(parameters.out.blur, parameters.enable, &frame.blur);
@@ -35,9 +32,9 @@ void LayersCombiner::createAttachments(moon::utils::AttachmentsDatabase& aDataba
 
 void LayersCombiner::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-        moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-        moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -67,16 +64,16 @@ void LayersCombiner::createRenderPass(){
 }
 
 void LayersCombiner::createFramebuffers(){
-    framebuffers.resize(imageInfo.Count);
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         std::vector<VkImageView> attachments = { frame.color.imageView(i), frame.bloom.imageView(i), frame.blur.imageView(i) };
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -120,8 +117,8 @@ void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPat
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath, specializationInfo);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
@@ -159,8 +156,8 @@ void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPat
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    descriptorPool = utils::vkDefault::DescriptorPool(device, {&descriptorSetLayout}, imageInfo.Count);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
+    descriptorPool = utils::vkDefault::DescriptorPool(device, {&descriptorSetLayout}, parameters.imageInfo.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
 }
 
 void LayersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -169,7 +166,7 @@ void LayersCombiner::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        combiner.create(shadersPath / "layersCombiner/layersCombinerVert.spv", shadersPath / "layersCombiner/layersCombinerFrag.spv", device, renderPass);
+        combiner.create(parameters.shadersPath / "layersCombiner/layersCombinerVert.spv", parameters.shadersPath / "layersCombiner/layersCombinerFrag.spv", device, renderPass);
         created = true;
     }
 }
@@ -179,7 +176,7 @@ void LayersCombiner::updateDescriptorSets(
     const moon::utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
 
-    for (uint32_t i = 0; i < imageInfo.Count; i++)
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
         VkDescriptorImageInfo colorImageInfo = aDatabase.descriptorImageInfo(parameters.in.color, i);
@@ -343,7 +340,7 @@ void LayersCombiner::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

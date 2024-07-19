@@ -6,34 +6,32 @@
 namespace moon::deferredGraphics {
 
 Graphics::Graphics(
-    const moon::utils::ImageInfo& imageInfo,
-    const std::filesystem::path& shadersPath,
     GraphicsParameters& parameters,
     const interfaces::Objects* object,
     const interfaces::Lights* lightSources,
     const interfaces::DepthMaps* depthMaps)
-    :   Workflow(imageInfo, shadersPath), parameters(parameters),
-        base(imageInfo, parameters, object),
+    :   Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters),
+        base(parameters.imageInfo, parameters, object),
         outlining(base),
-        lighting(imageInfo, parameters, lightSources, depthMaps),
+        lighting(parameters.imageInfo, parameters, lightSources, depthMaps),
         ambientLighting(lighting)
 {}
 
 void Graphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
     VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    deferredAttachments.image = utils::Attachments(physicalDevice, device, imageInfo, usage);
-    deferredAttachments.blur = utils::Attachments(physicalDevice, device, imageInfo, usage);
-    deferredAttachments.bloom = utils::Attachments(physicalDevice, device, imageInfo, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    deferredAttachments.image = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage);
+    deferredAttachments.blur = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage);
+    deferredAttachments.bloom = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-    moon::utils::ImageInfo f32Image = { imageInfo.Count, VK_FORMAT_R32G32B32A32_SFLOAT, imageInfo.Extent, imageInfo.Samples };
+    moon::utils::ImageInfo f32Image = { parameters.imageInfo.Count, VK_FORMAT_R32G32B32A32_SFLOAT, parameters.imageInfo.Extent, parameters.imageInfo.Samples };
     deferredAttachments.GBuffer.position = utils::Attachments(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
     deferredAttachments.GBuffer.normal = utils::Attachments(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
 
-    moon::utils::ImageInfo u8Image = { imageInfo.Count, VK_FORMAT_R8G8B8A8_UNORM, imageInfo.Extent, imageInfo.Samples };
+    moon::utils::ImageInfo u8Image = { parameters.imageInfo.Count, VK_FORMAT_R8G8B8A8_UNORM, parameters.imageInfo.Extent, parameters.imageInfo.Samples };
     deferredAttachments.GBuffer.color = utils::Attachments(physicalDevice, device, u8Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, {{0.0f,0.0f,0.0f,1.0f}});
 
-    moon::utils::ImageInfo depthImage = { imageInfo.Count, moon::utils::image::depthStencilFormat(physicalDevice), imageInfo.Extent, imageInfo.Samples };
+    moon::utils::ImageInfo depthImage = { parameters.imageInfo.Count, moon::utils::image::depthStencilFormat(physicalDevice), parameters.imageInfo.Extent, parameters.imageInfo.Samples };
     deferredAttachments.GBuffer.depth = utils::Attachments(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { { 1.0f, 0 } });
 
     aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.image, parameters.enable, &deferredAttachments.image);
@@ -130,8 +128,8 @@ void Graphics::createRenderPass()
 
 void Graphics::createFramebuffers()
 {
-    framebuffers.resize(imageInfo.Count);
-    for (size_t imageIndex = 0; imageIndex < imageInfo.Count; imageIndex++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for (size_t imageIndex = 0; imageIndex < parameters.imageInfo.Count; imageIndex++){
         std::vector<VkImageView> attachments;
         for(uint32_t attIndex = 0; attIndex < static_cast<uint32_t>(deferredAttachments.size()); attIndex++){
             attachments.push_back(deferredAttachments[attIndex].imageView(imageIndex));
@@ -142,18 +140,18 @@ void Graphics::createFramebuffers()
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[imageIndex] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
 void Graphics::createPipelines() {
-    base.create(shadersPath, device, renderPass);
-    outlining.create(shadersPath, device, renderPass);
-    lighting.create(shadersPath, device, renderPass);
-    ambientLighting.create(shadersPath, device, renderPass);
+    base.create(parameters.shadersPath, device, renderPass);
+    outlining.create(parameters.shadersPath, device, renderPass);
+    lighting.create(parameters.shadersPath, device, renderPass);
+    ambientLighting.create(parameters.shadersPath, device, renderPass);
 }
 
 void Graphics::create(moon::utils::AttachmentsDatabase& aDatabase)
@@ -186,7 +184,7 @@ void Graphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

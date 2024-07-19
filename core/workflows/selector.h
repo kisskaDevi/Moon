@@ -40,7 +40,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters, utils::Cursor** cursor);
+    SelectorGraphics(SelectorParameters& parameters, utils::Cursor** cursor);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

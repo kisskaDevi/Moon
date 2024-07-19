@@ -4,19 +4,19 @@
 
 namespace moon::workflows {
 
-SelectorGraphics::SelectorGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SelectorParameters& parameters, utils::Cursor** cursor)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), selector(this->imageInfo, parameters), cursor(cursor)
+SelectorGraphics::SelectorGraphics(SelectorParameters& parameters, utils::Cursor** cursor)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), selector(parameters.imageInfo, parameters), cursor(cursor)
 {}
 
 void SelectorGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.selector, parameters.enable, &frame);
 }
 
 void SelectorGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -45,15 +45,15 @@ void SelectorGraphics::createRenderPass()
 
 void SelectorGraphics::createFramebuffers()
 {
-    framebuffers.resize(imageInfo.Count);
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -147,7 +147,7 @@ void SelectorGraphics::updateDescriptorSets(
     const moon::utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
 
-    for (uint32_t i = 0; i < imageInfo.Count; i++)
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo cursorInfo = (*cursor)->descriptorBufferInfo();
         VkDescriptorImageInfo positionImageInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
@@ -218,7 +218,7 @@ void SelectorGraphics::updateCommandBuffer(uint32_t frameNumber){
     renderPassInfo.renderPass = renderPass;
     renderPassInfo.framebuffer = framebuffers[frameNumber];
     renderPassInfo.renderArea.offset = {0,0};
-    renderPassInfo.renderArea.extent = imageInfo.Extent;
+    renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 

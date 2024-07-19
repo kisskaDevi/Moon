@@ -35,11 +35,7 @@ private:
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, const moon::utils::DepthMap& depthMap);
     void createRenderPass();
 public:
-    ShadowGraphics(const moon::utils::ImageInfo& imageInfo,
-                   const std::filesystem::path& shadersPath,
-                   ShadowGraphicsParameters& parameters,
-                   const interfaces::Objects* objects = nullptr,
-                   interfaces::DepthMaps* depthMaps = nullptr);
+    ShadowGraphics(ShadowGraphicsParameters& parameters, const interfaces::Objects* objects = nullptr, interfaces::DepthMaps* depthMaps = nullptr);
 
     void create(moon::utils::AttachmentsDatabase&) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase&) override{};

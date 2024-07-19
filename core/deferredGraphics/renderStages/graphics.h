@@ -133,9 +133,7 @@ private:
     void createPipelines();
 
 public:
-    Graphics(const moon::utils::ImageInfo& imageInfo,
-             const std::filesystem::path& shadersPath,
-             GraphicsParameters& parameters,
+    Graphics(GraphicsParameters& parameters,
              const interfaces::Objects* object = nullptr,
              const interfaces::Lights* lightSources = nullptr,
              const interfaces::DepthMaps* depthMaps = nullptr);

@@ -47,9 +47,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    Scattering(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, ScatteringParameters& parameters,
-               const interfaces::Lights* lightSources = nullptr,
-               const interfaces::DepthMaps* depthMaps = nullptr);
+    Scattering(ScatteringParameters& parameters, const interfaces::Lights* lightSources = nullptr, const interfaces::DepthMaps* depthMaps = nullptr);
 
     void create(utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) override;

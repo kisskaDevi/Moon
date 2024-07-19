@@ -6,18 +6,18 @@
 
 namespace moon::workflows {
 
-BoundingBoxGraphics::BoundingBoxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BoundingBoxParameters& parameters, const interfaces::Objects* objects)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), box(imageInfo, objects)
+BoundingBoxGraphics::BoundingBoxGraphics(BoundingBoxParameters& parameters, const interfaces::Objects* objects)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), box(parameters.imageInfo, objects)
 {}
 
 void BoundingBoxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.boundingBox, parameters.enable, &frame);
 }
 
 void BoundingBoxGraphics::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -45,16 +45,16 @@ void BoundingBoxGraphics::createRenderPass(){
 }
 
 void BoundingBoxGraphics::createFramebuffers(){
-    framebuffers.resize(imageInfo.Count);
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         std::vector<VkImageView> pAttachments = {frame.imageView(i)};
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
             framebufferInfo.pAttachments = pAttachments.data();
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -144,7 +144,7 @@ void BoundingBoxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        box.create(shadersPath / "boundingBox/boundingBoxVert.spv", shadersPath / "boundingBox/boundingBoxFrag.spv", device, renderPass);
+        box.create(parameters.shadersPath / "boundingBox/boundingBoxVert.spv", parameters.shadersPath / "boundingBox/boundingBoxFrag.spv", device, renderPass);
         created = true;
     }
 }
@@ -155,7 +155,7 @@ void BoundingBoxGraphics::updateDescriptorSets(
 {
     if (!parameters.enable || !created) return;
 
-    for (uint32_t i = 0; i < imageInfo.Count; i++)
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
 
@@ -182,7 +182,7 @@ void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
     renderPassInfo.renderPass = renderPass;
     renderPassInfo.framebuffer = framebuffers[frameNumber];
     renderPassInfo.renderArea.offset = {0,0};
-    renderPassInfo.renderArea.extent = imageInfo.Extent;
+    renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 

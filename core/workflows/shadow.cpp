@@ -7,13 +7,8 @@
 
 namespace moon::workflows {
 
-ShadowGraphics::ShadowGraphics(
-    const moon::utils::ImageInfo& imageInfo,
-    const std::filesystem::path& shadersPath,
-    ShadowGraphicsParameters& parameters,
-    const interfaces::Objects* objects,
-    interfaces::DepthMaps* depthMaps)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), shadow(imageInfo, objects, depthMaps)
+ShadowGraphics::ShadowGraphics(ShadowGraphicsParameters& parameters, const interfaces::Objects* objects, interfaces::DepthMaps* depthMaps)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), shadow(parameters.imageInfo, objects, depthMaps)
 {}
 
 void ShadowGraphics::createRenderPass()
@@ -103,7 +98,7 @@ void ShadowGraphics::create(moon::utils::AttachmentsDatabase&)
 {
     if(parameters.enable && !created){
         createRenderPass();
-        shadow.create(shadersPath / "shadow/shadowMapVert.spv", "", device, renderPass);
+        shadow.create(parameters.shadersPath / "shadow/shadowMapVert.spv", "", device, renderPass);
         created = true;
     }
     for (auto& [light, depthMap] : *shadow.depthMaps) {
@@ -116,15 +111,15 @@ void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber) {
 
     for(const auto& [light, depthMap] : *shadow.depthMaps){
         if (light->isShadowEnable() && framebuffersMap.find(&depthMap) == framebuffersMap.end()){
-            framebuffersMap[&depthMap].resize(imageInfo.Count);
-            for (size_t i = 0; i < imageInfo.Count; i++) {
+            framebuffersMap[&depthMap].resize(parameters.imageInfo.Count);
+            for (size_t i = 0; i < parameters.imageInfo.Count; i++) {
                 VkFramebufferCreateInfo framebufferInfo{};
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
                 framebufferInfo.pAttachments = &depthMap.attachments().imageView(i);
-                framebufferInfo.width = imageInfo.Extent.width;
-                framebufferInfo.height = imageInfo.Extent.height;
+                framebufferInfo.width = parameters.imageInfo.Extent.width;
+                framebufferInfo.height = parameters.imageInfo.Extent.height;
                 framebufferInfo.layers = 1;
                 framebuffersMap[&depthMap][i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
             }
@@ -143,7 +138,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffersMap[&depthMap][frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

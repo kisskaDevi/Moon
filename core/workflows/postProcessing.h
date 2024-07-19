@@ -34,7 +34,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    PostProcessingGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, PostProcessingParameters& parameters);
+    PostProcessingGraphics(PostProcessingParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

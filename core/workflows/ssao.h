@@ -35,7 +35,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters& parameters);
+    SSAOGraphics(SSAOParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

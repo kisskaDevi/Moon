@@ -51,7 +51,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, const interfaces::Objects* object = nullptr);
+    SkyboxGraphics(SkyboxParameters& parameters, const interfaces::Objects* object = nullptr);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

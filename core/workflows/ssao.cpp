@@ -4,19 +4,19 @@
 
 namespace moon::workflows {
 
-SSAOGraphics::SSAOGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSAOParameters& parameters)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), ssao(this->imageInfo)
+SSAOGraphics::SSAOGraphics(SSAOParameters& parameters)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), ssao(parameters.imageInfo)
 {}
 
 void SSAOGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.ssao, parameters.enable, &frame);
 }
 
 void SSAOGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -45,15 +45,15 @@ void SSAOGraphics::createRenderPass()
 
 void SSAOGraphics::createFramebuffers()
 {
-    framebuffers.resize(imageInfo.Count);
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -120,7 +120,7 @@ void SSAOGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        ssao.create(shadersPath / "ssao/SSAOVert.spv", shadersPath / "ssao/SSAOFrag.spv", device, renderPass);
+        ssao.create(parameters.shadersPath / "ssao/SSAOVert.spv", parameters.shadersPath / "ssao/SSAOFrag.spv", device, renderPass);
         created = true;
     }
 }
@@ -130,7 +130,7 @@ void SSAOGraphics::updateDescriptorSets(
     const moon::utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
 
-    for (uint32_t i = 0; i < this->imageInfo.Count; i++)
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
         VkDescriptorImageInfo positionInfo = aDatabase.descriptorImageInfo(parameters.in.position, i);
@@ -193,7 +193,7 @@ void SSAOGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

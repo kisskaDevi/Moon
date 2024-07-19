@@ -56,6 +56,11 @@ void DeferredGraphics::createGraphicsPasses(){
     CHECK_M(device->instance == VK_NULL_HANDLE, std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
     CHECK_M(params.cameraObject == nullptr,     std::string("[ DeferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
+    VkExtent2D extent{ params.extent[0], params.extent[1] };
+    moon::utils::ImageInfo info{ resourceCount, swapChainKHR->info().Format, extent, params.MSAASamples };
+    moon::utils::ImageInfo scatterInfo{ resourceCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, params.MSAASamples };
+    moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, params.MSAASamples };
+
     graphicsParams.in.camera = "camera";
     graphicsParams.out.image = "image";
     graphicsParams.out.blur = "blur";
@@ -69,14 +74,20 @@ void DeferredGraphics::createGraphicsPasses(){
     graphicsParams.transparencyPass = false;
     graphicsParams.transparencyNumber = 0;
     graphicsParams.minAmbientFactor = params.minAmbientFactor();
+    graphicsParams.imageInfo = info;
+    graphicsParams.shadersPath = params.shadersPath;
 
     skyboxParams.in.camera = graphicsParams.in.camera;
     skyboxParams.out.baseColor = "skybox.color";
     skyboxParams.out.bloom = "skybox.bloom";
+    skyboxParams.imageInfo = info;
+    skyboxParams.shadersPath = params.workflowsShadersPath;
 
     scatteringParams.in.camera = graphicsParams.in.camera;
     scatteringParams.in.depth = graphicsParams.out.depth;
     scatteringParams.out.scattering = "scattering";
+    scatteringParams.imageInfo = scatterInfo;
+    scatteringParams.shadersPath = params.workflowsShadersPath;
 
     SSLRParams.in.camera = graphicsParams.in.camera;
     SSLRParams.in.position = graphicsParams.out.position;
@@ -86,6 +97,8 @@ void DeferredGraphics::createGraphicsPasses(){
     SSLRParams.in.firstTransparency = graphicsParams.out.transparency + "0";
     SSLRParams.in.defaultDepthTexture = "white";
     SSLRParams.out.sslr = "sslr";
+    SSLRParams.imageInfo = info;
+    SSLRParams.shadersPath = params.workflowsShadersPath;
 
     layersCombinerParams.in.camera = graphicsParams.in.camera;
     layersCombinerParams.in.color = graphicsParams.out.image;
@@ -106,6 +119,8 @@ void DeferredGraphics::createGraphicsPasses(){
     layersCombinerParams.transparentLayersCount = workflowsParameters["TransparentLayer"]->enable ? params.transparentLayersCount() : 1;
     layersCombinerParams.enableScatteringRefraction = params.scatteringRefraction();
     layersCombinerParams.blurDepth = params.blurDepth();
+    layersCombinerParams.imageInfo = info;
+    layersCombinerParams.shadersPath = params.shadersPath;
 
     bloomParams.in.bloom = layersCombinerParams.out.bloom;
     bloomParams.out.bloom = "bloomFinal";
@@ -113,13 +128,19 @@ void DeferredGraphics::createGraphicsPasses(){
     bloomParams.blitFactor = params.blitFactor();
     bloomParams.xSamplerStep = params.blitFactor();
     bloomParams.ySamplerStep = params.blitFactor();
+    bloomParams.imageInfo = info;
+    bloomParams.shadersPath = params.workflowsShadersPath;
 
     blurParams.in.blur = layersCombinerParams.out.blur;
     blurParams.out.blur = "blured";
     blurParams.blurDepth = params.blurDepth();
+    blurParams.imageInfo = info;
+    blurParams.shadersPath = params.workflowsShadersPath;
 
     bbParams.in.camera = graphicsParams.in.camera;
     bbParams.out.boundingBox = "boundingBox";
+    bbParams.imageInfo = info;
+    bbParams.shadersPath = params.workflowsShadersPath;
 
     SSAOParams.in.camera = graphicsParams.in.camera;
     SSAOParams.in.position = graphicsParams.out.position;
@@ -128,6 +149,8 @@ void DeferredGraphics::createGraphicsPasses(){
     SSAOParams.in.depth = graphicsParams.out.depth;
     SSAOParams.in.defaultDepthTexture = "white";
     SSAOParams.out.ssao = "ssao";
+    SSAOParams.imageInfo = info;
+    SSAOParams.shadersPath = params.workflowsShadersPath;
 
     selectorParams.in.storageBuffer = "storage";
     selectorParams.in.position = graphicsParams.out.position;
@@ -136,6 +159,8 @@ void DeferredGraphics::createGraphicsPasses(){
     selectorParams.in.defaultDepthTexture = "white";
     selectorParams.out.selector = "selector";
     selectorParams.transparentLayersCount = workflowsParameters["TransparentLayer"]->enable ? params.transparentLayersCount() : 1;
+    selectorParams.imageInfo = info;
+    selectorParams.shadersPath = params.workflowsShadersPath;
 
     postProcessingParams.in.baseColor = layersCombinerParams.out.color;
     postProcessingParams.in.bloom = bloomParams.out.bloom;
@@ -143,17 +168,17 @@ void DeferredGraphics::createGraphicsPasses(){
     postProcessingParams.in.boundingBox = bbParams.out.boundingBox;
     postProcessingParams.in.ssao = SSAOParams.out.ssao;
     postProcessingParams.out.postProcessing = "final";
+    postProcessingParams.imageInfo = info;
+    postProcessingParams.shadersPath = params.workflowsShadersPath,
 
-    VkExtent2D extent{ params.extent[0], params.extent[1]};
-    moon::utils::ImageInfo info{ resourceCount, swapChainKHR->info().Format, extent, params.MSAASamples };
-    moon::utils::ImageInfo scatterInfo{ resourceCount, VK_FORMAT_R32G32B32A32_SFLOAT, extent, params.MSAASamples };
-    moon::utils::ImageInfo shadowsInfo{ resourceCount, VK_FORMAT_D32_SFLOAT, VkExtent2D{1024,1024}, params.MSAASamples };
+    shadowGraphicsParameters.imageInfo = shadowsInfo;
+    shadowGraphicsParameters.shadersPath = params.workflowsShadersPath,
 
     workflows.clear();
 
-    workflows["DeferredGraphics"] = std::make_unique<Graphics>(info, params.shadersPath, graphicsParams, &objects, &lights, &depthMaps);
-    workflows["LayersCombiner"] = std::make_unique<LayersCombiner>(info, params.shadersPath, layersCombinerParams);
-    workflows["PostProcessing"] = std::make_unique<moon::workflows::PostProcessingGraphics>(info, params.workflowsShadersPath, postProcessingParams);
+    workflows["DeferredGraphics"] = std::make_unique<Graphics>(graphicsParams, &objects, &lights, &depthMaps);
+    workflows["LayersCombiner"] = std::make_unique<LayersCombiner>(layersCombinerParams);
+    workflows["PostProcessing"] = std::make_unique<moon::workflows::PostProcessingGraphics>(postProcessingParams);
 
     for(uint32_t i = 0; i < params.transparentLayersCount(); i++){
         const auto key = "TransparentLayer" + std::to_string(i);
@@ -164,18 +189,20 @@ void DeferredGraphics::createGraphicsPasses(){
         transparentLayersParams[i].transparencyPass = true;
         transparentLayersParams[i].transparencyNumber = i;
         transparentLayersParams[i].minAmbientFactor = params.minAmbientFactor();
-        workflows[key] = std::make_unique<Graphics>(info, params.shadersPath, transparentLayersParams[i], &objects, &lights, &depthMaps);
+        transparentLayersParams[i].imageInfo = graphicsParams.imageInfo;
+        transparentLayersParams[i].shadersPath = graphicsParams.shadersPath;
+        workflows[key] = std::make_unique<Graphics>(transparentLayersParams[i], &objects, &lights, &depthMaps);
     };
 
-    workflows["Blur"] = std::make_unique<moon::workflows::GaussianBlur>(info, params.workflowsShadersPath, blurParams);
-    workflows["Bloom"] = std::make_unique<moon::workflows::BloomGraphics>(info, params.workflowsShadersPath, bloomParams);
-    workflows["Skybox"] = std::make_unique<moon::workflows::SkyboxGraphics>(info, params.workflowsShadersPath, skyboxParams, &objects);
-    workflows["SSLR"] = std::make_unique<moon::workflows::SSLRGraphics>(info, params.workflowsShadersPath, SSLRParams);
-    workflows["SSAO"] = std::make_unique<moon::workflows::SSAOGraphics>(info, params.workflowsShadersPath, SSAOParams);
-    workflows["Shadow"] = std::make_unique<moon::workflows::ShadowGraphics>(shadowsInfo, params.workflowsShadersPath, shadowGraphicsParameters, &objects, &depthMaps);
-    workflows["Scattering"] = std::make_unique<moon::workflows::Scattering>(scatterInfo, params.workflowsShadersPath, scatteringParams, &lights, &depthMaps);
-    workflows["BoundingBox"] = std::make_unique<moon::workflows::BoundingBoxGraphics>(info, params.workflowsShadersPath, bbParams, &objects);
-    workflows["Selector"] = std::make_unique<moon::workflows::SelectorGraphics>(info, params.workflowsShadersPath, selectorParams, &params.cursor);
+    workflows["Blur"] = std::make_unique<moon::workflows::GaussianBlur>(blurParams);
+    workflows["Bloom"] = std::make_unique<moon::workflows::BloomGraphics>(bloomParams);
+    workflows["Skybox"] = std::make_unique<moon::workflows::SkyboxGraphics>(skyboxParams, &objects);
+    workflows["SSLR"] = std::make_unique<moon::workflows::SSLRGraphics>(SSLRParams);
+    workflows["SSAO"] = std::make_unique<moon::workflows::SSAOGraphics>(SSAOParams);
+    workflows["Shadow"] = std::make_unique<moon::workflows::ShadowGraphics>(shadowGraphicsParameters, &objects, &depthMaps);
+    workflows["Scattering"] = std::make_unique<moon::workflows::Scattering>(scatteringParams, &lights, &depthMaps);
+    workflows["BoundingBox"] = std::make_unique<moon::workflows::BoundingBoxGraphics>(bbParams, &objects);
+    workflows["Selector"] = std::make_unique<moon::workflows::SelectorGraphics>(selectorParams, &params.cursor);
 
     for(auto& [_,workflow]: workflows){
         workflow->setDeviceProp(device->instance, device->getLogical());

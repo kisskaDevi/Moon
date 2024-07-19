@@ -58,7 +58,7 @@ private:
 public:
     BloomGraphics(BloomGraphics&&) = default;
     BloomGraphics& operator=(BloomGraphics&&) = default;
-    BloomGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BloomParameters& parameters);
+    BloomGraphics(BloomParameters& parameters);
     BloomGraphics();
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;

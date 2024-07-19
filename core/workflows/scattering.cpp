@@ -11,16 +11,12 @@ struct ScatteringPushConst {
     alignas(4) uint32_t  height { 0 };
 };
 
-Scattering::Scattering(const moon::utils::ImageInfo& imageInfo,
-                       const std::filesystem::path& shadersPath,
-                       ScatteringParameters& parameters,
-                       const interfaces::Lights* lightSources,
-                       const interfaces::DepthMaps* depthMaps)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), lighting(imageInfo, lightSources, depthMaps)
+Scattering::Scattering(ScatteringParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), lighting(parameters.imageInfo, lightSources, depthMaps)
 {}
 
 void Scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame);
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.scattering, parameters.enable, &frame);
 }
 
@@ -56,15 +52,15 @@ void Scattering::createRenderPass()
 
 void Scattering::createFramebuffers()
 {
-    framebuffers.resize(imageInfo.Count);
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &frame.imageView(i);
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -155,7 +151,7 @@ void Scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        lighting.create(shadersPath / "scattering/scatteringVert.spv", shadersPath / "scattering/scatteringFrag.spv", device, renderPass);
+        lighting.create(parameters.shadersPath / "scattering/scatteringVert.spv", parameters.shadersPath / "scattering/scatteringFrag.spv", device, renderPass);
         created = true;
     }
 }
@@ -166,7 +162,7 @@ void Scattering::updateDescriptorSets(
 {
     if (!parameters.enable || !created) return;
 
-    for (uint32_t i = 0; i < imageInfo.Count; i++)
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)
     {
         VkDescriptorImageInfo depthInfos = aDatabase.descriptorImageInfo(parameters.in.depth, i);
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
@@ -202,7 +198,7 @@ void Scattering::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
@@ -210,7 +206,7 @@ void Scattering::updateCommandBuffer(uint32_t frameNumber){
 
     for(auto& lightSource: *lighting.lightSources){
         if(lightSource->isScatteringEnable()){
-            ScatteringPushConst pushConst{ imageInfo.Extent.width, imageInfo.Extent.height};
+            ScatteringPushConst pushConst{ parameters.imageInfo.Extent.width, parameters.imageInfo.Extent.height};
             vkCmdPushConstants(commandBuffers[frameNumber], lighting.pipelineLayoutMap[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
             uint8_t mask = lightSource->getPipelineBitMask();
             const auto& depthMap = lighting.depthMaps->at(lightSource);

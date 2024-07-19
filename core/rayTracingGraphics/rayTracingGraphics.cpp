@@ -79,8 +79,10 @@ void RayTracingGraphics::reset()
     bloomParams.enable = bloomEnable;
     bloomParams.blitAttachmentsCount = 8;
     bloomParams.inputImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    bloomParams.imageInfo = imageInfo;
+    bloomParams.shadersPath = workflowsShadersPath;
 
-    bloomGraph = std::make_unique<moon::workflows::BloomGraphics>(imageInfo, workflowsShadersPath, bloomParams);
+    bloomGraph = std::make_unique<moon::workflows::BloomGraphics>(bloomParams);
     bloomGraph->setDeviceProp(device->instance, device->getLogical());
     bloomGraph->create(aDatabase);
     bloomGraph->createCommandBuffers(commandPool);

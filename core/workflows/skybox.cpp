@@ -4,12 +4,12 @@
 
 namespace moon::workflows {
 
-SkyboxGraphics::SkyboxGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SkyboxParameters& parameters, const interfaces::Objects* objects)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), skybox(imageInfo, objects)
+SkyboxGraphics::SkyboxGraphics(SkyboxParameters& parameters, const interfaces::Objects* objects)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), skybox(parameters.imageInfo, objects)
 {}
 
 void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
     aDatabase.addAttachmentData(parameters.out.baseColor, parameters.enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, parameters.enable, &frame.bloom);
 }
@@ -17,8 +17,8 @@ void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDataba
 void SkyboxGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format),
-        moon::utils::Attachments::imageDescription(imageInfo.Format)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format),
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -48,8 +48,8 @@ void SkyboxGraphics::createRenderPass()
 
 void SkyboxGraphics::createFramebuffers()
 {
-    framebuffers.resize(imageInfo.Count);
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    framebuffers.resize(parameters.imageInfo.Count);
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         std::vector<VkImageView> pAttachments = {
             frame.color.imageView(i),
             frame.bloom.imageView(i)
@@ -59,8 +59,8 @@ void SkyboxGraphics::createFramebuffers()
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(pAttachments.size());
             framebufferInfo.pAttachments = pAttachments.data();
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -127,7 +127,7 @@ void SkyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        skybox.create(shadersPath / "skybox/skyboxVert.spv", shadersPath / "skybox/skyboxFrag.spv", device, renderPass);
+        skybox.create(parameters.shadersPath / "skybox/skyboxVert.spv", parameters.shadersPath / "skybox/skyboxFrag.spv", device, renderPass);
         created = true;
     }
 }
@@ -135,7 +135,7 @@ void SkyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 void SkyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase&) {
     if (!parameters.enable || !created) return;
 
-    for (uint32_t i = 0; i < imageInfo.Count; i++){
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++){
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -161,7 +161,7 @@ void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

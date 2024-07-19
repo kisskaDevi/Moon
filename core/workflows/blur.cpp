@@ -4,21 +4,21 @@
 
 namespace moon::workflows {
 
-GaussianBlur::GaussianBlur(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, GaussianBlurParameters& parameters)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), xblur(this->imageInfo, parameters, 0), yblur(this->imageInfo, parameters, 2)
+GaussianBlur::GaussianBlur(GaussianBlurParameters& parameters)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), xblur(parameters.imageInfo, parameters, 0), yblur(parameters.imageInfo, parameters, 2)
 {}
 
 void GaussianBlur::createAttachments(moon::utils::AttachmentsDatabase& aDatabase)
 {
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
     aDatabase.addAttachmentData(parameters.out.blur, parameters.enable, &frame);
 }
 
 void GaussianBlur::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format),
-        moon::utils::Attachments::imageDescription(imageInfo.Format)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format),
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -70,7 +70,7 @@ void GaussianBlur::createRenderPass(){
 }
 
 void GaussianBlur::createFramebuffers(){
-    framebuffers.resize(imageInfo.Count);
+    framebuffers.resize(parameters.imageInfo.Count);
     for (uint32_t i = 0; i < static_cast<uint32_t>(framebuffers.size()); i++) {
         std::vector<VkImageView> attachments = { frame.imageView(i), bufferAttachment.imageView(i) };
         VkFramebufferCreateInfo framebufferInfo{};
@@ -78,8 +78,8 @@ void GaussianBlur::createFramebuffers(){
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
         framebuffers[i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
@@ -197,7 +197,7 @@ void GaussianBlur::updateCommandBuffer(uint32_t frameNumber){
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[frameNumber];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

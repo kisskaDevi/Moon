@@ -74,6 +74,8 @@ public:
 
 struct Parameters {
     bool enable{false};
+    moon::utils::ImageInfo imageInfo;
+    std::filesystem::path shadersPath;
 };
 
 using ParametersMap = std::unordered_map<std::string, moon::workflows::Parameters*>;

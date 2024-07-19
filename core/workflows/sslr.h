@@ -36,7 +36,7 @@ private:
     void createRenderPass();
     void createFramebuffers();
 public:
-    SSLRGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, SSLRParameters& parameters);
+    SSLRGraphics(SSLRParameters& parameters);
 
     void create(moon::utils::AttachmentsDatabase& aDatabase) override;
     void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;

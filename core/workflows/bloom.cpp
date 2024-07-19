@@ -10,13 +10,13 @@ struct BloomPushConst{
     alignas (4) float blitFactor;
 };
 
-BloomGraphics::BloomGraphics(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path& shadersPath, BloomParameters& parameters)
-    : Workflow(imageInfo, shadersPath), parameters(parameters), filter(this->imageInfo), bloom(this->imageInfo, parameters)
+BloomGraphics::BloomGraphics(BloomParameters& parameters)
+    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), filter(parameters.imageInfo), bloom(parameters.imageInfo, parameters)
 {}
 
 void BloomGraphics::createRenderPass(){
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(imageInfo.Format,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -44,30 +44,30 @@ void BloomGraphics::createRenderPass(){
 }
 
 void BloomGraphics::createFramebuffers(){
-    framebuffers.resize(imageInfo.Count * (frames.size() + 1));
+    framebuffers.resize(parameters.imageInfo.Count * (frames.size() + 1));
     for(size_t i = 0; i < frames.size(); i++){
-        for (size_t j = 0; j < imageInfo.Count; j++){
+        for (size_t j = 0; j < parameters.imageInfo.Count; j++){
             VkFramebufferCreateInfo framebufferInfo{};
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = renderPass;
                 framebufferInfo.attachmentCount = 1;
                 framebufferInfo.pAttachments = &frames[i].imageView(j);
-                framebufferInfo.width = imageInfo.Extent.width;
-                framebufferInfo.height = imageInfo.Extent.height;
+                framebufferInfo.width = parameters.imageInfo.Extent.width;
+                framebufferInfo.height = parameters.imageInfo.Extent.height;
                 framebufferInfo.layers = 1;
-            framebuffers[imageInfo.Count * i + j] = utils::vkDefault::Framebuffer(device, framebufferInfo);
+            framebuffers[parameters.imageInfo.Count * i + j] = utils::vkDefault::Framebuffer(device, framebufferInfo);
         }
     }
-    for(size_t i = 0; i < imageInfo.Count; i++){
+    for(size_t i = 0; i < parameters.imageInfo.Count; i++){
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = &bufferAttachment.imageView(i);
-            framebufferInfo.width = imageInfo.Extent.width;
-            framebufferInfo.height = imageInfo.Extent.height;
+            framebufferInfo.width = parameters.imageInfo.Extent.width;
+            framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
-        framebuffers[imageInfo.Count * frames.size() + i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
+        framebuffers[parameters.imageInfo.Count * frames.size() + i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
     }
 }
 
@@ -192,23 +192,23 @@ void BloomGraphics::Bloom::create(const std::filesystem::path& vertShaderPath, c
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, parameters.imageInfo.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
 }
 
 void BloomGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
 {
     if(parameters.enable && !created){
         frames.resize(parameters.blitAttachmentsCount);
-        moon::utils::createAttachments(physicalDevice, device, imageInfo, parameters.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
-        moon::utils::createAttachments(physicalDevice, device, imageInfo, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
+        moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, parameters.blitAttachmentsCount, frames.data(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
+        moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &bufferAttachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, utils::vkDefault::sampler());
 
         aDatabase.addAttachmentData(parameters.out.bloom, parameters.enable, &bufferAttachment);
 
         createRenderPass();
         createFramebuffers();
-        filter.create(shadersPath / "customFilter/customFilterVert.spv", shadersPath / "customFilter/customFilterFrag.spv", device, renderPass);
-        bloom.create(shadersPath / "bloom/bloomVert.spv", shadersPath / "bloom/bloomFrag.spv", device, renderPass);
+        filter.create(parameters.shadersPath / "customFilter/customFilterVert.spv", parameters.shadersPath / "customFilter/customFilterFrag.spv", device, renderPass);
+        bloom.create(parameters.shadersPath / "bloom/bloomVert.spv", parameters.shadersPath / "bloom/bloomFrag.spv", device, renderPass);
 
         created = true;
     }
@@ -222,7 +222,7 @@ void BloomGraphics::updateDescriptorSets(
 
     srcAttachment = aDatabase.get(parameters.in.bloom);
 
-    for (uint32_t i = 0; i < imageInfo.Count; i++) {
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++) {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = bufferAttachment.imageView(i);
@@ -240,7 +240,7 @@ void BloomGraphics::updateDescriptorSets(
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
-    for (size_t image = 0; image < imageInfo.Count; image++)
+    for (size_t image = 0; image < parameters.imageInfo.Count; image++)
     {
         std::vector<VkDescriptorImageInfo> blitImageInfo(parameters.blitAttachmentsCount);
         for(uint32_t i = 0, index = 0; i < blitImageInfo.size(); i++, index++){
@@ -286,8 +286,8 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
     }
 
     VkImage blitBufferImage = bufferAttachment.image(frameNumber);
-    uint32_t width = imageInfo.Extent.width;
-    uint32_t height = imageInfo.Extent.height;
+    uint32_t width = parameters.imageInfo.Extent.width;
+    uint32_t height = parameters.imageInfo.Extent.height;
 
     for(uint32_t k = 0; k < frames.size(); k++){
         moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, (k == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
@@ -295,12 +295,12 @@ void BloomGraphics::updateCommandBuffer(uint32_t frameNumber){
         moon::utils::texture::blitDown(commandBuffers[frameNumber], blitImages[k], 0, blitBufferImage, 0, width, height, 0, 1, parameters.blitFactor);
         moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 
-        render(commandBuffers[frameNumber], frames[k], frameNumber, k * imageInfo.Count + frameNumber, &filter);
+        render(commandBuffers[frameNumber], frames[k], frameNumber, k * parameters.imageInfo.Count + frameNumber, &filter);
     }
     for(uint32_t k = 0; k < frames.size(); k++){
         moon::utils::texture::transitionLayout(commandBuffers[frameNumber],frames[k].image(frameNumber), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
     }
-    render(commandBuffers[frameNumber], bufferAttachment, frameNumber, static_cast<uint32_t>(frames.size()) * imageInfo.Count + frameNumber, &bloom);
+    render(commandBuffers[frameNumber], bufferAttachment, frameNumber, static_cast<uint32_t>(frames.size()) * parameters.imageInfo.Count + frameNumber, &bloom);
     moon::utils::texture::transitionLayout(commandBuffers[frameNumber], blitBufferImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_REMAINING_MIP_LEVELS, 0, 1);
 }
 
@@ -313,7 +313,7 @@ void BloomGraphics::render(VkCommandBuffer commandBuffer, const moon::utils::Att
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[framebufferIndex];
         renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = imageInfo.Extent;
+        renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 

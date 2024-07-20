@@ -11,19 +11,19 @@ struct ScatteringPushConst {
     alignas(4) uint32_t  height { 0 };
 };
 
-Scattering::Scattering(ScatteringParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps)
-    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), lighting(parameters.imageInfo, lightSources, depthMaps)
+Scattering::Scattering(ScatteringParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps) :
+    parameters(parameters), lighting(parameters.imageInfo, lightSources, depthMaps)
 {}
 
-void Scattering::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
+void Scattering::createAttachments(utils::AttachmentsDatabase& aDatabase){
+    utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
     aDatabase.addAttachmentData(parameters.out.scattering, parameters.enable, &frame);
 }
 
 void Scattering::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(VK_FORMAT_R32G32B32A32_SFLOAT)
+        utils::Attachments::imageDescription(VK_FORMAT_R32G32B32A32_SFLOAT)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -73,15 +73,15 @@ void Scattering::Lighting::create(const std::filesystem::path& vertShaderPath, c
     this->device = device;
 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    bufferDescriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createBufferDescriptorSetLayout(device);
-    descriptorSetLayoutMap[moon::interfaces::LightType::spot] = moon::interfaces::Light::createTextureDescriptorSetLayout(device);
-    shadowDescriptorSetLayout = moon::utils::DepthMap::createDescriptorSetLayout(device);
+    bufferDescriptorSetLayoutMap[interfaces::LightType::spot] = interfaces::Light::createBufferDescriptorSetLayout(device);
+    descriptorSetLayoutMap[interfaces::LightType::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
+    shadowDescriptorSetLayout = utils::DepthMap::createDescriptorSetLayout(device);
 
-    createPipeline(moon::interfaces::LightType::spot, pRenderPass);
+    createPipeline(interfaces::LightType::spot, pRenderPass);
 
     descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
@@ -92,14 +92,14 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
-    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = utils::vkDefault::depthStencilDisable();
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -110,7 +110,7 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass
         colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MIN;
-    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(1,&colorBlendAttachment);
+    VkPipelineColorBlendStateCreateInfo colorBlending = utils::vkDefault::colorBlendState(1,&colorBlendAttachment);
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -145,8 +145,8 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass
     pipelinesMap[mask] = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
-void Scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
-{
+void Scattering::create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) {
+    commandBuffers = commandPool.allocateCommandBuffers(parameters.imageInfo.Count);
     if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
@@ -156,10 +156,7 @@ void Scattering::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void Scattering::updateDescriptorSets(
-    const moon::utils::BuffersDatabase& bDatabase,
-    const moon::utils::AttachmentsDatabase& aDatabase)
-{
+void Scattering::updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)

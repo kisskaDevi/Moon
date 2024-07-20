@@ -43,33 +43,28 @@ public:
 class Workflow
 {
 protected:
-    VkPhysicalDevice        physicalDevice{VK_NULL_HANDLE};
-    VkDevice                device{VK_NULL_HANDLE};
-    std::filesystem::path   shadersPath;
-    moon::utils::ImageInfo  imageInfo;
+    VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};
+    VkDevice device{VK_NULL_HANDLE};
     bool created{false};
 
-    utils::vkDefault::RenderPass        renderPass;
-    utils::vkDefault::Framebuffers      framebuffers;
-    utils::vkDefault::CommandBuffers    commandBuffers;
+    utils::vkDefault::RenderPass renderPass;
+    utils::vkDefault::Framebuffers framebuffers;
+    utils::vkDefault::CommandBuffers commandBuffers;
+
+    virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
 
 public:
     virtual ~Workflow(){};
-    Workflow(const moon::utils::ImageInfo& imageInfo, const std::filesystem::path & shadersPath) : imageInfo(imageInfo), shadersPath(shadersPath) {};
-    Workflow(Workflow&&) = default;
-    Workflow& operator=(Workflow&&) = default;
 
     Workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
 
-    virtual void create(moon::utils::AttachmentsDatabase& aDatabase) = 0;
-    virtual void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) = 0;
-    virtual void updateCommandBuffer(uint32_t frameNumber) = 0;
+    virtual void create(const utils::vkDefault::CommandPool& commandPool, moon::utils::AttachmentsDatabase& aDatabase) = 0;
+    virtual void updateDescriptors(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) = 0;
 
-    void createCommandBuffers(const utils::vkDefault::CommandPool& commandPool);
-    void beginCommandBuffer(uint32_t frameNumber) const;
-    void endCommandBuffer(uint32_t frameNumber) const;
-    utils::vkDefault::CommandBuffer& commandBuffer(uint32_t frameNumber);
+    void update(uint32_t frameNumber);
     void raiseUpdateFlags();
+
+    utils::vkDefault::CommandBuffer& commandBuffer(uint32_t frameNumber);
 };
 
 struct Parameters {

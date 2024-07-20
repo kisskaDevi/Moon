@@ -6,12 +6,12 @@
 namespace moon::deferredGraphics {
 
 struct LayersCombinerAttachments{
-    moon::utils::Attachments color;
-    moon::utils::Attachments bloom;
-    moon::utils::Attachments blur;
+    utils::Attachments color;
+    utils::Attachments bloom;
+    utils::Attachments blur;
 
     static inline uint32_t size() { return 3;}
-    inline moon::utils::Attachments* operator&(){ return &color;}
+    inline utils::Attachments* operator&(){ return &color;}
 };
 
 struct LayersCombinerParameters : workflows::Parameters {
@@ -40,30 +40,32 @@ struct LayersCombinerParameters : workflows::Parameters {
     bool enableScatteringRefraction{ true };
 };
 
-class LayersCombiner : public moon::workflows::Workflow
+class LayersCombiner : public workflows::Workflow
 {
 private:
     LayersCombinerParameters& parameters;
     LayersCombinerAttachments frame;
 
-    struct Combiner : public moon::workflows::Workbody {
+    struct Combiner : public workflows::Workbody {
         const LayersCombinerParameters& parameters;
-        Combiner(const moon::utils::ImageInfo& imageInfo, const LayersCombinerParameters& parameters)
+        Combiner(const utils::ImageInfo& imageInfo, const LayersCombinerParameters& parameters)
             : Workbody(imageInfo), parameters(parameters)
         {};
 
         void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
     }combiner;
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
+
+    void updateCommandBuffer(uint32_t frameNumber) override;
+
 public:
     LayersCombiner(LayersCombinerParameters& parameters);
 
-    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateCommandBuffer(uint32_t frameNumber) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) override;
 };
 
 }

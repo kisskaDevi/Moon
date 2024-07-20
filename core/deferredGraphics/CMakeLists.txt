@@ -20,7 +20,6 @@ set(SOURCES
     renderStages/source/extension.cpp
     renderStages/graphics.cpp
     renderStages/deferredLink.cpp
-    renderStages/deferredAttachments.cpp
 )
 
 set(HEADERS

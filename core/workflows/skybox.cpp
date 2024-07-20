@@ -4,12 +4,12 @@
 
 namespace moon::workflows {
 
-SkyboxGraphics::SkyboxGraphics(SkyboxParameters& parameters, const interfaces::Objects* objects)
-    : Workflow(parameters.imageInfo, parameters.shadersPath), parameters(parameters), skybox(parameters.imageInfo, objects)
+SkyboxGraphics::SkyboxGraphics(SkyboxParameters& parameters, const interfaces::Objects* objects) :
+    parameters(parameters), skybox(parameters.imageInfo, objects)
 {}
 
-void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDatabase){
-    moon::utils::createAttachments(physicalDevice, device, parameters.imageInfo, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
+void SkyboxGraphics::createAttachments(utils::AttachmentsDatabase& aDatabase){
+    utils::createAttachments(physicalDevice, device, parameters.imageInfo, 2, &frame, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, utils::vkDefault::sampler());
     aDatabase.addAttachmentData(parameters.out.baseColor, parameters.enable, &frame.color);
     aDatabase.addAttachmentData(parameters.out.bloom, parameters.enable, &frame.bloom);
 }
@@ -17,8 +17,8 @@ void SkyboxGraphics::createAttachments(moon::utils::AttachmentsDatabase& aDataba
 void SkyboxGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format),
-        moon::utils::Attachments::imageDescription(parameters.imageInfo.Format)
+        utils::Attachments::imageDescription(parameters.imageInfo.Format),
+        utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
     std::vector<std::vector<VkAttachmentReference>> attachmentRef;
@@ -72,28 +72,28 @@ void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath,
     this->device = device;
 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    objectDescriptorSetLayout = moon::interfaces::Object::createSkyboxDescriptorSetLayout(device);
+    objectDescriptorSetLayout = interfaces::Object::createSkyboxDescriptorSetLayout(device);
 
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
-    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = utils::vkDefault::depthStencilDisable();
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE)};
-    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+        utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
+        utils::vkDefault::colorBlendAttachmentState(VK_TRUE)};
+    VkPipelineColorBlendStateCreateInfo colorBlending = utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {descriptorSetLayout, objectDescriptorSetLayout};
     pipelineLayout = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts);
@@ -121,8 +121,8 @@ void SkyboxGraphics::Skybox::create(const std::filesystem::path& vertShaderPath,
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
 }
 
-void SkyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
-{
+void SkyboxGraphics::create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) {
+    commandBuffers = commandPool.allocateCommandBuffers(parameters.imageInfo.Count);
     if(parameters.enable && !created){
         createAttachments(aDatabase);
         createRenderPass();
@@ -132,7 +132,7 @@ void SkyboxGraphics::create(moon::utils::AttachmentsDatabase& aDatabase)
     }
 }
 
-void SkyboxGraphics::updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase&) {
+void SkyboxGraphics::updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase&) {
     if (!parameters.enable || !created) return;
 
     for (uint32_t i = 0; i < parameters.imageInfo.Count; i++){
@@ -170,7 +170,7 @@ void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
     vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
     for(const auto& object: *skybox.objects)
     {
-        if((moon::interfaces::ObjectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
+        if((interfaces::ObjectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
             utils::vkDefault::DescriptorSets descriptorSets = {skybox.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
             vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
             vkCmdDraw(commandBuffers[frameNumber], 36, 1, 0, 0);

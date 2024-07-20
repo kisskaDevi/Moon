@@ -55,15 +55,16 @@ private:
 
     void createRenderPass();
     void createFramebuffers();
+    void updateCommandBuffer(uint32_t frameNumber) override;
+
 public:
     BloomGraphics(BloomGraphics&&) = default;
     BloomGraphics& operator=(BloomGraphics&&) = default;
     BloomGraphics(BloomParameters& parameters);
     BloomGraphics();
 
-    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateCommandBuffer(uint32_t frameNumber) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptors(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
 };
 
 }

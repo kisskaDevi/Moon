@@ -6,10 +6,10 @@
 namespace moon::deferredGraphics {
 
 struct GBufferAttachments{
-    moon::utils::Attachments         position;
-    moon::utils::Attachments         normal;
-    moon::utils::Attachments         color;
-    moon::utils::Attachments         depth;
+    utils::Attachments position;
+    utils::Attachments normal;
+    utils::Attachments color;
+    utils::Attachments depth;
 
     GBufferAttachments() = default;
     GBufferAttachments(const GBufferAttachments& other) = delete;
@@ -17,7 +17,10 @@ struct GBufferAttachments{
     GBufferAttachments(GBufferAttachments&& other) = default;
     GBufferAttachments& operator=(GBufferAttachments&& other) = default;
 
-    const moon::utils::Attachments& operator[](uint32_t index) const;
+    const utils::Attachments& operator[](uint32_t index) const {
+        return *(&position + index);
+    }
+
 
     constexpr static uint32_t size() {return 4;}
     constexpr static uint32_t positionIndex() {return 0;}
@@ -27,10 +30,10 @@ struct GBufferAttachments{
 };
 
 struct DeferredAttachments{
-    moon::utils::Attachments         image;
-    moon::utils::Attachments         blur;
-    moon::utils::Attachments         bloom;
-    GBufferAttachments               GBuffer;
+    utils::Attachments image;
+    utils::Attachments blur;
+    utils::Attachments bloom;
+    GBufferAttachments GBuffer;
 
     DeferredAttachments() = default;
     DeferredAttachments(const DeferredAttachments& other) = delete;
@@ -38,7 +41,9 @@ struct DeferredAttachments{
     DeferredAttachments(DeferredAttachments&& other) = default;
     DeferredAttachments& operator=(DeferredAttachments&& other) = default;
 
-    const moon::utils::Attachments& operator[](uint32_t index) const;
+    const utils::Attachments& operator[](uint32_t index) const {
+        return *(&image + index);
+    }
 
     constexpr static uint32_t size() {return 3 + GBufferAttachments::size();}
     constexpr static uint32_t imageIndex() {return 0;}
@@ -46,7 +51,13 @@ struct DeferredAttachments{
     constexpr static uint32_t bloomIndex() {return 2;}
     constexpr static uint32_t GBufferOffset() {return 3;}
 
-    std::vector<VkClearValue> clearValues() const;
+    std::vector<VkClearValue> DeferredAttachments::clearValues() const {
+        std::vector<VkClearValue> value;
+        for (uint32_t i = 0; i < size(); i++) {
+            value.push_back((*this)[i].clearValue());
+        }
+        return value;
+    }
 };
 
 }

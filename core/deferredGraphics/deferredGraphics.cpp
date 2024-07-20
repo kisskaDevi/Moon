@@ -206,11 +206,10 @@ void DeferredGraphics::createGraphicsPasses(){
 
     for(auto& [_,workflow]: workflows){
         workflow->setDeviceProp(device->instance, device->getLogical());
-        workflow->create(aDatabase);
+        workflow->create(commandPool, aDatabase);
     }
     for (auto& [_, workflow] : workflows) {
-        workflow->updateDescriptorSets(bDatabase, aDatabase);
-        workflow->createCommandBuffers(commandPool);
+        workflow->updateDescriptors(bDatabase, aDatabase);
     }
 
     moon::utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, params.MSAASamples};
@@ -225,21 +224,21 @@ void DeferredGraphics::createStages(){
             transparentLayersCommandBuffers.push_back(workflows["TransparentLayer" + std::to_string(i)]->commandBuffer(imageIndex));
         }
 
-        nodes[imageIndex] = moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["Shadow"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)),
-            moon::utils::Stage(  {workflows["Skybox"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["DeferredGraphics"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
-            moon::utils::Stage(  transparentLayersCommandBuffers, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["Scattering"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
-            moon::utils::Stage(  {workflows["SSLR"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["LayersCombiner"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
-        }, new moon::utils::Node(device->getLogical(), {
-            moon::utils::Stage(  {workflows["Selector"]->commandBuffer(imageIndex),
+        nodes[imageIndex] = moon::utils::PipelineNode(device->getLogical(), {
+            moon::utils::PipelineStage(  {copyCommandBuffers[imageIndex]}, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0,0))
+        }, new moon::utils::PipelineNode(device->getLogical(), {
+            moon::utils::PipelineStage(  {workflows["Shadow"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)),
+            moon::utils::PipelineStage(  {workflows["Skybox"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0))
+        }, new moon::utils::PipelineNode(device->getLogical(), {
+            moon::utils::PipelineStage(  {workflows["DeferredGraphics"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
+            moon::utils::PipelineStage(  transparentLayersCommandBuffers, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+        }, new moon::utils::PipelineNode(device->getLogical(), {
+            moon::utils::PipelineStage(  {workflows["Scattering"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)),
+            moon::utils::PipelineStage(  {workflows["SSLR"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+        }, new moon::utils::PipelineNode(device->getLogical(), {
+            moon::utils::PipelineStage(  {workflows["LayersCombiner"]->commandBuffer(imageIndex)}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0))
+        }, new moon::utils::PipelineNode(device->getLogical(), {
+            moon::utils::PipelineStage(  {workflows["Selector"]->commandBuffer(imageIndex),
                                   workflows["SSAO"]->commandBuffer(imageIndex),
                                   workflows["Bloom"]->commandBuffer(imageIndex),
                                   workflows["Blur"]->commandBuffer(imageIndex),
@@ -312,11 +311,7 @@ void DeferredGraphics::update(uint32_t imageIndex) {
     CHECK(copyCommandBuffers[imageIndex].end());
 
     for (auto& [name, workflow] : workflows) {
-        if (workflow->commandBuffer(imageIndex).dropFlag()) {
-            workflow->beginCommandBuffer(imageIndex);
-            workflow->updateCommandBuffer(imageIndex);
-            workflow->endCommandBuffer(imageIndex);
-        }
+        workflow->update(imageIndex);
     }
 }
 

@@ -7,7 +7,7 @@
 
 namespace moon::utils {
 
-struct Stage{
+struct PipelineStage{
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> waitSemaphores;
     std::vector<VkSemaphore> signalSemaphores;
@@ -15,28 +15,30 @@ struct Stage{
     VkQueue queue{VK_NULL_HANDLE};
     VkFence fence{VK_NULL_HANDLE};
 
-    Stage(std::vector<VkCommandBuffer> commandBuffers, VkPipelineStageFlags waitStages, VkQueue queue);
+    PipelineStage(std::vector<VkCommandBuffer> commandBuffers, VkPipelineStageFlags waitStages, VkQueue queue);
 
     VkResult submit();
 };
 
-struct Node{
-    std::vector<Stage> stages;
+using PipelineStages = std::vector<PipelineStage>;
+
+struct PipelineNode{
+    utils::PipelineStages stages;
     utils::vkDefault::Semaphores signalSemaphores;
-    Node* next{nullptr};
+    PipelineNode* next{nullptr};
     VkDevice device{VK_NULL_HANDLE};
 
-    Node() = default;
-    Node(const Node&) = delete;
-    Node& operator=(const Node&) = delete;
+    PipelineNode() = default;
+    PipelineNode(const PipelineNode&) = delete;
+    PipelineNode& operator=(const PipelineNode&) = delete;
 
-    void swap(Node&);
-    Node(Node&&);
-    Node& operator=(Node&&);
-    Node(VkDevice device, const std::vector<Stage>& stages, Node* next = nullptr);
-    ~Node();
+    void swap(PipelineNode&);
+    PipelineNode(PipelineNode&&);
+    PipelineNode& operator=(PipelineNode&&);
+    PipelineNode(VkDevice device, const PipelineStages& stages, PipelineNode* next = nullptr);
+    ~PipelineNode();
 
-    Node* back();
+    PipelineNode* back();
 
     void setExternalSemaphore(const std::vector<std::vector<VkSemaphore>>& externalSemaphore);
     void setExternalFence(const std::vector<VkFence>& externalFence);
@@ -46,7 +48,7 @@ struct Node{
     void submit();
 };
 
-using Nodes = std::vector<moon::utils::Node>;
+using PipelineNodes = std::vector<moon::utils::PipelineNode>;
 
 }
 #endif // NODE_H

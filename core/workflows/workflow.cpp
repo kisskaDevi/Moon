@@ -9,17 +9,13 @@ Workflow& Workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice devi
     return *this;
 }
 
-void Workflow::createCommandBuffers(const utils::vkDefault::CommandPool& commandPool) {
-    commandBuffers = commandPool.allocateCommandBuffers(imageInfo.Count);
-}
-
-void Workflow::beginCommandBuffer(uint32_t frameNumber) const {
-    CHECK(commandBuffers[frameNumber].reset());
-    CHECK(commandBuffers[frameNumber].begin());
-}
-
-void Workflow::endCommandBuffer(uint32_t frameNumber) const {
-    CHECK(commandBuffers[frameNumber].end());
+void Workflow::update(uint32_t frameNumber) {
+    if (commandBuffers[frameNumber].dropFlag()) {
+        CHECK(commandBuffers[frameNumber].reset());
+        CHECK(commandBuffers[frameNumber].begin());
+        updateCommandBuffer(frameNumber);
+        CHECK(commandBuffers[frameNumber].end());
+    }
 }
 
 utils::vkDefault::CommandBuffer& Workflow::commandBuffer(uint32_t frameNumber) {

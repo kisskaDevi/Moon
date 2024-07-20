@@ -32,14 +32,15 @@ private:
         interfaces::DepthMaps* depthMaps{ nullptr };
     }shadow;
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, moon::interfaces::Light* lightSource, const moon::utils::DepthMap& depthMap);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, interfaces::Light* lightSource, const utils::DepthMap& depthMap);
     void createRenderPass();
+    void updateCommandBuffer(uint32_t frameNumber) override;
+
 public:
     ShadowGraphics(ShadowGraphicsParameters& parameters, const interfaces::Objects* objects = nullptr, interfaces::DepthMaps* depthMaps = nullptr);
 
-    void create(moon::utils::AttachmentsDatabase&) override;
-    void updateDescriptorSets(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase&) override{};
-    void updateCommandBuffer(uint32_t frameNumber) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase&) override;
+    void updateDescriptors(const utils::BuffersDatabase&, const utils::AttachmentsDatabase&) override{};
 };
 
 }

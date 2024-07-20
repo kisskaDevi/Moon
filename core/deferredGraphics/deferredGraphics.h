@@ -86,7 +86,7 @@ private:
 
     utils::vkDefault::CommandPool commandPool;
     utils::vkDefault::CommandBuffers copyCommandBuffers;
-    utils::Nodes nodes;
+    utils::PipelineNodes nodes;
 
     utils::BuffersDatabase bDatabase;
     utils::AttachmentsDatabase aDatabase;

@@ -33,12 +33,13 @@ private:
     void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
+    void updateCommandBuffer(uint32_t frameNumber) override;
+
 public:
     PostProcessingGraphics(PostProcessingParameters& parameters);
 
-    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateCommandBuffer(uint32_t frameNumber) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, moon::utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptors(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
 };
 
 }

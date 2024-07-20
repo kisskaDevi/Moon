@@ -35,7 +35,7 @@ struct GraphicsParameters : workflows::Parameters {
     float       minAmbientFactor{ 0.05f };
 };
 
-class Graphics : public moon::workflows::Workflow
+class Graphics : public workflows::Workflow
 {
 private:
     GraphicsParameters& parameters;
@@ -46,16 +46,16 @@ private:
         const utils::ImageInfo&     imageInfo;
         const GraphicsParameters&   parameters;
 
-        moon::utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
-        moon::utils::vkDefault::PipelineMap         pipelineMap;
+        utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
+        utils::vkDefault::PipelineMap         pipelineMap;
 
-        moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
 
-        moon::utils::vkDefault::DescriptorPool descriptorPool;
-        moon::utils::vkDefault::DescriptorSets descriptorSets;
+        utils::vkDefault::DescriptorPool descriptorPool;
+        utils::vkDefault::DescriptorSets descriptorSets;
 
         const interfaces::Objects* objects{ nullptr };
 
@@ -64,7 +64,7 @@ private:
         void createPipeline(VkDevice device, VkRenderPass pRenderPass);
         void createDescriptorSetLayout(VkDevice device);
         void createDescriptors(VkDevice device);
-        void updateDescriptorSets(VkDevice device, const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
+        void updateDescriptorSets(VkDevice device, const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase);
 
         void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const;
@@ -74,8 +74,8 @@ private:
         std::filesystem::path   shadersPath;
         const Base&             parent;
 
-        moon::utils::vkDefault::PipelineLayout  pipelineLayout;
-        moon::utils::vkDefault::Pipeline        pipeline;
+        utils::vkDefault::PipelineLayout  pipelineLayout;
+        utils::vkDefault::Pipeline        pipeline;
 
         OutliningExtension(const Base& parent);
 
@@ -108,7 +108,7 @@ private:
         void createPipeline(VkDevice device, uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
         void createDescriptorSetLayout(VkDevice device);
         void createDescriptors(VkDevice device);
-        void updateDescriptorSets(VkDevice device, const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase);
+        void updateDescriptorSets(VkDevice device, const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase);
 
         void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) const;
@@ -118,8 +118,8 @@ private:
         std::filesystem::path   shadersPath;
         const Lighting&         parent;
 
-        moon::utils::vkDefault::PipelineLayout  pipelineLayout;
-        moon::utils::vkDefault::Pipeline        pipeline;
+        utils::vkDefault::PipelineLayout  pipelineLayout;
+        utils::vkDefault::Pipeline        pipeline;
 
         AmbientLighting(const Lighting& parent);
 
@@ -127,10 +127,12 @@ private:
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const;
     }ambientLighting;
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void createPipelines();
+
+    void updateCommandBuffer(uint32_t frameNumber) override;
 
 public:
     Graphics(GraphicsParameters& parameters,
@@ -138,9 +140,8 @@ public:
              const interfaces::Lights* lightSources = nullptr,
              const interfaces::DepthMaps* depthMaps = nullptr);
 
-    void create(moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptorSets(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateCommandBuffer(uint32_t frameNumber) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) override;
 };
 
 }

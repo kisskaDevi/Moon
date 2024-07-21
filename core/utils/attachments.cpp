@@ -8,11 +8,11 @@
 namespace moon::utils {
 
 Attachment::Attachment(Attachment&& other) noexcept {
-    this->swap(other);
+    swap(other);
 };
 
 Attachment& Attachment::operator=(Attachment&& other) noexcept {
-    this->swap(other);
+    swap(other);
     return *this;
 };
 
@@ -32,11 +32,11 @@ Attachment::Attachment(VkPhysicalDevice physicalDevice, VkDevice device, const I
 }
 
 Attachments::Attachments(Attachments&& other) noexcept {
-    this->swap(other);
+    swap(other);
 }
 
 Attachments& Attachments::operator=(Attachments&& other) noexcept {
-    this->swap(other);
+    swap(other);
     return *this;
 }
 

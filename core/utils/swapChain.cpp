@@ -5,10 +5,10 @@
 
 namespace moon::utils {
 
-VkResult SwapChain::reset(const PhysicalDevice* device, GLFWwindow* window, VkSurfaceKHR surface, int32_t maxImageCount){
-    this->device = device;
-    this->window = window;
-    this->surface = surface;
+VkResult SwapChain::reset(const PhysicalDevice* pdevice, GLFWwindow* pwindow, VkSurfaceKHR surfaceKHR, int32_t maxImageCount){
+    device = pdevice;
+    window = pwindow;
+    surface = surfaceKHR;
 
     swapChain::SupportDetails supportDetails = swapChain::queryingSupport(device->instance, surface);
     VkSurfaceFormatKHR surfaceFormat = swapChain::queryingSurfaceFormat(supportDetails.formats);

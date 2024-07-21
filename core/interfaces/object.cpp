@@ -12,18 +12,18 @@ bool Object::getEnableShadow() const {
     return enableShadow;
 }
 
-void Object::setEnable(const bool& enable) {
-    this->enable = enable;
+void Object::setEnable(const bool& inenable) {
+    enable = inenable;
 }
 
-void Object::setEnableShadow(const bool& enable) {
-    this->enableShadow = enable;
+void Object::setEnableShadow(const bool& inenable) {
+    enableShadow = inenable;
 }
 
-void Object::setModel(Model* model, uint32_t firstInstance, uint32_t instanceCount){
-    this->pModel = model;
-    this->firstInstance = firstInstance;
-    this->instanceCount = instanceCount;
+void Object::setModel(Model* model, uint32_t infirstInstance, uint32_t ininstanceCount){
+    pModel = model;
+    firstInstance = infirstInstance;
+    instanceCount = ininstanceCount;
 }
 
 Model* Object::getModel() {
@@ -54,12 +54,12 @@ moon::math::Vector<float,4> Object::getOutliningColor() const {
     return outlining.Color;
 }
 
-void Object::setFirstPrimitive(uint32_t firstPrimitive) {
-    this->firstPrimitive = firstPrimitive;
+void Object::setFirstPrimitive(uint32_t infirstPrimitive) {
+    firstPrimitive = infirstPrimitive;
 }
 
-void Object::setPrimitiveCount(uint32_t primitiveCount) {
-    this->primitiveCount = primitiveCount;
+void Object::setPrimitiveCount(uint32_t inprimitiveCount) {
+    primitiveCount = inprimitiveCount;
 }
 
 bool Object::comparePrimitive(uint32_t primitive) {

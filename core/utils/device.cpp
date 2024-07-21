@@ -106,7 +106,7 @@ bool PhysicalDevice::presentSupport(VkSurfaceKHR surface)
 
 VkResult PhysicalDevice::createDevice(VkPhysicalDeviceFeatures deviceFeatures, std::map<uint32_t,uint32_t> queueSizeMap)
 {
-    Device logical(deviceFeatures);
+    Device logicalDevice(deviceFeatures);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     for(auto queueSize: queueSizeMap){
@@ -128,17 +128,17 @@ VkResult PhysicalDevice::createDevice(VkPhysicalDeviceFeatures deviceFeatures, s
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
         createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
         createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
-    VkResult result = vkCreateDevice(instance, &createInfo, nullptr, &logical.instance);
+    VkResult result = vkCreateDevice(instance, &createInfo, nullptr, &logicalDevice.instance);
     CHECK(result);
 
     for(const auto& queueCreateInfo: queueCreateInfos){
-        logical.queueMap[queueCreateInfo.queueFamilyIndex] = std::vector<VkQueue>(queueCreateInfo.queueCount);
+        logicalDevice.queueMap[queueCreateInfo.queueFamilyIndex] = std::vector<VkQueue>(queueCreateInfo.queueCount);
         for(uint32_t index = 0; index < queueCreateInfo.queueCount; index++){
-            vkGetDeviceQueue(logical.instance, queueCreateInfo.queueFamilyIndex, index, &logical.queueMap[queueCreateInfo.queueFamilyIndex][index]);
+            vkGetDeviceQueue(logicalDevice.instance, queueCreateInfo.queueFamilyIndex, index, &logicalDevice.queueMap[queueCreateInfo.queueFamilyIndex][index]);
         }
     }
 
-    this->logical.emplace_back(std::move(logical));
+    logical.emplace_back(std::move(logicalDevice));
     return result;
 }
 

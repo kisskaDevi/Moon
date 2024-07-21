@@ -3,9 +3,9 @@
 
 namespace moon::workflows {
 
-Workflow& Workflow::setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device){
-    this->physicalDevice = physicalDevice;
-    this->device = device;
+Workflow& Workflow::setDeviceProp(VkPhysicalDevice physical, VkDevice logical){
+    physicalDevice = physical;
+    device = logical;
     return *this;
 }
 

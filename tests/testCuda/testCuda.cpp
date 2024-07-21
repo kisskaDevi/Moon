@@ -239,15 +239,15 @@ void testCuda::updateFrame(uint32_t, float frameTime)
     ImGui::SameLine(0.0, 10.0f);
     if(ImGui::Button("Make screenshot")){
         const auto& imageExtent = app->getImageExtent();
-        auto screenshot = app->makeScreenshot();
+        auto image = app->makeScreenshot();
 
         std::vector<uint8_t> jpg(3 * imageExtent.height * imageExtent.width, 0);
         for (size_t pixel_index = 0, jpg_index = 0; pixel_index < imageExtent.height * imageExtent.width; pixel_index++) {
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x00ff0000) >> 16);
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x0000ff00) >> 8);
-            jpg[jpg_index++] = static_cast<uint8_t>((screenshot[pixel_index] & 0x000000ff) >> 0);
+            jpg[jpg_index++] = static_cast<uint8_t>((image[pixel_index] & 0x00ff0000) >> 16);
+            jpg[jpg_index++] = static_cast<uint8_t>((image[pixel_index] & 0x0000ff00) >> 8);
+            jpg[jpg_index++] = static_cast<uint8_t>((image[pixel_index] & 0x000000ff) >> 0);
         }
-        auto filename = std::string("./") + std::string(this->screenshot.data()) + std::string(".jpg");
+        auto filename = std::string("./") + std::string(screenshot.data()) + std::string(".jpg");
         stbi_write_jpg(filename.c_str(), imageExtent.width, imageExtent.height, 3, jpg.data(), 100);
     }
 

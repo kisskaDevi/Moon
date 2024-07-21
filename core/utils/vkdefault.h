@@ -73,7 +73,7 @@ public:
 	Pipeline(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos);
 };
 
-using PipelineMap = std::unordered_map<MaskType, moon::utils::vkDefault::Pipeline>;
+using PipelineMap = std::unordered_map<MaskType, utils::vkDefault::Pipeline>;
 
 class PipelineLayout {
 	VKDEFAULT_INIT_DESCRIPTOR(PipelineLayout, VkPipelineLayout)
@@ -85,7 +85,7 @@ public:
 		const std::vector<VkPushConstantRange>& pushConstantRange = {});
 };
 
-using PipelineLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::PipelineLayout>;
+using PipelineLayoutMap = std::unordered_map<MaskType, utils::vkDefault::PipelineLayout>;
 
 class DescriptorSetLayout {
 	VKDEFAULT_INIT_DESCRIPTOR(DescriptorSetLayout, VkDescriptorSetLayout)
@@ -96,7 +96,7 @@ public:
 	DescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 };
 
-using DescriptorSetLayoutMap = std::unordered_map<MaskType, moon::utils::vkDefault::DescriptorSetLayout>;
+using DescriptorSetLayoutMap = std::unordered_map<MaskType, utils::vkDefault::DescriptorSetLayout>;
 
 class ShaderModule {
 protected:

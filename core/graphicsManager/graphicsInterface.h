@@ -35,15 +35,15 @@ private:
         uint32_t imageIndex) = 0;
 
     virtual void setProperties(
-        const utils::PhysicalDeviceMap& devices,
+        const utils::PhysicalDeviceMap& devicesMap,
         const uint32_t deviceIndex,
         const utils::SwapChain* swapChain,
-        uint32_t resourceCount)
+        uint32_t resources)
     {
-        this->swapChainKHR = swapChain;
-        this->resourceCount = resourceCount;
-        this->devices = &devices;
-        device = &devices.at(deviceIndex);
+        swapChainKHR = swapChain;
+        resourceCount = resources;
+        devices = &devicesMap;
+        device = &devicesMap.at(deviceIndex);
     }
 
     friend class GraphicsLinker;

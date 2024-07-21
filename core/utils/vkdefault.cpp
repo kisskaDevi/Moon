@@ -237,9 +237,6 @@ VkDescriptorSetLayoutBinding vkDefault::inAttachmentFragmentLayoutBinding(const 
         std::memcpy((void*)this, (void*)buff, sizeof(Name));                            \
     }
 
-#define VKDEFAULT_RESET()				                                                \
-    this->device = device;                                                              \
-
 template<typename Descriptor>
 Descriptor release(Descriptor& descriptor) {
     Descriptor temp = descriptor;
@@ -247,8 +244,7 @@ Descriptor release(Descriptor& descriptor) {
     return temp;
 }
 
-vkDefault::Pipeline::Pipeline(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos) {
-    VKDEFAULT_RESET()
+vkDefault::Pipeline::Pipeline(VkDevice device, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCreateInfos) : device(device) {
     CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphicsPipelineCreateInfos.size()), graphicsPipelineCreateInfos.data(), nullptr, &descriptor));
 }
 
@@ -262,10 +258,8 @@ VKDEFAULT_MAKE_DESCRIPTOR(Pipeline, VkPipeline)
 vkDefault::PipelineLayout::PipelineLayout(
     VkDevice device,
     const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts,
-    const std::vector<VkPushConstantRange>& pushConstantRange)
+    const std::vector<VkPushConstantRange>& pushConstantRange) : device(device)
 {
-    VKDEFAULT_RESET()
-
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
@@ -282,10 +276,7 @@ vkDefault::PipelineLayout::~PipelineLayout() {
 VKDEFAULT_MAKE_SWAP(PipelineLayout)
 VKDEFAULT_MAKE_DESCRIPTOR(PipelineLayout, VkPipelineLayout)
 
-vkDefault::DescriptorSetLayout::DescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings) {
-    VKDEFAULT_RESET()
-
-    this->bindings = bindings;
+vkDefault::DescriptorSetLayout::DescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings) : bindings(bindings), device(device){
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -332,7 +323,7 @@ vkDefault::FragmentShaderModule::FragmentShaderModule(VkDevice device, const std
     pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     pipelineShaderStageCreateInfo.module = shaderModule;
     pipelineShaderStageCreateInfo.pName = "main";
-    pipelineShaderStageCreateInfo.pSpecializationInfo = &this->specializationInfo;
+    pipelineShaderStageCreateInfo.pSpecializationInfo = &specializationInfo;
 }
 
 vkDefault::FragmentShaderModule::operator const VkPipelineShaderStageCreateInfo& () const {
@@ -350,16 +341,14 @@ vkDefault::VertrxShaderModule::VertrxShaderModule(VkDevice device, const std::fi
     pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     pipelineShaderStageCreateInfo.module = shaderModule;
     pipelineShaderStageCreateInfo.pName = "main";
-    pipelineShaderStageCreateInfo.pSpecializationInfo = &this->specializationInfo;
+    pipelineShaderStageCreateInfo.pSpecializationInfo = &specializationInfo;
 }
 
 vkDefault::VertrxShaderModule::operator const VkPipelineShaderStageCreateInfo& () const {
     return pipelineShaderStageCreateInfo;
 }
 
-vkDefault::RenderPass::RenderPass(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies) {
-    VKDEFAULT_RESET()
-
+vkDefault::RenderPass::RenderPass(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies) : device(device) {
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -379,9 +368,7 @@ vkDefault::RenderPass::~RenderPass() {
 VKDEFAULT_MAKE_SWAP(RenderPass)
 VKDEFAULT_MAKE_DESCRIPTOR(RenderPass, VkRenderPass)
 
-vkDefault::Framebuffer::Framebuffer(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo) {
-    VKDEFAULT_RESET()
-
+vkDefault::Framebuffer::Framebuffer(VkDevice device, const VkFramebufferCreateInfo& framebufferInfo) : device(device) {
     CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &descriptor));
 }
 
@@ -414,8 +401,7 @@ vkDefault::DebugUtilsMessenger::~DebugUtilsMessenger() {
     }
 }
 
-vkDefault::DebugUtilsMessenger::DebugUtilsMessenger(const VkInstance& instance) {
-    this->instance = instance;
+vkDefault::DebugUtilsMessenger::DebugUtilsMessenger(const VkInstance& instance) : instance(instance) {
     moon::utils::validationLayer::setupDebugMessenger(instance, &debugUtilsMessenger);
 }
 
@@ -430,8 +416,7 @@ vkDefault::Surface::~Surface() {
     }
 }
 
-vkDefault::Surface::Surface(const VkInstance& instance, GLFWwindow* window) {
-    this->instance = instance;
+vkDefault::Surface::Surface(const VkInstance& instance, GLFWwindow* window) : instance(instance) {
     CHECK(glfwCreateWindowSurface(instance, window, nullptr, &surface));
 }
 
@@ -439,9 +424,7 @@ vkDefault::Surface::operator const VkSurfaceKHR& () const {
     return surface;
 }
 
-vkDefault::Semaphore::Semaphore(const VkDevice& device) {
-    VKDEFAULT_RESET()
-
+vkDefault::Semaphore::Semaphore(const VkDevice& device) : device(device) {
     VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     CHECK(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &descriptor));
@@ -454,9 +437,7 @@ vkDefault::Semaphore::~Semaphore() {
 VKDEFAULT_MAKE_SWAP(Semaphore)
 VKDEFAULT_MAKE_DESCRIPTOR(Semaphore, VkSemaphore)
 
-vkDefault::Fence::Fence(const VkDevice& device) {
-    VKDEFAULT_RESET()
-
+vkDefault::Fence::Fence(const VkDevice& device) : device(device) {
     VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -470,9 +451,7 @@ vkDefault::Fence::~Fence() {
 VKDEFAULT_MAKE_SWAP(Fence)
 VKDEFAULT_MAKE_DESCRIPTOR(Fence, VkFence)
 
-vkDefault::Sampler::Sampler(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo) {
-    VKDEFAULT_RESET()
-
+vkDefault::Sampler::Sampler(const VkDevice& device, const VkSamplerCreateInfo& samplerInfo) : device(device) {
     CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &descriptor));
 }
 
@@ -483,13 +462,11 @@ vkDefault::Sampler::~Sampler() {
 VKDEFAULT_MAKE_SWAP(Sampler)
 VKDEFAULT_MAKE_DESCRIPTOR(Sampler, VkSampler)
 
-vkDefault::DescriptorPool::DescriptorPool(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo) {
-    VKDEFAULT_RESET()
+vkDefault::DescriptorPool::DescriptorPool(const VkDevice& device, const VkDescriptorPoolCreateInfo& poolInfo) : device(device) {
     CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptor));
 }
 
-vkDefault::DescriptorPool::DescriptorPool(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount) {
-    VKDEFAULT_RESET()
+vkDefault::DescriptorPool::DescriptorPool(const VkDevice& device, const std::vector<const vkDefault::DescriptorSetLayout*>& descriptorSetLayouts, const uint32_t descriptorsCount) : device(device) {
     uint32_t maxSets = 0;
     std::vector<VkDescriptorPoolSize> poolSizes;
     for (const vkDefault::DescriptorSetLayout* descriptorSetLayout : descriptorSetLayouts) {
@@ -536,8 +513,7 @@ vkDefault::ImageView::ImageView(
     VkImageAspectFlags aspectFlags,
     uint32_t mipLevels,
     uint32_t baseArrayLayer,
-    uint32_t layerCount) {
-    VKDEFAULT_RESET()
+    uint32_t layerCount) : device(device) {
     CHECK(utils::texture::createView(device, type, format, aspectFlags, mipLevels, baseArrayLayer, layerCount, image, &descriptor));
 }
 
@@ -559,8 +535,7 @@ vkDefault::Image::Image(
     VkFormat                        format,
     VkImageLayout                   layout,
     VkImageUsageFlags               usage,
-    VkMemoryPropertyFlags           properties) {
-    VKDEFAULT_RESET()
+    VkMemoryPropertyFlags           properties) : device(device) {
     CHECK(utils::texture::create(physicalDevice, device, flags, extent, arrayLayers, mipLevels, numSamples, format, layout, usage, properties, &descriptor, &memory));
 }
 
@@ -588,9 +563,7 @@ vkDefault::Buffer::Buffer(
     VkDevice                        device,
     VkDeviceSize                    size,
     VkBufferUsageFlags              usage,
-    VkMemoryPropertyFlags           properties) {
-    VKDEFAULT_RESET()
-    memorysize = size;
+    VkMemoryPropertyFlags           properties) : memorysize(size), device(device) {
     CHECK(utils::buffer::create(physicalDevice, device, size, usage, properties, &descriptor, &memory));
     if (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT || properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
         CHECK(vkMapMemory(device, memory, 0, size, 0, &memorymap))
@@ -638,10 +611,10 @@ vkDefault::Buffer::operator const VkDeviceMemory* () const {
 VKDEFAULT_MAKE_SWAP(Buffer)
 VKDEFAULT_MAKE_DESCRIPTOR(Buffer, VkBuffer)
 
-VkResult vkDefault::SwapchainKHR::reset(const VkDevice& device, const utils::ImageInfo& imageInfo, const utils::swapChain::SupportDetails& supportDetails, const std::vector<uint32_t>& queueFamilyIndices, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat) {
+VkResult vkDefault::SwapchainKHR::reset(const VkDevice& logical, const utils::ImageInfo& info, const utils::swapChain::SupportDetails& supportDetails, const std::vector<uint32_t>& queueFamilyIndices, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat) {
     if (descriptor) vkDestroySwapchainKHR(device, release(descriptor), nullptr);
-    this->device = device;
-    this->imageInfo = imageInfo;
+    device = logical;
+    imageInfo = info;
 
     VkSwapchainCreateInfoKHR createInfo {};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -686,9 +659,7 @@ vkDefault::SwapchainKHR::operator const bool() const {
     return descriptor != VK_NULL_HANDLE;
 }
 
-vkDefault::CommandPool::CommandPool(const VkDevice& device) {
-    VKDEFAULT_RESET()
-
+vkDefault::CommandPool::CommandPool(const VkDevice& device) : device(device) {
     VkCommandPoolCreateInfo poolInfo {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = 0;
@@ -720,10 +691,7 @@ vkDefault::CommandPool::~CommandPool() {
 
 VKDEFAULT_MAKE_DESCRIPTOR(CommandPool, VkCommandPool)
 
-vkDefault::CommandBuffer::CommandBuffer(const VkDevice& device, VkCommandPool commandPool) {
-    VKDEFAULT_RESET()
-    this->commandPool = commandPool;
-
+vkDefault::CommandBuffer::CommandBuffer(const VkDevice& device, VkCommandPool commandPool) : commandPool(commandPool), device(device) {
     VkCommandBufferAllocateInfo allocInfo {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = commandPool;

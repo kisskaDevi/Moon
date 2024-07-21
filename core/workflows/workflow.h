@@ -12,32 +12,24 @@
 
 namespace moon::workflows {
 
-class Workbody{
-public:
-    std::filesystem::path   vertShaderPath;
-    std::filesystem::path   fragShaderPath;
-    moon::utils::ImageInfo  imageInfo;
+enum class ShaderType
+{
+    Vertex,
+    Fragment
+};
 
-    VkDevice device{VK_NULL_HANDLE};
+using ShaderNames = std::unordered_map<ShaderType, std::string>;
 
-    utils::vkDefault::PipelineLayout        pipelineLayout;
-    utils::vkDefault::Pipeline              pipeline;
-    utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
+struct Workbody{
+    utils::vkDefault::Pipeline pipeline;
+    utils::vkDefault::PipelineLayout pipelineLayout;
+    utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
 
     utils::vkDefault::DescriptorPool descriptorPool;
     utils::vkDefault::DescriptorSets descriptorSets;
 
     virtual ~Workbody(){};
-    Workbody() = default;
-    Workbody(const moon::utils::ImageInfo& imageInfo) : imageInfo(imageInfo) {};
-    Workbody(Workbody&&) = default;
-    Workbody& operator=(Workbody&&) = default;
-
-    virtual void create(
-        const std::filesystem::path& vertShaderPath,
-        const std::filesystem::path& fragShaderPath,
-        VkDevice device,
-        VkRenderPass pRenderPass) = 0;
+    virtual void create(const ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) = 0;
 };
 
 class Workflow
@@ -58,8 +50,8 @@ public:
 
     Workflow& setDeviceProp(VkPhysicalDevice physicalDevice, VkDevice device);
 
-    virtual void create(const utils::vkDefault::CommandPool& commandPool, moon::utils::AttachmentsDatabase& aDatabase) = 0;
-    virtual void updateDescriptors(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) = 0;
+    virtual void create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) = 0;
+    virtual void updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) = 0;
 
     void update(uint32_t frameNumber);
     void raiseUpdateFlags();
@@ -69,12 +61,12 @@ public:
 
 struct Parameters {
     bool enable{false};
-    moon::utils::ImageInfo imageInfo;
+    utils::ImageInfo imageInfo;
     std::filesystem::path shadersPath;
 };
 
-using ParametersMap = std::unordered_map<std::string, moon::workflows::Parameters*>;
-using WorkflowsMap = std::unordered_map<std::string, std::unique_ptr<moon::workflows::Workflow>>;
+using ParametersMap = std::unordered_map<std::string, workflows::Parameters*>;
+using WorkflowsMap = std::unordered_map<std::string, std::unique_ptr<workflows::Workflow>>;
 
 }
 #endif // WORKFLOW_H

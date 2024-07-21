@@ -12,7 +12,7 @@ struct ScatteringPushConst {
 };
 
 Scattering::Scattering(ScatteringParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps) :
-    parameters(parameters), lighting(parameters.imageInfo, lightSources, depthMaps)
+    parameters(parameters), lighting(parameters, lightSources, depthMaps)
 {}
 
 void Scattering::createAttachments(utils::AttachmentsDatabase& aDatabase){
@@ -66,12 +66,7 @@ void Scattering::createFramebuffers()
     }
 }
 
-void Scattering::Lighting::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass)
-{
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
+void Scattering::Lighting::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -81,19 +76,19 @@ void Scattering::Lighting::create(const std::filesystem::path& vertShaderPath, c
     descriptorSetLayoutMap[interfaces::LightType::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
     shadowDescriptorSetLayout = utils::DepthMap::createDescriptorSetLayout(device);
 
-    createPipeline(interfaces::LightType::spot, pRenderPass);
+    createPipeline(interfaces::LightType::spot, shadersNames, device, renderPass);
 
-    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, parameters.imageInfo.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
 }
 
-void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass) {
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
+void Scattering::Lighting::createPipeline(uint8_t mask, const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment));
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
@@ -138,7 +133,7 @@ void Scattering::Lighting::createPipeline(uint8_t mask, VkRenderPass pRenderPass
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayoutMap[mask];
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
@@ -151,7 +146,11 @@ void Scattering::create(const utils::vkDefault::CommandPool& commandPool, utils:
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        lighting.create(parameters.shadersPath / "scattering/scatteringVert.spv", parameters.shadersPath / "scattering/scatteringFrag.spv", device, renderPass);
+        const workflows::ShaderNames shaderNames = {
+            {workflows::ShaderType::Vertex, "scattering/scatteringVert.spv"},
+            {workflows::ShaderType::Fragment, "scattering/scatteringFrag.spv"}
+        };
+        lighting.create(shaderNames, device, renderPass);
         created = true;
     }
 }

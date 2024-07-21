@@ -2,25 +2,21 @@
 #include "operations.h"
 #include "vkdefault.h"
 
-#include <filesystem>
-
 namespace moon::deferredGraphics {
 
-void Graphics::Lighting::createPipeline(VkDevice device, uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath){
-    uint8_t key = mask;
-
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShadersPath);
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShadersPath);
+void Graphics::Lighting::createPipeline(uint8_t mask, const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass){
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment));
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
-    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
+    VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = utils::vkDefault::depthStencilDisable();
 
     VkPipelineColorBlendAttachmentState customBlendAttachment{};
         customBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -33,19 +29,19 @@ void Graphics::Lighting::createPipeline(VkDevice device, uint8_t mask, VkRenderP
         customBlendAttachment.alphaBlendOp = VK_BLEND_OP_MIN;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment ={
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
+        utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
         customBlendAttachment,
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE)
+        utils::vkDefault::colorBlendAttachmentState(VK_TRUE)
     };
-    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
         descriptorSetLayout,
         shadowDescriptorSetLayout,
-        bufferDescriptorSetLayoutMap[key],
-        textureDescriptorSetLayoutMap[key]
+        bufferDescriptorSetLayoutMap[mask],
+        textureDescriptorSetLayoutMap[mask]
     };
-    pipelineLayoutMap[key] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts);
+    pipelineLayoutMap[mask] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -59,12 +55,12 @@ void Graphics::Lighting::createPipeline(VkDevice device, uint8_t mask, VkRenderP
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = pipelineLayoutMap[key];
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().layout = pipelineLayoutMap[mask];
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 1;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
-    pipelineMap[key] = utils::vkDefault::Pipeline(device, pipelineInfo);
+    pipelineMap[mask] = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
 }

@@ -23,15 +23,15 @@ class SSAOGraphics : public Workflow
 {
 private:
     SSAOParameters& parameters;
-    moon::utils::Attachments frame;
+    utils::Attachments frame;
 
     struct SSAO : public Workbody{
-        SSAO(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        const SSAOParameters& parameters;
+        SSAO(const SSAOParameters& parameters) : parameters(parameters) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
+    } ssao;
 
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-    }ssao;
-
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;

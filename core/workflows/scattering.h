@@ -21,29 +21,30 @@ class Scattering : public Workflow
 {
 private:
     ScatteringParameters& parameters;
-    moon::utils::Attachments frame;
+    utils::Attachments frame;
 
     struct Lighting : Workbody{
-        moon::utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
-        moon::utils::vkDefault::DescriptorSetLayoutMap  descriptorSetLayoutMap;
+        const ScatteringParameters& parameters;
 
-        moon::utils::vkDefault::PipelineLayoutMap       pipelineLayoutMap;
-        moon::utils::vkDefault::PipelineMap             pipelinesMap;
+        utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
+        utils::vkDefault::DescriptorSetLayoutMap  descriptorSetLayoutMap;
+        utils::vkDefault::PipelineLayoutMap       pipelineLayoutMap;
+        utils::vkDefault::PipelineMap             pipelinesMap;
 
         const interfaces::Lights* lightSources{ nullptr };
         const interfaces::DepthMaps* depthMaps{ nullptr };
 
-        Lighting(const moon::utils::ImageInfo& imageInfo, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps)
-            : Workbody(imageInfo), lightSources(lightSources), depthMaps(depthMaps)
+        Lighting(const ScatteringParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps)
+            : parameters(parameters), lightSources(lightSources), depthMaps(depthMaps)
         {}
 
-        void createPipeline(uint8_t mask, VkRenderPass pRenderPass);
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        void createPipeline(uint8_t mask, const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass pRenderPass);
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers);
     }lighting;
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;

@@ -48,12 +48,9 @@ private:
 
     struct Combiner : public workflows::Workbody {
         const LayersCombinerParameters& parameters;
-        Combiner(const utils::ImageInfo& imageInfo, const LayersCombinerParameters& parameters)
-            : Workbody(imageInfo), parameters(parameters)
-        {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-    }combiner;
+        Combiner(const LayersCombinerParameters& parameters) : parameters(parameters){};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
+    } combiner;
 
     void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();

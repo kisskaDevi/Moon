@@ -22,15 +22,15 @@ class PostProcessingGraphics : public Workflow
 {
 private:
     PostProcessingParameters& parameters;
-    moon::utils::Attachments frame;
+    utils::Attachments frame;
 
     struct PostProcessing : public Workbody{
-        PostProcessing(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        const PostProcessingParameters& parameters;
+        PostProcessing(const PostProcessingParameters& parameters) : parameters(parameters) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     } postProcessing;
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;
@@ -38,8 +38,8 @@ private:
 public:
     PostProcessingGraphics(PostProcessingParameters& parameters);
 
-    void create(const utils::vkDefault::CommandPool& commandPool, moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptors(const moon::utils::BuffersDatabase& bDatabase, const moon::utils::AttachmentsDatabase& aDatabase) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) override;
 };
 
 }

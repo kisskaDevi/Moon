@@ -42,88 +42,76 @@ private:
     DeferredAttachments deferredAttachments;
 
     struct Base{
-        std::filesystem::path       shadersPath;
-        const utils::ImageInfo&     imageInfo;
-        const GraphicsParameters&   parameters;
-
-        utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
-        utils::vkDefault::PipelineMap         pipelineMap;
-
-        utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-        utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
-        utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
-        utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
-
-        utils::vkDefault::DescriptorPool descriptorPool;
-        utils::vkDefault::DescriptorSets descriptorSets;
-
+        const GraphicsParameters& parameters;
         const interfaces::Objects* objects{ nullptr };
 
-        Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters, const interfaces::Objects* objects);
+        utils::vkDefault::PipelineLayoutMap     pipelineLayoutMap;
+        utils::vkDefault::PipelineMap           pipelineMap;
+        utils::vkDefault::DescriptorSetLayout   descriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout   objectDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout   primitiveDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout   materialDescriptorSetLayout;
+        utils::vkDefault::DescriptorPool        descriptorPool;
+        utils::vkDefault::DescriptorSets        descriptorSets;
 
-        void createPipeline(VkDevice device, VkRenderPass pRenderPass);
+        Base(const GraphicsParameters& parameters, const interfaces::Objects* objects);
+
+        void createPipeline(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass);
         void createDescriptorSetLayout(VkDevice device);
         void createDescriptors(VkDevice device);
         void updateDescriptorSets(VkDevice device, const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase);
 
-        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const;
     }base;
 
     struct OutliningExtension{
-        std::filesystem::path   shadersPath;
-        const Base&             parent;
+        const Base& parent;
 
         utils::vkDefault::PipelineLayout  pipelineLayout;
         utils::vkDefault::Pipeline        pipeline;
 
         OutliningExtension(const Base& parent);
 
-        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const;
     }outlining;
 
     struct Lighting{
-        std::filesystem::path       shadersPath;
-        const utils::ImageInfo&     imageInfo;
-        const GraphicsParameters&   parameters;
-
-        utils::vkDefault::DescriptorSetLayout     descriptorSetLayout;
-        utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
-        utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
-        utils::vkDefault::DescriptorSetLayoutMap  textureDescriptorSetLayoutMap;
-
-        utils::vkDefault::PipelineLayoutMap   pipelineLayoutMap;
-        utils::vkDefault::PipelineMap         pipelineMap;
-
-        utils::vkDefault::DescriptorPool descriptorPool;
-        utils::vkDefault::DescriptorSets descriptorSets;
-
+        const GraphicsParameters& parameters;
         const interfaces::Lights* lightSources{ nullptr };
         const interfaces::DepthMaps* depthMaps{ nullptr };
 
-        Lighting(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps);
+        utils::vkDefault::DescriptorSetLayout       descriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout       shadowDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayoutMap    bufferDescriptorSetLayoutMap;
+        utils::vkDefault::DescriptorSetLayoutMap    textureDescriptorSetLayoutMap;
+        utils::vkDefault::PipelineLayoutMap         pipelineLayoutMap;
+        utils::vkDefault::PipelineMap               pipelineMap;
+        utils::vkDefault::DescriptorPool            descriptorPool;
+        utils::vkDefault::DescriptorSets            descriptorSets;
 
-        void createPipeline(VkDevice device, VkRenderPass pRenderPass);
-        void createPipeline(VkDevice device, uint8_t mask, VkRenderPass pRenderPass, std::filesystem::path vertShadersPath, std::filesystem::path fragShadersPath);
+        Lighting(const GraphicsParameters& parameters, const interfaces::Lights* lightSources, const interfaces::DepthMaps* depthMaps);
+
+        void createPipeline(VkDevice device, VkRenderPass renderPass);
+        void createPipeline(uint8_t mask, const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass);
         void createDescriptorSetLayout(VkDevice device);
         void createDescriptors(VkDevice device);
         void updateDescriptorSets(VkDevice device, const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase);
 
-        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
+        void create(VkDevice device, VkRenderPass renderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffer) const;
     }lighting;
 
     struct AmbientLighting{
-        std::filesystem::path   shadersPath;
-        const Lighting&         parent;
+        const Lighting& parent;
 
         utils::vkDefault::PipelineLayout  pipelineLayout;
         utils::vkDefault::Pipeline        pipeline;
 
         AmbientLighting(const Lighting& parent);
 
-        void create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass);
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass);
         void render(uint32_t frameNumber, VkCommandBuffer commandBuffers) const;
     }ambientLighting;
 

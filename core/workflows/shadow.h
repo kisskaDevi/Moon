@@ -14,22 +14,20 @@ class ShadowGraphics : public Workflow
 {
 private:
     ShadowGraphicsParameters& parameters;
-    std::unordered_map<const moon::utils::DepthMap*, moon::utils::vkDefault::Framebuffers> framebuffersMap;
+    std::unordered_map<const utils::DepthMap*, utils::vkDefault::Framebuffers> framebuffersMap;
 
     struct Shadow : public Workbody{
-        Shadow(const moon::utils::ImageInfo& imageInfo, const interfaces::Objects* objects, interfaces::DepthMaps* depthMaps)
-            : Workbody(imageInfo), objects(objects), depthMaps(depthMaps)
-        {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-
-        moon::utils::vkDefault::DescriptorSetLayout lightUniformBufferSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
-        moon::utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
-
+        const ShadowGraphicsParameters& parameters;
+        utils::vkDefault::DescriptorSetLayout lightUniformBufferSetLayout;
+        utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
+        utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;
         const interfaces::Objects* objects{ nullptr };
         interfaces::DepthMaps* depthMaps{ nullptr };
+
+        Shadow(const ShadowGraphicsParameters& parameters, const interfaces::Objects* objects, interfaces::DepthMaps* depthMaps)
+            : parameters(parameters), objects(objects), depthMaps(depthMaps) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     }shadow;
 
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, interfaces::Light* lightSource, const utils::DepthMap& depthMap);

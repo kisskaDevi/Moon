@@ -11,7 +11,7 @@
 
 namespace moon::deferredGraphics {
 
-class Link : public moon::graphicsManager::Linkable
+class Link : public graphicsManager::Linkable
 {
 private:
     utils::vkDefault::PipelineLayout        pipelineLayout;
@@ -22,12 +22,12 @@ private:
     utils::vkDefault::DescriptorSets        descriptorSets;
 
     void createDescriptorSetLayout(VkDevice device);
-    void createPipeline(VkDevice device, const std::filesystem::path& shadersPath, const moon::utils::ImageInfo& info);
-    void createDescriptors(VkDevice device, const moon::utils::ImageInfo& info, const moon::utils::Attachments* attachment);
+    void createPipeline(VkDevice device, const std::filesystem::path& shadersPath, const utils::ImageInfo& info);
+    void createDescriptors(VkDevice device, const utils::ImageInfo& info, const utils::Attachments* attachment);
 
 public:
     Link() = default;
-    Link(VkDevice device, const std::filesystem::path& shadersPath, const moon::utils::ImageInfo& info, VkRenderPass renderPass, const moon::utils::Attachments* attachment);
+    Link(VkDevice device, const std::filesystem::path& shadersPath, const utils::ImageInfo& info, VkRenderPass renderPass, const utils::Attachments* attachment);
 
     void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const override;
 };

@@ -7,24 +7,22 @@
 
 namespace moon::deferredGraphics {
 
-Graphics::Base::Base(const utils::ImageInfo& imageInfo, const GraphicsParameters& parameters, const interfaces::Objects* objects)
-    : imageInfo(imageInfo), parameters(parameters), objects(objects)
-{}
+Graphics::Base::Base(const GraphicsParameters& parameters, const interfaces::Objects* objects) : parameters(parameters), objects(objects) {}
 
 void Graphics::Base::createDescriptorSetLayout(VkDevice device) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+        bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    objectDescriptorSetLayout = moon::interfaces::Object::createDescriptorSetLayout(device);
-    primitiveDescriptorSetLayout = moon::interfaces::Model::createNodeDescriptorSetLayout(device);
-    materialDescriptorSetLayout = moon::interfaces::Model::createMaterialDescriptorSetLayout(device);
+    objectDescriptorSetLayout = interfaces::Object::createDescriptorSetLayout(device);
+    primitiveDescriptorSetLayout = interfaces::Model::createNodeDescriptorSetLayout(device);
+    materialDescriptorSetLayout = interfaces::Model::createMaterialDescriptorSetLayout(device);
 }
 
-void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
+void Graphics::Base::createPipeline(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
     std::vector<VkBool32> transparencyData = {
         static_cast<VkBool32>(parameters.enableTransparency),
         static_cast<VkBool32>(parameters.transparencyPass)
@@ -44,12 +42,12 @@ void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
         specializationInfo.dataSize = sizeof(VkBool32) * transparencyData.size();
         specializationInfo.pData = transparencyData.data();
 
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "base/baseVert.spv");
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "base/baseFrag.spv", specializationInfo);
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment), specializationInfo);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vertShader, fragShader};
 
-    auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
-    auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
+    auto bindingDescription = interfaces::Model::Vertex::getBindingDescription();
+    auto attributeDescriptions = interfaces::Model::Vertex::getAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -57,33 +55,33 @@ void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, imageInfo.Extent);
-    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilEnable();
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
+    VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    VkPipelineMultisampleStateCreateInfo multisampling = utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = utils::vkDefault::depthStencilEnable();
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)
+        utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
+        utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
+        utils::vkDefault::colorBlendAttachmentState(VK_FALSE)
     };
-    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
         pushConstantRange.back().stageFlags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
         pushConstantRange.back().offset = 0;
-        pushConstantRange.back().size = sizeof(moon::interfaces::MaterialBlock);
+        pushConstantRange.back().size = sizeof(interfaces::MaterialBlock);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
         descriptorSetLayout,
         objectDescriptorSetLayout,
         primitiveDescriptorSetLayout,
         materialDescriptorSetLayout
     };
-    pipelineLayoutMap[moon::interfaces::ObjectType::base] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
+    pipelineLayoutMap[interfaces::ObjectType::base] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 
     std::vector<VkGraphicsPipelineCreateInfo> pipelineInfo;
     pipelineInfo.push_back(VkGraphicsPipelineCreateInfo{});
@@ -97,14 +95,14 @@ void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
         pipelineInfo.back().pRasterizationState = &rasterizer;
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
-        pipelineInfo.back().layout = pipelineLayoutMap[moon::interfaces::ObjectType::base];
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().layout = pipelineLayoutMap[interfaces::ObjectType::base];
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
-    pipelineMap[moon::interfaces::ObjectType::base] = utils::vkDefault::Pipeline(device, pipelineInfo);
+    pipelineMap[interfaces::ObjectType::base] = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    moon::utils::vkDefault::MaskType outliningMask = moon::interfaces::ObjectType::base | moon::interfaces::ObjectProperty::outlining;
+    utils::vkDefault::MaskType outliningMask = interfaces::ObjectType::base | interfaces::ObjectProperty::outlining;
         depthStencil.stencilTestEnable = VK_TRUE;
         depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
         depthStencil.back.failOp = VK_STENCIL_OP_REPLACE;
@@ -120,16 +118,13 @@ void Graphics::Base::createPipeline(VkDevice device, VkRenderPass pRenderPass) {
 }
 
 void Graphics::Base::createDescriptors(VkDevice device) {
-    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, parameters.imageInfo.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
 }
 
-void Graphics::Base::updateDescriptorSets(
-    VkDevice device,
-    const moon::utils::BuffersDatabase& bDatabase,
-    const moon::utils::AttachmentsDatabase& aDatabase)
+void Graphics::Base::updateDescriptorSets(VkDevice device, const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase)
 {
-    for (uint32_t i = 0; i < imageInfo.Count; i++)
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++)
     {
         VkDescriptorBufferInfo bufferInfo = bDatabase.descriptorBufferInfo(parameters.in.camera, i);
         VkDescriptorImageInfo skyboxImageInfo = aDatabase.descriptorEmptyInfo();
@@ -167,18 +162,16 @@ void Graphics::Base::updateDescriptorSets(
     }
 }
 
-void Graphics::Base::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->shadersPath = shadersPath;
-
+void Graphics::Base::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
     createDescriptorSetLayout(device);
-    createPipeline(device, pRenderPass);
+    createPipeline(shadersNames, device, renderPass);
     createDescriptors(device);
 }
 
 void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const
 {
     for(const auto& object: *objects){
-        if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
+        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineMap.at(object->getPipelineBitMask()));
 
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
@@ -188,7 +181,7 @@ void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
 
             utils::vkDefault::DescriptorSets descriptors = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
-            moon::interfaces::MaterialBlock material;
+            interfaces::MaterialBlock material;
 
             object->setFirstPrimitive(primitiveCount);
             object->getModel()->render(
@@ -198,7 +191,7 @@ void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
                         static_cast<uint32_t>(descriptors.size()),
                         descriptors.data(),
                         primitiveCount,
-                        sizeof(moon::interfaces::MaterialBlock),
+                        sizeof(interfaces::MaterialBlock),
                         0,
                         &material);
             object->setPrimitiveCount(primitiveCount - object->getFirstPrimitive());

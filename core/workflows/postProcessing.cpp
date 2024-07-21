@@ -4,9 +4,7 @@
 
 namespace moon::workflows{
 
-PostProcessingGraphics::PostProcessingGraphics(PostProcessingParameters& parameters) :
-    parameters(parameters), postProcessing(parameters.imageInfo)
-{}
+PostProcessingGraphics::PostProcessingGraphics(PostProcessingParameters& parameters) : parameters(parameters), postProcessing(parameters) {}
 
 void PostProcessingGraphics::createAttachments(utils::AttachmentsDatabase& aDatabase){
     utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
@@ -59,11 +57,7 @@ void PostProcessingGraphics::createFramebuffers()
     }
 }
 
-void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
+void PostProcessingGraphics::PostProcessing::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -72,12 +66,12 @@ void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path&
         bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment));
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = utils::vkDefault::vertexInputState();
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
@@ -104,14 +98,14 @@ void PostProcessingGraphics::PostProcessing::create(const std::filesystem::path&
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayout;
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
     pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 
-    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, parameters.imageInfo.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
 }
 
 void PostProcessingGraphics::create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) {
@@ -120,7 +114,11 @@ void PostProcessingGraphics::create(const utils::vkDefault::CommandPool& command
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        postProcessing.create(parameters.shadersPath / "postProcessing/postProcessingVert.spv", parameters.shadersPath / "postProcessing/postProcessingFrag.spv", device, renderPass);
+        const workflows::ShaderNames shaderNames = {
+            {workflows::ShaderType::Vertex, "postProcessing/postProcessingVert.spv"},
+            {workflows::ShaderType::Fragment, "postProcessing/postProcessingFrag.spv"}
+        };
+        postProcessing.create(shaderNames, device, renderPass);
         created = true;
     }
 }

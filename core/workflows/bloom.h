@@ -24,47 +24,36 @@ class BloomGraphics : public Workflow
 private:
     BloomParameters& parameters;
 
-    std::vector<moon::utils::Attachments> frames;
-    moon::utils::Attachments bufferAttachment;
-    const moon::utils::Attachments* srcAttachment{nullptr};
+    std::vector<utils::Attachments> frames;
+    utils::Attachments bufferAttachment;
+    const utils::Attachments* srcAttachment{nullptr};
 
     struct Filter : public Workbody{
+        const BloomParameters& parameters;
         Filter() = default;
-        Filter(Filter&&) = default;
-        Filter& operator=(Filter&&) = default;
-
-        Filter(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        Filter(const BloomParameters& parameters) : parameters(parameters) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     }filter;
 
     struct Bloom : public Workbody{
         const BloomParameters& parameters;
         Bloom() = default;
-        Bloom(Bloom&&) = default;
-        Bloom& operator=(Bloom&&) = default;
-
-        Bloom(const moon::utils::ImageInfo& imageInfo, const BloomParameters& parameters)
-            : Workbody(imageInfo), parameters(parameters)
-        {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        Bloom(const BloomParameters& parameters) : parameters(parameters) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     }bloom;
 
-    void render(VkCommandBuffer commandBuffer, const moon::utils::Attachments& image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker);
+    void render(VkCommandBuffer commandBuffer, const utils::Attachments& image, uint32_t frameNumber, uint32_t framebufferIndex, Workbody* worker);
 
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;
 
 public:
-    BloomGraphics(BloomGraphics&&) = default;
-    BloomGraphics& operator=(BloomGraphics&&) = default;
+    BloomGraphics() = default;
     BloomGraphics(BloomParameters& parameters);
-    BloomGraphics();
 
-    void create(const utils::vkDefault::CommandPool& commandPool, moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptors(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptors(const utils::BuffersDatabase&, const utils::AttachmentsDatabase& aDatabase) override;
 };
 
 }

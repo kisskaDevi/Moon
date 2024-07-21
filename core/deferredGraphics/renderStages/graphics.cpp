@@ -11,9 +11,9 @@ Graphics::Graphics(
     const interfaces::Lights* lightSources,
     const interfaces::DepthMaps* depthMaps)
     :   parameters(parameters),
-        base(parameters.imageInfo, parameters, object),
+        base(parameters, object),
         outlining(base),
-        lighting(parameters.imageInfo, parameters, lightSources, depthMaps),
+        lighting(parameters, lightSources, depthMaps),
         ambientLighting(lighting)
 {}
 
@@ -148,10 +148,25 @@ void Graphics::createFramebuffers()
 }
 
 void Graphics::createPipelines() {
-    base.create(parameters.shadersPath, device, renderPass);
-    outlining.create(parameters.shadersPath, device, renderPass);
-    lighting.create(parameters.shadersPath, device, renderPass);
-    ambientLighting.create(parameters.shadersPath, device, renderPass);
+    const workflows::ShaderNames baseShaderNames = {
+        {workflows::ShaderType::Vertex, "base/baseVert.spv"},
+        {workflows::ShaderType::Fragment, "base/baseFrag.spv"}
+    };
+    base.create(baseShaderNames, device, renderPass);
+
+    const workflows::ShaderNames outliningShaderNames = {
+        {workflows::ShaderType::Vertex, "outlining/outliningVert.spv"},
+        {workflows::ShaderType::Fragment, "outlining/outliningFrag.spv"}
+    };
+    outlining.create(outliningShaderNames, device, renderPass);
+
+    lighting.create(device, renderPass);
+
+    const workflows::ShaderNames ambientLightingShaderNames = {
+        {workflows::ShaderType::Vertex, "ambientLightingPass/ambientLightingVert.spv"},
+        {workflows::ShaderType::Fragment, "ambientLightingPass/ambientLightingFrag.spv"}
+    };
+    ambientLighting.create(ambientLightingShaderNames, device, renderPass);
 }
 
 void Graphics::create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase)

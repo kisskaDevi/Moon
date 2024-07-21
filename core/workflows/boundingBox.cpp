@@ -6,9 +6,7 @@
 
 namespace moon::workflows {
 
-BoundingBoxGraphics::BoundingBoxGraphics(BoundingBoxParameters& parameters, const interfaces::Objects* objects) :
-    parameters(parameters), box(parameters.imageInfo, objects)
-{}
+BoundingBoxGraphics::BoundingBoxGraphics(BoundingBoxParameters& parameters, const interfaces::Objects* objects) : parameters(parameters), box(parameters, objects) {}
 
 void BoundingBoxGraphics::createAttachments(utils::AttachmentsDatabase& aDatabase){
     utils::createAttachments(physicalDevice, device, parameters.imageInfo, 1, &frame);
@@ -60,11 +58,7 @@ void BoundingBoxGraphics::createFramebuffers(){
     }
 }
 
-void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass){
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
+void BoundingBoxGraphics::BoundingBox::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass){
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
 
@@ -73,8 +67,8 @@ void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertS
     objectDescriptorSetLayout = interfaces::Object::createDescriptorSetLayout(device);
     primitiveDescriptorSetLayout = interfaces::Model::createNodeDescriptorSetLayout(device);
 
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath);
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment));
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     auto bindingDescription = interfaces::Model::Vertex::getBindingDescription();
@@ -86,8 +80,8 @@ void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertS
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -129,13 +123,13 @@ void BoundingBoxGraphics::BoundingBox::create(const std::filesystem::path& vertS
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayout;
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
     pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
-    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, imageInfo.Count);
-    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageInfo.Count);
+    descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, parameters.imageInfo.Count);
+    descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
 }
 
 void BoundingBoxGraphics::create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) {
@@ -144,7 +138,11 @@ void BoundingBoxGraphics::create(const utils::vkDefault::CommandPool& commandPoo
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        box.create(parameters.shadersPath / "boundingBox/boundingBoxVert.spv", parameters.shadersPath / "boundingBox/boundingBoxFrag.spv", device, renderPass);
+        const workflows::ShaderNames shaderNames = {
+            {workflows::ShaderType::Vertex, "boundingBox/boundingBoxVert.spv"},
+            {workflows::ShaderType::Fragment, "boundingBox/boundingBoxFrag.spv"}
+        };
+        box.create(shaderNames, device, renderPass);
         created = true;
     }
 }

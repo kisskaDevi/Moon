@@ -7,32 +7,28 @@ struct LightPassPushConst{
     alignas(4) float minAmbientFactor;
 };
 
-Graphics::AmbientLighting::AmbientLighting(const Lighting& parent)
-    : parent(parent)
-{}
+Graphics::AmbientLighting::AmbientLighting(const Lighting& parent) : parent(parent) {}
 
-void Graphics::AmbientLighting::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass){
-    this->shadersPath = shadersPath;
-
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "ambientLightingPass/ambientLightingVert.spv");
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "ambientLightingPass/ambientLightingFrag.spv");
+void Graphics::AmbientLighting::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass){
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parent.parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parent.parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment));
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, parent.imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, parent.imageInfo.Extent);
-    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = moon::utils::vkDefault::vertexInputState();
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState();
-    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parent.parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parent.parameters.imageInfo.Extent);
+    VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo = utils::vkDefault::vertexInputState();
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState();
+    VkPipelineMultisampleStateCreateInfo multisampling = utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = utils::vkDefault::depthStencilDisable();
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment ={
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_TRUE)
+        utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
+        utils::vkDefault::colorBlendAttachmentState(VK_TRUE),
+        utils::vkDefault::colorBlendAttachmentState(VK_TRUE)
     };
-    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -55,7 +51,7 @@ void Graphics::AmbientLighting::create(const std::filesystem::path& shadersPath,
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayout;
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 1;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;

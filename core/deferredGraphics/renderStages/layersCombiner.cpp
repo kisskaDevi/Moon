@@ -10,10 +10,7 @@ struct LayersCombinerPushConst {
     alignas(4) float blurDepth{ 1.0f };
 };
 
-LayersCombiner::LayersCombiner(LayersCombinerParameters& parameters) :
-    parameters(parameters),
-    combiner(parameters.imageInfo, parameters)
-{}
+LayersCombiner::LayersCombiner(LayersCombinerParameters& parameters) : combiner(parameters), parameters(parameters) {}
 
 void LayersCombiner::createAttachments(utils::AttachmentsDatabase& aDatabase)
 {
@@ -78,11 +75,8 @@ void LayersCombiner::createFramebuffers(){
     }
 }
 
-void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
+void LayersCombiner::Combiner::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass)
+{
     std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.push_back(utils::vkDefault::bufferFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
         bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
@@ -112,8 +106,8 @@ void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPat
         specializationInfo.dataSize = sizeof(specializationData);
         specializationInfo.pData = &specializationData;
 
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, fragShaderPath, specializationInfo);
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment), specializationInfo);
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
     VkViewport viewport = utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
@@ -149,7 +143,7 @@ void LayersCombiner::Combiner::create(const std::filesystem::path& vertShaderPat
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayout;
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
@@ -165,7 +159,11 @@ void LayersCombiner::create(const utils::vkDefault::CommandPool& commandPool, ut
         createAttachments(aDatabase);
         createRenderPass();
         createFramebuffers();
-        combiner.create(parameters.shadersPath / "layersCombiner/layersCombinerVert.spv", parameters.shadersPath / "layersCombiner/layersCombinerFrag.spv", device, renderPass);
+        const workflows::ShaderNames shaderNames = {
+            {workflows::ShaderType::Vertex, "layersCombiner/layersCombinerVert.spv"},
+            {workflows::ShaderType::Fragment, "layersCombiner/layersCombinerFrag.spv"}
+        };
+        combiner.create(shaderNames, device, renderPass);
         created = true;
     }
 }

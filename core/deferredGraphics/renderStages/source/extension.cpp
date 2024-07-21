@@ -10,26 +10,22 @@ namespace moon::deferredGraphics {
 namespace{
 struct OutliningPushConstBlock {
     struct {
-        alignas(16) moon::math::Vector<float, 4> stencilColor;
+        alignas(16) math::Vector<float, 4> stencilColor;
         alignas(4)  float width;
     } outlining;
-    moon::interfaces::MaterialBlock material;
+    interfaces::MaterialBlock material;
 };
 }
 
-Graphics::OutliningExtension::OutliningExtension(const Graphics::Base& parent)
-    : parent(parent)
-{}
+Graphics::OutliningExtension::OutliningExtension(const Graphics::Base& parent) : parent(parent) {}
 
-void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPath, VkDevice device, VkRenderPass pRenderPass){
-    this->shadersPath = shadersPath;
-
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "outlining/outliningVert.spv");
-    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "outlining/outliningFrag.spv");
+void Graphics::OutliningExtension::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass){
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parent.parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
+    const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parent.parameters.shadersPath / shadersNames.at(workflows::ShaderType::Fragment));
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
 
-    auto bindingDescription = moon::interfaces::Model::Vertex::getBindingDescription();
-    auto attributeDescriptions = moon::interfaces::Model::Vertex::getAttributeDescriptions();
+    auto bindingDescription = interfaces::Model::Vertex::getBindingDescription();
+    auto attributeDescriptions = interfaces::Model::Vertex::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -38,13 +34,13 @@ void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPa
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = moon::utils::vkDefault::viewport({0,0}, parent.imageInfo.Extent);
-    VkRect2D scissor = moon::utils::vkDefault::scissor({0,0}, parent.imageInfo.Extent);
-    VkPipelineViewportStateCreateInfo viewportState = moon::utils::vkDefault::viewportState(&viewport, &scissor);
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = moon::utils::vkDefault::inputAssembly();
-    VkPipelineRasterizationStateCreateInfo rasterizer = moon::utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    VkPipelineMultisampleStateCreateInfo multisampling = moon::utils::vkDefault::multisampleState();
-    VkPipelineDepthStencilStateCreateInfo depthStencil = moon::utils::vkDefault::depthStencilDisable();
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parent.parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parent.parameters.imageInfo.Extent);
+    VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
+    VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    VkPipelineMultisampleStateCreateInfo multisampling = utils::vkDefault::multisampleState();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = utils::vkDefault::depthStencilDisable();
 
     depthStencil.stencilTestEnable = VK_TRUE;
     depthStencil.back.compareOp = VK_COMPARE_OP_NOT_EQUAL;
@@ -57,11 +53,11 @@ void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPa
     depthStencil.front = depthStencil.back;
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachment = {
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
-        moon::utils::vkDefault::colorBlendAttachmentState(VK_FALSE)
+        utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
+        utils::vkDefault::colorBlendAttachmentState(VK_FALSE),
+        utils::vkDefault::colorBlendAttachmentState(VK_FALSE)
     };
-    VkPipelineColorBlendStateCreateInfo colorBlending = moon::utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
+    VkPipelineColorBlendStateCreateInfo colorBlending = utils::vkDefault::colorBlendState(static_cast<uint32_t>(colorBlendAttachment.size()),colorBlendAttachment.data());
 
     std::vector<VkPushConstantRange> pushConstantRange;
     pushConstantRange.push_back(VkPushConstantRange{});
@@ -89,7 +85,7 @@ void Graphics::OutliningExtension::create(const std::filesystem::path& shadersPa
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayout;
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
@@ -100,7 +96,7 @@ void Graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     for(const auto& object: *parent.objects){
-        if(VkDeviceSize offsets = 0; (moon::interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getOutliningEnable()){
+        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getOutliningEnable()){
             vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
             if (object->getModel()->getIndices() != VK_NULL_HANDLE){
                 vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);

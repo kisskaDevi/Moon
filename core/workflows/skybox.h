@@ -9,13 +9,13 @@ namespace moon::workflows {
 
 struct SkyboxAttachments
 {
-    moon::utils::Attachments color;
-    moon::utils::Attachments bloom;
+    utils::Attachments color;
+    utils::Attachments bloom;
 
     inline uint32_t size() const{
         return 2;
     }
-    inline moon::utils::Attachments* operator&(){
+    inline utils::Attachments* operator&(){
         return &color;
     }
 };
@@ -37,17 +37,15 @@ private:
     SkyboxAttachments frame;
 
     struct Skybox : public Workbody{
-        moon::utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
+        const SkyboxParameters& parameters;
+        utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
         const interfaces::Objects* objects{nullptr};
 
-        Skybox(const moon::utils::ImageInfo& imageInfo, const interfaces::Objects* objects)
-            : Workbody(imageInfo), objects(objects)
-        {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        Skybox(const SkyboxParameters& parameters, const interfaces::Objects* objects) : parameters(parameters), objects(objects) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     }skybox;
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;

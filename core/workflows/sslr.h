@@ -24,15 +24,15 @@ class SSLRGraphics : public Workflow
 {
 private:
     SSLRParameters& parameters;
-    moon::utils::Attachments frame;
+    utils::Attachments frame;
 
     struct SSLR : public Workbody{
-        SSLR(const moon::utils::ImageInfo& imageInfo) : Workbody(imageInfo) {};
+        const SSLRParameters& parameters;
+        SSLR(const SSLRParameters& parameters) : parameters(parameters) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
+    } sslr;
 
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
-    }sslr;
-
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;

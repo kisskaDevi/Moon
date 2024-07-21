@@ -8,7 +8,7 @@
 namespace moon::workflows {
 
 ShadowGraphics::ShadowGraphics(ShadowGraphicsParameters& parameters, const interfaces::Objects* objects, interfaces::DepthMaps* depthMaps) :
-    parameters(parameters), shadow(parameters.imageInfo, objects, depthMaps)
+    parameters(parameters), shadow(parameters, objects, depthMaps)
 {}
 
 void ShadowGraphics::createRenderPass()
@@ -24,17 +24,13 @@ void ShadowGraphics::createRenderPass()
     renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, {});
 }
 
-void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) {
-    this->vertShaderPath = vertShaderPath;
-    this->fragShaderPath = fragShaderPath;
-    this->device = device;
-
+void ShadowGraphics::Shadow::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
     lightUniformBufferSetLayout = interfaces::Light::createBufferDescriptorSetLayout(device);
     objectDescriptorSetLayout = interfaces::Object::createDescriptorSetLayout(device);
     primitiveDescriptorSetLayout = interfaces::Model::createNodeDescriptorSetLayout(device);
     materialDescriptorSetLayout = interfaces::Model::createMaterialDescriptorSetLayout(device);
 
-    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, vertShaderPath);
+    const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / shadersNames.at(workflows::ShaderType::Vertex));
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader };
 
     auto bindingDescription = interfaces::Model::Vertex::getBindingDescription();
@@ -46,8 +42,8 @@ void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath,
         vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-    VkViewport viewport = utils::vkDefault::viewport({0,0}, imageInfo.Extent);
-    VkRect2D scissor = utils::vkDefault::scissor({0,0}, imageInfo.Extent);
+    VkViewport viewport = utils::vkDefault::viewport({0,0}, parameters.imageInfo.Extent);
+    VkRect2D scissor = utils::vkDefault::scissor({0,0}, parameters.imageInfo.Extent);
     VkPipelineViewportStateCreateInfo viewportState = utils::vkDefault::viewportState(&viewport, &scissor);
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = utils::vkDefault::inputAssembly();
     VkPipelineRasterizationStateCreateInfo rasterizer = utils::vkDefault::rasterizationState();
@@ -87,7 +83,7 @@ void ShadowGraphics::Shadow::create(const std::filesystem::path& vertShaderPath,
         pipelineInfo.back().pMultisampleState = &multisampling;
         pipelineInfo.back().pColorBlendState = &colorBlending;
         pipelineInfo.back().layout = pipelineLayout;
-        pipelineInfo.back().renderPass = pRenderPass;
+        pipelineInfo.back().renderPass = renderPass;
         pipelineInfo.back().subpass = 0;
         pipelineInfo.back().basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.back().pDepthStencilState = &depthStencil;
@@ -98,7 +94,10 @@ void ShadowGraphics::create(const utils::vkDefault::CommandPool& commandPool, ut
     commandBuffers = commandPool.allocateCommandBuffers(parameters.imageInfo.Count);
     if(parameters.enable && !created){
         createRenderPass();
-        shadow.create(parameters.shadersPath / "shadow/shadowMapVert.spv", "", device, renderPass);
+        const workflows::ShaderNames shaderNames = {
+            {workflows::ShaderType::Vertex, "shadow/shadowMapVert.spv"}
+        };
+        shadow.create(shaderNames, device, renderPass);
         created = true;
     }
     for (auto& [light, depthMap] : *shadow.depthMaps) {

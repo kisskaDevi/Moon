@@ -19,22 +19,19 @@ class GaussianBlur : public Workflow
 {
 private:
     GaussianBlurParameters& parameters;
-    moon::utils::Attachments bufferAttachment;
-    moon::utils::Attachments frame;
+    utils::Attachments bufferAttachment;
+    utils::Attachments frame;
 
     struct Blur : public Workbody{
         uint32_t subpassNumber{ 0 };
         const GaussianBlurParameters& parameters;
-        Blur(const moon::utils::ImageInfo& imageInfo, const GaussianBlurParameters& parameters, uint32_t subpassNumber)
-            : Workbody(imageInfo), parameters(parameters), subpassNumber(subpassNumber)
-        {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        Blur(const GaussianBlurParameters& parameters, uint32_t subpassNumber) : parameters(parameters), subpassNumber(subpassNumber) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     };
     Blur xblur;
     Blur yblur;
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;
@@ -42,8 +39,8 @@ private:
 public:
     GaussianBlur(GaussianBlurParameters& parameters);
 
-    void create(const utils::vkDefault::CommandPool& commandPool, moon::utils::AttachmentsDatabase& aDatabase) override;
-    void updateDescriptors(const moon::utils::BuffersDatabase&, const moon::utils::AttachmentsDatabase& aDatabase) override;
+    void create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) override;
+    void updateDescriptors(const utils::BuffersDatabase&, const utils::AttachmentsDatabase& aDatabase) override;
 };
 
 }

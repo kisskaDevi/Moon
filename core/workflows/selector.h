@@ -24,19 +24,16 @@ class SelectorGraphics : public Workflow
 {
 private:
     SelectorParameters& parameters;
-    moon::utils::Attachments frame;
+    utils::Attachments frame;
     utils::Cursor** cursor{ nullptr };
 
     struct Selector : public Workbody{
         const SelectorParameters& parameters;
-        Selector(const moon::utils::ImageInfo& imageInfo, const SelectorParameters& parameters)
-            : Workbody(imageInfo), parameters(parameters)
-        {};
-
-        void create(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath, VkDevice device, VkRenderPass pRenderPass) override;
+        Selector(const SelectorParameters& parameters) : parameters(parameters) {};
+        void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     }selector;
 
-    void createAttachments(moon::utils::AttachmentsDatabase& aDatabase);
+    void createAttachments(utils::AttachmentsDatabase& aDatabase);
     void createRenderPass();
     void createFramebuffers();
     void updateCommandBuffer(uint32_t frameNumber) override;

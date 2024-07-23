@@ -13,28 +13,27 @@
 
 namespace moon::utils {
 
-VkResult debug::checkResult(VkResult result, std::string message){
-    if (result != VK_SUCCESS){
-        message = string_VkResult(result) + std::string(" : ") + message;
+void debug::displayError(std::string message){
 #ifndef NDEBUG
-        std::cerr << message << std::endl;
+    std::cerr << message << std::endl;
 #endif
 #ifdef THROW_EXEPTION
-        throw std::runtime_error(message);
+    throw std::runtime_error(message);
 #endif
+}
+
+VkResult debug::checkResult(VkResult result, std::string message){
+    if (result != VK_SUCCESS){
+        debug::displayError(string_VkResult(result) + std::string(" : ") + message);
     }
     return result;
 }
 
-void debug::checkResult(bool result, std::string message){
-    if (result != VK_SUCCESS){
-#ifndef NDEBUG
-        std::cerr << message << std::endl;
-#endif
-#ifdef THROW_EXEPTION
-        throw std::runtime_error(message);
-#endif
+bool debug::checkResult(bool result, std::string message){
+    if (result){
+        debug::displayError(message);
     }
+    return result;
 }
 
 Memory::~Memory(){

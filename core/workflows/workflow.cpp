@@ -18,8 +18,12 @@ void Workflow::update(uint32_t frameNumber) {
     }
 }
 
-utils::vkDefault::CommandBuffer& Workflow::commandBuffer(uint32_t frameNumber) {
-    return commandBuffers[frameNumber];
+Workflow::operator utils::vkDefault::CommandBuffers& () {
+    return commandBuffers;
+}
+
+Workflow::operator utils::vkDefault::CommandBuffers* () {
+    return &commandBuffers;
 }
 
 void Workflow::raiseUpdateFlags() {

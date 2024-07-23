@@ -55,8 +55,11 @@ namespace debug {
             VkResult        result,
             std::string     message);
 
-    void checkResult(
+    bool checkResult(
             bool            result,
+            std::string     message);
+
+    void displayError(
             std::string     message);
 }
 

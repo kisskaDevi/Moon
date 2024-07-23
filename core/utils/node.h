@@ -1,51 +1,46 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <vulkan.h>
 #include <vector>
+
+#include <vulkan.h>
 #include <vkdefault.h>
 
 namespace moon::utils {
 
 struct PipelineStage{
-    std::vector<VkCommandBuffer> commandBuffers;
-    std::vector<VkSemaphore> waitSemaphores;
-    std::vector<VkSemaphore> signalSemaphores;
-    VkPipelineStageFlags waitStage;
+    struct Frame {
+        std::vector<VkCommandBuffer> commandBuffers;
+        std::vector<VkSemaphore> wait;
+        utils::vkDefault::Semaphores signal;
+    };
+    std::vector<Frame> frames;
+
+    VkPipelineStageFlags waitStagesMask{};
     VkQueue queue{VK_NULL_HANDLE};
     VkFence fence{VK_NULL_HANDLE};
 
-    PipelineStage(std::vector<VkCommandBuffer> commandBuffers, VkPipelineStageFlags waitStages, VkQueue queue);
-
-    VkResult submit();
+    PipelineStage(const std::vector<const vkDefault::CommandBuffers*>& commandBuffers, VkPipelineStageFlags waitStagesMask, VkQueue queue);
+    VkResult submit(uint32_t frameIndex) const;
 };
 
 using PipelineStages = std::vector<PipelineStage>;
 
-struct PipelineNode{
+class PipelineNode{
+private:
     utils::PipelineStages stages;
-    utils::vkDefault::Semaphores signalSemaphores;
     PipelineNode* next{nullptr};
-    VkDevice device{VK_NULL_HANDLE};
 
+    std::vector<std::vector<VkSemaphore>> semaphores(uint32_t frameIndex);
+
+public:
     PipelineNode() = default;
-    PipelineNode(const PipelineNode&) = delete;
-    PipelineNode& operator=(const PipelineNode&) = delete;
+    PipelineNode(VkDevice device, PipelineStages&& stages, PipelineNode* next = nullptr);
 
-    void swap(PipelineNode&);
-    PipelineNode(PipelineNode&&);
-    PipelineNode& operator=(PipelineNode&&);
-    PipelineNode(VkDevice device, const PipelineStages& stages, PipelineNode* next = nullptr);
-    ~PipelineNode();
-
-    PipelineNode* back();
-
-    void setExternalSemaphore(const std::vector<std::vector<VkSemaphore>>& externalSemaphore);
-    void setExternalFence(const std::vector<VkFence>& externalFence);
-    std::vector<std::vector<VkSemaphore>> getBackSemaphores();
-
-    VkResult createSemaphores();
-    void submit();
+    std::vector<std::vector<VkSemaphore>> submit(
+        const uint32_t frameIndex,
+        const std::vector<VkFence>& externalFence = {},
+        const std::vector<std::vector<VkSemaphore>>& externalSemaphore = {});
 };
 
 using PipelineNodes = std::vector<moon::utils::PipelineNode>;

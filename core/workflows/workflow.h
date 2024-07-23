@@ -56,7 +56,8 @@ public:
     void update(uint32_t frameNumber);
     void raiseUpdateFlags();
 
-    utils::vkDefault::CommandBuffer& commandBuffer(uint32_t frameNumber);
+    operator utils::vkDefault::CommandBuffers&();
+    operator utils::vkDefault::CommandBuffers*();
 };
 
 struct Parameters {

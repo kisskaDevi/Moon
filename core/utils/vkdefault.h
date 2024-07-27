@@ -9,23 +9,6 @@
 
 #include "operations.h"
 
-struct GLFWwindow;
-
-namespace moon::utils {
-
-struct ImageInfo {
-	uint32_t                Count{ 0 };
-	VkFormat                Format{ VK_FORMAT_UNDEFINED };
-	VkExtent2D              Extent{ 0, 0 };
-	VkSampleCountFlagBits   Samples{ VK_SAMPLE_COUNT_1_BIT };
-};
-
-template<typename T>
-void raiseFlags(std::vector<T>& buffers) {
-	for (auto& buffer : buffers) buffer.raiseFlag();
-}
-}
-
 namespace moon::utils::vkDefault {
 
 VkSamplerCreateInfo sampler();

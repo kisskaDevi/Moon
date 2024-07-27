@@ -203,7 +203,7 @@ void BaseObject::printStatus() const {
 }
 
 
-SkyboxObject::SkyboxObject(const std::vector<std::filesystem::path> &texturePaths) :
+SkyboxObject::SkyboxObject(const utils::paths& texturePaths) :
     BaseObject(),
     texturePaths(texturePaths){
     pipelineBitMask = moon::interfaces::ObjectType::skybox;

@@ -58,10 +58,10 @@ struct TextureImage {
 
 class Texture{
 protected:
-    std::vector<std::filesystem::path> paths;
+    utils::paths paths;
     TextureImage image;
 
-    Texture(const std::vector<std::filesystem::path>& paths);
+    Texture(const utils::paths& paths);
 
 public:
     virtual ~Texture() = default;
@@ -74,8 +74,7 @@ public:
 
     void destroyCache();
 
-    Texture(
-            VkPhysicalDevice    physicalDevice,
+    Texture(VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
             int                 width,
@@ -83,8 +82,7 @@ public:
             void*               buffer,
             const TextureSampler& textureSampler = TextureSampler{});
 
-    Texture(
-            const std::filesystem::path& path,
+    Texture(const std::filesystem::path& path,
             VkPhysicalDevice    physicalDevice,
             VkDevice            device,
             VkCommandBuffer     commandBuffer,
@@ -109,7 +107,7 @@ public:
     CubeTexture(CubeTexture&&) noexcept = default;
     CubeTexture& operator=(CubeTexture&&) noexcept = default;
     CubeTexture(Texture&& texture);
-    CubeTexture(const std::vector<std::filesystem::path>& path,
+    CubeTexture(const utils::paths&     path,
                 VkPhysicalDevice        physicalDevice,
                 VkDevice                device,
                 VkCommandBuffer         commandBuffer,

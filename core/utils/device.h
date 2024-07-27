@@ -25,8 +25,8 @@ struct QueueFamily{
 };
 
 struct Device{
-    VkDevice                    instance{VK_NULL_HANDLE};
-    VkPhysicalDeviceFeatures    deviceFeatures{};
+    VkDevice instance{VK_NULL_HANDLE};
+    VkPhysicalDeviceFeatures deviceFeatures{};
     std::map<uint32_t, std::vector<VkQueue>> queueMap;
 
     Device() = default;
@@ -56,9 +56,9 @@ struct PhysicalDevice{
     std::vector<const char*> deviceExtensions;
 
 #ifdef NDEBUG
-    bool                    enableValidationLayers = false;
+    bool enableValidationLayers = false;
 #else
-    bool                    enableValidationLayers = true;
+    bool enableValidationLayers = true;
 #endif
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 

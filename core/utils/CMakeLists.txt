@@ -19,7 +19,7 @@ include_directories(${INCLUDE_DIRS})
 
 set(SOURCES
     attachments.cpp
-    node.cpp
+    pipelineNode.cpp
     operations.cpp
     texture.cpp
     device.cpp
@@ -32,7 +32,7 @@ set(SOURCES
 
 set(HEADERS
     attachments.h
-    node.h
+    pipelineNode.h
     operations.h
     texture.h
     device.h

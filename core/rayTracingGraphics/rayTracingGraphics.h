@@ -64,10 +64,10 @@ private:
     moon::workflows::BloomParameters bloomParams;
 
     void update(uint32_t imageIndex) override;
-    std::vector<std::vector<VkSemaphore>> submit(
-        const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
-        const std::vector<VkFence>& externalFence,
-        uint32_t imageIndex) override;
+    utils::vkDefault::VkSemaphores submit(
+        uint32_t frameIndex,
+        const std::vector<VkFence>& externalFence = {},
+        const utils::vkDefault::VkSemaphores& externalSemaphore = {}) override;
 
 public:
     RayTracingGraphics(const std::filesystem::path& shadersPath, const std::filesystem::path& workflowsShadersPath, VkExtent2D extent);

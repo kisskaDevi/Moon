@@ -126,7 +126,7 @@ void PostProcessingGraphics::create(const utils::vkDefault::CommandPool& command
 void PostProcessingGraphics::updateDescriptors(const utils::BuffersDatabase&, const utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
 
-    for (size_t i = 0; i < parameters.imageInfo.Count; i++){
+    for (uint32_t i = 0; i < parameters.imageInfo.Count; i++){
         VkDescriptorImageInfo layersImageInfo = aDatabase.descriptorImageInfo(parameters.in.baseColor, i);
         VkDescriptorImageInfo blurImageInfo = aDatabase.descriptorImageInfo(parameters.in.blur, i);
         VkDescriptorImageInfo ssaoImageInfo = aDatabase.descriptorImageInfo(parameters.in.ssao, i);

@@ -8,7 +8,7 @@
 #include "cursor.h"
 #include "buffer.h"
 #include "vector.h"
-#include "node.h"
+#include "pipelineNode.h"
 
 #include "graphics.h"
 #include "layersCombiner.h"
@@ -65,7 +65,7 @@ struct Parameters {
         UpdateTracked<uint32_t> transparentLayersCount{ 2 };
         UpdateTracked<float>    blitFactor{ 1.5f };
         UpdateTracked<float>    blurDepth{ 1.0f };
-        UpdateTracked<float>    minAmbientFactor{ 0.05 };
+        UpdateTracked<float>    minAmbientFactor{ 0.05f };
         UpdateTracked<bool>     scatteringRefraction{ false };
     } workflowsParameters;
 
@@ -115,10 +115,11 @@ private:
     void updateParameters();
 
     void update(uint32_t imageIndex) override;
-    std::vector<std::vector<VkSemaphore>> submit(
-        const std::vector<std::vector<VkSemaphore>>& externalSemaphore,
-        const std::vector<VkFence>& externalFence,
-        uint32_t imageIndex) override;
+
+    virtual utils::vkDefault::VkSemaphores submit(
+        const uint32_t frameIndex,
+        const std::vector<VkFence>& externalFence = {},
+        const utils::vkDefault::VkSemaphores& externalSemaphore = {}) override;
 
 public:
     DeferredGraphics(const Parameters& parameters);

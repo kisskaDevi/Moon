@@ -1,12 +1,6 @@
 #include "deferredGraphics.h"
 #include "operations.h"
 #include "texture.h"
-#include "node.h"
-#include "model.h"
-#include "light.h"
-#include "object.h"
-#include "camera.h"
-#include "depthMap.h"
 #include "swapChain.h"
 
 #include "deferredLink.h"
@@ -204,10 +198,11 @@ void DeferredGraphics::createGraphicsPasses(){
     workflows["BoundingBox"] = std::make_unique<workflows::BoundingBoxGraphics>(bbParams, &objects);
     workflows["Selector"] = std::make_unique<workflows::SelectorGraphics>(selectorParams, &params.cursor);
 
-    for(auto& [_,workflow]: workflows){
+    for(auto& [k,workflow]: workflows){
         workflow->setDeviceProp(device->instance, device->getLogical());
         workflow->create(commandPool, aDatabase);
     }
+
     for (auto& [_, workflow] : workflows) {
         workflow->updateDescriptors(bDatabase, aDatabase);
     }
@@ -255,8 +250,11 @@ void DeferredGraphics::createStages(){
     nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(copyStages), &nodes.back()));
 }
 
-std::vector<std::vector<VkSemaphore>> DeferredGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>& externalFence, uint32_t imageIndex){
-    return nodes.back().submit(imageIndex, externalFence, externalSemaphore);
+utils::vkDefault::VkSemaphores DeferredGraphics::submit(
+    const uint32_t frameIndex,
+    const std::vector<VkFence>& externalFence,
+    const utils::vkDefault::VkSemaphores& externalSemaphore) {
+    return nodes.back().submit(frameIndex, externalFence, externalSemaphore);
 }
 
 void DeferredGraphics::updateParameters() {

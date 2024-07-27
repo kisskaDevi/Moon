@@ -41,7 +41,7 @@ public:
     void update(uint32_t resourceNumber, uint32_t imageNumber);
     VkRenderPass getRenderPass() const;
 
-    const VkSemaphore& submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue);
+    const VkSemaphore& submit(uint32_t frameNumber, const utils::vkDefault::VkSemaphores& waitSemaphores, VkFence fence, VkQueue queue);
 };
 
 }

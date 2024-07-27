@@ -317,8 +317,8 @@ vkDefault::FragmentShaderModule::~FragmentShaderModule() {
     specializationInfo = VkSpecializationInfo{};
 }
 
-vkDefault::FragmentShaderModule::FragmentShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo) :
-    ShaderModule(device, shaderPath), specializationInfo(specializationInfo) {
+vkDefault::FragmentShaderModule::FragmentShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specInfo) :
+    ShaderModule(device, shaderPath), specializationInfo(specInfo) {
     pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     pipelineShaderStageCreateInfo.module = shaderModule;
@@ -335,8 +335,8 @@ vkDefault::VertrxShaderModule::~VertrxShaderModule() {
     specializationInfo = VkSpecializationInfo{};
 }
 
-vkDefault::VertrxShaderModule::VertrxShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specializationInfo) :
-    ShaderModule(device, shaderPath), specializationInfo(specializationInfo) {
+vkDefault::VertrxShaderModule::VertrxShaderModule(VkDevice device, const std::filesystem::path& shaderPath, const VkSpecializationInfo& specInfo) :
+    ShaderModule(device, shaderPath), specializationInfo(specInfo) {
     pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     pipelineShaderStageCreateInfo.module = shaderModule;

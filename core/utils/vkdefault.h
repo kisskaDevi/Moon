@@ -250,6 +250,7 @@ public:
 };
 
 using Semaphores = std::vector<Semaphore>;
+using VkSemaphores = std::vector<VkSemaphore>;
 
 class Fence {
 	VKDEFAULT_INIT_DESCRIPTOR(Fence, VkFence)

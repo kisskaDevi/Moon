@@ -72,7 +72,7 @@ void ImguiGraphics::reset() {
 
 void ImguiGraphics::update(uint32_t) {}
 
-std::vector<std::vector<VkSemaphore>> ImguiGraphics::submit(const std::vector<std::vector<VkSemaphore>>& externalSemaphore, const std::vector<VkFence>&, uint32_t){
+utils::vkDefault::VkSemaphores ImguiGraphics::submit(uint32_t, const std::vector<VkFence>&, const utils::vkDefault::VkSemaphores& externalSemaphore) {
     return externalSemaphore;
 }
 

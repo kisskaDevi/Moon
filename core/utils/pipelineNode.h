@@ -11,8 +11,8 @@ namespace moon::utils {
 struct PipelineStage{
     struct Frame {
         std::vector<VkCommandBuffer> commandBuffers;
-        std::vector<VkSemaphore> wait;
-        utils::vkDefault::Semaphores signal;
+        vkDefault::VkSemaphores wait;
+        vkDefault::Semaphores signal;
     };
     std::vector<Frame> frames;
 
@@ -28,22 +28,19 @@ using PipelineStages = std::vector<PipelineStage>;
 
 class PipelineNode{
 private:
-    utils::PipelineStages stages;
+    PipelineStages stages;
     PipelineNode* next{nullptr};
 
-    std::vector<std::vector<VkSemaphore>> semaphores(uint32_t frameIndex);
+    vkDefault::VkSemaphores semaphores(uint32_t frameIndex);
 
 public:
     PipelineNode() = default;
     PipelineNode(VkDevice device, PipelineStages&& stages, PipelineNode* next = nullptr);
 
-    std::vector<std::vector<VkSemaphore>> submit(
-        const uint32_t frameIndex,
-        const std::vector<VkFence>& externalFence = {},
-        const std::vector<std::vector<VkSemaphore>>& externalSemaphore = {});
+    vkDefault::VkSemaphores submit(const uint32_t frameIndex, const std::vector<VkFence>& externalFence = {}, const vkDefault::VkSemaphores& externalSemaphore = {});
 };
 
-using PipelineNodes = std::vector<moon::utils::PipelineNode>;
+using PipelineNodes = std::vector<PipelineNode>;
 
 }
 #endif // NODE_H

@@ -167,17 +167,12 @@ VkResult GraphicsManager::drawFrame(){
     }
     linker.update(resourceIndex, imageIndex);
 
-    std::vector<std::vector<VkSemaphore>> waitSemaphores = {{availableSemaphores[resourceIndex]}};
+    utils::vkDefault::VkSemaphores waitSemaphores = {availableSemaphores[resourceIndex]};
     for(auto& graph: graphics){
-        waitSemaphores = graph->submit(waitSemaphores, {VK_NULL_HANDLE}, resourceIndex);
+        waitSemaphores = graph->submit(resourceIndex, {VK_NULL_HANDLE}, waitSemaphores);
     }
 
-    VkSemaphore linkerSemaphore = linker.submit(
-        resourceIndex,
-        waitSemaphores.size() > 0 ? waitSemaphores.back() : std::vector<VkSemaphore>(),
-        fences[resourceIndex],
-        activeDevice->getQueue(0,0)
-    );
+    VkSemaphore linkerSemaphore = linker.submit(resourceIndex, waitSemaphores, fences[resourceIndex], activeDevice->getQueue(0,0));
 
     resourceIndex = ((resourceIndex + 1) % resourceCount);
 

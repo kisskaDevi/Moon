@@ -67,7 +67,7 @@ void GraphicsLinker::createRenderPass(VkDevice device){
 
 void GraphicsLinker::createFramebuffers(VkDevice device, const moon::utils::SwapChain* swapChainKHR){
     framebuffers.resize(imageInfo.Count);
-    for (size_t i = 0; i < framebuffers.size(); i++) {
+    for (uint32_t i = 0; i < framebuffers.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -121,7 +121,7 @@ VkRenderPass GraphicsLinker::getRenderPass() const {
     return renderPass;
 }
 
-const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const std::vector<VkSemaphore>& waitSemaphores, VkFence fence, VkQueue queue){
+const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const utils::vkDefault::VkSemaphores& waitSemaphores, VkFence fence, VkQueue queue){
     VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

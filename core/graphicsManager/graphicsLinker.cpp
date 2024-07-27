@@ -120,8 +120,7 @@ void GraphicsLinker::update(uint32_t resourceNumber, uint32_t imageNumber){
 VkRenderPass GraphicsLinker::getRenderPass() const {
     return renderPass;
 }
-
-const VkSemaphore& GraphicsLinker::submit(uint32_t frameNumber, const utils::vkDefault::VkSemaphores& waitSemaphores, VkFence fence, VkQueue queue){
+VkSemaphore GraphicsLinker::submit(uint32_t frameNumber, const utils::vkDefault::VkSemaphores& waitSemaphores, VkFence fence, VkQueue queue) const  {
     VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

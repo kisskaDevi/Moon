@@ -26,7 +26,7 @@ private:
     void uploadFonts();
 
     void update(uint32_t imageIndex) override;
-    utils::vkDefault::VkSemaphores submit(uint32_t frameIndex, const std::vector<VkFence>& externalFence = {}, const utils::vkDefault::VkSemaphores& externalSemaphore = {}) override;
+    utils::vkDefault::VkSemaphores submit(uint32_t frameIndex, const utils::vkDefault::VkSemaphores& externalSemaphore = {}) override;
 public:
     ImguiGraphics(GLFWwindow* window, VkInstance instance, uint32_t maxImageCount);
     ~ImguiGraphics();

@@ -231,13 +231,13 @@ void DeferredGraphics::createStages(){
     preCombinedStages.push_back(utils::PipelineStage({*workflows["SSLR"]}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)));
     nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(preCombinedStages), &nodes.back()));
 
-    std::vector<const utils::vkDefault::CommandBuffers*> transparent(params.transparentLayersCount());
-    for (uint32_t i = 0; i < transparent.size(); i++) {
-        transparent[i] = *workflows["TransparentLayer" + std::to_string(i)];
+    std::vector<const utils::vkDefault::CommandBuffers*> deferredStagesCommandBuffers;
+    deferredStagesCommandBuffers.push_back(*workflows["DeferredGraphics"]);
+    for (uint32_t i = 0; i < params.transparentLayersCount(); i++) {
+        deferredStagesCommandBuffers.push_back(*workflows["TransparentLayer" + std::to_string(i)]);
     }
     utils::PipelineStages deferredStages;
-    deferredStages.push_back(utils::PipelineStage({*workflows["DeferredGraphics"]}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)));
-    deferredStages.push_back(utils::PipelineStage(transparent, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)));
+    deferredStages.push_back(utils::PipelineStage(deferredStagesCommandBuffers, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)));
     nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(deferredStages), &nodes.back()));
 
     utils::PipelineStages prepareStages;
@@ -250,11 +250,8 @@ void DeferredGraphics::createStages(){
     nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(copyStages), &nodes.back()));
 }
 
-utils::vkDefault::VkSemaphores DeferredGraphics::submit(
-    const uint32_t frameIndex,
-    const std::vector<VkFence>& externalFence,
-    const utils::vkDefault::VkSemaphores& externalSemaphore) {
-    return nodes.back().submit(frameIndex, externalFence, externalSemaphore);
+utils::vkDefault::VkSemaphores DeferredGraphics::submit(const uint32_t frameIndex, const utils::vkDefault::VkSemaphores& externalSemaphore) {
+    return nodes.back().submit(frameIndex, externalSemaphore);
 }
 
 void DeferredGraphics::updateParameters() {

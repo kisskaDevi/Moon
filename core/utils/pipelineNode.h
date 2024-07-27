@@ -18,7 +18,6 @@ struct PipelineStage{
 
     VkPipelineStageFlags waitStagesMask{};
     VkQueue queue{VK_NULL_HANDLE};
-    VkFence fence{VK_NULL_HANDLE};
 
     PipelineStage(const std::vector<const vkDefault::CommandBuffers*>& commandBuffers, VkPipelineStageFlags waitStagesMask, VkQueue queue);
     VkResult submit(uint32_t frameIndex) const;
@@ -37,7 +36,7 @@ public:
     PipelineNode() = default;
     PipelineNode(VkDevice device, PipelineStages&& stages, PipelineNode* next = nullptr);
 
-    vkDefault::VkSemaphores submit(const uint32_t frameIndex, const std::vector<VkFence>& externalFence = {}, const vkDefault::VkSemaphores& externalSemaphore = {});
+    vkDefault::VkSemaphores submit(const uint32_t frameIndex, const vkDefault::VkSemaphores& externalSemaphore = {});
 };
 
 using PipelineNodes = std::vector<PipelineNode>;

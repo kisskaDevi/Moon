@@ -115,11 +115,7 @@ private:
     void updateParameters();
 
     void update(uint32_t imageIndex) override;
-
-    virtual utils::vkDefault::VkSemaphores submit(
-        const uint32_t frameIndex,
-        const std::vector<VkFence>& externalFence = {},
-        const utils::vkDefault::VkSemaphores& externalSemaphore = {}) override;
+    utils::vkDefault::VkSemaphores submit(const uint32_t frameIndex, const utils::vkDefault::VkSemaphores& externalSemaphore = {}) override;
 
 public:
     DeferredGraphics(const Parameters& parameters);

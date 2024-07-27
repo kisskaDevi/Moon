@@ -104,7 +104,7 @@ void RayTracingGraphics::reset()
     rayTracer.create();
 }
 
-utils::vkDefault::VkSemaphores RayTracingGraphics::submit(uint32_t frameIndex, const std::vector<VkFence>& externalFence, const utils::vkDefault::VkSemaphores& externalSemaphore)
+utils::vkDefault::VkSemaphores RayTracingGraphics::submit(uint32_t frameIndex, const utils::vkDefault::VkSemaphores& externalSemaphore)
 {
     rayTracer.calculateImage(color.host.data(), bloom.host.data());
 

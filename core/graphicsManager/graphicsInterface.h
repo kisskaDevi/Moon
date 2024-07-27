@@ -28,11 +28,7 @@ protected:
 
 private:
     virtual void update(uint32_t imageIndex) = 0;
-
-    virtual utils::vkDefault::VkSemaphores submit(
-        const uint32_t frameIndex,
-        const std::vector<VkFence>& externalFence = {},
-        const utils::vkDefault::VkSemaphores& externalSemaphore = {}) = 0;
+    virtual utils::vkDefault::VkSemaphores submit(const uint32_t frameIndex, const utils::vkDefault::VkSemaphores& externalSemaphore) = 0;
 
     virtual void setProperties(
         const utils::PhysicalDeviceMap& devicesMap,

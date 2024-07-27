@@ -169,7 +169,7 @@ VkResult GraphicsManager::drawFrame(){
 
     utils::vkDefault::VkSemaphores waitSemaphores = {availableSemaphores[resourceIndex]};
     for(auto& graph: graphics){
-        waitSemaphores = graph->submit(resourceIndex, {VK_NULL_HANDLE}, waitSemaphores);
+        waitSemaphores = graph->submit(resourceIndex, waitSemaphores);
     }
 
     VkSemaphore linkerSemaphore = linker.submit(resourceIndex, waitSemaphores, fences[resourceIndex], activeDevice->getQueue(0,0));

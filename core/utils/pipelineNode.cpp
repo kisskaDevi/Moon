@@ -37,7 +37,7 @@ VkResult PipelineStage::submit(uint32_t frameIndex) const {
         submitInfo.pCommandBuffers = frame.commandBuffers.data();
         submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signals.size());
         submitInfo.pSignalSemaphores = signals.data();
-    return vkQueueSubmit(queue, 1, &submitInfo, fence);
+    return vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 }
 
 PipelineNode::PipelineNode(VkDevice device, PipelineStages&& instages, PipelineNode* next) : stages(std::move(instages)), next(next) {
@@ -56,23 +56,17 @@ PipelineNode::PipelineNode(VkDevice device, PipelineStages&& instages, PipelineN
     }
 }
 
-vkDefault::VkSemaphores PipelineNode::submit(const uint32_t frameIndex, const std::vector<VkFence>& externalFence, const vkDefault::VkSemaphores& externalSemaphore){
+vkDefault::VkSemaphores PipelineNode::submit(const uint32_t frameIndex, const vkDefault::VkSemaphores& externalSemaphore){
     if (!externalSemaphore.empty()) {
         CHECK_M(stages.size() != 1, std::string("[PipelineStage::submit] first PipelineNode must have single PipelineStage"))
         stages.front().frames.at(frameIndex).wait = externalSemaphore;
-    }
-
-    if (!next) {
-        for (uint32_t i = 0; i < externalFence.size(); i++) {
-            stages[i].fence = externalFence[i];
-        }
     }
 
     for(const auto& stage: stages){
         CHECK(stage.submit(frameIndex));
     }
 
-    return next ? next->submit(frameIndex, externalFence) : semaphores(frameIndex);
+    return next ? next->submit(frameIndex) : semaphores(frameIndex);
 }
 
 vkDefault::VkSemaphores PipelineNode::semaphores(uint32_t frameIndex) {

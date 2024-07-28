@@ -3,8 +3,7 @@
 
 #include <vulkan.h>
 #include "buffer.h"
-
-namespace moon::utils { struct PhysicalDevice;}
+#include "device.h"
 
 namespace moon::interfaces {
 

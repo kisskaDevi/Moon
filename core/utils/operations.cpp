@@ -87,7 +87,7 @@ void Memory::status()
     std::cout << "Total memory used : " << totalMemoryUsed << std::endl;
 }
 
-bool validationLayer::checkSupport(const std::vector<const char*> validationLayers)
+bool validationLayer::checkSupport(const std::vector<std::string> validationLayers)
 {
     uint32_t layerCount;
     CHECK(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
@@ -96,10 +96,10 @@ bool validationLayer::checkSupport(const std::vector<const char*> validationLaye
     CHECK(vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()));
 
     bool res = true;
-    for (const char* layerName : validationLayers){
+    for (const std::string& layerName : validationLayers){
         bool layerFound = false;
         for(const auto& layerProperties: availableLayers){
-            layerFound |= (strcmp(layerName, layerProperties.layerName) == 0);
+            layerFound |= (strcmp(layerName.c_str(), layerProperties.layerName) == 0);
         }
         res &= layerFound;
     }
@@ -307,7 +307,7 @@ VkSampleCountFlagBits physicalDevice::queryingSampleCount(VkPhysicalDevice devic
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-bool physicalDevice::isSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions)
+bool physicalDevice::isSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<std::string>& deviceExtensions)
 {
     VkPhysicalDeviceFeatures supportedFeatures{};
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
@@ -315,7 +315,7 @@ bool physicalDevice::isSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, c
     return physicalDevice::isExtensionsSupport(device, deviceExtensions) && swapChain::queryingSupport(device, surface).isNotEmpty() && supportedFeatures.samplerAnisotropy;
 }
 
-bool physicalDevice::isExtensionsSupport(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions)
+bool physicalDevice::isExtensionsSupport(VkPhysicalDevice device, const std::vector<std::string>& deviceExtensions)
 {
     uint32_t extensionCount;
     CHECK(vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,nullptr));

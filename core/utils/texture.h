@@ -58,10 +58,10 @@ struct TextureImage {
 
 class Texture{
 protected:
-    utils::paths paths;
+    utils::Paths paths;
     TextureImage image;
 
-    Texture(const utils::paths& paths);
+    Texture(const utils::Paths& paths);
 
 public:
     virtual ~Texture() = default;
@@ -107,7 +107,7 @@ public:
     CubeTexture(CubeTexture&&) noexcept = default;
     CubeTexture& operator=(CubeTexture&&) noexcept = default;
     CubeTexture(Texture&& texture);
-    CubeTexture(const utils::paths&     path,
+    CubeTexture(const utils::Paths&     path,
                 VkPhysicalDevice        physicalDevice,
                 VkDevice                device,
                 VkCommandBuffer         commandBuffer,

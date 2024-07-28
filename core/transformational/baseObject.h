@@ -98,13 +98,13 @@ public:
 
 class SkyboxObject : public BaseObject{
 private:
-    utils::paths texturePaths;
+    utils::Paths texturePaths;
     moon::utils::CubeTexture texture;
 
     void createDescriptorPool(uint32_t imageCount);
     void createDescriptorSet(uint32_t imageCount);
 public:
-    SkyboxObject(const utils::paths& texturePaths);
+    SkyboxObject(const utils::Paths& texturePaths);
 
     SkyboxObject& setMipLevel(float mipLevel);
     SkyboxObject& translate(const moon::math::Vector<float,3>& translate) override;

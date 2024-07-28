@@ -6,8 +6,7 @@
 #include <vector.h>
 
 #include <vkdefault.h>
-
-namespace moon::utils { struct PhysicalDevice;}
+#include <device.h>
 
 namespace moon::interfaces {
 

@@ -131,15 +131,15 @@ void SpotLight::create(
     uint32_t imageCount)
 {
     if(!this->device){
-        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkDevice is VK_NULL_HANDLE"));
-        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::bindLightSource ] VkCommandPool is VK_NULL_HANDLE"));
+        CHECK_M(VkPhysicalDevice(device) == VK_NULL_HANDLE, std::string("[ SpotLight::create ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(VkDevice(device.device()) == VK_NULL_HANDLE, std::string("[ SpotLight::create ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ SpotLight::create ] VkCommandPool is VK_NULL_HANDLE"));
 
         this->device = &device;
 
-        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(), commandPool);
-        texture = texturePath.empty() ? utils::Texture::empty(device, commandBuffer) : utils::Texture(texturePath, device.instance, device.getLogical(), commandBuffer);
-        moon::utils::singleCommandBuffer::submit(device.getLogical(), device.getQueue(0, 0), commandPool, &commandBuffer);
+        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.device(), commandPool);
+        texture = texturePath.empty() ? utils::Texture::empty(device, commandBuffer) : utils::Texture(texturePath, device, device.device(), commandBuffer);
+        moon::utils::singleCommandBuffer::submit(device.device(), device.device()(0, 0), commandPool, &commandBuffer);
         texture.destroyCache();
 
         createUniformBuffers(imageCount);
@@ -167,12 +167,12 @@ void SpotLight::createUniformBuffers(uint32_t imageCount)
 {
     uniformBuffersHost.resize(imageCount);
     for (auto& buffer: uniformBuffersHost){
-        buffer = utils::vkDefault::Buffer(device->instance, device->getLogical(), sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        buffer = utils::vkDefault::Buffer(*device, device->device(), sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
     }
     uniformBuffersDevice.resize(imageCount);
     for (auto& buffer: uniformBuffersDevice){
-        buffer = utils::vkDefault::Buffer(device->instance, device->getLogical(), sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        buffer = utils::vkDefault::Buffer(*device, device->device(), sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
     }
 }
@@ -195,9 +195,9 @@ void SpotLight::update(
 }
 
 void SpotLight::createDescriptorPool(uint32_t imageCount) {
-    textureDescriptorSetLayout = moon::interfaces::Light::createTextureDescriptorSetLayout(device->getLogical());
-    descriptorSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device->getLogical());
-    descriptorPool = utils::vkDefault::DescriptorPool(device->getLogical(), { &textureDescriptorSetLayout , &descriptorSetLayout}, imageCount);
+    textureDescriptorSetLayout = moon::interfaces::Light::createTextureDescriptorSetLayout(device->device());
+    descriptorSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device->device());
+    descriptorPool = utils::vkDefault::DescriptorPool(device->device(), { &textureDescriptorSetLayout , &descriptorSetLayout}, imageCount);
     textureDescriptorSets = descriptorPool.allocateDescriptorSets(textureDescriptorSetLayout, imageCount);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
 }
@@ -219,7 +219,7 @@ void SpotLight::updateDescriptorSets(uint32_t imageCount)
             descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites.back().descriptorCount = 1;
             descriptorWrites.back().pImageInfo = &lightTexture;
-        vkUpdateDescriptorSets(device->getLogical(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device->device(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
         VkDescriptorBufferInfo lightBufferInfo{};
             lightBufferInfo.buffer = uniformBuffersDevice[i];
@@ -234,7 +234,7 @@ void SpotLight::updateDescriptorSets(uint32_t imageCount)
             bufferDescriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             bufferDescriptorWrites.back().descriptorCount = 1;
             bufferDescriptorWrites.back().pBufferInfo = &lightBufferInfo;
-        vkUpdateDescriptorSets(device->getLogical(), static_cast<uint32_t>(bufferDescriptorWrites.size()), bufferDescriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device->device(), static_cast<uint32_t>(bufferDescriptorWrites.size()), bufferDescriptorWrites.data(), 0, nullptr);
     }
 }
 

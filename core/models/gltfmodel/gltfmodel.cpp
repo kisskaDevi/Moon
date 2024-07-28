@@ -306,7 +306,7 @@ void GltfModel::loadTextures(const moon::utils::PhysicalDevice& device, VkComman
             textureSampler.addressModeV = textureSampler.addressModeW = getVkWrapMode(gltfModel.samplers[tex.sampler].wrapT);
             textureSampler.addressModeU = getVkWrapMode(gltfModel.samplers[tex.sampler].wrapS);
         }
-        textures.emplace_back(device.instance, device.getLogical(), commandBuffer, gltfimage.width, gltfimage.height, buffer.data(), textureSampler);
+        textures.emplace_back(device, device.device(), commandBuffer, gltfimage.width, gltfimage.height, buffer.data(), textureSampler);
     }
     textures.push_back(utils::Texture::empty(device, commandBuffer));
 }
@@ -422,7 +422,7 @@ void GltfModel::loadFromFile(const moon::utils::PhysicalDevice& device, VkComman
         for(auto& instance: instances){
             uint32_t indexStart = 0;
             for (const auto& nodeIndex: gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0].nodes) {
-                loadNode(&instance, device.instance, device.getLogical(), nullptr, nodeIndex, gltfModel, indexStart);
+                loadNode(&instance, device, device.device(), nullptr, nodeIndex, gltfModel, indexStart);
             }
         }
 
@@ -444,8 +444,8 @@ void GltfModel::loadFromFile(const moon::utils::PhysicalDevice& device, VkComman
             }
         }
 
-        utils::createDeviceBuffer(device.instance, device.getLogical(), commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexCache, vertices);
-        utils::createDeviceBuffer(device.instance, device.getLogical(), commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexCache, indices);
+        utils::createDeviceBuffer(device, device.device(), commandBuffer, vertexBuffer.size() * sizeof(Vertex), vertexBuffer.data(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexCache, vertices);
+        utils::createDeviceBuffer(device, device.device(), commandBuffer, indexBuffer.size() * sizeof(uint32_t), indexBuffer.data(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexCache, indices);
     }
 }
 
@@ -485,15 +485,15 @@ void GltfModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool 
 {
     if(this->device == VK_NULL_HANDLE)
     {
-        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
-        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(VkPhysicalDevice(device) == VK_NULL_HANDLE, std::string("[ GltfModel::create ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(VkDevice(device.device()) == VK_NULL_HANDLE, std::string("[ GltfModel::create ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ GltfModel::create ] VkCommandPool is VK_NULL_HANDLE"));
 
-        this->device = device.getLogical();
+        this->device = device.device();
 
-        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
+        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.device(),commandPool);
         loadFromFile(device, commandBuffer);
-        moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
+        moon::utils::singleCommandBuffer::submit(device.device(), device.device()(0,0), commandPool, &commandBuffer);
         destroyCache();
 
         createDescriptorPool();

@@ -56,12 +56,46 @@ struct ImageInfo {
     VkSampleCountFlagBits   Samples{ VK_SAMPLE_COUNT_1_BIT };
 };
 
-template<typename T>
-void raiseFlags(std::vector<T>& buffers) {
-    for (auto& buffer : buffers) buffer.raiseFlag();
-}
+using QueueFamilyIndex = uint32_t;
+using QueueFamilySize = uint32_t;
 
-using paths = std::vector<std::filesystem::path>;
+struct QueueFamily {
+    VkQueueFamilyProperties queueFamilyProperties{};
+    VkBool32 presentSupport{false};
+    std::vector<float> queuePriorities;
+
+    QueueFamily() = default;
+    QueueFamily(VkQueueFamilyProperties queueFamilyProperties, VkBool32 presentSupport = false) :
+        queueFamilyProperties(queueFamilyProperties), presentSupport(presentSupport) {
+        queuePriorities.resize(queueFamilyProperties.queueCount, 1.0f / queueFamilyProperties.queueCount);
+    }
+    QueueFamily(const QueueFamily& other) : QueueFamily(other.queueFamilyProperties, other.presentSupport) {}
+    QueueFamily& operator=(const QueueFamily& other) {
+        queueFamilyProperties = other.queueFamilyProperties;
+        presentSupport = other.presentSupport;
+        queuePriorities.resize(queueFamilyProperties.queueCount, 1.0f / queueFamilyProperties.queueCount);
+        return *this;
+    }
+
+    QueueFamilySize count() const { return queueFamilyProperties.queueCount; }
+    bool availableQueueFlag(VkQueueFlags flag) const { return (flag & queueFamilyProperties.queueFlags) == flag; }
+};
+
+using QueueRequest = std::unordered_map<QueueFamilyIndex, QueueFamilySize>;
+using QueueFamilies = std::unordered_map<QueueFamilyIndex, QueueFamily>;
+
+using DeviceIndex = uint32_t;
+
+struct PhysicalDeviceProperties {
+    DeviceIndex index{ 0x7FFFFFFF };
+    VkPhysicalDeviceType type{ VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM };
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    std::string name{};
+    std::vector<std::string> deviceExtensions;
+    std::vector<std::string> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+};
+
+using Paths = std::vector<std::filesystem::path>;
 
 namespace debug {
 
@@ -83,7 +117,7 @@ namespace debug {
 namespace validationLayer{
 
     bool checkSupport(
-            const std::vector<const char*>              validationLayers);
+            const std::vector<std::string>              validationLayers);
 
     void setupDebugMessenger (
             VkInstance                                  instance,
@@ -135,11 +169,11 @@ namespace physicalDevice {
     bool isSuitable(
             VkPhysicalDevice                device,
             VkSurfaceKHR                    surface,
-            const std::vector<const char*>& deviceExtensions);
+            const std::vector<std::string>& deviceExtensions);
 
     bool isExtensionsSupport(
             VkPhysicalDevice                device,
-            const std::vector<const char*>& deviceExtensions);
+            const std::vector<std::string>& deviceExtensions);
 }
 
 namespace buffer{
@@ -289,6 +323,11 @@ namespace singleCommandBuffer {
         Scoped& operator=(const Scoped&) = delete;
         VkCommandBuffer& get();
     };
+}
+
+template<typename T>
+void raiseFlags(std::vector<T>& buffers) {
+    for (auto& buffer : buffers) buffer.raiseFlag();
 }
 
 namespace swapChain {

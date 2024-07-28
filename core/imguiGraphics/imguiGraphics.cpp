@@ -32,9 +32,9 @@ void ImguiGraphics::setupImguiContext(){
 
 void ImguiGraphics::uploadFonts()
 {
-    VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device->getLogical(),commandPool);
+    VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device->device(),commandPool);
     ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-    moon::utils::singleCommandBuffer::submit(device->getLogical(),device->getQueue(0,0),commandPool,&commandBuffer);
+    moon::utils::singleCommandBuffer::submit(device->device(), device->device()(0,0),commandPool,&commandBuffer);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
@@ -46,17 +46,17 @@ void ImguiGraphics::reset() {
         poolInfo.maxSets = 1;
         poolInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSize.size());
         poolInfo.pPoolSizes = descriptorPoolSize.data();
-    descriptorPool = utils::vkDefault::DescriptorPool(device->getLogical(), poolInfo);
-    commandPool = utils::vkDefault::CommandPool(device->getLogical());
+    descriptorPool = utils::vkDefault::DescriptorPool(device->device(), poolInfo);
+    commandPool = utils::vkDefault::CommandPool(device->device());
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForVulkan(window, true);
     ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = instance;
-        initInfo.PhysicalDevice = device->instance;
-        initInfo.Device = device->getLogical();
+        initInfo.PhysicalDevice = *device;
+        initInfo.Device = device->device();
         initInfo.QueueFamily = 0;
-        initInfo.Queue = device->getQueue(0,0);
+        initInfo.Queue = device->device()(0,0);
         initInfo.PipelineCache = VK_NULL_HANDLE;
         initInfo.DescriptorPool = descriptorPool;
         initInfo.Subpass = 0;

@@ -16,8 +16,8 @@ class GraphicsManager
 private:
     bool                                    enableValidationLayers = true;
 
-    const std::vector<const char*>          validationLayers = {"VK_LAYER_KHRONOS_validation"};
-    const std::vector<const char*>          deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    const std::vector<std::string>          validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    const std::vector<std::string>          deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     utils::vkDefault::Instance              instance;
     utils::vkDefault::DebugUtilsMessenger   debugMessenger;
@@ -55,7 +55,6 @@ public:
     uint32_t   getImageIndex() const;
     uint32_t   getImageCount() const;
 
-    std::vector<moon::utils::PhysicalDeviceProperties> getDeviceInfo() const;
     void setDevice(uint32_t deviceIndex);
     void setGraphics(GraphicsInterface* graphics);
 

@@ -6,10 +6,8 @@
 #include <vector.h>
 #include <vkdefault.h>
 
-namespace moon::utils {
-class Texture;
-struct PhysicalDevice;
-}
+#include "texture.h"
+#include "device.h"
 
 namespace moon::interfaces {
 

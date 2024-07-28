@@ -19,15 +19,15 @@ RayTracingGraphics::ImageResource::ImageResource(const std::string& id, const mo
     host.resize(imageInfo.Extent.width * imageInfo.Extent.height);
 
     hostDevice = utils::vkDefault::Buffer(
-        phDevice.instance,
-        phDevice.getLogical(),
+        phDevice,
+        phDevice.device(),
         sizeof(uint32_t) * host.size(),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     device = utils::Attachments(
-        phDevice.instance,
-        phDevice.getLogical(),
+        phDevice,
+        phDevice.device(),
         imageInfo,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 }
@@ -61,7 +61,7 @@ void RayTracingGraphics::ImageResource::copyToDevice(VkCommandBuffer commandBuff
 void RayTracingGraphics::reset()
 {
     aDatabase.destroy();
-    commandPool = utils::vkDefault::CommandPool(device->getLogical());
+    commandPool = utils::vkDefault::CommandPool(device->device());
 
     emptyTexture = utils::Texture::empty(*device, commandPool);
     aDatabase.addEmptyTexture("black", &emptyTexture);
@@ -83,13 +83,13 @@ void RayTracingGraphics::reset()
     bloomParams.shadersPath = workflowsShadersPath;
 
     bloomGraph = std::make_unique<moon::workflows::BloomGraphics>(bloomParams);
-    bloomGraph->setDeviceProp(device->instance, device->getLogical());
+    bloomGraph->setDeviceProp(*device, device->device());
     bloomGraph->create(commandPool, aDatabase);
     bloomGraph->updateDescriptors(bDatabase, aDatabase);
 
     moon::utils::ImageInfo bbInfo{ resourceCount, swapChainKHR->info().Format, extent, VK_SAMPLE_COUNT_1_BIT};
     std::string bbId = "bb";
-    bbGraphics.create(device->instance, device->getLogical(), bbInfo, shadersPath);
+    bbGraphics.create(*device, device->device(), bbInfo, shadersPath);
     aDatabase.addAttachmentData(bbId, bbGraphics.getEnable(), &bbGraphics.getAttachments());
 
     RayTracingLinkParameters linkParams;
@@ -99,7 +99,7 @@ void RayTracingGraphics::reset()
     linkParams.shadersPath = shadersPath;
     linkParams.imageInfo = utils::ImageInfo{ resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, VK_SAMPLE_COUNT_1_BIT };
 
-    link = std::make_unique<RayTracingLink>(device->getLogical(), linkParams, link->renderPass(), aDatabase);
+    link = std::make_unique<RayTracingLink>(device->device(), linkParams, link->renderPass(), aDatabase);
 
     rayTracer.create();
 }
@@ -114,7 +114,7 @@ utils::vkDefault::VkSemaphores RayTracingGraphics::submit(uint32_t frameIndex, c
     bloomGraph->update(frameIndex);
 
     std::vector<VkCommandBuffer> commandBuffers;
-    auto& commandBuffer = commandBuffers.emplace_back(moon::utils::singleCommandBuffer::create(device->getLogical(),commandPool));
+    auto& commandBuffer = commandBuffers.emplace_back(moon::utils::singleCommandBuffer::create(device->device(), commandPool));
     color.copyToDevice(commandBuffer, extent, frameIndex);
     bloom.copyToDevice(commandBuffer, extent, frameIndex);
     bbGraphics.render(commandBuffer, frameIndex);
@@ -127,8 +127,8 @@ utils::vkDefault::VkSemaphores RayTracingGraphics::submit(uint32_t frameIndex, c
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
     submitInfo.pCommandBuffers = commandBuffers.data();
-    CHECK(vkQueueSubmit(device->getQueue(0,0), 1, &submitInfo, VK_NULL_HANDLE));
-    CHECK(vkQueueWaitIdle(device->getQueue(0, 0)));
+    CHECK(vkQueueSubmit(device->device()(0, 0), 1, &submitInfo, VK_NULL_HANDLE));
+    CHECK(vkQueueWaitIdle(device->device()(0, 0)));
 
     return {};
 }

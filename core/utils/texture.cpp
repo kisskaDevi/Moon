@@ -105,7 +105,7 @@ VkResult TextureImage::create(
     return VK_SUCCESS;
 }
 
-Texture::Texture(const utils::paths& path) : paths(path) {}
+Texture::Texture(const utils::Paths& path) : paths(path) {}
 
 void Texture::swap(Texture& other) noexcept {
     std::swap(paths, other.paths);
@@ -168,7 +168,7 @@ const VkSampler Texture::sampler() const {return image.sampler;}
 
 CubeTexture::CubeTexture(Texture&& texture) : Texture(std::move(texture)){}
 
-CubeTexture::CubeTexture(const utils::paths& path, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, const TextureSampler& textureSampler) : Texture(path)
+CubeTexture::CubeTexture(const utils::Paths& path, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, const TextureSampler& textureSampler) : Texture(path)
 {
     if (paths.size() != 6) throw std::runtime_error("[CubeTexture::create] : must be 6 images");
 
@@ -194,9 +194,9 @@ CubeTexture::CubeTexture(const utils::paths& path, VkPhysicalDevice physicalDevi
 }
 
 Texture Texture::empty(const PhysicalDevice& device, VkCommandPool commandPool, bool isBlack){
-    VkCommandBuffer commandBuffer = singleCommandBuffer::create(device.getLogical(),commandPool);
+    VkCommandBuffer commandBuffer = singleCommandBuffer::create(device.device(),commandPool);
     Texture tex = Texture::empty(device, commandBuffer, isBlack);
-    singleCommandBuffer::submit(device.getLogical(), device.getQueue(0, 0), commandPool, &commandBuffer);
+    singleCommandBuffer::submit(device.device(), device.device()(0, 0), commandPool, &commandBuffer);
     tex.destroyCache();
     return tex;
 };
@@ -204,7 +204,7 @@ Texture Texture::empty(const PhysicalDevice& device, VkCommandPool commandPool, 
 Texture Texture::empty(const PhysicalDevice& device, VkCommandBuffer commandBuffer, bool isBlack) {
     uint32_t buffer = isBlack ? 0xff000000 : 0xffffffff;
     int width = 1, height = 1;
-    return Texture(device.instance, device.getLogical(), commandBuffer, width, height, &buffer);
+    return Texture(device, device.device(), commandBuffer, width, height, &buffer);
 }
 
 }

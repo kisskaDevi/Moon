@@ -3,55 +3,6 @@
 
 namespace moon::utils {
 
-Device::Device(Device&& other) {
-    swap(other);
-}
-
-Device& Device::operator=(Device&& other) {
-    swap(other);
-    return *this;
-}
-
-void Device::swap(Device& other) {
-    std::swap(instance, other.instance);
-    std::swap(deviceFeatures, other.deviceFeatures);
-    std::swap(queueMap, other.queueMap);
-}
-
-Device::Device(VkPhysicalDeviceFeatures deviceFeatures) :
-    deviceFeatures(deviceFeatures)
-{}
-
-Device::~Device() {
-    if (instance) {
-        vkDestroyDevice(instance, nullptr);
-        instance = VK_NULL_HANDLE;
-    }
-}
-
-QueueFamily::QueueFamily(uint32_t index, VkQueueFlags flag, uint32_t queueCount, VkBool32 presentSupport):
-index(index), flags(flag), queueCount(queueCount), presentSupport(presentSupport){
-    queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));
-}
-
-QueueFamily::QueueFamily(const QueueFamily& other):
-index(other.index), flags(other.flags), queueCount(other.queueCount), presentSupport(other.presentSupport){
-    queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));
-}
-
-QueueFamily& QueueFamily::operator=(const QueueFamily& other){
-    index = other.index;
-    flags = other.flags;
-    queueCount = other.queueCount;
-    presentSupport = other.presentSupport;
-    queuePriorities.resize(queueCount, 1.0f/static_cast<float>(queueCount));
-    return *this;
-}
-
-bool QueueFamily::availableQueueFlag(VkQueueFlags flag) const {
-    return (flag & flags) == flag;
-}
-
 PhysicalDevice& PhysicalDevice::operator=(PhysicalDevice&& other) {
     swap(other);
     return *this;
@@ -62,16 +13,14 @@ PhysicalDevice::PhysicalDevice(PhysicalDevice&& other) {
 };
 
 void PhysicalDevice::swap(PhysicalDevice& other) {
-    std::swap(instance, other.instance);
-    std::swap(properties, other.properties);
+    std::swap(descriptor, other.descriptor);
+    std::swap(props, other.props);
     std::swap(queueFamilies, other.queueFamilies);
-    std::swap(logical, other.logical);
-    std::swap(deviceExtensions, other.deviceExtensions);
+    std::swap(devices, other.devices);
 }
 
-PhysicalDevice::PhysicalDevice(VkPhysicalDevice physicalDevice, std::vector<const char*> deviceExtensions):
-    instance(physicalDevice),
-    deviceExtensions(deviceExtensions)
+PhysicalDevice::PhysicalDevice(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures deviceFeatures, const std::vector<std::string>& deviceExtensions)
+    : descriptor(physicalDevice)
 {
     uint32_t queueFamilyPropertyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
@@ -79,83 +28,49 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice physicalDevice, std::vector<cons
     std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
+    for (uint32_t index = 0; index < queueFamilyPropertyCount; index++) {
+        queueFamilies[index] = QueueFamily(queueFamilyProperties[index]);
+    }
+
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-    properties.index = physicalDeviceProperties.deviceID;
-    properties.type = physicalDeviceProperties.deviceType;
-    properties.name = physicalDeviceProperties.deviceName;
-
-    for (uint32_t index = 0; index < queueFamilyPropertyCount; index++){
-        queueFamilies[index] = QueueFamily{index,queueFamilyProperties[index].queueFlags,queueFamilyProperties[index].queueCount, false};
-    }
+    props.index = physicalDeviceProperties.deviceID;
+    props.type = physicalDeviceProperties.deviceType;
+    props.deviceFeatures = deviceFeatures;
+    props.name = physicalDeviceProperties.deviceName;
+    props.deviceExtensions = deviceExtensions;
 }
 
 bool PhysicalDevice::presentSupport(VkSurfaceKHR surface)
 {
     VkBool32 presentSupport = false;
     if(surface){
-        for (const auto& [index, _] : queueFamilies){
+        for (auto& [index, family] : queueFamilies){
             VkBool32 support = false;
-            CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(instance, index, surface, &support));
+            CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(descriptor, index, surface, &support));
             presentSupport |= support;
-            queueFamilies[index].presentSupport = support;
+            family.presentSupport = support;
         }
     }
     return presentSupport;
 }
 
-VkResult PhysicalDevice::createDevice(VkPhysicalDeviceFeatures deviceFeatures, std::map<uint32_t,uint32_t> queueSizeMap)
+VkResult PhysicalDevice::createDevice(const QueueRequest& queueRequest)
 {
-    Device logicalDevice(deviceFeatures);
-
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    for(auto queueSize: queueSizeMap){
-        if(uint32_t index = queueSize.first; queueFamilies.count(index)){
-            queueCreateInfos.push_back(VkDeviceQueueCreateInfo{});
-            queueCreateInfos.back().sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfos.back().queueFamilyIndex = index;
-            queueCreateInfos.back().queueCount = std::min(queueFamilies[index].queueCount, queueSize.second);
-            queueCreateInfos.back().pQueuePriorities = queueFamilies[index].queuePriorities.data();
-        }
-    }
-
-    VkDeviceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-        createInfo.pQueueCreateInfos = queueCreateInfos.data();
-        createInfo.pEnabledFeatures = &deviceFeatures;
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-        createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-        createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
-        createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
-    VkResult result = vkCreateDevice(instance, &createInfo, nullptr, &logicalDevice.instance);
-    CHECK(result);
-
-    for(const auto& queueCreateInfo: queueCreateInfos){
-        logicalDevice.queueMap[queueCreateInfo.queueFamilyIndex] = std::vector<VkQueue>(queueCreateInfo.queueCount);
-        for(uint32_t index = 0; index < queueCreateInfo.queueCount; index++){
-            vkGetDeviceQueue(logicalDevice.instance, queueCreateInfo.queueFamilyIndex, index, &logicalDevice.queueMap[queueCreateInfo.queueFamilyIndex][index]);
-        }
-    }
-
-    logical.emplace_back(std::move(logicalDevice));
-    return result;
+    devices.emplace_back(descriptor, props, queueFamilies, queueRequest);
+    return VK_SUCCESS;
 }
 
-VkDevice& PhysicalDevice::getLogical(){
-    return logical.back().instance;
+PhysicalDevice::operator VkPhysicalDevice() const {
+    return descriptor;
 }
 
-const VkDevice& PhysicalDevice::getLogical() const{
-    return logical.back().instance;
+const vkDefault::Device& PhysicalDevice::device(uint32_t index) const {
+    return devices.at(index);
 }
 
-bool PhysicalDevice::createdLogical() const {
-    return !logical.empty();
-}
-
-VkQueue PhysicalDevice::getQueue(uint32_t familyIndex, uint32_t queueIndex) const {
-    return logical.back().queueMap.at(familyIndex)[queueIndex];
+const PhysicalDeviceProperties& PhysicalDevice::properties() const {
+    return props;
 }
 
 }

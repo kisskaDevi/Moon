@@ -205,16 +205,16 @@ void PlyModel::create(const moon::utils::PhysicalDevice& device, VkCommandPool c
 {
     if(this->device)
     {
-        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkCommandPool is VK_NULL_HANDLE"));
-        CHECK_M(device.instance == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECK_M(device.getLogical() == VK_NULL_HANDLE, std::string("[ deferredGraphics::createModel ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(VkPhysicalDevice(device) == VK_NULL_HANDLE, std::string("[ PlyModel::create ] VkPhysicalDevice is VK_NULL_HANDLE"));
+        CHECK_M(VkDevice(device.device()) == VK_NULL_HANDLE, std::string("[ PlyModel::create ] VkDevice is VK_NULL_HANDLE"));
+        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ PlyModel::create ] VkCommandPool is VK_NULL_HANDLE"));
 
         emptyTexture = utils::Texture::empty(device, commandPool);
-        this->device = device.getLogical();
+        this->device = device.device();
 
-        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.getLogical(),commandPool);
-        loadFromFile(device.instance, device.getLogical(), commandBuffer);
-        moon::utils::singleCommandBuffer::submit(device.getLogical(),device.getQueue(0,0), commandPool, &commandBuffer);
+        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.device(), commandPool);
+        loadFromFile(device, device.device(), commandBuffer);
+        moon::utils::singleCommandBuffer::submit(device.device(), device.device()(0,0), commandPool, &commandBuffer);
         destroyCache();
         createDescriptorPool();
         createDescriptorSet();

@@ -32,7 +32,7 @@ DeferredGraphics::DeferredGraphics(const Parameters& parameters):
 
 void DeferredGraphics::reset()
 {
-    commandPool = utils::vkDefault::CommandPool(device->getLogical());
+    commandPool = utils::vkDefault::CommandPool(device->device());
     copyCommandBuffers = commandPool.allocateCommandBuffers(resourceCount);
 
     aDatabase.destroy();
@@ -47,7 +47,7 @@ void DeferredGraphics::reset()
 
 void DeferredGraphics::createGraphicsPasses(){
     CHECK_M(!commandPool,                       std::string("[ DeferredGraphics::createGraphicsPasses ] VkCommandPool is VK_NULL_HANDLE"));
-    CHECK_M(device->instance == VK_NULL_HANDLE, std::string("[ DeferredGraphics::createGraphicsPasses ] VkPhysicalDevice is VK_NULL_HANDLE"));
+    CHECK_M(device == nullptr,                  std::string("[ DeferredGraphics::createGraphicsPasses ] device is nullptr"));
     CHECK_M(params.cameraObject == nullptr,     std::string("[ DeferredGraphics::createGraphicsPasses ] camera is nullptr"));
 
     VkExtent2D extent{ params.extent[0], params.extent[1] };
@@ -199,7 +199,7 @@ void DeferredGraphics::createGraphicsPasses(){
     workflows["Selector"] = std::make_unique<workflows::SelectorGraphics>(selectorParams, &params.cursor);
 
     for(auto& [k,workflow]: workflows){
-        workflow->setDeviceProp(device->instance, device->getLogical());
+        workflow->setDeviceProp(*device, device->device());
         workflow->create(commandPool, aDatabase);
     }
 
@@ -208,7 +208,7 @@ void DeferredGraphics::createGraphicsPasses(){
     }
 
     utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, params.MSAASamples};
-    link = std::make_unique<Link>(device->getLogical(), params.shadersPath, linkInfo, link->renderPass(), aDatabase.get(postProcessingParams.out.postProcessing));
+    link = std::make_unique<Link>(device->device(), params.shadersPath, linkInfo, link->renderPass(), aDatabase.get(postProcessingParams.out.postProcessing));
 }
 
 void DeferredGraphics::createStages(){
@@ -219,17 +219,17 @@ void DeferredGraphics::createStages(){
     postProcessingStages.push_back(
         utils::PipelineStage({*workflows["Selector"], *workflows["SSAO"], *workflows["Bloom"], *workflows["Blur"], *workflows["BoundingBox"], *workflows["PostProcessing"]},
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        device->getQueue(0,0)));
-    nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(postProcessingStages), nullptr));
+        device->device()(0,0)));
+    nodes.push_back(utils::PipelineNode(device->device(), std::move(postProcessingStages), nullptr));
 
     utils::PipelineStages layersCombinerStages;
-    layersCombinerStages.push_back(utils::PipelineStage({ *workflows["LayersCombiner"] }, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0, 0)));
-    nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(layersCombinerStages), &nodes.back()));
+    layersCombinerStages.push_back(utils::PipelineStage({ *workflows["LayersCombiner"] }, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->device()(0,0)));
+    nodes.push_back(utils::PipelineNode(device->device(), std::move(layersCombinerStages), &nodes.back()));
 
     utils::PipelineStages preCombinedStages;
-    preCombinedStages.push_back(utils::PipelineStage({*workflows["Scattering"]}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)));
-    preCombinedStages.push_back(utils::PipelineStage({*workflows["SSLR"]}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)));
-    nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(preCombinedStages), &nodes.back()));
+    preCombinedStages.push_back(utils::PipelineStage({*workflows["Scattering"]}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->device()(0,0)));
+    preCombinedStages.push_back(utils::PipelineStage({*workflows["SSLR"]}, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->device()(0,0)));
+    nodes.push_back(utils::PipelineNode(device->device(), std::move(preCombinedStages), &nodes.back()));
 
     std::vector<const utils::vkDefault::CommandBuffers*> deferredStagesCommandBuffers;
     deferredStagesCommandBuffers.push_back(*workflows["DeferredGraphics"]);
@@ -237,17 +237,17 @@ void DeferredGraphics::createStages(){
         deferredStagesCommandBuffers.push_back(*workflows["TransparentLayer" + std::to_string(i)]);
     }
     utils::PipelineStages deferredStages;
-    deferredStages.push_back(utils::PipelineStage(deferredStagesCommandBuffers, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->getQueue(0,0)));
-    nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(deferredStages), &nodes.back()));
+    deferredStages.push_back(utils::PipelineStage(deferredStagesCommandBuffers, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, device->device()(0,0)));
+    nodes.push_back(utils::PipelineNode(device->device(), std::move(deferredStages), &nodes.back()));
 
     utils::PipelineStages prepareStages;
-    prepareStages.push_back(utils::PipelineStage({*workflows["Shadow"]}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)));
-    prepareStages.push_back(utils::PipelineStage({*workflows["Skybox"]}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->getQueue(0,0)));
-    nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(prepareStages), &nodes.back()));
+    prepareStages.push_back(utils::PipelineStage({*workflows["Shadow"]}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->device()(0,0)));
+    prepareStages.push_back(utils::PipelineStage({*workflows["Skybox"]}, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, device->device()(0,0)));
+    nodes.push_back(utils::PipelineNode(device->device(), std::move(prepareStages), &nodes.back()));
 
     utils::PipelineStages copyStages;
-    copyStages.push_back(utils::PipelineStage({ &copyCommandBuffers }, VK_PIPELINE_STAGE_TRANSFER_BIT, device->getQueue(0, 0)));
-    nodes.push_back(utils::PipelineNode(device->getLogical(), std::move(copyStages), &nodes.back()));
+    copyStages.push_back(utils::PipelineStage({ &copyCommandBuffers }, VK_PIPELINE_STAGE_TRANSFER_BIT, device->device()(0,0)));
+    nodes.push_back(utils::PipelineNode(device->device(), std::move(copyStages), &nodes.back()));
 }
 
 utils::vkDefault::VkSemaphores DeferredGraphics::submit(const uint32_t frameIndex, const utils::vkDefault::VkSemaphores& externalSemaphore) {
@@ -392,7 +392,7 @@ bool DeferredGraphics::remove(interfaces::Object* object){
 
 void DeferredGraphics::bind(utils::Cursor* cursor) {
     params.cursor = cursor;
-    cursor->create(device->instance, device->getLogical());
+    cursor->create(*device, device->device());
     if (workflows["Selector"]) workflows["Selector"]->raiseUpdateFlags();
 }
 

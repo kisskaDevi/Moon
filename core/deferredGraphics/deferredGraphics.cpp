@@ -12,7 +12,7 @@ namespace moon::deferredGraphics {
 DeferredGraphics::DeferredGraphics(const Parameters& parameters):
     params(parameters)
 {
-    link = std::make_unique<Link>();
+    link = std::make_unique<DeferredLink>();
 
     transparentLayersParams.resize(params.transparentLayersCount());
     (workflowsParameters["DeferredGraphics"] = &graphicsParams)->enable = true;
@@ -208,7 +208,7 @@ void DeferredGraphics::createGraphicsPasses(){
     }
 
     utils::ImageInfo linkInfo{resourceCount, swapChainKHR->info().Format, swapChainKHR->info().Extent, params.MSAASamples};
-    link = std::make_unique<Link>(device->device(), params.shadersPath, linkInfo, link->renderPass(), aDatabase.get(postProcessingParams.out.postProcessing));
+    link = std::make_unique<DeferredLink>(device->device(), params.shadersPath, linkInfo, link->renderPass(), aDatabase.get(postProcessingParams.out.postProcessing));
 }
 
 void DeferredGraphics::createStages(){

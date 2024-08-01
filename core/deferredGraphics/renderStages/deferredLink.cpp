@@ -4,21 +4,17 @@
 
 namespace moon::deferredGraphics {
 
-Link::Link(VkDevice device, const std::filesystem::path& shadersPath, const utils::ImageInfo& info, VkRenderPass renderPass, const utils::Attachments* attachment) {
-    pRenderPass = renderPass;
-    createDescriptorSetLayout(device);
+DeferredLink::DeferredLink(VkDevice device, const std::filesystem::path& shadersPath, const utils::ImageInfo& info, VkRenderPass renderPass, const utils::Attachments* attachment)
+    : Linkable(renderPass) {
     createPipeline(device, shadersPath, info);
     createDescriptors(device, info, attachment);
 }
 
-void Link::createDescriptorSetLayout(VkDevice device) {
+void DeferredLink::createPipeline(VkDevice device, const std::filesystem::path& shadersPath, const utils::ImageInfo& info) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-
+    bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
-}
 
-void Link::createPipeline(VkDevice device, const std::filesystem::path& shadersPath, const utils::ImageInfo& info) {
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, shadersPath / "linkable/deferredLinkableVert.spv");
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, shadersPath / "linkable/deferredLinkableFrag.spv");
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };
@@ -63,7 +59,7 @@ void Link::createPipeline(VkDevice device, const std::filesystem::path& shadersP
     pipeline = utils::vkDefault::Pipeline(device, pipelineInfo);
 }
 
-void Link::createDescriptors(VkDevice device, const utils::ImageInfo& info, const utils::Attachments* attachment) {
+void DeferredLink::createDescriptors(VkDevice device, const utils::ImageInfo& info, const utils::Attachments* attachment) {
     descriptorPool = utils::vkDefault::DescriptorPool(device, {&descriptorSetLayout}, info.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, info.Count);
 
@@ -89,8 +85,7 @@ void Link::createDescriptors(VkDevice device, const utils::ImageInfo& info, cons
     }
 }
 
-void Link::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const
-{
+void DeferredLink::draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const {
     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(positionInWindow), &positionInWindow);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageNumber], 0, nullptr);

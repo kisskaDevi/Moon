@@ -17,9 +17,11 @@ protected:
     PositionInWindow positionInWindow;
 
 public:
+    Linkable() = default;
+    Linkable(VkRenderPass renderPass) : pRenderPass(renderPass) {}
     virtual ~Linkable(){};
     virtual void draw(VkCommandBuffer commandBuffer, uint32_t imageNumber) const = 0;
-    virtual void setPositionInWindow(const PositionInWindow& position){ positionInWindow = position;};
+    virtual void setPositionInWindow(const PositionInWindow& position){ positionInWindow = position; }
     virtual VkRenderPass& renderPass() { return pRenderPass; }
 };
 

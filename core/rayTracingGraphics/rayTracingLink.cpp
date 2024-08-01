@@ -5,22 +5,18 @@
 namespace moon::rayTracingGraphics {
 
 RayTracingLink::RayTracingLink(VkDevice device, const RayTracingLinkParameters& parameters, VkRenderPass renderPass, const moon::utils::AttachmentsDatabase& aDatabase)
-    : parameters(parameters) {
-    pRenderPass = renderPass;
-    createDescriptorSetLayout(device);
+    : Linkable(renderPass), parameters(parameters) {
     createPipeline(device);
     createDescriptors(device, aDatabase);
 };
 
-void RayTracingLink::createDescriptorSetLayout(VkDevice device) {
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-        bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
-    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
-}
-
 void RayTracingLink::createPipeline(VkDevice device) {
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    bindings.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
+    descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
+
     const auto vertShader = utils::vkDefault::VertrxShaderModule(device, parameters.shadersPath / "linkable/linkableVert.spv");
     const auto fragShader = utils::vkDefault::FragmentShaderModule(device, parameters.shadersPath / "linkable/linkableFrag.spv");
     const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShader, fragShader };

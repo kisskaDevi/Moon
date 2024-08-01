@@ -41,17 +41,7 @@ void GraphicsLinker::createRenderPass(VkDevice device){
         moon::utils::Attachments::imageDescription(imageInfo.Format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     };
 
-    std::vector<std::vector<VkAttachmentReference>> attachmentRef;
-        attachmentRef.push_back(std::vector<VkAttachmentReference>());
-        attachmentRef.back().push_back(VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-
-    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
-    for(auto refIt = attachmentRef.begin(); refIt != attachmentRef.end(); refIt++){
-        subpasses.push_back(VkSubpassDescription{});
-        subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpasses.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
-        subpasses.back().pColorAttachments = refIt->data();
-    }
+    utils::SubpassInfos subpassInfos = utils::vkDefault::subpassInfos(attachments.size());
 
     utils::vkDefault::RenderPass::SubpassDependencies dependencies;
     dependencies.push_back(VkSubpassDependency{});
@@ -62,7 +52,7 @@ void GraphicsLinker::createRenderPass(VkDevice device){
     dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpassInfos, dependencies);
 }
 
 void GraphicsLinker::createFramebuffers(VkDevice device, const moon::utils::SwapChain* swapChainKHR){

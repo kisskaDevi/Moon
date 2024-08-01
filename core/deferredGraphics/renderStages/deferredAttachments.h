@@ -5,46 +5,57 @@
 
 namespace moon::deferredGraphics {
 
-struct GBufferAttachments{
-    utils::Attachments position;
-    utils::Attachments normal;
-    utils::Attachments color;
-    utils::Attachments depth;
-
-    const utils::Attachments& operator[](uint32_t index) const {
-        return *(&position + index);
-    }
-
-    constexpr static uint32_t size() {return 4;}
-    constexpr static uint32_t positionIndex() {return 0;}
-    constexpr static uint32_t normalIndex() {return 1;}
-    constexpr static uint32_t colorIndex() {return 2;}
-    constexpr static uint32_t depthIndex() {return 3;}
-};
-
 struct DeferredAttachments{
-    utils::Attachments image;
-    utils::Attachments blur;
-    utils::Attachments bloom;
-    GBufferAttachments GBuffer;
+private:
+    std::vector<utils::Attachments> attachments;
 
-    const utils::Attachments& operator[](uint32_t index) const {
-        return *(&image + index);
-    }
+    class GBuffer {
+    public:
+        constexpr static uint32_t size() { return depthIndex() + 1; }
+        constexpr static uint32_t positionIndex() { return 0; }
+        constexpr static uint32_t normalIndex() { return 1; }
+        constexpr static uint32_t colorIndex() { return 2; }
+        constexpr static uint32_t depthIndex() { return 3; }
+    };
 
-    constexpr static uint32_t size() {return 3 + GBufferAttachments::size();}
+public:
+    DeferredAttachments() { attachments.resize(size());}
+
+    constexpr static uint32_t size() {return GBufferOffset() + GBuffer::size();}
+    constexpr static uint32_t GBufferOffset() { return bloomIndex() + 1; }
     constexpr static uint32_t imageIndex() {return 0;}
     constexpr static uint32_t blurIndex() {return 1;}
     constexpr static uint32_t bloomIndex() {return 2;}
-    constexpr static uint32_t GBufferOffset() {return 3;}
+    constexpr static uint32_t positionIndex() { return GBufferOffset() + GBuffer::positionIndex(); }
+    constexpr static uint32_t normalIndex() { return GBufferOffset() + GBuffer::normalIndex(); }
+    constexpr static uint32_t colorIndex() { return GBufferOffset() + GBuffer::colorIndex(); }
+    constexpr static uint32_t depthIndex() { return GBufferOffset() + +GBuffer::depthIndex(); }
 
-    std::vector<VkClearValue> DeferredAttachments::clearValues() const {
-        std::vector<VkClearValue> value;
-        for (uint32_t i = 0; i < size(); i++) {
-            value.push_back((*this)[i].clearValue());
+    utils::Attachments& image() { return attachments[imageIndex()]; }
+    utils::Attachments& blur() { return attachments[blurIndex()]; }
+    utils::Attachments& bloom() { return attachments[bloomIndex()]; }
+    utils::Attachments& position() { return attachments[positionIndex()]; }
+    utils::Attachments& normal() { return attachments[normalIndex()]; }
+    utils::Attachments& color() { return attachments[colorIndex()]; }
+    utils::Attachments& depth() { return attachments[depthIndex()]; }
+
+    std::vector<VkImageView> views(uint32_t frameIndex) const {
+        std::vector<VkImageView> views;
+        for (const auto& attachment : attachments) {
+            views.push_back(attachment.imageView(frameIndex));
         }
-        return value;
+        return views;
     }
+
+    std::vector<VkClearValue> clearValues() const {
+        std::vector<VkClearValue> values;
+        for (const auto& attachment : attachments) {
+            values.push_back(attachment.clearValue());
+        }
+        return values;
+    }
+
+    operator std::vector<utils::Attachments>&() {return attachments;}
 };
 
 }

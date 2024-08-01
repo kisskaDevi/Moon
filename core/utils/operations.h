@@ -97,6 +97,14 @@ struct PhysicalDeviceProperties {
 
 using Paths = std::vector<std::filesystem::path>;
 
+struct SubpassInfo {
+    std::vector<VkAttachmentReference> out;
+    std::vector<VkAttachmentReference> in;
+    std::vector<VkAttachmentReference> depth;
+};
+
+using SubpassInfos = std::vector<SubpassInfo>;
+
 namespace debug {
 
     VkResult checkResult(

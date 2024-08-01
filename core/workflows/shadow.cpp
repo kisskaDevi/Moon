@@ -14,14 +14,12 @@ ShadowGraphics::ShadowGraphics(ShadowGraphicsParameters& parameters, const inter
 void ShadowGraphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = { utils::Attachments::depthDescription(VK_FORMAT_D32_SFLOAT)};
-    VkAttachmentReference depthRef{0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
-    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
-    subpasses.push_back(VkSubpassDescription{});
-    subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpasses.back().pDepthStencilAttachment = &depthRef;
+    utils::SubpassInfos subpassInfos;
+    auto& subpass = subpassInfos.emplace_back();
+    subpass.depth = { VkAttachmentReference{0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL} };
 
-    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, {});
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpassInfos, {});
 }
 
 void ShadowGraphics::Shadow::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {

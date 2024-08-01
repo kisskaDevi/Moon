@@ -161,6 +161,16 @@ VkPipelineColorBlendStateCreateInfo vkDefault::colorBlendState(uint32_t attachme
     return colorBlending;
 }
 
+utils::SubpassInfos vkDefault::subpassInfos(uint32_t attachmentCount) {
+    utils::SubpassInfos subpassInfos;
+    auto& subpass = subpassInfos.emplace_back();
+    subpass.out.resize(attachmentCount);
+    for (uint32_t i = 0; i < attachmentCount; i++) {
+        subpass.out[i] = VkAttachmentReference{i, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+    }
+    return subpassInfos;
+}
+
 VkPipelineVertexInputStateCreateInfo vkDefault::vertexInputState(){
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -348,7 +358,18 @@ vkDefault::VertrxShaderModule::operator const VkPipelineShaderStageCreateInfo& (
     return pipelineShaderStageCreateInfo;
 }
 
-vkDefault::RenderPass::RenderPass(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies) : device(device) {
+vkDefault::RenderPass::RenderPass(VkDevice device, const AttachmentDescriptions& attachments, const utils::SubpassInfos& subpassInfos, const SubpassDependencies& dependencies) : device(device) {
+    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
+    for (const auto& subpassInfo : subpassInfos) {
+        auto& subpass = subpasses.emplace_back();
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = static_cast<uint32_t>(subpassInfo.out.size());
+        subpass.pColorAttachments = subpassInfo.out.data();
+        subpass.inputAttachmentCount = static_cast<uint32_t>(subpassInfo.in.size());
+        subpass.pInputAttachments = subpassInfo.in.data();
+        subpass.pDepthStencilAttachment = subpassInfo.depth.data();
+    }
+
     VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());

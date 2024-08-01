@@ -26,6 +26,7 @@ VkPipelineDepthStencilStateCreateInfo depthStencilDisable();
 VkPipelineDepthStencilStateCreateInfo depthStencilEnable();
 VkPipelineColorBlendAttachmentState colorBlendAttachmentState(VkBool32 enable);
 VkPipelineColorBlendStateCreateInfo colorBlendState(uint32_t attachmentCount, VkPipelineColorBlendAttachmentState* pAttachments);
+utils::SubpassInfos subpassInfos(uint32_t attachmentCount = 1);
 
 VkDescriptorSetLayoutBinding bufferVertexLayoutBinding(const uint32_t& binding, const uint32_t& count);
 VkDescriptorSetLayoutBinding bufferFragmentLayoutBinding(const uint32_t& binding, const uint32_t& count);
@@ -155,7 +156,7 @@ public:
 	using SubpassDescriptions = std::vector<VkSubpassDescription>;
 	using SubpassDependencies = std::vector<VkSubpassDependency>;
 
-	RenderPass(VkDevice device, const AttachmentDescriptions& attachments, const SubpassDescriptions& subpasses, const SubpassDependencies& dependencies);
+	RenderPass(VkDevice device, const AttachmentDescriptions& attachments, const utils::SubpassInfos& subpassInfos, const SubpassDependencies& dependencies);
 };
 
 class Framebuffer {

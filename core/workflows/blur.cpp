@@ -19,27 +19,23 @@ void GaussianBlur::createRenderPass(){
         utils::Attachments::imageDescription(parameters.imageInfo.Format)
     };
 
-    std::vector<std::vector<VkAttachmentReference>> attachmentRef;
-    attachmentRef.push_back({   VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
-                                VkAttachmentReference{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}});
-    attachmentRef.push_back({   VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}});
-    attachmentRef.push_back({   VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}});
-
-    std::vector<std::vector<VkAttachmentReference>> inAttachmentRef;
-    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-    inAttachmentRef.push_back({ VkAttachmentReference{1,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}});
-    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-
-    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
-    for(auto refIt = attachmentRef.begin(), inRefIt = inAttachmentRef.begin();
-        refIt != attachmentRef.end() && inRefIt != inAttachmentRef.end(); refIt++, inRefIt++){
-        subpasses.push_back(VkSubpassDescription{});
-        subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpasses.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
-        subpasses.back().pColorAttachments = refIt->data();
-        subpasses.back().inputAttachmentCount = static_cast<uint32_t>(inRefIt->size());
-        subpasses.back().pInputAttachments = inRefIt->data();
-    }
+    utils::SubpassInfos subpassInfos;
+    auto& xblur = subpassInfos.emplace_back();
+    xblur.out = {
+        VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+        VkAttachmentReference{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}
+    };
+    auto& imageLayoutTransition = subpassInfos.emplace_back();
+    imageLayoutTransition.out = {
+        VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}
+    };
+    imageLayoutTransition.in = {
+        VkAttachmentReference{1,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
+    };
+    auto& yblur = subpassInfos.emplace_back();
+    yblur.out = {
+        VkAttachmentReference{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}
+    };
 
     utils::vkDefault::RenderPass::SubpassDependencies dependencies;
     dependencies.push_back(VkSubpassDependency{});
@@ -64,7 +60,7 @@ void GaussianBlur::createRenderPass(){
         dependencies.back().dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependencies.back().dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
-    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpassInfos, dependencies);
 }
 
 void GaussianBlur::createFramebuffers(){

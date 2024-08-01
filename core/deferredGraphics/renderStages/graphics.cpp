@@ -17,95 +17,81 @@ Graphics::Graphics(
         ambientLighting(lighting)
 {}
 
-void Graphics::createAttachments(utils::AttachmentsDatabase& aDatabase)
-{
+void Graphics::createAttachments(utils::AttachmentsDatabase& aDatabase) {
     VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    deferredAttachments.image = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage);
-    deferredAttachments.blur = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage);
-    deferredAttachments.bloom = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    deferredAttachments.image() = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage);
+    deferredAttachments.blur() = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage);
+    deferredAttachments.bloom() = utils::Attachments(physicalDevice, device, parameters.imageInfo, usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
     utils::ImageInfo f32Image = { parameters.imageInfo.Count, VK_FORMAT_R32G32B32A32_SFLOAT, parameters.imageInfo.Extent, parameters.imageInfo.Samples };
-    deferredAttachments.GBuffer.position = utils::Attachments(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-    deferredAttachments.GBuffer.normal = utils::Attachments(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+    deferredAttachments.position() = utils::Attachments(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+    deferredAttachments.normal() = utils::Attachments(physicalDevice, device, f32Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
 
     utils::ImageInfo u8Image = { parameters.imageInfo.Count, VK_FORMAT_R8G8B8A8_UNORM, parameters.imageInfo.Extent, parameters.imageInfo.Samples };
-    deferredAttachments.GBuffer.color = utils::Attachments(physicalDevice, device, u8Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, {{0.0f,0.0f,0.0f,1.0f}});
+    deferredAttachments.color() = utils::Attachments(physicalDevice, device, u8Image, usage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, {{0.0f,0.0f,0.0f,1.0f}});
 
     utils::ImageInfo depthImage = { parameters.imageInfo.Count, utils::image::depthStencilFormat(physicalDevice), parameters.imageInfo.Extent, parameters.imageInfo.Samples };
-    deferredAttachments.GBuffer.depth = utils::Attachments(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { { 1.0f, 0 } });
+    deferredAttachments.depth() = utils::Attachments(physicalDevice, device, depthImage, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { { 1.0f, 0 } });
 
-    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.image, parameters.enable, &deferredAttachments.image);
-    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.blur, parameters.enable, &deferredAttachments.blur);
-    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.bloom, parameters.enable, &deferredAttachments.bloom);
-    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.position, parameters.enable, &deferredAttachments.GBuffer.position);
-    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.normal, parameters.enable, &deferredAttachments.GBuffer.normal);
-    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.color, parameters.enable, &deferredAttachments.GBuffer.color);
-    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.depth, parameters.enable, &deferredAttachments.GBuffer.depth);
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.image, parameters.enable, &deferredAttachments.image());
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.blur, parameters.enable, &deferredAttachments.blur());
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.bloom, parameters.enable, &deferredAttachments.bloom());
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.position, parameters.enable, &deferredAttachments.position());
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.normal, parameters.enable, &deferredAttachments.normal());
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.color, parameters.enable, &deferredAttachments.color());
+    aDatabase.addAttachmentData((!parameters.transparencyPass ? "" : parameters.out.transparency + std::to_string(base.parameters.transparencyNumber) + ".") + parameters.out.depth, parameters.enable, &deferredAttachments.depth());
 }
 
 void Graphics::createRenderPass()
 {
     utils::vkDefault::RenderPass::AttachmentDescriptions attachments = {
-        utils::Attachments::imageDescription(deferredAttachments.image.format()),
-        utils::Attachments::imageDescription(deferredAttachments.blur.format()),
-        utils::Attachments::imageDescription(deferredAttachments.bloom.format()),
-        utils::Attachments::imageDescription(deferredAttachments.GBuffer.position.format()),
-        utils::Attachments::imageDescription(deferredAttachments.GBuffer.normal.format()),
-        utils::Attachments::imageDescription(deferredAttachments.GBuffer.color.format()),
-        utils::Attachments::depthStencilDescription(deferredAttachments.GBuffer.depth.format())
+        utils::Attachments::imageDescription(deferredAttachments.image().format()),
+        utils::Attachments::imageDescription(deferredAttachments.blur().format()),
+        utils::Attachments::imageDescription(deferredAttachments.bloom().format()),
+        utils::Attachments::imageDescription(deferredAttachments.position().format()),
+        utils::Attachments::imageDescription(deferredAttachments.normal().format()),
+        utils::Attachments::imageDescription(deferredAttachments.color().format()),
+        utils::Attachments::depthStencilDescription(deferredAttachments.depth().format())
     };
 
-    uint32_t gOffset = DeferredAttachments::GBufferOffset();
+    utils::SubpassInfos subpassInfos;
 
-    std::vector<std::vector<VkAttachmentReference>> attachmentRef;
-    attachmentRef.push_back(std::vector<VkAttachmentReference>());
-        attachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::positionIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-        attachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::normalIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-        attachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::colorIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    attachmentRef.push_back(std::vector<VkAttachmentReference>());
-        attachmentRef.back().push_back(VkAttachmentReference{DeferredAttachments::imageIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-        attachmentRef.back().push_back(VkAttachmentReference{DeferredAttachments::blurIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-        attachmentRef.back().push_back(VkAttachmentReference{DeferredAttachments::bloomIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    auto& geometry = subpassInfos.emplace_back();
+    geometry.out = {
+        VkAttachmentReference{DeferredAttachments::positionIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+        VkAttachmentReference{DeferredAttachments::normalIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+        VkAttachmentReference{DeferredAttachments::colorIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}
+    };
+    geometry.depth = {
+        VkAttachmentReference{DeferredAttachments::depthIndex(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL}
+    };
 
-    std::vector<std::vector<VkAttachmentReference>> inAttachmentRef;
-    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-    inAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::positionIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
-        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::normalIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
-        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::colorIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
-        inAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::depthIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
-
-    std::vector<std::vector<VkAttachmentReference>> depthAttachmentRef;
-    depthAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-        depthAttachmentRef.back().push_back(VkAttachmentReference{gOffset + GBufferAttachments::depthIndex(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL});
-    depthAttachmentRef.push_back(std::vector<VkAttachmentReference>());
-
-    utils::vkDefault::RenderPass::SubpassDescriptions subpasses;
-    auto refIt = attachmentRef.begin(), inRefIt = inAttachmentRef.begin(), depthIt = depthAttachmentRef.begin();
-    for(;refIt != attachmentRef.end() && inRefIt != inAttachmentRef.end() && depthIt != depthAttachmentRef.end(); refIt++, inRefIt++, depthIt++){
-        subpasses.push_back(VkSubpassDescription{});
-        subpasses.back().pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpasses.back().colorAttachmentCount = static_cast<uint32_t>(refIt->size());
-        subpasses.back().pColorAttachments = refIt->data();
-        subpasses.back().inputAttachmentCount = static_cast<uint32_t>(inRefIt->size());
-        subpasses.back().pInputAttachments = inRefIt->data();
-        subpasses.back().pDepthStencilAttachment = depthIt->data();
-    }
+    auto& lighting = subpassInfos.emplace_back();
+    lighting.out = {
+        VkAttachmentReference{DeferredAttachments::imageIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+        VkAttachmentReference{DeferredAttachments::blurIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+        VkAttachmentReference{DeferredAttachments::bloomIndex(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}
+    };
+    lighting.in = {
+        VkAttachmentReference{DeferredAttachments::positionIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL},
+        VkAttachmentReference{DeferredAttachments::normalIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL},
+        VkAttachmentReference{DeferredAttachments::colorIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL},
+        VkAttachmentReference{DeferredAttachments::depthIndex(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
+    };
 
     utils::vkDefault::RenderPass::SubpassDependencies dependencies;
     dependencies.push_back(VkSubpassDependency{});
         dependencies.back().srcSubpass = VK_SUBPASS_EXTERNAL;
         dependencies.back().dstSubpass = 0;
-        dependencies.back().srcStageMask =    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT|
-                                            VK_PIPELINE_STAGE_HOST_BIT;
-        dependencies.back().srcAccessMask =   VK_ACCESS_HOST_READ_BIT;
-        dependencies.back().dstStageMask =    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT|
+        dependencies.back().srcStageMask =  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT| VK_PIPELINE_STAGE_HOST_BIT;
+        dependencies.back().srcAccessMask = VK_ACCESS_HOST_READ_BIT;
+        dependencies.back().dstStageMask =  VK_PIPELINE_STAGE_VERTEX_INPUT_BIT|
                                             VK_PIPELINE_STAGE_VERTEX_SHADER_BIT|
                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT|
                                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT|
                                             VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT|
                                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies.back().dstAccessMask =   VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT|
+        dependencies.back().dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT|
                                             VK_ACCESS_UNIFORM_READ_BIT|
                                             VK_ACCESS_INDEX_READ_BIT|
                                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
@@ -123,23 +109,18 @@ void Graphics::createRenderPass()
                                             VK_ACCESS_INPUT_ATTACHMENT_READ_BIT|
                                             VK_ACCESS_UNIFORM_READ_BIT;
 
-    renderPass = utils::vkDefault::RenderPass(device, attachments, subpasses, dependencies);
+    renderPass = utils::vkDefault::RenderPass(device, attachments, subpassInfos, dependencies);
 }
 
-void Graphics::createFramebuffers()
-{
+void Graphics::createFramebuffers() {
     framebuffers.resize(parameters.imageInfo.Count);
     for (size_t imageIndex = 0; imageIndex < parameters.imageInfo.Count; imageIndex++){
-        std::vector<VkImageView> attachments;
-        for(uint32_t attIndex = 0; attIndex < static_cast<uint32_t>(deferredAttachments.size()); attIndex++){
-            attachments.push_back(deferredAttachments[attIndex].imageView(imageIndex));
-        }
-
+        auto views = deferredAttachments.views(imageIndex);
         VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments = attachments.data();
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(views.size());
+            framebufferInfo.pAttachments = views.data();
             framebufferInfo.width = parameters.imageInfo.Extent.width;
             framebufferInfo.height = parameters.imageInfo.Extent.height;
             framebufferInfo.layers = 1;
@@ -169,8 +150,7 @@ void Graphics::createPipelines() {
     ambientLighting.create(ambientLightingShaderNames, device, renderPass);
 }
 
-void Graphics::create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase)
-{
+void Graphics::create(const utils::vkDefault::CommandPool& commandPool, utils::AttachmentsDatabase& aDatabase) {
     commandBuffers = commandPool.allocateCommandBuffers(parameters.imageInfo.Count);
     if(parameters.enable && !created){
         createAttachments(aDatabase);
@@ -181,10 +161,8 @@ void Graphics::create(const utils::vkDefault::CommandPool& commandPool, utils::A
     }
 }
 
-void Graphics::updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase)
-{
+void Graphics::updateDescriptors(const utils::BuffersDatabase& bDatabase, const utils::AttachmentsDatabase& aDatabase) {
     if (!parameters.enable || !created) return;
-
     base.updateDescriptorSets(device, bDatabase, aDatabase);
     lighting.updateDescriptorSets(device, bDatabase, aDatabase);
 }

@@ -36,7 +36,7 @@ add_subdirectory(core/imguiGraphics)
 add_subdirectory(core/interfaces)
 add_subdirectory(core/deferredGraphics)
 add_subdirectory(core/models)
-add_subdirectory(core/transformational)
+add_subdirectory(core/transformationals)
 add_subdirectory(core/math)
 add_subdirectory(tests/testScene)
 

@@ -23,6 +23,6 @@ set(HEADERS
     group.h
 )
 
-add_library(transformational STATIC ${SOURCES} ${HEADERS})
-target_include_directories(transformational PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(transformational PUBLIC math interfaces utils)
+add_library(transformationals STATIC ${SOURCES} ${HEADERS})
+target_include_directories(transformationals PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(transformationals PUBLIC math interfaces utils)

@@ -27,7 +27,7 @@ set(INCLUDES
 
 add_executable(testScene ${INCLUDES} ${SOURCES})
 
-target_link_libraries(testScene PRIVATE deferredGraphics imguiGraphics models transformational ${LIBS_DIRS})
+target_link_libraries(testScene PRIVATE deferredGraphics imguiGraphics models transformationals ${LIBS_DIRS})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_custom_command(

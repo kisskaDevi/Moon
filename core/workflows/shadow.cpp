@@ -103,11 +103,27 @@ void ShadowGraphics::create(const utils::vkDefault::CommandPool& commandPool, ut
     }
 }
 
+void ShadowGraphics::updateFramebuffersMap() {
+    FramebuffersMap newFramebuffersMap;
+    for (const auto& [light, depthMap] : *shadow.depthMaps) {
+        if (framebuffersMap.find(&depthMap) != framebuffersMap.end()) {
+            newFramebuffersMap[&depthMap] = std::move(framebuffersMap[&depthMap]);
+        }
+    }
+    std::swap(framebuffersMap, newFramebuffersMap);
+}
+
 void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber) {
     if (!parameters.enable || !created) return;
 
+    updateFramebuffersMap();
+
     for(const auto& [light, depthMap] : *shadow.depthMaps){
-        if (light->isShadowEnable() && framebuffersMap.find(&depthMap) == framebuffersMap.end()){
+        if (!light->isShadowEnable()){
+            continue;
+        }
+
+        if(framebuffersMap.find(&depthMap) == framebuffersMap.end()) {
             framebuffersMap[&depthMap].resize(parameters.imageInfo.Count);
             for (size_t i = 0; i < parameters.imageInfo.Count; i++) {
                 VkFramebufferCreateInfo framebufferInfo{};
@@ -121,11 +137,12 @@ void ShadowGraphics::updateCommandBuffer(uint32_t frameNumber) {
                 framebuffersMap[&depthMap][i] = utils::vkDefault::Framebuffer(device, framebufferInfo);
             }
         }
-        render(frameNumber, commandBuffers[frameNumber], light, depthMap);
+
+        render(frameNumber, commandBuffers[frameNumber], light, depthMap, framebuffersMap[&depthMap][frameNumber]);
     }
 }
 
-void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, interfaces::Light* lightSource, const utils::DepthMap& depthMap)
+void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer, interfaces::Light* lightSource, const utils::DepthMap& depthMap, const utils::vkDefault::Framebuffer& framebuffer)
 {
     std::vector<VkClearValue> clearValues;
     clearValues.push_back(depthMap.attachments().clearValue());
@@ -133,7 +150,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
     VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffersMap[&depthMap][frameNumber];
+        renderPassInfo.framebuffer = framebuffer;
         renderPassInfo.renderArea.offset = {0,0};
         renderPassInfo.renderArea.extent = parameters.imageInfo.Extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

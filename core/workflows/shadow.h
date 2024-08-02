@@ -14,7 +14,8 @@ class ShadowGraphics : public Workflow
 {
 private:
     ShadowGraphicsParameters& parameters;
-    std::unordered_map<const utils::DepthMap*, utils::vkDefault::Framebuffers> framebuffersMap;
+    using FramebuffersMap = std::unordered_map<const utils::DepthMap*, utils::vkDefault::Framebuffers>;
+    FramebuffersMap framebuffersMap;
 
     struct Shadow : public Workbody{
         const ShadowGraphicsParameters& parameters;
@@ -30,9 +31,10 @@ private:
         void create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) override;
     }shadow;
 
-    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, interfaces::Light* lightSource, const utils::DepthMap& depthMap);
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, interfaces::Light* lightSource, const utils::DepthMap& depthMap, const utils::vkDefault::Framebuffer& framebuffer);
     void createRenderPass();
     void updateCommandBuffer(uint32_t frameNumber) override;
+    void updateFramebuffersMap();
 
 public:
     ShadowGraphics(ShadowGraphicsParameters& parameters, const interfaces::Objects* objects = nullptr, interfaces::DepthMaps* depthMaps = nullptr);

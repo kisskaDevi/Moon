@@ -6,7 +6,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
     mat4 view;
     mat4 proj;
-    vec4 eyePosition;
 } global;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
@@ -56,8 +55,8 @@ void main()
     mat4x4 model = local.matrix * node.matrix * skinMat;
 
     outPosition  = model * vec4(inPosition,	1.0);
-    outNormal	 = normalize(vec3(transpose(inverse(model)) * vec4(inNormal,	0.0)));
-    outTangent	 = normalize(vec3(model * vec4(inTangent,	0.0)));
+    outNormal	 = normalize(vec3(transpose(inverse(model)) * vec4(inNormal, 0.0)));
+    outTangent	 = normalize(vec3(model * vec4(inTangent, 0.0)));
     outBitangent = normalize(vec3(model * vec4(inBitangent,	0.0)));
 
     gl_Position = global.proj * global.view * outPosition;

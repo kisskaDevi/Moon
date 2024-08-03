@@ -5,7 +5,6 @@
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
     mat4 view;
     mat4 proj;
-    vec4 eyePosition;
 } global;
 
 layout(set = 1, binding = 0) uniform LocalUniformBuffer {
@@ -37,7 +36,7 @@ layout(location = 0) out vec4 outPosition;
 void main() {
     outPosition = vec4(inPosition.xyz, 1.0);
 
-    mat4 skinMat =  node.jointCount > 0.0 ?  
+    mat4 skinMat =  node.jointCount > 0.0 ?
                     inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
                     inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
                     inWeight0.z * node.jointMatrix[int(inJoint0.z)] +

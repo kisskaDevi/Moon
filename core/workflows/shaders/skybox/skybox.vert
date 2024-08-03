@@ -1,12 +1,12 @@
 #version 450
 
 #include "../__methods__/defines.glsl"
+#include "../__methods__/geometricFunctions.glsl"
 
 layout (set = 0, binding = 0) uniform UniformBuffer
 {
     mat4 view;
     mat4 proj;
-    vec4 eyePosition;
 } camera;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
@@ -67,9 +67,10 @@ void main()
     colorFactor = local.colorFactor;
 
     mat4x4 cameraModel = mat4x4(1.0f);
-    cameraModel[3][0] = camera.eyePosition.x;
-    cameraModel[3][1] = camera.eyePosition.y;
-    cameraModel[3][2] = camera.eyePosition.z;
+    vec3 eyePosition = viewPosition(camera.view);
+    cameraModel[3][0] = eyePosition.x;
+    cameraModel[3][1] = eyePosition.y;
+    cameraModel[3][2] = eyePosition.z;
 
     vec3 Position = vertex[gl_VertexIndex];
     outUVW = vec4(vec4(Position,1.0f)).xyz;

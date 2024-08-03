@@ -2,8 +2,11 @@
 #define VECTOR_H
 
 #include <iostream>
-#include <cmath>
 #include <algorithm>
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <math.h>
 
 #undef max
 

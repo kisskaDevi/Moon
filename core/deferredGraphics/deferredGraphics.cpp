@@ -313,7 +313,7 @@ void DeferredGraphics::create(interfaces::Model *pModel){
 void DeferredGraphics::bind(interfaces::Camera* cameraObject){
     params.cameraObject = cameraObject;
     cameraObject->create(*device, resourceCount);
-    bDatabase.add("camera", &cameraObject->getBuffers());
+    bDatabase.add("camera", &cameraObject->buffers());
 }
 
 void DeferredGraphics::remove(interfaces::Camera* cameraObject){

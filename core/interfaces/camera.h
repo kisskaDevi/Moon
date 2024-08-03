@@ -11,9 +11,8 @@ class Camera{
 public:
     virtual ~Camera(){};
 
-    virtual const moon::utils::Buffers& getBuffers() const = 0;
-
-    virtual void create(const moon::utils::PhysicalDevice& device, uint32_t imageCount) = 0;
+    virtual utils::Buffers& buffers() = 0;
+    virtual void create(const utils::PhysicalDevice& device, uint32_t imageCount) = 0;
     virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
 };
 

@@ -19,7 +19,7 @@ namespace moon::interfaces { class Model;}
 namespace moon::graphicsManager { class GraphicsManager;}
 namespace moon::imguiGraphics { class ImguiGraphics;}
 namespace moon::deferredGraphics { class DeferredGraphics;}
-namespace moon::transformational { class SpotLight; class IsotropicLight; class BaseObject; class Group; class BaseCamera; class SkyboxObject;}
+namespace moon::transformational { class SpotLight; class IsotropicLight; class BaseObject; class Group; class Camera; class SkyboxObject;}
 namespace moon::utils { class Cursor;}
 
 class testScene : public scene
@@ -62,7 +62,7 @@ private:
 #endif
 
     std::unordered_map<std::string, std::shared_ptr<moon::interfaces::Model>> models;
-    std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseCamera>> cameras;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::Camera>> cameras;
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseObject>> objects;
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseObject>> staticObjects;
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::SkyboxObject>> skyboxObjects;

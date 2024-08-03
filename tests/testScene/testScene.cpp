@@ -3,10 +3,10 @@
 #include "graphicsManager.h"
 #include "gltfmodel.h"
 #include "plymodel.h"
-#include "spotLight.h"
-#include "baseObject.h"
+#include "cameras.h"
+#include "lights.h"
+#include "objects.h"
 #include "group.h"
-#include "baseCamera.h"
 #include "cursor.h"
 
 #ifdef SECOND_VIEW_WINDOW
@@ -53,11 +53,11 @@ void testScene::resize(uint32_t width, uint32_t height)
 {
     extent = { width, height };
 
-    cameras["base"]->recreate(45.0f, (float) extent[0] / (float) extent[1], 0.1f);
+    cameras["base"]->setProjMatrix(moon::math::perspective(moon::math::radians(45.0f), (float)extent[0] / (float)extent[1], 0.1f));
     graphics["base"]->parameters().extent = extent;
 
 #ifdef SECOND_VIEW_WINDOW
-    cameras["view"]->recreate(45.0f, (float)extent[0] / (float)extent[1], 0.1f);
+    cameras["view"]->->setProjMatrix(moon::math::perspective(moon::math::radians(45.0f), (float)extent[0] / (float)extent[1], 0.1f));
     graphics["view"]->parameters().extent = extent / 3;
 #endif
 
@@ -68,14 +68,14 @@ void testScene::resize(uint32_t width, uint32_t height)
 
 void testScene::create()
 {
-    cameras["base"] = std::make_shared<moon::transformational::BaseCamera>(45.0f, (float) extent[0] / (float) extent[1], 0.1f);
+    cameras["base"] = std::make_shared<moon::transformational::Camera>(45.0f, (float) extent[0] / (float) extent[1], 0.1f);
     moon::deferredGraphics::Parameters deferredGraphicsParameters;
     deferredGraphicsParameters.shadersPath = ExternalPath / "core/deferredGraphics/spv";
     deferredGraphicsParameters.workflowsShadersPath = ExternalPath / "core/workflows/spv";
     deferredGraphicsParameters.extent = extent;
     graphics["base"] = std::make_shared<moon::deferredGraphics::DeferredGraphics>(deferredGraphicsParameters);
     app->setGraphics(graphics["base"].get());
-    graphics["base"]->bind(cameras["base"].get());
+    graphics["base"]->bind(*cameras["base"].get());
     graphics["base"]->bind(cursor.get());
     graphics["base"]->
         setEnable("TransparentLayer", true).
@@ -493,8 +493,8 @@ void testScene::mouseEvent()
 
     if(double x = 0, y = 0; mouse->pressed(GLFW_MOUSE_BUTTON_LEFT)){
         glfwGetCursorPos(window,&x,&y);
-        cameras["base"]->rotateX(sensitivity * static_cast<float>(mousePos[1] - y), {1.0f,0.0f,0.0f});
-        cameras["base"]->rotateY(sensitivity * static_cast<float>(mousePos[0] - x), {0.0f,0.0f,1.0f});
+        cameras["base"]->rotateX(sensitivity * static_cast<float>(mousePos[1] - y));
+        cameras["base"]->rotateY(sensitivity * static_cast<float>(mousePos[0] - x));
         mousePos = {x,y};
 
         cursor->update(mousePos[0] / extent[0], mousePos[1] / extent[1]);

@@ -1,12 +1,12 @@
 #version 450
 
 #include "../__methods__/defines.glsl"
+#include "../__methods__/geometricFunctions.glsl"
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
     mat4 view;
     mat4 proj;
-    vec4 eyePosition;
 } global;
 
 layout (set = 1, binding = 0) uniform LocalUniformBuffer
@@ -48,34 +48,34 @@ vec3 vertex[24] = vec3[](
 
     vec3(max.x,min.y,min.z),
     vec3(max.x,max.y,min.z),
-    
+
     vec3(max.x,max.y,min.z),
     vec3(min.x,max.y,min.z),
-    
+
     vec3(min.x,max.y,min.z),
     vec3(min.x,min.y,min.z),
-    
+
     vec3(min.x,min.y,max.z),
     vec3(max.x,min.y,max.z),
 
     vec3(max.x,min.y,max.z),
     vec3(max.x,max.y,max.z),
-    
+
     vec3(max.x,max.y,max.z),
     vec3(min.x,max.y,max.z),
-    
+
     vec3(min.x,max.y,max.z),
     vec3(min.x,min.y,max.z),
 
     vec3(min.x,min.y,min.z),
     vec3(min.x,min.y,max.z),
-    
+
     vec3(max.x,min.y,min.z),
     vec3(max.x,min.y,max.z),
-    
+
     vec3(max.x,max.y,min.z),
     vec3(max.x,max.y,max.z),
-    
+
     vec3(min.x,max.y,min.z),
     vec3(min.x,max.y,max.z)
 );
@@ -89,7 +89,7 @@ void main()
         inWeight0.w * node.jointMatrix[int(inJoint0.w)] : mat4(1.0f);
 
     mat4x4 model = local.matrix * node.matrix * skinMat;
-    
+
     vec3 Position = vertex[gl_VertexIndex];
 
     gl_Position = global.proj * global.view * model * vec4(Position,1.0f);

@@ -5,9 +5,6 @@
 
 namespace moon::transformational {
 
-Group::Group(){}
-Group::~Group(){}
-
 void Group::updateModelMatrix()
 {
     moon::math::DualQuaternion<float> dQuat = convert(rotation,translation);
@@ -77,8 +74,7 @@ void Group::delObject(Transformational* object)
     }
 }
 
-bool Group::findObject(Transformational* object)
-{
+bool Group::findObject(Transformational* object) {
     return std::accumulate(objects.begin(),objects.end(), false, [&object](const bool& a, const auto& obj){
         return a + (obj == object);
     });

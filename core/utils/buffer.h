@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "vkdefault.h"
+#include "device.h"
 
 namespace moon::utils {
 
@@ -14,6 +15,22 @@ using Buffer = vkDefault::Buffer;
 using Buffers = std::vector<Buffer>;
 
 void createDeviceBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkCommandBuffer commandBuffer, size_t bufferSize, void* data, VkBufferUsageFlagBits usage, Buffer& cache, Buffer& deviceLocal);
+
+struct UniformBuffer {
+    void* host{ nullptr };
+    utils::Buffers cache;
+    utils::Buffers device;
+    size_t size{ 0 };
+
+    UniformBuffer() = default;
+    UniformBuffer(void* hostData, size_t dataSize);
+    UniformBuffer(const utils::PhysicalDevice& device, uint32_t imageCount, void* hostData, size_t dataSize);
+    UniformBuffer(UniformBuffer&&);
+    UniformBuffer& operator=(UniformBuffer&&);
+    void swap(UniformBuffer&);
+
+    void update(uint32_t frameNumber, VkCommandBuffer commandBuffer);
+};
 
 struct BuffersDatabase{
     std::unordered_map<std::string, const Buffers*> buffersMap;

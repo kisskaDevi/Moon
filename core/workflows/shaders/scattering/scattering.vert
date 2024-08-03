@@ -1,12 +1,12 @@
 #version 450
 
 #include "../__methods__/defines.glsl"
+#include "../__methods__/geometricFunctions.glsl"
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer
 {
     mat4 view;
     mat4 proj;
-    vec4 eyePosition;
 } global;
 
 layout(set = 2, binding = 0) uniform LightBufferObject
@@ -35,7 +35,7 @@ int index[18] = int[](
 void main()
 {
     projview	= global.proj * global.view;
-    eyePosition = global.eyePosition;
+    eyePosition = vec4(viewPosition(global.view), 1.0f);
 
     vec3 u =   normalize(vec3(light.view[0][0],light.view[1][0],light.view[2][0]));
     vec3 v =   normalize(vec3(light.view[0][1],light.view[1][1],light.view[2][1]));

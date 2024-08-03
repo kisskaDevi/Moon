@@ -1,9 +1,9 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#define M_PI 3.14159265358979323846
-
 #include <fstream>
+#include <limits>
+
 #include "vector.h"
 
 namespace moon::math {
@@ -443,28 +443,14 @@ Matrix<type,4,4> scale(Vector<type,3> sc) {
 }
 
 template<typename type>
-Matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n, const type& f) {
+Matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n = std::numeric_limits<type>::min(), const type& f = std::numeric_limits<type>::max()) {
     const type a = type(1) / std::tan(fovy / type(2));
 
     Matrix<type,4,4> m(0.0f);
     m[0][0] = a / aspect;
     m[1][1] = - a;
-    m[2][2] = (f + n) / (n - f);
-    m[2][3] = type(2) * f * n / (n - f);
-    m[3][2] = - type(1);
-
-    return m;
-}
-
-template<typename type>
-Matrix<type,4,4> perspective(const type& fovy, const type& aspect, const type& n = type(0)) {
-    const type a = type(1) / std::tan(fovy / type(2));
-
-    Matrix<type,4,4> m(0.0f);
-    m[0][0] = a / aspect;
-    m[1][1] = - a;
-    m[2][2] = - type(1);
-    m[2][3] = - type(2) * n;
+    m[2][2] = f == std::numeric_limits<type>::max() ? - type(1) : (f + n) / (n - f);
+    m[2][3] = type(2) * n * (f == std::numeric_limits<type>::max() ? - type(1) : f / (n - f));
     m[3][2] = - type(1);
 
     return m;

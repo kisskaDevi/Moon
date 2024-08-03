@@ -1,13 +1,13 @@
 #version 450
 
 #include "../../../workflows/shaders/__methods__/defines.glsl"
+#include "../../../workflows/shaders/__methods__/geometricFunctions.glsl"
 
 layout(constant_id = 0) const int transparentLayersCount = 1;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
     mat4 view;
     mat4 proj;
-    vec4 eyePosition;
 } global;
 
 layout(set = 0, binding = 1) uniform sampler2D Sampler;
@@ -38,7 +38,7 @@ layout(location = 1) out vec4 outBloom;
 layout(location = 2) out vec4 outBlur;
 
 mat4 projview = global.proj * global.view;
-vec3 eyePosition = global.eyePosition.xyz;
+vec3 eyePosition = viewPosition(global.view);
 
 float h = 0.5f;
 float nbegin = 1.33f;

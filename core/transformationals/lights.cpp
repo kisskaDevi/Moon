@@ -1,4 +1,5 @@
-#include "spotLight.h"
+#include "lights.h"
+
 #include "operations.h"
 #include "dualQuaternion.h"
 #include "device.h"

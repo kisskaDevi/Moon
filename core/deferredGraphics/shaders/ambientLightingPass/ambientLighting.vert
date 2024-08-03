@@ -6,7 +6,6 @@ layout(set = 0, binding = 4) uniform GlobalUniformBuffer
 {
     mat4 view;
     mat4 proj;
-    vec4 eyePosition;
 } global;
 
 vec2 step[6] = vec2[](

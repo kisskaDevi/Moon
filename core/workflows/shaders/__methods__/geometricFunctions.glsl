@@ -16,7 +16,7 @@ vec3 getDirection(const in mat4 view){
 bool outsideSpotCondition(const in mat4 proj, const in mat4 view, const in float type, const in vec3 position) {
     vec4 coordinates = view * vec4(position, 1.0) * vec4(getAspect(proj), 1.0, -1.0, 1.0);
 
-    return type == 0.0 
+    return type == 0.0
     ? sqrt(coordinates.x * coordinates.x + coordinates.y * coordinates.y) >= coordinates.z
     : abs(coordinates.x) >= abs(coordinates.z) || abs(coordinates.y) >= abs(coordinates.z);
 }
@@ -60,6 +60,10 @@ bool isInside(const in vec2 coords) {
 vec4 positionProj(const in mat4 projview, const in vec4 position) {
     vec4 positionProj = projview * position;
     return positionProj / positionProj.w;
+}
+
+vec3 viewPosition(const in mat4 view) {
+    return -transpose(mat3(view)) * vec3(view[3]);
 }
 
 #endif

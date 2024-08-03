@@ -20,10 +20,8 @@ private:
     moon::math::Matrix<float,4,4>       modelMatrix{1.0f};
 
     void updateModelMatrix();
-public:
-    Group();
-    ~Group();
 
+public:
     Group& setGlobalTransform(const moon::math::Matrix<float,4,4> & transform);
     Group& translate(const moon::math::Vector<float,3> & translate);
     Group& rotate(const float & ang ,const moon::math::Vector<float,3> & ax);

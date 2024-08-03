@@ -9,16 +9,16 @@ else()
 endif()
 
 set(SOURCES
-    baseCamera.cpp
-    baseObject.cpp
+    cameras.cpp
+    objects.cpp
+    lights.cpp
     group.cpp
-    spotLight.cpp
 )
 
 set(HEADERS
-    baseCamera.h
-    baseObject.h
-    spotLight.h
+    cameras.h
+    objects.h
+    lights.h
     transformational.h
     group.h
 )

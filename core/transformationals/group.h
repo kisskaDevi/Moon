@@ -11,7 +11,7 @@ namespace moon::transformational {
 class Group : public Transformational
 {
 private:
-    std::unordered_set<Transformational *> objects;
+    std::unordered_set<Transformational*> objects;
     moon::math::Matrix<float, 4, 4> modelMatrix{1.0f};
     DEFAULT_TRANSFORMATIONAL()
 

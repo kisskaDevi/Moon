@@ -1,6 +1,7 @@
 #version 450
 
 #include "../__methods__/defines.glsl"
+#include "../__methods__/geometricFunctions.glsl"
 #include "scatteringBase.glsl"
 
 layout(location = 0)	in vec4 eyePosition;
@@ -13,8 +14,6 @@ layout(set = 2, binding = 0) uniform LightBufferObject
 {
     mat4 proj;
     mat4 view;
-    mat4 projView;
-    vec4 position;
     vec4 color;
     vec4 prop;
 } light;
@@ -35,18 +34,18 @@ void main()
     float depthMap = texture(inDepthTexture, vec2(gl_FragCoord.x / pc.width, gl_FragCoord.y / pc.height)).r;
 
     outScattering = LightScattering(
-            50, 
-            light.view, 
-            light.proj, 
-            light.projView, 
-            light.position, 
-            light.color, 
-            projview, 
-            eyePosition, 
-            glPosition, 
-            lightTexture, 
-            shadowMap, 
-            depthMap, 
+            50,
+            light.view,
+            light.proj,
+            light.proj * light.view,
+            vec4(viewPosition(light.view), 1.0f),
+            light.color,
+            projview,
+            eyePosition,
+            glPosition,
+            lightTexture,
+            shadowMap,
+            depthMap,
             light.prop.z,       // lightDropFactor
             light.prop.x);      // type
 }

@@ -11,8 +11,6 @@ layout(set = 0, binding = 4) uniform GlobalUniformBuffer {
 layout(set = 2, binding = 0) uniform LightBufferObject {
     mat4 proj;
     mat4 view;
-    mat4 projView;
-    vec4 position;
     vec4 color;
     vec4 prop;
 } light;
@@ -40,11 +38,12 @@ void main() {
     float h = - far / light.proj[1][1];
     float w = - far / light.proj[0][0];
 
-    vec3 center = light.position.xyz + far * n;
+    vec3 lightPosition = viewPosition(light.view);
+    vec3 center = lightPosition + far * n;
     vec3 x = w * u;
     vec3 y = h * v;
 
-    vertex[0] = light.position.xyz;
+    vertex[0] = lightPosition;
     vertex[1] = center + x + y;
     vertex[2] = center + x - y;
     vertex[3] = center - x - y;

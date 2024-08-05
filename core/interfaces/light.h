@@ -11,10 +11,6 @@
 
 namespace moon::interfaces {
 
-enum LightType : uint8_t {
-    spot = 0x1
-};
-
 class Light
 {
 protected:
@@ -28,6 +24,10 @@ protected:
     uint8_t pipelineBitMask{0};
 
 public:
+    enum Type : uint8_t {
+        spot = 0x1
+    };
+
     virtual ~Light(){};
 
     void setEnableShadow(bool enable);
@@ -36,24 +36,12 @@ public:
     bool isShadowEnable() const;
     bool isScatteringEnable() const;
 
-    uint8_t getPipelineBitMask() const;
-    const moon::utils::vkDefault::DescriptorSets& getDescriptorSets() const;
+    uint8_t& pipelineFlagBits();
+    const VkDescriptorSet& getDescriptorSet(uint32_t i) const;
 
-    virtual void create(
-            const moon::utils::PhysicalDevice& device,
-            VkCommandPool commandPool,
-            uint32_t imageCount) = 0;
-
-    virtual void render(
-        uint32_t frameNumber,
-        VkCommandBuffer commandBuffer,
-        const utils::vkDefault::DescriptorSets& descriptorSet,
-        VkPipelineLayout pipelineLayout,
-        VkPipeline pipeline) = 0;
-
-    virtual void update(
-        uint32_t frameNumber,
-        VkCommandBuffer commandBuffer) = 0;
+    virtual void create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) = 0;
+    virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
+    virtual void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, const utils::vkDefault::DescriptorSets& descriptorSet, VkPipelineLayout pipelineLayout, VkPipeline pipeline) = 0;
 
     static moon::utils::vkDefault::DescriptorSetLayout createTextureDescriptorSetLayout(VkDevice device);
     static moon::utils::vkDefault::DescriptorSetLayout createBufferDescriptorSetLayout(VkDevice device);

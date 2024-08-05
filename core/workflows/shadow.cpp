@@ -24,7 +24,7 @@ void ShadowGraphics::createRenderPass()
 
 void ShadowGraphics::Shadow::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
     lightUniformBufferSetLayout = interfaces::Light::createBufferDescriptorSetLayout(device);
-    objectDescriptorSetLayout = interfaces::Object::createDescriptorSetLayout(device);
+    objectDescriptorSetLayout = interfaces::Object::createBaseDescriptorSetLayout(device);
     primitiveDescriptorSetLayout = interfaces::Model::createNodeDescriptorSetLayout(device);
     materialDescriptorSetLayout = interfaces::Model::createMaterialDescriptorSetLayout(device);
 
@@ -166,7 +166,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
                 vkCmdBindIndexBuffer(commandBuffer, *object->model()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
-            utils::vkDefault::DescriptorSets descriptorSets = {lightSource->getDescriptorSets()[frameNumber], object->getDescriptorSet(frameNumber)};
+            utils::vkDefault::DescriptorSets descriptorSets = {lightSource->getDescriptorSet(frameNumber), object->getDescriptorSet(frameNumber)};
 
             interfaces::MaterialBlock material{};
 

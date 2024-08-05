@@ -11,29 +11,26 @@
 
 namespace moon::transformational {
 
-struct LightBufferObject
-{
+struct LightBufferObject {
     alignas(16) moon::math::Matrix<float,4,4>   proj;
     alignas(16) moon::math::Matrix<float,4,4>   view;
-    alignas(16) moon::math::Matrix<float,4,4>   projView;
-    alignas(16) moon::math::Vector<float,4>     position;
     alignas(16) moon::math::Vector<float,4>     lightColor;
     alignas(16) moon::math::Vector<float,4>     lightProp;
 };
 
-enum SpotType
-{
-    circle,
-    square
-};
-
 class SpotLight : public Transformational, public moon::interfaces::Light
 {
+public:
+    enum Type {
+        circle,
+        square
+    };
+
 private:
     const std::filesystem::path texturePath;
     moon::utils::Texture texture;
 
-    SpotType                            type{ SpotType::circle };
+    Type                                type{ Type::circle };
     float                               lightPowerFactor{10.0f};
     float                               lightDropFactor{1.0f};
     moon::math::Vector<float,4>         lightColor{0.0f};
@@ -62,8 +59,9 @@ private:
     SpotLight& update() override;
 
 public:
-    SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
-    SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
+
+    SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, Type type = Type::circle);
+    SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, Type type = Type::circle);
     virtual ~SpotLight();
 
     SpotLight& setGlobalTransform(const moon::math::Matrix<float,4,4> & transform) override;
@@ -101,8 +99,6 @@ public:
     void update(
         uint32_t frameNumber,
         VkCommandBuffer commandBuffer) override;
-
-    void printStatus() const;
 };
 
 class IsotropicLight: public Transformational

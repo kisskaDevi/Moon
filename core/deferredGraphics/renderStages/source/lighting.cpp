@@ -21,8 +21,8 @@ void Graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    bufferDescriptorSetLayoutMap[interfaces::LightType::spot] = interfaces::Light::createBufferDescriptorSetLayout(device);
-    textureDescriptorSetLayoutMap[interfaces::LightType::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
+    bufferDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createBufferDescriptorSetLayout(device);
+    textureDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
     shadowDescriptorSetLayout = utils::DepthMap::createDescriptorSetLayout(device);
 }
 
@@ -31,7 +31,7 @@ void Graphics::Lighting::createPipeline(VkDevice device, VkRenderPass renderPass
         {workflows::ShaderType::Vertex, "spotLightingPass/spotLightingVert.spv"},
         {workflows::ShaderType::Fragment, "spotLightingPass/spotLightingFrag.spv"}
     };
-    createPipeline(interfaces::LightType::spot, shaderNames, device, renderPass);
+    createPipeline(interfaces::Light::Type::spot, shaderNames, device, renderPass);
 }
 
 void Graphics::Lighting::createDescriptors(VkDevice device) {
@@ -86,7 +86,7 @@ void Graphics::Lighting::render(uint32_t frameNumber, VkCommandBuffer commandBuf
 {
     for(auto& lightSource: *lightSources){
         const auto& depthMap = depthMaps->at(lightSource);
-        uint8_t mask = lightSource->getPipelineBitMask();
+        uint8_t mask = lightSource->pipelineFlagBits();
         lightSource->render(
             frameNumber,
             commandBuffer,

@@ -6,8 +6,6 @@ layout(set = 0, binding = 0) uniform LightBufferObject
 {
     mat4 proj;
     mat4 view;
-    mat4 projView;
-    vec4 position;
     vec4 lightColor;
     vec4 lightProp;
 }light;
@@ -36,12 +34,12 @@ layout(location = 7)	in  vec3 inBitangent;
 void main()
 {
     mat4 model = local.matrix * node.matrix;
-    
+
     mat4 skinMat = node.jointCount > 0.0 ?
         inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
         inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
         inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
         inWeight0.w * node.jointMatrix[int(inJoint0.w)] : mat4(1.0f);
 
-    gl_Position = light.projView * model * skinMat* vec4(inPosition, 1.0);
+    gl_Position = light.proj * light.view * model * skinMat* vec4(inPosition, 1.0);
 }

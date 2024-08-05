@@ -62,11 +62,11 @@ void Scattering::Lighting::create(const workflows::ShaderNames& shadersNames, Vk
         bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    bufferDescriptorSetLayoutMap[interfaces::LightType::spot] = interfaces::Light::createBufferDescriptorSetLayout(device);
-    descriptorSetLayoutMap[interfaces::LightType::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
+    bufferDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createBufferDescriptorSetLayout(device);
+    descriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
     shadowDescriptorSetLayout = utils::DepthMap::createDescriptorSetLayout(device);
 
-    createPipeline(interfaces::LightType::spot, shadersNames, device, renderPass);
+    createPipeline(interfaces::Light::Type::spot, shadersNames, device, renderPass);
 
     descriptorPool = utils::vkDefault::DescriptorPool(device, { &descriptorSetLayout }, parameters.imageInfo.Count);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, parameters.imageInfo.Count);
@@ -193,8 +193,8 @@ void Scattering::updateCommandBuffer(uint32_t frameNumber){
     for(auto& lightSource: *lighting.lightSources){
         if(lightSource->isScatteringEnable()){
             ScatteringPushConst pushConst{ parameters.imageInfo.Extent.width, parameters.imageInfo.Extent.height};
-            vkCmdPushConstants(commandBuffers[frameNumber], lighting.pipelineLayoutMap[lightSource->getPipelineBitMask()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
-            uint8_t mask = lightSource->getPipelineBitMask();
+            vkCmdPushConstants(commandBuffers[frameNumber], lighting.pipelineLayoutMap[lightSource->pipelineFlagBits()], VK_SHADER_STAGE_ALL, 0, sizeof(ScatteringPushConst), &pushConst);
+            uint8_t mask = lightSource->pipelineFlagBits();
             const auto& depthMap = lighting.depthMaps->at(lightSource);
             lightSource->render(
                 frameNumber,

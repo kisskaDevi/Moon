@@ -8,22 +8,22 @@
 
 namespace moon::transformational {
 
-SpotLight::SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
+SpotLight::SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, Type type):
     lightColor(color),
     projectionMatrix(projection),
     type(type)
 {
-    pipelineBitMask = moon::interfaces::LightType::spot;
+    pipelineBitMask = moon::interfaces::Light::Type::spot;
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
 }
 
-SpotLight::SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, SpotType type):
+SpotLight::SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, Type type):
     texturePath(texturePath),
     projectionMatrix(projection),
     type(type)
 {
-    pipelineBitMask = moon::interfaces::LightType::spot;
+    pipelineBitMask = moon::interfaces::Light::Type::spot;
     this->enableShadow = enableShadow;
     this->enableScattering = enableScattering;
 }
@@ -157,10 +157,10 @@ void SpotLight::render(
     VkPipeline pipeline)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    utils::vkDefault::DescriptorSets descriptorSets = descriptorSet;
-    descriptorSets.push_back(this->descriptorSets[frameNumber]);
-    descriptorSets.push_back(textureDescriptorSets[frameNumber]);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+    utils::vkDefault::DescriptorSets descriptors = descriptorSet;
+    descriptors.push_back(descriptorSets[frameNumber]);
+    descriptors.push_back(textureDescriptorSets[frameNumber]);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptors.size()), descriptors.data(), 0, nullptr);
     vkCmdDraw(commandBuffer, 18, 1, 0, 0);
 }
 
@@ -186,10 +186,8 @@ void SpotLight::update(
         LightBufferObject lightBuffer{};
             lightBuffer.proj = transpose(projectionMatrix);
             lightBuffer.view = transpose(inverse(modelMatrix));
-            lightBuffer.projView = transpose(projectionMatrix * inverse(modelMatrix));
-            lightBuffer.position = modelMatrix * moon::math::Vector<float,4>(0.0f,0.0f,0.0f,1.0f);
             lightBuffer.lightColor = lightColor;
-            lightBuffer.lightProp = moon::math::Vector<float,4>(static_cast<float>(type),lightPowerFactor,lightDropFactor,0.0f);
+            lightBuffer.lightProp = {static_cast<float>(type), lightPowerFactor, lightDropFactor, 0.0f};
         buffer.copy(&lightBuffer);
         moon::utils::buffer::copy(commandBuffer, sizeof(LightBufferObject), buffer, uniformBuffersDevice[frameNumber]);
     }
@@ -239,35 +237,28 @@ void SpotLight::updateDescriptorSets(uint32_t imageCount)
     }
 }
 
-void SpotLight::printStatus() const
-{
-    std::cout << "translation\t" << translation.im()[0] << '\t' << translation.im()[1] << '\t' << translation.im()[2] << '\n';
-    std::cout << "rotation\t" << rotation.re() << '\t' << rotation.im()[0] << '\t' << rotation.im()[1] << '\t' << rotation.im()[2] << '\n';
-    std::cout << "scale\t" << scaling[0] << '\t' << scaling[1] << '\t' << scaling[2] << '\n';
-}
-
 //isotropicLight
 
 IsotropicLight::IsotropicLight(const moon::math::Vector<float,4>& color, float radius)
 {
     const auto proj = moon::math::perspective(moon::math::radians(91.0f), 1.0f, 0.01f, radius);
 
-    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
     lightSource.back()->rotate(moon::math::radians(90.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
 
-    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
     lightSource.back()->rotate(moon::math::radians(-90.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
 
-    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
     lightSource.back()->rotate(moon::math::radians(0.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
 
-    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
     lightSource.back()->rotate(moon::math::radians(90.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
 
-    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
     lightSource.back()->rotate(moon::math::radians(-90.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
 
-    lightSource.push_back(new SpotLight(color, proj,true,false,SpotType::square));
+    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
     lightSource.back()->rotate(moon::math::radians(180.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
 
     // colors for debug if color = {0, 0, 0, 0}

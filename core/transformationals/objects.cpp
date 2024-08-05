@@ -19,7 +19,7 @@ void BaseObject::update(uint32_t frameNumber, VkCommandBuffer commandBuffer) {
 }
 
 void BaseObject::createDescriptors(const utils::PhysicalDevice& device, uint32_t imageCount) {
-    descriptorSetLayout = interfaces::Object::createDescriptorSetLayout(device.device());
+    descriptorSetLayout = interfaces::Object::createBaseDescriptorSetLayout(device.device());
     descriptorPool = utils::vkDefault::DescriptorPool(device.device(), { &descriptorSetLayout }, imageCount);
     descriptors = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
     for (size_t i = 0; i < imageCount; i++) {

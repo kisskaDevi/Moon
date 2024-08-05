@@ -21,11 +21,11 @@ bool Light::isScatteringEnable() const{
     return enableScattering;
 }
 
-const utils::vkDefault::DescriptorSets& Light::getDescriptorSets() const {
-    return descriptorSets;
+const VkDescriptorSet& Light::getDescriptorSet(uint32_t i) const {
+    return descriptorSets[i];
 }
 
-uint8_t Light::getPipelineBitMask() const {
+uint8_t& Light::pipelineFlagBits() {
     return pipelineBitMask;
 }
 

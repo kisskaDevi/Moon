@@ -17,7 +17,7 @@ void Graphics::Base::createDescriptorSetLayout(VkDevice device) {
 
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    objectDescriptorSetLayout = interfaces::Object::createDescriptorSetLayout(device);
+    objectDescriptorSetLayout = interfaces::Object::createBaseDescriptorSetLayout(device);
     primitiveDescriptorSetLayout = interfaces::Model::createNodeDescriptorSetLayout(device);
     materialDescriptorSetLayout = interfaces::Model::createMaterialDescriptorSetLayout(device);
 }

@@ -13,8 +13,6 @@ layout(set = 2, binding = 0) uniform LightBufferObject
 {
     mat4 proj;
     mat4 view;
-    mat4 projView;
-    vec4 position;
     vec4 color;
     vec4 prop;
 }light;
@@ -45,11 +43,12 @@ void main()
     float h = - far/light.proj[1][1];
     float w = light.proj[1][1]/light.proj[0][0]*h;
 
-    vertex[0] = light.position.xyz;
-    vertex[1] = light.position.xyz + far*n + w*u + h*v;
-    vertex[2] = light.position.xyz + far*n + w*u - h*v;
-    vertex[3] = light.position.xyz + far*n - w*u - h*v;
-    vertex[4] = light.position.xyz + far*n - w*u + h*v;
+    vec3 lightPosition = viewPosition(light.view);
+    vertex[0] = lightPosition;
+    vertex[1] = lightPosition + far*n + w*u + h*v;
+    vertex[2] = lightPosition + far*n + w*u - h*v;
+    vertex[3] = lightPosition + far*n - w*u - h*v;
+    vertex[4] = lightPosition + far*n - w*u + h*v;
 
     glPosition = vec4(vertex[index[gl_VertexIndex]],1.0f);
     gl_Position = projview * glPosition;

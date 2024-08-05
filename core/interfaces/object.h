@@ -75,7 +75,7 @@ public:
     virtual void create(const utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) = 0;
     virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
 
-    static utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);
+    static utils::vkDefault::DescriptorSetLayout createBaseDescriptorSetLayout(VkDevice device);
     static utils::vkDefault::DescriptorSetLayout createSkyboxDescriptorSetLayout(VkDevice device);
 };
 

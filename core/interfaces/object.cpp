@@ -65,7 +65,7 @@ const VkDescriptorSet& Object::getDescriptorSet(uint32_t i) const {
     return descriptors[i];
 }
 
-utils::vkDefault::DescriptorSetLayout Object::createDescriptorSetLayout(VkDevice device){
+utils::vkDefault::DescriptorSetLayout Object::createBaseDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> binding;
         binding.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;

@@ -19,7 +19,7 @@ namespace moon::interfaces { class Model;}
 namespace moon::graphicsManager { class GraphicsManager;}
 namespace moon::imguiGraphics { class ImguiGraphics;}
 namespace moon::deferredGraphics { class DeferredGraphics;}
-namespace moon::transformational { class SpotLight; class IsotropicLight; class BaseObject; class Group; class Camera; class SkyboxObject;}
+namespace moon::transformational { class SpotLight; class IsotropicLight; class Object; class Group; class Camera; class SkyboxObject;}
 namespace moon::utils { class Cursor;}
 
 class testScene : public scene
@@ -63,23 +63,23 @@ private:
 
     std::unordered_map<std::string, std::shared_ptr<moon::interfaces::Model>> models;
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::Camera>> cameras;
-    std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseObject>> objects;
-    std::unordered_map<std::string, std::shared_ptr<moon::transformational::BaseObject>> staticObjects;
-    std::unordered_map<std::string, std::shared_ptr<moon::transformational::SkyboxObject>> skyboxObjects;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::Object>> objects;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::Object>> staticObjects;
+    std::unordered_map<std::string, std::shared_ptr<moon::transformational::Object>> skyboxObjects;
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::Group>> groups;
     std::unordered_map<std::string, std::shared_ptr<moon::transformational::IsotropicLight>> lightPoints;
     std::vector<std::shared_ptr<moon::transformational::SpotLight>> lightSources;
 
     struct ControledObject
     {
-        moon::transformational::BaseObject* ptr{ nullptr };
+        moon::transformational::Object* ptr{ nullptr };
         std::string name{ "none" };
         struct Outlighting {
             bool enable{ true };
             moon::math::Vector<float, 4> color{ 1.0f, 1.0f, 1.0f, 1.0f };
         } outlighting;
-        operator moon::transformational::BaseObject*(){return ptr;}
-        moon::transformational::BaseObject* operator->(){ return ptr; }
+        operator moon::transformational::Object*(){return ptr;}
+        moon::transformational::Object* operator->(){ return ptr; }
     } controledObject;
 
     void mouseEvent();

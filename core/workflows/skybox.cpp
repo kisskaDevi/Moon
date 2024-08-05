@@ -159,7 +159,7 @@ void SkyboxGraphics::updateCommandBuffer(uint32_t frameNumber){
     vkCmdBindPipeline(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
     for(const auto& object: *skybox.objects)
     {
-        if((interfaces::ObjectType::skybox & object->getPipelineBitMask()) && object->getEnable()){
+        if((interfaces::ObjectType::skybox & object->pipelineFlagBits()) && object->getEnable()){
             utils::vkDefault::DescriptorSets descriptorSets = {skybox.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
             vkCmdBindDescriptorSets(commandBuffers[frameNumber], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
             vkCmdDraw(commandBuffers[frameNumber], 36, 1, 0, 0);

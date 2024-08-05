@@ -40,14 +40,14 @@ UniformBuffer::UniformBuffer(const utils::PhysicalDevice& physicalDevice, uint32
         cache.resize(imageCount);
         for (auto& buffer : cache) {
             buffer = utils::vkDefault::Buffer(physicalDevice, physicalDevice.device(), size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &cache[0]));
+            utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", UniformBuffer::UniformBuffer, cache " + std::to_string(&buffer - &cache[0]));
         }
     }
     if (device.empty()) {
         device.resize(imageCount);
         for (auto& buffer : device) {
             buffer = utils::vkDefault::Buffer(physicalDevice, physicalDevice.device(), size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", baseCamera::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &device[0]));
+            utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", UniformBuffer::UniformBuffer, device " + std::to_string(&buffer - &device[0]));
         }
     }
 }

@@ -5,12 +5,12 @@
 #include <vector>
 #include <vector.h>
 
-#include <vkdefault.h>
-#include <device.h>
+#include "vkdefault.h"
+#include "device.h"
+#include "buffer.h"
+#include "model.h"
 
 namespace moon::interfaces {
-
-class Model;
 
 enum ObjectType : uint8_t {
     base = 0x1,
@@ -22,8 +22,13 @@ enum ObjectProperty : uint8_t {
     outlining = 1<<4
 };
 
-class Object
-{
+struct Outlining {
+    bool enable{ false };
+    float width{ 0.0f };
+    math::Vector<float, 4> color{ 0.0f };
+};
+
+class Object {
 protected:
     bool enable{true};
     bool enableShadow{true};
@@ -31,27 +36,22 @@ protected:
     uint32_t firstPrimitive{0};
     uint32_t primitiveCount{0};
 
-    struct Outlining{
-        bool Enable{false};
-        float Width{0.0f};
-        moon::math::Vector<float,4> Color{0.0f};
-    }outlining;
+    Outlining outliningProps;
 
+    uint8_t pipelineBitMask{ 0 };
     Model* pModel{nullptr};
     uint32_t firstInstance{0};
     uint32_t instanceCount{1};
 
-    uint8_t pipelineBitMask{0};
-
-    moon::utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
-    moon::utils::vkDefault::DescriptorPool descriptorPool;
-    moon::utils::vkDefault::DescriptorSets descriptors;
+    utils::vkDefault::DescriptorSetLayout descriptorSetLayout;
+    utils::vkDefault::DescriptorPool descriptorPool;
+    utils::vkDefault::DescriptorSets descriptors;
 
 public:
-    virtual ~Object(){};
-
-    void setModel(Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    Model* getModel();
+    Object() = default;
+    Object(uint8_t pipelineBitMask);
+    Object(uint8_t pipelineBitMask, Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
+    Model* model();
     uint32_t getInstanceNumber(uint32_t imageNumber) const;
 
     void setEnable(const bool& enable);
@@ -59,13 +59,8 @@ public:
     bool getEnable() const;
     bool getEnableShadow() const;
 
-    void setOutlining(
-        const bool& enable,
-        const float& width = 0,
-        const moon::math::Vector<float,4>& color = {0.0f});
-    bool getOutliningEnable() const;
-    float getOutliningWidth() const;
-    moon::math::Vector<float,4> getOutliningColor() const;
+    uint8_t& pipelineFlagBits();
+    Outlining& outlining();
 
     bool comparePrimitive(uint32_t primitive);
     void setFirstPrimitive(uint32_t firstPrimitive);
@@ -73,23 +68,18 @@ public:
     uint32_t getFirstPrimitive() const;
     uint32_t getPrimitiveCount() const;
 
-    uint8_t getPipelineBitMask() const;
     const VkDescriptorSet& getDescriptorSet(uint32_t i) const;
 
-    virtual void create(
-        const moon::utils::PhysicalDevice& device,
-        VkCommandPool commandPool,
-        uint32_t imageCount) = 0;
+    virtual ~Object() {};
+    virtual utils::Buffers& buffers() = 0;
+    virtual void create(const utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) = 0;
+    virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
 
-    virtual void update(
-        uint32_t frameNumber,
-        VkCommandBuffer commandBuffer) = 0;
-
-    static moon::utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);
-    static moon::utils::vkDefault::DescriptorSetLayout createSkyboxDescriptorSetLayout(VkDevice device);
+    static utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);
+    static utils::vkDefault::DescriptorSetLayout createSkyboxDescriptorSetLayout(VkDevice device);
 };
 
-using Objects = std::vector<moon::interfaces::Object*>;
+using Objects = std::vector<interfaces::Object*>;
 
 }
 #endif // OBJECT_H

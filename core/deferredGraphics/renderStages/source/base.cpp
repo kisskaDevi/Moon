@@ -171,12 +171,13 @@ void Graphics::Base::create(const workflows::ShaderNames& shadersNames, VkDevice
 void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers, uint32_t& primitiveCount) const
 {
     for(const auto& object: *objects){
-        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
-            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineMap.at(object->getPipelineBitMask()));
+        auto pipelineFlagBits = object->pipelineFlagBits();
+        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & pipelineFlagBits) && object->getEnable()){
+            vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineMap.at(pipelineFlagBits));
 
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
-            if (object->getModel()->getIndices() != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->model()->getVertices(), &offsets);
+            if (object->model()->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffers, *object->model()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
             utils::vkDefault::DescriptorSets descriptors = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
@@ -184,10 +185,10 @@ void Graphics::Base::render(uint32_t frameNumber, VkCommandBuffer commandBuffers
             interfaces::MaterialBlock material;
 
             object->setFirstPrimitive(primitiveCount);
-            object->getModel()->render(
+            object->model()->render(
                         object->getInstanceNumber(frameNumber),
                         commandBuffers,
-                        pipelineLayoutMap.at(object->getPipelineBitMask()),
+                        pipelineLayoutMap.at(pipelineFlagBits),
                         static_cast<uint32_t>(descriptors.size()),
                         descriptors.data(),
                         primitiveCount,

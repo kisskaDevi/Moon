@@ -20,38 +20,25 @@ void Object::setEnableShadow(const bool& inenable) {
     enableShadow = inenable;
 }
 
-void Object::setModel(Model* model, uint32_t infirstInstance, uint32_t ininstanceCount){
-    pModel = model;
-    firstInstance = infirstInstance;
-    instanceCount = ininstanceCount;
-}
+Object::Object(uint8_t pipelineBitMask) : pipelineBitMask(pipelineBitMask) {}
 
-Model* Object::getModel() {
-    return pModel;
+Object::Object(uint8_t pipelineBitMask, Model* model, uint32_t firstInstance, uint32_t instanceCount)
+    : pipelineBitMask(pipelineBitMask), pModel(model), firstInstance(firstInstance), instanceCount(instanceCount) {}
+
+Model* Object::model() {
+     return pModel;
 }
 
 uint32_t Object::getInstanceNumber(uint32_t imageNumber) const {
     return firstInstance + (instanceCount > imageNumber ? imageNumber : 0);
 }
 
-void Object::setOutlining(const bool& enable, const float& width, const moon::math::Vector<float,4>& color){
-    outlining.Enable = enable;
-    outlining.Width = width > 0.0f ? width : outlining.Width;
-    outlining.Color = dot(color,color) > 0.0f ? color : outlining.Color;
-
-    pipelineBitMask |= outlining.Enable ? ObjectProperty::outlining : ObjectProperty::non;
+uint8_t& Object::pipelineFlagBits() {
+    return pipelineBitMask;
 }
 
-bool Object::getOutliningEnable() const {
-    return outlining.Enable;
-}
-
-float Object::getOutliningWidth() const {
-    return outlining.Width;
-}
-
-moon::math::Vector<float,4> Object::getOutliningColor() const {
-    return outlining.Color;
+Outlining& Object::outlining() {
+    return outliningProps;
 }
 
 void Object::setFirstPrimitive(uint32_t infirstPrimitive) {
@@ -78,21 +65,17 @@ const VkDescriptorSet& Object::getDescriptorSet(uint32_t i) const {
     return descriptors[i];
 }
 
-uint8_t Object::getPipelineBitMask() const {
-    return pipelineBitMask;
-}
-
-moon::utils::vkDefault::DescriptorSetLayout Object::createDescriptorSetLayout(VkDevice device){
+utils::vkDefault::DescriptorSetLayout Object::createDescriptorSetLayout(VkDevice device){
     std::vector<VkDescriptorSetLayoutBinding> binding;
-        binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+        binding.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
         binding.back().stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
     return utils::vkDefault::DescriptorSetLayout(device, binding);
 }
 
-moon::utils::vkDefault::DescriptorSetLayout Object::createSkyboxDescriptorSetLayout(VkDevice device) {
+utils::vkDefault::DescriptorSetLayout Object::createSkyboxDescriptorSetLayout(VkDevice device) {
     std::vector<VkDescriptorSetLayoutBinding> binding;
-        binding.push_back(moon::utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
-        binding.push_back(moon::utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+        binding.push_back(utils::vkDefault::bufferVertexLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
+        binding.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(binding.size()), 1));
     return utils::vkDefault::DescriptorSetLayout(device, binding);
 }
 

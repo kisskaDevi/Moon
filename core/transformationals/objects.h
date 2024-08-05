@@ -2,7 +2,9 @@
 #define BASEOBJECT_H
 
 #include <vulkan.h>
+
 #include <filesystem>
+#include <optional>
 
 #include "transformational.h"
 #include "quaternion.h"
@@ -10,33 +12,58 @@
 #include "buffer.h"
 #include "object.h"
 #include "matrix.h"
+#include "model.h"
 
-namespace moon::interfaces { class Model;}
+namespace moon::interfaces {
+
+class BaseObject : public interfaces::Object {
+protected:
+    utils::UniformBuffer uniformBuffer;
+
+    void create(const utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) override;
+    void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
+    void createDescriptors(const utils::PhysicalDevice& device, uint32_t imageCount);
+
+public:
+    virtual ~BaseObject() {};
+    BaseObject(uint8_t pipelineBitMask, void* hostData, size_t hostDataSize);
+    BaseObject(uint8_t pipelineBitMask, void* hostData, size_t hostDataSize, interfaces::Model* model, uint32_t firstInstance, uint32_t instanceCount);
+    utils::Buffers& buffers() override;
+};
+
+class SkyboxObject : public BaseObject {
+private:
+    utils::Paths texturePaths;
+    utils::CubeTexture texture;
+
+    void create(const utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) override;
+    void createDescriptors(const utils::PhysicalDevice& device, uint32_t imageCount);
+
+public:
+    SkyboxObject(uint8_t pipelineBitMask, void* hostData, size_t hostDataSize, const utils::Paths& texturePaths, const float& mipLevel);
+    SkyboxObject& setMipLevel(float mipLevel);
+};
+
+}
 
 namespace moon::transformational {
 
-struct UniformBuffer
-{
-    alignas(16) moon::math::Matrix<float,4,4> modelMatrix;
-    alignas(16) moon::math::Vector<float,4>   constantColor;
-    alignas(16) moon::math::Vector<float,4>   colorFactor;
-    alignas(16) moon::math::Vector<float,4>   bloomColor;
-    alignas(16) moon::math::Vector<float,4>   bloomFactor;
-};
-
-class BaseObject : public moon::interfaces::Object, public Transformational
+class Object : public Transformational
 {
 private:
-    moon::math::Quaternion<float>               translation{0.0f,0.0f,0.0f,0.0f};
-    moon::math::Quaternion<float>               rotation{1.0f,0.0f,0.0f,0.0f};
-    moon::math::Vector<float,3>                 scaling{1.0f,1.0f,1.0f};
-    moon::math::Matrix<float,4,4>               globalTransformation{1.0f};
-    moon::math::Matrix<float,4,4>               modelMatrix{1.0f};
+    struct {
+        struct ColorLinearProperties {
+            alignas(16) math::Vector<float, 4> constant{0.0f};
+            alignas(16) math::Vector<float, 4> factor{1.0f};
+        };
+        alignas(16) math::Matrix<float, 4, 4> modelMatrix;
+        ColorLinearProperties base;
+        ColorLinearProperties bloom;
+    } buffer;
 
-    moon::math::Vector<float,4>                 colorFactor{1.0f};
-    moon::math::Vector<float,4>                 constantColor{0.0f};
-    moon::math::Vector<float,4>                 bloomFactor{1.0f};
-    moon::math::Vector<float,4>                 bloomColor{0.0f};
+    DEFAULT_TRANSFORMATIONAL()
+
+    std::unique_ptr<interfaces::Object> pObject;
 
     bool changeAnimationFlag{false};
     uint32_t animationIndex{0};
@@ -45,74 +72,24 @@ private:
     float startTimer{0.0f};
     float changeAnimationTime{0.0f};
 
-protected:
-    const moon::utils::PhysicalDevice* device{nullptr};
-
-    std::vector<moon::utils::Buffer> uniformBuffersHost;
-    std::vector<moon::utils::Buffer> uniformBuffersDevice;
-
-    void createUniformBuffers(uint32_t imageCount);
-
-private:
-    void createDescriptorPool(uint32_t imageCount);
-    void createDescriptorSet(uint32_t imageCount);
-    BaseObject& updateModelMatrix();
-
 public:
-    BaseObject() = default;
-    BaseObject(moon::interfaces::Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
-    virtual ~BaseObject() = default;
+    Object() = default;
+    Object(interfaces::Model* model, uint32_t firstInstance = 0, uint32_t instanceCount = 1);
+    Object(const utils::Paths& texturePaths, const float& mipLevel = 1.0f);
 
-    BaseObject& setGlobalTransform(const moon::math::Matrix<float,4,4>& transform) override;
-    BaseObject& translate(const moon::math::Vector<float,3>& translate) override;
-    BaseObject& rotate(const float& ang, const moon::math::Vector<float,3>& ax) override;
-    BaseObject& rotate(const moon::math::Quaternion<float>& quat);
-    BaseObject& scale(const moon::math::Vector<float,3>& scale) override;
-    BaseObject& setTranslation(const moon::math::Vector<float,3>& translate);
+    DEFAULT_TRANSFORMATIONAL_OVERRIDE(Object)
+    DEFAULT_TRANSFORMATIONAL_GETTERS()
 
-    const moon::math::Vector<float,3> getTranslation() const;
-    const moon::math::Quaternion<float> getRotation() const;
-    const moon::math::Vector<float,3> getScale() const;
-
-    BaseObject& setConstantColor(const moon::math::Vector<float,4> & color);
-    BaseObject& setColorFactor(const moon::math::Vector<float,4> & color);
-    BaseObject& setBloomColor(const moon::math::Vector<float,4> & color);
-    BaseObject& setBloomFactor(const moon::math::Vector<float,4> & color);
-
-    void create(
-        const moon::utils::PhysicalDevice& device,
-        VkCommandPool commandPool,
-        uint32_t imageCount) override;
-
-    void update(
-        uint32_t frameNumber,
-        VkCommandBuffer commandBuffer) override;
+    Object& setOutlining(const bool& enable, const float& width = 0, const math::Vector<float, 4>& color = { 0.0f });
+    Object& setBase(std::optional<math::Vector<float,4>> constant = std::nullopt, std::optional<math::Vector<float, 4>> factor = std::nullopt);
+    Object& setBloom(std::optional<math::Vector<float, 4>> constant = std::nullopt, std::optional<math::Vector<float, 4>> factor = std::nullopt);
 
     uint32_t getAnimationIndex();
     void setAnimation(uint32_t animationIndex, float animationTime);
     void changeAnimation(uint32_t newAnimationIndex, float changeAnimationTime);
     void updateAnimation(uint32_t imageNumber, float frameTime);
 
-    void printStatus() const;
-};
-
-class SkyboxObject : public BaseObject{
-private:
-    utils::Paths texturePaths;
-    moon::utils::CubeTexture texture;
-
-    void createDescriptorPool(uint32_t imageCount);
-    void createDescriptorSet(uint32_t imageCount);
-public:
-    SkyboxObject(const utils::Paths& texturePaths);
-
-    SkyboxObject& setMipLevel(float mipLevel);
-    SkyboxObject& translate(const moon::math::Vector<float,3>& translate) override;
-
-    void create(
-        const moon::utils::PhysicalDevice& device,
-        VkCommandPool commandPool,
-        uint32_t imageCount) override;
+    operator interfaces::Object* () const;
 };
 
 }

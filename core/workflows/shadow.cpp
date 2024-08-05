@@ -160,10 +160,10 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadow.pipeline);
     for(const auto& object: *shadow.objects){
-        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getEnableShadow()){
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->getModel()->getVertices(), &offsets);
-            if (object->getModel()->getIndices() != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffer, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
+        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->pipelineFlagBits()) && object->getEnable() && object->getEnableShadow()){
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, object->model()->getVertices(), &offsets);
+            if (object->model()->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffer, *object->model()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
             utils::vkDefault::DescriptorSets descriptorSets = {lightSource->getDescriptorSets()[frameNumber], object->getDescriptorSet(frameNumber)};
@@ -171,7 +171,7 @@ void ShadowGraphics::render(uint32_t frameNumber, VkCommandBuffer commandBuffer,
             interfaces::MaterialBlock material{};
 
             uint32_t primitives = 0;
-            object->getModel()->render(
+            object->model()->render(
                         object->getInstanceNumber(frameNumber),
                         commandBuffer,
                         shadow.pipelineLayout,

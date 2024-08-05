@@ -96,20 +96,21 @@ void Graphics::OutliningExtension::render(uint32_t frameNumber, VkCommandBuffer 
 {
     vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     for(const auto& object: *parent.objects){
-        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable() && object->getOutliningEnable()){
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
-            if (object->getModel()->getIndices() != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
+        const auto& outlining = object->outlining();
+        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->pipelineFlagBits()) && object->getEnable() && outlining.enable){
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->model()->getVertices(), &offsets);
+            if (object->model()->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffers, *object->model()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
             utils::vkDefault::DescriptorSets descriptorSets = {parent.descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
             OutliningPushConstBlock pushConstBlock;
-            pushConstBlock.outlining.stencilColor = object->getOutliningColor();
-            pushConstBlock.outlining.width = object->getOutliningWidth();
+            pushConstBlock.outlining.stencilColor = outlining.color;
+            pushConstBlock.outlining.width = outlining.width;
 
             uint32_t primirives = 0;
-            object->getModel()->render(
+            object->model()->render(
                         object->getInstanceNumber(frameNumber),
                         commandBuffers,
                         pipelineLayout,

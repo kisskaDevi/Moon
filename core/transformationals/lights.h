@@ -59,7 +59,7 @@ private:
     void createDescriptorPool(uint32_t imageCount);
     void updateDescriptorSets(uint32_t imageCount);
 
-    SpotLight& updateModelMatrix();
+    SpotLight& update() override;
 
 public:
     SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, SpotType type = SpotType::circle);
@@ -76,7 +76,7 @@ public:
     SpotLight& setTranslation(const moon::math::Vector<float,3>& translate);
     SpotLight& setRotation(const moon::math::Quaternion<float>& rotation);
     SpotLight& setRotation(const float & ang ,const moon::math::Vector<float,3> & ax);
-    SpotLight& rotate(const moon::math::Quaternion<float>& quat);
+    SpotLight& rotate(const moon::math::Quaternion<float>& quat) override;
 
     void setLightColor(const moon::math::Vector<float,4> & color);
     void setLightDropFactor(const float& dropFactor);
@@ -122,7 +122,7 @@ private:
 
     std::vector<SpotLight*>             lightSource;
 
-    IsotropicLight& updateModelMatrix();
+    IsotropicLight& update() override;
 
 public:
     IsotropicLight(const moon::math::Vector<float,4>& color, float radius = 100.0f);
@@ -133,10 +133,11 @@ public:
     void setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection);
 
     IsotropicLight& setTranslation(const moon::math::Vector<float,3>& translate);
-    IsotropicLight& setGlobalTransform(const moon::math::Matrix<float,4,4>& transform);
-    IsotropicLight& translate(const moon::math::Vector<float,3>& translate);
-    IsotropicLight& rotate(const float& ang,const moon::math::Vector<float,3>& ax);
-    IsotropicLight& scale(const moon::math::Vector<float,3>& scale);
+    IsotropicLight& setGlobalTransform(const moon::math::Matrix<float,4,4>& transform) override;
+    IsotropicLight& translate(const moon::math::Vector<float,3>& translate) override;
+    IsotropicLight& rotate(const float& ang,const moon::math::Vector<float,3>& ax) override;
+    IsotropicLight& scale(const moon::math::Vector<float,3>& scale) override;
+    IsotropicLight& rotate(const math::Quaternion<float>&) override {return *this;}
 
     IsotropicLight& rotateX(const float& ang ,const moon::math::Vector<float,3>& ax);
     IsotropicLight& rotateY(const float& ang ,const moon::math::Vector<float,3>& ax);

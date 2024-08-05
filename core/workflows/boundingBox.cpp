@@ -180,17 +180,17 @@ void BoundingBoxGraphics::updateCommandBuffer(uint32_t frameNumber){
 
 void BoundingBoxGraphics::BoundingBox::render(uint32_t frameNumber, VkCommandBuffer commandBuffers){
     for(const auto& object: *objects){
-        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->getPipelineBitMask()) && object->getEnable()){
+        if(VkDeviceSize offsets = 0; (interfaces::ObjectType::base & object->pipelineFlagBits()) && object->getEnable()){
             vkCmdBindPipeline(commandBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->getModel()->getVertices(), &offsets);
-            if (object->getModel()->getIndices() != VK_NULL_HANDLE){
-                vkCmdBindIndexBuffer(commandBuffers, *object->getModel()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers, 0, 1, object->model()->getVertices(), &offsets);
+            if (object->model()->getIndices() != VK_NULL_HANDLE){
+                vkCmdBindIndexBuffer(commandBuffers, *object->model()->getIndices(), 0, VK_INDEX_TYPE_UINT32);
             }
 
             utils::vkDefault::DescriptorSets descriptors = {descriptorSets[frameNumber], object->getDescriptorSet(frameNumber)};
 
-            object->getModel()->renderBB(
+            object->model()->renderBB(
                 object->getInstanceNumber(frameNumber),
                 commandBuffers,
                 pipelineLayout,

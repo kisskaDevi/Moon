@@ -19,7 +19,7 @@ private:
 
     struct Shadow : public Workbody{
         const ShadowGraphicsParameters& parameters;
-        utils::vkDefault::DescriptorSetLayout lightUniformBufferSetLayout;
+        utils::vkDefault::DescriptorSetLayout lightDescriptorSetLayout;
         utils::vkDefault::DescriptorSetLayout objectDescriptorSetLayout;
         utils::vkDefault::DescriptorSetLayout primitiveDescriptorSetLayout;
         utils::vkDefault::DescriptorSetLayout materialDescriptorSetLayout;

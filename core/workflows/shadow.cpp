@@ -23,7 +23,7 @@ void ShadowGraphics::createRenderPass()
 }
 
 void ShadowGraphics::Shadow::create(const workflows::ShaderNames& shadersNames, VkDevice device, VkRenderPass renderPass) {
-    lightUniformBufferSetLayout = interfaces::Light::createBufferDescriptorSetLayout(device);
+    lightDescriptorSetLayout = interfaces::Light::createDescriptorSetLayout(device);
     objectDescriptorSetLayout = interfaces::Object::createBaseDescriptorSetLayout(device);
     primitiveDescriptorSetLayout = interfaces::Model::createNodeDescriptorSetLayout(device);
     materialDescriptorSetLayout = interfaces::Model::createMaterialDescriptorSetLayout(device);
@@ -61,7 +61,7 @@ void ShadowGraphics::Shadow::create(const workflows::ShaderNames& shadersNames, 
         pushConstantRange.back().offset = 0;
         pushConstantRange.back().size = sizeof(interfaces::MaterialBlock);
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
-        lightUniformBufferSetLayout,
+        lightDescriptorSetLayout,
         objectDescriptorSetLayout,
         primitiveDescriptorSetLayout,
         materialDescriptorSetLayout

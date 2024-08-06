@@ -27,8 +27,7 @@ private:
         const ScatteringParameters& parameters;
 
         utils::vkDefault::DescriptorSetLayout     shadowDescriptorSetLayout;
-        utils::vkDefault::DescriptorSetLayoutMap  bufferDescriptorSetLayoutMap;
-        utils::vkDefault::DescriptorSetLayoutMap  descriptorSetLayoutMap;
+        utils::vkDefault::DescriptorSetLayoutMap  lightDescriptorSetLayoutMap;
         utils::vkDefault::PipelineLayoutMap       pipelineLayoutMap;
         utils::vkDefault::PipelineMap             pipelinesMap;
 

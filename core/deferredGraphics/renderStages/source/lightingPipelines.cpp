@@ -38,8 +38,7 @@ void Graphics::Lighting::createPipeline(uint8_t mask, const workflows::ShaderNam
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
         descriptorSetLayout,
         shadowDescriptorSetLayout,
-        bufferDescriptorSetLayoutMap[mask],
-        textureDescriptorSetLayoutMap[mask]
+        lightDescriptorSetLayoutMap[mask]
     };
     pipelineLayoutMap[mask] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts);
 

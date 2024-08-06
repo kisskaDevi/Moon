@@ -13,7 +13,7 @@ layout(input_attachment_index = 2, binding = 2) uniform subpassInput inBaseColor
 layout(input_attachment_index = 3, binding = 3) uniform subpassInput inDepthTexture;
 
 layout(set = 1, binding = 0) uniform sampler2D shadowMap;
-layout(set = 3, binding = 0) uniform sampler2D lightTexture;
+layout(set = 2, binding = 1) uniform sampler2D lightTexture;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outBlur;

@@ -84,8 +84,7 @@ private:
 
         utils::vkDefault::DescriptorSetLayout       descriptorSetLayout;
         utils::vkDefault::DescriptorSetLayout       shadowDescriptorSetLayout;
-        utils::vkDefault::DescriptorSetLayoutMap    bufferDescriptorSetLayoutMap;
-        utils::vkDefault::DescriptorSetLayoutMap    textureDescriptorSetLayoutMap;
+        utils::vkDefault::DescriptorSetLayoutMap    lightDescriptorSetLayoutMap;
         utils::vkDefault::PipelineLayoutMap         pipelineLayoutMap;
         utils::vkDefault::PipelineMap               pipelineMap;
         utils::vkDefault::DescriptorPool            descriptorPool;

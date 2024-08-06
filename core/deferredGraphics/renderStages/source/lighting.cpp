@@ -21,8 +21,7 @@ void Graphics::Lighting::createDescriptorSetLayout(VkDevice device)
 
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    bufferDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createBufferDescriptorSetLayout(device);
-    textureDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
+    lightDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createDescriptorSetLayout(device);
     shadowDescriptorSetLayout = utils::DepthMap::createDescriptorSetLayout(device);
 }
 

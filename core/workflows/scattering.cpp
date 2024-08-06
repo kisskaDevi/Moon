@@ -62,8 +62,7 @@ void Scattering::Lighting::create(const workflows::ShaderNames& shadersNames, Vk
         bindings.push_back(utils::vkDefault::imageFragmentLayoutBinding(static_cast<uint32_t>(bindings.size()), 1));
     descriptorSetLayout = utils::vkDefault::DescriptorSetLayout(device, bindings);
 
-    bufferDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createBufferDescriptorSetLayout(device);
-    descriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createTextureDescriptorSetLayout(device);
+    lightDescriptorSetLayoutMap[interfaces::Light::Type::spot] = interfaces::Light::createDescriptorSetLayout(device);
     shadowDescriptorSetLayout = utils::DepthMap::createDescriptorSetLayout(device);
 
     createPipeline(interfaces::Light::Type::spot, shadersNames, device, renderPass);
@@ -105,8 +104,7 @@ void Scattering::Lighting::createPipeline(uint8_t mask, const workflows::ShaderN
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {
         descriptorSetLayout,
         shadowDescriptorSetLayout,
-        bufferDescriptorSetLayoutMap[mask],
-        descriptorSetLayoutMap[mask]
+        lightDescriptorSetLayoutMap[mask]
     };
     pipelineLayoutMap[mask] = utils::vkDefault::PipelineLayout(device, descriptorSetLayouts, pushConstantRange);
 

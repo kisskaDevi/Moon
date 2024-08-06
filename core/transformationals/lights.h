@@ -32,9 +32,6 @@ private:
     void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, const utils::vkDefault::DescriptorSets& descriptorSet, VkPipelineLayout pipelineLayout, VkPipeline pipeline) override;
     void createDescriptors(const utils::PhysicalDevice& device, uint32_t imageCount);
 
-    utils::vkDefault::DescriptorSetLayout textureDescriptorSetLayout;
-    utils::vkDefault::DescriptorSets textureDescriptorSets;
-
 public:
     SpotLight(uint8_t pipelineBitMask, void* hostData, size_t hostDataSize, bool enableShadow, bool enableScattering, const std::filesystem::path& texturePaths = "");
     utils::Buffers& buffers() override;

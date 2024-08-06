@@ -45,8 +45,7 @@ public:
     virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
     virtual void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, const utils::vkDefault::DescriptorSets& descriptorSet, VkPipelineLayout pipelineLayout, VkPipeline pipeline) = 0;
 
-    static moon::utils::vkDefault::DescriptorSetLayout createTextureDescriptorSetLayout(VkDevice device);
-    static moon::utils::vkDefault::DescriptorSetLayout createBufferDescriptorSetLayout(VkDevice device);
+    static moon::utils::vkDefault::DescriptorSetLayout createDescriptorSetLayout(VkDevice device);
 };
 
 using Lights = std::vector<moon::interfaces::Light*>;

@@ -6,19 +6,14 @@
 #include "quaternion.h"
 #include "buffer.h"
 #include "texture.h"
+#include "group.h"
 
 #include <filesystem>
+#include <memory>
 
-namespace moon::transformational {
+namespace moon::interfaces {
 
-struct LightBufferObject {
-    alignas(16) moon::math::Matrix<float,4,4>   proj;
-    alignas(16) moon::math::Matrix<float,4,4>   view;
-    alignas(16) moon::math::Vector<float,4>     lightColor;
-    alignas(16) moon::math::Vector<float,4>     lightProp;
-};
-
-class SpotLight : public Transformational, public moon::interfaces::Light
+class SpotLight : public interfaces::Light
 {
 public:
     enum Type {
@@ -27,120 +22,77 @@ public:
     };
 
 private:
+    utils::UniformBuffer uniformBuffer;
+
     const std::filesystem::path texturePath;
-    moon::utils::Texture texture;
+    utils::Texture texture;
 
-    Type                                type{ Type::circle };
-    float                               lightPowerFactor{10.0f};
-    float                               lightDropFactor{1.0f};
-    moon::math::Vector<float,4>         lightColor{0.0f};
-    moon::math::Matrix<float,4,4>       projectionMatrix{1.0f};
+    void create(const utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) override;
+    void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) override;
+    void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, const utils::vkDefault::DescriptorSets& descriptorSet, VkPipelineLayout pipelineLayout, VkPipeline pipeline) override;
+    void createDescriptors(const utils::PhysicalDevice& device, uint32_t imageCount);
 
-    moon::math::Quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
-    moon::math::Quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
-    moon::math::Quaternion<float>       rotationX{1.0f,0.0f,0.0f,0.0f};
-    moon::math::Quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
-    moon::math::Vector<float,3>         scaling{1.0f,1.0f,1.0f};
-    moon::math::Matrix<float,4,4>       globalTransformation{1.0f};
-    moon::math::Matrix<float,4,4>       modelMatrix{1.0f};
-
-    moon::utils::vkDefault::DescriptorSetLayout textureDescriptorSetLayout;
+    utils::vkDefault::DescriptorSetLayout textureDescriptorSetLayout;
     utils::vkDefault::DescriptorSets textureDescriptorSets;
 
-    std::vector<moon::utils::Buffer> uniformBuffersHost;
-    std::vector<moon::utils::Buffer> uniformBuffersDevice;
-
-    const moon::utils::PhysicalDevice* device{ nullptr };
-
-    void createUniformBuffers(uint32_t imageCount);
-    void createDescriptorPool(uint32_t imageCount);
-    void updateDescriptorSets(uint32_t imageCount);
-
-    SpotLight& update() override;
-
 public:
-
-    SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, Type type = Type::circle);
-    SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, Type type = Type::circle);
-    virtual ~SpotLight();
-
-    SpotLight& setGlobalTransform(const moon::math::Matrix<float,4,4> & transform) override;
-    SpotLight& translate(const moon::math::Vector<float,3> & translate) override;
-    SpotLight& rotate(const float & ang,const moon::math::Vector<float,3> & ax) override;
-    SpotLight& scale(const moon::math::Vector<float,3> & scale) override;
-
-    SpotLight& rotateX(const float & ang ,const moon::math::Vector<float,3> & ax);
-    SpotLight& rotateY(const float & ang ,const moon::math::Vector<float,3> & ax);
-    SpotLight& setTranslation(const moon::math::Vector<float,3>& translate);
-    SpotLight& setRotation(const moon::math::Quaternion<float>& rotation);
-    SpotLight& setRotation(const float & ang ,const moon::math::Vector<float,3> & ax);
-    SpotLight& rotate(const moon::math::Quaternion<float>& quat) override;
-
-    void setLightColor(const moon::math::Vector<float,4> & color);
-    void setLightDropFactor(const float& dropFactor);
-    void setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection);
-
-    moon::math::Matrix<float,4,4>   getModelMatrix() const;
-    moon::math::Vector<float,3>     getTranslate() const;
-    moon::math::Vector<float,4>     getLightColor() const;
-
-    void create(
-            const moon::utils::PhysicalDevice& device,
-            VkCommandPool commandPool,
-            uint32_t imageCount) override;
-
-    void render(
-        uint32_t frameNumber,
-        VkCommandBuffer commandBuffer,
-        const utils::vkDefault::DescriptorSets& descriptorSet,
-        VkPipelineLayout pipelineLayout,
-        VkPipeline pipeline) override;
-
-    void update(
-        uint32_t frameNumber,
-        VkCommandBuffer commandBuffer) override;
+    SpotLight(uint8_t pipelineBitMask, void* hostData, size_t hostDataSize, bool enableShadow, bool enableScattering, const std::filesystem::path& texturePaths = "");
+    utils::Buffers& buffers() override;
 };
 
-class IsotropicLight: public Transformational
+}
+
+namespace moon::transformational {
+
+class Light : public Transformational
 {
 private:
-    moon::math::Vector<float,4>         lightColor{0.0f};
-    moon::math::Matrix<float,4,4>       projectionMatrix{1.0f};
-    float                               lightDropFactor{1.0f};
+    struct {
+        alignas(16) math::Matrix<float, 4, 4> proj;
+        alignas(16) math::Matrix<float, 4, 4> view;
+        alignas(16) math::Vector<float, 4>    color;
+        alignas(16) math::Vector<float, 4>    props;
+    } buffer;
 
-    moon::math::Quaternion<float>       translation{0.0f,0.0f,0.0f,0.0f};
-    moon::math::Quaternion<float>       rotation{1.0f,0.0f,0.0f,0.0f};
-    moon::math::Quaternion<float>       rotationX{1.0f,0.0f,0.0f,0.0f};
-    moon::math::Quaternion<float>       rotationY{1.0f,0.0f,0.0f,0.0f};
-    moon::math::Vector<float,3>         scaling{1.0f,1.0f,1.0f};
-    moon::math::Matrix<float,4,4>       globalTransformation{1.0f};
-    moon::math::Matrix<float,4,4>       modelMatrix{1.0f};
+    DEFAULT_TRANSFORMATIONAL()
 
-    std::vector<SpotLight*>             lightSource;
+    std::unique_ptr<interfaces::Light> pLight;
 
-    IsotropicLight& update() override;
+    interfaces::SpotLight::Type type{ interfaces::SpotLight::Type::circle };
+    float lightPowerFactor{ 10.0f };
+    float lightDropFactor{ 1.0f };
 
 public:
-    IsotropicLight(const moon::math::Vector<float,4>& color, float radius = 100.0f);
-    ~IsotropicLight();
+    Light(const math::Vector<float,4>& color, const math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, interfaces::SpotLight::Type type = interfaces::SpotLight::Type::circle);
+    Light(const std::filesystem::path& texturePath, const math::Matrix<float,4,4> & projection, bool enableShadow = true, bool enableScattering = false, interfaces::SpotLight::Type type = interfaces::SpotLight::Type::circle);
 
-    void setLightColor(const moon::math::Vector<float,4> & color);
-    void setLightDropFactor(const float& dropFactor);
-    void setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection);
+    DEFAULT_TRANSFORMATIONAL_OVERRIDE(Light)
+    DEFAULT_TRANSFORMATIONAL_GETTERS()
+    DEFAULT_TRANSFORMATIONAL_ROTATE_XY_DECL(Light)
 
-    IsotropicLight& setTranslation(const moon::math::Vector<float,3>& translate);
-    IsotropicLight& setGlobalTransform(const moon::math::Matrix<float,4,4>& transform) override;
-    IsotropicLight& translate(const moon::math::Vector<float,3>& translate) override;
-    IsotropicLight& rotate(const float& ang,const moon::math::Vector<float,3>& ax) override;
-    IsotropicLight& scale(const moon::math::Vector<float,3>& scale) override;
-    IsotropicLight& rotate(const math::Quaternion<float>&) override {return *this;}
+    Light& setColor(const math::Vector<float,4> & color);
+    Light& setDrop(const float& drop);
+    Light& setPower(const float& power);
+    Light& setProjectionMatrix(const math::Matrix<float,4,4> & projection);
 
-    IsotropicLight& rotateX(const float& ang ,const moon::math::Vector<float,3>& ax);
-    IsotropicLight& rotateY(const float& ang ,const moon::math::Vector<float,3>& ax);
+    operator interfaces::Light* () const;
+};
 
-    moon::math::Vector<float,3> getTranslate() const;
-    moon::math::Vector<float,4> getLightColor() const;
-    std::vector<SpotLight*> get() const;
+class IsotropicLight: public Group
+{
+private:
+    std::vector<std::unique_ptr<Light>> lights;
+
+public:
+    IsotropicLight(const math::Vector<float,4>& color = {0.0f}, float radius = 100.0f, bool enableShadow = true, bool enableScattering = false);
+    ~IsotropicLight() = default;
+
+    IsotropicLight& setColor(const math::Vector<float,4>& color);
+    IsotropicLight& setDrop(const float& drop);
+    IsotropicLight& setPower(const float& power);
+    IsotropicLight& setProjectionMatrix(const math::Matrix<float,4,4>& projection);
+
+    std::vector<interfaces::Light*> getLights() const;
 };
 
 }

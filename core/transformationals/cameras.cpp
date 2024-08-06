@@ -50,18 +50,7 @@ Camera& Camera::setProjMatrix(const math::Matrix<float,4,4> & proj) {
 
 DEFAULT_TRANSFORMATIONAL_DEFINITION(Camera)
 DEFAULT_TRANSFORMATIONAL_GETTERS_DEFINITION(Camera)
-
-Camera& Camera::rotateX(const float& ang) {
-    const math::Vector<float, 3> ax(1.0f, 0.0f, 0.0f);
-    m_rotation = m_rotation * convert(ang, math::Vector<float, 3>(normalize(ax)));
-    return update();
-}
-
-Camera& Camera::rotateY(const float& ang) {
-    const math::Vector<float, 3> ax(0.0f, 0.0f, 1.0f);
-    m_rotation = convert(ang, math::Vector<float, 3>(normalize(ax))) * m_rotation;
-    return update();
-}
+DEFAULT_TRANSFORMATIONAL_ROTATE_XY_DEF(Camera)
 
 math::Matrix<float,4,4> Camera::getProjMatrix()  const { return transpose(buffer.proj);}
 math::Matrix<float,4,4> Camera::getViewMatrix()  const { return transpose(buffer.view);}

@@ -45,9 +45,7 @@ public:
 
     DEFAULT_TRANSFORMATIONAL_OVERRIDE(Camera)
     DEFAULT_TRANSFORMATIONAL_GETTERS()
-
-    Camera& rotateX(const float& ang);
-    Camera& rotateY(const float& ang);
+    DEFAULT_TRANSFORMATIONAL_ROTATE_XY_DECL(Camera)
 
     Camera& setProjMatrix(const math::Matrix<float,4,4> & proj);
     math::Matrix<float,4,4> getProjMatrix()  const;

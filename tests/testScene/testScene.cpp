@@ -346,7 +346,7 @@ void testScene::createObjects()
     objects["lightBox"] = std::make_shared<moon::transformational::Object>(models["box"].get());
     objects["lightBox"]->setBloom(moon::math::Vector<float,4>(1.0f,1.0f,1.0f,1.0f));
     groups["lightBox"] = std::make_shared<moon::transformational::Group>();
-    groups["lightBox"]->addObject(objects["lightBox"].get());
+    groups["lightBox"]->add(objects["lightBox"].get());
 
     objects["dragon"] = std::make_shared<moon::transformational::Object>(models["DragonAttenuation"].get());
     objects["dragon"]->scale(1.0f).rotate(moon::math::Quaternion<float>(0.5f, 0.5f, -0.5f, -0.5f)).translate(moon::math::Vector<float,3>(26.0f, 11.0f, 11.0f));
@@ -361,38 +361,38 @@ void testScene::createObjects()
     objects["ufo_light_0"]->rotate(moon::math::radians(90.0f),{1.0f,0.0f,0.0f});
     groups["ufo_light_0"] = std::make_shared<moon::transformational::Group>();
     groups["ufo_light_0"]->rotate(moon::math::radians(45.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f)).rotate(moon::math::radians(45.0f), moon::math::Vector<float,3>(0.0f,0.0f,-1.0f)).translate(moon::math::Vector<float,3>(24.0f, 7.5f, 18.0f));
-    groups["ufo_light_0"]->addObject(objects["ufo_light_0"].get());
+    groups["ufo_light_0"]->add(objects["ufo_light_0"].get());
 
     objects["ufo_light_1"] = std::make_shared<moon::transformational::Object>(models["ufo"].get());
     objects["ufo_light_1"]->rotate(moon::math::radians(90.0f),{1.0f,0.0f,0.0f});
     groups["ufo_light_1"] = std::make_shared<moon::transformational::Group>();
     groups["ufo_light_1"]->rotate(moon::math::radians(45.0f), moon::math::Vector<float,3>(-1.0f,0.0f,0.0f)).rotate(moon::math::radians(45.0f), moon::math::Vector<float,3>(0.0f,0.0f,1.0f)).translate(moon::math::Vector<float,3>(24.0f, -7.5f, 18.0f));
-    groups["ufo_light_1"]->addObject(objects["ufo_light_1"].get());
+    groups["ufo_light_1"]->add(objects["ufo_light_1"].get());
 
     objects["ufo_light_2"] = std::make_shared<moon::transformational::Object>(models["ufo"].get());
     objects["ufo_light_2"]->rotate(moon::math::radians(90.0f),{1.0f,0.0f,0.0f});
     groups["ufo_light_2"] = std::make_shared<moon::transformational::Group>();
     groups["ufo_light_2"]->rotate(moon::math::radians(30.0f), moon::math::Vector<float,3>(-1.0f,0.0f,0.0f)).rotate(moon::math::radians(30.0f), moon::math::Vector<float,3>(0.0f,0.0f,1.0f)).translate(moon::math::Vector<float,3>(-32.0f, 13.0f, 19.0f));
-    groups["ufo_light_2"]->addObject(objects["ufo_light_2"].get());
+    groups["ufo_light_2"]->add(objects["ufo_light_2"].get());
 
     objects["ufo_light_3"] = std::make_shared<moon::transformational::Object>(models["ufo"].get());
     objects["ufo_light_3"]->rotate(moon::math::radians(90.0f),{1.0f,0.0f,0.0f});
     groups["ufo_light_3"] = std::make_shared<moon::transformational::Group>();
     groups["ufo_light_3"]->rotate(moon::math::radians(30.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f)).rotate(moon::math::radians(30.0f), moon::math::Vector<float,3>(0.0f,0.0f,-1.0f)).translate(moon::math::Vector<float,3>(-32.0f, 7.0f, 19.0f));
-    groups["ufo_light_3"]->addObject(objects["ufo_light_3"].get());
+    groups["ufo_light_3"]->add(objects["ufo_light_3"].get());
 
     objects["ufo_light_4"] = std::make_shared<moon::transformational::Object>(models["ufo"].get());
     objects["ufo_light_4"]->rotate(moon::math::radians(90.0f),{1.0f,0.0f,0.0f});
     groups["ufo_light_4"] = std::make_shared<moon::transformational::Group>();
     groups["ufo_light_4"]->rotate(moon::math::radians(30.0f), moon::math::Vector<float,3>(-1.0f,0.0f,0.0f)).rotate(moon::math::radians(30.0f), moon::math::Vector<float,3>(0.0f,0.0f,-1.0f)).translate(moon::math::Vector<float,3>(-26.0f, 13.0f, 19.0f));
-    groups["ufo_light_4"]->addObject(objects["ufo_light_4"].get());
+    groups["ufo_light_4"]->add(objects["ufo_light_4"].get());
 
     for(auto key = "ufo" + std::to_string(ufoCounter); ufoCounter < 4; ufoCounter++, key = "ufo" + std::to_string(ufoCounter)){
         objects[key] = std::make_shared<moon::transformational::Object>(models["ufo"].get());
         objects[key]->rotate(moon::math::radians(90.0f),{1.0f,0.0f,0.0f});
         objects[key]->setBase(moon::math::Vector<float,4>(0.0f,0.0f,0.0f,-0.8f));
         groups[key] = std::make_shared<moon::transformational::Group>();
-        groups[key]->addObject(objects["ufo" + std::to_string(ufoCounter)].get());
+        groups[key]->add(objects["ufo" + std::to_string(ufoCounter)].get());
     }
 
     skyboxObjects["lake"] = std::make_shared<moon::transformational::Object>(
@@ -437,48 +437,46 @@ void testScene::createLight()
     std::filesystem::path LIGHT_TEXTURE2  = ExternalPath / "dependences/texture/light2.jpg";
     std::filesystem::path LIGHT_TEXTURE3  = ExternalPath / "dependences/texture/light3.jpg";
 
-    lightPoints["lightBox"] = std::make_shared<moon::transformational::IsotropicLight>(moon::math::Vector<float,4>(1.0f,1.0f,1.0f,1.0f));
-    groups["lightBox"]->addObject(lightPoints["lightBox"].get());
-
-    for(const auto& light: lightPoints["lightBox"]->get()){
-        lightSources.push_back(std::shared_ptr<moon::transformational::SpotLight>(light));
-    }
+    lightPoints["lightBox"] = std::make_shared<moon::transformational::IsotropicLight>(moon::math::Vector<float,4>(1.0f));
+    lightPoints["lightBox"]->setDrop(0.05f);
+    groups["lightBox"]->add(lightPoints["lightBox"].get());
 
     moon::math::Matrix<float,4,4> proj = moon::math::perspective(moon::math::radians(90.0f), 1.0f, 0.1f, 20.0f);
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(LIGHT_TEXTURE0, proj, true, true));
-    groups["ufo0"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(LIGHT_TEXTURE0, proj, true, true));
+    groups["ufo0"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(LIGHT_TEXTURE1, proj, true, true));
-    groups["ufo1"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(LIGHT_TEXTURE1, proj, true, true));
+    groups["ufo1"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(LIGHT_TEXTURE2, proj, true, true));
-    groups["ufo2"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(LIGHT_TEXTURE2, proj, true, true));
+    groups["ufo2"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(LIGHT_TEXTURE3, proj, true, true));
-    groups["ufo3"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(LIGHT_TEXTURE3, proj, true, true));
+    groups["ufo3"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(moon::math::Vector<float,4>(1.0f,0.65f,0.2f,1.0f), proj, true, true));
-    groups["ufo_light_0"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(moon::math::Vector<float,4>(1.0f,0.65f,0.2f,1.0f), proj, true, true));
+    groups["ufo_light_0"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(moon::math::Vector<float,4>(0.9f,0.85f,0.95f,1.0f), proj, true, false));
-    groups["ufo_light_1"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(moon::math::Vector<float,4>(0.9f,0.85f,0.95f,1.0f), proj, true, false));
+    groups["ufo_light_1"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(moon::math::Vector<float,4>(0.9f,0.85f,0.75f,1.0f), proj, true, true));
-    lightSources.back()->setLightColor(moon::math::Vector<float,4>(0.9f,0.85f,0.75f,1.0f));
-    groups["ufo_light_2"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(moon::math::Vector<float,4>(0.9f,0.85f,0.75f,1.0f), proj, true, true));
+    groups["ufo_light_2"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(moon::math::Vector<float,4>(0.9f,0.3f,0.4f,1.0f), proj, true, true));
-    groups["ufo_light_3"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(moon::math::Vector<float,4>(0.9f,0.3f,0.4f,1.0f), proj, true, true));
+    groups["ufo_light_3"]->add(lightSources.back().get());
 
-    lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(moon::math::Vector<float,4>(0.2f,0.5f,0.95f,1.0f), proj, true, true));
-    groups["ufo_light_4"]->addObject(lightSources.back().get());
+    lightSources.push_back(std::make_shared<moon::transformational::Light>(moon::math::Vector<float,4>(0.2f,0.5f,0.95f,1.0f), proj, true, true));
+    groups["ufo_light_4"]->add(lightSources.back().get());
 
-    for(auto& source: lightSources){
-        for(auto& [_,graph]: graphics){
-            graph->bind(source.get());
+    for (auto& [_, graph] : graphics) {
+        for (const auto& light : lightPoints["lightBox"]->getLights()) {
+            graph->bind(light);
         }
-        source->setLightDropFactor(0.05f);
+        for(auto& source: lightSources) {
+            graph->bind(source->setDrop(0.05f));
+        }
     }
 }
 
@@ -541,7 +539,7 @@ void testScene::keyboardEvent()
     auto rotateControled = [this](const float& ang, const moon::math::Vector<float,3>& ax){
         if(bool foundInGroups = false; controledObject){
             for(auto& [_,group]: groups){
-                if(group->findObject(controledObject)){
+                if(group->find(controledObject)){
                     group->rotate(ang,ax);
                     foundInGroups = true;
                 }
@@ -560,7 +558,7 @@ void testScene::keyboardEvent()
     auto translateControled = [this](const moon::math::Vector<float,3>& tr){
         if(bool foundInGroups = false; controledObject){
             for(auto& [_,group]: groups){
-                if(group->findObject(controledObject)){
+                if(group->find(controledObject)){
                     group->translate(tr);
                     foundInGroups = true;
                 }
@@ -587,19 +585,19 @@ void testScene::keyboardEvent()
         std::uniform_real_distribution dist(0.3f, 1.0f);
         moon::math::Vector<float,4> newColor = moon::math::Vector<float,4>(dist(device), dist(device), dist(device), 1.0f);
 
-        lightSources.push_back(std::make_shared<moon::transformational::SpotLight>(newColor, moon::math::perspective(moon::math::radians(90.0f), 1.0f, 0.1f, 20.0f), true, true));
-        lightSources.back()->setLightDropFactor(0.2f);
+        lightSources.push_back(std::make_shared<moon::transformational::Light>(newColor, moon::math::perspective(moon::math::radians(90.0f), 1.0f, 0.1f, 20.0f), true, true));
+        lightSources.back()->setDrop(0.2f);
 
         objects["ufo" + std::to_string(ufoCounter)] = std::make_shared<moon::transformational::Object>(models["ufo"].get());
         objects["ufo" + std::to_string(ufoCounter)]->rotate(moon::math::radians(90.0f),{1.0f,0.0f,0.0f});
 
         groups["ufo0" + std::to_string(ufoCounter)] = std::make_shared<moon::transformational::Group>();
         groups["ufo0" + std::to_string(ufoCounter)]->translate(cameras["base"]->translation().im());
-        groups["ufo0" + std::to_string(ufoCounter)]->addObject(lightSources.back().get());
-        groups["ufo0" + std::to_string(ufoCounter)]->addObject(objects["ufo" + std::to_string(ufoCounter)].get());
+        groups["ufo0" + std::to_string(ufoCounter)]->add(lightSources.back().get());
+        groups["ufo0" + std::to_string(ufoCounter)]->add(objects["ufo" + std::to_string(ufoCounter)].get());
 
         for(auto& [_,graph]: graphics){
-            graph->bind(lightSources.back().get());
+            graph->bind(*lightSources.back().get());
             graph->bind(*objects["ufo" + std::to_string(ufoCounter++)].get());
         }
     }
@@ -608,7 +606,7 @@ void testScene::keyboardEvent()
         if(ufoCounter > 4 && app->deviceWaitIdle() == VK_SUCCESS) {
             for(auto& [_,graph]: graphics){
                 graph->remove(*objects["ufo" + std::to_string(ufoCounter - 1)].get());
-                graph->remove(lightSources.back().get());
+                graph->remove(*lightSources.back().get());
             }
             lightSources.pop_back();
             objects.erase("ufo" + std::to_string(ufoCounter--));

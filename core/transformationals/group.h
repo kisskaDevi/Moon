@@ -12,16 +12,17 @@ class Group : public Transformational
 {
 private:
     std::unordered_set<Transformational*> objects;
-    moon::math::Matrix<float, 4, 4> modelMatrix{1.0f};
     DEFAULT_TRANSFORMATIONAL()
 
 public:
+    virtual ~Group() = default;
+
     DEFAULT_TRANSFORMATIONAL_OVERRIDE(Group)
     DEFAULT_TRANSFORMATIONAL_GETTERS()
 
-    void addObject(Transformational* object);
-    void delObject(Transformational* object);
-    bool findObject(Transformational* object);
+    bool add(Transformational* object);
+    bool remove(Transformational* object);
+    bool find(Transformational* object);
 };
 
 }

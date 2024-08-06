@@ -5,6 +5,9 @@
 
 namespace moon::interfaces {
 
+Light::Light(uint8_t pipelineBitMask, bool enableShadow, bool enableScattering)
+    : pipelineBitMask(pipelineBitMask), enableShadow(enableShadow), enableScattering(enableScattering) {}
+
 void Light::setEnableShadow(bool enable){
     enableShadow = enable;
 }

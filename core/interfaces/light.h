@@ -14,6 +14,7 @@ namespace moon::interfaces {
 class Light
 {
 protected:
+    uint8_t pipelineBitMask{ 0 };
     bool enableShadow{false};
     bool enableScattering{false};
 
@@ -21,12 +22,12 @@ protected:
     moon::utils::vkDefault::DescriptorPool descriptorPool;
     moon::utils::vkDefault::DescriptorSets descriptorSets;
 
-    uint8_t pipelineBitMask{0};
-
 public:
     enum Type : uint8_t {
         spot = 0x1
     };
+
+    Light(uint8_t pipelineBitMask, bool enableShadow, bool enableScattering);
 
     virtual ~Light(){};
 
@@ -39,6 +40,7 @@ public:
     uint8_t& pipelineFlagBits();
     const VkDescriptorSet& getDescriptorSet(uint32_t i) const;
 
+    virtual utils::Buffers& buffers() = 0;
     virtual void create(const moon::utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) = 0;
     virtual void update(uint32_t frameNumber, VkCommandBuffer commandBuffer) = 0;
     virtual void render(uint32_t frameNumber, VkCommandBuffer commandBuffer, const utils::vkDefault::DescriptorSets& descriptorSet, VkPipelineLayout pipelineLayout, VkPipeline pipeline) = 0;

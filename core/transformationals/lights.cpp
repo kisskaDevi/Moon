@@ -6,147 +6,20 @@
 
 #include <cstring>
 
-namespace moon::transformational {
+namespace moon::interfaces {
 
-SpotLight::SpotLight(const moon::math::Vector<float,4>& color, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, Type type):
-    lightColor(color),
-    projectionMatrix(projection),
-    type(type)
-{
-    pipelineBitMask = moon::interfaces::Light::Type::spot;
-    this->enableShadow = enableShadow;
-    this->enableScattering = enableScattering;
-}
+SpotLight::SpotLight(uint8_t pipelineBitMask, void* hostData, size_t hostDataSize, bool enableShadow, bool enableScattering, const std::filesystem::path& texturePath)
+    : Light(pipelineBitMask, enableShadow, enableScattering), uniformBuffer(hostData, hostDataSize), texturePath(texturePath) {}
 
-SpotLight::SpotLight(const std::filesystem::path& texturePath, const moon::math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, Type type):
-    texturePath(texturePath),
-    projectionMatrix(projection),
-    type(type)
-{
-    pipelineBitMask = moon::interfaces::Light::Type::spot;
-    this->enableShadow = enableShadow;
-    this->enableScattering = enableScattering;
-}
+void SpotLight::create(const utils::PhysicalDevice& device, VkCommandPool commandPool, uint32_t imageCount) {
+    uniformBuffer = utils::UniformBuffer(device, imageCount, uniformBuffer.host, uniformBuffer.size);
 
-SpotLight::~SpotLight(){}
+    VkCommandBuffer commandBuffer = utils::singleCommandBuffer::create(device.device(), commandPool);
+    texture = texturePath.empty() ? utils::Texture::empty(device, commandBuffer) : utils::Texture(texturePath, device, device.device(), commandBuffer);
+    CHECK(utils::singleCommandBuffer::submit(device.device(), device.device()(0, 0), commandPool, &commandBuffer));
+    texture.destroyCache();
 
-SpotLight& SpotLight::update() {
-    moon::math::Matrix<float,4,4> transformMatrix = convert(convert(rotation, translation));
-    modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
-    utils::raiseFlags(uniformBuffersHost);
-    return *this;
-}
-
-SpotLight& SpotLight::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
-{
-    globalTransformation = transform;
-    return update();
-}
-
-SpotLight& SpotLight::translate(const moon::math::Vector<float,3> & translate)
-{
-    translation += moon::math::Quaternion<float>(0.0f,translate);
-    return update();
-}
-
-SpotLight& SpotLight::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
-{
-    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
-    return update();
-}
-
-SpotLight& SpotLight::rotate(const moon::math::Quaternion<float>& quat)
-{
-    rotation = quat*rotation;
-    return update();
-}
-
-SpotLight& SpotLight::scale(const moon::math::Vector<float,3> & scale)
-{
-    scaling = scale;
-    return update();
-}
-
-SpotLight& SpotLight::setTranslation(const moon::math::Vector<float,3>& translate)
-{
-    translation = moon::math::Quaternion<float>(0.0f, translate);
-    return update();
-}
-
-SpotLight& SpotLight::setRotation(const float & ang ,const moon::math::Vector<float,3> & ax)
-{
-    rotation = convert(ang,moon::math::Vector<float,3>(normalize(ax)));
-    return update();
-}
-
-SpotLight& SpotLight::setRotation(const moon::math::Quaternion<float>& rotation)
-{
-    this->rotation = rotation;
-    return update();
-}
-
-SpotLight& SpotLight::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
-{
-    rotationX = convert(ang,moon::math::Vector<float,3>(normalize(ax))) * rotationX;
-    rotation = rotationY * rotationX;
-    return update();
-}
-
-SpotLight& SpotLight::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
-{
-    rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
-    rotation = rotationY * rotationX;
-    return update();
-}
-
-void SpotLight::setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection)  {
-    projectionMatrix = projection;
-    utils::raiseFlags(uniformBuffersHost);
-}
-
-void SpotLight::setLightColor(const moon::math::Vector<float,4> &color){
-    lightColor = color;
-    utils::raiseFlags(uniformBuffersHost);
-}
-
-void SpotLight::setLightDropFactor(const float& dropFactor){
-    lightDropFactor = dropFactor;
-    utils::raiseFlags(uniformBuffersHost);
-}
-
-moon::math::Matrix<float,4,4> SpotLight::getModelMatrix() const {
-    return modelMatrix;
-}
-
-moon::math::Vector<float,3> SpotLight::getTranslate() const {
-    return translation.im();
-}
-
-moon::math::Vector<float,4> SpotLight::getLightColor() const {
-    return lightColor;
-}
-
-void SpotLight::create(
-    const moon::utils::PhysicalDevice& device,
-    VkCommandPool commandPool,
-    uint32_t imageCount)
-{
-    if(!this->device){
-        CHECK_M(VkPhysicalDevice(device) == VK_NULL_HANDLE, std::string("[ SpotLight::create ] VkPhysicalDevice is VK_NULL_HANDLE"));
-        CHECK_M(VkDevice(device.device()) == VK_NULL_HANDLE, std::string("[ SpotLight::create ] VkDevice is VK_NULL_HANDLE"));
-        CHECK_M(commandPool == VK_NULL_HANDLE, std::string("[ SpotLight::create ] VkCommandPool is VK_NULL_HANDLE"));
-
-        this->device = &device;
-
-        VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device.device(), commandPool);
-        texture = texturePath.empty() ? utils::Texture::empty(device, commandBuffer) : utils::Texture(texturePath, device, device.device(), commandBuffer);
-        moon::utils::singleCommandBuffer::submit(device.device(), device.device()(0, 0), commandPool, &commandBuffer);
-        texture.destroyCache();
-
-        createUniformBuffers(imageCount);
-        createDescriptorPool(imageCount);
-        updateDescriptorSets(imageCount);
-    }
+    createDescriptors(device, imageCount);
 }
 
 void SpotLight::render(
@@ -164,68 +37,39 @@ void SpotLight::render(
     vkCmdDraw(commandBuffer, 18, 1, 0, 0);
 }
 
-void SpotLight::createUniformBuffers(uint32_t imageCount)
-{
-    uniformBuffersHost.resize(imageCount);
-    for (auto& buffer: uniformBuffersHost){
-        buffer = utils::vkDefault::Buffer(*device, device->device(), sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersHost " + std::to_string(&buffer - &uniformBuffersHost[0]));
-    }
-    uniformBuffersDevice.resize(imageCount);
-    for (auto& buffer: uniformBuffersDevice){
-        buffer = utils::vkDefault::Buffer(*device, device->device(), sizeof(LightBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        moon::utils::Memory::instance().nameMemory(buffer, std::string(__FILE__) + " in line " + std::to_string(__LINE__) + ", spotLight::createUniformBuffers, uniformBuffersDevice " + std::to_string(&buffer - &uniformBuffersDevice[0]));
-    }
+void SpotLight::update(uint32_t frameNumber, VkCommandBuffer commandBuffer) {
+    uniformBuffer.update(frameNumber, commandBuffer);
 }
 
-void SpotLight::update(
-    uint32_t frameNumber,
-    VkCommandBuffer commandBuffer)
-{
-    if(auto& buffer = uniformBuffersHost[frameNumber]; buffer.dropFlag()){
-        LightBufferObject lightBuffer{};
-            lightBuffer.proj = transpose(projectionMatrix);
-            lightBuffer.view = transpose(inverse(modelMatrix));
-            lightBuffer.lightColor = lightColor;
-            lightBuffer.lightProp = {static_cast<float>(type), lightPowerFactor, lightDropFactor, 0.0f};
-        buffer.copy(&lightBuffer);
-        moon::utils::buffer::copy(commandBuffer, sizeof(LightBufferObject), buffer, uniformBuffersDevice[frameNumber]);
-    }
-}
-
-void SpotLight::createDescriptorPool(uint32_t imageCount) {
-    textureDescriptorSetLayout = moon::interfaces::Light::createTextureDescriptorSetLayout(device->device());
-    descriptorSetLayout = moon::interfaces::Light::createBufferDescriptorSetLayout(device->device());
-    descriptorPool = utils::vkDefault::DescriptorPool(device->device(), { &textureDescriptorSetLayout , &descriptorSetLayout}, imageCount);
-    textureDescriptorSets = descriptorPool.allocateDescriptorSets(textureDescriptorSetLayout, imageCount);
+void SpotLight::createDescriptors(const utils::PhysicalDevice& device, uint32_t imageCount) {
+    textureDescriptorSetLayout = interfaces::Light::createTextureDescriptorSetLayout(device.device());
+    descriptorSetLayout = interfaces::Light::createBufferDescriptorSetLayout(device.device());
+    descriptorPool = utils::vkDefault::DescriptorPool(device.device(), { &textureDescriptorSetLayout , &descriptorSetLayout }, imageCount);
     descriptorSets = descriptorPool.allocateDescriptorSets(descriptorSetLayout, imageCount);
-}
+    textureDescriptorSets = descriptorPool.allocateDescriptorSets(textureDescriptorSetLayout, imageCount);
 
-void SpotLight::updateDescriptorSets(uint32_t imageCount)
-{
-    for (size_t i = 0; i < imageCount; i++)
-    {
+    for (size_t i = 0; i < imageCount; i++) {
         VkDescriptorImageInfo lightTexture{};
             lightTexture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             lightTexture.imageView = texture.imageView();
             lightTexture.sampler = texture.sampler();
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        descriptorWrites.push_back(VkWriteDescriptorSet{});
-            descriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.back().dstSet = textureDescriptorSets[i];
-            descriptorWrites.back().dstBinding = static_cast<uint32_t>(descriptorWrites.size() - 1);
-            descriptorWrites.back().dstArrayElement = 0;
-            descriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.back().descriptorCount = 1;
-            descriptorWrites.back().pImageInfo = &lightTexture;
-        vkUpdateDescriptorSets(device->device(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        std::vector<VkWriteDescriptorSet> textureDescriptorWrites;
+            textureDescriptorWrites.push_back(VkWriteDescriptorSet{});
+            textureDescriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            textureDescriptorWrites.back().dstSet = textureDescriptorSets[i];
+            textureDescriptorWrites.back().dstBinding = static_cast<uint32_t>(textureDescriptorWrites.size() - 1);
+            textureDescriptorWrites.back().dstArrayElement = 0;
+            textureDescriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            textureDescriptorWrites.back().descriptorCount = 1;
+            textureDescriptorWrites.back().pImageInfo = &lightTexture;
+        vkUpdateDescriptorSets(device.device(), static_cast<uint32_t>(textureDescriptorWrites.size()), textureDescriptorWrites.data(), 0, nullptr);
 
         VkDescriptorBufferInfo lightBufferInfo{};
-            lightBufferInfo.buffer = uniformBuffersDevice[i];
+            lightBufferInfo.buffer = uniformBuffer.device[i];
             lightBufferInfo.offset = 0;
-            lightBufferInfo.range = sizeof(LightBufferObject);
+            lightBufferInfo.range = uniformBuffer.size;
         std::vector<VkWriteDescriptorSet> bufferDescriptorWrites;
-        bufferDescriptorWrites.push_back(VkWriteDescriptorSet{});
+            bufferDescriptorWrites.push_back(VkWriteDescriptorSet{});
             bufferDescriptorWrites.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             bufferDescriptorWrites.back().dstSet = descriptorSets[i];
             bufferDescriptorWrites.back().dstBinding = static_cast<uint32_t>(bufferDescriptorWrites.size() - 1);
@@ -233,131 +77,135 @@ void SpotLight::updateDescriptorSets(uint32_t imageCount)
             bufferDescriptorWrites.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             bufferDescriptorWrites.back().descriptorCount = 1;
             bufferDescriptorWrites.back().pBufferInfo = &lightBufferInfo;
-        vkUpdateDescriptorSets(device->device(), static_cast<uint32_t>(bufferDescriptorWrites.size()), bufferDescriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device.device(), static_cast<uint32_t>(bufferDescriptorWrites.size()), bufferDescriptorWrites.data(), 0, nullptr);
     }
 }
 
-//isotropicLight
+utils::Buffers& SpotLight::buffers() {
+    return uniformBuffer.device;
+}
 
-IsotropicLight::IsotropicLight(const moon::math::Vector<float,4>& color, float radius)
+}
+
+namespace moon::transformational {
+
+Light::Light(const math::Vector<float,4>& color, const math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, interfaces::SpotLight::Type type)
+    : type(type)
 {
-    const auto proj = moon::math::perspective(moon::math::radians(91.0f), 1.0f, 0.01f, radius);
-
-    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
-    lightSource.back()->rotate(moon::math::radians(90.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
-
-    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
-    lightSource.back()->rotate(moon::math::radians(-90.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
-
-    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
-    lightSource.back()->rotate(moon::math::radians(0.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
-
-    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
-    lightSource.back()->rotate(moon::math::radians(90.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
-
-    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
-    lightSource.back()->rotate(moon::math::radians(-90.0f), moon::math::Vector<float,3>(0.0f,1.0f,0.0f));
-
-    lightSource.push_back(new SpotLight(color, proj,true,false, SpotLight::Type::square));
-    lightSource.back()->rotate(moon::math::radians(180.0f), moon::math::Vector<float,3>(1.0f,0.0f,0.0f));
-
-    // colors for debug if color = {0, 0, 0, 0}
-    if(dot(color,color) == 0.0f){
-        lightSource.at(0)->setLightColor(moon::math::Vector<float,4>(1.0f,0.0f,0.0f,1.0f));
-        lightSource.at(1)->setLightColor(moon::math::Vector<float,4>(0.0f,1.0f,0.0f,1.0f));
-        lightSource.at(2)->setLightColor(moon::math::Vector<float,4>(0.0f,0.0f,1.0f,1.0f));
-        lightSource.at(3)->setLightColor(moon::math::Vector<float,4>(0.3f,0.6f,0.9f,1.0f));
-        lightSource.at(4)->setLightColor(moon::math::Vector<float,4>(0.6f,0.9f,0.3f,1.0f));
-        lightSource.at(5)->setLightColor(moon::math::Vector<float,4>(0.9f,0.3f,0.6f,1.0f));
-    }
+    buffer.color = color;
+    buffer.proj = transpose(projection);
+    uint8_t pipelineBitMask = interfaces::Light::Type::spot;
+    pLight = std::make_unique<interfaces::SpotLight>(pipelineBitMask, &buffer, sizeof(buffer), enableShadow, enableScattering);
 }
 
-IsotropicLight::~IsotropicLight(){}
-
-moon::math::Vector<float,4> IsotropicLight::getLightColor() const {
-    return lightColor;
-}
-
-moon::math::Vector<float,3> IsotropicLight::getTranslate() const {
-    return translation.im();
-}
-
-std::vector<SpotLight*> IsotropicLight::get() const {
-    return lightSource;
-}
-
-void IsotropicLight:: setProjectionMatrix(const moon::math::Matrix<float,4,4> & projection)
+Light::Light(const std::filesystem::path& texturePath, const math::Matrix<float,4,4> & projection, bool enableShadow, bool enableScattering, interfaces::SpotLight::Type type):
+    type(type)
 {
-    projectionMatrix = projection;
-    for(auto& source: lightSource)
-        source->setProjectionMatrix(projectionMatrix);
+    buffer.proj = transpose(projection);
+    uint8_t pipelineBitMask = interfaces::Light::Type::spot;
+    pLight = std::make_unique<interfaces::SpotLight>(pipelineBitMask, &buffer, sizeof(buffer), enableShadow, enableScattering, texturePath);
 }
 
-void IsotropicLight::setLightColor(const moon::math::Vector<float,4> &color)
-{
-    this->lightColor = color;
-    for(auto& source: lightSource)
-        source->setLightColor(color);
-}
-
-void IsotropicLight::setLightDropFactor(const float& dropFactor){
-    lightDropFactor = dropFactor;
-    for(auto& source: lightSource)
-        source->setLightDropFactor(lightDropFactor);
-}
-
-IsotropicLight& IsotropicLight::update()
-{
-    moon::math::Matrix<float,4,4> transformMatrix = convert(convert(rotation, translation));
-    modelMatrix = globalTransformation * transformMatrix * moon::math::scale(scaling);
-    for(auto& source: lightSource)
-        source->setGlobalTransform(modelMatrix);
-
+Light& Light::update() {
+    math::Matrix<float,4,4> transformMatrix = convert(convert(m_rotation, m_translation));
+    buffer.view = transpose(inverse(math::Matrix<float, 4, 4>(m_globalTransformation * transformMatrix * math::scale(m_scaling))));
+    buffer.props = moon::math::Vector<float, 4>(static_cast<float>(type), lightPowerFactor, lightDropFactor, 0.0f);
+    utils::raiseFlags(pLight->buffers());
     return *this;
 }
 
-IsotropicLight& IsotropicLight::setGlobalTransform(const moon::math::Matrix<float,4,4> & transform)
-{
-    globalTransformation = transform;
+DEFAULT_TRANSFORMATIONAL_DEFINITION(Light)
+DEFAULT_TRANSFORMATIONAL_GETTERS_DEFINITION(Light)
+DEFAULT_TRANSFORMATIONAL_ROTATE_XY_DEF(Light)
+
+Light& Light::setProjectionMatrix(const math::Matrix<float,4,4>& projection)  {
+    buffer.proj = transpose(projection);
     return update();
 }
 
-IsotropicLight& IsotropicLight::translate(const moon::math::Vector<float,3> & translate)
-{
-    translation += moon::math::Quaternion<float>(0.0f, translate);
+Light& Light::setColor(const math::Vector<float,4> &color){
+    buffer.color = color;
     return update();
 }
 
-IsotropicLight& IsotropicLight::rotate(const float & ang ,const moon::math::Vector<float,3> & ax)
-{
-    rotation = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotation;
+Light& Light::setDrop(const float& drop) {
+    lightDropFactor = drop;
     return update();
 }
 
-IsotropicLight& IsotropicLight::scale(const moon::math::Vector<float,3> & scale)
-{
-    scaling = scale;
+Light& Light::setPower(const float& power) {
+    lightPowerFactor = power;
     return update();
 }
 
-IsotropicLight& IsotropicLight::rotateX(const float & ang ,const moon::math::Vector<float,3> & ax)
-{
-    rotationX = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationX;
-    rotation = rotationY * rotationX;
-    return update();
+Light::operator interfaces::Light* () const {
+    return pLight.get();
 }
 
-IsotropicLight& IsotropicLight::rotateY(const float & ang ,const moon::math::Vector<float,3> & ax)
-{
-    rotationY = convert(ang, moon::math::Vector<float,3>(normalize(ax))) * rotationY;
-    rotation = rotationY * rotationX;
-    return update();
+IsotropicLight::IsotropicLight(const math::Vector<float,4>& color, float radius, bool enableShadow, bool enableScattering) {
+    const auto proj = math::perspective(math::radians(91.0f), 1.0f, 0.1f, radius);
+
+    lights.reserve(6);
+
+    add(&lights.emplace_back(std::make_unique<Light>(color, proj, enableShadow, enableScattering, interfaces::SpotLight::Type::square))
+        ->rotate(math::radians(90.0f), math::Vector<float, 3>(1.0f, 0.0f, 0.0f)));
+
+    add(&lights.emplace_back(std::make_unique<Light>(color, proj, enableShadow, enableScattering, interfaces::SpotLight::Type::square))
+        ->rotate(math::radians(-90.0f), math::Vector<float, 3>(1.0f, 0.0f, 0.0f)));
+
+    add(&lights.emplace_back(std::make_unique<Light>(color, proj, enableShadow, enableScattering, interfaces::SpotLight::Type::square))
+        ->rotate(math::radians(0.0f), math::Vector<float, 3>(0.0f, 1.0f, 0.0f)));
+
+    add(&lights.emplace_back(std::make_unique<Light>(color, proj, enableShadow, enableScattering, interfaces::SpotLight::Type::square))
+        ->rotate(math::radians(90.0f), math::Vector<float, 3>(0.0f, 1.0f, 0.0f)));
+
+    add(&lights.emplace_back(std::make_unique<Light>(color, proj, enableShadow, enableScattering, interfaces::SpotLight::Type::square))
+        ->rotate(math::radians(-90.0f), math::Vector<float, 3>(0.0f, 1.0f, 0.0f)));
+
+    add(&lights.emplace_back(std::make_unique<Light>(color, proj, enableShadow, enableScattering, interfaces::SpotLight::Type::square))
+        ->rotate(math::radians(180.0f), math::Vector<float, 3>(1.0f, 0.0f, 0.0f)));
+
+    // colors for debug if color = {0, 0, 0, 0}
+    if(dot(color, color) == 0.0f && lights.size() == 6) {
+        lights.at(0)->setColor(math::Vector<float,4>(1.0f,0.0f,0.0f,1.0f));
+        lights.at(1)->setColor(math::Vector<float,4>(0.0f,1.0f,0.0f,1.0f));
+        lights.at(2)->setColor(math::Vector<float,4>(0.0f,0.0f,1.0f,1.0f));
+        lights.at(3)->setColor(math::Vector<float,4>(0.3f,0.6f,0.9f,1.0f));
+        lights.at(4)->setColor(math::Vector<float,4>(0.6f,0.9f,0.3f,1.0f));
+        lights.at(5)->setColor(math::Vector<float,4>(0.9f,0.3f,0.6f,1.0f));
+    }
 }
 
-IsotropicLight& IsotropicLight::setTranslation(const moon::math::Vector<float,3>& translate)
-{
-    translation = moon::math::Quaternion<float>(0.0f, translate);
-    return update();
+#define GENERATE_SETTER(func)       \
+    for (auto& light : lights) {    \
+        light->func(val);           \
+    }                               \
+    return *this;
+
+IsotropicLight& IsotropicLight::setProjectionMatrix(const math::Matrix<float,4,4>& val){
+    GENERATE_SETTER(setProjectionMatrix)
+}
+
+IsotropicLight& IsotropicLight::setColor(const math::Vector<float,4>& val){
+    GENERATE_SETTER(setColor)
+}
+
+IsotropicLight& IsotropicLight::setDrop(const float& val){
+    GENERATE_SETTER(setDrop)
+}
+
+IsotropicLight& IsotropicLight::setPower(const float& val) {
+    GENERATE_SETTER(setPower)
+}
+
+#undef GENERATE_SETTER
+
+std::vector<interfaces::Light*> IsotropicLight::getLights() const {
+    std::vector<interfaces::Light*> pLights;
+    for (const auto& light: lights) {
+        pLights.push_back(*light.get());
+    }
+    return pLights;
 }
 
 }

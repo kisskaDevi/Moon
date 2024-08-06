@@ -22,11 +22,11 @@ public:
 }
 
 #define DEFAULT_TRANSFORMATIONAL()                                              \
-private:                                                                        \
+protected:                                                                      \
     moon::math::Quaternion<float>     m_translation{ 0.0f,0.0f,0.0f,0.0f };     \
     moon::math::Quaternion<float>     m_rotation{ 1.0f,0.0f,0.0f,0.0f };        \
     moon::math::Vector<float, 3>      m_scaling{ 1.0f,1.0f,1.0f };              \
-    moon::math::Matrix<float, 4, 4>   m_globalTransformation{ 1.0f };           \
+    moon::math::Matrix<float, 4, 4>   m_globalTransformation{ 1.0f };
 
 #define DEFAULT_TRANSFORMATIONAL_GETTERS()                      \
 public:                                                         \
@@ -69,6 +69,23 @@ public:                                                                         
     }                                                                                               \
     Name& Name::rotate(const moon::math::Quaternion<float>& rot) {                                  \
         m_rotation = rot * m_rotation;                                                              \
+        return update();                                                                            \
+    }
+
+#define DEFAULT_TRANSFORMATIONAL_ROTATE_XY_DECL(Name)   \
+    Name& rotateX(const float& ang);                    \
+    Name& rotateY(const float& ang);
+
+#define DEFAULT_TRANSFORMATIONAL_ROTATE_XY_DEF(Name)                                                \
+    Name& Name::rotateX(const float& ang) {                                                         \
+        const moon::math::Vector<float, 3> ax(1.0f, 0.0f, 0.0f);                                    \
+        m_rotation = m_rotation * convert(ang, moon::math::Vector<float, 3>(normalize(ax)));        \
+        return update();                                                                            \
+    }                                                                                               \
+                                                                                                    \
+    Name& Name::rotateY(const float& ang) {                                                         \
+        const moon::math::Vector<float, 3> ax(0.0f, 0.0f, 1.0f);                                    \
+        m_rotation = convert(ang, moon::math::Vector<float, 3>(normalize(ax))) * m_rotation;        \
         return update();                                                                            \
     }
 

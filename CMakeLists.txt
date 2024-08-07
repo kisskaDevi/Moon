@@ -18,6 +18,7 @@ set(GLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinygltf)
 set(PLY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinyply)
 set(OBJ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/tinyobj)
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/imgui)
+set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependences/libs/imGuIZMO.quat)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(GLFW_LIB

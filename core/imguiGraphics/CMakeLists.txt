@@ -8,12 +8,20 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-include_directories(
+set(INCLUDE_DIRS
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
+    ${IMGUIZMO_DIR}
+    ${IMGUIZMO_DIR}/imGuIZMO.quat
+)
+
+include_directories(
+    ${INCLUDE_DIRS}
     ${Vulkan_INCLUDE_DIRS}
     ${GLFW_DIR}/include
 )
+
+add_compile_definitions(IMGUIZMO_IMGUI_FOLDER=)
 
 set(SOURCES
     imguiGraphics.cpp
@@ -25,6 +33,7 @@ set(SOURCES
     ${IMGUI_DIR}/imgui_demo.cpp
     ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
     ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUIZMO_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp
 )
 
 set(HEADERS
@@ -36,11 +45,8 @@ set(HEADERS
 )
 
 add_library(imguiGraphics STATIC ${SOURCES} ${HEADERS})
-target_include_directories(imguiGraphics
-    PUBLIC
+target_include_directories(imguiGraphics PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${IMGUI_DIR}
-    ${IMGUI_DIR}/backends
-    ${Vulkan_INCLUDE_DIRS}
+    ${INCLUDE_DIRS}}
 )
 target_link_libraries(imguiGraphics PUBLIC graphicsManager utils)

@@ -39,7 +39,6 @@ private:
     float                   minAmbientFactor{0.05f};
     float                   animationSpeed{1.0f};
     float                   frameTime{0.0f};
-    std::string             screenshot;
     uint32_t                primitiveNumber = std::numeric_limits<uint32_t>::max();
 
 #ifdef SECOND_VIEW_WINDOW
@@ -90,7 +89,7 @@ private:
     void createLight();
     void createObjects();
     void requestUpdate();
-    void makeScreenshot();
+    void makeScreenshot(const std::string& screenshot);
     void makeGui();
 
 public:

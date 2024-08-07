@@ -20,10 +20,8 @@ private:
     uint32_t            imageCount{0};
 
     utils::vkDefault::DescriptorPool descriptorPool;
-    utils::vkDefault::CommandPool commandPool;
 
     void setupImguiContext();
-    void uploadFonts();
 
     void update(uint32_t imageIndex) override;
     utils::vkDefault::VkSemaphores submit(uint32_t frameIndex, const utils::vkDefault::VkSemaphores& externalSemaphore = {}) override;

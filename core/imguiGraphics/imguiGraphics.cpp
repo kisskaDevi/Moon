@@ -30,14 +30,6 @@ void ImguiGraphics::setupImguiContext(){
     ImGui::StyleColorsDark();
 }
 
-void ImguiGraphics::uploadFonts()
-{
-    VkCommandBuffer commandBuffer = moon::utils::singleCommandBuffer::create(device->device(),commandPool);
-    ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-    moon::utils::singleCommandBuffer::submit(device->device(), device->device()(0,0),commandPool,&commandBuffer);
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
-}
-
 void ImguiGraphics::reset() {
     std::vector<VkDescriptorPoolSize> descriptorPoolSize = { VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 } };
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -47,7 +39,6 @@ void ImguiGraphics::reset() {
         poolInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSize.size());
         poolInfo.pPoolSizes = descriptorPoolSize.data();
     descriptorPool = utils::vkDefault::DescriptorPool(device->device(), poolInfo);
-    commandPool = utils::vkDefault::CommandPool(device->device());
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForVulkan(window, true);
@@ -65,9 +56,10 @@ void ImguiGraphics::reset() {
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = VK_NULL_HANDLE;
         initInfo.CheckVkResultFn = [](VkResult result){moon::utils::debug::checkResult(result,"");};
-    ImGui_ImplVulkan_Init(&initInfo, link->renderPass());
+        initInfo.RenderPass = link->renderPass();
+    ImGui_ImplVulkan_Init(&initInfo);
 
-    uploadFonts();
+    ImGui_ImplVulkan_CreateFontsTexture();
 }
 
 void ImguiGraphics::update(uint32_t) {}

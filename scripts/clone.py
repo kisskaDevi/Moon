@@ -29,7 +29,8 @@ if __name__ == '__main__':
         library('tinyply', 'https://github.com/ddiakopoulos/tinyply.git', 'e5d969413b8612de31bf96604c95bf294d406230'),
         library('tinyobj', 'https://github.com/tinyobjloader/tinyobjloader.git', 'cab4ad7254cbf7eaaafdb73d272f99e92f166df8'),
         library('vulkan', 'https://github.com/KhronosGroup/Vulkan-Headers.git', '2b55157592bf4c639b76cc16d64acaef565cc4b5'),
-        library('imgui', 'https://github.com/ocornut/imgui.git', 'f8c768760b0746aa7c1652397e2d9234c8502cb1'),
+        library('imgui', 'https://github.com/ocornut/imgui.git', '4b654db9040851228857528b44e195e358868e9a'),
+        library('imGuIZMO.quat', 'https://github.com/BrutPitt/imGuIZMO.quat.git', '6c038a90fdadae580b357fbaf26f83cafeb83a6a'),
         library('glfw', 'https://github.com/glfw/glfw.git', '3fa2360720eeba1964df3c0ecf4b5df8648a8e52'),
     ]
     for lib in libs:

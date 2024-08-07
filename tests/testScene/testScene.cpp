@@ -19,10 +19,13 @@
 #endif
 
 #ifdef IMGUI_GRAPHICS
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imguiGraphics.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+#define IMGUIZMO_IMGUI_FOLDER
+#include <imGuIZMO.quat/imGuIZMOquat.h>
 #endif
 
 #include <random>
@@ -43,9 +46,6 @@ testScene::testScene(moon::graphicsManager::GraphicsManager *app, GLFWwindow* wi
     resourceCount(app->getResourceCount()),
     imageCount(app->getImageCount())
 {
-    screenshot.resize(100);
-    std::memcpy(screenshot.data(), "screenshot", 10);
-
     create();
 }
 
@@ -141,45 +141,57 @@ void testScene::makeGui() {
         framebufferResized = true;
     }
 
-    ImGui::SameLine(0.0, 10.0f);
-    if (ImGui::Button("Make screenshot")) {
-        makeScreenshot();
-    }
-
-    ImGui::SameLine(0.0, 10.0f);
-    ImGui::SetNextItemWidth(100.0f);
-    ImGui::InputText("filename", screenshot.data(), screenshot.size());
-
-    auto switcher = [this](std::shared_ptr<moon::deferredGraphics::DeferredGraphics> graphics, const std::string& name) {
+    auto switcher = [](std::shared_ptr<moon::deferredGraphics::DeferredGraphics> graphics, const std::string& name) -> bool {
         if (auto val = graphics->getEnable(name); ImGui::RadioButton(name.c_str(), val)) {
             graphics->setEnable(name, !val);
-            framebufferResized = true;
+            return true;
         }
+        return false;
     };
 
-    if (ImGui::TreeNodeEx("Props", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+    ImGui::SliderFloat("animation speed", &animationSpeed, 0.0f, 5.0f);
+
+    if(ImGui::TreeNodeEx("Screenshot", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
     {
-        std::string title = "FPS = " + std::to_string(1.0f / frameTime);
-        ImGui::Text("%s", title.c_str());
-        if (ImGui::SliderFloat("bloom", &blitFactor, 1.0f, 3.0f)) {
-            graphics["base"]->parameters().blitFactor() = blitFactor;
-        }
+        ImGui::TreePush("Screenshot_Node");
+            static char screenshot[32] = "screenshot";
+            ImGui::SetNextItemWidth(100.0f);
+            ImGui::InputText("", screenshot, 32);
 
-        if (graphics["base"]->getEnable("Blur")) {
-            ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.0f, 1.0f);
-            graphics["base"]->parameters().blurDepth() = 1.02f * farBlurDepth;
-        }
-        else {
-            farBlurDepth = 1.0f;
-        }
+            ImGui::SameLine(0.0, 10.0f);
+            if (ImGui::Button("Make screenshot")) {
+                makeScreenshot(screenshot);
+            }
 
+            ImGui::TreePop();
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNodeEx("Performance", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        size_t fpsPlotSize = 100;
+        static std::vector<float> fps(fpsPlotSize, 0.0f);
+        float average = 0.0f, max = std::numeric_limits<float>::min(), min = std::numeric_limits<float>::max();
+        for(size_t i = 0; i < fps.size() - 1; i++){
+            average += (fps[i] = fps[i + 1]);
+            max = std::max(max, fps[i]);
+            min = std::min(min, fps[i]);
+        }
+        average += (fps[fps.size() - 1] = 1.0f / frameTime);
+        average /= fpsPlotSize;
+        max = std::max(max, fps[fps.size() - 1]);
+        min = std::min(min, fps[fps.size() - 1]);
+        ImGui::PlotLines(("FPS:\n[" + std::to_string(min) + ",\n" + std::to_string(max) + "]").c_str(), fps.data(), fps.size(), 0, ("average = " + std::to_string(average)).c_str(), min, max, {250.0f, 100.0f});
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNodeEx("Graphics Props", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+    {
         if (ImGui::SliderFloat("ambient", &minAmbientFactor, 0.0f, 1.0f)) {
             for (auto& [_, graph] : graphics) {
                 graph->parameters().minAmbientFactor() = minAmbientFactor;
             }
         }
-
-        ImGui::SliderFloat("animation speed", &animationSpeed, 0.0f, 5.0f);
 
         if (ImGui::RadioButton("refraction of scattering", enableScatteringRefraction)) {
             enableScatteringRefraction = !enableScatteringRefraction;
@@ -188,16 +200,38 @@ void testScene::makeGui() {
             }
         }
 
-        switcher(graphics["base"], "Bloom");
-        switcher(graphics["base"], "Blur");
-        switcher(graphics["base"], "Skybox");
-        switcher(graphics["base"], "SSLR");
-        switcher(graphics["base"], "SSAO");
-        switcher(graphics["base"], "Shadow");
-        switcher(graphics["base"], "Scattering");
-        switcher(graphics["base"], "BoundingBox");
-        switcher(graphics["base"], "TransparentLayer");
+        bool needUpdate = false;
 
+        ImGui::BeginGroup();
+            needUpdate = switcher(graphics["base"], "Bloom");
+            ImGui::SameLine(0.0, 10.0);
+            ImGui::SetNextItemWidth(150.0f);
+            if (ImGui::SliderFloat("", &blitFactor, 1.0f, 3.0f)) {
+                graphics["base"]->parameters().blitFactor() = blitFactor;
+            }
+        ImGui::EndGroup();
+        ImGui::BeginGroup();
+            needUpdate |= switcher(graphics["base"], "Blur");
+            ImGui::SetNextItemWidth(150.0f);
+            ImGui::SameLine(0.0, 10.0);
+            if (graphics["base"]->getEnable("Blur")) {
+                ImGui::SliderFloat("farBlurDepth", &farBlurDepth, 0.0f, 1.0f);
+                graphics["base"]->parameters().blurDepth() = 1.02f * farBlurDepth;
+            } else {
+                farBlurDepth = 1.0f;
+            }
+        ImGui::EndGroup();
+        needUpdate |= switcher(graphics["base"], "Skybox");
+        needUpdate |= switcher(graphics["base"], "SSLR");
+        needUpdate |= switcher(graphics["base"], "SSAO");
+        needUpdate |= switcher(graphics["base"], "Shadow");
+        needUpdate |= switcher(graphics["base"], "Scattering");
+        needUpdate |= switcher(graphics["base"], "BoundingBox");
+        needUpdate |= switcher(graphics["base"], "TransparentLayer");
+
+        if(needUpdate){
+            framebufferResized = true;
+        }
         ImGui::TreePop();
     }
 
@@ -222,41 +256,79 @@ void testScene::makeGui() {
     }
 #endif
 
-    if (ImGui::TreeNodeEx("Object", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+    if (controledObject && ImGui::TreeNodeEx(std::string("Object : " + controledObject.name).c_str(), ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
     {
-        std::string title = "controled object : " + controledObject.name;
-        ImGui::Text("%s", title.c_str());
-        {
-            if (controledObject) {
-                const auto p = controledObject->translation().im();
-                std::string pos = "position : " + std::to_string(p[0]) + " " + std::to_string(p[1]) + " " + std::to_string(p[2]);
-                ImGui::Text("%s", pos.c_str());
-                const auto r = controledObject->rotation();
-                std::string rot = "rot : " + std::to_string(r.re()) + " " + std::to_string(r.im()[0]) + " " + std::to_string(r.im()[1]) + " " + std::to_string(r.im()[2]);
-                ImGui::Text("%s", rot.c_str());
-                const auto s = controledObject->scaling();
-                std::string scl = "scale : " + std::to_string(s[0]) + " " + std::to_string(s[1]) + " " + std::to_string(s[2]);
-                ImGui::Text("%s", scl.c_str());
+        ImGui::BeginGroup();
+            ImGui::Text("translation : "); ImGui::SameLine(); ImGui::Separator();
+            float* translation = (float*)&controledObject->translation();
+            ImGui::Text(("x : " + std::to_string(translation[1])).c_str());
+            ImGui::Text(("y : " + std::to_string(translation[2])).c_str());
+            ImGui::Text(("z : " + std::to_string(translation[3])).c_str());
+        ImGui::EndGroup();
+
+        ImGui::BeginGroup();
+            ImGui::Text("scale : "); ImGui::SameLine(); ImGui::Separator();
+            constexpr auto scaleWidth = 150.0f;
+            constexpr auto scaleStep = 0.1f;
+            bool needUpdate = false;
+            float* scale = (float*)&controledObject->scaling();
+            ImGui::SameLine(0.0, 2.0);
+            if (ImGui::Button("+", { 20, 20 })) {
+                controledObject->scaling() += moon::math::Vector<float, 3>(scaleStep);
+                needUpdate = true;
             }
-        }
-        if (ImGui::RadioButton("outlighting", controledObject.outlighting.enable)) {
-            controledObject.outlighting.enable = !controledObject.outlighting.enable;
-            if (controledObject) {
-                controledObject->setOutlining(controledObject.outlighting.enable);
+            ImGui::SameLine(0.0, 2.0);
+            if (ImGui::Button("-", { 20, 20 })) {
+                controledObject->scaling() -= moon::math::Vector<float, 3>(scaleStep);
+                needUpdate = true;
+            }
+            ImGui::SetNextItemWidth(scaleWidth); needUpdate |= ImGui::InputFloat("x", &scale[0], scaleStep);
+            ImGui::SetNextItemWidth(scaleWidth); needUpdate |= ImGui::InputFloat("y", &scale[1], scaleStep);
+            ImGui::SetNextItemWidth(scaleWidth); needUpdate |= ImGui::InputFloat("z", &scale[2], scaleStep);
+            if(needUpdate) controledObject->update();
+        ImGui::EndGroup();
+
+        ImGui::BeginGroup();
+            ImGui::Text("rotation : "); ImGui::SameLine(); ImGui::Separator();
+            float* rotation = (float*)&controledObject->rotation();
+            float* cam = (float*)&cameras["base"]->getViewMatrix()[2].dvec();
+            vec3 camdir(-cam[0], -cam[1], -cam[2]);
+            if (quat qu(rotation[0], rotation[1], rotation[2], rotation[3]);
+                ImGui::gizmo3D("", qu, camdir, 100, imguiGizmo::mode3Axes | imguiGizmo::sphereAtOrigin))
+            {
+                controledObject->rotation() = moon::math::Quaternion<float>(qu.w, qu.x, qu.y, qu.z);
+                controledObject->update();
+            }
+            ImGui::SameLine(0.0, 10.0);
+            ImGui::BeginGroup();
+                ImGui::Text("s : %s", std::to_string(rotation[0]).c_str());
+                ImGui::Text("x : %s", std::to_string(rotation[1]).c_str());
+                ImGui::Text("y : %s", std::to_string(rotation[2]).c_str());
+                ImGui::Text("z : %s", std::to_string(rotation[3]).c_str());
+            ImGui::EndGroup();
+        ImGui::EndGroup();
+
+        ImGui::BeginGroup();
+            ImGui::Separator();
+            auto& outlighting = controledObject.outlighting;
+            auto& enable = outlighting.enable;
+            auto& color = outlighting.color;
+            if (ImGui::RadioButton("outlighting", enable)) {
+                controledObject->setOutlining(enable = !enable);
                 requestUpdate();
             }
-        }
-        if (ImGui::ColorPicker4("outlighting", (float*)&controledObject.outlighting.color, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB)) {
-            if (controledObject) {
-                controledObject->setOutlining(controledObject.outlighting.enable, 0.03f, controledObject.outlighting.color);
+            ImGui::SetNextItemWidth(300);
+            if (enable && ImGui::ColorEdit4("", (float*)&color, ImGuiColorEditFlags_NoDragDrop)) {
+                controledObject->setOutlining(enable, 0.03f, color);
                 requestUpdate();
             }
-        }
+        ImGui::EndGroup();
+
         ImGui::TreePop();
     }
 }
 
-void testScene::makeScreenshot() {
+void testScene::makeScreenshot(const std::string& screenshot) {
     const auto imageExtent = app->getImageExtent();
     auto screenshotImage = app->makeScreenshot();
     size_t imageSize = imageExtent.height * imageExtent.width;
@@ -536,24 +608,24 @@ void testScene::keyboardEvent()
     if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_Z)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[1].dvec());
     if(!board->pressed(GLFW_KEY_LEFT_CONTROL) && board->pressed(GLFW_KEY_S)) cameras["base"]->translate( sensitivity*cameras["base"]->getViewMatrix()[2].dvec());
 
-    auto rotateControled = [this](const float& ang, const moon::math::Vector<float,3>& ax){
-        if(bool foundInGroups = false; controledObject){
-            for(auto& [_,group]: groups){
-                if(group->find(controledObject)){
-                    group->rotate(ang,ax);
+    auto rotateControled = [this](const float& ang, const moon::math::Vector<float, 3>& ax) {
+        if (bool foundInGroups = false; controledObject) {
+            for (auto& [_, group] : groups) {
+                if (group->find(controledObject)) {
+                    group->rotate(ang, ax);
                     foundInGroups = true;
-                }
+                    }
+                 }
+             if (!foundInGroups) controledObject->rotate(ang, ax);
             }
-            if(!foundInGroups) controledObject->rotate(ang,ax);
-        }
-    };
+        };
 
-    if(board->pressed(GLFW_KEY_KP_4)) rotateControled(moon::math::radians( 0.5f), {0.0f,0.0f,1.0f});
-    if(board->pressed(GLFW_KEY_KP_6)) rotateControled(moon::math::radians(-0.5f), {0.0f,0.0f,1.0f});
-    if(board->pressed(GLFW_KEY_KP_8)) rotateControled(moon::math::radians( 0.5f), {1.0f,0.0f,0.0f});
-    if(board->pressed(GLFW_KEY_KP_5)) rotateControled(moon::math::radians(-0.5f), {1.0f,0.0f,0.0f});
-    if(board->pressed(GLFW_KEY_KP_7)) rotateControled(moon::math::radians( 0.5f), {0.0f,1.0f,0.0f});
-    if(board->pressed(GLFW_KEY_KP_9)) rotateControled(moon::math::radians(-0.5f), {0.0f,1.0f,0.0f});
+    if (board->pressed(GLFW_KEY_KP_4)) rotateControled(moon::math::radians(0.5f), { 0.0f,0.0f,1.0f });
+    if (board->pressed(GLFW_KEY_KP_6)) rotateControled(moon::math::radians(-0.5f), { 0.0f,0.0f,1.0f });
+    if (board->pressed(GLFW_KEY_KP_8)) rotateControled(moon::math::radians(0.5f), { 1.0f,0.0f,0.0f });
+    if (board->pressed(GLFW_KEY_KP_5)) rotateControled(moon::math::radians(-0.5f), { 1.0f,0.0f,0.0f });
+    if (board->pressed(GLFW_KEY_KP_7)) rotateControled(moon::math::radians(0.5f), { 0.0f,1.0f,0.0f });
+    if (board->pressed(GLFW_KEY_KP_9)) rotateControled(moon::math::radians(-0.5f), { 0.0f,1.0f,0.0f });
 
     auto translateControled = [this](const moon::math::Vector<float,3>& tr){
         if(bool foundInGroups = false; controledObject){
